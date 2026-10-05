@@ -16,6 +16,7 @@ import { ID_TO_MODEL, handlingFor, KNIFE_MELEE } from './gunsmith/handling.js';
 import { MuzzleFlash, ShellPool, SmokeWisps } from './gunsmith/fx.js';
 import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js';
 import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -64,6 +65,22 @@ function sleeveCamo(schemeId) {
   const [base, dark, light, accent] = sc.camo;
   const deep = '#' + [1, 3, 5].map(i => Math.round(parseInt(dark.slice(i, i + 2), 16) * 0.72).toString(16).padStart(2, '0')).join('');
   return [base, dark, accent, deep, light];
+}
+
+/**
+ * Ladebildschirm-Vorarbeit (core, G18): die einmaligen Texturen, die das erste `new ViewModel()` sonst in
+ * einem Block erzeugt (Ärmel-Grundmuster + Tarnmuster des Teams je 512², Stoff-Normalen, Tape, Uhr,
+ * Mündungsfeuer, Rauch), als einzelne Schritte. Texturen sind gecacht → das Viewmodel baut danach nur
+ * noch Geometrie. team wie `G.player.team` ('A' | null = FFA), world für das Kartenschema.
+ */
+export function viewModelWarmupSteps({ team = 'A', world = null } = {}) {
+  return [
+    () => camoMap('arid'),
+    () => camoMap(sleeveCamo(schemeForTeam(team, world) || null)),
+    () => fabricNormal(),
+    () => { tapeMap(); watchFaceTexture(); },
+    () => { flashMap('star'); flashMap('side'); smokeMap(); },
+  ];
 }
 
 function basis(F, B, out) {
@@ -1115,14 +1132,19 @@ export class ViewModel {
     if (!v) { this.flash.hide(); this.shells.clear(); this.smoke.clear(); }
   }
 
-  /** Alle Waffenmodelle vorbauen und Shader kompilieren (z. B. im Ladebildschirm). */
+  /** Alle Waffenmodelle vorbauen und Shader kompilieren (z. B. im Ladebildschirm) – auch die der Effekte
+   *  (Mündungsfeuer, Rauch, Hülsen je Art), damit der erste Schuss kein Programm mehr linkt. */
   warmup(renderer, ids = Object.keys(ID_TO_MODEL)) {
     const prev = this.cur;
     const holder = new THREE.Group();
+    const shells = new Set();
     for (const id of ids) {
       const e = this._getModel(id, (this._defFor(id)?.model) || ID_TO_MODEL[id] || id);
+      shells.add(handlingFor(e.key).shell);
       if (e !== prev) holder.add(e.model);
     }
+    this.shells.prepare(shells);
+    if (!this.flash.group.parent) holder.add(this.flash.group);   // noch keine Waffe gezogen
     this.root.add(holder);
     for (const p of Object.values(this.props)) p.visible = true;
     try { renderer?.compile?.(this.scene, this.camera); } catch { /* optional */ }

@@ -255,7 +255,7 @@ export class MapBuilder {
 
   /**
    * Schreibt ein lokales Primitiv mit Matrix m in den Material-Bucket.
-   * o: { tint, uv: 'world'|'local'|'fit'|'keep', uvScale, uvOffset:[u,v], cast, bullet, interior, ground, noise,
+   * o: { tint, uv: 'world'|'local'|'fit'|'keep', uvScale, uvOffset:[u,v], uvSwap (u/v tauschen), cast, bullet, interior, ground, noise,
    *      aoFloor, aoMin, aoH, ao(false), chunkAt:[x,z] }
    */
   _emit(prim, m, mat, o, center) {
@@ -270,7 +270,7 @@ export class MapBuilder {
     const P = bk.pos.a, N = bk.nor.a, UV = bk.uv.a, C = bk.col.a, FL = bk.flg.a;
     let pi = bk.pos.n, ui = bk.uv.n, fi = bk.flg.n;
     const tint = linearTint(o.tint);
-    const uvMode = o.uv || 'world', uvs = 1 / (o.uvScale || 1), uo = o.uvOffset || [0, 0];
+    const uvMode = o.uv || 'world', uvs = 1 / (o.uvScale || 1), uo = o.uvOffset || [0, 0], uvSwap = !!o.uvSwap;
     const ao = o.ao !== false;
     const floorY = o.aoFloor ?? center[1];
     const aoMin = o.aoMin ?? 0.5, aoH = o.aoH ?? 1.1;
@@ -299,6 +299,7 @@ export class MapBuilder {
         else { u = qz > 0 ? px : -px; v = py; }
         u *= uvs; v *= uvs;
       }
+      if (uvSwap) { const s = u; u = v; v = s; }
       UV[ui] = u + uo[0]; UV[ui + 1] = v + uo[1];
       // AO
       let k = 1;
@@ -786,14 +787,37 @@ export class MapBuilder {
 
     // Kollisionsgeometrie (Weltkoordinaten, 9 Floats je Dreieck)
     const colArr = this.colTris.view().slice();
-    this.colTris = new FBuf(16);
 
     let drawTris = 0; for (const m of meshes) drawTris += m.geometry.attributes.position.count / 3;
+    const stats = { meshes: meshes.length, triangles: drawTris, bulletTris: triCount, colliderTris: colArr.length / 9, prims: this.stats.prims, signAtlas: this.signAtlasSize || null };
+    this._releaseScratch();
     return {
       group, meshes, decalMeshes, signMesh, foliage, lights, objects,
       bulletTris: btris, bulletData: bdata, colTris: colArr,
-      stats: { meshes: meshes.length, triangles: drawTris, bulletTris: triCount, colliderTris: colArr.length / 9, prims: this.stats.prims, signAtlas: this.signAtlasSize || null },
+      stats,
     };
+  }
+
+  /**
+   * Bau-Zwischendaten freigeben (nach build()): Die Buckets sind in die Meshes kopiert, Bodenraster und
+   * Innenraumgitter wurden nur für die Vertexfarben gebraucht, Decal-/Schild-/Pflanzen-/Licht-Listen sind verbaut.
+   * Danach bleiben nur footprints, navPoints, navExclude und objects (Minikarte, Navigation, world.update).
+   */
+  _releaseScratch() {
+    this.buckets.clear();
+    this.colTris = new FBuf(16);
+    this._aoRaster = null;
+    this._interiorGrid = null;
+    this.interiors = [];
+    this.navBlockers = [];
+    this.decals = [];
+    this.signs = [];
+    this.signDefs = {};
+    this.plants = [];
+    this.lights = [];
+    this.glows = [];
+    this.floors = [];
+    this.materials.clear();
   }
 
   _buildGlows(group) {

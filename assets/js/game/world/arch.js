@@ -276,12 +276,18 @@ export function building(b, o) {
   // Böden
   const floorMat = o.floorMat || 'tiles';
   b.boxMM(x0 + t, y0, z0 + t, x1 - t, y0 + (o.floorT ?? 0.12), z1 - t, floorMat, { grad: false, minimap: false, tint: o.floorTint });
+  // Zwischendecken liegen zwischen den Wänden (Innenmaß): Die Außenwand des Geschosses reicht über die Deckenstirn.
+  // Eine Decke über den vollen Grundriss läge mit ihrer Stirn in der Fassadenebene (Z-Fighting-Streifen unter jedem
+  // Geschossband) und mit ihrer Oberseite in der Wandkrone (Flimmern in Türschwellen des Obergeschosses).
+  // Die Dachdecke bleibt voll – über ihr endet die Wand, ihre Stirn ist dort die Fassade.
+  const inset = (sid) => (o.skipWalls?.includes(sid) ? 0 : t);
   for (let i = 1; i <= floors; i++) {
     const y = fy(i) - slabT;
     const holes = (o.holes || []).filter(hl => (hl.floor ?? 1) === i);
     const isRoof = i === floors;
     if (isRoof && o.roof === false) continue;
-    slab(b, x0, z0, x1, z1, y, slabT, isRoof ? (o.roof?.mat || 'concrete') : (o.slabMat || 'concrete'), holes, { tint: isRoof ? o.roof?.tint : o.slabTint, minimap: isRoof ? 'roof' : false });
+    const [sx0, sz0, sx1, sz1] = isRoof ? [x0, z0, x1, z1] : [x0 + inset('w'), z0 + inset('n'), x1 - inset('e'), z1 - inset('s')];
+    slab(b, sx0, sz0, sx1, sz1, y, slabT, isRoof ? (o.roof?.mat || 'concrete') : (o.slabMat || 'concrete'), holes, { tint: isRoof ? o.roof?.tint : o.slabTint, minimap: isRoof ? 'roof' : false });
     // Bodenbelag oben auf Zwischendecken
     if (!isRoof && o.upperFloorMat) slab(b, x0 + t, z0 + t, x1 - t, z1 - t, fy(i), 0.02, o.upperFloorMat, holes, { tint: o.floorTint });
   }

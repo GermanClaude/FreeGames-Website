@@ -8,7 +8,11 @@
 //   data-fit-grow="0"      nie größer als die CSS-Schriftgröße (nur Breite anpassen, notfalls schrumpfen)
 //   fitOpts.weight = true  zusätzlich messen, wie stark jede Glyphe mit der Stärke wächst (für Breitenausgleich)
 //   data-fit-slots         jede Glyphe bekommt ihre Ruhebreite als feste Box: bewegte Schnitte (Eintritt, Stauchung,
-//                          Wellen) verändern dann nur die Zeichnung in der Box, nie die Lage der Nachbarn (kein CLS)
+//                          Wellen) verändern dann nur die Zeichnung in der Box, nie die Lage der Nachbarn (kein CLS).
+//                          Die Boxen sind gemessen (nicht aus dem linearen Modell: die Breitenachse ist nicht linear,
+//                          Vorschübe werden je Glyphe gerundet) und ergeben zusammen nie mehr als die Zeilenbreite;
+//                          das Modell trägt dazu je Glyphe Box, Wachstum bis 125/900 und den Platz bis zum Rand
+//                          (kinetic.js hält bewegte Zeichnungen damit in der Zeile).
 //   .fl-Kinder mit display:block werden einzeln gesetzt (Zeilenmodus)
 
 const all = new Set();
@@ -73,6 +77,16 @@ function fixedFor(el) {
   return Number.isFinite(v) ? v : null;
 }
 
+/**
+ * Breite der Clip-Box in Bruchteilen von px: clientWidth rundet (966,6 → 967) – eine so berechnete Zeile stünde
+ * um den Rundungsrest über. Ohne Transformation (Abweichung < 1 px) gilt der kleinere der beiden Werte.
+ */
+function innerW(el) {
+  const cw = el.clientWidth;
+  const rw = el.getBoundingClientRect().width;
+  return Math.abs(rw - cw) < 1 ? Math.min(rw, cw) : cw;
+}
+
 function makeClone(unit, wdth, root) {
   const c = unit.cloneNode(true);
   c.removeAttribute('id');
@@ -111,11 +125,11 @@ function flush() {
   for (const el of els) {
     const lines = [...el.querySelectorAll('.fl')];
     const lineMode = lines.length > 1 && getComputedStyle(lines[0]).display === 'block';
-    const W = el.clientWidth;
+    const W = innerW(el);
     lastW.set(el, Math.round(el.getBoundingClientRect().width * 2) / 2);
     if (!W) continue;
     if (lineMode) {
-      for (const fl of lines) units.push({ el, unit: fl, W: fl.clientWidth || W, fixed: fixedFor(fl), max: maxFor(el), line: true });
+      for (const fl of lines) units.push({ el, unit: fl, W: innerW(fl) || W, fixed: fixedFor(fl), max: maxFor(el), line: true });
     } else {
       units.push({ el, unit: el, W, fixed: fixedFor(el), max: maxFor(el), line: false, lines });
     }
@@ -189,8 +203,9 @@ function flush() {
     else u.unit.style.removeProperty('font-size');
   }
 
-  // 5) Korrektur über einen Klon im gelösten Schnitt (unabhängig von Eintritts-/Bewegungszuständen)
-  const check = units.filter((u) => u.fixed === null && u.wd < 125 && u.wd > 62);
+  // 5) Korrektur über einen Klon im gelösten Schnitt (unabhängig von Eintritts-/Bewegungszuständen);
+  //    Einheiten mit festen Glyphenboxen korrigiert Schritt 6 mit seinen eigenen Messungen
+  const check = units.filter((u) => u.fixed === null && u.wd < 125 && u.wd > 62 && u.el.dataset.fitSlots === undefined);
   for (const u of check) {
     u.cx = makeClone(u.unit, u.wd, u.el);
     if (Math.abs(u.fs - u.base) > 0.25) u.cx.style.fontSize = `${u.fs.toFixed(2)}px`;
@@ -207,20 +222,94 @@ function flush() {
     }
   }
 
+  // 6) Feste Glyphenboxen: im gelösten Schnitt messen, bis die Zeile passt (Breitenachse, zuletzt Schriftgröße)
+  const slotted = units.filter((u) => u.el.dataset.fitSlots !== undefined);
+  if (slotted.length) measureSlots(slotted);
+
   for (const u of units) {
-    if (u.el.dataset.fitSlots !== undefined) {
-      const gs = u.unit.querySelectorAll('.g');
-      gs.forEach((g, i) => {
-        const w = ((u.ga[i] ?? 0) + (u.gb[i] ?? 0) * (u.wd - 62)) * u.scale;
-        if (w > 0) g.style.width = `${w.toFixed(2)}px`;
-      });
+    if (u.slots) {
+      u.unit.querySelectorAll('.g').forEach((g, i) => { if (u.slots[i] > 0) g.style.width = `${u.slots[i]}px`; });
     }
     models.set(u.unit, {
       b: u.gb.map((b) => b * u.scale), a: u.ga.map((a) => a * u.scale), c: u.gc ? u.gc.map((c) => c * u.scale) : null,
       rw: u.rw ?? null, wdth: u.wd, fs: u.fs, W: u.W,
+      slots: u.slots ? { s: u.slots, up: u.up, wc: u.wc, room: u.room } : null,
     });
     u.unit.dataset.fitted = u.wd.toFixed(1);
   }
   const done = new Set(units.map((u) => u.el));
   for (const el of done) el.dispatchEvent(new CustomEvent('fitted', { bubbles: false }));
+}
+
+const LU = 64; // Layout-Einheiten je px (Chrome)
+
+/**
+ * Misst je Einheit die echten Glyphenvorschübe im gelösten Schnitt (Ruhe, wdth 125, wght 900) und stellt nach,
+ * bis die Summe in die Zeile passt bzw. sie füllt: bis zu zwei Schritte über die Breitenachse, danach – nur bei
+ * deutlichem Überstand – über die Schriftgröße. Was dann noch übersteht (Rundung der Vorschübe auf ganze px,
+ * je Glyphe < 0,4 px), nehmen die Boxen vor der letzten Glyphe auf: Ihre Zeichnungen ragen unmerklich in die
+ * Nachbarbox, die letzte Zeichnung endet spätestens am Zeilenende.
+ * Ergebnis je Einheit: slots (Boxbreiten px), up (px je wdth-Einheit über der Ruhe), wc (px je wght-Einheit über
+ * der Ruhe), room (px vom Ende der ruhenden Zeichnung bis zum Zeilenende).
+ */
+function measureSlots(list) {
+  let todo = list;
+  // Ruhestärke vorab lesen (ein Stilabgleich, nicht einer je Einheit zwischen den Klonen)
+  for (const u of list) {
+    if (u.rw == null) { const cs = getComputedStyle(u.unit); u.rw = parseFloat(cs.getPropertyValue('--wght')) || parseFloat(cs.fontWeight) || 400; }
+  }
+  for (let it = 0; it < 4 && todo.length; it++) {
+    for (const u of todo) {
+      const mk = (wd, wght) => {
+        const c = makeClone(u.unit, wd, u.el);
+        if (Math.abs(u.fs - u.base) > 0.25) c.style.fontSize = `${u.fs.toFixed(2)}px`;
+        if (wght) c.style.setProperty('--wght', String(wght));
+        u.unit.parentNode.appendChild(c);
+        return c;
+      };
+      u.k = [mk(u.wd), mk(125), mk(u.wd, 900)];
+    }
+    const widths = (c) => [...c.querySelectorAll('.g')].map((g) => g.getBoundingClientRect().width);
+    for (const u of todo) [u.mr, u.m125, u.m900] = u.k.map(widths);
+    const next = [];
+    for (const u of todo) {
+      for (const c of u.k) c.remove();
+      u.k = null;
+      const n = u.mr.length;
+      const total = u.mr.reduce((a, b) => a + b, 0);
+      const over = total - u.W;
+      const absorb = 0.4 * Math.max(1, n - 1); // so viel Überstand nehmen die Boxen unmerklich auf
+      const short = over < -(1 + 0.002 * u.W); // sichtbare Lücke am Zeilenende
+      if (it < 2 && u.fixed === null && (over > absorb ? u.wd > 62 : short && u.wd < 125)) {
+        // Breitenachse nachstellen (Sekante zum jeweiligen Achsenende)
+        const t62 = u.w62 * u.scale;
+        const t125 = u.m125.reduce((a, b) => a + b, 0);
+        const slope = over > 0 ? (total - t62) / Math.max(1e-3, u.wd - 62) : (t125 - total) / Math.max(1e-3, 125 - u.wd);
+        u.wd = Math.max(62, Math.min(125, u.wd - (over + (over > 0 ? 0.25 : 0)) / Math.max(1e-3, slope)));
+        u.unit.style.setProperty('--wdth', u.wd.toFixed(2));
+        next.push(u);
+        continue;
+      }
+      if (it < 3 && over > absorb) {
+        // Achse am Ende (oder fest) und deutlich zu breit: Schriftgröße – Vorschübe skalieren mit ihr
+        u.fs = Math.max(8, u.fs * (u.W - 0.25) / total);
+        u.scale = u.fs / u.base;
+        u.unit.style.fontSize = `${u.fs.toFixed(2)}px`;
+        next.push(u);
+        continue;
+      }
+      const slots = u.mr.map((w) => Math.floor(w * LU) / LU);
+      if (over > 0 && n > 1) {
+        const head = slots.slice(0, -1).reduce((a, b) => a + b, 0);
+        const k = Math.max(0, 1 - (over + 1 / LU) / Math.max(1e-3, head));
+        for (let i = 0; i < n - 1; i++) slots[i] = Math.floor(slots[i] * k * LU) / LU;
+      }
+      let left = 0;
+      u.room = slots.map((w, i) => { const r = u.W - left - u.mr[i]; left += w; return Math.max(0, r); });
+      u.up = u.mr.map((w, i) => (u.wd < 124.9 ? Math.max(0, ((u.m125[i] ?? w) - w) / (125 - u.wd)) : 0));
+      u.wc = u.mr.map((w, i) => (u.rw < 899 ? Math.max(0, ((u.m900[i] ?? w) - w) / (900 - u.rw)) : 0));
+      u.slots = slots;
+    }
+    todo = next;
+  }
 }

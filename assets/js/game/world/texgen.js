@@ -821,6 +821,63 @@ G.woodStock = (t, r, o) => {
   }
 };
 
+/**
+ * Rinde. o.rings > 0: Palmstamm – waagerechte Blattnarben-Ringe (je Kachel o.rings), heller Wulst über einer
+ * schattigen Kerbe, senkrechte Fasern. Sonst Borke (Olive/Laubbaum): senkrechte Platten mit tiefen Furchen.
+ * Albedo bewusst mittelhell (Stämme stehen in der Sonne; die Vertexfarbe tönt nur noch leicht).
+ */
+G.bark = (t, r, o) => {
+  const { S, n } = t;
+  const base = hex(o.base || '#857a6b'), dark = hex(o.dark || '#463d33'), light = hex(o.light || '#a69c8c');
+  const mott = fbm(S, 3, 5, r), fib = fbm(S, 48, 3, r, { py: 4 }), fine = fbm(S, 96, 2, r);
+  const rings = o.rings | 0;
+  if (rings > 0) {
+    // Palmstamm: je Ring eine Blattnarbe – schattige Kerbe unten, gewölbter Wulst darüber, faserige Fläche;
+    // Ringe laufen leicht wellig und setzen stellenweise aus (Narben umfassen den Stamm nicht überall gleich)
+    const wob = fbm(S, 5, 3, r, { py: 2 }), brk = fbm(S, 6, 3, r, { py: rings });
+    const ring = []; for (let k = 0; k < rings; k++) ring.push({ tone: (r() - 0.5) * 0.18, w: 0.12 + r() * 0.1 });
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const i = y * S + x;
+      const fy = (y / S) * rings + (wob[i] - 0.5) * 0.5;
+      const k = ((Math.floor(fy) % rings) + rings) % rings, f = fy - Math.floor(fy), R = ring[k];
+      const depth = 0.55 + 0.45 * smooth(0.25, 0.6, brk[i]);
+      const groove = (1 - smooth(0, R.w, f)) * depth;
+      const bulge = smooth(R.w * 0.5, R.w + 0.3, f) * (1 - smooth(0.55, 1, f) * 0.6);
+      const fiber = fib[i] * 0.65 + fine[i] * 0.35;
+      let c = mixC(base, light, bulge * 0.5 + (fiber - 0.5) * 0.6);
+      c = c.map(v => v * (0.88 + mott[i] * 0.24 + R.tone) * (1 - (1 - f) * 0.12));
+      c = mixC(c, dark, groove * 0.9);
+      t.set(i, c[0], c[1], c[2]);
+      t.height[i] = bulge * 0.7 - groove * 0.7 + fiber * 0.35;
+      t.rough[i] = 0.86 + fine[i] * 0.1;
+    }
+    return;
+  }
+  // Borke: lange, mäandernde Längsrisse (Höhenlinien eines senkrecht gestreckten Rauschens) zwischen rauen
+  // Platten; ein zweites Feld verzweigt sie. Rissbreite über den Gradienten in Pixeln gemessen → gleichmäßig breit.
+  const f1 = fbm(S, 7, 4, r, { py: 1 }), f2 = fbm(S, 11, 3, r, { py: 2 });
+  const lines = o.lines || 3, px = S / 256;
+  const distPx = (f, x, y, k, off) => {
+    const i = y * S + x, xm = y * S + (x - 1 + S) % S, xp = y * S + (x + 1) % S, ym = ((y - 1 + S) % S) * S + x, yp = ((y + 1) % S) * S + x;
+    const g = Math.hypot(f[xp] - f[xm], f[yp] - f[ym]) * 0.5 * k + 1e-6;
+    const a = (f[i] * k + off) % 1;
+    return Math.min(a, 1 - a) / g;
+  };
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const i = y * S + x;
+    const d1 = distPx(f1, x, y, lines, 0), d2 = distPx(f2, x, y, lines + 1, 0.37);
+    const furrow = Math.max(1 - smooth(0.6 * px, 2.6 * px, d1), (1 - smooth(0.4 * px, 1.5 * px, d2)) * 0.75);
+    const plate = smooth(1 * px, 9 * px, Math.min(d1, d2 * 1.5));
+    const fiber = fib[i] * 0.6 + fine[i] * 0.4;
+    let c = mixC(base, light, plate * 0.35 + (fiber - 0.5) * 0.5);
+    c = c.map(v => v * (0.86 + mott[i] * 0.26));
+    c = mixC(c, dark, furrow * 0.9);
+    t.set(i, c[0], c[1], c[2]);
+    t.height[i] = plate * 0.6 - furrow * 0.6 + fiber * 0.35;
+    t.rough[i] = 0.88 + fine[i] * 0.1;
+  }
+};
+
 G.camo = (t, r, o) => {
   const { S, n } = t;
   const cols = o.colors.map(hex);
@@ -926,6 +983,8 @@ export const TEX = {
   wood_dark:      { gen: 'planks', o: { palette: ['#5a4634', '#4e3c2c', '#62503c', '#45362a'], rows: 10 }, normal: 3 },
   wood_crate:     { gen: 'crate', o: {}, normal: 3 },
   wood_stock:     { gen: 'woodStock', o: {}, normal: 1.5 },
+  bark:           { gen: 'bark', o: { base: '#857c6f', dark: '#433b32', light: '#a8a092', lines: 3 }, normal: 4 },
+  bark_palm:      { gen: 'bark', o: { base: '#8f8270', dark: '#4a4034', light: '#b0a38c', rings: 12 }, normal: 3.5 },
   cardboard:      { gen: 'cardboard', o: {}, normal: 1.5 },
   metal_painted:  { gen: 'paint', o: {}, normal: 1.5 },
   metal_rust:     { gen: 'rust', o: {}, normal: 3 },
