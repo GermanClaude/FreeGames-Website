@@ -3,11 +3,11 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261006133650';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, lampPost, acUnit, cable,
   bench, cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js';
+} from '../props.js?v=20261006133650';
 
 const FH = 3.2;                       // Geschosshöhe
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };

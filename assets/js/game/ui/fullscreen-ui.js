@@ -3,7 +3,7 @@
 // App-Browser, eingebettet, abgelehnt). Wird per MutationObserver in #menu-root eingesetzt – lobby.js/menus.js
 // bleiben unberührt; Klicks laufen über einen eigenen Listener (data-fs). Logik: engine/fullscreen.js.
 
-import { codeLabel } from '../../shared/bindings.data.js';
+import { codeLabel } from '../../shared/bindings.data.js?v=20261006133650';
 
 const GUIDE_FLAG = 'nullpunkt:fullscreenGuide';
 

@@ -2,13 +2,13 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { getMaterial } from '../../engine/textures.js';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js';
+import { getMaterial } from '../../engine/textures.js?v=20261006133650';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261006133650';
 import {
   container, CONTAINER_H, crate, crateStack, barrel, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   forklift, truck, van, car, lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, lockers, dumpster, frame, roofVent, dress,
-} from '../props.js';
+} from '../props.js?v=20261006133650';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;

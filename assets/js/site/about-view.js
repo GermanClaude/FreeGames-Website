@@ -1,8 +1,8 @@
 // §08 Über: Datenschutz (lokale Daten löschen) und das optionale Impressum aus config.js.
-import { $, h } from './dom.js';
-import { IMPRESSUM } from './config.js';
-import { site } from './state.js';
-import { announce } from './live.js';
+import { $, h } from './dom.js?v=20261006133650';
+import { IMPRESSUM } from './config.js?v=20261006133650';
+import { site } from './state.js?v=20261006133650';
+import { announce } from './live.js?v=20261006133650';
 
 /** Alle Schlüssel 'nullpunkt:*' im lokalen Speicher. */
 function ourKeys() {

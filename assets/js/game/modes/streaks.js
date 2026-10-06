@@ -7,11 +7,11 @@
 // Treffer auf Geschütze: world.raycast wird solange um die Geschütze erweitert; 'impact' → Schaden.
 
 import * as THREE from 'three';
-import { STREAKS, STREAK_ORDER } from '../../shared/modes.data.js';
-import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js';
-import { falloff } from '../combat.js';
-import { Sentry, sentryResources } from './sentry.js';
-import { Strike, strikeResources, groundAt } from './strike.js';
+import { STREAKS, STREAK_ORDER } from '../../shared/modes.data.js?v=20261006133650';
+import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261006133650';
+import { falloff } from '../combat.js?v=20261006133650';
+import { Sentry, sentryResources } from './sentry.js?v=20261006133650';
+import { Strike, strikeResources, groundAt } from './strike.js?v=20261006133650';
 
 const _v = new THREE.Vector3();
 const _d = new THREE.Vector3();

@@ -7,8 +7,8 @@
 // Gesichter sind verdeckt (Realismus-Plan C1: Sturmhaube, Halstuch, Shemagh, Gasmaske + Schutzbrillen) – wie Bodycam,
 // das Gesichter verpixelt; so entsteht kein „Uncanny Valley“ aus der Nähe.
 import * as THREE from 'three';
-import { SkinBuilder, limb, lathe as latheBase, rbox, ellipsoid, cyl, torus, xf } from './builder.js';
-import { SKIN_TONES } from './materials.js';
+import { SkinBuilder, limb, lathe as latheBase, rbox, ellipsoid, cyl, torus, xf } from './builder.js?v=20261006133650';
+import { SKIN_TONES } from './materials.js?v=20261006133650';
 
 export const VARIANTS = [
   { id: 'sturm', name: 'Sturm', head: 'helmet', cover: true, nvg: true, ears: true, face: 'gaiter', eyes: 'shades', vest: 'plate', back: 'assault', knees: true, holster: true, sleeves: 'long', skin: 1, hair: '#2a2119' },

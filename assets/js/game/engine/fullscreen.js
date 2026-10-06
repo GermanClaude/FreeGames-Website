@@ -15,7 +15,7 @@
 // - Wake-Lock auf Touch-Geräten, solange ein Match läuft (countdown/playing/paused).
 // - Ereignis 'fullscreen:change' { active, kind: 'api'|'standalone'|'none' }; body[data-fullscreen].
 
-import { resolveBindings } from '../../shared/bindings.data.js';
+import { resolveBindings } from '../../shared/bindings.data.js?v=20261006133650';
 
 const D = typeof document !== 'undefined' ? document : null;
 const MATCH = new Set(['countdown', 'playing']);

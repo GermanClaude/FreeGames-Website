@@ -13,7 +13,7 @@
 // Einstellung „Lernende Bots“ (adaptiveBots, Standard an): aus = weder lernen noch anpassen.
 // Prüfstand: ?botlearn=off|fresh|camper|sniper|close (synthetisches Modell, wird nicht gespeichert).
 import * as THREE from 'three';
-import { analyze, perchNear } from './tactics.js';
+import { analyze, perchNear } from './tactics.js?v=20261006133650';
 
 export const STORE_KEY = 'nullpunkt:botAdapt';
 const VERSION = 1;

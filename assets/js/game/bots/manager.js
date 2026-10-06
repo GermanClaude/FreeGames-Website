@@ -6,16 +6,16 @@
 // API: new BotManager(G); attach(G); detach(); spawnBots({ allies, enemies, ffa, difficulty, modeId }) → Bot[];
 //      removeAll(); update(dt); bots; handlesStreaks (= true: Bots setzen Serienprämien selbst ein)
 import * as THREE from 'three';
-import { Bot } from './bot.js';
-import { difficultyProfile } from './difficulty.js';
-import { pickNames } from './names.js';
-import { Nameplate } from './nameplates.js';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js';
-import { analyze } from './ai/tactics.js';
-import { TeamTactics, planRoles } from './ai/squad.js';
-import { BotAdapt } from './ai/adapt.js';
-import { CLASSES, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js';
+import { Bot } from './bot.js?v=20261006133650';
+import { difficultyProfile } from './difficulty.js?v=20261006133650';
+import { pickNames } from './names.js?v=20261006133650';
+import { Nameplate } from './nameplates.js?v=20261006133650';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261006133650';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261006133650';
+import { analyze } from './ai/tactics.js?v=20261006133650';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261006133650';
+import { BotAdapt } from './ai/spielstil.js?v=20261006133650';
+import { CLASSES, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261006133650';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();

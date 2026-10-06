@@ -7,8 +7,8 @@
 //   pads [{ x, z, w, d, y, blend, worn }] (eingeebnete Bauflächen), roads [{ id, kind 'asphalt'|'gravel'|'dirt', width,
 //   pts, bridge? { a: [x, z], b: [x, z], y } }], fields [{ x, z, w, d, ry, kind 'acker'|'wiese' }], forests [{ x, z, r }]
 // Reihenfolge: Grundform → Details → Fluss → Bauflächen → Straßen (planieren) → Felder → Splat/Maske.
-import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js';
-import { Heightfield } from './heightfield.js';
+import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261006133650';
+import { Heightfield } from './heightfield.js?v=20261006133650';
 
 /** Catmull-Rom-Kurve durch pts ([[x, z], …]), Abtastung ~step m. → [[x, z], …] */
 export function sampleSpline(pts, step = 2) {

@@ -8,8 +8,8 @@
 // Magazine: kleiner Pool aus Klonen der 3rd-Person-Magazine (bereits kompilierte Materialien der Bots).
 // Keine Allokationen pro Bild außer world.raycast-Treffern (selten: nur beim Aufschlag).
 import * as THREE from 'three';
-import { casingGeometry } from '../gunsmith/fx.js';
-import { createWeaponModel } from '../models.js';
+import { casingGeometry } from '../gunsmith/fx.js?v=20261006133650';
+import { createWeaponModel } from '../models.js?v=20261006133650';
 
 export const CASING_TYPES = ['rifle', 'pistol', 'big', 'shotgun'];
 // Je Qualitätsstufe: liegende Hülsen gesamt, Magazine, Liegezeit (s), Strahlen je Bild

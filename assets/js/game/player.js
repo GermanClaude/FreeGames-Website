@@ -11,9 +11,9 @@
 // freies Zielen; getAimScreenPoint() liefert den Laufpunkt auf dem Bildschirm (Fadenkreuz).
 
 import * as THREE from 'three';
-import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js';
-import { raycastHumanoid, PRONE } from './combat.js';
-import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS } from '../shared/classes.data.js';
+import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261006133650';
+import { raycastHumanoid, PRONE } from './combat.js?v=20261006133650';
+import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS } from '../shared/classes.data.js?v=20261006133650';
 
 const STAND_H = 1.8;
 const CROUCH_H = 1.15;

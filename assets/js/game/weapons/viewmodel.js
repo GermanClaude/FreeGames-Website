@@ -13,18 +13,18 @@
 //   playGrenade(type?, opts?) releaseGrenade() playInspect() cancelAction() getMuzzleWorldPosition(out)
 //   setVisible(bool) setLighting(lighting) showScopeOverlay warmup(renderer) dispose()
 import * as THREE from 'three';
-import { createWeaponModel } from './models.js';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js';
-import { applyCamo } from './gunsmith/camos.js';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js';
+import { createWeaponModel } from './models.js?v=20261006133650';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261006133650';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261006133650';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261006133650';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261006133650';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261006133650';
+import { applyCamo } from './gunsmith/camos.js?v=20261006133650';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261006133650';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261006133650';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261006133650';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261006133650';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261006133650';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();

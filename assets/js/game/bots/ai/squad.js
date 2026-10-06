@@ -12,7 +12,7 @@
 // Jede Maßnahme meldet `bot:tactic { type, squad, team, … }` (type: bound, overwatch, suppress, flank, crossfire,
 // smoke, stack, clear_grenade, enter, fallback, regroup, medic, heal, spot, at, prone).
 import * as THREE from 'three';
-import { analyze } from './tactics.js';
+import { analyze } from './tactics.js?v=20261006133650';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();

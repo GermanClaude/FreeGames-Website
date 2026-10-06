@@ -14,14 +14,14 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js';
-import { ICON, medalBadge } from './icons.js';
-import { Minimap } from './minimap.js';
-import { Killfeed } from './killfeed.js';
-import { scoreboardHtml, liveRows } from './scoreboard.js';
-import { StrikeTargeting } from './strike-target.js';
-import { actionKey } from './settings/keys.js';
-import { DeployScreen } from './deploy.js';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261006133650';
+import { ICON, medalBadge } from './icons.js?v=20261006133650';
+import { Minimap } from './minimap.js?v=20261006133650';
+import { Killfeed } from './killfeed.js?v=20261006133650';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261006133650';
+import { StrikeTargeting } from './strike-target.js?v=20261006133650';
+import { actionKey } from './settings/keys.js?v=20261006133650';
+import { DeployScreen } from './deploy.js?v=20261006133650';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();

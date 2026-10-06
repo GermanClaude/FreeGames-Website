@@ -2,8 +2,8 @@
 // Rauchfahne und gepoolte Hülsen mit einfacher Physik (InstancedMesh, ein Draw Call je Hülsenart).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { flashMap, smokeMap } from './textures.js';
-import { takeMaterials, parkMaterials } from './materials.js';
+import { flashMap, smokeMap } from './textures.js?v=20261006133650';
+import { takeMaterials, parkMaterials } from './materials.js?v=20261006133650';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _e = new THREE.Euler();
 

@@ -4,7 +4,7 @@
 // Aufklärer) › Gebiet absuchen (Spuren, Machtpositionen, erhöhte Posten halten). Setzt außerdem
 // Serienprämien ein.
 import * as THREE from 'three';
-import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js';
+import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js?v=20261006133650';
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();

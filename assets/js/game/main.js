@@ -13,43 +13,43 @@
 // erscheint das Fehlerpanel („Neu laden“, „Zurück zur Website“); fehlt nur das Audiomodul, läuft das Spiel stumm.
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js';
-import { profile } from '../shared/profile.js';
-import * as weaponsData from '../shared/weapons.data.js';
-import * as modesData from '../shared/modes.data.js';
-import * as mapsData from '../shared/maps.data.js';
-import * as classesData from '../shared/classes.data.js'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { EventBus } from './engine/events.js';
-import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js';
-import { Input } from './engine/input.js';
-import { createFullscreen } from './engine/fullscreen.js'; // Vollbild auf allen Plattformen (G.fullscreen)
-import { FullscreenUI } from './ui/fullscreen-ui.js';
-import { watchForUpdates } from './engine/update.js'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js';
-import { DynamicResolution } from './engine/dynres.js';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js';
-import { Combat } from './combat.js';
+import { settings } from '../shared/settings.js?v=20261006133650';
+import { profile } from '../shared/profile.js?v=20261006133650';
+import * as weaponsData from '../shared/weapons.data.js?v=20261006133650';
+import * as modesData from '../shared/modes.data.js?v=20261006133650';
+import * as mapsData from '../shared/maps.data.js?v=20261006133650';
+import * as classesData from '../shared/classes.data.js?v=20261006133650'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { EventBus } from './engine/events.js?v=20261006133650';
+import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261006133650';
+import { Input } from './engine/input.js?v=20261006133650';
+import { createFullscreen } from './engine/fullscreen.js?v=20261006133650'; // Vollbild auf allen Plattformen (G.fullscreen)
+import { FullscreenUI } from './ui/fullscreen-ui.js?v=20261006133650';
+import { watchForUpdates } from './engine/update.js?v=20261006133650'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261006133650';
+import { DynamicResolution } from './engine/dynres.js?v=20261006133650';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261006133650'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261006133650';
+import { Combat } from './combat.js?v=20261006133650';
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js', ['ViewModel']],
-  world: ['./world/index.js', ['loadWorld']],
-  audio: ['./engine/audio.js', ['AudioEngine']],
-  weapons: ['./weapons/index.js', ['WeaponSystem']],
-  effects: ['./engine/effects.js', ['Effects']],
-  bots: ['./bots/manager.js', ['BotManager']],
-  vehicles: ['./vehicles/index.js', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261006133650', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261006133650', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261006133650', ['ViewModel']],
+  world: ['./world/index.js?v=20261006133650', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261006133650', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261006133650', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261006133650', ['Effects']],
+  bots: ['./bots/manager.js?v=20261006133650', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261006133650', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js', []],
-  fxtex: ['./weapons/ballistics/fxtex.js', []],
-  modes: ['./modes/index.js', ['createMode']],
-  hud: ['./ui/hud.js', ['HUD']],
-  menus: ['./ui/menus.js', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261006133650', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261006133650', []],
+  modes: ['./modes/index.js?v=20261006133650', ['createMode']],
+  hud: ['./ui/hud.js?v=20261006133650', ['HUD']],
+  menus: ['./ui/menus.js?v=20261006133650', ['Menus']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (stummer Ersatz). */
 const OPTIONAL = new Set(['audio']);
@@ -257,7 +257,7 @@ async function importModule(path, required) {
     mod = await import(url);
   } catch (err) {
     if (!isFetchError(err)) throw err;
-    mod = await import(`${url}?retry=${Date.now()}`);
+    mod = await import(`${url}${url.includes('?') ? '&' : '?'}retry=${Date.now()}`);
   }
   const missing = required.filter((n) => typeof mod[n] === 'undefined');
   if (missing.length) throw new Error(`${path}: Exporte fehlen (${missing.join(', ')})`);

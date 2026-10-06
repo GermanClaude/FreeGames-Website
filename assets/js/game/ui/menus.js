@@ -4,16 +4,16 @@
 // (Steuerkreuz/Stick, A wählen, B zurück, Start fortsetzen) bedienbar. Absichten an main über
 // onStart(cfg) · onResume() · onRestart() · onQuit() · onExit().
 
-import { el, esc, clock } from './dom.js';
-import { ICON } from './icons.js';
-import { Lobby } from './lobby.js';
-import { WeaponPreview } from './preview3d.js';
-import { SettingsPanel } from './settings-panel.js';
-import { TouchEditor } from './touch-editor.js';
-import { controlsHtml, bindControls } from './controls-help.js';
-import { EndScreen } from './endscreen.js';
-import { LoadoutPanel } from './loadout-panel.js';
-import { drawMapArt, rememberMinimap } from './mapart.js';
+import { el, esc, clock } from './dom.js?v=20261006133650';
+import { ICON } from './icons.js?v=20261006133650';
+import { Lobby } from './lobby.js?v=20261006133650';
+import { WeaponPreview } from './preview3d.js?v=20261006133650';
+import { SettingsPanel } from './settings-panel.js?v=20261006133650';
+import { TouchEditor } from './touch-editor.js?v=20261006133650';
+import { controlsHtml, bindControls } from './controls-help.js?v=20261006133650';
+import { EndScreen } from './endscreen.js?v=20261006133650';
+import { LoadoutPanel } from './loadout-panel.js?v=20261006133650';
+import { drawMapArt, rememberMinimap } from './mapart.js?v=20261006133650';
 
 const TIPS = [
   'Sprinte und ducke dich, um zu rutschen. Ideal für Ecken und Türen.',
