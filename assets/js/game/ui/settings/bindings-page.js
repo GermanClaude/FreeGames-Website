@@ -3,14 +3,14 @@
 // Halten/Umschalten je Aktion, Standard je Aktion bzw. Gerät; Touch: Vorlagen, Stick, zusätzliche Knöpfe,
 // Einstieg in den Layout-Editor.
 
-import { esc } from '../dom.js?v=20261006133650';
-import { ICON } from '../icons.js?v=20261006133650';
+import { esc } from '../dom.js?v=20261006151057';
+import { ICON } from '../icons.js?v=20261006151057';
 import {
   ACTION_DEFS, ACTION_GROUPS, DEFAULT_BINDINGS, MAX_SLOTS, TOUCH_PRESETS, TOUCH_BUTTONS,
   resolveBindings, setBinding, resetBindings, conflictsOf, codeWarning, resolveTouchLayout, sanitizeTouchLayout,
-} from '../../../shared/bindings.data.js?v=20261006133650';
-import { keyHtml, keyText, padStyle, touchAspect, editTouch, seedAspect } from './keys.js?v=20261006133650';
-import { rowHtml, bindRows, syncRows } from './rows.js?v=20261006133650';
+} from '../../../shared/bindings.data.js?v=20261006151057';
+import { keyHtml, keyText, padStyle, touchAspect, editTouch, seedAspect } from './keys.js?v=20261006151057';
+import { rowHtml, bindRows, syncRows } from './rows.js?v=20261006151057';
 
 const DEVICES = [['kb', 'Tastatur & Maus', ICON.keyboard], ['pad', 'Controller', ICON.pad], ['touch', 'Touch', ICON.touch]];
 const MODE_LABEL = { hold: 'Halten', toggle: 'Umschalten' };

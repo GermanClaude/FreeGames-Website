@@ -3,17 +3,17 @@
 // Motorik. Darstellung über Soldier-Instanzen (zwei im Wechsel, damit die Leiche nach dem Respawn liegen
 // bleiben und sich auflösen kann).
 import * as THREE from 'three';
-import { CapsuleBody } from '../engine/physics.js?v=20261006133650';
-import { raycastHumanoid } from '../combat.js?v=20261006133650';
-import { Soldier } from './character.js?v=20261006133650';
-import { Memory } from './ai/memory.js?v=20261006133650';
-import { sense } from './ai/perception.js?v=20261006133650';
-import { Navigator } from './ai/navigator.js?v=20261006133650';
-import { Gunner } from './ai/combat.js?v=20261006133650';
-import { think, newGoal, useStreaks } from './ai/brain.js?v=20261006133650';
-import { targetPoints } from './ai/perception.js?v=20261006133650';
-import { GADGETS } from '../../shared/classes.data.js?v=20261006133650';
-import { BONE } from './soldier/rig.js?v=20261006133650';
+import { CapsuleBody } from '../engine/physics.js?v=20261006151057';
+import { raycastHumanoid } from '../combat.js?v=20261006151057';
+import { Soldier } from './character.js?v=20261006151057';
+import { Memory } from './ai/memory.js?v=20261006151057';
+import { sense } from './ai/perception.js?v=20261006151057';
+import { Navigator } from './ai/navigator.js?v=20261006151057';
+import { Gunner } from './ai/combat.js?v=20261006151057';
+import { think, newGoal, useStreaks } from './ai/brain.js?v=20261006151057';
+import { targetPoints } from './ai/perception.js?v=20261006151057';
+import { GADGETS } from '../../shared/classes.data.js?v=20261006151057';
+import { BONE } from './soldier/rig.js?v=20261006151057';
 
 const STAND_H = 1.8, CROUCH_H = 1.15, PRONE_H = 0.75;
 const SPEED = { walk: 3.1, run: 5.4, sprint: 8.2, crouch: 2.6, crawl: 1.05 };
@@ -55,7 +55,7 @@ let serial = 0;
 
 export class Bot {
   /**
-   * @param {import('./manager.js?v=20261006133650').BotManager} manager
+   * @param {import('./manager.js?v=20261006151057').BotManager} manager
    * opts: { team, name, diff (Profil), loadout, variant, scheme, modeId, lane }
    */
   constructor(manager, { team, name, diff, loadout, variant = 0, scheme = null, modeId = 'tdm', lane = 1 }) {

@@ -3,12 +3,12 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261006133650';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261006151057';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress,
-} from '../props.js?v=20261006133650';
+} from '../props.js?v=20261006151057';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle

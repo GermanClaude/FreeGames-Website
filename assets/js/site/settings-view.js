@@ -1,9 +1,9 @@
 // §06 Einstellungen: Setzkasten. Formular aus SETTINGS_SCHEMA (ohne 'intern'), ein <fieldset> pro Gruppe.
 // Jede Änderung gilt sofort für Website und Spiel; Änderungen aus anderen Tabs/dem Spiel kommen zurück.
-import { h, $, signalLost } from './dom.js?v=20261006133650';
-import { crosshairSvg } from './cursor.js?v=20261006133650';
-import { announce } from './live.js?v=20261006133650';
-import { num, NNBSP, clamp01 } from './fmt.js?v=20261006133650';
+import { h, $, signalLost } from './dom.js?v=20261006151057';
+import { crosshairSvg } from './cursor.js?v=20261006151057';
+import { announce } from './live.js?v=20261006151057';
+import { num, NNBSP, clamp01 } from './fmt.js?v=20261006151057';
 
 const GROUPS = [['profil', 'Profil'], ['steuerung', 'Steuerung'], ['hud', 'Fadenkreuz & HUD'], ['grafik', 'Grafik'], ['audio', 'Audio'], ['spiel', 'Spiel']];
 const SWATCHES = [['#ffffff', 'Weiß'], ['#ff5b1f', 'Signalorange'], ['#38b6ff', 'Blau'], ['#5fe08a', 'Grün'], ['#ffc23d', 'Gelb']];

@@ -12,18 +12,18 @@
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder } from './gunsmith/builder.js?v=20261006133650';
-import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261006133650';
-import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261006133650';
-import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261006133650';
-import { p9, adler } from './gunsmith/guns-pistol.js?v=20261006133650';
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261006133650';
-import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261006133650';
-import { titan, hagel, kobra, donner, rocket } from './gunsmith/guns-heavy.js?v=20261006133650';
-import { karambit, machete, tomahawk, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261006133650';
-import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261006133650';
-import { disposeMaterials } from './gunsmith/materials.js?v=20261006133650';
-import { disposeTextures } from './gunsmith/textures.js?v=20261006133650';
+import { Builder } from './gunsmith/builder.js?v=20261006151057';
+import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261006151057';
+import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261006151057';
+import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261006151057';
+import { p9, adler } from './gunsmith/guns-pistol.js?v=20261006151057';
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261006151057';
+import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261006151057';
+import { titan, hagel, kobra, donner, rocket } from './gunsmith/guns-heavy.js?v=20261006151057';
+import { karambit, machete, tomahawk, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261006151057';
+import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261006151057';
+import { disposeMaterials } from './gunsmith/materials.js?v=20261006151057';
+import { disposeTextures } from './gunsmith/textures.js?v=20261006151057';
 
 const BUILDERS = {
   kv47, m17, vp9, qx90, hm60, sk14, brecher, bulldog, p9, adler, knife, frag, semtex,

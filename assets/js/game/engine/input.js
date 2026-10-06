@@ -17,8 +17,8 @@ import * as THREE from 'three';
 import {
   ACTION_IDS, ACTION_BY_ID, resolveBindings, codeMap, findConflicts, codeLabel, isBindable,
   TOUCH_BUTTONS, aspectBucket, resolveTouchLayout, loadKeyboardLayout,
-} from '../../shared/bindings.data.js?v=20261006133650';
-import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261006133650';
+} from '../../shared/bindings.data.js?v=20261006151057';
+import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261006151057';
 
 /** Alle Aktionen (Reihenfolge wie ACTION_DEFS; die ursprünglichen 17 sind enthalten). */
 export const ACTIONS = ACTION_IDS;
@@ -1146,7 +1146,8 @@ export class Input {
    * bei Touch ist pointerdown keine Nutzeraktivierung, der Browser würde mit Konsolenwarnung ablehnen.
    */
   _maybeFullscreen() {
-    // engine/fullscreen.js: Präfix-API, Einstellung „Vollbild“, Drossel 4 s, Querformat-Sperre, nie Fehler
+    // engine/fullscreen.js: Präfix-API, Einstellung „Vollbild“, Drossel 4 s, Querformat-Sperre, nie Fehler. Klare
+    // Spielaktion (Tippen auf die Touch-Steuerung im laufenden Match); fehlt das Modul (G.fullscreen null), entfällt das.
     const st = this.G.match && this.G.match.state;
     if ((st === 'playing' || st === 'countdown') && this.G.fullscreen) this.G.fullscreen.auto({ throttle: 4000 });
   }

@@ -1,7 +1,7 @@
 // Ton (standardmäßig aus). UI-Klänge aus engine/audio/ui-sounds.js, Waffenklänge aus der Audio-Engine
 // des Spiels (erst bei Bedarf geladen), sonst eine winzige WebAudio-Synthese.
 // Spielt nie vor einem ausdrücklichen Einschalten; startet erst nach einer Nutzergeste.
-import { site } from './state.js?v=20261006133650';
+import { site } from './state.js?v=20261006151057';
 
 let settings = null;
 let enabled = false;
@@ -58,7 +58,7 @@ function ensure() {
   if (loading) return loading;
   loading = (async () => {
     try {
-      const m = await import('../game/engine/audio/ui-sounds.js?v=20261006133650');
+      const m = await import('../game/engine/audio/ui-sounds.js?v=20261006151057');
       if (typeof m.createUiSounds === 'function') {
         uiSnd = m.createUiSounds(settings, { gestures: false });
         uiSnd.unlock();
@@ -74,7 +74,7 @@ function ensureEngine() {
   if (engine || engineLoading) return engineLoading;
   engineLoading = (async () => {
     try {
-      const mod = await import('../game/engine/audio.js?v=20261006133650');
+      const mod = await import('../game/engine/audio.js?v=20261006151057');
       if (mod?.AudioEngine) {
         engine = new mod.AudioEngine({ settings, events: null }, { autoUnlock: false, autoMusic: false });
         await engine.unlock();

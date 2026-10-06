@@ -2,14 +2,14 @@
 // und Ausrüstung (Primär/Sekundär/Granate mit Werte-Balken aus computeStats, Vergleich, Stufen-Sperren,
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261006133650';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261006133650'; // atmosphere-weather
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261006133650';
-import { esc, num, secs, meters } from './dom.js?v=20261006133650';
-import { ICON } from './icons.js?v=20261006133650';
-import { drawMapArt } from './mapart.js?v=20261006133650';
-import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261006133650';
-import { ProgressView } from './progress.js?v=20261006133650';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261006151057';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261006151057'; // atmosphere-weather
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261006151057';
+import { esc, num, secs, meters } from './dom.js?v=20261006151057';
+import { ICON } from './icons.js?v=20261006151057';
+import { drawMapArt } from './mapart.js?v=20261006151057';
+import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261006151057';
+import { ProgressView } from './progress.js?v=20261006151057';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];

@@ -2,8 +2,8 @@
 // RGBA-Kontrollkarte, Fotoscan-Sätze aus assets/lib (KTX2) mit prozeduralem Rückfall (engine/textures.js),
 // Gegen-Kachelung (zwei Maßstäbe + Makro-Rauschen + UV-Verzerrung), Nässe am Ufer, Detailnormalen (low: nur nah) (Owner: world).
 import * as THREE from 'three';
-import { LIB_MATERIALS } from '../library.js?v=20261006133650';
-import { getDetailNormalTexture } from '../../engine/textures.js?v=20261006133650';
+import { LIB_MATERIALS } from '../library.js?v=20261006151057';
+import { getDetailNormalTexture } from '../../engine/textures.js?v=20261006151057';
 
 /** Schichten: Bibliotheks-ID, prozeduraler Ersatz, Kachelgröße (m), Rauheit, Normalen-Rang (−1 = keine). */
 export const TERRAIN_LAYERS = [

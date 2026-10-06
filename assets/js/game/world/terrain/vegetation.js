@@ -3,8 +3,8 @@
 // (Einfachmodell bis zur Nebelkante); Instanzen werden nach Kamerabewegung kompakt umsortiert (wenige Draw Calls).
 // Stämme und Felsen liefern Kollisions-/Kugel-Dreiecke; Laub blockiert keine Kugeln.
 import * as THREE from 'three';
-import { createFoliage, foliageUniforms } from '../atlas.js?v=20261006133650';
-import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261006133650';
+import { createFoliage, foliageUniforms } from '../atlas.js?v=20261006151057';
+import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261006151057';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 const _c = new THREE.Color();

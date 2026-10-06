@@ -2,8 +2,8 @@
 // { name, team, score, kills, deaths, assists, extra:{label,value}, isPlayer, isBot, alive, mvp }.
 // Kein Ping: das Spiel läuft komplett offline gegen Bots.
 
-import { esc, kd } from './dom.js?v=20261006133650';
-import { ICON } from './icons.js?v=20261006133650';
+import { esc, kd } from './dom.js?v=20261006151057';
+import { ICON } from './icons.js?v=20261006151057';
 
 /**
  * HTML der Tabelle. opts: { teams, playerTeam, teamNames:{A,B}, teamScores:{A,B}, live }

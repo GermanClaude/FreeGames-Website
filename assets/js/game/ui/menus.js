@@ -4,16 +4,16 @@
 // (Steuerkreuz/Stick, A wählen, B zurück, Start fortsetzen) bedienbar. Absichten an main über
 // onStart(cfg) · onResume() · onRestart() · onQuit() · onExit().
 
-import { el, esc, clock } from './dom.js?v=20261006133650';
-import { ICON } from './icons.js?v=20261006133650';
-import { Lobby } from './lobby.js?v=20261006133650';
-import { WeaponPreview } from './preview3d.js?v=20261006133650';
-import { SettingsPanel } from './settings-panel.js?v=20261006133650';
-import { TouchEditor } from './touch-editor.js?v=20261006133650';
-import { controlsHtml, bindControls } from './controls-help.js?v=20261006133650';
-import { EndScreen } from './endscreen.js?v=20261006133650';
-import { LoadoutPanel } from './loadout-panel.js?v=20261006133650';
-import { drawMapArt, rememberMinimap } from './mapart.js?v=20261006133650';
+import { el, esc, clock } from './dom.js?v=20261006151057';
+import { ICON } from './icons.js?v=20261006151057';
+import { Lobby } from './lobby.js?v=20261006151057';
+import { WeaponPreview } from './preview3d.js?v=20261006151057';
+import { SettingsPanel } from './settings-panel.js?v=20261006151057';
+import { TouchEditor } from './touch-editor.js?v=20261006151057';
+import { controlsHtml, bindControls } from './controls-help.js?v=20261006151057';
+import { EndScreen } from './endscreen.js?v=20261006151057';
+import { LoadoutPanel } from './loadout-panel.js?v=20261006151057';
+import { drawMapArt, rememberMinimap } from './mapart.js?v=20261006151057';
 
 const TIPS = [
   'Sprinte und ducke dich, um zu rutschen. Ideal für Ecken und Türen.',
@@ -240,7 +240,7 @@ export class Menus {
         // Chromium/Edge: das Angebot (beforeinstallprompt) war bisher nur im Vollbild-Ratgeber erreichbar
         this.sound('confirm');
         b.disabled = true;
-        G.fullscreen.install().then(() => { if (this.current === 'pause' && G.match.state === 'paused') this.showPause(); });
+        (G.fullscreen ? G.fullscreen.install() : Promise.resolve('unavailable')).then(() => { if (this.current === 'pause' && G.match.state === 'paused') this.showPause(); });
       }
       else if (act === 'armory') this.showArmory();
       else if (act === 'equip') this.showEquip();
@@ -450,6 +450,8 @@ export class Menus {
     const t = e.target;
     const typing = t && t.matches && t.matches('input[type="text"], textarea');
     if (e.code === 'Escape') {
+      // Esc gehalten (z. B. beim Verlassen von Vollbild/Pointer-Lock): Wiederholungen schalten nicht Pause/Fortsetzen hin und her
+      if (e.repeat) return;
       if (this.current === 'pause') {
         const c = this.root.querySelector('.ps-confirm');
         if (c && !c.hidden) { c.hidden = true; e.preventDefault(); return; }

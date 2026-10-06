@@ -1,6 +1,6 @@
 // NULLPUNKT — Einfache Einstellungsseite: alle Schlüssel einer Schema-Gruppe als Zeilen (Audio, Profil, Spiel).
 
-import { rowHtml, bindRows, syncRows } from './rows.js?v=20261006133650';
+import { rowHtml, bindRows, syncRows } from './rows.js?v=20261006151057';
 
 /** Kurze Erklärungen unter den Beschriftungen (alle Seiten). */
 export const HINTS = {
@@ -32,7 +32,7 @@ export const HINTS = {
   autoFireDevices: 'Für welche Eingabegeräte das automatische Feuern gilt.',
   gameStyle: 'Arcade: das bekannte Spiel. Realistisch: keine Gegneranzeigen, minimales HUD, mehr Schaden, langsamere Heilung.',
   realisticCrosshair: 'Zeigt im Spielstil „Realistisch“ trotzdem ein Fadenkreuz.',
-  fullscreen: 'Automatisch: Vollbild beim ersten Klick bzw. Tippen, bei Spielstart und beim Fortsetzen. Umschalten jederzeit mit Alt + Eingabe oder der Vollbild-Taste (Belegung).',
+  fullscreen: 'Automatisch: Vollbild bei „Einsatz starten“ und beim Fortsetzen, auf dem Smartphone auch beim Tippen auf die Steuerung im Match. Umschalten jederzeit mit Alt + Eingabe oder der Vollbild-Taste (Belegung). Esc verlässt das Vollbild wie gewohnt und pausiert das Spiel.',
   gyroMode: 'Zielen durch Neigen und Drehen des Geräts, zusätzlich zum Ziehen.',
   touchOpacity: 'Gilt für alle Knöpfe; einzelne Knöpfe im Layout-Editor.',
   touchButtonScale: 'Gilt für alle Knöpfe; einzelne Knöpfe im Layout-Editor.',
@@ -48,7 +48,7 @@ export const HINTS = {
   weaponPose: 'Körperkamera: Waffe tiefer und mittiger, verdeckt weniger vom Bild.',
   hudStyle: 'Realismus: kein Fadenkreuz, keine Munitions- und Lebensanzeige, keine Minikarte – wie bei Bodycam.',
   bodycamStamp: 'Uhrzeit und erfundene Geräte-ID in der Bildecke, wie bei einer Körperkamera-Aufnahme.',
-  showFps: 'Bildrate oben links.',
+  showFps: 'Bildrate unten links.',
   audioMix: 'Handy: hebt Schritte und Stimmen hervor, nimmt tiefe Bässe weg.',
 };
 

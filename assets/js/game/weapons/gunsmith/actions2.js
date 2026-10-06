@@ -4,7 +4,7 @@
 // alle Methoden arbeiten mit denselben Ausgaben wie die Basisaktionen: out.p/out.r (Waffe, Kameraraum),
 // out.left/out.right (Handanfragen), out.parts (Teilversätze [dx, dy, dz, rx, ry, rz] im Elternraum, _vis).
 import * as THREE from 'three';
-import { curve, windowW, clamp, smooth } from './anim.js?v=20261006133650';
+import { curve, windowW, clamp, smooth } from './anim.js?v=20261006151057';
 
 const ZERO3 = [0, 0, 0];
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion();

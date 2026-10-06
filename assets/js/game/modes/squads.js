@@ -3,7 +3,7 @@
 // mode.objectiveFor(bot) folgt ihnen. KI-Trupps bekommen ihre Ziele vom einfachen Teamhirn im Modus.
 // API (G.squads): list, of(actor), members(squad, {alive}), leaderOf(actor), order(squad, order, by), clearOrder(squad).
 
-import { SQUAD_NAMES, SQUAD_SIZE } from '../../shared/modes.data.js?v=20261006133650';
+import { SQUAD_NAMES, SQUAD_SIZE } from '../../shared/modes.data.js?v=20261006151057';
 
 export class SquadSystem {
   constructor(G) {

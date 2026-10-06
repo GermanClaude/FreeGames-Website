@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261006133650';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261006151057';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -36,7 +36,7 @@ export const DEFAULTS = Object.freeze({
   // Kernmechanik (core-mechanics): Spielstil, Klassen, stufenlose Zielhilfe und Auto-Feuer
   gameStyle: 'arcade', realisticCrosshair: false, lastClass: 'sturm', classLoadouts: Object.freeze({}),
   aimAssistLevel: 0.5, aimAssistDevices: 'touch_pad', autoFireLevel: 0.6, autoFireDevices: 'touch',
-  // Vollbild (engine/fullscreen.js): auto = erste Geste, Matchstart, Fortsetzen | off = nur Knopf/Taste
+  // Vollbild (engine/fullscreen.js): auto = bei „Einsatz starten“, „Fortsetzen“ und (Touch) Tippen auf die Steuerung im Match | off = nur Knopf/Taste
   fullscreen: 'auto',
   // Lobby: Wetter/Tageszeit (atmosphere-weather): 'standard' | 'zufall' | Wetter-/Zeit-id
   lastWeather: 'standard', lastTime: 'standard',
