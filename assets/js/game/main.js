@@ -18,13 +18,15 @@ import { profile } from '../shared/profile.js';
 import * as weaponsData from '../shared/weapons.data.js';
 import * as modesData from '../shared/modes.data.js';
 import * as mapsData from '../shared/maps.data.js';
+import * as classesData from '../shared/classes.data.js'; // core-mechanics: Klassen, Panzerung, Spielstile
 import { EventBus } from './engine/events.js';
 import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js';
 import { Input } from './engine/input.js';
-import { separateActors } from './engine/physics.js';
-import { DynamicResolution } from './engine/dynres.js';
 import { createFullscreen } from './engine/fullscreen.js'; // Vollbild auf allen Plattformen (G.fullscreen)
 import { FullscreenUI } from './ui/fullscreen-ui.js';
+import { separateActors } from './engine/physics.js';
+import { DynamicResolution } from './engine/dynres.js';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js'; // Erweitert-Grafik (S9, ui-controls)
 import { Player } from './player.js';
 import { Combat } from './combat.js';
 
@@ -40,6 +42,7 @@ const MODULES = {
   weapons: ['./weapons/index.js', ['WeaponSystem']],
   effects: ['./engine/effects.js', ['Effects']],
   bots: ['./bots/manager.js', ['BotManager']],
+  vehicles: ['./vehicles/index.js', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
   soldiers: ['./bots/character.js', []],
   fxtex: ['./weapons/ballistics/fxtex.js', []],
@@ -115,13 +118,16 @@ const G = {
     state: 'boot', modeId: null, mapId: null, difficulty: null, allies: 0, enemies: 0, loadout: null,
     startedAt: null, startedReal: null, countdown: 0, ffa: false, timeLimit: null, scoreLimit: null, pausedFrom: null, endedAt: null, result: null,
     unranked: false, awaitingLock: false,
+    // core-mechanics: Spielstil-Flags, Panzerung an/aus, Online-Deckel der Hilfen, Respawn-Halt, Ausrüstung ab nächstem Spawn
+    style: 'arcade', styleFlags: classesData.styleFlags('arcade'), armor: false, assistCap: null, respawnHold: false, pendingLoadout: null,
   },
   time: { dt: 0, elapsed: 0, frame: 0, real: 0 },
   timeScale: 1,
   params,
   debug: DEBUG,
   // Reine Daten (weapons/modes/maps.data.js) – statisch importiert, keine Ersatzkopien
-  data: { ...weaponsData, ...modesData, ...mapsData },
+  // weapons.data zuletzt: G.data.CLASS_ORDER bleibt die Waffenklassen-Reihenfolge (modes.data exportiert gleichnamig die Soldatenklassen)
+  data: { ...modesData, ...mapsData, ...weaponsData, SOLDIER_CLASS_ORDER: classesData.SOLDIER_CLASS_ORDER },
   modules: {},
   moduleStatus: {},
   lastConfig: null,
@@ -378,6 +384,13 @@ function normalizeConfig(cfg = {}) {
   const mapId = [cfg.mapId, settings.get('lastMap'), ...rec, maps[0]].find((id) => id && maps.includes(id)) || 'hafen';
   const difficulty = DIFFS.includes(cfg.difficulty) ? cfg.difficulty : DIFFS.includes(settings.get('difficulty')) ? settings.get('difficulty') : 'regulaer';
   const counts = modeCounts(modeId);
+  // modes-ui: Teamgrößen je Karte und Gerät (limitsFor, GROSSKAMPF §3.2: Arena 12 v 12, Großkarte 32 v 32)
+  if (typeof G.data.limitsFor === 'function') {
+    const L = safe('limitsFor', () => G.data.limitsFor(modeId, (G.data.MAPS || {})[mapId] || mapId, {
+      tier: (G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
+    }));
+    if (L) Object.assign(counts, { alliesRange: L.allies, enemiesRange: L.enemies, allies: L.recommended.allies, enemies: L.recommended.enemies });
+  }
   const ffa = isFfaMode(modeId);
   const allies = ffa ? 0 : intParam(cfg.allies, counts.allies, counts.alliesRange[0], Math.max(counts.alliesRange[1], 0));
   const enemies = intParam(cfg.enemies, counts.enemies, counts.enemiesRange[0], Math.max(counts.enemiesRange[1], 0));
@@ -393,8 +406,27 @@ function normalizeConfig(cfg = {}) {
     secondary: [lo.secondary, last.secondary].find((id) => okW(id, 'secondary')) || def.secondary,
     lethal: [lo.lethal, last.lethal].find(okEq) || def.lethal,
   };
+  // modes-ui: Klasse, Tarnungen, Outfit, Spielstil, Matchlänge, Tageszeit (Lobby bzw. URL style=/cls=)
+  const CL = classesData.CLASSES; // core-mechanics: Klassen/Spielstile aus shared/classes.data.js
+  if (lo.cls && CL[lo.cls]) loadout.cls = lo.cls;
+  if (lo.camo && typeof lo.camo === 'object') loadout.camo = { ...lo.camo };
+  if (typeof lo.skin === 'string') loadout.skin = lo.skin;
+  const STY = classesData.GAME_STYLES;
+  const style = STY[cfg.style] ? cfg.style : STY[settings.get('gameStyle')] ? settings.get('gameStyle') : 'arcade'; // core-mechanics: Einstellung als Rückfall
+  // core-mechanics: Klasse/Weste/Helm vervollständigen; eine Klasse ohne Waffenwahl (URL cls=) bringt ihre Standardwaffen mit
+  const extra = {};
+  if (loadout.camo) extra.camo = loadout.camo;
+  if (loadout.skin) extra.skin = loadout.skin;
+  const src = loadout.cls && !lo.primary && !lo.secondary ? { cls: loadout.cls } : { ...loadout, cls: loadout.cls || settings.get('lastClass') };
+  const full = cleanLoadout({ ...src, armor: lo.armor, helmet: lo.helmet });
+  for (const k of Object.keys(loadout)) delete loadout[k];
+  Object.assign(loadout, full, extra);
   return {
-    modeId, mapId, difficulty, allies, enemies, loadout, ffa,
+    modeId, mapId, difficulty, allies, enemies, loadout, ffa, armor: armorFor(cfg, mapId, modeId),
+    style, crosshair: typeof cfg.crosshair === 'boolean' ? cfg.crosshair : null,
+    matchLength: ['kurz', 'standard', 'lang'].includes(cfg.matchLength) ? cfg.matchLength : 'standard',
+    timeOfDay: typeof cfg.timeOfDay === 'string' ? cfg.timeOfDay : null,
+    weather: typeof cfg.weather === 'string' ? cfg.weather : null, // atmosphere-weather: id | 'standard' | 'zufall'
     timeLimit: numParam(cfg.timeLimit), scoreLimit: numParam(cfg.scoreLimit),
   };
 }
@@ -415,8 +447,10 @@ function configFromParams() {
   return {
     modeId: params.get('mode'), mapId: params.get('map'), difficulty: params.get('diff'),
     allies: params.get('allies'), enemies: params.get('enemies'),
-    loadout: { primary: params.get('primary'), secondary: params.get('secondary'), lethal: params.get('lethal') },
-    timeLimit: params.get('time'), scoreLimit: params.get('score'),
+    loadout: { primary: params.get('primary'), secondary: params.get('secondary'), lethal: params.get('lethal'), cls: params.get('cls'), armor: params.get('vest'), helmet: params.get('helmet') },
+    timeLimit: params.get('time'), scoreLimit: params.get('score'), style: params.get('style'), armor: params.get('armor'),
+    // atmosphere-weather: weather=klar|dunst|morgennebel|bewoelkt|zufall, tod=<Tageszeit-id> (time= nur, wenn nicht numerisch)
+    weather: params.get('weather'), timeOfDay: params.get('tod') || (params.get('time') && !/^[\d.]+$/.test(params.get('time')) ? params.get('time') : null),
   };
 }
 
@@ -441,12 +475,147 @@ function spawnActor(actor) {
     if (s) spawn = { position: s.position.clone(), yaw: s.yaw || 0 };
   }
   if (!spawn) spawn = { position: new THREE.Vector3(), yaw: 0 };
+  // core-mechanics: vorgemerkte Ausrüstung (Pausemenü/Todesbildschirm) gilt ab diesem Spawn; Klasse + Panzerung ausgeben
+  if (actor === G.player && G.match.pendingLoadout) {
+    const lo = G.match.pendingLoadout;
+    G.match.pendingLoadout = null;
+    actor.loadout = { ...lo };
+    if (actor.weapon && typeof actor.weapon.setLoadout === 'function') safe('weapon.setLoadout', () => actor.weapon.setLoadout(actor.loadout));
+  }
+  if (actor === G.player) G.match.respawnHold = false;
+  safe('equipActor', () => equipActor(actor));
   actor.respawn(spawn);
   actor.respawnAt = null;
   actor.diedAt = null;
   G.events.emit('actor:spawn', { actor });
 }
 G.spawnActor = spawnActor;
+
+/* ===================================================== Klassen, Panzerung, Ausrüstung im Match (core-mechanics) */
+
+const SPAWN_GRACE = 5; // s nach dem Spawn, in denen eine neue Ausrüstung sofort gilt (solange noch nicht geschossen)
+
+/** Spielstil + Panzerung des Matches aus der normalisierten Konfiguration. */
+function applyStyle(cfg) {
+  const style = cfg.style === 'realistisch' ? 'realistisch' : 'arcade';
+  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: cfg.crosshair })) : null;
+  G.match.style = style;
+  G.match.styleFlags = classesData.styleFlags(style, { realisticCrosshair: settings.get('realisticCrosshair'), rules });
+  G.match.armor = cfg.armor;
+  G.match.respawnHold = false;
+  G.match.pendingLoadout = null;
+}
+
+/** Panzerung an? URL/Lobby `armor` (1/0, an/aus, true/false) > Modus (`MODES[id].armor`) > Großkarte bzw. Eroberung. */
+function armorFor(cfg, mapId, modeId) {
+  const v = cfg.armor;
+  if (v === true || v === 1 || v === '1' || v === 'an' || v === 'true') return true;
+  if (v === false || v === 0 || v === '0' || v === 'aus' || v === 'false') return false;
+  const mode = (G.data.MODES || {})[modeId];
+  if (mode && typeof mode.armor === 'boolean') return mode.armor;
+  const map = (G.data.MAPS || {})[mapId];
+  return !!(map && map.scale === 'gross') || modeId === 'cq';
+}
+
+/** Ausrüstung bereinigen: Klasse, Waffen (freigeschaltet), Weste/Helm; fehlende Waffen aus der Klassen-Standardausrüstung. */
+function cleanLoadout(lo = {}, fallback = {}) {
+  const W = G.data.WEAPONS || {};
+  const EQ = G.data.EQUIPMENT || {};
+  const unlocked = (id) => DEBUG || profile.isUnlocked(id);
+  const cls = classesData.CLASSES[lo.cls] ? lo.cls : classesData.CLASSES[fallback.cls] ? fallback.cls : classesData.DEFAULT_CLASS;
+  const base = Object.fromEntries(Object.entries({ ...fallback, ...Object.fromEntries(Object.entries(lo).filter(([, v]) => v != null)) }).filter(([, v]) => v != null));
+  const r = classesData.resolveClassLoadout(cls, { weapons: W, equipment: EQ, isUnlocked: unlocked, base });
+  const out = { ...base, cls, primary: r.primary, secondary: r.secondary, lethal: r.lethal, armor: r.armor, helmet: r.helmet };
+  if (r.launcher) out.launcher = r.launcher;
+  for (const k of Object.keys(out)) if (out[k] == null) delete out[k];
+  return out;
+}
+
+/** Klasse, Weste und Helm eines Akteurs am Spawn (Bots ohne Klasse bekommen eine gewichtete Zufallsklasse). */
+function equipActor(actor) {
+  actor.cls = (actor.loadout && classesData.CLASSES[actor.loadout.cls] && actor.loadout.cls) || (classesData.CLASSES[actor.cls] && actor.cls) ||
+    (actor.isPlayer ? classesData.DEFAULT_CLASS : classesData.pickBotClass());
+  const c = classesData.classDef(actor.cls);
+  actor.classDef = c;
+  const lo = actor.loadout || {};
+  if (G.match.armor) G.combat.equipArmor(actor, classesData.ARMOR_TIERS[lo.armor] ? lo.armor : c.armor, classesData.HELMETS[lo.helmet] ? lo.helmet : c.helmet);
+  else actor.armor = null;
+}
+
+/**
+ * Ausrüstung im Match wechseln (Pausemenü „Ausrüstung“, Todesbildschirm „Ausrüsten“).
+ * Gilt sofort, wenn der Spieler tot ist (nächster Spawn) bzw. ≤ 5 s nach dem Spawn noch nicht geschossen hat; sonst ab dem nächsten Spawn.
+ * → { ok, when: 'now'|'next', loadout, reason? }
+ */
+function requestLoadout(loadout) {
+  const p = G.player;
+  if (!p || !loadout || typeof loadout !== 'object') return { ok: false, reason: 'ungueltig' };
+  const st = G.match.state;
+  if (st !== 'playing' && st !== 'countdown' && st !== 'paused') return { ok: false, reason: 'kein-match' };
+  // Klassenwechsel: Weste/Helm/Werfer der neuen Klasse (außer ausdrücklich gewählt), Waffen bleiben (alle Klassen dürfen alle)
+  const prev = p.loadout || G.match.loadout || {};
+  const fallback = loadout.cls && loadout.cls !== prev.cls ? { ...prev, cls: loadout.cls, armor: undefined, helmet: undefined, launcher: undefined } : prev;
+  const lo = cleanLoadout(loadout, fallback);
+  if (!lo.primary && !lo.secondary) return { ok: false, reason: 'ungueltig' };
+  const now = G.time.elapsed;
+  const fresh = p.alive && (st === 'countdown' || (now - (p.spawnTime || 0) <= SPAWN_GRACE && (p.lastFiredTime || -1e9) < (p.spawnTime || 0)));
+  if (fresh) {
+    applyLoadoutNow(p, lo);
+    G.match.pendingLoadout = null;
+  } else G.match.pendingLoadout = lo;
+  G.match.loadout = { ...lo };
+  settings.patch({ lastLoadout: lo, lastClass: lo.cls });
+  const when = fresh ? 'now' : 'next';
+  G.events.emit('loadout:change', { actor: p, loadout: { ...lo }, when });
+  return { ok: true, when, loadout: { ...lo } };
+}
+
+function applyLoadoutNow(p, lo) {
+  p.loadout = { ...lo };
+  p.cls = lo.cls;
+  if (p.weapon && typeof p.weapon.setLoadout === 'function') safe('weapon.setLoadout', () => p.weapon.setLoadout(p.loadout));
+  else if (G.weapons) p.weapon = G.weapons.createController(p, p.loadout);
+  equipActor(p);
+  safe('player.applyClass', () => p.applyClass && p.applyClass());
+}
+
+/**
+ * Respawn des Spielers zurückhalten (Ausrüsten-Menü / Einsatzkarte offen) bzw. freigeben.
+ * pause = true (Standard): Restzeit steht still; pause = false: Zeit läuft weiter, nur der Wiedereinstieg wartet.
+ */
+function holdRespawn(on = true, { pause = true } = {}) {
+  on = !!on;
+  G.match.respawnHoldPause = !!pause;
+  if (G.match.respawnHold === on) return on;
+  G.match.respawnHold = on;
+  G.events.emit('respawn:hold', { on, remaining: respawnRemaining() });
+  return on;
+}
+
+/** Restzeit bis zum Respawn des Spielers (s; 0 = jetzt möglich, null = lebt). */
+function respawnRemaining() {
+  const p = G.player;
+  if (!p || p.alive || p.respawnAt == null) return null;
+  return Math.max(0, p.respawnAt - G.time.elapsed);
+}
+
+/** „Einsatz“: Halten beenden und sofort spawnen (wenn der Modus es erlaubt), sonst läuft die Restzeit weiter. */
+function deploy() {
+  const p = G.player;
+  holdRespawn(false);
+  if (!p || p.alive || G.match.state !== 'playing' || p.respawnAt == null) return false;
+  const mode = G.mode;
+  if (mode && typeof mode.canRespawn === 'function' && mode.canRespawn(p) === false) return false;
+  // Mindestwartezeit des Modus bleibt (kein Überspringen des Timers durch Menü-Klicks): nur nach Ablauf sofort
+  if (G.time.elapsed < p.respawnAt) return false;
+  spawnActor(p);
+  return true;
+}
+
+G.requestLoadout = requestLoadout;
+G.holdRespawn = holdRespawn;
+G.deploy = deploy;
+G.respawnRemaining = respawnRemaining;
 
 /* ===================================================== Matchstart in Schritten (G18) */
 
@@ -640,7 +809,11 @@ async function runStart(config, gen) {
   const live = () => gen === matchGen;
   try {
     const cfg = normalizeConfig(config);
-    const reuse = !!(G.world && G.world.id === cfg.mapId);
+    // atmosphere-weather: Wetter/Zeit hier auflösen – „Zufall“ würfelt bei jedem Start (auch Revanche) neu, der
+    // Ladebildschirm zeigt das Ergebnis; anderes Wetter/Zeit → Welt neu aufbauen
+    const cond = safe('weather', () => G.modules.world?.resolveConditions?.(G.data.MAPS?.[cfg.mapId], { weather: cfg.weather, time: cfg.timeOfDay })) || null;
+    const condKey = cond ? cond.key : `${cfg.weather || ''}|${cfg.timeOfDay || ''}`;
+    const reuse = !!(G.world && G.world.id === cfg.mapId && (G.world._condKey ?? '|') === condKey);
     await teardownMatch({ keepWorld: reuse });
     if (!live()) return;
     applyAutoTier();
@@ -650,8 +823,11 @@ async function runStart(config, gen) {
       loadout: { ...cfg.loadout }, ffa: cfg.ffa, timeLimit: cfg.timeLimit, scoreLimit: cfg.scoreLimit,
       startedAt: null, startedReal: null, countdown: 0, pausedFrom: null, endedAt: null, result: null,
       unranked: isUnranked(cfg),
+      style: cfg.style, crosshair: cfg.crosshair, matchLength: cfg.matchLength, timeOfDay: cfg.timeOfDay, cls: cfg.loadout.cls || null, // modes-ui
+      weather: cfg.weather, conditions: cond, // atmosphere-weather (Anfrage; aufgelöst: conditions = G.world.weather)
     });
-    settings.patch({ lastMode: cfg.modeId, lastMap: cfg.mapId, difficulty: cfg.difficulty, lastLoadout: cfg.loadout });
+    settings.patch({ lastMode: cfg.modeId, lastMap: cfg.mapId, difficulty: cfg.difficulty, lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
+    applyStyle(cfg); // core-mechanics: G.match.style/styleFlags/armor
     setState('loading');
     G.menus.showLoading(0);
     safe('hud.hide', () => G.hud.hide());
@@ -670,11 +846,13 @@ async function runStart(config, gen) {
       sceneBase = new Set(G.scene.children);
       // Vorarbeiten ohne Kartenbezug laufen in den Pausen des Kartenaufbaus (Worker-Phasen) mit
       const early = runJobs(matchAssetJobs(cfg, null), live);
-      const world = await G.modules.world.loadWorld(G, cfg.mapId, { onProgress });
+      const world = await G.modules.world.loadWorld(G, cfg.mapId, { onProgress, weather: cond ? cond.weather : cfg.weather, time: cond ? cond.time || 'standard' : cfg.timeOfDay });
       if (!world) throw new Error(`loadWorld(${cfg.mapId}) lieferte keine Welt`);
+      world._condKey = condKey;
       G.world = world;
+      safe('renderer.setMood', () => { G.renderer.setMood?.(world.grade || cfg.mapId); G.renderer.setSun?.(world.lighting); }); // core-render: LUT/Belichtung/Lichtstrahlen je Karte
       if (world.group && !world.group.parent) G.scene.add(world.group);
-      if (dynres) { dynres.reset(); G.renderer.setResolutionScale(1); }
+      if (dynres) { dynres.reset(); G.renderer.setResolutionScale(renderScaleValue(settings.get('renderScale')) || 1); }
       await early;
       // Abgebrochen (neuer Start/Lobby): Welt stehen lassen – der Nachfolger entscheidet (gleiche Karte → wiederverwenden)
       if (!live()) { await teardownMatch({ keepWorld: true }); return; }
@@ -714,6 +892,7 @@ async function runStart(config, gen) {
     for (const a of G.actors) spawnActor(a);
     if (!(await nextStep(0.9))) { await teardownMatch({ keepWorld: true }); return; }
 
+    safe('vehicles.attach', () => G.vehicles.attach(G)); // vehicles: Spawns aus world.vehicleSpawns bzw. ?vehicles=1
     G.hud.attach(G);
     safe('audio.startAmbience', () => G.audio.startAmbience(G.world.ambience));
     G.mode.start();
@@ -796,6 +975,7 @@ async function warmUp(live = () => true) {
     await nextFrame();
     if (!live()) return;
     G.menus.showLoading(0.97);
+    G.renderer.compilePost?.(); // core-render: Objektiv/Grade/Belichtung (auch EASU für spätere Skalen < 1)
     G.renderer.render(G.scene, G.camera, G.viewmodel.scene, G.viewmodel.camera);
   } catch (err) {
     console.warn('[NULLPUNKT] Shader-Vorbereitung:', err);
@@ -880,6 +1060,7 @@ async function teardownMatch({ keepWorld = false } = {}) {
   safe('hud', () => { G.hud.hide(); G.hud.detach(); });
   safe('mode', () => { if (G.mode) G.mode.detach(); });
   G.mode = null;
+  safe('vehicles', () => G.vehicles.detach()); // vehicles: Insassen aussteigen lassen, vor Bots/Spieler/Welt
   safe('bots', () => { G.bots.removeAll(); G.bots.detach(); });
   safe('player', () => G.player.endMatch());
   safe('audio', () => { G.audio.stopAmbience(); G.audio.detach(); });
@@ -1089,8 +1270,12 @@ function applyAutoTier() {
 }
 
 function updatePerf(now, workMs, rawMs) {
+  // Feste Auflösungsskala (Einstellung renderScale) statt dynamischer Auflösung
+  const fixed = renderScaleValue(settings.get('renderScale'));
+  if (fixed) { if (Math.abs(G.renderer.resolutionScale - fixed) > 1e-3) G.renderer.setResolutionScale(fixed); return; }
   if (!dynres || QUALITY_OVERRIDE || G.match.startedReal == null || G.time.real - G.match.startedReal < 3) return;
-  dynres.touch = G.input.mode === 'touch'; // Ziel 30 FPS auf Touch, 60 auf Desktop
+  const cap = fpsLimitValue(settings.get('fpsLimit'));
+  dynres.touch = G.input.mode === 'touch' || (cap > 0 && cap <= 30); // Ziel 30 FPS auf Touch (bzw. bei 30er-Begrenzung), 60 auf Desktop
   dynres.frame(now, rawMs, workMs);
   const R = G.renderer;
   const auto = settings.get('quality') === 'auto';
@@ -1104,8 +1289,16 @@ function updatePerf(now, workMs, rawMs) {
 let lastNow = 0;
 let idleRenderAt = 0;
 
+let capAt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
+  // Bildratenbegrenzung (Einstellung fpsLimit): Bilder auslassen; die Zeit läuft im nächsten Bild weiter
+  const cap = fpsLimitValue(settings.get('fpsLimit'));
+  if (cap) {
+    if (now < capAt - 1.5) return;
+    capAt += 1000 / cap; // Takt halten (bei 144 Hz und 60er-Grenze im Mittel 60 Bilder)
+    if (capAt < now) capAt = now + 1000 / cap; // zurückgefallen (Pause, Hintergrund): neu ansetzen
+  }
   const t0 = performance.now();
   const raw = lastNow ? Math.max(0, (now - lastNow) / 1000) : 0;
   lastNow = now;
@@ -1122,9 +1315,11 @@ function frame(now) {
     if (st === 'countdown') tickCountdown(Math.min(raw, 0.25) * G.timeScale); // Echtzeit, nicht Simulationszeit
     step('input', () => G.input.update(dt));
     if (G.input.pressed('pause') && G.match.state !== 'paused') pause();
-    step('player', () => G.player.update(dt));
+    step('player', () => (G.player.vehicle ? G.vehicles.updateOccupant(G.player, dt) : G.player.update(dt))); // vehicles: Sitz statt Laufen
     step('bots', () => G.bots.update(dt));
     if (st === 'playing') step('separate', () => separateActors(G.actors));
+    step('vehicles', () => G.vehicles.update(dt));
+    step('armor', () => G.combat.tickArmor(G.actors)); // core-mechanics: Platten fertig einsetzen, Bots setzen selbst ein
     step('weapons', () => G.weapons.update(dt));
     step('mode', () => { if (G.mode) G.mode.update(dt); });
     if (G.match.state === 'playing') step('respawn', updateRespawns);
@@ -1149,8 +1344,12 @@ function frame(now) {
 function updateRespawns() {
   const mode = G.mode;
   const now = G.time.elapsed;
+  // Respawn-Halt (Ausrüsten im Todesbildschirm): Restzeit des Spielers steht still
+  const p = G.player;
+  if (G.match.respawnHold && G.match.respawnHoldPause !== false && p && !p.alive && p.respawnAt != null) p.respawnAt += G.time.dt;
   for (const a of G.actors) {
     if (a.alive || a.respawnAt == null || now < a.respawnAt) continue;
+    if (a === p && G.match.respawnHold) continue;
     if (mode && typeof mode.canRespawn === 'function' && mode.canRespawn(a) === false) continue;
     spawnActor(a);
   }
@@ -1180,13 +1379,14 @@ function updateStats(now) {
     text += `\n${i.drawCalls} Draw Calls · ${(i.triangles / 1000).toFixed(1).replace('.', ',')}k Dreiecke\n${i.quality} · ${i.width}×${i.height} @${i.pixelRatio} · Skala ${String(i.resolutionScale).replace('.', ',')}\n` +
       `${G.match.state} · ${G.actors.length} Akteure · Geo ${i.geometries} · Tex ${i.textures}` +
       (p && p.interval ? `\nArbeit ${String(p.work).replace('.', ',')} ms / ${String(p.interval).replace('.', ',')} ms${dynres.plateau ? ` · Plateau ${Math.round(dynres.plateau)}` : ''}` : '') +
+      (i.post && i.post.mode !== 'direct' ? `\nBild ${i.post.style} · ${i.post.mode} · ${i.post.internal}→${i.post.output} (${i.post.upscaler}) · Pässe ${i.post.passes}${i.post.exposure != null ? ` · Bel. ×${String(i.post.exposure).replace('.', ',')}` : ''}` : '') +
       (missing.length ? `\nFehlt: ${missing.join(', ')}` : '');
   }
   statsEl.textContent = text;
 }
 
 function applyQualityClasses() {
-  document.body.classList.toggle('np-css-vignette', !G.renderer.preset.grade);
+  document.body.classList.toggle('np-css-vignette', G.renderer.cssVignette ?? !G.renderer.preset.grade);
   document.body.dataset.quality = G.renderer.quality;
 }
 
@@ -1290,6 +1490,14 @@ function wireGlobal() {
     victim.respawnAt = G.time.elapsed + delay;
   });
   G.events.on('ui:sound', ({ name } = {}) => { if (!audioAttached && name) safe('audio.ui', () => G.audio.ui(name)); });
+  // core-render (R18): Kugeln am Kopf vorbei / Treffer → Unterdrückung; nahe Explosion → kurzes Ausbrennen
+  G.events.on('bullet:whiz', ({ distance } = {}) => G.renderer.suppress?.(0.18 + 0.22 * Math.max(0, 1 - (Number(distance) || 1) / 2.2)));
+  G.events.on('player:damaged', ({ amount } = {}) => G.renderer.suppress?.(Math.min(0.5, 0.12 + (Number(amount) || 0) / 120)));
+  G.events.on('explosion', ({ position, radius } = {}) => {
+    if (!position || !G.camera || !G.renderer.flash) return;
+    const d = G.camera.position.distanceTo(position), r = (Number(radius) || 6) * 1.6;
+    if (d < r) G.renderer.flash(0.35 * (1 - d / r) ** 2);
+  });
   G.events.on('input:lock', ({ locked, error }) => {
     updateLockHint();
     const st = G.match.state;
@@ -1324,6 +1532,10 @@ function wireGlobal() {
       applyQuality(value);
     }
     if (key === 'playerName' && G.player) G.player.name = value;
+    if (key === 'renderScale' && G.renderer) { // Erweitert-Grafik: sofort (auch in der Pause), „Dynamisch“ übernimmt ab hier
+      const f = renderScaleValue(value);
+      if (f) G.renderer.setResolutionScale(f); else if (dynres) dynres.clearSamples();
+    }
   });
 
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
@@ -1371,9 +1583,11 @@ async function bootstrap() {
   let phase = 'error';
   try {
     setBoot(0.02, 'Prüfe Grafik …');
-    G.renderer = createRendererOrNull({ quality: QUALITY_OVERRIDE || settings.get('quality') });
+    G.renderer = createRendererOrNull({ quality: QUALITY_OVERRIDE || settings.get('quality'), settings });
     if (!G.renderer) { showFatal('webgl'); return; }
     G.renderer.onQualityChange(onQualityChanged);
+    if (G.renderer.onStyleChange) G.renderer.onStyleChange(applyQualityClasses); // Bildstil (core-render)
+    if (DEBUG && G.renderer.exposure) G.renderer.exposure.track = true;
     applyQualityClasses();
     G.perf = dynres = new DynamicResolution({ touch: window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : false });
 
@@ -1394,6 +1608,7 @@ async function bootstrap() {
     G.weapons = new G.modules.weapons.WeaponSystem(G);
     G.effects = new G.modules.effects.Effects(G);
     G.bots = new G.modules.bots.BotManager(G);
+    G.vehicles = new G.modules.vehicles.VehicleSystem(G);
     G.hud = new G.modules.hud.HUD(G);
     G.menus = new G.modules.menus.Menus(G);
     if (G.fullscreen) G.fullscreenUi = safe('fullscreenUi', () => new FullscreenUI(G, { autoShow: !AUTOSTART })) || null;

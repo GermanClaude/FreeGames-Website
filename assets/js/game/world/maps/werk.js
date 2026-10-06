@@ -7,7 +7,7 @@ import { building, wall, stairs, railing, catwalk } from '../arch.js';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, pipe,
-  workbench, lockers, dumpster, tank, roofVent,
+  workbench, lockers, dumpster, tank, roofVent, dress,
 } from '../props.js';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
@@ -21,19 +21,27 @@ export default {
   visualBounds: { minX: -170, maxX: 170, minZ: -170, maxZ: 170 },
   chunkSize: 36,
   ambience: 'industrial',
+  // Fotoscan-Bibliothek (assets/lib): HDRI für Umgebungslicht + Himmel, Materialzuordnung siehe world/library.js
+  assets: { hdri: 'abandoned_slipway' },
   defaultSurface: 'concrete',
   navSpacing: 1.5,
   groundNoise: 0.22,
   interiorTint: [1, 0.93, 0.84],
   lighting: {
     sun: { elevation: 8, azimuth: 252, color: '#ffae70', intensity: 2.6 },
-    sky: { turbidity: 9, rayleigh: 2.2, mieCoefficient: 0.012, mieDirectionalG: 0.82, exposure: 0.42, tint: '#c8ccd8', clouds: { coverage: 0.82, density: 0.62, scale: 0.00016, elevation: 0.45, speed: 0.00002 }, hazeHigh: 0.2, hazeAmount: 0.95 },
+    // HDRI abandoned_slipway (bedeckt) nur als Umgebungslicht, dämmerblau getönt; der Himmel bleibt prozedural (Dämmerung),
+    // das Foto zeigt am Horizont nahe Mauern/Bäume, die über dem Werk riesig wirkten
+    sky: { turbidity: 9, rayleigh: 2.2, mieCoefficient: 0.012, mieDirectionalG: 0.82, exposure: 0.42, tint: '#c8ccd8', clouds: { coverage: 0.82, density: 0.62, scale: 0.00016, elevation: 0.45, speed: 0.00002 }, hazeHigh: 0.2, hazeAmount: 0.95, hdri: false },
     // Himmels-/Umgebungslicht trägt die Dämmerung (Env-Map ohne Mie-Hotspot, s. lighting.js) → kräftiger
-    hemi: { sky: '#a6b2c6', ground: '#7d7064', intensity: 2.1 },
-    env: { intensity: 2.2, ground: '#5c554c', groundIntensity: 0.6, tint: '#c4ccdc' },
-    fog: { color: '#7c8596', near: 45, far: 280 },
+    hemi: { sky: '#a6b2c6', ground: '#7d7064', intensity: 2.1, hdriIntensity: 1.2 },
+    env: { intensity: 2.2, ground: '#5c554c', groundIntensity: 0.6, tint: '#c4ccdc', hdriIntensity: 1.1, hdriTint: '#8e9ab4' },
+    fog: { color: '#7c8596', near: 45, far: 280, density: 0.0075, falloff: 0.05, start: 15, sun: 0.5, sunExp: 4 },
     shadow: { size: 40, bias: -0.0005 },
     exposure: 1.55,
+    // Halle: Abendsonne flach durch die Westfenster, viel Staub; Feuertonnen (Lichtgruppe 2) flackern
+    probes: { bounce: 1.0, flicker: [{ group: 2, amount: 0.35, speed: 11 }] },
+    // atmosphere-weather: Hallenfenster-Strahlen + Staub etwas kräftiger, Lücken zwischen Hallen/Containern (slots)
+    atmos: { beams: 0.027, beamG: 0.42, dust: 1.7, slots: 0.6, outdoor: 0.5 },
   },
 
   build(b, ctx) {
@@ -84,6 +92,7 @@ export default {
     for (const s of [1, -1]) half(b, mirror(s), ctx);
 
     backdrop(b);
+    dressing(b);
 
     // -----------------------------------------------------------------------
     // Startpunkte & Flaggen
@@ -94,8 +103,8 @@ export default {
     for (const [x, z] of sA) spawns.A.push({ x, z, yaw: 0 });
     for (const [x, z] of sB) spawns.B.push({ x, z, yaw: Math.PI });
     for (const [x, z] of [
-      [-46, 24], [-44, -12], [-31, 30], [-30, -33], [-24.5, 5], [-14, 17], [-12, -16], [-8, 5], [9, -6], [13, 15], [12, -24],
-      [26, 18], [26, -14], [36, 16], [35, 0], [48, 12], [47.5, -30], [24, -38],
+      [-46, 24], [-44, -12], [-31, 30], [-30, -33], [-24.5, 5], [-13, 17], [-12, -16], [-8, 5], [9, -6], [13, 15], [12, -24],
+      [26, 18], [25.7, -15], [36, 16], [35, 0], [48, 12], [47.5, -30], [24, -38],
     ]) spawns.ffa.push({ x, z });
     return {
       spawns,
@@ -104,6 +113,38 @@ export default {
     };
   },
 };
+
+// ---------------------------------------------------------------------------
+// Ausstattung aus der Asset-Bibliothek (Fotoscan-Requisiten; ohne Bibliothek entfällt sie)
+// ---------------------------------------------------------------------------
+function dressing(b) {
+  const Q = Math.PI / 2;
+  const list = [];
+  for (const s of [1, -1]) {
+    // Hallenlampen an den Bindern (z = Binderlinien), deutlich über Laufsteg und Kranbahn
+    for (const x of [-8, 8]) list.push(['hanging_industrial_lamp', x, 10.4, s * 12, 0, { s: 1.35, castShadow: false, maxDist: 90 }]);
+    list.push(['hanging_industrial_lamp', 0, 10.4, s * 24, 0, { s: 1.35, castShadow: false, maxDist: 90 }]);
+    // Regale an der Westwand (zwischen Ladetor und Fenster), Werkzeug an der Ostseite
+    list.push(['steel_frame_shelves_01', -21.2, 0, s * 6.0, Q, { collide: true }]);
+    list.push(['worn_metal_rack', 21.15, 0, s * 6.6, -Q, { collide: true }]);
+    list.push(['metal_tool_chest', 20.95, 0, s * 13.65, -Q, { collide: true }]);
+    list.push(['tool_cart', 16.6, 0, s * 7.2, 0.3 * s, { collide: true }]);
+    list.push(['portable_generator', -3.2, 0, s * 22.4, 0.7 * s, { collide: true }]);
+    list.push(['industrial_pastic_container', 14.2, 0, s * 18.9, 0.25], ['industrial_pastic_container', 14.0, 0, s * 19.6, 1.4]);
+    list.push(['cardboard_box_01', -18.95, 0, s * 14.55, 0.2], ['cardboard_box_01', -18.45, 0, s * 15.1, 1.1], ['cardboard_box_01', -18.75, 0.34, s * 14.8, 0.5]);
+    list.push(['wetfloorsign_01', 2.6, 0, s * 18.2, 0.4 * s]);
+    // Leitstand: Stuhl am Pult
+    list.push(['schoolchair_01', 13.4, 0.12, s * 24.0, s > 0 ? 0.25 : Math.PI + 0.25]);
+    // Laderampe: Sackkarre, Kartons; Hofrand: Kunststoffkisten, Müll am Container
+    list.push(['hand_truck', -23.0, 1.26, s * 8.0, 2.2]);
+    list.push(['cardboard_box_01', -23.3, 1.26, s * 3.0, 0.1], ['cardboard_box_01', -22.9, 1.26, s * 2.5, 0.9]);
+    list.push(['industrial_pastic_container', -49.8, 0, s * 11.4, 0.3]);
+    list.push(['trashbag', 48.6, 0, s * 25.1], ['trashbag', 49.3, 0, s * 25.4]);
+    // Schaltkästen an der Hallen-Westwand (außen)
+    list.push(['power_box_01', -22.22, 1.35, s * 24.0, -Q, { castShadow: false }]);
+  }
+  dress(b, list);
+}
 
 function defineSigns(b) {
   b.defineSign('title', { style: 'logo', text: 'WALZWERK 7', sub: 'Hütte Nordstahl · seit 1923', bg: '#1f2a33', fg: '#e8e4dc', accent: '#ff8a2a' });
@@ -192,7 +233,7 @@ function fireBarrel(b, x, z, o = {}) {
       mat.opacity = 0.7 + Math.sin(t * 11) * 0.12;
     },
   });
-  if (o.light !== false) b.light('point', x, 1.6, z, { color: '#ff9a40', intensity: o.intensity ?? 9, distance: o.distance ?? 9, priority: 2 });
+  if (o.light !== false) b.light('point', x, 1.6, z, { color: '#ff9a40', intensity: o.intensity ?? 9, distance: o.distance ?? 9, priority: 2, group: 2 });
   b.glow(x, 1.25, z, { color: '#ff8a30', size: 2.6, intensity: 0.9 });
 }
 
@@ -360,6 +401,11 @@ function hall(b) {
   }
   b.light('point', -9, 8.6, 7, { color: '#ffae5a', intensity: 40, distance: 24, priority: 1 });
   b.light('point', 9, 8.6, -7, { color: '#ffae5a', intensity: 40, distance: 24, priority: 1 });
+  // übrige Leuchten nur gebacken (Sonden-Gitter): Lichtinseln unter jeder Lampe ohne Laufzeitkosten
+  for (const zz of [-21, -7, 7, 21]) for (const xx of [-9, 9]) {
+    if ((xx === -9 && zz === 7) || (xx === 9 && zz === -7)) continue;
+    b.light('point', xx, 8.6, zz, { color: '#ffae5a', intensity: 32, distance: 20, realtime: false });
+  }
   // Kaltes Abendlicht durch die Dachlöcher (Lichtkegel als Staubschleier)
   for (const [x, z] of [[-11, -9], [11, 9], [11, -15], [-11, 15]]) dustShaft(b, x, z);
   // Beschriftung außen

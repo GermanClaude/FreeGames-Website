@@ -18,7 +18,10 @@ export const MAPS = {
     dimensions: { x: 96, z: 104 },
     timeOfDay: 'Goldene Stunde',
     weather: 'Klar, tiefe Sonne',
-    modes: ['tdm', 'ffa', 'dom', 'gun'],
+    // atmosphere-weather: wählbares Wetter (ohne Niederschlag) + Tageszeiten; Standard = Kartenwetter/-zeit (unverändert)
+    weathers: ['klar', 'dunst', 'morgennebel', 'bewoelkt'], weatherDefault: 'klar',
+    timeDefault: 'abend', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'mittag', name: 'Mittag' }],
+    modes: ['tdm', 'ffa', 'dom', 'gun', 'kc', 'inf'],
     palette: ['#f2a65a', '#c8402f', '#2d5f94', '#1f4a57', '#3b3f44'],
     features: ['Kletterbare Containerstapel', 'Portalkran als Wahrzeichen', 'Lagerhalle mit Büro-Empore', 'Kaikante mit Wasser'],
     lanes: ['Kaikante (West)', 'Containerlabyrinth (Mitte)', 'Lagerhalle (Ost)'],
@@ -84,7 +87,10 @@ export const MAPS = {
     dimensions: { x: 92, z: 104 },
     timeOfDay: 'Mittag',
     weather: 'Wolkenlos, gleißende Sonne',
-    modes: ['tdm', 'ffa', 'dom', 'gun'],
+    // atmosphere-weather: wählbares Wetter (ohne Niederschlag) + Tageszeiten; Standard = Kartenwetter/-zeit (unverändert)
+    weathers: ['klar', 'dunst', 'morgennebel', 'bewoelkt'], weatherDefault: 'klar',
+    timeDefault: 'mittag', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'nachmittag', name: 'Nachmittag' }, { id: 'abend', name: 'Abend' }],
+    modes: ['tdm', 'ffa', 'dom', 'gun', 'kc', 'inf'],
     palette: ['#ede6d6', '#2f6f9a', '#b65a37', '#d9b26a', '#7fa0c8'],
     features: ['Begehbare Häuser und Dachterrassen', 'Markt mit Sonnensegeln', 'Brunnenplatz mit Glockenturm', 'Enge Gassen und Torbögen'],
     lanes: ['Marktgasse (West)', 'Brunnenplatz (Mitte)', 'Gassen & Dächer (Ost)'],
@@ -143,7 +149,10 @@ export const MAPS = {
     dimensions: { x: 104, z: 96 },
     timeOfDay: 'Bewölkte Dämmerung',
     weather: 'Bedeckt, kühles Abendlicht',
-    modes: ['tdm', 'ffa', 'dom', 'gun'],
+    // atmosphere-weather: wählbares Wetter (ohne Niederschlag) + Tageszeiten; Standard = Kartenwetter/-zeit (unverändert)
+    weathers: ['klar', 'dunst', 'morgennebel', 'bewoelkt'], weatherDefault: 'dunst',
+    timeDefault: 'abend', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'mittag', name: 'Mittag' }],
+    modes: ['tdm', 'ffa', 'dom', 'gun', 'kc', 'inf'],
     palette: ['#ffae4a', '#4b5560', '#7d8a84', '#2a3036', '#a35d2c'],
     features: ['Große Halle mit Laufstegen', 'Maschinen und Rohrbrücken', 'Ladebuchten und Lkw-Hof', 'Warmes Natriumlicht gegen kalte Dämmerung'],
     lanes: ['Lkw-Hof (West)', 'Walzhalle (Mitte)', 'Kesselhaus (Ost)'],
@@ -215,6 +224,9 @@ export const MAPS = {
     dimensions: { x: 60, z: 139 },
     timeOfDay: 'Klarer Morgen',
     weather: 'Klar, frische Luft',
+    // atmosphere-weather: wählbares Wetter (ohne Niederschlag) + Tageszeiten; Standard = Kartenwetter/-zeit (unverändert)
+    weathers: ['klar', 'dunst', 'morgennebel', 'bewoelkt'], weatherDefault: 'klar',
+    timeDefault: 'morgen', times: [{ id: 'mittag', name: 'Mittag' }, { id: 'abend', name: 'Abend' }],
     modes: ['training'],
     palette: ['#ff5b1f', '#e8ecef', '#5d7488', '#2c2f33', '#f2c230'],
     features: ['Acht Schießbahnen', 'Klappziele 10–100 m', 'Entfernungstafeln', 'Einschieß-Parcours'],
@@ -253,6 +265,55 @@ export const MAPS = {
     flags: [{ id: 'A', x: 0, z: 49 }, { id: 'B', x: 0, z: 2 }, { id: 'C', x: 0, z: -56 }],
     spawns: { A: [0, 51], B: [0, -69] },
   },
+  grenzland: {
+    id: 'grenzland',
+    name: 'Grenzland',
+    subtitle: 'Flusstal an der alten Grenze',
+    description: 'Ein stilles Flusstal an der alten Grenze, späte Vormittagssonne über Feldern und Fichtenwäldern. Fünf Flaggen liegen weit auseinander: das Gehöft mit seiner Scheune, das Dorf rund um Kapelle und Gasthaus, die einzige Straßenbrücke über den Fluss, das Kieswerk mit Halle und Förderband und der Funkhügel mit Bunker und Gittermast. Furten, Feldwege und Hecken bieten Umwege – wer die Brücke hält, kontrolliert die Landstraße.',
+    short: 'Großkarte: Fluss mit Brücke, Dorf, Gehöft, Kieswerk und Funkhügel – fünf Flaggen.',
+    size: 'groß',
+    scale: 'gross',
+    viewDistance: { low: 340, medium: 600, high: 850, ultra: 850 },
+    dimensions: { x: 500, z: 500 },
+    timeOfDay: 'Später Vormittag',
+    weather: 'Leicht dunstig, Schönwetterwolken',
+    // atmosphere-weather: wählbares Wetter (ohne Niederschlag) + Tageszeiten; Standard = Kartenwetter/-zeit (unverändert)
+    weathers: ['klar', 'dunst', 'morgennebel', 'bewoelkt'], weatherDefault: 'dunst',
+    timeDefault: 'vormittag', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'abend', name: 'Abend' }],
+    modes: ['cq', 'tdm', 'dom', 'ffa'],
+    palette: ['#6f8a4e', '#c9b98a', '#3f5d6a', '#8a4232', '#e9e2d0'],
+    features: ['Fünf Eroberungsflaggen A–E mit HQs', 'Fluss mit Brücke und zwei Furten', 'Betretbare Häuser, Scheune mit Heuboden', 'Wälder, Hecken, Felder und Randgebirge', 'Fahrzeug-Stellplätze in beiden HQs'],
+    lanes: ['Westen: Gehöft – Furt – Funkhügel', 'Mitte: Dorf – Brücke – Landstraße', 'Osten: Werkstraße – Furt – Kieswerk'],
+    ambience: 'range',
+    bounds: { minX: -250, maxX: 250, minZ: -250, maxZ: 250 },
+    layout: [
+      [-231,-42,67,15,"water",-0.13], [-175,-37,57.6,15,"water",0.35], [-125,-21,56.4,15,"water",0.27], [-81,-14,42.5,15,"water",0], [-31,-17.5,66.9,15,"water",-0.11], [20,-25.5,45.5,15,"water",-0.22],
+      [55,-37,37.6,15,"water",-0.44], [90,-50,46.3,15,"water",-0.29], [140,-51,65.3,15,"water",0.17], [205,-34,78.5,15,"water",0.33], [251,-23.5,26.7,15,"water",-0.14], [53.5,239,44.2,7,"lane",-1.5],
+      [45.5,194,53.7,7,"lane",-1.95], [28,155,36.1,7,"lane",-2.06], [7.5,106,74.5,7,"lane",-1.92], [4.5,54,42.8,7,"lane",-1.09], [19.5,24,28.5,7,"lane",-1.14], [30.5,-1,30.3,7,"lane",-1.17],
+      [40,-30,35.1,7,"lane",-1.33], [51,-61,35.2,7,"lane",-1.13], [79,-86,48.6,7,"lane",-0.44], [125,-103,54,7,"lane",-0.27], [141,-135,55.2,7,"lane",-1.92], [106,-182.5,70.9,7,"lane",-2.43],
+      [30,-213.5,103.5,7,"lane",-2.97], [-27,-242,44.5,7,"lane",-1.91], [-37.5,80,68.3,4.5,"lane",2.9], [-110,96.5,83.1,4.5,"lane",2.93], [-175,121.5,61.3,4.5,"lane",2.56], [-225,148,55.2,4.5,"lane",2.76],
+      [-156,72.5,67.2,3.6,"lane",-1.75], [-156,6,70.1,3.6,"lane",-1.4], [-144,-57,60.3,3.6,"lane",-1.37], [-129.5,-111,53.9,3.6,"lane",-1.24], [-95.5,-157,67.1,3.6,"lane",-0.69], [-45,-200,67.7,3.6,"lane",-0.72],
+      [168,-85,63.1,5,"lane",0.95], [191,-49,25.7,5,"lane",1.14], [186,-4,72.4,5,"lane",1.86], [148,61,85,5,"lane",2.31], [87.5,155,143.3,5,"lane",2.05], [-26,58,13,9,"house"],
+      [18,64,9,8,"house"], [-30,95,9,8,"house"], [24,96,10,7,"house"], [-8,40,9,8,"house"], [35,40,8,8,"house"], [-48,72,7,9,"house"],
+      [-8,100,7,13,"kirche"], [-8,91.6,4.2,4.2,"turm"], [-14,81,2,2,"well"], [-162,96,11,8,"house"], [-136,118,16,11,"house"], [-178,92,6,12,"house"],
+      [-124,90,4.6,4.6,"tank"], [168,-118,15,26,"house"], [178,-90,5.6,5.6,"tank"], [138,-142,2.5,6,"container"], [138,-134,2.5,6,"container"], [132,-96,12,12,"cover"],
+      [128,-128,10,10,"cover"], [40,-30,8.2,36,"bridge",-1.33], [-62,14,12,9,"wall"], [-117,-135,7,5.5,"house"], [-128,-146,2.4,2.4,"turm"], [60,219,68,44,"lane"],
+      [-20,-222,68,44,"lane"],
+    ],
+    flags: [{ id: 'A', x: -6, z: 74 }, { id: 'B', x: -62, z: 14 }, { id: 'C', x: 40, z: -30 }],
+    cq: [{ id: 'A', name: 'Gehöft', x: -148, z: 106 }, { id: 'B', name: 'Dorf', x: -6, z: 74 }, { id: 'C', name: 'Brücke', x: 40, z: -30 }, { id: 'D', name: 'Kieswerk', x: 152, z: -112 }, { id: 'E', name: 'Funkhügel', x: -121, z: -142 }],
+    hq: { A: [60, 219], B: [-20, -222] },
+    spawns: { A: [4, 124], B: [46, -72] },
+  },
 };
 
-export const MAP_ORDER = ['hafen', 'altstadt', 'werk', 'range'];
+/** Wetter ohne Niederschlag (atmosphere-weather; Wirkung in world/weather.js). Lobby: „Wetter“ (Standard = Kartenwetter, Zufall). */
+export const WEATHERS = {
+  klar: { id: 'klar', name: 'Klar', short: 'Klare Sicht, harte Schatten' },
+  dunst: { id: 'dunst', name: 'Dunst', short: 'Diesige Luft, sichtbare Lichtstrahlen' },
+  morgennebel: { id: 'morgennebel', name: 'Morgennebel', short: 'Bodennebel, Sonne bricht durch', time: 'morgen' }, // time: Lobby wählt beim Umschalten „Morgen“ vor (= weather.js)
+  bewoelkt: { id: 'bewoelkt', name: 'Bewölkt', short: 'Geschlossene Wolkendecke, weiches Licht' },
+};
+export const WEATHER_ORDER = ['klar', 'dunst', 'morgennebel', 'bewoelkt'];
+
+export const MAP_ORDER = ['hafen', 'altstadt', 'werk', 'range', 'grenzland'];

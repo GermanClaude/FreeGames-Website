@@ -11,9 +11,11 @@
 // - Einstellung „fullscreen“: 'auto' (Standard: erste Geste auf der Spielseite, Matchstart, Fortsetzen,
 //   Berührung im Match) | 'off' (nur Knopf/Taste). Ausdrückliches Verlassen per Knopf/Taste schaltet die
 //   Automatik bis zum nächsten ausdrücklichen Betreten ab.
-// - Tasten: Alt+Enter und F11 (fest; v1 hat keine Tastenbelegung).
+// - Tasten: Alt+Enter (fest) und Aktion „fullscreen“ (Standard F11, umbelegbar).
 // - Wake-Lock auf Touch-Geräten, solange ein Match läuft (countdown/playing/paused).
 // - Ereignis 'fullscreen:change' { active, kind: 'api'|'standalone'|'none' }; body[data-fullscreen].
+
+import { resolveBindings } from '../../shared/bindings.data.js';
 
 const D = typeof document !== 'undefined' ? document : null;
 const MATCH = new Set(['countdown', 'playing']);
@@ -26,8 +28,6 @@ const KB_LOCK = ['Escape', 'KeyW', 'KeyT', 'KeyN', 'KeyQ', 'KeyR', 'KeyF', 'KeyD
 const GESTURE_KEY = /^(Key[A-Z]|Digit\d|Numpad\d|Space|Enter|NumpadEnter|Arrow(Up|Down|Left|Right))$/;
 const MODS = { Control: 'ctrlKey', Alt: 'altKey', Shift: 'shiftKey', Meta: 'metaKey', OS: 'metaKey' };
 const MAX_FAILS = 2;
-/** Vollbild-Tasten neben Alt+Enter (Codes, optional „Mod+Code“). */
-const FS_KEYS = ['F11'];
 
 /* -------------------------------------------------------------- Erkennung */
 
@@ -175,7 +175,7 @@ export class FullscreenManager {
   /** Anleitung sinnvoll? (kein Vollbild möglich und nicht schon als App gestartet) */
   get needsGuide() { return !this.standalone && this.reason !== null; }
 
-  /** Vollbild-Taste(n) neben Alt+Enter (Codes), z. B. ['F11']. */
+  /** Taste(n) der Aktion „fullscreen“ (Codes), z. B. ['F11']. */
   get keys() { return this._keys.slice(); }
 
   /* ------------------------------------------------------------ Aktionen */
@@ -301,7 +301,7 @@ export class FullscreenManager {
     this._on(window, 'click', (e) => this._gesture(e));
     this._on(window, 'pointerup', (e) => { if (e.pointerType !== 'mouse') this._gesture(e); });
     this._on(window, 'keydown', (e) => this._gesture(e));
-    // Tasten: Capture, vor strike-target.js (Enter ohne Alt-Prüfung)
+    // Tasten: Capture, vor deploy.js/strike-target.js (Enter ohne Alt-Prüfung)
     this._on(window, 'keydown', (e) => this._key(e), { capture: true });
     this._on(D, 'dragstart', (e) => { const t = e.target; if (!(t && t.closest && t.closest('input, textarea'))) e.preventDefault(); });
     this._on(D, 'visibilitychange', () => { if (D.hidden) this._hiddenAt = performance.now(); this._wake(); });
@@ -316,6 +316,7 @@ export class FullscreenManager {
     const S = this.G.settings;
     if (S && typeof S.onChange === 'function') {
       const off = S.onChange((key, value) => {
+        if (key === 'bindings') this._reloadKeys();
         // 'auto' im Menü gewählt (Klick = Geste) → sofort; ohne Geste (anderer Tab) prüft request() selbst
         if (key === 'fullscreen' && value === 'auto') { this._optOut = false; if (!this.autoDisabled) this.request(); }
         if (key === 'fullscreen') this._emit();
@@ -325,7 +326,10 @@ export class FullscreenManager {
   }
 
   _reloadKeys() {
-    this._keys = FS_KEYS.slice();
+    try {
+      const b = resolveBindings(this.G.settings ? this.G.settings.get('bindings') : null);
+      this._keys = (b.kb && b.kb.fullscreen) || [];
+    } catch { this._keys = ['F11']; }
   }
 
   _gesture(e) {
@@ -342,14 +346,14 @@ export class FullscreenManager {
     else if (!this._firstDone && e.type !== 'pointerup') this.auto(); // Menüs: erst „click“ (Ziel steht fest)
   }
 
-  /** Alt+Enter und F11 (fest). */
+  /** Alt+Enter (fest) und Aktion „fullscreen“ (umbelegbar, Standard F11). */
   _key(e) {
     // Esc gehalten (Chrome/Edge mit Tastatursperre: so verlässt man das Vollbild): Wiederholungen dürfen Pause/
     // Fortsetzen nicht hin- und herschalten (menus.js, main.js) → hier verschlucken; das erste keydown pausiert.
     if (e.code === 'Escape' && e.repeat) { e.stopImmediatePropagation(); return; }
     if (e.repeat || !e.isTrusted) return;
     const inp = this.G.input;
-    if (inp && inp._capture) return; // Tastenbelegung wird gerade aufgenommen (falls vorhanden)
+    if (inp && inp._capture) return; // Tastenbelegung wird gerade aufgenommen
     const altEnter = (e.code === 'Enter' || e.code === 'NumpadEnter') && e.altKey && !e.ctrlKey && !e.metaKey;
     if (!altEnter && !this._matches(e)) return;
     if (!this.supported) return; // Browser-Vollbild (F11) nicht blockieren

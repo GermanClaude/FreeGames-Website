@@ -10,7 +10,7 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange } from '../../shared/weapons.data.js';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js';
 import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -21,6 +21,7 @@ const _muz = new THREE.Vector3();
 const _to = new THREE.Vector3();
 const _side = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
+const _org = new THREE.Vector3();
 
 const MOVE_REF = 5.4; // Gehtempo (m/s) – Bezug für Laufstreuung
 const SWITCH_LOWER = 0.2; // Wegstecken (passend zum ViewModel)
@@ -31,6 +32,16 @@ const AUTO_RANGE = { shotgun: 13, smg: 30, pistol: 28, ar: 48, lmg: 52, marksman
 const BREATH_HOLD = 4.5; // s Atem anhalten
 const BREATH_RECOVER = 2.8; // s bis voll erholt
 const EXHAUST = 1.6; // s außer Atem
+// Wandkollision (F3): ab diesem Anteil (0..1, wie weit die Waffe angezogen ist) kein Anschlag bzw. kein Schuss –
+// mit Hysterese, damit es an der Grenze nicht flackert
+const OBSTRUCT_ADS = [0.3, 0.2]; // walls: Reichweite = echte Vorderkante → Anschlag endet, bevor die Visierlinie anstößt
+const OBSTRUCT_NEAR = 0.3;        // m Wandtiefe, ab der die Waffe ganz angezogen ist (Auge an der Wand ≈ 0,33 m)
+const _wdir = new THREE.Vector3();
+const _wup = new THREE.Vector3();
+const _wlast = new THREE.Vector3();
+const OBSTRUCT_FIRE = [0.72, 0.55];
+// Rückstoß 2.0: kurzer Kamera-Ruck schwerer Waffen (Trauma für player.shake, nur Optik, Komfort über core)
+const SHOT_SHAKE = { sniper: 0.22, shotgun: 0.2, marksman: 0.1, lmg: 0.025 };
 
 const FALLBACK = {
   id: 'ar_m17', name: 'M-17 Falke', cls: 'ar', slot: 'primary', model: 'm17', damage: { max: 25, min: 19, rangeStart: 22, rangeEnd: 45 },
@@ -40,6 +51,17 @@ const FALLBACK = {
   range: 110, penetration: 0.55, sound: { profile: 'ar', pitch: 1 },
 };
 const KNIFE_FALLBACK = { range: 2.4, lungeRange: 4.5, lungeSpeed: 10, arc: 0.6, swingTime: 0.75, hitDelay: 0.14 };
+
+/** Lehnen des Akteurs (core: player.lean −1…1, − = links), sonst 0. */
+function actorLean(actor) {
+  const l = actor && actor.lean;
+  return Number.isFinite(l) ? l : 0;
+}
+/** Freies Zielen (core: player.aimOffset {x, y} rad, Lauf relativ zur Sicht, x > 0 rechts, y > 0 oben) oder null. */
+function actorFreeAim(actor) {
+  const o = actor && actor.aimOffset;
+  return o && (o.x || o.y) ? o : null;
+}
 
 export class WeaponController {
   /**
@@ -53,7 +75,12 @@ export class WeaponController {
     this.actor = actor;
     this.slots = [];
     this.index = 0;
-    this.equipment = { lethal: { id: null, count: 0 } };
+    this.equipment = { lethal: { id: null, count: 0 }, tactical: { id: null, count: 0 } };
+    this.meleeId = 'knife';      // Nahkampfwaffe (loadout.melee)
+    this.isPlating = false;      // Schutzplatte wird eingesetzt (plateInsert)
+    this.isInspecting = false;   // Inspizieren läuft (nur Spieler, PC)
+    this.handlesInspect = true;  // player.js: Controller wertet it.inspect selbst aus (kein doppeltes playInspect)
+    this._plate = null;
 
     // Öffentlicher Zustand (HUD, Bots, Spieler, Audio lesen ihn)
     this.adsProgress = 0;
@@ -83,6 +110,8 @@ export class WeaponController {
     this.idealRange = 20;
     this.maxRange = 100;
     this.viewModel = null;
+    this.obstructed = 0;  // Wandkollision 0..1 (Spieler; 1 = Waffe ganz angezogen)
+    this.winded = 0;      // Atemnot nach dem Sprint 0..1 (Spieler; mehr Schwanken, schnellerer Atem)
 
     // Intern
     this._cooldown = 0;
@@ -105,6 +134,16 @@ export class WeaponController {
     this._swayX = 0;
     this._swayY = 0;
     this._shotSerial = 0;
+    this._obsSample = [Infinity, Infinity, Infinity];
+    // walls-3: Trefferpunkt + Normale je Strahl (Welt) → Viewmodel s.wallHit (echte Fläche statt Tiefenebene)
+    this._obsHit = [0, 1, 2].map(() => ({ ok: false, px: 0, py: 0, pz: 0, nx: 0, ny: 0, nz: 0 }));
+    this.wallHit = null;
+    this.wallDist = Infinity; // m Wandtiefe vor dem Auge (Messung + Vorhalt, walls) → Viewmodel s.wallDist
+    this._obsK = 0;
+    this._obsAds = false;
+    this._obsFire = false;
+    this._sprintT = 0;
+    this._driftT = Math.random() * 20;
     this._disposed = false;
 
     if (actor && actor.isPlayer) this._createViewModel();
@@ -124,7 +163,12 @@ export class WeaponController {
   _weapons() { return (this.G.data && this.G.data.WEAPONS) || DATA_WEAPONS; }
   _equipmentDefs() { return (this.G.data && this.G.data.EQUIPMENT) || DATA_EQUIPMENT; }
   _def(id) { const W = this._weapons(); return (id && W[id]) || null; }
-  _knife() { const k = this._def('knife'); return { def: k, spec: (k && k.melee) || KNIFE_FALLBACK }; }
+  _knife() {
+    const cur = this.currentDef;
+    // Nahkampfwaffe als Hauptwaffe (Gun Game, Messer in der Hand): diese; sonst die ausgerüstete Nahkampfwaffe
+    const k = (cur && cur.cls === 'melee' ? cur : this._def(this.meleeId)) || this._def('knife');
+    return { def: k, spec: (k && k.melee) || KNIFE_FALLBACK };
+  }
 
   /* ================================================================ Viewmodel */
 
@@ -184,6 +228,15 @@ export class WeaponController {
     const lethal = loadout.lethal === null ? null : loadout.lethal === undefined ? (this.equipment.lethal.id || 'frag') : loadout.lethal;
     if (!lethal || !EQ[lethal]) this.equipment.lethal = { id: null, count: 0 };
     else if (this.equipment.lethal.id !== lethal) this.equipment.lethal = { id: lethal, count: EQ[lethal].count || 1 };
+    // Taktisch (Blend/Rauch; Taste „Taktisch“) – Standard Rauch
+    const tac = loadout.tactical === null ? null : loadout.tactical === undefined ? (this.equipment.tactical.id || 'smoke') : loadout.tactical;
+    if (!tac || !EQ[tac]) this.equipment.tactical = { id: null, count: 0 };
+    else if (this.equipment.tactical.id !== tac) this.equipment.tactical = { id: tac, count: EQ[tac].count || 1 };
+    // Nahkampfwaffe
+    const md = loadout.melee ? this._def(loadout.melee) : null;
+    if (md && md.cls === 'melee') this.meleeId = md.id;
+    // Aussehen (nur Spieler-Viewmodel): Tarnmuster je Waffe, Klassen-Arme
+    if (this.viewModel) this._applyCosmetics(loadout);
     // Aktive Aktionen beenden (gezogene Granate fällt vor die Füße)
     this._abortActions(false, true);
     // Gleiche Waffe behalten; sonst denselben Slot (z. B. neue Pistole, während die alte in der Hand war)
@@ -204,11 +257,37 @@ export class WeaponController {
     void W;
   }
 
+  /**
+   * Tarnmuster/Klassen-Aussehen aus dem Loadout (Spieler): camo { [weaponId]: camoId } bzw. camos, oder camo als Id für alle,
+   * Rückfall Einstellung `weaponCamos` (falls vorhanden); look/classId/class → Klassen-Arme.
+   */
+  _applyCosmetics(loadout = {}) {
+    const vm = this.viewModel;
+    let stored = null;
+    try { stored = this.G.settings && typeof this.G.settings.get === 'function' ? this.G.settings.get('weaponCamos') : null; } catch { stored = null; }
+    // loadout.camo: { [weaponId]: camoId } (Lobby/modes-ui) oder eine Id für alle; loadout.camos wie die Objektform
+    const map = loadout.camos || (loadout.camo && typeof loadout.camo === 'object' ? loadout.camo : null);
+    const all = typeof loadout.camo === 'string' ? loadout.camo : null;
+    const camoFor = (id) => (map && map[id]) || all || (stored && typeof stored === 'object' ? stored[id] : null) || null;
+    for (const s of this.slots) this._vm('setCamo', s.id, camoFor(s.id));
+    this._vm('setCamo', this.meleeId, camoFor(this.meleeId));
+    this._vm('setMelee', this.meleeId);
+    // Klassen-Arme: loadout.skin ('klasse:stufe', modes-ui) > look/classId/cls > Akteur-Klasse
+    const [skCls, skTier] = typeof loadout.skin === 'string' ? loadout.skin.split(':') : [];
+    const look = skCls || loadout.look || loadout.classId || loadout.cls || loadout.class || (this.actor && (this.actor.cls || this.actor.classLook));
+    if (look || !this._lookSet) { this._lookSet = true; this._vm('setLook', look || 'standard', skTier || 'standard'); }
+    void vm;
+  }
+
   /** Volle Munition + Granaten (Respawn). */
   refill() {
     for (const s of this.slots) { s.mag = s.def.mag || 0; s.reserve = s.def.reserve || 0; }
     const eq = this.equipment.lethal;
     if (eq.id) { const d = this._equipmentDefs()[eq.id]; eq.count = d ? d.count || 1 : 1; }
+    const tq = this.equipment.tactical;
+    if (tq && tq.id) { const d = this._equipmentDefs()[tq.id]; tq.count = d ? d.count || 1 : 1; }
+    this._plate = null;
+    this.isPlating = false;
     this._abortActions(false);
     this.adsProgress = 0;
     this.ads = this._adsOn = false;
@@ -223,6 +302,14 @@ export class WeaponController {
     this._steady = 1;
     this._swayX = this._swayY = this._swayAmp = 0;
     this.holdingBreath = false;
+    this.obstructed = 0;
+    this._obsSample.fill(Infinity);
+    this.wallDist = Infinity;
+    this.wallHit = null;
+    this._obsLatch = null;
+    this._obsAds = this._obsFire = false;
+    this.winded = 0;
+    this._sprintT = 0;
     this._autoReloadAt = Infinity;
     this.lastShotTime = -1e9;
     if (this.index !== 0) {
@@ -252,12 +339,46 @@ export class WeaponController {
     this._switch = null;
     this._melee = null;
     this._throw = null;
+    this._plate = null;
     this.cooking = false;
     this.cookTime = 0;
     this.fuseLeft = Infinity;
-    this.isReloading = this.isSwitching = this.isMeleeing = this.isThrowing = false;
+    this.isReloading = this.isSwitching = this.isMeleeing = this.isThrowing = this.isPlating = false;
     this.reloadProgress = 0;
     this.switchProgress = 1;
+  }
+
+  /* ================================================================ Schutzplatte + Inspizieren */
+
+  /**
+   * Schutzplatte einsetzen (Rüstung, core-mechanics): sperrt Feuern/Anschlag/Nachladen für `duration` s und spielt
+   * die Ego-Animation. Laufendes Nachladen wird abgebrochen. → bool
+   */
+  plateInsert(duration = 1.6) {
+    if (this._plate || this._throw || this._melee || this.actor.alive === false) return false;
+    if (this._reload) this._finishReload(true);
+    this._burstLeft = 0;
+    this._fireBuffer = 0;
+    this._plate = { t: 0, dur: Math.max(0.3, duration) };
+    this.isPlating = true;
+    this._vm('playPlate', this._plate.dur);
+    return true;
+  }
+
+  /** Platteneinsatz abbrechen (z. B. Sprint, Treffer – Entscheidung bei core-mechanics). */
+  cancelPlate() {
+    if (!this._plate) return;
+    this._plate = null;
+    this.isPlating = false;
+    if (this.viewModel && this.viewModel.actionName === 'plate') this._vm('cancelAction');
+  }
+
+  /** Waffe inspizieren (nur Spieler; die Taste wertet update() am PC aus). → bool */
+  inspect() {
+    if (!this.viewModel || this._reload || this._switch || this._melee || this._throw || this._plate || this.ads) return false;
+    if (this.viewModel.isBusy) return false;
+    this._vm('playInspect');
+    return true;
   }
 
   /* ================================================================ Hauptschleife */
@@ -285,6 +406,17 @@ export class WeaponController {
       this._bloomAds *= k;
     }
 
+    if (this._plate) {
+      this._plate.t += dt;
+      if (this._plate.t >= this._plate.dur) { this._plate = null; this.isPlating = false; }
+    }
+    // Inspizieren (PC, Taste „inspect“; Touch nicht) – jede Kampfeingabe bricht es ab
+    if (actor.isPlayer && this.viewModel) {
+      const insp = this.viewModel.actionName === 'inspect';
+      if (insp && (it.fire || it.firePressed || it.ads || it.reload || it.sprinting || it.grenade || it.tactical || it.melee || it.swap)) this._vm('cancelAction');
+      else if (!it.frozen && !insp && (it.inspect || (G.input && G.input.mode !== 'touch' && typeof G.input.pressed === 'function' && G.input.pressed('inspect')))) this.inspect();
+      this.isInspecting = this.viewModel.actionName === 'inspect';
+    }
     if (!it.frozen) {
       this._inputMelee(it);
       this._updateThrow(dt, it);
@@ -295,8 +427,14 @@ export class WeaponController {
     const def = this.currentDef; // kann sich durch Wechsel geändert haben
     const cur = this.current;
 
+    // ---- Wandkollision + Atemnot (nur Spieler)
+    if (actor.isPlayer) {
+      this._updateObstruct(dt, def);
+      this._updateWinded(dt, it);
+    }
+
     // ---- Anschlag
-    const blocked = it.frozen || it.sprinting || !!this._switch || !!this._melee || !!this._throw || !!this._reload || def.cls === 'melee';
+    const blocked = it.frozen || it.sprinting || !!this._switch || !!this._melee || !!this._throw || !!this._reload || !!this._plate || def.cls === 'melee' || this._obsAds || !!it.mantling;
     const wantAds = !!it.ads && !blocked;
     if (wantAds !== this._adsOn) {
       this._adsOn = wantAds;
@@ -311,7 +449,7 @@ export class WeaponController {
     this._updateSpread(dt, it, def, a);
 
     // ---- Feuern
-    if (!it.frozen) this._updateFire(it, def, cur);
+    if (!it.frozen && !this._plate) this._updateFire(it, def, cur);
 
     // ---- Zielfernrohr-Schwanken + Atem (nur Spieler)
     if (actor.isPlayer) this._updateSway(dt, it, def, a);
@@ -322,8 +460,8 @@ export class WeaponController {
     this.isMeleeing = !!this._melee;
     this.isThrowing = !!this._throw;
     this.isFiring = now - this.lastShotTime < 0.12;
-    this.canSprint = !this._reload && !this._melee && !this._throw;
-    this.autoFireReady = !this._reload && !this._switch && !this._melee && !this._throw && (def.cls === 'melee' || cur.mag > 0) &&
+    this.canSprint = !this._reload && !this._melee && !this._throw && !this._plate;
+    this.autoFireReady = !this._reload && !this._switch && !this._melee && !this._throw && !this._obsFire && (def.cls === 'melee' || cur.mag > 0) &&
       (def.cls !== 'sniper' || this.adsProgress > 0.85);
     if (this._switch) {
       const s = this._switch;
@@ -349,6 +487,27 @@ export class WeaponController {
       s.firing = this.isFiring;
       s.timeSinceShot = now - this.lastShotTime;
       s.mag = def.cls === 'melee' ? 1 : cur.mag;
+      // Waffengefühl: Geschwindigkeit im Blickraum (x rechts, y oben, z vorwärts), Wandkollision, Atemnot,
+      // Lehnen und freies Zielen (core, sobald vorhanden)
+      const v = s.vel || (s.vel = { x: 0, y: 0, z: 0 });
+      const bv = actor.body && actor.body.velocity;
+      if (bv && Number.isFinite(actor.yaw)) {
+        const cy = Math.cos(actor.yaw), sy = Math.sin(actor.yaw);
+        v.x = bv.x * cy - bv.z * sy; v.y = bv.y; v.z = -bv.x * sy - bv.z * cy;
+      } else { v.x = 0; v.y = 0; v.z = it.speed || 0; }
+      s.obstruct = this.obstructed;
+      s.wallDist = this.wallDist;
+      s.wallHit = this.wallHit; // walls-3: {px,py,pz,nx,ny,nz,lead} (Welt) oder null
+      s.winded = this.winded;
+      s.exhausted = this._exhausted > 0;
+      s.holdingBreath = this.holdingBreath;
+      s.lean = actorLean(actor);
+      s.freeAim = actorFreeAim(actor);
+      s.mantling = !!(it.mantling || actor.mantling);
+      // Körperkamera (core): Schritt- und Atemphase der Kamera, damit Waffe und Kamera im selben Takt schwingen
+      s.stepPhase = Number.isFinite(actor.stepPhase) ? actor.stepPhase : Number.isFinite(actor._bobPhase) ? actor._bobPhase : undefined;
+      s.breathPhase = Number.isFinite(actor.breathPhase) ? actor.breathPhase : Number.isFinite(actor._breathPh) ? actor._breathPh : undefined;
+      s.cameraMotion = Number.isFinite(actor.cameraMotion) ? actor.cameraMotion : undefined;
       try { vm.update(dt, s); } catch (err) { this._vmError('update', err); }
       this.scoped = !!vm.showScopeOverlay;
     } else {
@@ -393,6 +552,8 @@ export class WeaponController {
       return;
     }
     if (this._switch || this._throw || this._melee || it.sprinting || this._sprintRecover > 0) return;
+    // Waffe an der Wand angezogen: kein Schuss (Eingabepuffer verfällt von selbst)
+    if (this._obsFire || it.mantling) return;
     if (this._reload) {
       // Schrot: Schießen unterbricht das Nachladen, sobald eine Patrone drin ist
       if (this._reload.shells && st.mag > 0) this._finishReload(true);
@@ -460,13 +621,20 @@ export class WeaponController {
 
     // Kugeln
     const combat = G.combat;
-    const spread = this.fireSpread;
+    const r = def.recoil || FALLBACK.recoil;
+    // Erster Schuss aus der Ruhe: eigener Streufaktor (Rückstoß 2.0, Daten recoil.firstShotSpread)
+    const spread = this.fireSpread * (this.shotIndex === 0 && Number.isFinite(r.firstShotSpread) ? r.firstShotSpread : 1);
     const rot = Math.random() * Math.PI * 2;
     const scale = Number.isFinite(actor.damageScale) ? actor.damageScale : 1;
     const range = def.range || 100;
     const semi = mode !== 'auto' && mode !== 'burst';
     let from = null;
-    for (let i = 0; i < pellets; i++) {
+    if (def.projectile) {
+      // Rakete (Panzerabwehr): Projektil statt Strahl – Flug, Fahrzeug-/Akteurtreffer, Splitter (ballistics/rockets.js)
+      sampleCone(_aim, spread, _dir);
+      if (this.system && typeof this.system.fireProjectile === 'function') this.system.fireProjectile(actor, def, _muz, _dir, scale);
+    }
+    for (let i = 0; i < (def.projectile ? 0 : pellets); i++) {
       if (pellets > 1) samplePellet(_aim, spread, i, pellets, rot, _dir);
       else sampleCone(_aim, spread, _dir);
       const res = combat ? combat.fireHitscan({ shooter: actor, origin: _eye, dir: _dir, range, weapon: def, pelletIndex: i, damageScale: scale }) : null;
@@ -480,7 +648,6 @@ export class WeaponController {
     }
 
     // Rückstoß
-    const r = def.recoil || FALLBACK.recoil;
     const e = patternAt(r.pattern, this.shotIndex);
     const first = this.shotIndex === 0 ? (r.firstShotMult || 1) : 1;
     const a = smooth01(this.adsProgress);
@@ -490,7 +657,18 @@ export class WeaponController {
     if (actor.isPlayer && G.input && G.input.mode === 'touch') k *= 0.72; // Touch: wie COD Mobile deutlich ruhiger
     const pitch = r.vertical * e[1] * first * k * (0.94 + Math.random() * 0.12);
     const yaw = r.horizontal * (e[0] + (Math.random() * 0.7 - 0.35)) * k;
-    if (typeof actor.addRecoil === 'function') actor.addRecoil(pitch, yaw, r.recovery);
+    // Freies Zielen (core, nur an der Hüfte): ein Teil des Stoßes bewegt den Lauf innerhalb der Totzone statt der
+    // Sicht – die Waffe springt im Bild, die Kamera folgt erst am Rand (Überlauf übernimmt player._applyLook)
+    let camP = pitch, camY = yaw;
+    const fa = actor.isPlayer ? actor.aimOffset : null;
+    if (fa && actor.freeAimRadius > 1e-4) {
+      const kf = 0.45 * (1 - a);
+      fa.y += pitch * kf;
+      fa.x += yaw * kf;
+      camP *= 1 - kf;
+      camY *= 1 - kf;
+    }
+    if (typeof actor.addRecoil === 'function') actor.addRecoil(camP, camY, r.recovery);
 
     // Aufblühen
     const hip = def.hipSpread || 0.04;
@@ -500,8 +678,16 @@ export class WeaponController {
     this._bloomAds = Math.min(adsS * 1.2 + 0.0012, this._bloomAds + (adsS * 0.3 + 0.0002) * (auto ? 1 : 1.4));
     this.spread = Math.max(this.spread, this.fireSpread + this._bloomHip * (1 - a));
 
-    // Viewmodel
-    if (this.viewModel) this._vm('onShot', SHOT_STRENGTH[def.cls] || (def.id === 'pi_adler' ? 1.6 : 1), { empty: st.mag === 0, suppressed: !!def.suppressed });
+    // Sichtbarer Stoß (Rückstoß 2.0): Charakter je Waffe (recoil.visual) × Verhältnis zum Grundrückstoß der Waffe
+    // (Aufsätze, die den Rückstoß ändern, ändern auch den sichtbaren Stoß); seitlich in Richtung des Zielrückstoßes
+    if (actor.isPlayer) {
+      const base = DATA_WEAPONS[def.baseId || def.id];
+      const ratio = base && base.recoil && base.recoil.vertical > 0 ? clamp(r.vertical / base.recoil.vertical, 0.5, 1.6) : 1;
+      const visual = (Number.isFinite(r.visual) ? r.visual : 1) * ratio;
+      if (this.viewModel) this._vm('onShot', SHOT_STRENGTH[def.cls] || (def.id === 'pi_adler' ? 1.6 : 1), { empty: st.mag === 0, suppressed: !!def.suppressed, visual, yaw, pitch });
+      const sh = (SHOT_SHAKE[def.cls] || (def.sound && def.sound.profile === 'pistol_heavy' ? 0.1 : 0)) * visual * (1 - 0.3 * a);
+      if (sh > 0 && typeof actor.shake === 'function') actor.shake(sh);
+    }
 
     // Munition: Bots/Training nie leer
     if (infinite && st.reserve < (def.mag || 1)) st.reserve = def.reserve || (def.mag || 1) * 4;
@@ -529,7 +715,7 @@ export class WeaponController {
   /** Nachladen starten (falls sinnvoll). → bool */
   reload() {
     const st = this.current;
-    if (!st || this._reload || this._switch || this._melee || this._throw) return false;
+    if (!st || this._reload || this._switch || this._melee || this._throw || this._plate) return false;
     const def = st.def;
     if (def.cls === 'melee' || !def.mag || st.mag >= def.mag) return false;
     if (st.reserve <= 0 && !this.infiniteAmmo) return false;
@@ -705,7 +891,8 @@ export class WeaponController {
       animAt: lunge ? Math.max(0, arrive - (spec.swingTime || 0.75) * 0.2) : 0, anim: false,
       end: arrive + (spec.swingTime || 0.75), spec, def: kdef,
     };
-    if (this._melee.animAt <= 0) { this._melee.anim = true; this._vm('playMelee'); }
+    this._melee.backstab = !!(target && this._isBehind(target));
+    if (this._melee.animAt <= 0) { this._melee.anim = true; this._vm('playMelee', { backstab: this._melee.backstab, duration: spec.swingTime }); }
     G.events.emit('weapon:melee', { actor, phase: 'swing', lunge, target: target || null });
     return true;
   }
@@ -750,7 +937,7 @@ export class WeaponController {
     const G = this.G;
     const a = this.actor;
     m.t += dt;
-    if (!m.anim && m.t >= m.animAt) { m.anim = true; this._vm('playMelee'); }
+    if (!m.anim && m.t >= m.animAt) { m.anim = true; this._vm('playMelee', { backstab: m.backstab, duration: spec.swingTime }); }
     const spec = m.spec;
     const range = spec.range || 2.4;
     // Ausfallschritt: auf das Ziel zu, Blick rastet ein
@@ -778,7 +965,7 @@ export class WeaponController {
     }
     if (!m.hit && m.t >= m.hitAt) {
       m.hit = true;
-      if (!m.anim) { m.anim = true; this._vm('playMelee'); }
+      if (!m.anim) { m.anim = true; this._vm('playMelee', { backstab: m.backstab, duration: spec.swingTime }); }
       if (m.lunge && a.body) { a.body.velocity.x *= 0.25; a.body.velocity.z *= 0.25; }
       this._resolveMelee(m);
     }
@@ -797,11 +984,7 @@ export class WeaponController {
     a.getAimDirection(_aim);
     if (target) {
       // Rückenstich: Angreifer hinter dem Ziel (Blickrichtung des Ziels zeigt weg)
-      const ty = Number.isFinite(target.yaw) ? target.yaw : 0;
-      _fwd.set(-Math.sin(ty), 0, -Math.cos(ty));
-      _to.copy(a.position).sub(target.position);
-      _to.y = 0;
-      const backstab = _to.lengthSq() > 1e-4 && _fwd.dot(_to.normalize()) < -0.45;
+      const backstab = this._isBehind(target);
       // Schwierigkeit (Bots): gleicher Faktor wie bei Kugeln und Granaten → auf „Rekrut“ braucht das
       // Messer zwei Treffer, der Rückenstich tötet weiterhin sofort.
       const scale = Number.isFinite(a.damageScale) ? a.damageScale : 1;
@@ -809,40 +992,56 @@ export class WeaponController {
       const point = new THREE.Vector3().copy(target.position);
       point.y += (target.body ? target.body.height : 1.8) * 0.62;
       const dir = point.clone().sub(_eye).normalize();
-      const dealt = G.combat.damage(target, { amount: dmg, attacker: a, weaponId: 'knife', zone: 'body', dir, point, distance: point.distanceTo(_eye) });
-      G.events.emit('weapon:meleeHit', { actor: a, target, backstab, killed: !target.alive, damage: dealt });
+      const wid = (m.def && m.def.id) || 'knife';
+      const dealt = G.combat.damage(target, { amount: dmg, attacker: a, weaponId: wid, zone: 'body', dir, point, distance: point.distanceTo(_eye) });
+      G.events.emit('weapon:meleeHit', { actor: a, target, backstab, killed: !target.alive, damage: dealt, weaponId: wid });
       return;
     }
     // Daneben: Einschlag an Wand/Ziel (Funken/Staub, Schießstand-Klappziele)
     const w = G.world;
     if (w && typeof w.raycast === 'function') {
       const hit = w.raycast(_eye, _aim, Math.min(2.0, range));
-      if (hit) G.events.emit('impact', { point: hit.point, normal: hit.normal, surface: hit.surface || 'concrete', shooter: a, weaponId: 'knife', melee: true });
+      if (hit) G.events.emit('impact', { point: hit.point, normal: hit.normal, surface: hit.surface || 'concrete', shooter: a, weaponId: (m.def && m.def.id) || 'knife', melee: true });
     }
+  }
+
+  /** Steht der Akteur hinter dem Ziel (Blickrichtung des Ziels zeigt weg)? */
+  _isBehind(target) {
+    const ty = Number.isFinite(target.yaw) ? target.yaw : 0;
+    _fwd.set(-Math.sin(ty), 0, -Math.cos(ty));
+    _to.copy(this.actor.position).sub(target.position);
+    _to.y = 0;
+    return _to.lengthSq() > 1e-4 && _fwd.dot(_to.normalize()) < -0.45;
   }
 
   /* ================================================================ Granaten */
 
   _updateThrow(dt, it) {
-    const lethal = this.equipment.lethal;
     const G = this.G;
-    if (!this._throw && it.grenade && lethal.id && lethal.count > 0 && !this._melee && !(this._switch && !this._switch.swapped)) {
-      const eq = this._equipmentDefs()[lethal.id];
-      if (this._reload) this._finishReload(true);
-      this._burstLeft = 0;
-      this._fireBuffer = 0;
-      this._throw = { t: 0, type: lethal.id, eq, cookable: !!(eq && eq.cookable), pinned: false, released: false, thrown: false, cook: 0 };
-      this._vm('playGrenade', lethal.id, { hold: true });
+    if (!this._throw && !this._melee && !this._plate && !(this._switch && !this._switch.swapped)) {
+      // Tödlich (Taste Granate) hat Vorrang vor taktisch (Taste Taktisch)
+      const slot = it.grenade ? 'lethal' : it.tactical ? 'tactical' : null;
+      const eqs = slot ? this.equipment[slot] : null;
+      if (eqs && eqs.id && eqs.count > 0) {
+        const eq = this._equipmentDefs()[eqs.id];
+        if (this._reload) this._finishReload(true);
+        this._burstLeft = 0;
+        this._fireBuffer = 0;
+        this._throw = { t: 0, type: eqs.id, slot, eq, cookable: !!(eq && eq.cookable), pinned: false, released: false, thrown: false, cook: 0 };
+        this._vm('playGrenade', eqs.id, { hold: true });
+      }
     }
     const tr = this._throw;
     if (!tr) { this.cooking = false; this.cookTime = 0; this.fuseLeft = Infinity; return; }
+    const lethal = this.equipment[tr.slot || 'lethal'] || this.equipment.lethal;
     tr.t += dt;
     if (!tr.pinned && tr.t >= GRENADE.pin) {
       tr.pinned = true;
       G.events.emit('grenade:pin', { actor: this.actor, type: tr.type });
     }
     // Halten (Spieler: Taste gedrückt; Bots: grenadeCook Sekunden)
-    const held = this.actor.isPlayer ? !!it.grenadeHeld : (it.grenadeHeld || (it.grenadeCook || tr.botCook || 0) > tr.cook);
+    const heldKey = tr.slot === 'tactical' ? 'tacticalHeld' : 'grenadeHeld';
+    const held = this.actor.isPlayer ? !!it[heldKey] : (it[heldKey] || (it.grenadeCook || tr.botCook || 0) > tr.cook);
     if (it.grenadeCook && !tr.botCook) tr.botCook = it.grenadeCook;
     if (!tr.released) {
       if (held && tr.t >= GRENADE.hold) {
@@ -888,9 +1087,124 @@ export class WeaponController {
     const tr = this._throw;
     if (!tr || tr.thrown) return;
     tr.thrown = true;
-    const lethal = this.equipment.lethal;
+    const lethal = this.equipment[tr.slot || 'lethal'] || this.equipment.lethal;
     lethal.count = Math.max(0, lethal.count - 1);
     try { this.system.throwGrenade(this.actor, tr.type, { cook: tr.cook || 0, drop: true }); } catch { /* Welt evtl. schon weg */ }
+  }
+
+  /* ================================================================ Wandkollision + Atemnot */
+
+  /**
+   * Wandkollision (F3, nur Spieler): je Bild EIN Strahl gegen die Kugel-Geometrie, abwechselnd entlang der
+   * Laufrichtung ab dem Auge und ab der Waffenseite (rechts unten, nur an der Hüfte). Liegt die Wand näher als
+   * die Reichweite der Waffe (`handling.reach`, Auge → Mündung), wird sie angezogen: `obstructed` 0..1.
+   * Ab OBSTRUCT_ADS kein Anschlag, ab OBSTRUCT_FIRE kein Schuss (mit Hysterese).
+   */
+  _updateObstruct(dt, def) {
+    const G = this.G;
+    const actor = this.actor;
+    const w = G.world;
+    const reach = def.cls === 'melee' ? 0 : weaponHandling(def).reach || 0;
+    let raw = 0;
+    let wall = Infinity;
+    if (reach > 0 && w && typeof w.raycast === 'function' && actor.alive !== false) {
+      // walls: drei Strahlen im Wechsel – Auge entlang der Laufrichtung, Waffenseite, Auge → Vorderkante an der Hüfte
+      // (Sichtraum ≈ (0,15; −0,14; −1)); alle als Tiefe entlang der Blickachse
+      actor.getEyePosition(_eye);
+      actor.getAimDirection(_aim);
+      // schnelle Drehung (> 4° seit der letzten Messung): alle drei Strahlen sofort neu, alte Werte gelten nicht mehr
+      const all = _wlast.dot(_aim) < 0.9976;
+      _wlast.copy(_aim);
+      const a = smooth01(this.adsProgress);
+      _side.crossVectors(_aim, UP);
+      if (_side.lengthSq() < 1e-6) _side.set(1, 0, 0); else _side.normalize();
+      _wup.crossVectors(_side, _aim).normalize();
+      for (let n = all ? 3 : 1; n > 0; n--) {
+        const k = (this._obsK = (this._obsK + 1) % 3);
+        _org.copy(_eye);
+        let dir = _aim, scale = 1;
+        if (k === 1) {
+          // Waffenseite: etwas rechts und unterhalb des Auges (im Anschlag liegt die Waffe auf der Visierlinie)
+          _org.addScaledVector(_side, 0.1 * (1 - a)).addScaledVector(UP, -0.08 * (1 - a));
+        } else if (k === 2) {
+          _wdir.copy(_aim).addScaledVector(_side, 0.15 * (1 - a)).addScaledVector(_wup, -0.14 * (1 - a));
+          scale = 1 / _wdir.length();
+          _wdir.multiplyScalar(scale);
+          dir = _wdir;
+        }
+        let d = Infinity;
+        const oh = this._obsHit[k];
+        oh.ok = false;
+        try {
+          const hit = w.raycast(_org, dir, (reach + 0.15) / scale);
+          if (hit && Number.isFinite(hit.distance) && hit.targetId === undefined) {
+            d = hit.distance * scale;
+            if (hit.normal) {
+              oh.ok = true;
+              oh.px = _org.x + dir.x * hit.distance; oh.py = _org.y + dir.y * hit.distance; oh.pz = _org.z + dir.z * hit.distance;
+              oh.nx = hit.normal.x; oh.ny = hit.normal.y; oh.nz = hit.normal.z;
+            }
+          }
+        } catch { /* Welt im Abbau */ }
+        this._obsSample[k] = d;
+      }
+      let dmin = Math.min(this._obsSample[0], this._obsSample[1], this._obsSample[2]);
+      // walls-3: Fläche des nächsten Treffers (Punkt/Normale) für das Viewmodel; Vorhalt als Verschiebung entlang der Blickachse
+      const km = this._obsSample.indexOf(dmin);
+      this.wallHit = Number.isFinite(dmin) && km >= 0 && this._obsHit[km].ok ? this._obsHit[km] : null;
+      // Vorhalt: Annäherung an die Wand (Messungen bis zu drei Bilder alt, Glättung im Viewmodel)
+      const bv = actor.body && actor.body.velocity;
+      if (bv && Number.isFinite(dmin)) dmin -= Math.max(0, bv.x * _aim.x + bv.y * _aim.y + bv.z * _aim.z) * (3 * dt + 0.04);
+      wall = dmin;
+      raw = Number.isFinite(dmin) ? clamp((reach - dmin) / Math.max(0.15, reach - OBSTRUCT_NEAR), 0, 1) : 0;
+      // Anschlag früher beenden: Annäherung während der Zielzeit vorhalten (sonst ragt die Visierlinie in die Wand)
+      if (bv && Number.isFinite(dmin)) {
+        const dAds = dmin - Math.max(0, bv.x * _aim.x + bv.z * _aim.z) * (def.adsTime || 0.25);
+        this._obsAdsRaw = clamp((reach - dAds) / Math.max(0.15, reach - OBSTRUCT_NEAR), 0, 1);
+      } else this._obsAdsRaw = raw;
+    } else {
+      this._obsSample.fill(Infinity);
+      this._obsAdsRaw = 0;
+      this.wallHit = null;
+    }
+    this.wallDist = wall;
+    if (this.wallHit) this.wallHit.lead = Number.isFinite(wall) ? Math.max(0, Math.min(this._obsSample[0], this._obsSample[1], this._obsSample[2]) - wall) : 0;
+    this.obstructed += (raw - this.obstructed) * damp(raw > this.obstructed ? 40 : 8, dt);
+    if (this.obstructed < 1e-3) this.obstructed = 0;
+    // walls 2: Rückmeldung des Viewmodels (Stützpunkt-Strahlen gegen niedrige/schräge Hindernisse, s. viewmodel wallFit):
+    // stark gekippte Waffe → kein Schuss; im Anschlag nicht frei zu bekommen → Anschlag endet und bleibt gesperrt, bis
+    // sich Spieler (> 0,25 m) oder Blick (> 8°) bewegt haben (sonst Flackern Anschlag ↔ Hüfte an derselben Kante)
+    const vs = this._vmState;
+    const need = vs && reach > 0 && Number.isFinite(vs.wallNeed) ? vs.wallNeed : 0;
+    const L = this._obsLatch;
+    if (vs && vs.wallAds && reach > 0) {
+      actor.getEyePosition(_eye); actor.getAimDirection(_aim);
+      if (!L) this._obsLatch = { x: _eye.x, y: _eye.y, z: _eye.z, ax: _aim.x, ay: _aim.y, az: _aim.z };
+      else { L.x = _eye.x; L.y = _eye.y; L.z = _eye.z; L.ax = _aim.x; L.ay = _aim.y; L.az = _aim.z; }
+    } else if (L) {
+      actor.getEyePosition(_eye); actor.getAimDirection(_aim);
+      if (reach <= 0 || Math.hypot(_eye.x - L.x, _eye.y - L.y, _eye.z - L.z) > 0.25 || _aim.x * L.ax + _aim.y * L.ay + _aim.z * L.az < 0.990) this._obsLatch = null;
+    }
+    const o = this.obstructed, of = Math.max(o, need);
+    const oa = this._obsLatch ? 1 : Math.max(o, this._obsAdsRaw || 0);
+    this._obsAds = this._obsAds ? oa > OBSTRUCT_ADS[1] : oa > OBSTRUCT_ADS[0];
+    this._obsFire = this._obsFire ? of > OBSTRUCT_FIRE[1] : of > OBSTRUCT_FIRE[0];
+  }
+
+  /**
+   * Atemnot nach dem Sprint (nur Spieler): steigt nach ~1,5 s Sprint binnen ~5 s auf 1, fällt danach in
+   * ~4,5 s (geduckt schneller). Nutzt `exertion` des Spielers (core), sobald vorhanden.
+   */
+  _updateWinded(dt, it) {
+    const ex = Number.isFinite(it.exertion) ? it.exertion : this.actor.exertion;
+    if (Number.isFinite(ex)) { this.winded = clamp(ex, 0, 1); return; }
+    if (it.sprinting) this._sprintT += dt; else this._sprintT = Math.max(0, this._sprintT - dt * 2);
+    if (it.sprinting) {
+      const target = clamp((this._sprintT - 1.5) / 5, 0, 1);
+      if (target > this.winded) this.winded = Math.min(target, this.winded + dt / 5);
+    } else {
+      this.winded = Math.max(0, this.winded - dt / (it.crouching ? 3 : 4.5));
+    }
   }
 
   /* ================================================================ Zielfernrohr */
@@ -931,8 +1245,25 @@ export class WeaponController {
     const t = this._swayT;
     const w = (Math.PI * 2) / 3.3;
     const A = this._swayAmp;
-    const x = (Math.sin(w * t) + 0.18 * Math.sin(2.7 * t + 0.4)) * A;
-    const y = (0.55 * Math.sin(2 * w * t + 0.6) + 0.12 * Math.sin(1.9 * t + 1.1)) * A;
+    let x = (Math.sin(w * t) + 0.18 * Math.sin(2.7 * t + 0.4)) * A;
+    let y = (0.55 * Math.sin(2 * w * t + 0.6) + 0.12 * Math.sin(1.9 * t + 1.1)) * A;
+    // Zielwandern im Anschlag (F2, handling.aimDrift): ruhiges Rauschen statt Achterfigur, nach dem Sprint
+    // (Atemnot) und außer Atem deutlich stärker, geduckt ruhiger; Atem anhalten beruhigt es ebenfalls.
+    // Touch: nur ein Drittel (verträgt sich sonst schlecht mit der Zielhilfe).
+    const drift0 = weaponHandling(def).aimDrift || 0;
+    let dAmp = 0;
+    if (drift0 > 0 && !amp0 && a > 0.3 && !it.frozen && actor.alive !== false) {
+      const sp = clamp((it.speed || 0) / MOVE_REF, 0, 1);
+      dAmp = drift0 * smooth01((a - 0.3) / 0.7) * (1 + 2 * this.winded + (this._exhausted > 0 ? 1.5 : 0)) *
+        (it.crouching ? 0.6 : 1) * (1 + 0.6 * sp) * (input && input.mode === 'touch' ? 0.35 : 1);
+    }
+    this._driftAmp = (this._driftAmp || 0) + (dAmp - (this._driftAmp || 0)) * damp(3, dt);
+    if (this._driftAmp > 1e-7) {
+      this._driftT += dt * (1 + 0.8 * this.winded);
+      const u = this._driftT;
+      x += (Math.sin(u * 0.53 + 0.3) * 0.55 + Math.sin(u * 1.27 + 2.1) * 0.3 + Math.sin(u * 2.9 + 0.7) * 0.15) * this._driftAmp;
+      y += (Math.sin(u * 0.41 + 1.7) * 0.55 + Math.sin(u * 1.13 + 0.2) * 0.3 + Math.sin(u * 2.3 + 2.6) * 0.15) * this._driftAmp;
+    }
     if (Number.isFinite(actor.yaw)) actor.yaw -= x - this._swayX;
     if (Number.isFinite(actor.pitch)) actor.pitch += y - this._swayY;
     this._swayX = x;
@@ -946,6 +1277,8 @@ export class WeaponController {
     if (this._throw && this._throw.pinned && !this._throw.thrown) this._dropCookedGrenade();
     this._throw = null;
     this._melee = null;
+    this._plate = null;
+    this.isPlating = false;
     if (this._reload) this._finishReload(true);
     this._switch = null;
     this.cooking = false;

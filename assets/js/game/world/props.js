@@ -17,8 +17,30 @@ export function frame(b, x, y, z, ry = 0) {
 }
 
 const shade = (hex, k) => { const c = new THREE.Color(hex); c.multiplyScalar(k); return '#' + c.getHexString(); };
+
+/** Positionsabhängiger Zufall 0..1 (Varianten/Drehungen der Bibliotheksmodelle, ohne den Kartenzufall zu verbrauchen). */
+export function hash01(x, z, k = 0) {
+  let n = Math.imul(Math.round(x * 97) | 0, 374761393) + Math.imul(Math.round(z * 89) | 0, 668265263) + Math.imul(k + 1, 2246822519);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+}
+
 const geoCache = new Map();
 function cached(key, fn) { if (!geoCache.has(key)) geoCache.set(key, fn()); return geoCache.get(key); }
+
+/**
+ * Ausstattung aus der Asset-Bibliothek (Kleinteile, Möbel, Technik): Liste [id, x, y, z, ry?, opts?]
+ * (Positionen = Unterkante-Mitte). Standard ohne Bewegungskollision (Kugeln treffen trotzdem); opts.collide für
+ * Möbel/Geräte, die wie Deckung wirken. Ohne Bibliothek (KTX2/Transcoder fehlt) entfällt die Ausstattung – die
+ * Karte ist ohne sie vollständig.
+ */
+export function dress(b, list) {
+  if (!b.lib) return;
+  for (const [id, x, y, z, ry, o] of list) {
+    if (!b.lib.has(id)) continue;
+    b.model(id, x, y, z, { ry: ry ?? hash01(x, z, 9) * Math.PI * 2, collide: false, ...(o || {}) });
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Container
@@ -87,6 +109,20 @@ export function crateStack(b, x, z, o = {}) {
 
 export function barrel(b, x, y, z, o = {}) {
   const color = o.color || b.pick(['#2d5f94', '#b8392c', '#3e7a4c', '#c9a227', '#3a3d40']);
+  if (b.hasModel('barrel_01')) {
+    // Fotoscan-Fässer: Rot (Stahl, Gefahrzeichen), Blau (Stahl), Blau (Kunststoff) – nach gewünschter Farbe/Ort
+    const c = new THREE.Color(color), h = hash01(x, z, 3);
+    const id = c.r > c.b * 1.4 ? 'barrel_01' : c.b > c.r * 1.3 ? (h < 0.6 ? 'barrel_03' : 'barrel_02') : (h < 0.5 ? 'barrel_01' : 'barrel_03');
+    const fb = (bb) => barrelProc(bb, x, y, z, { ...o, color });
+    if (o.tipped) b.model(id, x, y + 0.3, z, { pivot: 'center', rz: Math.PI / 2, ry: o.ry || 0, minimap: 'cover', fallback: fb });
+    else b.model(id, x, y, z, { ry: hash01(x, z, 4) * Math.PI * 2, minimap: 'cover', fallback: fb });
+    return;
+  }
+  barrelProc(b, x, y, z, { ...o, color });
+}
+
+function barrelProc(b, x, y, z, o) {
+  const color = o.color;
   if (o.tipped) {
     b.cyl(x, y + 0.3, z, 0.3, 0.88, 'metal_painted', { axis: 'x', ry: o.ry || 0, tint: color, minimap: 'cover' });
     return;
@@ -149,7 +185,8 @@ export function palletStack(b, x, z, o = {}) {
 // ---------------------------------------------------------------------------
 // Sandsäcke
 // ---------------------------------------------------------------------------
-export function sandbagGeom() {
+export function sandbagGeom(detail = false) {
+  if (detail) return cached('sandbag-hd', sandbagGeomHD);
   return cached('sandbag', () => {
     const g = new THREE.BoxGeometry(0.56, 0.16, 0.32, 3, 2, 2);
     const p = g.attributes.position;
@@ -170,9 +207,37 @@ export function sandbagGeom() {
   });
 }
 
+/** env-look (medium+): Sandsack als gefülltes Kissen – flach gedrückte Lauffläche, gewölbte Flanken, abgebundene,
+ * eingeschnürte Enden („Ohren“), unten breiter gesackt (Last der oberen Lage), leichte Längsnaht. 144 Dreiecke. */
+function sandbagGeomHD() {
+  const L = 0.56, H = 0.16, D = 0.32;
+  const g = new THREE.BoxGeometry(L, H, D, 6, 2, 3); // 144 Dreiecke (Speicher: Grenzland hat ≈ 1000 Säcke)
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const a = p.getX(i) / (L / 2), bb = p.getY(i) / (H / 2), c = p.getZ(i) / (D / 2);
+    const ea = Math.abs(a);
+    // Enden: abgebunden (Querschnitt schnürt sich zusammen), Ecken gerundet
+    const tie = ea > 0.6 ? 1 - Math.pow((ea - 0.6) / 0.4, 1.6) * 0.62 : 1;
+    const round = Math.pow(Math.max(0, 1 - Math.pow(ea, 6)), 0.32);
+    let y = bb * (H / 2) * round * tie * (1 - 0.22 * c * c * c * c);
+    if (bb < 0) y *= 0.82;                         // Unterseite flach aufliegend
+    y += (bb > 0.5 && Math.abs(c) < 0.3 ? -0.004 : 0) * (1 - ea); // Längsnaht
+    let z = c * (D / 2) * (1 - 0.14 * a * a * a * a) * (1 - 0.1 * bb * bb) * tie * (1 + 0.07 * Math.max(0, -bb));
+    const x = a * (L / 2) * (1 - 0.05 * bb * bb) * (ea > 0.95 ? 0.98 : 1);
+    p.setXYZ(i, x, y, z);
+  }
+  g.computeVertexNormals();
+  const ng = g.toNonIndexed();
+  ng.translate(0, 0.075, 0);
+  const uv = ng.attributes.uv, pp = ng.attributes.position;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, pp.getX(i) + pp.getZ(i) * 0.7, pp.getY(i) + pp.getZ(i) * 0.3);
+  return ng;
+}
+
 /** Sandsackwall entlang einer Linie. rows: Lagen (3 ≈ 0,45 m, 6 ≈ 0,9 m). */
 export function sandbags(b, x0, z0, x1, z1, o = {}) {
-  const rows = o.rows ?? 4, y = o.y ?? 0, g = sandbagGeom();
+  const hd = o.detail ?? (b.lookQuality ? b.lookQuality !== 'low' : false);
+  const rows = o.rows ?? 4, y = o.y ?? 0, g = sandbagGeom(hd);
   const L = Math.hypot(x1 - x0, z1 - z0), ry = Math.atan2(-(z1 - z0), x1 - x0);
   const ux = (x1 - x0) / L, uz = (z1 - z0) / L;
   const depth = o.double ? 2 : 1;
@@ -185,7 +250,10 @@ export function sandbags(b, x0, z0, x1, z1, o = {}) {
       for (let k = 0; k < depth; k++) {
         const lz = (k - (depth - 1) / 2) * 0.33 - uz * 0;
         const nx = -uz * lz, nz = ux * lz;
-        b.geom(g, x0 + ux * s + nx + (b.rand() - 0.5) * 0.03, y + r * 0.145, z0 + uz * s + nz + (b.rand() - 0.5) * 0.03, 'sandbag', { ry: ry + (b.rand() - 0.5) * 0.12, tint: b.pick(tints), collide: false, minimap: false, uv: 'keep', grad: false, aoFloor: y });
+        const jx = (b.rand() - 0.5) * 0.03, jz = (b.rand() - 0.5) * 0.03, jr = (b.rand() - 0.5) * 0.12, tint = b.pick(tints);
+        // env-look: leichte Neigung je Sack (liegen nie exakt eben), nur mit der Detailform
+        const tilt = hd ? { rx: (b.rand() - 0.5) * 0.06, rz: (b.rand() - 0.5) * 0.08, sy: 0.92 + b.rand() * 0.16 } : {};
+        b.geom(g, x0 + ux * s + nx + jx, y + r * 0.145, z0 + uz * s + nz + jz, 'sandbag', { ry: ry + jr, ...tilt, tint, collide: false, minimap: false, uv: 'keep', grad: false, aoFloor: y });
       }
     }
   }
@@ -210,6 +278,17 @@ function jerseyGeom(len) {
 
 export function jersey(b, x, z, o = {}) {
   const len = o.len ?? 3, ry = o.ry || 0;
+  if (b.hasModel('concrete_road_barrier')) {
+    // Fotoscan-Leitwand (1,54 m je Element), Elemente aneinandergereiht; Kollision unten wie bisher
+    const n = Math.max(1, Math.round(len / 1.54)), seg = len / n, c = Math.cos(ry), sn = Math.sin(ry);
+    for (let i = 0; i < n; i++) {
+      const lx = -len / 2 + seg * (i + 0.5);
+      b.model('concrete_road_barrier', x + lx * c, o.y ?? 0, z - lx * sn, { ry: ry + (hash01(x, z, i) - 0.5) * 0.04 + (hash01(z, x, i) < 0.5 ? Math.PI : 0), sx: seg / 1.54, collide: false,
+        fallback: (bb) => bb.geom(jerseyGeom(seg), x + lx * c, o.y ?? 0, z - lx * sn, 'concrete', { ry, tint: o.tint || '#d6d2c8', uv: 'local', collide: false, aoFloor: o.y ?? 0 }) });
+    }
+    b.box(x, o.y ?? 0, z, len, 0.81, 0.6, 'black', { ry, visual: false, minimap: 'cover' });
+    return;
+  }
   b.geom(jerseyGeom(len), x, o.y ?? 0, z, 'concrete', { ry, tint: o.tint || '#d6d2c8', uv: 'local', collide: false, aoFloor: o.y ?? 0 });
   b.box(x, o.y ?? 0, z, len, 0.81, 0.6, 'black', { ry, visual: false, minimap: 'cover' });
   if (o.stripes) {
@@ -247,6 +326,13 @@ function wheel(f, lx, ly, lz, r, w) {
 /** PKW (lokal z = Länge). style: 'sedan'|'hatch'|'wreck' */
 export function car(b, x, z, o = {}) {
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0), col = o.color || b.pick(['#8c2b24', '#2f4f6e', '#c7c7c2', '#3b3d40', '#6b7a52', '#b98b3a']);
+  if (b.hasModel('covered_car') && o.model !== false) {
+    // abgedecktes Auto (Fotoscan, Plane über der Karosserie) – Maße wie das prozedurale (1,8 × 1,42 × 4,3 m)
+    b.model('covered_car', x, o.y ?? 0, z, { ry: o.ry || 0, collide: false, fallback: (bb) => car(bb, x, z, { ...o, color: col, model: false }) });
+    f.solid(0, 0, 0, 1.8, 1.42, 4.3, { minimap: 'vehicle' });
+    b.decal(x, (o.y ?? 0) + 0.01, z, 2.6, 4.6, 'oil', { ry: o.ry || 0, opacity: 0.5 });
+    return;
+  }
   const L = 4.3, W = 1.8, hatch = o.style === 'hatch';
   const wreck = o.style === 'wreck';
   const pm = 'metal_painted';
@@ -349,6 +435,12 @@ export function forklift(b, x, z, o = {}) {
 // ---------------------------------------------------------------------------
 /** Klimagerät an Wand (Normale ry zeigt nach außen) oder auf Dach. */
 export function acUnit(b, x, y, z, o = {}) {
+  if (b.hasModel('exterior_aircon_unit') && o.model !== false) {
+    // Fotoscan-Klimagerät (zwei Varianten: neu/verrostet); Halterung und Kondensatleitung sind im Modell
+    const part = hash01(x, z, 7) < 0.55 ? 'exterior_aircon_unit_rusted' : 'exterior_aircon_unit';
+    b.model('exterior_aircon_unit', x, y - (o.bracket === false ? 0 : 0.1), z, { part, ry: o.ry || 0, s: o.s ?? 0.95, collide: o.collide ?? false, minimap: false, fallback: (bb) => acUnit(bb, x, y, z, { ...o, model: false }) });
+    return;
+  }
   const f = frame(b, x, y, z, o.ry || 0);
   f.box(0, 0, 0, 0.95, 0.65, 0.38, 'metal_painted', { tint: o.tint || '#d8d9d4', collide: o.collide ?? false, minimap: false, grad: false });
   f.cyl(0.18, 0.33, 0.2, 0.22, 0.02, 'black', { axis: 'z', collide: false, minimap: false, seg: 14 });
@@ -452,7 +544,10 @@ export function fence(b, x0, z0, x1, z1, o = {}) {
   b.cyl((x0 + x1) / 2, y + h, (z0 + z1) / 2, 0.03, L, 'metal_galvanized', { axis: 'x', ry, seg: 6, collide: false, minimap: false, ao: false });
   const style = o.style || 'chain';
   if (style === 'chain' || style === 'mesh') {
-    b.box((x0 + x1) / 2, y + 0.05, (z0 + z1) / 2, L, h - 0.08, 0.02, 'metal_grate', { ry, collide: false, minimap: false, bullet: false, grad: false, uvScale: style === 'chain' ? 0.35 : 0.8, ao: false, matOpts: null });
+    // Maschendraht: Fotoscan-Satz „chainlink“ (dünn → geblendet, bleibt auch in kleinen Mip-Stufen durchsichtig);
+    // Gitterzaun („mesh“): dichtes Gitter mit Alphatest
+    const chain = style === 'chain';
+    b.box((x0 + x1) / 2, y + 0.05, (z0 + z1) / 2, L, h - 0.08, 0.02, chain ? 'chainlink' : 'metal_grate', { ry, collide: false, minimap: false, bullet: false, grad: false, uvScale: chain ? 1 : 0.8, ao: false, matOpts: null, cast: !chain });
     if (o.barbed) b.cyl((x0 + x1) / 2, y + h + 0.25, (z0 + z1) / 2, 0.012, L, 'metal_galvanized', { axis: 'x', ry, seg: 4, collide: false, minimap: false, ao: false });
   } else {
     const m = Math.round(L / 0.12);
@@ -476,6 +571,16 @@ export function dumpster(b, x, z, o = {}) {
 /** Reifenstapel */
 export function tires(b, x, z, o = {}) {
   const n = o.n ?? 4, y = o.y ?? 0;
+  if (b.hasModel('old_tyre')) {
+    // gestapelte Altreifen (liegend), Kollision als ein Zylinder wie bisher
+    for (let i = 0; i < n; i++) {
+      const ox = (b.rand() - 0.5) * 0.08, oz = (b.rand() - 0.5) * 0.08;
+      b.model('old_tyre', x + ox, y + i * 0.2 + 0.1, z + oz, { pivot: 'center', rx: Math.PI / 2, ry: hash01(x, z, i) * 6.28, s: 1.18, collide: false,
+        fallback: (bb) => { bb.cyl(x + ox, y + i * 0.24, z + oz, 0.36, 0.24, 'rubber', { seg: 14, collide: false, minimap: false, grad: i === 0 }); } });
+    }
+    b.cyl(x, y, z, 0.37, n * 0.2, 'black', { visual: false, minimap: 'cover' });
+    return;
+  }
   for (let i = 0; i < n; i++) {
     const ox = (b.rand() - 0.5) * 0.08, oz = (b.rand() - 0.5) * 0.08;
     b.cyl(x + ox, y + i * 0.24, z + oz, 0.36, 0.24, 'rubber', { seg: 14, collide: false, minimap: false, grad: i === 0 });
@@ -535,11 +640,16 @@ export function cafeTable(b, x, z, o = {}) {
   const n = o.chairs ?? 2;
   for (let i = 0; i < n; i++) {
     const a = (o.ry || 0) + (i / n) * Math.PI * 2 + 0.3;
-    chair(b, x + Math.cos(a) * 0.7, z + Math.sin(a) * 0.7, { ry: -a - Math.PI / 2, y, tint: o.chairTint });
+    chair(b, x + Math.cos(a) * 0.7, z + Math.sin(a) * 0.7, { ry: -a - Math.PI / 2, y, tint: o.chairTint, model: o.chairModel });
   }
 }
 
 export function chair(b, x, z, o = {}) {
+  if (o.model === true && b.hasModel('plastic_monobloc_chair_01')) {
+    // Monobloc-Gartenstuhl (Fotoscan) – auf Wunsch (Terrassen, Dächer); sonst bleibt der prozedurale Stuhl
+    b.model('plastic_monobloc_chair_01', x, o.y ?? 0, z, { ry: (o.ry || 0) + Math.PI, s: 0.95, collide: false, fallback: (bb) => chair(bb, x, z, { ...o, model: false }) });
+    return;
+  }
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0), t = o.tint || '#2f6f9a';
   for (const sx of [-0.18, 0.18]) for (const sz of [-0.18, 0.18]) f.box(sx, 0, sz, 0.035, 0.45, 0.035, 'metal_painted', { tint: '#2b2d30', collide: false, minimap: false });
   f.box(0, 0.45, 0, 0.42, 0.04, 0.42, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
@@ -648,6 +758,15 @@ export function tree(b, x, z, o = {}) {
 /** Blumentopf (Terrakotta) mit Busch. */
 export function pot(b, x, y, z, o = {}) {
   const r = o.r ?? 0.28, h = o.h ?? 0.45;
+  if (b.hasModel('planter_pot_clay') && o.model !== false) {
+    // Fotoscan-Terrakottatopf (0,27 × 0,22 m) auf Topfmaß skaliert; Erde + Pflanze wie bisher
+    const k = (2 * r) / 0.27;
+    b.model('planter_pot_clay', x, y, z, { sx: k, sz: k, sy: h / 0.22, ry: hash01(x, z, 5) * 6.28, collide: o.collide ?? true, minimap: 'prop',
+      fallback: (bb) => bb.cyl(x, y, z, r * 0.8, h, 'tiles_terracotta', { r1: r, seg: 12, tint: '#c47a52', minimap: 'prop', collide: o.collide ?? true, uv: 'keep' }) });
+    b.cyl(x, y + h - 0.07, z, r * 0.86, 0.04, 'dirt', { seg: 12, collide: false, minimap: false, ao: false });
+    b.plant(o.plant || 'bush', x, y + h - 0.15, z, { s: o.s ?? (r * 1.4) });
+    return;
+  }
   b.cyl(x, y, z, r * 0.8, h, 'tiles_terracotta', { r1: r, seg: 12, tint: '#c47a52', minimap: 'prop', collide: o.collide ?? true, uv: 'keep' });
   b.cyl(x, y + h - 0.05, z, r * 0.92, 0.04, 'dirt', { seg: 12, collide: false, minimap: false, ao: false });
   b.plant(o.plant || 'bush', x, y + h - 0.15, z, { s: o.s ?? (r * 1.4) });

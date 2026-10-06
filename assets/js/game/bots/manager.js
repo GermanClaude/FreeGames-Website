@@ -11,18 +11,36 @@ import { difficultyProfile } from './difficulty.js';
 import { pickNames } from './names.js';
 import { Nameplate } from './nameplates.js';
 import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js';
 import { analyze } from './ai/tactics.js';
+import { TeamTactics, planRoles } from './ai/squad.js';
+import { CLASSES, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
 const _sphere = new THREE.Sphere();
 const _cam = new THREE.Vector3();
+const _tc = new THREE.Vector3(); // canTeleport
+const _tw = new THREE.Vector3();
+const _tv = new THREE.Vector3();
+const NO_SMOOTH = { smooth: false };
 
 const LOS_BASE = 48, LOS_BASE_LOW = 26; // Sichtstrahlen pro Bild (Grundbudget)
 const LOS_PER_SENSE = 10; // geschätzte Strahlen je Wahrnehmungsschritt eines Bots (≈ 6 Gegner im Blick, teils Kopfstrahl)
 
 const SNIPER_LOADOUT = { id: 'praezision', primary: 'sr_brecher', secondary: 'pi_p9', lethal: 'frag' };
+const PATH_MS = 1.6, PATH_MS_LOW = 1.0; // ms je Bild für Pfadsuchen (mindestens eine)
+// Simulations-Detailstufen (bots-scale): Takt (jedes n-te Bild), Wahrnehmungsrate ×, Entscheidungsintervall ×
+const SIM_LOD = [
+  { every: 1, sense: 1, think: 1 }, // nah / sichtbar / im Gefecht mit dem Spieler
+  { every: 2, sense: 0.6, think: 1.6 }, // mittel
+  { every: 3, sense: 0.35, think: 2.5 }, // fern, nicht im Bild
+  { every: 4, sense: 0.15, think: 4 }, // sehr fern, nicht im Bild (≈ 1 Hz Entscheidungen)
+];
+// Aussehen je Klasse (Varianten aus soldier/gear.js); Truppführer tragen das Funkgerät
+const CLASS_LOOKS = { sturm: ['sturm', 'grenadier', 'schatten'], sanitaeter: ['sanitaeter'], pionier: ['pionier', 'bastion'], aufklaerer: ['spaeher', 'kundschafter'] };
+const pick = (a) => a[(Math.random() * a.length) | 0];
 
 /** Reihenfolge der Namensschilder: höheres Ziel zuerst, dann näher. */
 function plateOrder(a, b) { return (b._target - a._target) || (a._d - b._d); }
@@ -39,7 +57,8 @@ export class BotManager {
     this.handlesStreaks = true;
     this.scene = G.scene;
     this.models = null;
-    this.quality = 'high';
+    this.quality = 'high'; // Material-/Budgetstufe der Soldaten: 'low' | 'high'
+    this.tier = 'high'; // Qualitätsstufe des Renderers (Detailstufen-Schwellen): low | medium | high | ultra
     this._subs = null;
     this._plates = new Map();
     this._paths = new Map();
@@ -54,6 +73,10 @@ export class BotManager {
     this._frustum = new THREE.Frustum();
     this._shadowT = 0;
     this._plateLos = new Map();
+    this.tactics = new TeamTactics(this);
+    this.lodEnabled = true;
+    this._stepEv = { actor: null, sprint: false, crouch: false }; // Simulations-Detailstufen (Prüfstand/Messung: false = alle Bots jedes Bild)
+    this.lodCount = [0, 0, 0, 0];
     this.activity = []; // jüngste Gefechtslärm-Positionen { pos, time, actor } (hörbar über die ganze Karte)
     this.debug = { los: 0, paths: 0, ms: 0, losUsed: 0, pathsUsed: 0 };
   }
@@ -63,7 +86,11 @@ export class BotManager {
     if (this._subs) this._subs.dispose();
     this.scene = G.scene;
     this.models = (G.modules && G.modules.models && G.modules.models.createWeaponModel) ? G.modules.models : null;
-    this.quality = G.renderer && G.renderer.quality === 'low' ? 'low' : 'high';
+    const R = G.renderer;
+    this.tier = R && typeof R.quality === 'string' && R.quality !== 'auto' ? R.quality : 'high';
+    this.quality = this.tier === 'low' ? 'low' : 'high';
+    // Fotoscan-Stoff der Soldaten im Hintergrund nachladen (einmalig; ohne Transcoder bleibt der prozedurale Stoff)
+    if (R && R.renderer) upgradeSoldierMaterials(R.renderer, this.tier);
     this._intel.clear();
     this._paths.clear();
     this._pathQ.length = 0;
@@ -77,6 +104,7 @@ export class BotManager {
     s.on('impact', (e) => this._onImpact(e));
     s.on('actor:hit', (e) => this._onHit(e));
     s.on('kill', (e) => this._onKill(e));
+    s.on('actor:flashed', (e) => this._onFlashed(e));
   }
 
   detach() {
@@ -125,7 +153,7 @@ export class BotManager {
     const make = (team, i, lo, variant, scheme, lane) => {
       const bot = new Bot(this, {
         team, name: names.shift() || `Bot ${this.bots.length + 1}`, diff,
-        loadout: { primary: lo.primary, secondary: lo.secondary, lethal: lo.lethal }, variant, scheme, modeId, lane,
+        loadout: { primary: lo.primary, secondary: lo.secondary, lethal: lo.lethal, tactical: lo.tactical, cls: lo.cls }, variant, scheme, modeId, lane,
       });
       this.bots.push(bot);
       if (!G.actors.includes(bot)) G.actors.push(bot);
@@ -139,15 +167,27 @@ export class BotManager {
       const vars = shuffle(VARIANTS.map((_, i) => i));
       const schemes = ffaSchemes(G.world); // je Karte gut sichtbare Tarnschemata
       const off = (Math.random() * schemes.length) | 0;
-      for (let i = 0; i < n; i++) make(null, i, los[i], vars[i % vars.length], schemes[(i + off) % schemes.length], (Math.random() * 3) | 0);
+      for (let i = 0; i < n; i++) {
+        const cls = pickBotClass();
+        const bot = make(null, i, los[i], vars[i % vars.length], schemes[(i + off) % schemes.length], (Math.random() * 3) | 0);
+        bot.cls = cls; bot.classDef = CLASSES[cls]; bot.loadout.cls = cls;
+      }
     } else {
+      // bots-scale: Trupps zu 8 (2 Feuerteams à 4) mit Rollen → Klasse (pickBotClass je Rolle) → Ausrüstung + Aussehen
       for (const [team, n] of [['A', allies], ['B', enemies]]) {
         if (n <= 0) continue;
-        const los = loadoutPool(n);
-        const vars = shuffle(VARIANTS.map((_, i) => i));
+        const roles = planRoles(n);
         const lanes = shuffle([0, 1, 2]);
         const scheme = schemeForTeam(team, G.world); // Gegner auf hellen Karten dunkler (Kontrast)
-        for (let i = 0; i < n; i++) make(team, i, los[i], vars[i % vars.length], scheme, lanes[i % 3]);
+        for (let i = 0; i < n; i++) {
+          const plan = roles[i];
+          const cls = pickBotClass(Math.random, plan.role);
+          const lo = this._classLoadout(cls, plan.role);
+          const bot = make(team, i, lo, this._lookFor(cls, plan.role, lo, plan.ft), scheme, lanes[plan.squad % 3]);
+          bot.cls = cls;
+          bot.classDef = CLASSES[cls];
+          this.tactics.register(bot, plan);
+        }
       }
     }
     // Analyse der Karte vorab (Spuren/Machtpositionen)
@@ -155,8 +195,56 @@ export class BotManager {
     return created;
   }
 
+  /** Ausrüstung einer Klasse/Rolle (Waffen aus den Wunschlisten + Waffenklassen, Werfer für Pioniere, Rauch/Blend). */
+  _classLoadout(cls, role) {
+    const G = this.G;
+    const W = (G.data && G.data.WEAPONS) || {};
+    const EQ = (G.data && G.data.EQUIPMENT) || {};
+    let r = null;
+    try { r = resolveClassLoadout(cls, { weapons: W, equipment: EQ, isUnlocked: () => true }); } catch { r = null; }
+    const of = (...classes) => Object.keys(W).filter((id) => classes.includes(W[id].cls) && W[id].slot !== 'secondary');
+    let primary = r && r.primary;
+    if (role === 'mg') primary = pick(of('lmg')) || primary;
+    else if (role === 'marksman') primary = pick(of(cls === 'aufklaerer' ? 'sniper' : 'marksman')) || pick(of('marksman', 'sniper')) || primary;
+    else if (cls === 'sturm') primary = pick(of('ar', 'carbine')) || primary;
+    else if (cls === 'sanitaeter') primary = pick(Math.random() < 0.7 ? of('smg') : of('ar', 'carbine')) || primary;
+    else if (cls === 'pionier') primary = pick(Math.random() < 0.35 ? of('shotgun') : Math.random() < 0.5 ? of('lmg') : of('ar')) || primary;
+    else if (cls === 'aufklaerer') primary = pick(of('marksman', 'ar')) || primary;
+    if (!W[primary]) primary = W.ar_m17 ? 'ar_m17' : Object.keys(W).find((id) => W[id].slot !== 'secondary');
+    // Panzerabwehr nur, wenn es in diesem Match Fahrzeuge gibt (sonst Pistole statt nutzlosem Werfer)
+    const veh = this._vehiclesExpected();
+    const launcher = !veh ? null : r && r.launcher && W[r.launcher] ? r.launcher : cls === 'pionier' && W.at_donner ? 'at_donner' : null;
+    let secondary = launcher || (r && r.secondary) || 'pi_p9';
+    if (!veh && W[secondary] && W[secondary].cls === 'launcher') secondary = W.pi_p9 ? 'pi_p9' : Object.keys(W).find((id) => W[id].slot === 'secondary' && W[id].cls !== 'launcher') || secondary;
+    const lethal = (r && r.lethal) || 'frag';
+    const tactical = (role === 'rifleman' || role === 'grenadier') && EQ.flash ? 'flash' : EQ.smoke ? 'smoke' : undefined;
+    return { cls, primary, secondary, lethal, tactical };
+  }
+
+  /** Gibt es in diesem Match Fahrzeuge? (Kartenstellplätze bzw. ?vehicles=1 / Matchoption; ?vehicles=0 schaltet ab) */
+  _vehiclesExpected() {
+    const G = this.G, w = G.world;
+    const param = G.params && typeof G.params.get === 'function' ? G.params.get('vehicles') : null;
+    if (param === '0') return false;
+    return !!((w && Array.isArray(w.vehicleSpawns) && w.vehicleSpawns.length) || param === '1' || (G.match && G.match.vehicles));
+  }
+
+  /** Soldatenvariante zur Klasse (Weste/Helm/Gepäck): Sanitäter mit Armbinde, Pionier mit Werfer, Scharfschütze im Überwurf,
+   *  Funkgerät nur beim Truppführer (Feuerteam 0). */
+  _lookFor(cls, role, lo, ft = 0) {
+    const W = (this.G.data && this.G.data.WEAPONS) || {};
+    const pcls = W[lo.primary] ? W[lo.primary].cls : 'ar';
+    if (role === 'leader' && ft === 0 && cls === 'sturm') return 'funker';
+    if (cls === 'pionier' && W[lo.secondary] && W[lo.secondary].cls === 'launcher') return 'panzerpionier';
+    if (cls === 'aufklaerer' && (pcls === 'sniper' || pcls === 'marksman')) return 'scharfschuetze';
+    const ids = (CLASS_LOOKS[cls] || CLASS_LOOKS.sturm).filter((v) => VARIANTS.some((x) => x.id === v));
+    return ids.length ? pick(ids) : 0;
+  }
+
   removeAll() {
     const G = this.G;
+    this._restoreNav();
+    this.tactics.clear();
     for (const b of this.bots) {
       b.dispose();
       const i = G.actors.indexOf(b);
@@ -206,21 +294,31 @@ export class BotManager {
       const r = b.alive && b.gunner.rec;
       if (r && r.visible) this._targetCount.set(r.actor, (this._targetCount.get(r.actor) || 0) + 1);
     }
-    // Pfadsuchen (Budget, in Anfragereihenfolge)
-    let pathsLeft = low ? 2 : 3;
+    // Pfadsuchen (Zeitbudget je Bild, mindestens eine, in Anfragereihenfolge); ferne Bots ohne Glättung (billiger)
     const nav = G.world && G.world.nav;
     const q = this._pathQ;
-    while (pathsLeft > 0 && q.length) {
+    const pStart = performance.now();
+    const pBudget = low ? PATH_MS_LOW : PATH_MS;
+    let done = 0;
+    while (q.length && (done === 0 || (performance.now() - pStart < pBudget && done < 8))) {
       const bot = q.shift();
       const dest = this._paths.get(bot);
       this._paths.delete(bot);
       if (!dest || !bot.alive) continue;
       let path = [];
-      try { path = nav ? nav.findPath(bot.position, dest) : [dest.clone()]; } catch { path = []; }
+      // Großkarte: A*-Expansionen nach Luftlinie begrenzen (unerreichbare Ziele kosteten bis 30 000 Expansionen ≈ 20–50 ms)
+      const cap = nav && typeof nav.maxExpand === 'number' ? nav.maxExpand : null;
+      if (cap !== null) nav.maxExpand = Math.max(1500, Math.min(cap, Math.round(bot.position.distanceTo(dest) * (bot.simTier >= 2 ? 25 : 45))));
+      try { path = nav ? nav.findPath(bot.position, dest, bot.simTier >= 2 ? NO_SMOOTH : undefined) : [dest.clone()]; } catch { path = []; }
+      if (cap !== null) nav.maxExpand = cap;
       bot.nav.onPath(path);
-      pathsLeft--;
+      done++;
     }
+    this.debug.pathsDone = done;
     // Kamera: Sichtbarkeit + Abstand
+    const now = G.time.elapsed;
+    const aimT = G.input && G.input.aimTarget;
+    this.lodCount[0] = this.lodCount[1] = this.lodCount[2] = this.lodCount[3] = 0;
     const cam = G.camera;
     if (cam) {
       _m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
@@ -236,26 +334,58 @@ export class BotManager {
       _sphere.radius = 1.5;
       const inView = !cam || this._frustum.intersectsSphere(_sphere);
       b.inView = inView;
-      b.animEvery = !inView ? 6 : d < (low ? 16 : 26) ? 1 : d < (low ? 40 : 60) ? 2 : 3;
+      // Animationsrate: nah jedes Bild … fern seltener; außerhalb des Bildes 1/6, fern und unsichtbar eingefroren (nur Lage)
+      b.animEvery = !inView ? (d > 50 ? 0 : 6) : d < (low ? 16 : 26) ? 1 : d < (low ? 40 : 60) ? 2 : d < 110 ? 3 : 5;
+      // Simulations-Detailstufe nach Abstand/Sicht; Gefecht mit dem Spieler = volle Rate
+      const pl = G.player;
+      const duel = !!pl && ((b.gunner.rec && b.gunner.rec.actor === pl && now - (b.gunner.rec.seenAt || -1e9) < 3) || (aimT === b));
+      // (Sichtkegel ohne Verdeckung: auf der Großkarte liegt fast jeder im Bild → Abstand entscheidet, Sicht hebt eine Stufe an)
+      const tier = !this.lodEnabled ? 0 : !b.alive || duel || d < 50 || (inView && d < 90) ? 0 : d < 120 || (inView && d < 220) ? 1 : d < 260 || inView ? 2 : 3;
+      b.simTier = tier;
+      const L = SIM_LOD[tier];
+      b.simEvery = L.every; b.lodSense = L.sense; b.lodThink = L.think;
+      this.lodCount[tier]++;
       if (s && b.alive && s.state === 'alive') {
         s.root.visible = inView;
-        s.updateLod(d * (cam ? cam.fov / 60 : 1), this.quality);
+        s.updateLod(d * (cam ? cam.fov / 60 : 1), this.tier);
+        // Waffe (eigene Draw Calls) erst ab 140 m (low 90 m) ausblenden – dort ≈ 1 Pixel (bots-scale: 64 Akteure)
+        if (s.gunHolder) s.gunHolder.visible = d * (cam ? cam.fov / 60 : 1) < (low ? 90 : 140);
       }
       for (let k = 0; k < b.soldiers.length; k++) {
         const o = b.soldiers[k];
         if (o && o.state === 'dead') {
           _sphere.center.copy(o.root.position); _sphere.center.y += 0.5; _sphere.radius = 3;
           o.root.visible = !cam || this._frustum.intersectsSphere(_sphere);
-          o.updateLod(o.root.position.distanceTo(_cam) * (cam ? cam.fov / 60 : 1), this.quality);
+          o.updateLod(o.root.position.distanceTo(_cam) * (cam ? cam.fov / 60 : 1), this.tier);
         }
       }
     }
-    // Bots
+    // Trupptaktik (gestaffelt je Trupp)
+    this.tactics.update(dt, now);
+    // Bots (ferne Detailstufen nur jedes n-te Bild mit aufgelaufener Zeit, Phase je Bot verteilt)
+    let simmed = 0;
     for (let i = 0; i < bots.length; i++) {
       const b = bots[i];
-      b.update(dt);
-      if (b.alive) b.updateCorpsesOnly(dt);
+      const every = b.alive ? b.simEvery || 1 : 1;
+      b._simAcc += dt;
+      if (every > 1 && (this._frame + b.simPhase) % every !== 0) {
+        // Zwischenbild: sichtbare Figur entlang der Geschwindigkeit weiterschieben (kein Ruckeln bei 10–15 Hz Takt)
+        const s = b.soldier;
+        if (b.alive && b.inView && s && s.state === 'alive') {
+          const v = b.body.velocity;
+          _w.copy(s.root.position);
+          _w.x += v.x * dt; _w.z += v.z * dt;
+          s.place(_w, s.anim.bodyYaw);
+        }
+        continue;
+      }
+      const sdt = Math.min(b._simAcc, 0.15);
+      b._simAcc = 0;
+      b.update(sdt);
+      simmed++;
+      if (b.alive) b.updateCorpsesOnly(sdt);
     }
+    this.debug.simmed = simmed;
     // Schatten (nächste N sichtbare)
     this._shadowT -= dt;
     if (this._shadowT <= 0) { this._shadowT = 0.5; this._assignShadows(); }
@@ -384,14 +514,59 @@ export class BotManager {
     return true;
   }
 
-  /** Unsichtbar umsetzen erlaubt? (nicht im Blick des Spielers) */
-  canTeleport(bot) {
-    return !bot.inView && bot.camDist > 18;
+  /** Unsichtbar umsetzen erlaubt? Weder der Bot noch der Zielpunkt `to` dürfen für den Spieler sichtbar sein:
+   *  außerhalb des Bildes, vom Auge aus verdeckt, oder (mit Zoom/Zielfernrohr gerechnet) weiter als 220 m. */
+  canTeleport(bot, to = null) {
+    const cam = this.G.camera;
+    if (!cam) return true;
+    _tc.setFromMatrixPosition(cam.matrixWorld);
+    if (cam.fov > (this._fovBase || 0)) this._fovBase = cam.fov; // Hüft-FOV (größter beobachteter Wert)
+    const base = Math.max(55, this._fovBase || 70);
+    const zoom = Math.max(1, Math.tan((base * Math.PI) / 360) / Math.tan((Math.max(1, cam.fov) * Math.PI) / 360));
+    if (bot.camDist * zoom > 220 && (!to || to.distanceTo(_tc) * zoom > 220)) return true;
+    if (bot.camDist < 18) return false;
+    const W = this.G.world;
+    const seen = (p, inView) => {
+      if (!inView) return false;
+      if (!W || typeof W.lineOfSight !== 'function') return true;
+      _tw.set(p.x, p.y + 1.2, p.z);
+      if (W.lineOfSight(_tc, _tw)) return true;
+      _tw.y = p.y + 0.4;
+      return W.lineOfSight(_tc, _tw);
+    };
+    if (seen(bot.position, bot.inView)) return false;
+    if (to) {
+      _tv.copy(to).project(cam);
+      const inView = _tv.z < 1 && Math.abs(_tv.x) < 1.1 && Math.abs(_tv.y) < 1.1;
+      if (seen(to, inView) || to.distanceTo(_tc) < 18) return false;
+    }
+    return true;
+  }
+
+  /** Nav-Knoten an `p` für diesen Match verteuern (Verbindung scheitert wiederholt, Bot darf nicht versetzt werden). */
+  penalizeNav(p) {
+    const nav = this.G.world && this.G.world.nav;
+    if (!nav || typeof nav.nearest !== 'function' || !p) return;
+    const n = nav.nearest(p);
+    if (!n || n.position.distanceTo(p) > 0.5) return;
+    const pen = this._navPen || (this._navPen = new Map());
+    if (!pen.has(n)) pen.set(n, n.cost || 0);
+    n.cost = Math.min((n.cost || 0) + 40, pen.get(n) + 160);
+    this.navPenalties = (this.navPenalties || 0) + 1;
+  }
+
+  /** Verteuerte Nav-Knoten zurücksetzen (Matchende). */
+  _restoreNav() {
+    if (!this._navPen) return;
+    for (const [n, c] of this._navPen) n.cost = c;
+    this._navPen.clear();
   }
 
   footstep(bot) {
     const G = this.G;
     const sprint = bot.sprinting, crouch = bot.crouching;
+    // Weit weg vom Hörer (> 50 m, unhörbar): kein Ereignis (Audio-Kosten), nur das Gehör der Bots bedienen
+    if (bot.camDist > 50) { this._stepEv.actor = bot; this._stepEv.sprint = sprint; this._stepEv.crouch = crouch; this._onFootstep(this._stepEv); return; }
     const surface = bot.camDist < 32 && G.world && G.world.surfaceAt ? G.world.surfaceAt(bot.position) : 'concrete';
     G.events.emit('footstep', { actor: bot, surface, sprint, crouch, position: bot.position.clone() });
   }
@@ -450,13 +625,28 @@ export class BotManager {
     this._hear(actor, sprint ? 20 : crouch ? 3 : 10, 1, this.G.time.elapsed, 'sound', false);
   }
 
-  _onExplosion({ position, attacker } = {}) {
+  _onExplosion({ position, attacker, radius, type, nonLethal } = {}) {
     const now = this.G.time.elapsed;
     if (attacker && attacker.position && attacker.alive) this._hear(attacker, 45, 5, now);
+    if (!position) return;
+    // Taumeln (C2): Druckwelle schiebt nahe Bots weg (Stärke nach Abstand; Rauch: keiner, Blend: schwach)
+    const R = Math.max(4, (Number(radius) || 6) * 1.5);
+    const k = type === 'smoke' ? 0 : type === 'flash' || nonLethal ? 0.35 : 1;
+    if (!k) return;
     for (const b of this.bots) {
-      if (!b.alive || !position) continue;
-      if (b.position.distanceTo(position) < 9 && b.soldier) b.soldier.playHit(_v.subVectors(b.position, position).setY(0.2).normalize(), 'body', 25);
+      if (!b.alive) continue;
+      const d = b.position.distanceTo(position);
+      if (d >= R) continue;
+      const strength = Math.min(1.5, (1 - d / R) * 1.6) * k;
+      if (strength < 0.08) continue;
+      _v.subVectors(b.position, position).setY(0);
+      if (_v.lengthSq() < 1e-4) _v.set(Math.random() - 0.5, 0, Math.random() - 0.5);
+      b.onBlast(_v.normalize(), strength);
     }
+  }
+
+  _onFlashed({ actor, strength = 1, duration = 2 } = {}) {
+    if (actor && actor.isBot && this.bots.includes(actor)) actor.onFlashed(strength, duration);
   }
 
   _onImpact({ point, shooter } = {}) {
@@ -519,6 +709,7 @@ export class BotManager {
     const viewH = R && R.height > 1 ? R.height : 720;
     const viewW = R && R.width > 1 ? R.width : 1280;
     const aimT = G.input && G.input.aimTarget;
+    const lens = R && R.lens && typeof R.lens.toScreen === 'function' ? R.lens : null;
     const now = G.time.real || G.time.elapsed;
     const playerAlive = G.player && G.player.alive;
     cam.getWorldPosition(_cam); // Sichtstrahlen von der Kamera aus (das Schild wird aus ihrer Sicht gezeichnet)
@@ -555,12 +746,19 @@ export class BotManager {
       p._target = target;
       p._fade = fade;
       p._d = d;
-      if (target > 0) {
-        // Bildschirmposition für die Entflechtung
+      p._size = 1;
+      if (target > 0 || p.alpha > 0.02) {
+        // Bildschirmposition für die Entflechtung – durch die Objektiv-Abbildung (Bodycam-Fischauge, R2): die Schilder
+        // sind 3D-Sprites und werden mitverzerrt, ihre tatsächliche Lage ist lens.toScreen(camera.project(…)).
         _v.copy(pos).project(cam);
+        if (lens && lens.active) {
+          // örtlichen Maßstab ausgleichen (am Rand < 1), damit Schilder überall gleich groß und lesbar bleiben
+          p._size = 1 / Math.max(0.5, lens.scaleAt(_v.x, _v.y));
+          lens.toScreen(_v);
+        }
         p._sx = _v.x * viewW * 0.5;
         p._sy = _v.y * viewH * 0.5;
-        list.push(p);
+        if (target > 0) list.push(p);
       }
     }
     // Überlappende Schilder: das nähere gewinnt (Ziel unter dem Fadenkreuz immer)
@@ -584,7 +782,7 @@ export class BotManager {
     }
     for (let i = 0; i < bots.length; i++) {
       const p = this._plates.get(bots[i]);
-      if (p) p.update(p._pos, cam, viewH, p._target || 0, dt, p._fade || 6);
+      if (p) p.update(p._pos, cam, viewH, p._target || 0, dt, p._fade || 6, p._size || 1);
     }
   }
 
@@ -604,13 +802,31 @@ export class BotManager {
 
   stats() {
     const states = {};
-    let broken = 0;
+    let broken = 0, leaning = 0, staggered = 0;
+    const now = this.G.time ? this.G.time.elapsed : 0;
     for (const b of this.bots) {
       if (!b.alive) continue;
       states[b.goal.kind] = (states[b.goal.kind] || 0) + 1;
       if (!this._soldierSane(b)) broken++;
+      if (Math.abs(b.lean) > 0.5) leaning++;
+      if (now < b.staggerUntil) staggered++;
     }
-    return { bots: this.bots.length, alive: this.bots.filter((b) => b.alive).length, states, ms: +this.debug.ms.toFixed(2), losPerFrame: this.debug.losUsed, pathQueue: this._paths.size, broken };
+    let prone = 0, ordered = 0, corpses = 0, sunk = 0;
+    const W = this.G.world;
+    for (const b of this.bots) {
+      // Leichen: Becken nicht unter dem Boden (Ragdoll gegen world.groundHeight)
+      for (const sd of b.soldiers) {
+        if (!sd || sd.state !== 'dead' || !W || typeof W.groundHeight !== 'function') continue;
+        corpses++;
+        sd.joint(0, _v);
+        const g = W.groundHeight(_v.x, _v.z, _v.y + 1.2);
+        if (g !== null && _v.y < g - 0.15) sunk++;
+      }
+      if (!b.alive) continue;
+      if (b.stance === 'prone') prone++;
+      if (b.order && b.order.kind && now < b.order.until) ordered++;
+    }
+    return { bots: this.bots.length, alive: this.bots.filter((b) => b.alive).length, states, ms: +this.debug.ms.toFixed(2), losPerFrame: this.debug.losUsed, pathQueue: this._paths.size, broken, leaning, staggered, prone, ordered, corpses, sunk, lod: this.lodCount.slice(), simmed: this.debug.simmed, tactics: { ...this.tactics.counts }, squads: this.tactics.squads.length, fabric: soldierDetailInfo().kind };
   }
 
   /** Diagnose: Pose/Trefferzonen eines lebenden Bots endlich und am Körper (≤ 3 m von den Füßen)? */

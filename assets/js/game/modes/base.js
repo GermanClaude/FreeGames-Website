@@ -3,7 +3,7 @@
 // Unterklassen überschreiben die Haken onKillScored / onSuicide / tick / decide / extraRow.
 
 import * as THREE from 'three';
-import { MODES, SCORE_RULES, MEDAL_RULES, isLongshot } from '../../shared/modes.data.js';
+import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js';
 import { WEAPONS } from '../../shared/weapons.data.js';
 import { chooseSpawn } from './spawns.js';
 import { MedalTracker } from './medals.js';
@@ -31,6 +31,15 @@ export class BaseMode {
     this.scoreLimit = num(opts.scoreLimit, opts.score, this.def.scoreLimit);
     this.timeLimit = num(opts.timeLimit, opts.time, this.def.timeLimit);
     this.respawnDelay = Number.isFinite(this.def.respawnDelay) ? this.def.respawnDelay : 3;
+    // Spielstil (Arcade/Realistisch): main setzt G.match.style + G.match.styleFlags (core-mechanics, classes.data.js)
+    const m = G.match || {};
+    this.style = m.style === 'realistisch' && this.id !== 'training' ? 'realistisch' : 'arcade';
+    this.flags = m.styleFlags || {};
+    if (G.match && !G.match.cls) G.match.cls = (m.loadout && m.loadout.cls) || null;
+    if (Number.isFinite(STYLE_RESPAWN[this.style])) this.respawnDelay = Math.max(this.respawnDelay, STYLE_RESPAWN[this.style]);
+    this.respawnHolds = new Set();
+    this.pendingLoadout = null;
+    this.counters = new Map(); // actor → { vehicles, confirms, … } (playerSummary.counters)
     this.timeLeft = this.timeLimit > 0 ? this.timeLimit : Infinity;
     this.elapsed = 0;
     this.scores = this.teams ? { A: 0, B: 0 } : {};
@@ -59,8 +68,10 @@ export class BaseMode {
     s.on('kill', (e) => { if (!this.isOver) this._onKill(e); });
     s.on('actor:hit', (e) => this.medals.onHit(e));
     s.on('impact', (e) => this.medals.onImpact(e));
-    s.on('weapon:fire', (e) => this.medals.onFire(e));
-    s.on('actor:spawn', ({ actor }) => this.onSpawn(actor));
+    s.on('weapon:fire', (e) => { if (e.actor && e.actor.isPlayer) e.actor._firedSinceSpawn = true; this.medals.onFire(e); });
+    s.on('actor:spawn', ({ actor }) => { this._applyPending(actor); this.onSpawn(actor); });
+    s.on('vehicle:destroyed', (e) => { if (!this.isOver) this._onVehicleDestroyed(e); });
+    s.on('secret:found', (e) => this._onSecret(e));
     s.on('match:start', () => this.onMatchStart());
     if (this.streaks) this.streaks.attach(s);
     this._addWarmup(G);
@@ -89,6 +100,7 @@ export class BaseMode {
     if (this.streaks) objs.push(...this.streaks.warmObjects());
     const gs = G.weapons && G.weapons.grenadeSystem;
     if (this.def.lethals !== false && gs && typeof gs.warmObjects === 'function') objs.push(...gs.warmObjects());
+    objs.push(...this.warmObjects());
     if (!objs.length) return;
     const g = new THREE.Group();
     g.name = 'aufwaermen:modus';
@@ -150,8 +162,105 @@ export class BaseMode {
     if (!this.isOver) this.end('forced');
   }
 
-  canRespawn() {
-    return !this.isOver;
+  canRespawn(actor) {
+    return !this.isOver && !this.respawnHolds.has(actor);
+  }
+
+  /** Einsatz-/Ausrüstungsbildschirm: Wiedereinstieg anhalten bzw. freigeben (ui/deploy.js). */
+  holdRespawn(actor, on, { pause = true } = {}) {
+    if (!actor) return;
+    if (on) this.respawnHolds.add(actor); else this.respawnHolds.delete(actor);
+    // core-mechanics: G.holdRespawn(on, {pause}) – pause: Restzeit steht still (Ausrüsten), sonst läuft sie weiter (Einsatzkarte)
+    if (actor.isPlayer && typeof this.G.holdRespawn === 'function') { try { this.G.holdRespawn(!!on, { pause }); } catch (err) { console.error('[NULLPUNKT] holdRespawn:', err); } }
+  }
+
+  /** „Einsatz“: Halt aufheben und – sobald die Wartezeit um ist – sofort einsetzen. */
+  deployNow(actor) {
+    const G = this.G;
+    if (!actor) return;
+    this.holdRespawn(actor, false);
+    if (typeof G.deploy === 'function') { try { G.deploy(); return; } catch (err) { console.error('[NULLPUNKT] deploy:', err); } }
+    if (!actor.alive && actor.respawnAt != null) actor.respawnAt = Math.min(actor.respawnAt, G.time.elapsed);
+  }
+
+  /** Verbleibende Wartezeit bis zum Wiedereinstieg (s). */
+  respawnLeft(actor) {
+    const G = this.G;
+    if (!actor || actor.alive) return 0;
+    if (actor.isPlayer && typeof G.respawnRemaining === 'function') { try { const r = G.respawnRemaining(); if (Number.isFinite(r)) return Math.max(0, r); } catch { /* */ } }
+    return actor.respawnAt != null ? Math.max(0, actor.respawnAt - G.time.elapsed) : 0;
+  }
+
+  /**
+   * Ausrüstung im Match wechseln (Pausenmenü „Ausrüstung“, Todesbildschirm „Ausrüsten“): sofort, wenn der Spieler
+   * gerade gespawnt ist (≤ 6 s, kaum bewegt, nicht gefeuert), sonst beim nächsten Einsatz. → 'now' | 'next'
+   */
+  setLoadout(lo, { immediate = true } = {}) {
+    const G = this.G;
+    const p = G.player;
+    if (!lo || !p) return 'next';
+    // core-mechanics: G.requestLoadout tauscht auch Weste/Helm/Gadget (sofort ≤ 5 s nach dem Spawn, sonst beim nächsten)
+    if (typeof G.requestLoadout === 'function') {
+      try {
+        const r = G.requestLoadout({ ...lo });
+        if (r && r.ok !== false) { if (G.match) G.match.cls = lo.cls || G.match.cls; return r.when === 'now' ? 'now' : 'next'; }
+      } catch (err) { console.error('[NULLPUNKT] requestLoadout:', err); }
+    }
+    const fresh = p.alive && p._spawnAt != null && G.time.elapsed - p._spawnAt < 6 && !p._firedSinceSpawn
+      && (!p._spawnPos || p.position.distanceTo(p._spawnPos) < 6);
+    this.pendingLoadout = { ...lo };
+    if (immediate && fresh) { this._applyPending(p); return 'now'; }
+    return 'next';
+  }
+
+  _applyPending(actor) {
+    const G = this.G;
+    if (!actor || !actor.isPlayer) return;
+    actor._spawnAt = G.time.elapsed;
+    actor._firedSinceSpawn = false;
+    actor._spawnPos = actor.position ? actor.position.clone() : null;
+    const lo = this.pendingLoadout;
+    if (!lo || this.lockLoadout) return;
+    this.pendingLoadout = null;
+    const next = { ...(actor.loadout || {}), ...lo };
+    actor.loadout = next;
+    if (next.cls) actor.cls = next.cls;
+    if (actor.weapon && typeof actor.weapon.setLoadout === 'function') {
+      try { actor.weapon.setLoadout(next); } catch (err) { console.error('[NULLPUNKT] setLoadout:', err); }
+    }
+    if (G.match) { G.match.loadout = { ...next }; G.match.cls = next.cls || G.match.cls; }
+    try { G.settings.set('lastLoadout', { primary: next.primary, secondary: next.secondary, lethal: next.lethal }); } catch { /* */ }
+    G.events.emit('loadout:change', { actor, loadout: { ...next } });
+  }
+
+  /** Zähler je Akteur für playerSummary.counters (Herausforderungen). */
+  count(actor, key, n = 1) {
+    if (!actor || !actor.isPlayer) return;
+    let c = this.counters.get(actor);
+    if (!c) { c = {}; this.counters.set(actor, c); }
+    c[key] = (c[key] || 0) + n;
+  }
+
+  /** Zerstörtes Fahrzeug: Punkte je Typ für den Angreifer (nicht für eigene/teamgleiche Fahrzeuge). */
+  _onVehicleDestroyed({ vehicle, by } = {}) {
+    if (!vehicle || !by || !by.stats || by.isStreakEntity) return;
+    const team = vehicle.team || vehicle.spawnTeam || null;
+    if (team && by.team && team === by.team) return;
+    const pts = VEHICLE_POINTS[vehicle.type] ?? this.rules.vehicle;
+    this.award(by, 'vehicle', pts);
+    this.medals.award(by, 'panzerknacker');
+    this.count(by, 'vehicles');
+    by.stats.vehiclesDestroyed = (by.stats.vehiclesDestroyed || 0) + 1;
+    this.onVehicleScored(by, vehicle);
+  }
+
+  _onSecret({ id, name, actor, map } = {}) {
+    const G = this.G;
+    if (!id || (actor && !actor.isPlayer)) return;
+    const prof = G.profile;
+    let fresh = true;
+    if (prof && typeof prof.markSecret === 'function') { try { fresh = prof.markSecret(id, name, map || G.match.mapId); } catch { /* */ } }
+    if (fresh !== false) this.count(G.player, 'secrets');
   }
 
   /* ------------------------------------------------------------ Haken */
@@ -161,6 +270,9 @@ export class BaseMode {
   onStart() {}
   onMatchStart() {}
   onSpawn() {}
+  onVehicleScored() {}
+  /** Zusätzliche Objekte für den Aufwärm-Kompilierdurchgang (z. B. Erkennungsmarken). */
+  warmObjects() { return []; }
   tick() {}
   /** Abschuss mit Punktwirkung (credit = Schütze oder Besitzer der Serienprämie). */
   onKillScored() {}
@@ -359,7 +471,8 @@ export class BaseMode {
       rows.push({
         actor: a, id: a.id, name: a.name, team: a.team, score: s.score || 0, kills: s.kills || 0, deaths: s.deaths || 0,
         assists: s.assists || 0, captures: s.captures || 0, isPlayer: !!a.isPlayer, isBot: !!a.isBot,
-        extra: this.extraRow(a), alive: !!a.alive,
+        extra: this.extraRow(a), alive: !!a.alive, cls: a.cls || (a.loadout && a.loadout.cls) || null,
+        squad: a.squad ? a.squad.label : null,
       });
     }
     rows.sort((x, y) => this.compareRows(x, y));
@@ -413,12 +526,13 @@ export class BaseMode {
       shotsFired: ps.shotsFired | 0, shotsHit: Math.min(ps.shotsHit | 0, ps.shotsFired | 0), bestStreak: ps.bestStreak | 0,
       longestKill: Math.round((ps.longestKill || 0) * 10) / 10, damage: Math.round(ps.damage || 0), captures: ps.captures | 0,
       medals, weaponStats, duration, placement, players: board.length,
+      counters: { ...(this.counters.get(player) || {}) }, style: this.style, cls: player.cls || (player.loadout && player.loadout.cls) || null,
     } : null;
     const winnerRow = winner !== 'draw' && !this.teams ? board.find((r) => r.id === winner) : null;
     return {
       modeId: this.id, mapId: G.match.mapId, modeName: this.def.name, mapName: G.world ? G.world.name : G.match.mapId,
       teams: this.teams, winner, winnerName: winnerRow ? winnerRow.name : null, playerWon: !!playerWon, draw, reason,
-      overtime: this.overtime, duration, placement, players: board.length,
+      overtime: this.overtime, duration, placement, players: board.length, style: this.style,
       teamScores: this.teams ? { A: this.scores.A || 0, B: this.scores.B || 0 } : null,
       scoreLimit: this.scoreLimit, timeLimit: this.timeLimit, scoreUnit: this.def.scoreUnit || 'Punkte',
       scoreboard: board.map((r) => ({

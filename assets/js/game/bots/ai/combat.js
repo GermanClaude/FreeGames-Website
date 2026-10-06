@@ -47,6 +47,7 @@ export class Gunner {
     this.strafe = 1;
     this.peekUntil = 0;
     this.hidden = false;
+    this.peekLean = null; // Spähen an hoher Deckung: 0 = in Deckung bleiben, 1 = hinauslehnen (Bot wählt die Seite), null = frei
     this.recoilP = 0;
     this.recoilY = 0;
     this.lastSeenAim = new THREE.Vector3();
@@ -280,7 +281,11 @@ export class Gunner {
     if (!world || typeof world.lineOfSight !== 'function') return true;
     targetPoints(a, _p, _h);
     bot.getEyePosition(_eye);
-    return world.lineOfSight(_eye, this.aimHead || (this.rec && this.rec.partial) ? _h : _p);
+    const pt = this.aimHead || (this.rec && this.rec.partial) ? _h : _p;
+    if (!world.lineOfSight(_eye, pt)) return false;
+    // durch dichten Rauch wird nicht gezielt geschossen (Arsenal: Rauch-Register)
+    const W = bot.G.weapons;
+    return !(W && W.smokes && W.smokes.length && typeof W.smokeVisibility === 'function' && W.smokeVisibility(_eye, pt) < 0.3);
   }
 
   /* ---------------------------------------------------------------- Bewegung im Gefecht */
@@ -293,6 +298,7 @@ export class Gunner {
     const rec = this.rec;
     const D = bot.diff;
     out.x = 0; out.z = 0; out.crouch = false; out.jump = false; out.nav = null; out.sprint = false;
+    this.peekLean = null;
     if (!rec) return out;
     const def = bot.weapon && bot.weapon.currentDef;
     const cls = def ? def.cls : 'ar';
@@ -317,6 +323,11 @@ export class Gunner {
       else if (d > 14 && r < D.strafeChance + D.peekChance * 0.5) this.moveMode = 'crouch';
       else this.moveMode = cls === 'shotgun' && d > ideal ? 'advance' : 'hold';
       if (Math.random() < 0.55) this.strafe = -this.strafe;
+      // bots-scale: Seitwärts nur, wo Platz ist (Wand/Absturz auf 1,6 m prüfen; sonst andere Seite bzw. halten)
+      if (this.moveMode === 'strafe' || this.moveMode === 'backoff') {
+        const ok = this._sideFree(_d, this.strafe);
+        if (!ok) { this.strafe = -this.strafe; if (!this._sideFree(_d, this.strafe)) this.moveMode = D.peekChance > 0.3 ? 'crouch' : 'hold'; }
+      }
       if (this.moveMode === 'strafe' && D.jumpShot > 0 && d < 16 && Math.random() < D.jumpShot * 3) out.jump = true;
     }
     const lx = -_d.z * this.strafe, lz = _d.x * this.strafe;
@@ -335,14 +346,19 @@ export class Gunner {
         out.crouch = true;
         break;
       case 'peek': {
-        // hinter Deckung: ducken ↔ auftauchen
+        // hinter Deckung: ducken ↔ auftauchen (niedrige Deckung) bzw. verdeckt ↔ hinauslehnen (hohe Deckung, C6)
         if (now > this.peekUntil) {
           this.hidden = !this.hidden;
           this.peekUntil = now + (this.hidden ? rnd(0.5, 1.1) : rnd(1.1, 2.2));
         }
         const low = bot.coverNode && !bot.coverNode.coverHigh;
         if (low) out.crouch = this.hidden;
-        else if (this.hidden) { out.x = lx * 0.6; out.z = lz * 0.6; }
+        else if (this.hidden) this.peekLean = 0;
+        else {
+          this.peekLean = 1;
+          // keine Seite mit Sicht → wie bisher ein Seitschritt aus der Deckung
+          if (bot.leanSide !== -1 && bot.leanSide !== 1) { out.x = lx * 0.6; out.z = lz * 0.6; }
+        }
         break;
       }
       default: break;
@@ -352,6 +368,23 @@ export class Gunner {
     return out;
   }
 }
+
+/** Platz für Seitwärtsschritte? toTarget (horizontal, normiert), side ±1. Ein Strahl + zwei Bodenproben. */
+Gunner.prototype._sideFree = function (toTarget, side) {
+  const bot = this.bot;
+  const W = bot.G.world;
+  if (!W || typeof W.raycast !== 'function') return true;
+  const p = bot.position;
+  _a.set(-toTarget.z * side, 0, toTarget.x * side);
+  _eye.set(p.x, p.y + 0.9, p.z);
+  const h = W.raycast(_eye, _a, 1.6);
+  if (h && h.distance < 1.5) return false;
+  if (typeof W.groundHeight === 'function') {
+    const g = W.groundHeight(p.x + _a.x * 1.4, p.z + _a.z * 1.4, p.y + 0.6);
+    if (g === null || Math.abs(g - p.y) > 0.6) return false;
+  }
+  return true;
+};
 
 /** Zielt a ungefähr auf b? (Bedrohung) */
 function aimingAt(a, b, d) {

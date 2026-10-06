@@ -5,9 +5,9 @@ Ein Ego-Shooter im Browser im Stil von *Call of Duty: Mobile*, gespielt gegen Bo
 **Live:** https://germanclaude.github.io/FreeGames-Website/ (sobald GitHub Pages eingeschaltet ist, siehe unten)
 
 - **Website** (`index.html`): ein Schriftmusterbuch, das zurückschießt. Die Seite zeigt keine Fotos und keine Kästen, nur Typografie, feine Linien und einen orangen Zielpunkt. Die Breite der Schrift steht für Reichweite, ihre Stärke für Schaden.
-- **Spiel** (`spielen.html`): schnelle Matches gegen Bots in fünf Modi (Team-Deathmatch, Jeder gegen jeden, Herrschaft, Waffenspiel, Schießstand) auf vier Karten (Hafen, Altstadt, Werk, Schießstand). Dazu kommen zehn Waffen, Messer, Splitter- und Haftgranate, Abschussserien (Aufklärer, Präzisionsschlag, Wachgeschütz), Medaillen, Erfahrungspunkte (EP) und Ränge bis Stufe 55. Auf Handy und Tablet gibt es Touch-Steuerung wie in COD Mobile.
+- **Spiel** (`spielen.html`): realistischer Ego-Shooter gegen Bots mit acht Modi (Eroberung mit Panzern und Jeeps, Team-Deathmatch, Jeder gegen jeden, Herrschaft, Abschuss bestätigt, Infiziert, Waffenspiel, Schießstand) auf fünf Karten (Hafen, Altstadt, Werk, Schießstand und die große Karte Grenzland). Dazu kommen 20 Waffen inklusive Raketenwerfer, vier Nahkampfwaffen, Splitter-, Haft-, Aufschlag-, Brand-, Blend- und Rauchgranaten, 25 Tarnmuster, vier Klassen (Sturm, Sanitäter, Pionier, Aufklärer) mit Rüstung und Platten, Hinlegen, Lehnen und Klettern. Es spielen bis zu 32 gegen 32, auf Veteran und Elite mit Trupp-Taktik. Wählbar sind Wetter (Klar, Dunst, Morgennebel, Bewölkt), Tageszeit und Spielstil (Arcade oder Realistisch). Hinzu kommen Abschussserien, Medaillen, Erfahrungspunkte (EP) und Ränge bis Stufe 55. Auf Handy und Tablet gibt es Touch-Steuerung.
 
-Alles ist statisch, aus HTML, CSS und JavaScript (ES-Module), ohne Build-Schritt. Es gibt keinen Server, keine Datenbank, keine Cookies, kein Tracking und keine externen Skripte oder Schriften. Grafik, Texturen, 3D-Modelle und Klänge entstehen beim Laden im Browser.
+Alles ist statisch, aus HTML, CSS und JavaScript (ES-Module), ohne Build-Schritt. Es gibt keinen Server, keine Datenbank, keine Cookies, kein Tracking und keine externen Skripte oder Schriften. Ein Teil der Grafik und der Klänge entsteht beim Laden im Browser. Dazu kommen frei verwendbare Fototexturen, 3D-Modelle, Himmel und Klangaufnahmen (CC0) in `assets/lib/`; die Quellen stehen in `CREDITS.md`.
 
 ## GitHub Pages einschalten (einmalig)
 
@@ -25,7 +25,7 @@ Link-Vorschauen (Messenger, soziale Netze) brauchen absolute Adressen. In `index
 1. Website öffnen und auf **Sofort spielen.** tippen. Wer Modus, Karte, Schwierigkeit und Teamgröße selbst wählen will, nimmt **Einsatz zusammenstellen**.
 2. In der Lobby die Ausrüstung wählen und **Einsatz starten** drücken.
 
-**Tastatur und Maus:** W A S D laufen, Maus zielen, linke Maustaste feuern, rechte Maustaste über Kimme und Korn zielen, R nachladen, Leertaste springen, C ducken bzw. aus dem Sprint rutschen, Umschalt sprinten (beim Zielfernrohr: Atem anhalten), V Messer, G oder Q Granate (halten zum Kochen), 1/2 oder Mausrad Waffe wechseln, 3/4/5 Abschussserien, F/E interagieren (Schießstand), Tab Punktetabelle, Esc Pause.
+**Tastatur und Maus:** W A S D laufen, Maus zielen, linke Maustaste feuern, rechte Maustaste über Kimme und Korn zielen, R nachladen, Leertaste springen bzw. klettern, C ducken bzw. aus dem Sprint rutschen, Z hinlegen, Q/E lehnen, Umschalt sprinten (beim Zielfernrohr: Atem anhalten), V Messer, G Granate (halten zum Kochen), X Blend- oder Rauchgranate, 1/2 oder Mausrad Waffe wechseln, 4 Schutzplatte einsetzen, B Klassen-Ausrüstung, I Waffe ansehen, L Ausrüstung wechseln, 3/5 Abschussserien, F interagieren und Fahrzeuge, Tab Punktetabelle, Esc Pause. Alle Tasten lassen sich in den Einstellungen frei belegen.
 
 **Gamepad:** Sticks laufen und zielen, rechter Trigger feuern, linker Trigger zielen. Die übrigen Belegungen zeigt das Spiel unter *Steuerung*.
 
@@ -58,6 +58,7 @@ assets/css/        Gestaltung (gemeinsame Werte, Website, Spiel)
 assets/fonts/      Archivo, JetBrains Mono, Rajdhani (SIL Open Font License)
 assets/img/        Symbole, Vorschaubild, Kartenbilder
 assets/vendor/     Three.js r186 (MIT) mit den benötigten Zusatzmodulen
+assets/lib/        Fototexturen, 3D-Modelle, HDRI-Himmel und Klangaufnahmen (CC0) mit Lader
 assets/js/shared/  Daten und Speicher für Website und Spiel (Waffen, Modi, Karten, Einstellungen, Profil)
 assets/js/site/    Website
 assets/js/game/    Spiel: Engine, Welt und Karten, Waffen, Bots, Modi, HUD und Menüs
@@ -69,3 +70,4 @@ Dieses Repository enthält die veröffentlichte Fassung. Die Entwicklungsfassung
 
 - Three.js: MIT-Lizenz (`assets/vendor/three/LICENSE`)
 - Schriften Archivo, JetBrains Mono, Rajdhani: SIL Open Font License 1.1 (`assets/fonts/OFL-*.txt`)
+- Fototexturen, Modelle, HDRI-Himmel und Klangaufnahmen in `assets/lib/`: CC0 (Poly Haven, ambientCG u. a., siehe `CREDITS.md`)

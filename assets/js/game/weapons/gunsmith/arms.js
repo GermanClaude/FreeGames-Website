@@ -1,4 +1,4 @@
-// Ego-Arme: Handschuhhände als SkinnedMesh (je Hand 1 Draw Call, 16 Knochen mit Fingergliedern),
+// Ego-Arme: Handschuhhände als SkinnedMesh (je Hand 1 Draw Call, 17 Knochen: Hand, Fingerglieder, Daumen, Unterarm),
 // Unter-/Oberarm-Ärmel mit Tarnmuster, Zwei-Knochen-IK von der Schulter zum Handgelenk, Uhr + Klebeband.
 // Handkoordinaten (rechte Hand): Handgelenk im Ursprung, Finger −Z, Handrücken +Y, Daumen −X.
 // Die linke Hand ist gespiegelt gebaut (gleiche Semantik: Finger −Z, Handrücken +Y, Daumen +X).
@@ -8,21 +8,14 @@
 // bis sie anliegen; der Zeigefinger sucht den Abzug; die Daumenausrichtung wird gesucht, bis die Kuppe ihr
 // Ziel auf der Gegenseite erreicht. Ergebnisse werden je Griffart + Maßen gecacht.
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { boxUV, chamferBoxGeometry } from './builder.js';
-import { camoMap, fabricNormal, watchFaceTexture, tapeMap } from './textures.js';
+import { chamferBoxGeometry } from './builder.js';
+import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js';
 import { takeMaterials, parkMaterials } from './materials.js';
+import { contactHit, MultiCollider } from './contact.js';
 
-const FINGERS = [
-  { x: -0.0285, y: 0.001, z: -0.08, len: [0.043, 0.027, 0.022], r: [0.0094, 0.0088, 0.0082], splay: 0.07 },
-  { x: -0.0093, y: 0.002, z: -0.084, len: [0.047, 0.03, 0.023], r: [0.0097, 0.0091, 0.0084], splay: 0.0 },
-  { x: 0.0102, y: 0.001, z: -0.081, len: [0.044, 0.028, 0.022], r: [0.0093, 0.0087, 0.008], splay: -0.06 },
-  { x: 0.0285, y: -0.002, z: -0.073, len: [0.034, 0.022, 0.019], r: [0.0084, 0.0078, 0.0073], splay: -0.14 },
-];
-const THUMB = { base: [-0.027, -0.011, -0.018], len: [0.042, 0.032, 0.026], r: [0.0128, 0.0112, 0.0101] };
-
-const GLOVE = new THREE.Color(0x2e3032), PALM = new THREE.Color(0x5b554b), PAD = new THREE.Color(0x1d1e20), CUFF = new THREE.Color(0x3a3c36);
+// Fingermaße + Bindehaltung des Handschuhnetzes (hands-v3): gemeinsam mit tools/assets/hands/build-hand.mjs
+import { FINGERS, THUMB, THUMB_REST, BIND_SPLAY, BIND_CURL, BIND_THUMB_FLEX, handDimsKey } from './handdims.js';
+import { GLOVE_MESH } from './glove-mesh.js';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const _v1 = V3(), _v2 = V3(), _v3 = V3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler();
@@ -106,6 +99,7 @@ function thumbFK(q, flex) {
 }
 
 const FMAX = [1.55, 1.75, 1.3];
+const WRIST_FLEX = 1.2, WRIST_EXT = 1.0, WRIST_DEV = 0.42;   // rad (≈ 69°, 57°, 24°)
 const FREE = [1.2, 1.45, 0.95];
 const START = [0.06, 0.1, 0.06];
 
@@ -236,13 +230,17 @@ function barShape(d, A = V3(0, 0, -1)) {
   const w = d.w ?? d.r ?? 0.024, h = d.h ?? d.r ?? 0.024;
   return makeCyl(V3(0, h, 0), A, V3(1, 0, 0), w, h, -0.12, 0.12);
 }
+const wrapF = (s, w = 0) => (w ? s.U.clone().multiplyScalar(Math.cos(w)).addScaledVector(s.V, Math.sin(w)) : s.U);
+const wrapB = (s, w) => s.V.clone().multiplyScalar(Math.cos(w)).addScaledVector(s.U, -Math.sin(w)).addScaledVector(s.A, -0.05);
 const leftOf = (s, ext, up, fwd) => s.c.clone().addScaledVector(s.V, -(s.b + ext)).addScaledVector(s.A, -up).addScaledVector(s.U, fwd);
 
 export const GRIPS = {
   // Rechte Hand am Pistolengriff, Zeigefinger am Abzug, Daumen links am Gehäuse
+  // wrap (hands-v3, Pistolen): Hand um die Griffachse nach hinten gedreht – Handballen rechts hinten, Daumenwurzel links
+  // hinten am Griffrücken (hoch im Biber), Daumen liegt links am Rahmen unter dem Schlitten nach vorn (nicht darüber)
   pistolGrip: {
-    shape: d => gripShape(d), F: (d, s) => s.U, B: () => [1, 0.05, 0.3], hOff: d => d.ho ?? 0.018, pc: [0, -0.0175, -0.066],
-    index: 'trigger', thumb: (d, s) => leftOf(s, 0.011, d.tu ?? 0.034, s.a * 0.35),
+    shape: d => gripShape(d), F: (d, s) => wrapF(s, d.wrap), B: (d, s) => (d.wrap ? wrapB(s, d.wrap) : [1, 0.05, 0.3]), hOff: d => d.ho ?? 0.018, pc: [0, -0.0175, -0.066],
+    index: 'trigger', thumb: (d, s) => leftOf(s, 0.011, d.tu ?? 0.034, d.wrap ? (d.tf ?? 0.03) : s.a * 0.35),
   },
   // Linke Hand unter dem Handschutz (Handfläche links unten, Finger um die rechte Seite, Daumen links vorn).
   // Finger schräg nach vorn oben → das Handgelenk liegt hinten unten, der Unterarm kommt kurz und steil von
@@ -268,8 +266,9 @@ export const GRIPS = {
   },
   // Stützhand an der Pistole: umfasst die Schusshand, Daumen vorn am Rahmen
   pistol: {
-    shape: d => gripShape(d, 0.019, 0.012), F: (d, s) => s.U, B: () => [-1, -0.12, 0.06], hOff: d => (d.ho ?? 0) + 0.03, pc: [0, -0.0175, -0.05],
-    thumb: (d, s) => leftOf(s, -0.007, 0.022, 0.012),
+    // hands-v3 (wrap): höher (Zeigefinger unter dem Abzugsbügel statt am Magazinboden), Daumen nach vorn am Rahmen
+    shape: d => gripShape(d, 0.019, 0.012), F: (d, s) => s.U, B: () => [-1, -0.12, 0.06], hOff: d => (d.ho ?? 0) + (d.wrap ? 0.016 : 0.03), pc: [0, -0.0175, -0.05],
+    thumb: (d, s) => (d.wrap ? leftOf(s, -0.006, 0.03, 0.045) : leftOf(s, -0.007, 0.022, 0.012)),
   },
   // Magazin seitlich greifen (linke Hand)
   mag: {
@@ -299,7 +298,7 @@ export const GRIPS = {
 };
 
 const gripCache = new Map();
-const KEYS = ['rake', 'gw', 'gd', 'gu', 'gl', 'ho', 'tu', 'r', 'w', 'h', 'd'];
+const KEYS = ['rake', 'gw', 'gd', 'gu', 'gl', 'ho', 'tu', 'r', 'w', 'h', 'd', 'wrap', 'tf'];
 
 function solveGrip(style, d, side) {
   const g = GRIPS[style] || GRIPS.under;
@@ -367,216 +366,94 @@ export function gripTransform(style, data = {}, side = 1, outPos = V3(), outQuat
 
 // ---------------------------------------------------------------- Geometrie
 
-function tag(geo, bone, color) {
-  const g = geo.index ? geo.toNonIndexed() : geo;
-  for (const n of Object.keys(g.attributes)) if (n !== 'position' && n !== 'normal') g.deleteAttribute(n);
-  const n = g.attributes.position.count;
-  const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), col = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) { si[i * 4] = bone; sw[i * 4] = 1; }
-  // Handflächenseite heller (Wildleder), Rücken dunkel
-  const nrm = g.attributes.normal;
-  for (let i = 0; i < n; i++) {
-    const c = typeof color === 'function' ? color(nrm.getY(i), g.attributes.position.getY(i)) : color;
-    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
-  }
-  g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
-  g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  return g;
+// ---------------------------------------------------------------- Handschuhnetz (hands-v3)
+// Ein geglättetes, gehäutetes Netz je Hand aus glove-mesh.js (erzeugt von tools/assets/hands/build-hand.mjs aus einem
+// Distanzfeld anatomischer Grundkörper, ≈ 3,5k Dreiecke high / 1,5k low): weiche Hautgewichte über die Gelenke
+// (≤ 4 Knochen je Ecke), Bündchen auf dem Unterarm-Knochen 16 (folgt dem Ärmel, steckt immer darin); Masken (Leder-
+// Innenhand, Polster, Bündchen, Abrieb) + Umgebungsverdeckung als Attribute für den Handschuh-Shader. Die Kapseln
+// (FINGERS/THUMB) bleiben unsichtbar die Messkörper für Kontaktlöser und Prüfwerkzeuge.
+const DEC = {};
+function unb64(s, T) { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); }
+function decodeGlove(lod) {
+  if (DEC[lod]) return DEC[lod];
+  if (GLOVE_MESH.key !== handDimsKey()) console.warn('[arms] glove-mesh.js passt nicht zu handdims.js – node tools/assets/hands/build-hand.mjs ausführen');
+  const M = GLOVE_MESH[lod], n = M.n, q = unb64(M.pos, Uint16Array), nq = unb64(M.nrm, Int8Array);
+  const pos = new Float32Array(n * 3), nrm = new Float32Array(n * 3);
+  for (let i = 0; i < n * 3; i++) { const k = i % 3; pos[i] = M.lo[k] + q[i] * M.sc[k]; nrm[i] = nq[i] / 127; }
+  return (DEC[lod] = { n, pos, nrm, idx: unb64(M.idx, Uint16Array), ski: unb64(M.ski, Uint8Array), skw: unb64(M.skw, Uint8Array), msk: unb64(M.msk, Uint8Array), ao: unb64(M.ao, Uint8Array) });
 }
-
-const sideColor = (ny) => (ny < -0.35 ? PALM : GLOVE);
-
-function capsule(r0, r1, len, seg = 10) {
-  // Leicht konisches Fingerglied mit runden Enden, entlang −Z ab Ursprung
-  const pts = [];
-  const cap = 3;
-  for (let i = 0; i <= cap; i++) { const a = -Math.PI / 2 + (i / cap) * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * r0, Math.sin(a) * r0)); }
-  for (let i = 0; i <= cap; i++) { const a = (i / cap) * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * r1, len + Math.sin(a) * r1)); }
-  const g = new THREE.LatheGeometry(pts, seg);
-  g.rotateX(-Math.PI / 2);
-  // leicht abgeflacht (Finger sind breiter als hoch)
-  g.scale(1.08, 0.92, 1);
-  return g;
-}
-
-function buildHandGeometry(mirror) {
-  const parts = [];
-  // Handfläche: verjüngt zum Handgelenk
-  const palm = new RoundedBoxGeometry(0.084, 0.032, 0.09, 3, 0.012);
-  palm.translate(0, 0.0, -0.045);
-  const pa = palm.attributes.position;
-  for (let i = 0; i < pa.count; i++) {
-    const z = pa.getZ(i), t = THREE.MathUtils.clamp(-z / 0.09, 0, 1);
-    pa.setX(i, pa.getX(i) * (0.72 + 0.28 * t));
-    // gewölbter Handrücken, Handballen
-    const y = pa.getY(i);
-    if (y > 0) pa.setY(i, y + 0.004 * Math.cos(pa.getX(i) / 0.04 * Math.PI / 2));
-    else pa.setY(i, y - 0.003 * (1 - t));
-  }
-  palm.computeVertexNormals();
-  const palmS = mergeVerticesSmooth(palm);
-
-  parts.push(tag(palmS, 0, sideColor));
-  // Daumenballen
-  const thenar = new THREE.SphereGeometry(0.019, 10, 8);
-  thenar.scale(0.9, 0.75, 1.5);
-  thenar.translate(-0.021, -0.009, -0.03);
-  parts.push(tag(thenar, 0, sideColor));
-  // Knöchelschutz (hart) + Polster auf dem Handrücken
-  const knuckle = bent(new RoundedBoxGeometry(0.068, 0.008, 0.024, 2, 0.0035), 5);
-  knuckle.translate(0, 0.0175, -0.074);
-  parts.push(tag(knuckle, 0, PAD));
-  const backPad = bent(new RoundedBoxGeometry(0.046, 0.004, 0.036, 2, 0.0018), 7);
-  backPad.translate(0.002, 0.0178, -0.036);
-  parts.push(tag(backPad, 0, PAD));
-  // Bündchen + Klettverschluss
-  const cuff = new THREE.CylinderGeometry(0.036, 0.033, 0.055, 14, 1, false);
-  cuff.rotateX(Math.PI / 2);
-  cuff.scale(1.05, 0.85, 1);
-  cuff.translate(0, 0.0, 0.022);
-  parts.push(tag(cuff, 0, CUFF));
-  const strap = bent(new RoundedBoxGeometry(0.046, 0.005, 0.022, 1, 0.002), 9);
-  strap.translate(0.003, 0.0305, 0.02);
-  parts.push(tag(strap, 0, PAD));
-
-  // Finger
-  let bone = 1;
-  for (const f of FINGERS) {
-    for (let s = 0; s < 3; s++) {
-      const len = f.len[s], r0 = f.r[s], r1 = s < 2 ? f.r[s + 1] : f.r[s] * 0.88;
-      const g = capsule(r0, r1, len, 12);
-      // Ruheposition entlang −Z ab Knöchel
-      let z = f.z;
-      for (let k = 0; k < s; k++) z -= f.len[k];
-      g.translate(f.x, f.y, z);
-      parts.push(tag(g, bone + s, sideColor));
-      if (s < 2) {
-        // Gepolsterte Glieder auf dem Fingerrücken
-        const pad = new RoundedBoxGeometry(r0 * 1.35, 0.003, len * (s ? 0.42 : 0.5), 1, 0.0012);
-        pad.translate(f.x, f.y + r0 * 0.86, z - len * 0.5);
-        parts.push(tag(pad, bone + s, PAD));
-      }
-    }
-    bone += 3;
-  }
-  // Daumen (Ruhe entlang seiner eigenen −Z-Achse; Ausrichtung über Knochen-Ruhedrehung)
-  const tq = thumbRestQuat();
-  let tz = 0;
-  for (let s = 0; s < 3; s++) {
-    const len = THUMB.len[s], r0 = THUMB.r[s], r1 = s < 2 ? THUMB.r[s + 1] : THUMB.r[s] * 0.88;
-    const g = capsule(r0, r1, len, 12);
-    if (s === 2) {
-      const pad = new RoundedBoxGeometry(r0 * 1.3, 0.003, len * 0.45, 1, 0.0012);
-      pad.translate(0, r0 * 0.86, -len * 0.45);
-      g.deleteAttribute('uv');
-      const merged = mergeGeometries([g.toNonIndexed(), tagPlain(pad)]);
-      g.dispose();
-      merged.translate(0, 0, tz);
-      merged.applyQuaternion(tq);
-      merged.translate(...THUMB.base);
-      parts.push(tag(merged, 13 + s, sideColor));
-    } else {
-      g.translate(0, 0, tz);
-      g.applyQuaternion(tq);
-      g.translate(...THUMB.base);
-      parts.push(tag(g, 13 + s, sideColor));
-    }
-    tz -= len;
-  }
-  let geo = mergeGeometries(parts, false);
-  parts.forEach(p => p.dispose());
+function gloveGeometry(mirror, lod = 'high') {
+  const D = decodeGlove(lod === 'low' ? 'low' : 'high');
+  const pos = D.pos.slice(), nrm = D.nrm.slice(), idx = D.idx.slice();
   if (mirror) {
-    const p = geo.attributes.position, n = geo.attributes.normal;
-    for (let i = 0; i < p.count; i++) { p.setX(i, -p.getX(i)); n.setX(i, -n.getX(i)); }
-    // Dreiecksumlauf umkehren
-    for (const name of Object.keys(geo.attributes)) {
-      const a = geo.attributes[name], sz = a.itemSize, arr = a.array;
-      for (let t = 0; t < a.count; t += 3) for (let k = 0; k < sz; k++) { const tmp = arr[(t + 1) * sz + k]; arr[(t + 1) * sz + k] = arr[(t + 2) * sz + k]; arr[(t + 2) * sz + k] = tmp; }
-    }
+    for (let i = 0; i < pos.length; i += 3) { pos[i] = -pos[i]; nrm[i] = -nrm[i]; }
+    for (let t = 0; t < idx.length; t += 3) { const a = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = a; }
   }
-  boxUV(geo, 0.03);
-  geo.computeBoundingSphere();
-  return geo;
-}
-
-// Platte entlang X zur Handrücken-Wölbung biegen (y −= k·x²)
-function bent(g, k) {
-  const p = g.attributes.position;
-  for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) - k * p.getX(i) * p.getX(i));
-  g.computeVertexNormals();
-  return g;
-}
-
-function tagPlain(g) {
-  const n = g.index ? g.toNonIndexed() : g;
-  if (n !== g) g.dispose();
-  for (const k of Object.keys(n.attributes)) if (k !== 'position' && k !== 'normal') n.deleteAttribute(k);
-  return n;
-}
-
-// Glättet Normalen einer Box (für die Handfläche)
-function mergeVerticesSmooth(geo) {
-  geo.deleteAttribute('uv');
-  const g = geo.index ? geo.toNonIndexed() : geo;
-  if (g !== geo) geo.dispose();
-  // Gleiche Positionen → gemittelte Normalen
-  const p = g.attributes.position, n = g.attributes.normal, map = new Map();
-  for (let i = 0; i < p.count; i++) {
-    const k = `${p.getX(i).toFixed(4)},${p.getY(i).toFixed(4)},${p.getZ(i).toFixed(4)}`;
-    if (!map.has(k)) map.set(k, []);
-    map.get(k).push(i);
-  }
-  for (const idx of map.values()) {
-    let x = 0, y = 0, z = 0;
-    for (const i of idx) { x += n.getX(i); y += n.getY(i); z += n.getZ(i); }
-    const l = Math.hypot(x, y, z) || 1;
-    for (const i of idx) n.setXYZ(i, x / l, y / l, z / l);
-  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+  g.setAttribute('skinIndex', new THREE.Uint8BufferAttribute(D.ski, 4));
+  g.setAttribute('skinWeight', new THREE.Uint8BufferAttribute(D.skw, 4, true));
+  g.setAttribute('gloveMask', new THREE.Uint8BufferAttribute(D.msk, 4, true));
+  g.setAttribute('gloveAO', new THREE.Uint8BufferAttribute(D.ao, 1, true));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  g.computeBoundingSphere();
   return g;
 }
 
 function thumbRestQuat(mirror = false) {
-  const q = basisQuat([-0.62, -0.42, -0.66], [-0.75, 0.6, -0.1]);
+  const q = basisQuat(THUMB_REST.F, THUMB_REST.B);
   if (mirror) { q.y = -q.y; q.z = -q.z; }
   return q.clone();
 }
+// Bindehaltung im Pose-Format (applyPose spiegelt für die linke Hand)
+function bindPose() {
+  const q = thumbRestQuat(false);
+  return { f: BIND_CURL.map((c, i) => [c[0], c[1], c[2], BIND_SPLAY[i] - FINGERS[i].splay * 0.5]), t: [q.x, q.y, q.z, q.w, BIND_THUMB_FLEX[0], BIND_THUMB_FLEX[1]] };
+}
 
-// Ärmel: Stoffrohr entlang −Z (0 = Ellbogen/Schulter → −len = Handgelenk/Ellbogen) mit Muskelform,
-// verjüngt zum Ende, schräg verlaufenden Stauchfalten (an den Enden dichter: Bündchen, Ellbogenbeuge) und
-// Vertex-Farben als Stoffschattierung (Faltentäler dunkler, Rücken heller, Säume abgedunkelt).
-// opts: bulge (m, Muskelbauch), bulgeAt (0..1), seg (Umfangssegmente)
-function sleeveGeometry(len, rA, rB, folds, seed = 1, { bulge = 0, bulgeAt = 0.3, seg = 16 } = {}) {
-  const N = 22;
-  // Profil: [t, Radius, Faltenanteil, Helligkeit]; t < 0 / > 1 = Saum (nach innen umgeschlagen)
-  const prof = [[-0.012, rA * 0.72, 0, 0.55]];
-  for (let i = 0; i <= N; i++) {
-    const t = i / N;
-    const taper = 1 - THREE.MathUtils.smoothstep(t, 0.06, 1);
-    let r = rB + (rA - rB) * taper + bulge * Math.exp(-(((t - bulgeAt) / 0.2) ** 2));
-    // Falten an den Enden kräftiger (Stoff staut sich über dem Bündchen und in der Beuge)
+// Ärmel (hands-v3): Stoffrohr entlang −Z (0 = Ellbogen/Schulter → −len = Handgelenk/Ellbogen) mit Muskelform, zum
+// Ende ovaler (Unterarm am Handgelenk), schräg verlaufenden Stauchfalten (an den Enden dichter), über dem elastischen
+// Saum gebauschter Stoff (bunch) und Saumeinzug (cinch); beide Enden als gerundete, umgeschlagene Kante mit Futter
+// nach innen – aus keinem Winkel ist eine offene Röhre oder Rückseite zu sehen (Material zusätzlich beidseitig).
+// Vertex-Farben = Stoffschattierung (Faltentäler dunkler, Säume/Futter abgedunkelt). userData.fit(z) → {rx, ry}:
+// Außenmaß ohne Falten an lokaler Höhe z (für Zubehör-Ringe, Klettlasche, Uhr).
+function sleeveGeometry(len, rA, rB, folds, seed = 1, { bulge = 0, bulgeAt = 0.3, seg = 16, oval = 0, bunch = 0, cinch = 0, lining = 0.016, N = 26 } = {}) {
+  const S = THREE.MathUtils.smoothstep, lip = 0.0017;
+  const radius = (t) => rB + (rA - rB) * (1 - S(t, 0.06, 1)) + bulge * Math.exp(-(((t - bulgeAt) / 0.2) ** 2)) - cinch * S(t, 1 - 0.04 / len, 1);
+  const ovalT = (t) => oval * S(t, 0.55, 1);
+  const prof = [];   // [z, r, Faltenanteil, Helligkeit, t]
+  const r0 = radius(0), r1 = radius(1);
+  prof.push([-lining, r0 - 2 * lip, 0, 0.4, 0], [-0.004, r0 - 2 * lip, 0, 0.46, 0]);
+  for (let k = 0; k <= 4; k++) { const a = Math.PI * (1 - k / 4); prof.push([Math.sin(a) * lip, r0 - lip + Math.cos(a) * lip, 0, 0.5 + 0.08 * k, 0]); }
+  for (let i = 1; i < N; i++) {
+    const t = 1 - Math.pow(1 - i / N, 1.5);
     const fw = 0.7 + 0.8 * Math.exp(-t / 0.14) + 1.1 * Math.exp(-(1 - t) / 0.12);
-    // Säume etwas dunkler (Überlappung, Schatten der Nachbarteile)
-    const shade = 1 - 0.16 * Math.exp(-t / 0.05) - 0.2 * Math.exp(-(1 - t) / 0.06);
-    prof.push([t, r, fw, shade]);
+    const shade = 1 - 0.12 * Math.exp(-t / 0.05) - 0.12 * Math.exp(-(1 - t) / 0.05);
+    prof.push([-t * len, radius(t), fw, shade, t]);
   }
-  prof.push([1 + 0.002 / len, rB * 1.05, 0.6, 0.76], [1 + 0.007 / len, rB * 0.8, 0, 0.5]);
+  for (let k = 0; k <= 4; k++) { const a = Math.PI * (k / 4); prof.push([-len - Math.sin(a) * lip, r1 - lip + Math.cos(a) * lip, 0, 0.82 - 0.08 * k, 1]); }
+  prof.push([-len + 0.004, r1 - 2 * lip, 0, 0.46, 1], [-len + lining, r1 - 2 * lip, 0, 0.4, 1]);
   const rows = prof.length, cols = seg + 1;
   const pos = new Float32Array(rows * cols * 3), uv = new Float32Array(rows * cols * 2), col = new Float32Array(rows * cols * 3);
-  const uS = 2 * Math.PI * rA / 0.22, vS = len / 0.22;
+  const uS = 2 * Math.PI * rA / 0.22;
   for (let i = 0; i < rows; i++) {
-    const [t, r0, fw, shade] = prof[i];
+    const [z, r0_, fw, shade, t] = prof[i];
+    const dEnd = (1 - t) * len, ot = ovalT(t), sx = 1.06 + 0.07 * ot, sy = 0.94 - 0.1 * ot;
+    const env = bunch * S(dEnd, 0.075, 0.03) * S(dEnd, 0.004, 0.016) * (fw > 0 ? 1 : 0);
     for (let j = 0; j < cols; j++) {
       const th = (j / seg) * Math.PI * 2;
       // schräge, unregelmäßige Faltenringe: Phase wandert mit dem Umfang
       const ph = t * Math.PI * folds * 1.7 + seed + 0.9 * Math.sin(th * 2 + seed) + 0.45 * Math.sin(th * 3 - seed * 1.7);
       const f = Math.sin(ph) * 0.62 + Math.sin(ph * 2.3 + seed * 2 + th) * 0.38;
-      const r = r0 + f * 0.003 * fw;
-      const k = (i * cols + j);
-      pos[k * 3] = Math.sin(th) * r * 1.06; pos[k * 3 + 1] = Math.cos(th) * r * 0.94; pos[k * 3 + 2] = -t * len;
-      uv[k * 2] = (j / seg) * uS; uv[k * 2 + 1] = t * vS;
-      // Faltentäler dunkler, Rücken heller (nur wo Falten sind)
-      const c = shade * (0.9 + 0.13 * f * Math.min(1, fw));
+      // Bausch über dem Saum: wulstige, ungleichmäßige Ringe (≈ 1,6 cm), nach außen gewölbt
+      const pb = dEnd / 0.016 * Math.PI * 2 + 1.3 * Math.sin(th + seed) + 0.6 * Math.sin(2 * th - seed * 1.3);
+      const puff = Math.pow(0.5 + 0.5 * Math.sin(pb), 0.8) * (0.75 + 0.25 * Math.sin(th * 3 + seed * 2.1));
+      const r = r0_ + f * 0.003 * fw * (fw > 0 ? 1 : 0) + env * puff;
+      const k = i * cols + j;
+      pos[k * 3] = Math.sin(th) * r * sx; pos[k * 3 + 1] = Math.cos(th) * r * sy; pos[k * 3 + 2] = z;
+      uv[k * 2] = (j / seg) * uS; uv[k * 2 + 1] = -z / 0.22;
+      const c = shade * (fw > 0 ? 0.9 + 0.13 * f * Math.min(1, fw) : 1) * (env > 0 ? 0.86 + 0.2 * puff * env / bunch : 1);
       col[k * 3] = col[k * 3 + 1] = col[k * 3 + 2] = c;
     }
   }
@@ -598,17 +475,21 @@ function sleeveGeometry(len, rA, rB, folds, seed = 1, { bulge = 0, bulgeAt = 0.3
     const x = n.getX(a) + n.getX(b), y = n.getY(a) + n.getY(b), z = n.getZ(a) + n.getZ(b), l = Math.hypot(x, y, z) || 1;
     n.setXYZ(a, x / l, y / l, z / l); n.setXYZ(b, x / l, y / l, z / l);
   }
+  g.userData.fit = (z) => {
+    const t = THREE.MathUtils.clamp(-z / len, 0, 1), r = radius(t), ot = ovalT(t);
+    return { rx: r * (1.06 + 0.07 * ot), ry: r * (0.94 - 0.1 * ot) };
+  };
   return g;
 }
 
 // ---------------------------------------------------------------- Arm-Rig
 
 class Arm {
-  constructor(side, mats) {
+  constructor(side, mats, lod = 'high') {
     this.side = side;            // 1 = rechts, −1 = links
     this.group = new THREE.Group();
     this.group.name = side > 0 ? 'arm-rechts' : 'arm-links';
-    const geo = buildHandGeometry(side < 0);
+    const geo = gloveGeometry(side < 0, lod);
     // Knochen
     const bones = [];
     const hand = new THREE.Bone(); hand.name = 'hand'; bones.push(hand);
@@ -635,9 +516,13 @@ class Arm {
     }
     this.thumb = thumb;
     this.handBone = hand;
+    // Unterarm-Knochen (16): trägt das Bündchen, folgt in solve() dem Ärmel (Ursprung Handgelenk, +Z zum Ellbogen)
+    const foreBone = new THREE.Bone(); foreBone.name = 'unterarm'; bones.push(foreBone);
+    this.foreBone = foreBone;
     this.mesh = new THREE.SkinnedMesh(geo, mats.glove);
     this.mesh.name = 'handschuh';
-    this.mesh.add(hand);
+    this.mesh.add(hand, foreBone);
+    this.applyPose(bindPose());   // Bindehaltung des Netzes (leicht gespreizt/gebeugt)
     this.mesh.updateMatrixWorld(true);
     this.mesh.bind(new THREE.Skeleton(bones));
     this.mesh.frustumCulled = false;
@@ -646,35 +531,54 @@ class Arm {
     // Ärmel (Unter- und Oberarm) + Ellbogen
     this.upperLen = 0.33; this.foreLen = 0.3;
     // Unterarm: kräftig am Ellbogen (Muskelbauch), schlank zum Bündchen; Oberarm kaum verjüngt
-    this.fore = new THREE.Mesh(sleeveGeometry(this.foreLen + 0.008, 0.049, 0.036, 3.2, side > 0 ? 1 : 2.4, { bulge: 0.004, bulgeAt: 0.22 }), mats.sleeve);
-    this.upper = new THREE.Mesh(sleeveGeometry(this.upperLen, 0.056, 0.05, 2.2, side > 0 ? 3 : 4.1, { bulge: 0.002, bulgeAt: 0.55 }), mats.sleeve);
-    const elbowGeo = new THREE.SphereGeometry(0.05, 12, 8);
+    // Unterarm: zum Handgelenk oval, über dem elastischen Saum gebauscht, Saum liegt eng über dem Handschuh-Bündchen
+    const seg = lod === 'low' ? 14 : 20;
+    this.fore = new THREE.Mesh(sleeveGeometry(this.foreLen + 0.008, 0.049, 0.0355, 3.2, side > 0 ? 1 : 2.4, { bulge: 0.004, bulgeAt: 0.22, oval: 1, bunch: 0.0036, cinch: 0.0046, seg, N: lod === 'low' ? 22 : 30 }), mats.sleeve);
+    this.upper = new THREE.Mesh(sleeveGeometry(this.upperLen, 0.056, 0.05, 2.2, side > 0 ? 3 : 4.1, { bulge: 0.002, bulgeAt: 0.55, seg: lod === 'low' ? 14 : 18, N: lod === 'low' ? 16 : 22 }), mats.sleeve);
+    // Ellbogen: Kugel im ovalen Ärmelquerschnitt (folgt der Unterarmdrehung, siehe solve) → kein Absatz zwischen den Röhren
+    const elbowGeo = new THREE.SphereGeometry(0.0495, lod === 'low' ? 12 : 16, lod === 'low' ? 8 : 12);
+    elbowGeo.scale(1.06, 0.94, 1);
     elbowGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(elbowGeo.attributes.position.count * 3).fill(0.86), 3));
     this.elbow = new THREE.Mesh(elbowGeo, mats.sleeve);
     for (const m of [this.fore, this.upper, this.elbow]) { m.frustumCulled = false; this.group.add(m); }
-    // Klebeband am rechten Unterarm, Uhr an der Innenseite des linken Handgelenks
+    // Klettlasche am Ärmelsaum (Außenseite, über dem Bausch), Klebeband am rechten Unterarm, Uhr an der Innenseite
+    // des linken Handgelenks (auf dem Unterarm-Knochen: sitzt auf dem Bündchen, das dem Ärmel folgt)
+    const fit = this.fore.geometry.userData.fit, zEnd = -(this.foreLen + 0.008);
+    const tabFit = fit(zEnd + 0.02);
+    const tabGeo = chamferBoxGeometry(0.019, 0.0022, 0.026, 0.0009);
+    tabGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(tabGeo.attributes.position.count * 3).fill(0.9), 3));
+    // UV wie der Ärmel (≈ 0,22 m je Kachel), sonst zeigt die Lasche nur einen Tarnfleck
+    { const p = tabGeo.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { uv[i * 2] = 0.3 + p.getX(i) / 0.22; uv[i * 2 + 1] = 0.6 + p.getZ(i) / 0.22; } tabGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); }
+    const tab = new THREE.Mesh(tabGeo, mats.sleeve);
+    const ta = side * 0.42;   // Winkel um die Ärmelachse (von oben zur Außenseite)
+    tab.position.set(Math.sin(ta) * (tabFit.rx + 0.0036), Math.cos(ta) * (tabFit.ry + 0.0036), zEnd + 0.017);
+    tab.rotation.set(0.06, 0, -ta * 0.92);
+    tab.frustumCulled = false;
+    this.fore.add(tab);
     if (side > 0) {
       // Radius = Ärmelprofil an dieser Stelle (+ Faltenhöhe), damit das Band anliegt
-      const tape = new THREE.Mesh(new THREE.CylinderGeometry(0.0412, 0.0412, 0.032, 16, 1, true), mats.tape);
+      const tf = fit(-0.21);
+      const tape = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.032, 18, 1, true), mats.tape);
       tape.geometry.rotateX(Math.PI / 2);
-      tape.scale.set(1.06, 0.94, 1);
+      tape.scale.set(tf.rx + 0.0034, tf.ry + 0.0034, 1);
       tape.position.z = -0.21;
       this.fore.add(tape);
     } else {
-      // Uhrgruppe: Ursprung auf der Handgelenksachse, lokal +Y zeigt zur Handflächenseite
+      // Uhrgruppe: Ursprung auf der Handgelenksachse, lokal +Y zeigt zur Handflächenseite; Band umschließt das
+      // Handschuh-Bündchen (≈ 2,8 × 2,0 cm Halbachsen bei +1 cm)
       const watch = new THREE.Group();
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.018, 18, 1, true), mats.watchCase);
-      band.rotation.x = Math.PI / 2; band.scale.set(1.08, 0.9, 1);
-      const caseM = new THREE.Mesh(chamferBoxGeometry(0.032, 0.01, 0.036, 0.0035), mats.watchCase);
-      caseM.position.y = 0.0365;
-      const face = new THREE.Mesh(new THREE.CircleGeometry(0.0122, 20), mats.watchFace);
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.016, 22, 1, true), mats.watchCase);
+      band.rotation.x = Math.PI / 2; band.scale.set(0.0292, 0.0222, 1);
+      const caseM = new THREE.Mesh(chamferBoxGeometry(0.03, 0.009, 0.034, 0.0032), mats.watchCase);
+      caseM.position.y = 0.0262;
+      const face = new THREE.Mesh(new THREE.CircleGeometry(0.0115, 20), mats.watchFace);
       // Zifferblatt: nach außen (+Y), Ziffern lesbar vom Handgelenk zu den Fingern
       face.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
-      face.position.y = 0.0418;
+      face.position.y = 0.0308;
       watch.add(band, caseM, face);
-      watch.position.set(0, -0.001, 0.013);
+      watch.position.set(0, -0.0008, 0.0105);
       watch.rotation.z = Math.PI;
-      this.handBone.add(watch);
+      this.foreBone.add(watch);
       this.watch = watch;
     }
     this.align = 0.7;            // 0 = reine IK, 1 = Unterarm exakt in Handachse
@@ -695,6 +599,359 @@ class Arm {
     this.thumb[0].quaternion.set(t[0], t[1] * side, t[2] * side, t[3]).normalize();
     this.thumb[1].rotation.set(-t[4], 0, 0);
     this.thumb[2].rotation.set(-t[5], 0, 0);
+  }
+
+  /**
+   * Kontakt mit der Waffe (hands): Hand (Ziel T.pos/T.quat im Elternraum der Arme, Pose bereits per applyPose gesetzt)
+   * starr aus der Waffe schieben (Handballen, Fingergrund, Daumenballen), dann je Finger-/Daumenkette die Glieder
+   * aus der Oberfläche drehen – je Punkt das Gelenk der Kette mit dem größten Hebel (Daumengrund frei, sonst nur
+   * Beugeachse, in Gelenkgrenzen) – und bei grip greifende Finger an die Oberfläche beugen (Spalt ≤ 2,5 mm). Was
+   * danach noch steckt, schiebt ein zweiter starrer Durchgang (alle Punkte) heraus. col: GunCollider (contact.js).
+   * Ändert T.pos und die Knochen. opts: { grip: bool, skipIndex: bool (Zeigefinger am Abzug), push: m }
+   */
+  contact(col, T, opts = {}) {
+    const hand = this.handBone;
+    hand.position.copy(T.pos); hand.quaternion.copy(T.quat);
+    hand.updateMatrixWorld(true);
+    hand.matrixWorld.decompose(_c1, _cq, _cs);
+    this._sc = _cs.x || 1;
+    this._start = (this._start || V3()).copy(hand.position);
+    this._maxPush = (opts.push ?? 0.08) / this._sc;
+    // Requisit in DIESER Hand (Granate, Messer, Platte) bewegt sich mit ihr: nur für Finger/Daumen, nicht starr
+    const cc = opts.own ? _multi.set([col, opts.own]) : col;
+    if (this._rigid(col, false)) opts.own?.sync();
+    this._chains(cc, opts);
+    const saved = _saved;
+    if (opts.grip) {
+      for (let i = 0; i < 4; i++) for (let k = 0; k < 3; k++) saved[i * 3 + k] = this.fingers[i][k].rotation.x;
+      this._grip(cc, opts); this._chains(cc, opts);
+    }
+    if (this._rigid(col, true)) { opts.own?.sync(); this._chains(cc, opts); }
+    // Handballen/Fingergrund haben Vorrang (Finger lösen sich danach über ihre Gelenke)
+    if (this._rigid(col, false)) { opts.own?.sync(); this._chains(cc, opts); }
+    // Greifen darf nie verschlechtern: steckt ein Finger danach noch, zwischen dem Stand vor dem Anlegen und dem
+    // angelegten halbieren (hands 2: früher ganz zurück – die Finger standen dann 2–4 cm vom Handschutz ab)
+    if (opts.grip) for (let i = 0; i < 4; i++) {
+      if (this._fingerPen(cc, i) <= 0.0015) continue;
+      const ch = this.fingers[i];
+      for (let k = 0; k < 3; k++) _gripCur[k] = ch[k].rotation.x;
+      let lo = 0, hi = 1;
+      for (let it = 0; it < 6; it++) {
+        const mid = (lo + hi) / 2;
+        for (let k = 0; k < 3; k++) ch[k].rotation.x = saved[i * 3 + k] + (_gripCur[k] - saved[i * 3 + k]) * mid;
+        ch[0].updateMatrixWorld(true);
+        if (this._fingerPen(cc, i) <= 0.0012) lo = mid; else hi = mid;
+      }
+      for (let k = 0; k < 3; k++) ch[k].rotation.x = saved[i * 3 + k] + (_gripCur[k] - saved[i * 3 + k]) * lo;
+      ch[0].updateMatrixWorld(true);
+      this._unpenChain(cc, ch, FINGERS[i].len, FINGERS[i].r, this._sc, false, TS_F);
+    }
+    if (opts.grip && opts.rest) this._gripSearch(cc, opts);
+    // hands 2: was jetzt noch steckt (Daumen am Schlitten/Trommelkran, Finger im Bügel, Handballen beim Griff an
+    // Schlitten oder Granate): erst Ersatzhaltungen je Kette, dann ein weiterer starrer Durchgang mit mehr Spielraum
+    this._rescue(cc);
+    this._maxPush = 0.13 / this._sc;
+    if (this._rigid(col, true)) { opts.own?.sync(); this._chains(cc, opts); this._rescue(cc); }
+    if (opts.rest) this._restNudge(cc, opts);
+    if (opts.rest && opts.layThumb) this._thumbLay(cc);
+    T.pos.copy(hand.position);
+  }
+
+  // Abstand (m) von Mittel-/Endglied des Daumens zur Waffe (hv3; ≤ 0 = liegt an)
+  _thumbGap(col) {
+    const H = _hit;
+    let g = 0.06;
+    for (let s = 1; s < 3; s++) for (const t of TS_T) {
+      const r = THUMB.r[s] * 0.92 * this._sc;
+      if (col.query(segPoint(this.thumb[s], THUMB.len[s], t, _c1), r + 0.06, H)) g = Math.min(g, H.d - r);
+    }
+    return g;
+  }
+
+  /**
+   * Daumen anlegen (hv3, nur gemerkter Ruhegriff der Stützhand): steht der Daumen nach dem Lösen > 4 mm von der Waffe
+   * ab (KV-47: lange Röhre schräg nach oben in die Luft, P9: quer über dem Griff), das Grundglied in Schritten um
+   * seine drei Achsen drehen, Glieder wahlweise beugen – es bleibt die Lage mit dem kleinsten Abstand ohne Eindringen.
+   */
+  _thumbLay(col) {
+    const ch = this.thumb;
+    let g0 = this._thumbGap(col);
+    if (g0 <= 0.004) return;
+    for (let k = 0; k < 3; k++) { ch[k].quaternion.toArray(_rsBest, k * 4); ch[k].quaternion.toArray(_rsBase, k * 4); }
+    for (const a of THUMB_LAY) {
+      for (let k = 0; k < 3; k++) ch[k].quaternion.fromArray(_rsBase, k * 4);
+      ch[0].quaternion.multiply(_cq2.setFromAxisAngle(_c5.set(a[0], a[1], a[2]), a[3]));
+      if (a[4]) { ch[1].rotation.x -= a[4]; ch[2].rotation.x -= a[4] * 0.7; }
+      ch[0].updateMatrixWorld(true);
+      if (this._chainPen(col, 4) > 0.0012) continue;
+      const g = this._thumbGap(col);
+      if (g < g0 - 0.0015) { g0 = g; for (let k = 0; k < 3; k++) ch[k].quaternion.toArray(_rsBest, k * 4); }
+      if (g0 <= 0.0025) break;
+    }
+    for (let k = 0; k < 3; k++) ch[k].quaternion.fromArray(_rsBest, k * 4);
+    ch[0].updateMatrixWorld(true);
+  }
+
+  // Größtes Eindringen der ganzen Hand (Handballen, Finger, Daumen)
+  _handPen(col) {
+    const hand = this.handBone, sc = this._sc;
+    let worst = -Infinity;
+    for (let k = 0; k < 9; k++) { const R = RIGID[k]; _c1.set(R.p[0] * this.side, R.p[1], R.p[2]).applyMatrix4(hand.matrixWorld); worst = Math.max(worst, col.pen(_c1, R.r * sc, _hit)); }
+    for (let i = 0; i < 5; i++) worst = Math.max(worst, this._chainPen(col, i));
+    return worst;
+  }
+
+  /**
+   * Ruhegriff (hands 2, einmal je Waffe gemerkt): steckt die Hand danach noch (zwischen eng stehenden Griffteilen
+   * eingeklemmt, Brecher/Bulldog), kleine Versätze entlang der Handachsen probieren (je mit Lösen der Ketten).
+   */
+  _restNudge(col, opts) {
+    const hand = this.handBone;
+    let best = this._handPen(col);
+    if (best <= 0.0015) return;
+    const bones = this._allBones || (this._allBones = [...this.fingers.flat(), ...this.thumb]);
+    const base = _nudgeBase, keep = _nudgeKeep;
+    bones.forEach((b, i) => b.quaternion.toArray(base, i * 4));
+    base[60] = hand.position.x; base[61] = hand.position.y; base[62] = hand.position.z;
+    keep.set(base);
+    for (let ax = 0; ax < 6 && best > 0.0015; ax++) {
+      _c5.set(ax >> 1 === 0 ? 1 : 0, ax >> 1 === 1 ? 1 : 0, ax >> 1 === 2 ? 1 : 0).multiplyScalar(ax & 1 ? -1 : 1).applyQuaternion(hand.quaternion);
+      for (const st of NUDGE) {
+        bones.forEach((b, i) => b.quaternion.fromArray(base, i * 4));
+        hand.position.set(base[60], base[61], base[62]).addScaledVector(_c5, st / this._sc);
+        hand.updateMatrixWorld(true);
+        opts.own?.sync();
+        this._chains(col, opts);
+        const p = this._handPen(col);
+        if (p < best - 0.0005) { best = p; bones.forEach((b, i) => b.quaternion.toArray(keep, i * 4)); keep[60] = hand.position.x; keep[61] = hand.position.y; keep[62] = hand.position.z; }
+      }
+    }
+    bones.forEach((b, i) => b.quaternion.fromArray(keep, i * 4));
+    hand.position.set(keep[60], keep[61], keep[62]);
+    hand.updateMatrixWorld(true);
+    opts.own?.sync();
+  }
+
+  // Abstand (m) von Mittel-/Endglied eines Fingers zur Waffe (wie das Prüfwerkzeug; ≤ 0 = liegt an)
+  _fingerGap(col, i) {
+    const f = FINGERS[i], H = _hit;
+    let g = 0.06;
+    for (let s = 1; s < 3; s++) for (const t of TS_F) {
+      const r = f.r[s] * 0.92 * this._sc;
+      if (col.query(segPoint(this.fingers[i][s], f.len[s], t, _c1), r + 0.06, H)) g = Math.min(g, H.d - r);
+    }
+    return g;
+  }
+
+  /**
+   * Ruhegriff (hands 2, nur beim gemerkten Lösen): greifende Finger, die nach dem Anlegen noch > 5 mm abstehen
+   * (kleiner Finger hinter dem Handschutz, Finger neben dem Griff), im Grundgelenk abspreizen und neu anlegen; es
+   * bleibt die Lage mit dem kleinsten Abstand ohne Eindringen.
+   */
+  _gripSearch(col, opts) {
+    for (let i = 0; i < 4; i++) {
+      if (i === 0 && opts.skipIndex) continue;
+      const ch = this.fingers[i];
+      let g0 = this._fingerGap(col, i);
+      if (g0 <= 0.005) continue;
+      for (let k = 0; k < 3; k++) { ch[k].quaternion.toArray(_rsBest, k * 4); ch[k].quaternion.toArray(_rsBase, k * 4); }
+      for (const sp of GRIP_SPLAY) {
+        for (let k = 0; k < 3; k++) ch[k].quaternion.fromArray(_rsBase, k * 4);
+        ch[0].rotation.y += sp * this.side;
+        ch[0].updateMatrixWorld(true);
+        this._grip(col, opts, i);
+        if (this._fingerPen(col, i) > 0.0012) continue;
+        const g = this._fingerGap(col, i);
+        if (g < g0 - 0.002) { g0 = g; for (let k = 0; k < 3; k++) ch[k].quaternion.toArray(_rsBest, k * 4); }
+      }
+      for (let k = 0; k < 3; k++) ch[k].quaternion.fromArray(_rsBest, k * 4);
+      ch[0].updateMatrixWorld(true);
+    }
+  }
+
+  // Größtes Eindringen einer Kette (0–3 Finger, 4 Daumen)
+  _chainPen(col, i) {
+    if (i < 4) return this._fingerPen(col, i);
+    let worst = -Infinity;
+    for (let s = 0; s < 3; s++) for (const t of TS_T) worst = Math.max(worst, col.pen(segPoint(this.thumb[s], THUMB.len[s], t, _c1), THUMB.r[s] * 0.92 * this._sc, _hit));
+    return worst;
+  }
+
+  // Ersatzhaltungen (hands 2) für Ketten, die nach dem Lösen noch > 1,5 mm stecken: Grundgelenk abspreizen bzw.
+  // (Daumen) um seine drei Achsen drehen, Glieder strecken oder beugen – je mit Lösen; die beste Haltung bleibt.
+  _rescue(col) {
+    const sc = this._sc;
+    for (let i = 0; i < 5; i++) {
+      const thumb = i === 4, ch = thumb ? this.thumb : this.fingers[i];
+      let best = this._chainPen(col, i);
+      if (best <= 0.0015) continue;
+      for (let k = 0; k < 3; k++) { ch[k].quaternion.toArray(_rsBest, k * 4); ch[k].quaternion.toArray(_rsBase, k * 4); }
+      const C = thumb ? RESCUE_T : RESCUE_F;
+      for (let c = 0; c < C.length && best > 0.0015; c++) {
+        for (let k = 0; k < 3; k++) ch[k].quaternion.fromArray(_rsBase, k * 4);
+        const a = C[c];
+        if (thumb) {
+          ch[0].quaternion.multiply(_cq2.setFromAxisAngle(_c5.set(a[0], a[1], a[2]).normalize(), a[3]));
+          if (a[4] >= 0) { ch[1].rotation.x = -a[4]; ch[2].rotation.x = -a[4]; }
+        } else {
+          ch[0].rotation.y += a[0] * this.side;
+          if (a[1] >= 0) for (let k = 0; k < 3; k++) ch[k].rotation.x = -a[1] * FMAX[k];
+        }
+        ch[0].updateMatrixWorld(true);
+        this._unpenChain(col, ch, thumb ? THUMB.len : FINGERS[i].len, thumb ? THUMB.r : FINGERS[i].r, sc, thumb, thumb ? TS_T : TS_F);
+        const p = this._chainPen(col, i);
+        if (p < best - 0.0003) { best = p; for (let k = 0; k < 3; k++) ch[k].quaternion.toArray(_rsBest, k * 4); }
+      }
+      for (let k = 0; k < 3; k++) ch[k].quaternion.fromArray(_rsBest, k * 4);
+      ch[0].updateMatrixWorld(true);
+    }
+  }
+
+  /**
+   * Schnellprüfung (hands 2) für Bilder ohne Lösen (low/medium): Hand auf T setzen (Knochen wie gesetzt) und das
+   * größte Eindringen an Handballen, Fingergliedern und Daumen messen (≈ 30 Abfragen statt mehrerer Hundert).
+   */
+  quickPen(col, T) {
+    const hand = this.handBone;
+    hand.position.copy(T.pos); hand.quaternion.copy(T.quat);
+    hand.updateMatrixWorld(true);
+    hand.matrixWorld.decompose(_c1, _cq, _cs);
+    const sc = _cs.x || 1;
+    let worst = -Infinity;
+    for (let k = 0; k < 9; k += 2) { const R = RIGID[k]; _c1.set(R.p[0] * this.side, R.p[1], R.p[2]).applyMatrix4(hand.matrixWorld); worst = Math.max(worst, col.pen(_c1, R.r * sc, _hit)); }
+    for (let i = 0; i < 4; i++) for (let s = 0; s < 3; s++) for (const t of s ? QTS : QTS0) worst = Math.max(worst, col.pen(segPoint(this.fingers[i][s], FINGERS[i].len[s], t, _c1), FINGERS[i].r[s] * 0.92 * sc, _hit));
+    for (let s = 0; s < 3; s++) for (const t of QTS) worst = Math.max(worst, col.pen(segPoint(this.thumb[s], THUMB.len[s], t, _c1), THUMB.r[s] * 0.92 * sc, _hit));
+    return worst;
+  }
+
+  _fingerPen(col, i) {
+    let worst = -Infinity;
+    for (let s = 0; s < 3; s++) for (const t of TS_F) worst = Math.max(worst, col.pen(segPoint(this.fingers[i][s], FINGERS[i].len[s], t, _c1), FINGERS[i].r[s] * 0.92 * this._sc, _hit));
+    return worst;
+  }
+
+  // Starr herausschieben: all = alle Hand-Punkte (sonst nur Handballen/Fingergrund/Daumenballen). true = bewegt.
+  _rigid(col, all) {
+    const hand = this.handBone, H = _hit, sc = this._sc;
+    let moved = false;
+    for (let it = 0; it < 6; it++) {
+      // Mittel der Eindringvektoren (eingeklemmte Hand pendelt nicht zwischen zwei Seiten), Länge ≥ halbe Tiefe
+      let worst = CONTACT_TOL, wd = null, n = 0;
+      _c8.set(0, 0, 0);
+      const test = (p, r) => { const pen = col.pen(p, r, H); if (pen > CONTACT_TOL) { _c8.addScaledVector(H.dir, pen); n++; if (pen > worst) { worst = pen; wd = _c3.copy(H.dir); } } };
+      for (let k = 0; k < RIGID.length; k++) {
+        const R = RIGID[k];
+        if (R.bone < 0) _c1.set(R.p[0] * this.side, R.p[1], R.p[2]).applyMatrix4(hand.matrixWorld);
+        else segPoint(R.bone < 13 ? this.fingers[(R.bone - 1) / 3 | 0][0] : this.thumb[0], R.len, R.t, _c1);
+        test(_c1, R.r * sc);
+      }
+      if (all) {
+        for (let i = 0; i < 4; i++) for (let s = 0; s < 3; s++) for (const t of TS_F) test(segPoint(this.fingers[i][s], FINGERS[i].len[s], t, _c1), FINGERS[i].r[s] * 0.92 * sc);
+        for (let s = 0; s < 3; s++) for (const t of TS_T) test(segPoint(this.thumb[s], THUMB.len[s], t, _c1), THUMB.r[s] * 0.92 * sc);
+      }
+      if (!wd) break;
+      const avg = _c8.divideScalar(n), al = avg.length();
+      if (al > worst * 0.5) wd.copy(avg).divideScalar(al); else if (al > 1e-5) wd.copy(avg).divideScalar(al).multiplyScalar(Math.max(al, worst * 0.5) / worst);
+      else break;   // ringsum gleich tief eingeklemmt: Finger lösen das über die Gelenke
+      _c1.setFromMatrixPosition(hand.matrixWorld).addScaledVector(wd, worst + 0.0004);
+      _c1.applyMatrix4(_cm.copy(hand.parent.matrixWorld).invert());
+      hand.position.copy(_c1);
+      if (hand.position.distanceTo(this._start) > this._maxPush) hand.position.sub(this._start).setLength(this._maxPush).add(this._start);
+      hand.updateMatrixWorld(true);
+      moved = true;
+    }
+    return moved;
+  }
+
+  // Alle Ketten (Daumen, vier Finger) aus der Waffe drehen
+  _chains(col, opts) {
+    const sc = this._sc;
+    this._unpenChain(col, this.thumb, THUMB.len, THUMB.r, sc, true, TS_T);
+    for (let i = 0; i < 4; i++) this._unpenChain(col, this.fingers[i], FINGERS[i].len, FINGERS[i].r, sc, false, TS_F);
+  }
+
+  // Kette: je Glied den tiefsten Punkt suchen und über das wirksamste Gelenk (0..s) herausdrehen
+  _unpenChain(col, ch, lens, radii, sc, freeBase, ts) {
+    const H = _hit;
+    let baseTurn = 0;
+    for (let s = 0; s < 3; s++) {
+      const r = radii[s] * 0.92 * sc;
+      for (let it = 0; it < 5; it++) {
+        let worst = CONTACT_TOL;
+        for (const t of ts) {
+          const pen = col.pen(segPoint(ch[s], lens[s], t, _c1), r, H);
+          if (pen > worst) { worst = pen; _c4.copy(_c1); _c3.copy(H.dir); }
+        }
+        if (worst <= CONTACT_TOL) break;
+        // wirksamstes Gelenk wählen
+        let bj = -1, bv = 0, bdc = 0;
+        for (let j = s; j >= 0; j--) {
+          if (freeBase && j === 0) {
+            if (baseTurn >= 0.8) continue;
+            ch[0].getWorldPosition(_c2);
+            const l = _c6.crossVectors(_c5.subVectors(_c4, _c2), _c3).length();
+            if (l > bv) { bv = l; bj = 0; bdc = 0; }
+            continue;
+          }
+          const vn = this._flexRate(ch[j], _c4, _c3);
+          if (Math.abs(vn) < 2e-4) continue;
+          const want = THREE.MathUtils.clamp((worst + 0.0005) / vn, -0.6, 0.6);
+          const cur = -ch[j].rotation.x, lim = j === 0 ? FLIM0 : FLIM;
+          const got = THREE.MathUtils.clamp(cur + want, lim[0], j === 0 ? lim[1] : FMAX[j]) - cur;
+          if (Math.abs(got) < 1e-3) continue;
+          const eff = Math.abs(vn) * Math.abs(got / want);
+          if (eff > bv) { bv = eff; bj = j; bdc = got; }
+        }
+        if (bj < 0) break;
+        if (freeBase && bj === 0) {
+          ch[0].getWorldPosition(_c2);
+          const ax = _c6.crossVectors(_c5.subVectors(_c4, _c2), _c3);
+          const l = ax.length();
+          let da = Math.min(0.35, (worst + 0.0005) / l, 0.8 - baseTurn);
+          baseTurn += da;
+          ax.divideScalar(l).applyQuaternion(ch[0].getWorldQuaternion(_cq).invert());
+          ch[0].quaternion.multiply(_cq2.setFromAxisAngle(ax, da));
+          ch[0].updateMatrixWorld(true);
+        } else {
+          ch[bj].rotation.x -= bdc;
+          ch[bj].updateMatrixWorld(true);
+        }
+      }
+    }
+  }
+
+  // Bewegung (m/rad) von Punkt p entlang dir beim Beugen des Glieds (Beugen = Drehung um −X des Glieds)
+  _flexRate(bone, p, dir) {
+    bone.getWorldPosition(_c2);
+    _c5.set(1, 0, 0).applyQuaternion(bone.getWorldQuaternion(_cq)).negate();
+    return _c6.crossVectors(_c5, _c7.subVectors(p, _c2)).dot(dir);
+  }
+
+  // Greifende Finger an die Oberfläche beugen: nächster Punkt von Mittel-/Endglied, über Mittel- und Endgelenk
+  _grip(col, opts, only = -1) {
+    const H = _hit, sc = this._sc;
+    for (let i = 0; i < 4; i++) {
+      if ((i === 0 && opts.skipIndex) || (only >= 0 && i !== only)) continue;
+      const ch = this.fingers[i], f = FINGERS[i];
+      for (let it = 0; it < 5; it++) {
+        let g = Infinity, gs = -1;
+        for (let s = 1; s < 3; s++) for (const t of TS_F) {
+          segPoint(ch[s], f.len[s], t, _c1);
+          if (col.query(_c1, f.r[s] * sc + 0.05, H) && H.d - f.r[s] * 0.92 * sc < g) { g = H.d - f.r[s] * 0.92 * sc; gs = s; _c4.copy(_c1); _c3.copy(H.dir).negate(); }
+        }
+        if (gs < 0 || g <= 0.002) break;
+        // Gelenk mit dem größten Hebel zur Oberfläche (Grund-, Mittel- oder Endgelenk; Endgelenk nur für Punkte am Endglied)
+        let bj = -1, bv = 2e-4;
+        for (const j of gs === 2 ? [0, 1, 2] : [0, 1]) {
+          const vn = this._flexRate(ch[j], _c4, _c3);
+          if (vn > bv && -ch[j].rotation.x < FMAX[j] - 1e-3) { bv = vn; bj = j; }
+        }
+        if (bj < 0) break;
+        const cur = -ch[bj].rotation.x;
+        ch[bj].rotation.x = -Math.min(FMAX[bj], cur + Math.min(0.5, (g - 0.0008) / bv));
+        ch[bj].updateMatrixWorld(true);
+      }
+    }
   }
 
   // Handgelenk setzen und Arm per Zwei-Knochen-IK anschließen (alles im Elternraum der Arme)
@@ -723,6 +980,12 @@ class Arm {
     // Je stärker Handachse und IK-Richtung auseinanderliegen, desto mehr gilt die reine IK (kein Arm durchs Bild)
     const agree = THREE.MathUtils.smoothstep(ik.dot(back), -0.1, 0.55);
     const fd = ik.lerp(back, this.align * agree).normalize();
+    // Handgelenk-Grenzen (hands): Unterarmrichtung im Handraum (+Z = gerade) auf natürliche Bereiche begrenzen –
+    // Beugung ≤ 70°, Streckung ≤ 60°, Abspreizung ≤ 25°; den Rest übernehmen Ellbogen/Oberarm (Ärmel dehnt sich).
+    const dl = fd.applyQuaternion(_cq.copy(wristQuat).invert());
+    const pitch = THREE.MathUtils.clamp(Math.atan2(-dl.y, dl.z), -WRIST_EXT, WRIST_FLEX);
+    const yaw = THREE.MathUtils.clamp(Math.atan2(dl.x, dl.z), -WRIST_DEV, WRIST_DEV);
+    fd.set(Math.tan(yaw), -Math.tan(pitch), 1).normalize().applyQuaternion(wristQuat);
     E.copy(W).addScaledVector(fd, Lf);
     const up = _upA.set(0, 1, 0).applyQuaternion(wristQuat);
     orient(this.fore, E, W, up, 0.03);
@@ -730,10 +993,39 @@ class Arm {
     orient(this.upper, S0, E, _upB.set(0, 1, 0), 0.0);
     this.upper.scale.z = THREE.MathUtils.clamp(S0.distanceTo(E) / Lu, 0.6, 1.6);
     this.elbow.position.copy(E);
+    this.elbow.quaternion.slerpQuaternions(this.fore.quaternion, this.upper.quaternion, 0.5);
     this.elbowPos = E;
+    // Bündchen-Knochen = Ärmel am Handgelenk (gleiche Drehung wie der Unterarm-Ärmel, Ursprung im Handgelenk)
+    this.foreBone.position.copy(W);
+    this.foreBone.quaternion.copy(this.fore.quaternion);
   }
 }
+// Fingermaße für Prüfwerkzeuge (tools/out/hands2/probe.mjs)
+Arm.FINGER_R = FINGERS.map(f => f.r.slice());
+Arm.FINGER_L = FINGERS.map(f => f.len.slice());
 const _upA = V3(), _upB = V3(), _oz = V3(), _oy = V3(), _ox = V3(), _fd = V3();
+const _c1 = V3(), _c2 = V3(), _c3 = V3(), _c4 = V3(), _c5 = V3(), _c6 = V3(), _c7 = V3(), _c8 = V3(), _cs = V3();
+const _cq = new THREE.Quaternion(), _cq2 = new THREE.Quaternion(), _cm = new THREE.Matrix4();
+const _hit = contactHit(), _multi = new MultiCollider(), _saved = new Float32Array(12);
+const _gripCur = new Float32Array(3), _rsBest = new Float32Array(12), _rsBase = new Float32Array(12);
+const _nudgeBase = new Float32Array(63), _nudgeKeep = new Float32Array(63), NUDGE = [0.004, 0.008, 0.013, 0.02];
+const QTS0 = [0.5], QTS = [0.5, 0.92], GRIP_SPLAY = [0.12, -0.12, 0.24, -0.24, 0.36, -0.36];
+// Ersatzhaltungen (hands 2) – Finger: [Abspreizen rad, Beugung als Anteil von FMAX (−1 = lassen)];
+// Daumen: [Achse x, y, z (Grundgliedraum), Winkel rad, Beugung Mittel-/Endglied rad (−1 = lassen)]
+const RESCUE_F = [[0.2, -1], [-0.2, -1], [0.4, -1], [-0.4, -1], [0, 0.04], [0, 0.95], [0.25, 0.5], [-0.25, 0.5]];
+const RESCUE_T = [[1, 0, 0, 0.5, -1], [1, 0, 0, -0.5, -1], [0, 1, 0, 0.5, -1], [0, 1, 0, -0.5, -1], [0, 0, 1, 0.6, -1], [0, 0, 1, -0.6, -1], [1, 0, 0, 0.9, 0.1], [0, 1, 0, -0.9, 0.1], [0, 0, 0, 0, 0.05], [1, 0, 0, -0.9, 0.5]];
+// Starre Kontaktpunkte: Handballen (Handraum, x gespiegelt je Seite), Fingergrund, Daumenballen
+const RIGID = [];
+for (const x of [-0.025, 0, 0.025]) for (const z of [-0.065, -0.035, -0.01]) RIGID.push({ bone: -1, p: [x, 0, z], r: 0.011 });
+for (let i = 0; i < 4; i++) RIGID.push({ bone: 1 + i * 3, len: FINGERS[i].len[0], t: 0.15, r: FINGERS[i].r[0] * 0.92 });
+RIGID.push({ bone: 13, len: THUMB.len[0], t: 0.2, r: THUMB.r[0] * 0.92 });
+function segPoint(bone, len, t, out) { return out.set(0, 0, -len * t).applyMatrix4(bone.matrixWorld); }
+const TS_F = [0.15, 0.5, 0.9], TS_T = [0.2, 0.6, 0.95];
+// hv3: Daumen-Anlegen – kleine Drehungen des Grundglieds (Achse, Winkel) ohne/mit Beugen der Glieder, kleine zuerst
+const THUMB_LAY = [];
+for (const ang of [0.12, 0.25, 0.4, 0.6, 0.8]) for (const bend of [0, 0.3]) for (const ax of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) for (const sg of [1, -1]) THUMB_LAY.push([ax[0], ax[1], ax[2], sg * ang, bend]);          // Messpunkte je Glied (wie tools/out/hands2/probe.mjs)
+const CONTACT_TOL = 0.0006;                                       // m zulässiges Eindringen beim Lösen
+const FLIM0 = [-0.25, FMAX[0]], FLIM = [-0.1, 0];                 // Beugegrenzen Grundglied / Mittel-+Endglied (oben FMAX)
 
 function orient(mesh, from, to, up, extend) {
   const z = _oz.subVectors(from, to).normalize();     // lokal +Z zeigt zurück zum Ursprung
@@ -771,15 +1063,174 @@ export function getPose(name) {
 
 export function newPose(name = 'relaxed') { return clonePose(getPose(name)); }
 
+// ---------------------------------------------------------------- Handschuh-/Ärmel-Texturen (hands, hands-v3)
+// Prozedural, kachelbar, je Größe gecacht. Handschuh (hands-v3) = eine RGBA-Detailkarte, im Shader dreiachsig über die
+// Bindeposition gelegt (keine UV-Nähte, klebt an der Haut): R Strickstoff-Höhe (Stretch-Rücken), G Narbung des
+// Synthetikleders (Innenhand), B Abrieb/Schmutz, A Faser-Helligkeit. Ärmel = Ripstop-Gewebe als Normal-Map.
+// Größe je Qualität: low 256², medium 512², high/ultra 1024².
+const TEX = new Map();
+function texCanvas(S) { const c = document.createElement('canvas'); c.width = c.height = S; return c; }
+function mkTex(c, srgb, repeat = 1) {
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  t.anisotropy = 4;
+  t.repeat.set(repeat, repeat);
+  t.needsUpdate = true;
+  return t;
+}
+function normalFromHeight(h, S, strength) {
+  const c = texCanvas(S), ctx = c.getContext('2d'), img = ctx.createImageData(S, S), d = img.data;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const l = h[y * S + ((x - 1 + S) % S)], r = h[y * S + ((x + 1) % S)], u = h[((y - 1 + S) % S) * S + x], b = h[((y + 1) % S) * S + x];
+    let nx = (l - r) * strength, ny = (u - b) * strength, nz = 1;
+    const k = 1 / Math.hypot(nx, ny, nz);
+    const i = (y * S + x) * 4;
+    d[i] = (nx * k * 0.5 + 0.5) * 255; d[i + 1] = (ny * k * 0.5 + 0.5) * 255; d[i + 2] = (nz * k * 0.5 + 0.5) * 255; d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+export function gloveDetail(S = 512) {
+  const key = 'gloveD' + S;
+  if (TEX.has(key)) return TEX.get(key);
+  // Kachel = 3,5 cm: 40 Maschenstäbchen (0,9 mm), Leder-Poren ≈ 0,3 mm, Abrieb-Flecken ≈ 3–6 mm
+  const grain = fbm(S, S, { seed: 71, period: S >= 1024 ? 96 : 64, octaves: 2, gain: 0.55 });
+  const pore = fbm(S, S, { seed: 72, period: 28, octaves: 2, gain: 0.5 });
+  const crease = fbm(S, S, { seed: 76, period: 9, octaves: 3, gain: 0.5 });
+  const wear = fbm(S, S, { seed: 73, period: 8, octaves: 3 }), fib = fbm(S, S, { seed: 75, period: S >> 3, octaves: 2 });
+  const d = new Uint8Array(S * S * 4), cols = 40, rows = 52;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const i = y * S + x, u = (x / S) * cols, v = (y / S) * rows, fu = u - Math.floor(u);
+    // Rechts-Links-Maschen: Stäbchen mit V-förmig versetzten Schlaufen
+    const loop = 0.5 + 0.5 * Math.sin((v + Math.abs(fu - 0.5) * 1.2) * Math.PI * 2);
+    const knit = 0.18 + 0.62 * Math.sin(fu * Math.PI) * (0.55 + 0.45 * loop) + (fib[i] - 0.5) * 0.25;
+    const leather = 0.55 + (grain[i] - 0.5) * 0.7 - Math.max(0, pore[i] - 0.6) * 1.6 - Math.pow(1 - Math.abs(crease[i] - 0.5) * 2, 8) * 0.35;
+    d[i * 4] = THREE.MathUtils.clamp(knit, 0, 1) * 255;
+    d[i * 4 + 1] = THREE.MathUtils.clamp(leather, 0, 1) * 255;
+    d[i * 4 + 2] = THREE.MathUtils.clamp(wear[i], 0, 1) * 255;
+    d[i * 4 + 3] = THREE.MathUtils.clamp(0.5 + (fib[i] - 0.5) * 1.4, 0, 1) * 255;
+  }
+  const t = new THREE.DataTexture(d, S, S, THREE.RGBAFormat);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true;
+  t.anisotropy = 4; t.colorSpace = THREE.NoColorSpace; t.needsUpdate = true;
+  TEX.set(key, t);
+  return t;
+}
+export function sleeveWeave(S = 512) {
+  const key = 'weave' + S;
+  if (TEX.has(key)) return TEX.get(key);
+  // 6 Ripstop-Karos je Kachel (Kachel ≈ 3,7 cm auf dem Ärmel), Grundbindung mit 2 px-Fäden
+  const h = new Float32Array(S * S), cell = S / 6, th = Math.max(2, S >> 8);
+  const n = fbm(S, S, { seed: 81, period: 16, octaves: 2 });
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const wx = (x / th) | 0, wy = (y / th) | 0;
+    const base = (wx + wy) & 1 ? 0.35 + 0.25 * Math.sin((x % th) / th * Math.PI) : 0.35 + 0.25 * Math.sin((y % th) / th * Math.PI);
+    const gx = Math.abs((x % cell) - cell / 2) > cell / 2 - th * 1.5, gy = Math.abs((y % cell) - cell / 2) > cell / 2 - th * 1.5;
+    h[y * S + x] = base + (gx || gy ? 0.45 : 0) + n[y * S + x] * 0.25;
+  }
+  const t = mkTex(normalFromHeight(h, S, 1.4), false, 6);
+  TEX.set(key, t);
+  return t;
+}
+const texSize = q => (q === 'low' ? 256 : q === 'medium' ? 512 : 1024);
+
+/**
+ * Klassen-Handschuhton (hands-v3): taktische Töne statt Pappe/Haut – Standard Schwarz/Anthrazit, Klassen behalten
+ * ihren Farbton (Grau, Coyote, Braun, Oliv, Dunkeloliv, Elite schwarz), Sättigung ≤ 0,32, Helligkeit 0,2–0,42
+ * (Untergrenze: schwarzer Handschuh säuft im Schatten nicht ab; Glanzsaum im Shader hält die Kontur).
+ */
+const GLOVE_DEFAULT = '#383a3d';
+const _hsl = {};
+export function gloveTone(hex, out = new THREE.Color()) {
+  if (!hex || /^#?f{6}$/i.test(hex)) return out.set(GLOVE_DEFAULT);
+  out.set(hex).getHSL(_hsl, THREE.SRGBColorSpace);
+  return out.setHSL(_hsl.h, Math.min(_hsl.s, 0.32), THREE.MathUtils.clamp(_hsl.l * 0.82, 0.2, 0.42), THREE.SRGBColorSpace);
+}
+
+// Handschuh-Shader (hands-v3): MeshStandardMaterial + Einschübe. Masken je Ecke (gloveMask: Leder, Polster, Bündchen,
+// Abrieb; gloveAO) → Grundfarbe je Zone (Stretch-Rücken, dunkleres Synthetikleder innen, TPR-Polster, Neopren-
+// Bündchen), Nähte als scharfe Linien auf den Zonengrenzen (Ableitungs-geglättet), Abrieb an Kuppen/Handballen,
+// Feld-AO; Rauheit je Zone; Mikrorelief (Strick/Narbung/Nahtrillen) über Höhen-Ableitungen (ohne Tangenten/UVs, ab
+// medium); weicher Stoff-Glanzsaum (Sheen) aus der diffusen Beleuchtung → Kontur bleibt auch im Schatten lesbar.
+function makeGloveMaterial(S) {
+  const m = new THREE.MeshStandardMaterial({ color: GLOVE_DEFAULT, roughness: 0.85, metalness: 0.0 });
+  const U = { gloveDetail: { value: gloveDetail(S) }, gloveTile: { value: 1 / 0.035 }, gloveBump: { value: 0.00032 }, gloveSheen: { value: 0.32 } };
+  m.userData.gloveU = U;
+  m.defines = { GLOVE_BUMP: '' };
+  m.customProgramCacheKey = () => 'glove-v3';
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 gloveMask;\nattribute float gloveAO;\nvarying vec4 vGM;\nvarying float vGAO;\nvarying vec3 vBP;\nvarying vec3 vBN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGM = gloveMask; vGAO = gloveAO; vBP = position; vBN = normal;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+uniform sampler2D gloveDetail; uniform float gloveTile; uniform float gloveBump; uniform float gloveSheen;
+varying vec4 vGM; varying float vGAO; varying vec3 vBP; varying vec3 vBN;
+float gL, gPad, gCuf, gWear, gH;`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+{
+  vec3 bw = abs(normalize(vBN)); bw *= bw; bw *= bw; bw /= (bw.x + bw.y + bw.z);
+  vec3 P = vBP * gloveTile;
+  vec4 tx = texture2D(gloveDetail, P.zy) * bw.x + texture2D(gloveDetail, P.xz) * bw.y + texture2D(gloveDetail, P.xy) * bw.z;
+  gL = smoothstep(0.4, 0.6, vGM.x); gPad = smoothstep(0.4, 0.6, vGM.y); gCuf = smoothstep(0.35, 0.65, vGM.z) * (1.0 - gPad);
+  vec3 base = diffuseColor.rgb;
+  vec3 fabric = base * (0.9 + 0.3 * (tx.a - 0.5)) * (0.94 + 0.12 * tx.r);
+  vec3 leather = base * vec3(0.6, 0.6, 0.63) * (0.9 + 0.3 * (tx.g - 0.5));
+  vec3 padC = base * 0.56 * (0.95 + 0.1 * tx.g);
+  vec3 cuffC = base * 0.8 * (0.92 + 0.16 * tx.r);
+  vec3 col = mix(mix(fabric, leather, gL), padC, gPad);
+  col = mix(col, cuffC, gCuf);
+  float sw = fwidth(vGM.x) * 1.3 + 0.012, pw = fwidth(vGM.y) * 1.3 + 0.012, cw = fwidth(vGM.z) * 1.3 + 0.012;
+  float seam = max((1.0 - smoothstep(0.0, sw, abs(vGM.x - 0.5))) * (1.0 - gCuf), 1.0 - smoothstep(0.0, pw, abs(vGM.y - 0.5)));
+  seam = max(seam, 1.0 - smoothstep(0.0, cw, abs(vGM.z - 0.5)));
+  // Steppnaht neben der Kappnaht (heller Faden, gestrichelt entlang der Grenze)
+  float st = (1.0 - smoothstep(0.0, sw, abs(abs(vGM.x - 0.5) - 0.09))) * step(0.5, fract(dot(P, vec3(9.0, 11.0, 13.0)))) * (1.0 - gCuf);
+  col *= 1.0 - 0.5 * seam;
+  col = mix(col, base * 1.25 + 0.012, st * 0.35);
+  gWear = vGM.w * smoothstep(0.3, 0.7, tx.b + vGM.w * 0.3);
+  col = mix(col, col * 1.55 + 0.018, gWear * 0.55);
+  col *= 0.88 + 0.24 * tx.b * (1.0 - gWear);
+  col *= mix(1.0, vGAO, 0.85);
+  diffuseColor.rgb = col;
+  gH = mix(tx.r * 0.75, tx.g * 0.55, gL) * (1.0 - gPad) + gPad * (0.5 + tx.g * 0.15) - seam * 0.9 + gCuf * tx.r * 0.2;
+}`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+roughnessFactor = mix(mix(0.86, 0.6, gL), 0.5, gPad);
+roughnessFactor = mix(roughnessFactor, 0.92, gCuf) - gWear * 0.18 + 0.06 * (vGAO - 0.7);`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+#ifdef GLOVE_BUMP
+{
+  vec2 dH = vec2(dFdx(gH), dFdy(gH)) * gloveBump;
+  vec3 sX = dFdx(-vViewPosition), sY = dFdy(-vViewPosition);
+  vec3 R1 = cross(sY, normal), R2 = cross(normal, sX);
+  float det = dot(sX, R1) * faceDirection;
+  normal = normalize(abs(det) * normal - sign(det) * (dH.x * R1 + dH.y * R2));
+}
+#endif`)
+      .replace('#include <opaque_fragment>', `{
+  float fr = 1.0 - saturate(dot(normal, normalize(vViewPosition)));
+  fr = fr * fr * fr;
+  vec3 irr = (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse) / max(diffuseColor.rgb, vec3(0.03));
+  outgoingLight += irr * fr * gloveSheen * mix(1.0, 0.4, gL) * (1.0 - 0.6 * gPad) * vec3(0.92, 0.95, 1.0);
+}
+#include <opaque_fragment>`);
+  };
+  return m;
+}
+
 // Materialsatz der Arme (überdauert das Match, siehe takeMaterials in materials.js)
 function makeArmMaterials() {
   const watchTex = watchFaceTexture();
   const set = {
-    glove: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78, metalness: 0.0, normalMap: fabricNormal(), normalScale: new THREE.Vector2(0.22, 0.22) }),
-    sleeve: new THREE.MeshStandardMaterial({ map: camoMap('arid'), vertexColors: true, roughness: 0.92, metalness: 0.0, normalMap: fabricNormal(), normalScale: new THREE.Vector2(0.3, 0.3) }),
+    glove: makeGloveMaterial(512),
+    // Ärmel beidseitig: Futter/Saum zeigen Stoff, nie eine offene Rückseite
+    sleeve: new THREE.MeshStandardMaterial({ map: camoMap('arid'), vertexColors: true, roughness: 0.9, metalness: 0.0, normalMap: sleeveWeave(512), normalScale: new THREE.Vector2(0.5, 0.5), side: THREE.DoubleSide }),
     tape: new THREE.MeshStandardMaterial({ map: tapeMap(), roughness: 0.6, metalness: 0.0 }),
     watchCase: new THREE.MeshStandardMaterial({ color: 0x1b1c1d, roughness: 0.55, metalness: 0.2 }),
-    watchFace: new THREE.MeshStandardMaterial({ map: watchTex, emissive: 0xffffff, emissiveMap: watchTex, emissiveIntensity: 0.55, roughness: 0.15, metalness: 0.0 }),
+    watchFace: new THREE.MeshStandardMaterial({ map: watchTex, emissive: 0xffffff, emissiveMap: watchTex, emissiveIntensity: 0.16, roughness: 0.15, metalness: 0.0 }),
   };
   for (const [k, m] of Object.entries(set)) m.name = 'vm:' + k;
   return set;
@@ -787,15 +1238,18 @@ function makeArmMaterials() {
 
 export class Arms {
   /** camo: Palettenname ('arid' | 'wood' | 'neutral') oder 5 Hex-Farben (siehe textures.js CAMO_PALETTES). */
-  constructor({ camo = 'arid' } = {}) {
+  constructor({ camo = 'arid', quality = 'high' } = {}) {
     this.mats = takeMaterials('arms', makeArmMaterials);
     this.camo = null;
     this.setCamo(camo);
+    this.setQuality(quality);
     getPose('relaxed');
     this.group = new THREE.Group();
     this.group.name = 'arme';
-    this.right = new Arm(1, this.mats);
-    this.left = new Arm(-1, this.mats);
+    // LOD: Handschuhnetz ≈ 3,5k Dreiecke je Hand (high/medium) bzw. ≈ 1,5k (low), Ärmel 20 bzw. 14 Segmente
+    const lod = quality === 'low' ? 'low' : 'high';
+    this.right = new Arm(1, this.mats, lod);
+    this.left = new Arm(-1, this.mats, lod);
     this.group.add(this.right.group, this.left.group);
     this._watchTimer = 0;
   }
@@ -809,6 +1263,22 @@ export class Arms {
     // Nur die Textur wechselt (Karte war schon gesetzt) → gleiches Shaderprogramm, kein needsUpdate nötig
     this.mats.sleeve.map = camoMap(camo);
   }
+
+  /** Texturgröße/Mikrorelief je Qualität (Karten werden getauscht; low ohne Relief → eigenes Programm). */
+  setQuality(q) {
+    const S = texSize(q);
+    if (S === this._texS) return;
+    this._texS = S;
+    const g = this.mats.glove, sl = this.mats.sleeve;
+    if (g.userData.gloveU) g.userData.gloveU.gloveDetail.value = gloveDetail(S);
+    // Mikrorelief erst ab medium (low: nur Zonenfarben, Nähte, AO, Glanzsaum)
+    const bump = q !== 'low';
+    if (g.defines && ('GLOVE_BUMP' in g.defines) !== bump) { if (bump) g.defines.GLOVE_BUMP = ''; else delete g.defines.GLOVE_BUMP; g.needsUpdate = true; }
+    sl.normalMap = sleeveWeave(S);
+  }
+
+  /** Handschuhfarbe (Klassen-Look, sRGB-Hex); Töne werden auf taktische Werte gebracht (gloveTone). */
+  setGlove(hex) { gloveTone(hex, this.mats.glove.color); }
 
   update(dt) {
     // Uhr regelmäßig neu zeichnen (Minutenanzeige)

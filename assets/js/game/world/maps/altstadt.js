@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { building, wall, stairs, railing, pitchedRoof } from '../arch.js';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, lampPost, acUnit, cable,
-  bench, cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair,
+  bench, cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
 } from '../props.js';
 
 const FH = 3.2;                       // Geschosshöhe
@@ -23,18 +23,29 @@ export default {
   visualBounds: { minX: -180, maxX: 180, minZ: -190, maxZ: 190 },
   chunkSize: 32,
   ambience: 'desert',
+  // Fotoscan-Bibliothek (assets/lib): HDRI für Umgebungslicht + Himmel, Materialzuordnung siehe world/library.js
+  assets: { hdri: 'old_outdoor_theater' },
   defaultSurface: 'concrete',
   navSpacing: 1.5,
   groundNoise: 0.18,
   lighting: {
     sun: { elevation: 61, azimuth: 212, color: '#ffeccc', intensity: 4.9 },
-    sky: { turbidity: 2.6, rayleigh: 1.05, mieCoefficient: 0.0035, mieDirectionalG: 0.8, exposure: 0.6, clouds: { coverage: 0.1, density: 0.28, scale: 0.00024, elevation: 0.62 }, hazeHigh: 0.11, hazeAmount: 0.75 },
-    hemi: { sky: '#d6e0ea', ground: '#e0bd8c', intensity: 0.6 },
+    // HDRI old_outdoor_theater: Umgebungslicht + Foto-Wolken ab ≈ 25° Höhe (darunter Bäume/Mauer des Fotos, die über
+    // der Stadt riesig wirkten) – unten bleibt der Preetham-Himmel mit Dunst
+    sky: { turbidity: 2.6, rayleigh: 1.05, mieCoefficient: 0.0035, mieDirectionalG: 0.8, exposure: 0.6, clouds: { coverage: 0.1, density: 0.28, scale: 0.00024, elevation: 0.62 }, hazeHigh: 0.11, hazeAmount: 0.75, hdriBlend: [0.42, 0.75] },
+    hemi: { sky: '#d6e0ea', ground: '#e0bd8c', intensity: 0.6, hdriIntensity: 0.45 },
     env: { intensity: 0.58, ground: '#e0c090', groundIntensity: 0.9, tint: '#fff0dc' },
-    fog: { color: '#d9e4ec', near: 90, far: 520 },
+    fog: { color: '#d9e4ec', near: 90, far: 520, density: 0.0026, falloff: 0.03, start: 35, sun: 0.25, sunExp: 6 },
     shadow: { size: 40 },
     exposure: 0.94,
+    // Gassen: heller Putz und Sand werfen viel Licht zurück (warme Schattenseiten), staubige Luft
+    probes: { bounce: 1.25 },
+    // atmosphere-weather: Strahlen durch Kirchenfenster/Türen kräftiger; Torbögen/Fenster ins Freie (outdoor), Gassen-
+    // schlitze nur bei tiefer Sonne (Morgen/Abend; die Mittagssonne steht zu steil)
+    atmos: { beams: 0.03, beamG: 0.4, dust: 1.4, slots: 0.7, outdoor: 0.65 },
   },
+  // Belichtung: draußen unverändert (L̄ 0,156 ≈ Referenz 0,16); Kirche/Häuser (L̄ ≈ 0,016) stießen an evMax 1,8 → 2,2
+  grade: { exposure: { evMax: 2.2 } },
 
   build(b, ctx) {
     const zones = [];
@@ -89,6 +100,7 @@ export default {
     // Kulisse außerhalb
     // -----------------------------------------------------------------------
     backdrop(b);
+    dressing(b);
 
     // -----------------------------------------------------------------------
     // Startpunkte & Flaggen
@@ -107,6 +119,28 @@ export default {
     };
   },
 };
+
+// ---------------------------------------------------------------------------
+// Ausstattung aus der Asset-Bibliothek (Fotoscan-Kleinteile; ohne Bibliothek entfällt sie)
+// ---------------------------------------------------------------------------
+function dressing(b) {
+  const list = [];
+  for (const s of [1, -1]) {
+    const R = s > 0 ? 0 : Math.PI;
+    // Marktgasse (West): Müll, Kartons, Zementsäcke an den Hauswänden (x −37,4)
+    list.push(['trashbag', -36.9, 0, s * 24.4], ['trashbag', -36.95, 0, s * 25.0], ['cardboard_box_01', -36.9, 0, s * 9.0, 0.3]);
+    list.push(['cement_bag', -36.85, 0, s * 14.4, 0.1 + R], ['cement_bag', -36.9, 0.18, s * 14.5, 1.5]);
+    list.push(['metal_jerrycan_green', -36.95, 0, s * 7.6, 0.6]);
+    // Ostgasse (x 31,4 … 35,0)
+    list.push(['trashbag', 34.6, 0, s * 21.2], ['cardboard_box_01', 31.8, 0, s * 18.6, 0.8]);
+    // Torvorplatz (Sand): ausgedientes Sofa + Fernseher an der Stadtmauer, Kisten, Müll
+    list.push(['sofa_01', -30.0, 0, s * 50.45, R, { collide: true }], ['television_01', -28.55, 0, s * 50.55, R + 0.3]);
+    list.push(['trashbag', -27.9, 0, s * 50.7], ['cardboard_box_01', 18.6, 0, s * 50.6, 0.4], ['cardboard_box_01', 19.2, 0, s * 50.75, 1.3]);
+    list.push(['wooden_military_crate', 36.2, 0, s * 50.6, R + 0.05, { collide: true }]);
+    list.push(['metal_jerrycan_green', 9.4, 0, s * 50.8, 2.0], ['cement_bag', -9.6, 0, s * 50.7, 0.3]);
+  }
+  dress(b, list);
+}
 
 // ---------------------------------------------------------------------------
 // Schilder
@@ -1149,7 +1183,7 @@ function terraceDeco(b, M, h, o) {
   for (const [x, z] of o.pots || []) pot(b, x, y, M.z(z), { r: 0.3, h: 0.5, plant: b.rand() < 0.4 ? 'flowers' : 'bush' });
   if (o.tank) waterTank(b, o.tank[0], y, M.z(o.tank[1]));
   if (o.parasol) parasol(b, o.parasol[0], M.z(o.parasol[1]), { y, r: 1.3, tint: b.pick(['#ffffff', '#f2e6d0']) });
-  for (const [x, z] of o.chairs || []) chair(b, x, M.z(z), { y, ry: b.rand() * Math.PI * 2, tint: b.pick(['#2f6f9a', '#3c7a5a', '#c8402f']) });
+  for (const [x, z] of o.chairs || []) chair(b, x, M.z(z), { y, ry: b.rand() * Math.PI * 2, tint: b.pick(['#2f6f9a', '#3c7a5a', '#c8402f']), model: true });
   for (const [ax, az, bx, bz] of o.laundry || []) {
     b.cyl(ax, y, M.z(az), 0.03, 1.9, 'metal_galvanized', { seg: 5, collide: false, minimap: false, ao: false });
     b.cyl(bx, y, M.z(bz), 0.03, 1.9, 'metal_galvanized', { seg: 5, collide: false, minimap: false, ao: false });
@@ -1210,7 +1244,7 @@ function cafe(b, M, h) {
   b.light('point', -11.0, 2.6, Z(18.5), { color: '#ffd6a0', intensity: 9, distance: 9 });
   // Terrasse auf dem Platz mit Sonnenschirmen + Pflanzkübeln (Deckung)
   awning(b, -11.0, 3.0, Z(13.0) - 0.1 * M.s, 9.0, 2.6, { ry: M.ry(Math.PI), design: 1, drop: 0.6 });
-  for (const [x, z] of [[-13.6, 10.6], [-10.2, 10.2], [-6.8, 10.8]]) cafeTable(b, x, Z(z), { chairs: 3, chairTint: '#2f6f9a' });
+  for (const [x, z] of [[-13.6, 10.6], [-10.2, 10.2], [-6.8, 10.8]]) cafeTable(b, x, Z(z), { chairs: 3, chairTint: '#2f6f9a', chairModel: true });
   parasol(b, -12.0, Z(8.6), { r: 1.5, tint: '#f2efe6' });
   planter(b, -15.0, Z(8.0), 0.9, 2.4, { h: 0.7 });
   planter(b, -8.4, Z(7.8), 2.6, 0.8, { h: 0.7 });

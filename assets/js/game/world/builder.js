@@ -1,11 +1,14 @@
 // NULLPUNKT — MapBuilder: sammelt statische Geometrie, verschmilzt sie pro Material/Chunk,
 // backt Ambient Occlusion in Vertexfarben, erzeugt Kollisions- und Kugel-Geometrie (Owner: world)
 import * as THREE from 'three';
-import { getMaterial, surfaceOf, preloadMaterials } from '../engine/textures.js';
+import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js';
 import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js';
+import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric', 'flesh'];
 const SURF_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s, i]));
+/** Mittlere Albedo der Bibliotheks-Requisiten je Oberfläche (Sonden-Rückprall). */
+const PROP_ALBEDO = { concrete: 0.4, metal: 0.3, wood: 0.32, dirt: 0.3, sand: 0.45, grass: 0.25, glass: 0.2, water: 0.1, tile: 0.4, fabric: 0.3, flesh: 0.35 };
 
 // ---------------------------------------------------------------------------
 // Wachsende Typed Arrays
@@ -212,6 +215,11 @@ export class MapBuilder {
     this.objects = [];    // dynamische/separate Objekte: { object, update }
     this.materials = new Set();
     this.floors = [];     // { minX, maxX, minZ, maxZ, y }
+    this.openings = [];   // Fenster/Tore aus arch.wall(): { x, y, z (Mitte), ux, uz (Wandrichtung), w, h, t, kind, glass } – Lichtstrahlen
+    this.models = [];     // Bibliotheks-Requisiten: { id, x, y, z, o } (model())
+    this.interiorScale = null; // 0..1: Anteil des gebackenen Innenraumlichts (null = voll; mit Sonden-Gitter gesetzt)
+    this.lib = null;      // Set verfügbarer Modell-IDs (Bibliothek nutzbar) oder null (nur prozedural)
+    this.library = null;  // async ({ names, models }, onProgress) → { models: Map id → Vorlage|null } (loadWorld)
     this.stats = { prims: 0 };
     this._m = new THREE.Matrix4();
     this._q = new THREE.Quaternion();
@@ -497,7 +505,15 @@ export class MapBuilder {
 
   /** Innenraum-Volumen: Flächen innen werden abgedunkelt (gebackenes Innenraumlicht). */
   interior(minX, minZ, maxX, maxZ, minY, maxY, factor = 0.62, tint = null) {
-    this.interiors.push({ minX, minZ, maxX, maxZ, minY, maxY, factor, tint: tint || this.interiorTint });
+    let t = tint || this.interiorTint;
+    // Mit Sonden-Gitter (loadWorld setzt interiorScale) liefert das Gitter die Innenraum-Dunkelheit fürs indirekte
+    // Licht; hier bleibt nur ein Rest (sonst wäre auch das Sonnenlicht durchs Fenster abgedunkelt)
+    if (this.interiorScale != null) {
+      const k = this.interiorScale;
+      factor = 1 - (1 - factor) * k;
+      t = t ? t.map(c => 1 - (1 - c) * Math.min(1, k * 1.6)) : t;
+    }
+    this.interiors.push({ minX, minZ, maxX, maxZ, minY, maxY, factor, tint: t });
     this._interiorGrid = null;
     return this;
   }
@@ -563,7 +579,11 @@ export class MapBuilder {
     return this;
   }
 
-  /** Lichtquelle (Punkt/Spot). Wird beim Aufbau als echtes Licht erzeugt (begrenzte Anzahl). */
+  /**
+   * Lichtquelle (Punkt/Spot). Wird beim Aufbau als echtes Licht erzeugt (begrenzte Anzahl; nicht auf low) und ins
+   * Sonden-Gitter gebacken. o.realtime: false = nur gebacken (kostet zur Laufzeit nichts), o.bake: false = nicht
+   * backen, o.group 0..2 = Lichtgruppe (sonst nach Farbe: warm/kalt/rot).
+   */
   light(type, x, y, z, o = {}) { this.lights.push({ type, x, y, z, ...o }); return this; }
 
   /** Weicher Lichthof um eine Lampe (additiver Punkt-Sprite; alle Lichthöfe zusammen ein Draw Call). */
@@ -571,6 +591,19 @@ export class MapBuilder {
 
   /** Separates Objekt (animiert, nicht verschmolzen). */
   object(obj, o = {}) { this.objects.push({ object: obj, update: o.update || null, bullet: o.bullet || false, surface: o.surface }); return this; }
+
+  /** Steht das Bibliotheksmodell zur Verfügung (Bibliothek nutzbar und Modell im Manifest)? */
+  hasModel(id) { return !!this.lib && this.lib.has(id); }
+
+  /**
+   * Requisite aus der Asset-Bibliothek (glb, instanziert, LOD nach Abstand). (x, y, z) = Unterkante-Mitte des
+   * Hüllquaders (o.pivot 'center': Mitte), Drehung ry/rx/rz um diesen Punkt, Skalierung s bzw. sx/sy/sz.
+   * o: { part (Teil/Variante, z. B. 'exterior_aircon_unit_rusted'), collide (true; ab 0,25 m Höhe Quader-Kollision),
+   *      shrink (Kollisionsquader waagerecht verkleinern, 0..1), bullet (true: Dreiecke der gröbsten Stufe), minimap,
+   *      surface, tint (Instanzfarbe), interior (false: kein gebackenes Innenraumlicht), maxDist, castShadow,
+   *      fallback: (b) => … prozeduraler Ersatz, falls das Modell nicht lädt }
+   */
+  model(id, x, y, z, o = {}) { this.models.push({ id, x, y, z, o }); return this; }
 
   // ---------------------------------------------------------------------------
   // Fertigstellung
@@ -667,11 +700,17 @@ export class MapBuilder {
     const group = new THREE.Group();
     group.name = 'world-static';
 
-    // Materialien (Texturen parallel erzeugen)
+    // Materialien: Fotoscan-Sätze + Requisiten aus der Bibliothek laden (Netz) und gleichzeitig die übrigen
+    // prozeduralen Texturen im Worker-Pool erzeugen
     const extra = ['concrete'];
     if (this.signs.length) extra.push('metal_painted');
-    await preloadMaterials([...this.materials, ...extra], (p, n) => onProgress?.(0.05 + p * 0.5, 'Texturen: ' + n));
+    const used = [...new Set([...this.materials, ...extra, ...libraryPendingNames()])];
+    let libP = null, libFrac = 0, procFrac = 0;
+    const report = (label) => onProgress?.(0.05 + (libP ? (libFrac * 0.7 + procFrac * 0.3) : procFrac) * 0.5, label);
+    if (this.library) libP = this.library({ names: used, models: [...new Set(this.models.map(m => m.id))] }, (p, l) => { libFrac = p; report(l); });
+    const [libRes] = await Promise.all([libP, preloadMaterials(proceduralNames(used), (p, n) => { procFrac = p; report('Texturen: ' + n); })]);
     await step(0.56, 'Geometrie');
+    this._resolveModels(libRes?.models || new Map());
     this._groundAORaster();
 
     // Buckets → finale Vertexfarben
@@ -747,9 +786,11 @@ export class MapBuilder {
     const foliage = createFoliage(this.plants, quality);
     for (const f of foliage.meshes) group.add(f);
 
-    // Lichter
+    // Lichter (Definitionen bleiben für die Lichtgruppen des Sonden-Gitters erhalten – auf low nur gebacken)
     const lights = [];
+    const lightDefs = this.lights.map(L => ({ ...L }));
     for (const L of (quality === 'low' ? [] : this.lights)) {
+      if (L.realtime === false) continue; // nur gebacken (Sonden-Gitter)
       let light;
       if (L.type === 'spot') {
         light = new THREE.SpotLight(L.color || '#ffd7a0', L.intensity ?? 20, L.distance ?? 18, L.angle ?? 0.9, L.penumbra ?? 0.6, 2);
@@ -764,6 +805,8 @@ export class MapBuilder {
     }
     for (const ob of this.objects) group.add(ob.object);
     this._buildGlows(group);
+    const props = this._props ? this._props.build() : null;
+    if (props) group.add(props);
 
     await step(0.66, 'Kugel-Geometrie');
     // Dreiecke für die Kugel-BVH aus sichtbarer Geometrie (pro Dreieck: Oberfläche + Mesh-Index);
@@ -771,19 +814,45 @@ export class MapBuilder {
     const objects = [];
     let triCount = 0;
     for (const m of meshes) { const b = m.userData.bullet; for (let i = 0; i < b.length; i++) triCount += b[i]; }
-    const btris = new Float32Array(triCount * 9), bdata = new Uint32Array(triCount);
+    let btris = new Float32Array(triCount * 9), bdata = new Uint32Array(triCount);
+    // Albedo je Kugel-Dreieck (linear·255): Materialfarbe × mittlere Textur × Vertexfarbe – Farbe des Sonnen-Rückpralls
+    // im Sonden-Gitter (world/probes.js)
+    let balb = new Uint8Array(triCount * 3);
     let bi = 0;
     meshes.forEach(m => {
       const objIndex = objects.push(m) - 1;
       const pos = m.geometry.attributes.position.array, bl = m.userData.bullet;
+      const col = m.geometry.attributes.color?.array || null;
+      const alb = materialAlbedo(m.material);
       const sid = SURF_INDEX[m.userData.surface] ?? 0;
       for (let t = 0; t < bl.length; t++) {
         if (!bl[t]) continue;
         btris.set(pos.subarray(t * 9, t * 9 + 9), bi * 9);
+        for (let ch = 0; ch < 3; ch++) {
+          const vc = col ? (col[t * 9 + ch] + col[t * 9 + 3 + ch] + col[t * 9 + 6 + ch]) / 3 : 1;
+          balb[bi * 3 + ch] = Math.min(255, Math.round(alb[ch] * vc * 255));
+        }
         bdata[bi++] = sid | (objIndex << 8);
       }
       delete m.userData.bullet;
     });
+    // Kugeltreffer auf Bibliotheks-Requisiten (gröbste LOD-Stufe je Instanz)
+    if (this._propBullet && this._propBullet.tris.n) {
+      const pb = this._propBullet, n = pb.tris.n / 9;
+      const t2 = new Float32Array((bi + n) * 9), d2 = new Uint32Array(bi + n), a2 = new Uint8Array((bi + n) * 3);
+      t2.set(btris.subarray(0, bi * 9)); d2.set(bdata.subarray(0, bi)); a2.set(balb.subarray(0, bi * 3));
+      t2.set(pb.tris.view(), bi * 9);
+      const objIdx = new Map();
+      for (let i = 0; i < n; i++) {
+        const g = pb.group[i];
+        let k = objIdx.get(g);
+        if (k === undefined) { k = objects.push(this._props.hitObject(g) || group) - 1; objIdx.set(g, k); }
+        d2[bi + i] = pb.surf[i] | (k << 8);
+        const a = PROP_ALBEDO[SURFACES[pb.surf[i]]] ?? 0.35;
+        a2[(bi + i) * 3] = a2[(bi + i) * 3 + 1] = a2[(bi + i) * 3 + 2] = Math.round(a * 255);
+      }
+      btris = t2; bdata = d2; balb = a2; bi += n; triCount += n;
+    }
 
     // Kollisionsgeometrie (Weltkoordinaten, 9 Floats je Dreieck)
     const colArr = this.colTris.view().slice();
@@ -791,9 +860,12 @@ export class MapBuilder {
     let drawTris = 0; for (const m of meshes) drawTris += m.geometry.attributes.position.count / 3;
     const stats = { meshes: meshes.length, triangles: drawTris, bulletTris: triCount, colliderTris: colArr.length / 9, prims: this.stats.prims, signAtlas: this.signAtlasSize || null };
     this._releaseScratch();
+    if (this._props) Object.assign(stats, { propInstances: this._props.stats.instances, propGroups: this._props.stats.groups, propMeshes: this._props.stats.meshes, propFallbacks: this._propFallbacks || 0 });
+    const propsOut = this._props;
+    this._props = null; this._propBullet = null;
     return {
-      group, meshes, decalMeshes, signMesh, foliage, lights, objects,
-      bulletTris: btris, bulletData: bdata, colTris: colArr,
+      group, meshes, decalMeshes, signMesh, foliage, lights, objects, props: propsOut,
+      bulletTris: btris, bulletData: bdata, bulletAlbedo: balb, colTris: colArr, lightDefs,
       stats,
     };
   }
@@ -817,7 +889,63 @@ export class MapBuilder {
     this.lights = [];
     this.glows = [];
     this.floors = [];
+    this.models = [];
     this.materials.clear();
+  }
+
+  /**
+   * Bibliotheks-Requisiten auflösen (nach dem Laden): Instanzen anlegen, Kollision, Footprint, Kugeltreffer;
+   * fehlt ein Modell, zeichnet der prozedurale Ersatz (o.fallback) in die Buckets.
+   */
+  _resolveModels(templates) {
+    if (!this.models.length) return;
+    const props = new PropInstances({ quality: this._quality });
+    const bullet = { tris: new FBuf(65536), surf: [], group: [] };
+    let fallbacks = 0;
+    const col = new THREE.Color(), tmpBox = new THREE.Box3(), v = new THREE.Vector3(), mCol = new THREE.Matrix4(), tr = new THREE.Matrix4();
+    for (const pl of this.models) {
+      const { id, x, y, z, o } = pl;
+      const tpl = templates.get(id);
+      if (!tpl) { if (o.fallback) { o.fallback(this); fallbacks++; } continue; }
+      const parts = PropInstances.selectParts(tpl, o.part);
+      const box = PropInstances.boxOf(tpl, parts);
+      const M = placementMatrix(box, x, y, z, o);
+      // Instanzfarbe: gebackenes Innenraumlicht (wie die Wände ringsum) × Tönung
+      let color = null;
+      if (o.tint) color = col.set(o.tint).clone();
+      if (o.interior !== false && this.interiors.length) {
+        tmpBox.copy(box).applyMatrix4(M); tmpBox.getCenter(v);
+        const iv = this._interiorAt(v.x, Math.min(v.y, tmpBox.min.y + 0.5), v.z);
+        if (iv) { color = color || new THREE.Color(1, 1, 1); color.multiplyScalar(iv.factor); if (iv.tint) color.multiply(col.setRGB(iv.tint[0], iv.tint[1], iv.tint[2])); }
+      }
+      const g = props.add(tpl, parts, M, color, o);
+      const size = box.getSize(new THREE.Vector3());
+      const sc = new THREE.Vector3(); M.decompose(new THREE.Vector3(), new THREE.Quaternion(), sc);
+      const h = size.y * sc.y;
+      if (o.collide !== false && h >= (o.minCollideH ?? 0.25)) {
+        const k = o.shrink ?? 1;
+        tr.makeTranslation((box.min.x + box.max.x) / 2, box.min.y, (box.min.z + box.max.z) / 2);
+        mCol.multiplyMatrices(M, tr);
+        // Quader in Modellmaßen (die Skalierung steckt in mCol); waagerecht ggf. verkleinert
+        this._collTris(collBox(size.x * k, Math.min(size.y, (o.collideH ?? Infinity) / sc.y), size.z * k), mCol);
+        tmpBox.copy(box).applyMatrix4(M);
+        const tilted = !!(o.rx || o.rz);
+        const kind = o.minimap ?? (h > 1.0 ? 'cover' : 'prop');
+        if (tilted) this._footprint((tmpBox.min.x + tmpBox.max.x) / 2, (tmpBox.min.z + tmpBox.max.z) / 2, (tmpBox.max.x - tmpBox.min.x) * k, (tmpBox.max.z - tmpBox.min.z) * k, 0, tmpBox.min.y, tmpBox.max.y, kind);
+        else { v.set((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2).applyMatrix4(M); this._footprint(v.x, v.z, size.x * sc.x * k, size.z * sc.z * k, o.ry || 0, tmpBox.min.y, tmpBox.max.y, kind); }
+      }
+      if (o.bullet !== false) {
+        const sid = SURF_INDEX[o.surface || MODEL_SURFACE[id] || 'metal'] ?? 1;
+        forEachBulletTri(tpl, parts, M, (...t) => {
+          bullet.tris.ensure(9); bullet.tris.a.set(t, bullet.tris.n); bullet.tris.n += 9;
+          bullet.surf.push(sid); bullet.group.push(g);
+        });
+      }
+    }
+    this._props = props.stats.instances ? props : null;
+    this.modelIdsUsed = [...new Set(this.models.filter(m => templates.get(m.id)).map(m => m.id))];
+    this._propBullet = bullet;
+    this._propFallbacks = fallbacks;
   }
 
   _buildGlows(group) {

@@ -9,8 +9,10 @@ import { ICON } from './icons.js';
 import { Lobby } from './lobby.js';
 import { WeaponPreview } from './preview3d.js';
 import { SettingsPanel } from './settings-panel.js';
+import { TouchEditor } from './touch-editor.js';
 import { controlsHtml, bindControls } from './controls-help.js';
 import { EndScreen } from './endscreen.js';
+import { LoadoutPanel } from './loadout-panel.js';
 import { drawMapArt, rememberMinimap } from './mapart.js';
 
 const TIPS = [
@@ -43,6 +45,9 @@ export class Menus {
     this.lobby = new Lobby(this);
     this.endScreen = new EndScreen(G);
     this.settingsPanel = new SettingsPanel(G);
+    this.settingsPanel.menus = this;
+    this.touchEditor = new TouchEditor(G);
+    this._padMute = 0;
     this._tipT = null;
     this._padPrev = [];
     this._padRepeat = 0;
@@ -86,6 +91,7 @@ export class Menus {
   _leave() {
     if (this.current === 'lobby') { this.preview.stop(); this.lobby.unmount(); }
     if (this.current === 'settings') this.settingsPanel.unmount();
+    if (this.current === 'touchedit' && this.touchEditor.open) this.touchEditor.stop(false);
     if (this.current === 'end') this.endScreen.stop();
     if (this._tipT) { clearInterval(this._tipT); this._tipT = null; }
   }
@@ -135,6 +141,7 @@ export class Menus {
     setTimeout(() => { this._busy = false; }, 1500);
     btn.classList.add('is-go');
     this.sound('confirm');
+    this.lobby.saveClassLoadout();
     this.onStart(this.lobby.config());
   }
 
@@ -147,12 +154,15 @@ export class Menus {
       const map = (D.MAPS || {})[G.match.mapId] || null;
       const mode = (D.MODES || {})[G.match.modeId] || null;
       const prep = { hafen: 'im', altstadt: 'in der', werk: 'im', range: 'am' }[G.match.mapId] || 'auf';
+      // atmosphere-weather: aufgelöstes Wetter + Tageszeit („Bewölkt · Mittag“), sonst die Kartenzeit
+      let cond = map && map.timeOfDay ? map.timeOfDay : '';
+      try { if (G.match.conditions && G.modules?.world?.conditionsLabel) cond = G.modules.world.conditionsLabel(G.match.conditions, map, D.WEATHERS); } catch { /* Kartenzeit */ }
       const s = this._screen('loading', 'm-loading', `
         <canvas class="ld-art" aria-hidden="true"></canvas>
         <div class="ld-inner">
           <div class="m-kicker">${esc(mode ? mode.name : 'Einsatz')} ${esc(prep)} ${esc(map ? map.name : 'Testgelände')}</div>
           <h1 class="ld-title">${esc(map ? map.name : 'Testgelände')}<em>.</em></h1>
-          <div class="ld-sub">${esc(map ? map.subtitle || '' : '')}${map && map.timeOfDay ? ` · ${esc(map.timeOfDay)}` : ''}</div>
+          <div class="ld-sub">${esc([map ? map.subtitle : '', cond].filter(Boolean).join(' · '))}</div>
           ${mode ? `<p class="ld-obj"><span class="ld-ico">${mode.icon || ''}</span>${esc(mode.hudObjective || mode.tagline || '')}</p>` : ''}
           <div class="ld-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
           <div class="ld-row"><span class="ld-pct">0 %</span><span class="ld-state">Einsatzgebiet wird aufgebaut</span></div>
@@ -207,6 +217,7 @@ export class Menus {
         <nav class="ps-menu" aria-label="Pausenmenü">
           <button type="button" class="m-btn m-primary" data-act="resume">${ICON.play}<span>Fortsetzen</span><kbd>Esc</kbd></button>
           ${training ? `<button type="button" class="m-btn" data-act="armory">${ICON.target}<span>Waffenkammer</span></button>` : ''}
+          ${!training && mode && !mode.lockLoadout ? `<button type="button" class="m-btn" data-act="equip">${ICON.target}<span>Ausrüstung</span></button>` : ''}
           <button type="button" class="m-btn" data-act="settings">${ICON.gear}<span>Einstellungen</span></button>
           <button type="button" class="m-btn" data-act="controls">${ICON.pad}<span>Steuerung</span></button>
           ${training ? `<button type="button" class="m-btn" data-act="finish">${ICON.check}<span>Training beenden</span></button>` : `<button type="button" class="m-btn" data-act="restart">${ICON.restart}<span>Neu starten</span></button>`}
@@ -225,6 +236,7 @@ export class Menus {
       else if (act === 'settings') this.showSettings('pause');
       else if (act === 'controls') this.showControls('pause');
       else if (act === 'armory') this.showArmory();
+      else if (act === 'equip') this.showEquip();
       else if (act === 'restart') { this.sound('confirm'); if (this.onRestart) this.onRestart(); }
       else if (act === 'finish') this._finishTraining();
       else if (act === 'quit') {
@@ -286,6 +298,40 @@ export class Menus {
     this._focusFirst(s, '.ar-item.is-on');
   }
 
+  /* ================================================================ Ausrüstung im Match (Pausemenü) */
+
+  /** Klasse/Waffen/Tarnung wechseln: sofort, wenn gerade gespawnt, sonst ab dem nächsten Einsatz. */
+  showEquip() {
+    const G = this.G;
+    const s = this._screen('equip', 'm-sub', `
+      <div class="sub sub-wide">
+        <header class="sub-head"><button type="button" class="m-icon" data-act="back" aria-label="Zurück">${ICON.back}</button><div><div class="m-kicker">Pause</div><h1 class="m-title">Ausrüstung<em>.</em></h1></div></header>
+        <p class="sub-lead">Gilt sofort, wenn du gerade erst eingesetzt wurdest – sonst ab dem nächsten Einsatz.</p>
+        <div class="sub-body m-scroll eq-host" data-scrollable></div>
+        <div class="m-actions eq-actions"><button type="button" class="m-btn m-primary" data-act="apply">${ICON.check}<span>Übernehmen</span></button><button type="button" class="m-btn" data-act="back">${ICON.back}<span>Abbrechen</span></button></div>
+      </div>`);
+    const panel = (this._equipPanel = this._equipPanel || new LoadoutPanel(G));
+    panel.mount(s.querySelector('.eq-host'));
+    s.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      if (b.dataset.act === 'back') { panel.unmount(); this._back(); return; }
+      if (b.dataset.act === 'apply') {
+        const lo = panel.value();
+        panel.save();
+        const when = G.mode && typeof G.mode.setLoadout === 'function' ? G.mode.setLoadout(lo) : 'next';
+        G.events.emit('loadout:change', { actor: G.player, loadout: lo, when });
+        this.sound('confirm');
+        panel.unmount();
+        this.showPause();
+        const n = this.root.querySelector('.ps-info');
+        if (n) n.insertAdjacentHTML('beforeend', `<p class="ps-note">${when === 'now' ? 'Ausrüstung übernommen.' : 'Ausrüstung gilt ab dem nächsten Einsatz.'}</p>`);
+      }
+    });
+    this.parent = 'pause';
+    this._focusFirst(s, '.lp-cls[aria-pressed="true"]');
+  }
+
   /* ================================================================ Einstellungen / Steuerung */
 
   showSettings(from) {
@@ -308,12 +354,35 @@ export class Menus {
     const s = this._screen('controls', 'm-sub', `
       <div class="sub sub-wide">
         <header class="sub-head"><button type="button" class="m-icon" data-act="back" aria-label="Zurück">${ICON.back}</button><div><div class="m-kicker">${back === 'lobby' ? 'Lobby' : 'Pause'}</div><h1 class="m-title">Steuerung<em>.</em></h1></div></header>
-        ${controlsHtml(touch ? 'touch' : pad ? 'pad' : 'keys')}
+        ${controlsHtml(touch ? 'touch' : pad ? 'pad' : 'keys', this.G)}
       </div>`);
     this.parent = back;
-    bindControls(s);
+    bindControls(s, (dev) => {
+      // „Belegung ändern“: Einstellungen → Belegung mit diesem Gerät; Touch direkt in den Layout-Editor
+      if (dev === 'touch') { this.showTouchEditor(); return; }
+      this.settingsPanel.group = 'belegung';
+      this.settingsPanel._state.belegung = { device: dev };
+      this.sound('click');
+      this.showSettings(back);
+    });
     s.querySelector('[data-act="back"]').addEventListener('click', () => this._back());
     this._focusFirst(s, '.m-tab[aria-selected="true"]');
+  }
+
+  /**
+   * Touch-Layout-Editor (aus Einstellungen → Steuerung/Belegung). Schließen kehrt in die Einstellungen zurück
+   * (gleicher Reiter, gleiche Scrollposition).
+   */
+  showTouchEditor() {
+    const back = this.parent || (this.G.match.state === 'paused' ? 'pause' : 'lobby');
+    const s = this._screen('touchedit', 'm-touchedit', '');
+    this.parent = back;
+    this.touchEditor.start(s, { onClose: () => { if (this.current === 'touchedit') this.showSettings(back); } });
+  }
+
+  /** Gamepad-Eingaben im Menü kurz ignorieren (nach einer Tastenerfassung: das Loslassen gehört noch dazu). */
+  mutePad(ms = 250) {
+    this._padMute = Math.max(this._padMute, performance.now() + ms);
   }
 
   _back() {
@@ -379,7 +448,7 @@ export class Menus {
         if (c && !c.hidden) { c.hidden = true; e.preventDefault(); return; }
         e.preventDefault();
         this._resume();
-      } else if (['settings', 'controls', 'armory'].includes(this.current)) { e.preventDefault(); this._back(); }
+      } else if (['settings', 'controls', 'armory', 'equip'].includes(this.current)) { e.preventDefault(); if (this._equipPanel) this._equipPanel.unmount(); this._back(); }
       return;
     }
     if (typing) return;
@@ -414,6 +483,11 @@ export class Menus {
     const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
     const prev = this._padPrev;
     const now = performance.now();
+    // Tastenerfassung („Taste drücken …“) fragt selbst ab; danach kurz stumm, sonst wirkt das Loslassen im Menü
+    const capturing = !!(this.G.input && this.G.input.capturing);
+    if (capturing) this._padMute = now + 250;
+    if (capturing || now < this._padMute) { for (let i = 0; i < pad.buttons.length; i++) prev[i] = btn(i); this._padDir = null; return; }
+    if (this.current === 'touchedit') { this.touchEditor.pollPad(pad); return; }
     const released = (i) => prev[i] && !btn(i);
     // Richtung (Steuerkreuz oder Stick, mit Wiederholung)
     const ax = pad.axes[0] || 0;
@@ -430,6 +504,9 @@ export class Menus {
           const st = Number(a.step) || 0.01;
           a.value = String(Number(a.value) + (dir === 'right' ? st : -st) * 2);
           a.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (a && a.matches && a.matches('.sp-step') && (dir === 'left' || dir === 'right')) {
+          // Wähler ‹ Wert › (Einstellungen): links/rechts ändert den Wert
+          a.dispatchEvent(new CustomEvent('np-step', { bubbles: true, detail: { d: dir === 'right' ? 1 : -1 } }));
         } else this._move(dir);
         this._padRepeat = now + (dir === this._padDir ? 120 : 380);
         this._padDir = dir;
@@ -443,7 +520,7 @@ export class Menus {
     }
     if (released(1)) {
       if (this.current === 'pause') this._resume();
-      else if (['settings', 'controls', 'armory'].includes(this.current)) this._back();
+      else if (['settings', 'controls', 'armory', 'equip'].includes(this.current)) { if (this._equipPanel) this._equipPanel.unmount(); this._back(); }
     }
     if (released(9) && this.current === 'pause') this._resume();
     if (released(4) || released(5)) this._cycleTabs(released(5) ? 1 : -1);
@@ -462,7 +539,7 @@ export class Menus {
 
   /** Räumliche Fokus-Navigation. */
   _move(dir) {
-    const items = [...this.root.querySelectorAll('button:not([disabled]), input, select, [tabindex="0"]')].filter((n) => n.offsetParent !== null && !n.closest('[hidden]'));
+    const items = [...this.root.querySelectorAll('button:not([disabled]), input:not([disabled]), select, [tabindex="0"]')].filter((n) => n.tabIndex !== -1 && n.offsetParent !== null && !n.closest('[hidden]'));
     if (!items.length) return;
     const a = document.activeElement;
     if (!a || !this.root.contains(a) || !items.includes(a)) { items[0].focus({ preventScroll: false }); return; }

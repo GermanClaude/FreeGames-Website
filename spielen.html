@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="NULLPUNKT">
   <meta name="format-detection" content="telephone=no">
-  <meta name="description" content="NULLPUNKT – schneller Ego-Shooter im Browser gegen Bots: Team-Deathmatch, Jeder gegen jeden, Herrschaft, Waffenspiel. Mit Touch-Steuerung für Smartphones.">
+  <meta name="description" content="NULLPUNKT – realistischer Ego-Shooter im Browser gegen Bots: Eroberung mit Panzern, Team-Deathmatch, Herrschaft, Abschuss bestätigt, Infiziert und mehr. Mit Touch-Steuerung für Smartphones.">
   <title>Einsatz · NULLPUNKT</title>
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="assets/img/favicon-32.png" type="image/png" sizes="32x32">
@@ -30,13 +30,15 @@
   <link rel="modulepreload" href="assets/js/shared/weapons.data.js">
   <link rel="modulepreload" href="assets/js/shared/modes.data.js">
   <link rel="modulepreload" href="assets/js/shared/maps.data.js">
+  <link rel="modulepreload" href="assets/js/shared/classes.data.js">
   <link rel="modulepreload" href="assets/js/game/engine/events.js">
   <link rel="modulepreload" href="assets/js/game/engine/renderer.js">
   <link rel="modulepreload" href="assets/js/game/engine/input.js">
-  <link rel="modulepreload" href="assets/js/game/engine/physics.js">
-  <link rel="modulepreload" href="assets/js/game/engine/dynres.js">
   <link rel="modulepreload" href="assets/js/game/engine/fullscreen.js">
   <link rel="modulepreload" href="assets/js/game/ui/fullscreen-ui.js">
+  <link rel="modulepreload" href="assets/js/game/engine/physics.js">
+  <link rel="modulepreload" href="assets/js/game/engine/dynres.js">
+  <link rel="modulepreload" href="assets/js/shared/graphics.data.js">
   <link rel="modulepreload" href="assets/js/game/player.js">
   <link rel="modulepreload" href="assets/js/game/combat.js">
   <link rel="modulepreload" href="assets/js/game/engine/textures.js">
@@ -47,38 +49,47 @@
   <link rel="modulepreload" href="assets/js/game/weapons/index.js">
   <link rel="modulepreload" href="assets/js/game/engine/effects.js">
   <link rel="modulepreload" href="assets/js/game/bots/manager.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/index.js">
   <link rel="modulepreload" href="assets/js/game/bots/character.js">
   <link rel="modulepreload" href="assets/js/game/weapons/ballistics/fxtex.js">
   <link rel="modulepreload" href="assets/js/game/modes/index.js">
   <link rel="modulepreload" href="assets/js/game/ui/hud.js">
   <link rel="modulepreload" href="assets/js/game/ui/menus.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/EffectComposer.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/RenderPass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/UnrealBloomPass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/SMAAPass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/FXAAPass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/GTAOPass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/ShaderPass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/OutputPass.js">
+  <link rel="modulepreload" href="assets/js/shared/bindings.data.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/pipeline.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/memory.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/grade.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/common.js">
   <link rel="modulepreload" href="assets/vendor/three/addons/math/Capsule.js">
   <link rel="modulepreload" href="assets/js/game/world/texgen.js">
+  <link rel="modulepreload" href="assets/js/game/world/shading.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/builder.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/guns-ar.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/guns-auto.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/guns-long.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/guns-pistol.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/gear.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/guns-wave2.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/guns-heavy.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/gear2.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/camos.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/materials.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/textures.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/arms.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/handling.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/actions2.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/contact.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/fx.js">
   <link rel="modulepreload" href="assets/js/game/bots/soldier/materials.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/anim.js">
   <link rel="modulepreload" href="assets/js/game/world/collider.js">
   <link rel="modulepreload" href="assets/js/game/world/bvh.js">
+  <link rel="modulepreload" href="assets/js/game/world/library.js">
   <link rel="modulepreload" href="assets/js/game/world/builder.js">
   <link rel="modulepreload" href="assets/js/game/world/lighting.js">
+  <link rel="modulepreload" href="assets/js/game/world/probes.js">
+  <link rel="modulepreload" href="assets/js/game/world/atmos.js">
+  <link rel="modulepreload" href="assets/js/game/world/weather.js">
   <link rel="modulepreload" href="assets/js/game/world/water.js">
   <link rel="modulepreload" href="assets/js/game/world/navgraph.js">
   <link rel="modulepreload" href="assets/js/game/world/minimap.js">
@@ -89,16 +100,34 @@
   <link rel="modulepreload" href="assets/js/game/engine/audio/music.js">
   <link rel="modulepreload" href="assets/js/game/engine/audio/ambience.js">
   <link rel="modulepreload" href="assets/js/game/engine/audio/space.js">
+  <link rel="modulepreload" href="assets/js/game/engine/audio/samples.js">
+  <link rel="modulepreload" href="assets/js/game/engine/audio/acoustics.js">
+  <link rel="modulepreload" href="assets/js/game/engine/audio/reflect.js">
+  <link rel="modulepreload" href="assets/js/game/engine/audio/hearing.js">
+  <link rel="modulepreload" href="assets/js/game/engine/audio/mix.js">
   <link rel="modulepreload" href="assets/js/game/engine/audio/ui-sounds.js">
   <link rel="modulepreload" href="assets/js/game/weapons/controller.js">
   <link rel="modulepreload" href="assets/js/game/weapons/grenades.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/ballistics/rockets.js">
   <link rel="modulepreload" href="assets/js/game/weapons/ballistics/math.js">
   <link rel="modulepreload" href="assets/js/game/weapons/ballistics/fxlayers.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/ballistics/debris.js">
   <link rel="modulepreload" href="assets/js/game/bots/bot.js">
   <link rel="modulepreload" href="assets/js/game/bots/difficulty.js">
   <link rel="modulepreload" href="assets/js/game/bots/names.js">
   <link rel="modulepreload" href="assets/js/game/bots/nameplates.js">
   <link rel="modulepreload" href="assets/js/game/bots/ai/tactics.js">
+  <link rel="modulepreload" href="assets/js/game/bots/ai/squad.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/data.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/vehicle.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/projectiles.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/camera.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/controls.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/hud.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/audio.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/materials.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/models.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/sim.js">
   <link rel="modulepreload" href="assets/js/game/bots/soldier/rig.js">
   <link rel="modulepreload" href="assets/js/game/bots/soldier/animator.js">
   <link rel="modulepreload" href="assets/js/game/bots/soldier/ragdoll.js">
@@ -109,6 +138,10 @@
   <link rel="modulepreload" href="assets/js/game/modes/dom.js">
   <link rel="modulepreload" href="assets/js/game/modes/gun.js">
   <link rel="modulepreload" href="assets/js/game/modes/training.js">
+  <link rel="modulepreload" href="assets/js/game/modes/conquest.js">
+  <link rel="modulepreload" href="assets/js/game/modes/killconfirmed.js">
+  <link rel="modulepreload" href="assets/js/game/modes/infected.js">
+  <link rel="modulepreload" href="assets/js/game/modes/squads.js">
   <link rel="modulepreload" href="assets/js/game/modes/spawns.js">
   <link rel="modulepreload" href="assets/js/game/modes/streaks.js">
   <link rel="modulepreload" href="assets/js/game/ui/dom.js">
@@ -117,27 +150,34 @@
   <link rel="modulepreload" href="assets/js/game/ui/killfeed.js">
   <link rel="modulepreload" href="assets/js/game/ui/scoreboard.js">
   <link rel="modulepreload" href="assets/js/game/ui/strike-target.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/keys.js">
+  <link rel="modulepreload" href="assets/js/game/ui/deploy.js">
   <link rel="modulepreload" href="assets/js/game/ui/lobby.js">
   <link rel="modulepreload" href="assets/js/game/ui/preview3d.js">
   <link rel="modulepreload" href="assets/js/game/ui/settings-panel.js">
+  <link rel="modulepreload" href="assets/js/game/ui/touch-editor.js">
   <link rel="modulepreload" href="assets/js/game/ui/controls-help.js">
   <link rel="modulepreload" href="assets/js/game/ui/endscreen.js">
+  <link rel="modulepreload" href="assets/js/game/ui/loadout-panel.js">
   <link rel="modulepreload" href="assets/js/game/ui/mapart.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/CopyShader.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/MaskPass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/Pass.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/LuminosityHighPassShader.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/SMAAShader.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/FXAAShader.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/GTAOShader.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/PoissonDenoiseShader.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/math/SimplexNoise.js">
-  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/OutputShader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/SMAAPass.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/FXAAPass.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/GTAOPass.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/lens.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/exposure.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/bloom.js">
+  <link rel="modulepreload" href="assets/js/game/engine/post/shafts.js">
   <link rel="modulepreload" href="assets/vendor/three/addons/utils/BufferGeometryUtils.js">
   <link rel="modulepreload" href="assets/vendor/three/addons/geometries/RoundedBoxGeometry.js">
   <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/parts.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/handdims.js">
+  <link rel="modulepreload" href="assets/js/game/weapons/gunsmith/glove-mesh.js">
+  <link rel="modulepreload" href="assets/lib/loader.js">
   <link rel="modulepreload" href="assets/vendor/three/addons/math/Octree.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/loaders/HDRLoader.js">
+  <link rel="modulepreload" href="assets/js/game/world/libprops.js">
   <link rel="modulepreload" href="assets/vendor/three/addons/objects/Sky.js">
+  <link rel="modulepreload" href="assets/js/game/world/shadows.js">
   <link rel="modulepreload" href="assets/js/game/world/navbuild.js">
   <link rel="modulepreload" href="assets/js/game/engine/audio/sfx-weapons.js">
   <link rel="modulepreload" href="assets/js/game/engine/audio/sfx-foley.js">
@@ -148,13 +188,38 @@
   <link rel="modulepreload" href="assets/js/game/bots/ai/navigator.js">
   <link rel="modulepreload" href="assets/js/game/bots/ai/combat.js">
   <link rel="modulepreload" href="assets/js/game/bots/ai/brain.js">
+  <link rel="modulepreload" href="assets/js/game/vehicles/autopilot.js">
   <link rel="modulepreload" href="assets/js/game/bots/soldier/ik.js">
   <link rel="modulepreload" href="assets/js/game/bots/soldier/builder.js">
   <link rel="modulepreload" href="assets/js/game/modes/medals.js">
   <link rel="modulepreload" href="assets/js/game/modes/sentry.js">
   <link rel="modulepreload" href="assets/js/game/modes/strike.js">
   <link rel="modulepreload" href="assets/js/game/ui/glyphs.js">
+  <link rel="modulepreload" href="assets/js/game/ui/progress.js">
   <link rel="modulepreload" href="assets/vendor/three/addons/environments/RoomEnvironment.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/controls-page.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/bindings-page.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/display-page.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/graphics-page.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/hud-page.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/schema-page.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/Pass.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/SMAAShader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/FXAAShader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/postprocessing/ShaderPass.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/GTAOShader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/PoissonDenoiseShader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/shaders/CopyShader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/math/SimplexNoise.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/loaders/GLTFLoader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/loaders/KTX2Loader.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/libs/meshopt_decoder.module.js">
+  <link rel="modulepreload" href="assets/js/game/ui/settings/rows.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/utils/SkeletonUtils.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/utils/WorkerPool.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/libs/ktx-parse.module.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/libs/zstddec.module.js">
+  <link rel="modulepreload" href="assets/vendor/three/addons/math/ColorSpaces.js">
   <!-- modulepreload:end -->
 </head>
 <body data-match-state="boot" data-input-mode="desktop">

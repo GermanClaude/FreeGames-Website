@@ -6,6 +6,12 @@
 // Punktetabelle (Tab/Touch), Start-Countdown-Banner, Todes-/Wiedereinstiegsbanner, Hinweise (Serien, Flaggen,
 // Verlängerung, Führung), Schießstand-Panel (Statistik, Parcours) und die Zielkarte des Präzisionsschlags.
 // Interaktive Teile liegen in #hud-top (über der Touch-Steuerung, unter den Menüs).
+// HUD-Stil (Einstellung hudStyle, Realismus-Plan §5.3/§11.1): „voll“, „reduziert“ (ohne Minikarte/Kompass, Munition als
+// Balken, Leben nur nach Treffern) und „aus“ = Realismus wie Bodycam (kein Fadenkreuz, keine Treffermarker, keine
+// Munitions-/Lebensanzeige; Punktetabelle halten zeigt Minikarte, Stand und Flaggen wie ein Taktik-Tablet).
+// Weltbezogene Anzeigen (Flaggenmarker, Schadenszahlen) laufen durch die Objektiv-Abbildung des Renderers
+// (renderer.lens.toScreen), das Fadenkreuz sitzt auf dem projizierten Laufpunkt (player.getAimScreenPoint: freies
+// Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
 import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js';
@@ -14,13 +20,16 @@ import { Minimap } from './minimap.js';
 import { Killfeed } from './killfeed.js';
 import { scoreboardHtml, liveRows } from './scoreboard.js';
 import { StrikeTargeting } from './strike-target.js';
+import { actionKey } from './settings/keys.js';
+import { DeployScreen } from './deploy.js';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
 const COMPASS = [[0, 'N'], [45, 'NO'], [90, 'O'], [135, 'SO'], [180, 'S'], [225, 'SW'], [270, 'W'], [315, 'NW']];
 const DEG_PX = 2.4;
-const PAD_HINT = { breath: 'L3', reload: 'X', swap: 'Y', grenade: 'LB', melee: 'RB', interact: 'X', streak1: '▲', streak2: '◀', streak3: '▶', scoreboard: 'View' };
-const KEY_HINT = { breath: 'Umschalt', reload: 'R', swap: '1/2', grenade: 'G', melee: 'V', interact: 'F', streak1: '3', streak2: '4', streak3: '5', scoreboard: 'Tab' };
+const _aim = { x: 0, y: 0 };
+const _proj = { x: 0, y: 0, behind: false };
+const HUD_STYLES = ['voll', 'reduziert', 'aus'];
 const NOTICE_LIFE = 2.6;
 
 // Einmal-Animationen (Web Animations statt CSS-Klasse + erzwungenem Layout, siehe dom.js replay()).
@@ -81,6 +90,11 @@ export class HUD {
     this._parcours = null;
     this._fov = 0;
     this._dead = false;
+    this._aimX = null;
+    this._aimY = null;
+    this._tablet = false;
+    this._stampAt = -1;
+    if (this.root) toggle(this.root, 'is-tablet', false);
     this._resetZones();
   }
 
@@ -106,9 +120,12 @@ export class HUD {
       <div class="h-markers"></div>
       <div class="h-dmgnums"></div>
       <div class="h-hitdirs">${'<div class="h-hitdir"><i></i></div>'.repeat(6)}</div>
-      <div class="h-cross" data-style="cross"><i class="l"></i><i class="r"></i><i class="t"></i><i class="b"></i><i class="c"></i><i class="o"></i></div>
-      <div class="h-hit"><i></i><i></i><i></i><i></i></div>
-      <div class="h-killico"></div>
+      <div class="h-aim">
+        <div class="h-cross" data-style="cross"><i class="l"></i><i class="r"></i><i class="t"></i><i class="b"></i><i class="c"></i><i class="o"></i></div>
+        <div class="h-hit"><i></i><i></i><i></i><i></i></div>
+        <div class="h-killico"></div>
+      </div>
+      <div class="h-stamp" hidden aria-hidden="true"><b></b><span><i></i> <em></em></span></div>
       <div class="h-cook"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="19"/><circle class="fg" cx="22" cy="22" r="19"/></svg><b></b></div>
       <div class="h-ammo-hint"><span class="t"></span><kbd></kbd><i class="bar"></i></div>
       <div class="h-tl"><div class="h-mm"></div><div class="h-uav" hidden>${ICON.radar}<span></span></div></div>
@@ -130,7 +147,10 @@ export class HUD {
       <div class="h-medal"></div>
       <div class="h-death" hidden><div class="k">Ausgeschaltet<em>.</em></div><div class="by"></div><div class="info"></div><div class="re"><span></span><i><u></u></i></div></div>
       <div class="h-health"><b>100</b><i><u></u><s></s></i></div>
-      <div class="h-weapon"><div class="h-wname"><span class="n"></span><span class="m"></span></div><div class="h-ammo"><b>0</b><span>/ 0</span></div><div class="h-equip"></div><div class="h-next"></div></div>
+      <div class="h-armor" hidden><span class="h-armico">${ICON.plate}</span><div class="h-plates"></div><b class="h-carry"></b><i class="h-ins"><u></u></i></div>
+      <div class="h-stance" data-st="stand" aria-hidden="true"></div>
+      <div class="h-zone" hidden><b></b><span></span></div>
+      <div class="h-weapon"><div class="h-wname"><span class="n"></span><span class="m"></span></div><div class="h-ammo"><b>0</b><span>/ 0</span></div><div class="h-magbar"><u></u></div><div class="h-equip"></div><div class="h-next"></div></div>
       <div class="h-streaks"></div>
       <div class="h-train" hidden></div>
       <div class="h-board" hidden data-scrollable></div>`;
@@ -138,7 +158,8 @@ export class HUD {
     const q = (s) => r.querySelector(s);
     this.el = {
       lowhp: q('.h-lowhp'), flash: q('.h-flash'), acog: q('.h-acog'), scope: q('.h-scope'), breath: q('.h-breath'), breathT: q('.h-breath span'), breathBar: q('.h-breath b'), markers: q('.h-markers'), dmgnums: q('.h-dmgnums'),
-      dirs: [...r.querySelectorAll('.h-hitdir')], cross: q('.h-cross'), hit: q('.h-hit'), killico: q('.h-killico'), cook: q('.h-cook'), cookFg: q('.h-cook .fg'), cookT: q('.h-cook b'),
+      dirs: [...r.querySelectorAll('.h-hitdir')], aim: q('.h-aim'), cross: q('.h-cross'), hit: q('.h-hit'), killico: q('.h-killico'), cook: q('.h-cook'), cookFg: q('.h-cook .fg'), cookT: q('.h-cook b'),
+      stamp: q('.h-stamp'), stampId: q('.h-stamp b'), stampD: q('.h-stamp i'), stampT: q('.h-stamp em'), magbar: q('.h-magbar u'),
       ammoHint: q('.h-ammo-hint'), ammoHintT: q('.h-ammo-hint .t'), ammoHintK: q('.h-ammo-hint kbd'), ammoHintBar: q('.h-ammo-hint .bar'),
       mm: q('.h-mm'), uav: q('.h-uav'), uavT: q('.h-uav span'), feed: q('.h-feed'), top: q('.h-top'), mtag: q('.h-mtag'),
       sA: q('.h-s-a'), sAv: q('.h-s-a b'), sAbar: q('.h-s-a u'), sAs: q('.h-s-a small'), sB: q('.h-s-b'), sBv: q('.h-s-b b'), sBbar: q('.h-s-b u'), sBs: q('.h-s-b small'),
@@ -151,6 +172,8 @@ export class HUD {
       health: q('.h-health'), hpN: q('.h-health b'), hpBar: q('.h-health u'), hpLag: q('.h-health s'),
       weapon: q('.h-weapon'), wName: q('.h-wname .n'), wMode: q('.h-wname .m'), mag: q('.h-ammo b'), reserve: q('.h-ammo span'), equip: q('.h-equip'), next: q('.h-next'),
       streaks: q('.h-streaks'), train: q('.h-train'), board: q('.h-board'),
+      armor: q('.h-armor'), plates: q('.h-plates'), carry: q('.h-carry'), ins: q('.h-ins'), insBar: q('.h-ins u'), stance: q('.h-stance'),
+      zone: q('.h-zone'), zoneT: q('.h-zone b'), zoneS: q('.h-zone span'),
     };
     // Kompass-Streifen (zweimal 360° für nahtloses Scrollen)
     let strip = '';
@@ -207,6 +230,14 @@ export class HUD {
       if (p && typeof p.action === 'function') p.action();
     });
     this.targeting = new StrikeTargeting(this.G, top);
+    // modes-ui: Einsatzkarte (Eroberung) und „Ausrüsten“ nach dem Tod; Trupp-Befehl-Knopf (Touch, Eroberung)
+    this.deploy = new DeployScreen(this.G);
+    this.orderBtn = el('button', 'ht-order');
+    this.orderBtn.type = 'button';
+    this.orderBtn.hidden = true;
+    this.orderBtn.innerHTML = `${ICON.squad}<span>Befehl</span>`;
+    this.orderBtn.addEventListener('click', (e) => { e.preventDefault(); this._squadPing(); });
+    this.topUi.appendChild(this.orderBtn);
   }
 
   /* ================================================================ Lebenszyklus */
@@ -222,6 +253,15 @@ export class HUD {
     const modeId = mode ? mode.id : G.match.modeId;
     this.root.dataset.mode = modeId || '';
     this.root.dataset.teams = mode && mode.teams ? '1' : '0';
+    this._flags = (G.match && G.match.styleFlags) || {};
+    this.root.dataset.gstyle = (G.match && G.match.style) || 'arcade';
+    this._applyStyle();
+    this._armKey = '';
+    this._teamSeen = G.player ? G.player.team : null;
+    this.el.armor.hidden = true;
+    this.el.zone.hidden = true;
+    if (this.deploy) this.deploy.attach(G);
+    this.orderBtn.hidden = !(mode && mode.squads);
     // Touch-Knöpfe ohne Funktion im Modus ausblenden (Serien im Waffenspiel/Schießstand, Granaten im Waffenspiel)
     document.body.dataset.streaks = mode && mode.streaks ? '1' : '0';
     document.body.dataset.lethals = mode && mode.def && mode.def.lethals === false ? '0' : '1';
@@ -269,12 +309,39 @@ export class HUD {
     s.on('training:parcours', (e) => this._onParcours(e));
     s.on('training:weapon', () => { this._slowT = 0; });
     s.on('objective:update', () => this._syncObjectives());
+    // modes-ui: Geheimnisse, Gebietswarnung, Trupp, Marken, Infektion, Tickets
+    s.on('secret:found', ({ name, actor } = {}) => { if (!actor || actor === P()) this._secretToast(name); });
+    s.on('zone:warn', (e) => this._zoneWarn(e));
+    s.on('squad:order', ({ squad, order, by }) => {
+      const me = P();
+      if (!me || !squad || squad !== me.squad || !order) return;
+      const f = (G.mode && G.mode.objectives || []).find((x) => x.id === order.objectiveId);
+      const txt = `${order.kind === 'defend' ? 'Verteidigt' : 'Angriff auf'} ${order.objectiveId}${f && f.name ? ` – ${f.name}` : ''}`;
+      this._notice(`Trupp ${squad.name}: ${txt}`, by === me ? 'ally' : 'dim', null, NOTICE_LIFE, 'squad');
+    });
+    s.on('squad:done', ({ squad }) => { if (squad && P() && squad === P().squad) this._notice('Befehl ausgeführt.', 'gold'); });
+    s.on('infect', ({ actor }) => {
+      if (actor === P()) this._notice('Du bist infiziert. Jage die Überlebenden.', 'enemy', null, 4, 'inf');
+      else if (G.mode && G.mode.scores && G.mode.scores.A === 1 && P() && P().team === 'A') this._notice('Letzter Überlebender!', 'gold', null, 4, 'inf');
+    });
+    s.on('ticket', ({ team, value, reason }) => {
+      const me = P();
+      if (!me || reason === 'start' || !G.mode || !G.mode.ticketsMax) return;
+      const max = G.mode.ticketsMax[team] || 1;
+      const warn = Math.round(max * 0.1);
+      if (value === warn) this._notice(team === me.team ? 'Unsere Tickets gehen zur Neige.' : 'Der Gegner hat kaum noch Tickets.', team === me.team ? 'enemy' : 'ally');
+    });
+    s.on('settings:change', ({ key }) => {
+      if (key === 'hudStyle' || key === 'bodycamStamp' || key === 'playerName') this._applyStyle();
+      else if (key === 'bindings' || key === 'padIcons') this._buildStreaks(); // Tastenhinweise der Serien
+    });
     this._onResize = () => {
       if (this.minimap) this.minimap.resize();
       this._vw = window.innerWidth;
       this._vh = window.innerHeight;
       this._resetZones();
       this._syncFeedMax();
+      if (this.deploy) this.deploy.resize();
     };
     window.addEventListener('resize', this._onResize);
     this._onResize();
@@ -282,6 +349,7 @@ export class HUD {
   }
 
   detach() {
+    if (this.deploy) this.deploy.detach();
     if (this._subs) this._subs.dispose();
     this._subs = null;
     if (this._onResize) window.removeEventListener('resize', this._onResize);
@@ -290,6 +358,7 @@ export class HUD {
     if (this.feed) this.feed.clear();
     this._setPostDesat(0);
     if (this.topUi) this.topUi.hidden = true;
+    if (this.orderBtn) this.orderBtn.hidden = true;
     delete document.body.dataset.streaks;
     delete document.body.dataset.lethals;
     this._setDead(false);
@@ -396,12 +465,13 @@ export class HUD {
     const short = def.short || String(id).toUpperCase();
     const limit = mode && mode.scoreLimit > 0 ? ` · ${mode.scoreLimit}` : '';
     setText(this.el.mtag, `${short}${limit}`);
-    const names = G.data.TEAM_NAMES || { A: 'Team A', B: 'Team B' };
+    const names = (mode && mode.teamNames) || G.data.TEAM_NAMES || { A: 'Team A', B: 'Team B' };
     const myTeam = G.player && G.player.team === 'B' ? 'B' : 'A';
+    this._teamSeen = G.player ? G.player.team : null;
     setText(this.el.sAs, mode && mode.teams ? names[myTeam] : 'Du');
     setText(this.el.sBs, mode && mode.teams ? names[myTeam === 'A' ? 'B' : 'A'] : 'Spitze');
     let sub = '';
-    if (id === 'dom') {
+    if (id === 'dom' || (mode && mode.flagBar)) {
       sub = '<div class="h-flags">' + (mode.objectives || []).map((f) => `<div class="h-flag" data-id="${esc(f.id)}"><i></i><b>${esc(f.id)}</b></div>`).join('') + '</div>';
     } else if (id === 'gun') {
       const n = mode.steps ? mode.steps.length : 18;
@@ -468,10 +538,43 @@ export class HUD {
 
   /* ================================================================ Ereignisse */
 
+  /** Tastenhinweis aus der aktuellen Belegung (input.bindings; Touch → ''). breath = Sprint-Taste, swap = „1/2“. */
   _keyFor(action) {
-    const input = this.G.input;
+    const G = this.G;
+    const input = G.input;
     if (!input || input.mode === 'touch') return '';
-    return input.lastDevice === 'gamepad' ? PAD_HINT[action] || '' : KEY_HINT[action] || '';
+    if (action === 'swap' && input.lastDevice !== 'gamepad') {
+      const a = actionKey(G, 'slot1');
+      const b = actionKey(G, 'slot2');
+      if (a && b) return `${a}/${b}`;
+    }
+    return actionKey(G, action === 'breath' ? 'sprint' : action);
+  }
+
+  /** HUD-Stil + Bodycam-Einblendung aus den Einstellungen übernehmen. */
+  _applyStyle() {
+    if (!this.root) return;
+    const S = this.G.settings;
+    const v = S.get('hudStyle');
+    let st = HUD_STYLES.includes(v) ? v : 'voll';
+    // Spielstil „Realistisch“: mindestens reduziertes HUD, Fadenkreuz nach Stil/Einstellung
+    const fl = this._flags || {};
+    if (fl.hudMin === 'reduziert' && st === 'voll') st = 'reduziert';
+    if (this.root.dataset.xhair !== (fl.crosshair === false ? '0' : '1')) this.root.dataset.xhair = fl.crosshair === false ? '0' : '1';
+    const changed = this.style !== st;
+    this.style = st;
+    if (this.root.dataset.hud !== st) this.root.dataset.hud = st;
+    const stamp = !!S.get('bodycamStamp');
+    this.el.stamp.hidden = !stamp;
+    toggle(this.root, 'has-stamp', stamp);
+    if (stamp) { this._stampAt = -1; setHtml(this.el.stampId, `<i>NP-K2 · </i>${deviceId(S.get('playerName'))}`); }
+    if (changed && this.minimap) this.minimap.resize();
+    if (st === 'aus') { this.el.hit.classList.remove('is-on'); this._hitT = 0; }
+  }
+
+  /** Minikarte sichtbar? (voll; im Realismus-Stil nur als „Tablet“ bei gehaltener Punktetabelle) */
+  get _mapShown() {
+    return this.style === 'voll' || this._tablet;
   }
 
   _streakName(id) {
@@ -493,6 +596,7 @@ export class HUD {
   }
 
   _hitmarker(kind) {
+    if (this.style === 'aus' || (this._flags && this._flags.hitmarkers === 'aus')) return; // Realismus: kein Treffermarker (der Klang bleibt)
     this._hitT = kind === 'kill' ? 0.42 : 0.2;
     this._hitKind = kind;
     const h = this.el.hit;
@@ -503,11 +607,11 @@ export class HUD {
 
   _onKill(e) {
     const G = this.G;
-    this.feed.pushKill(e);
+    if (!(this._flags && this._flags.killfeed === 'eigene') || e.killer === this.G.player || e.victim === this.G.player) this.feed.pushKill(e, { weapons: !(this._flags && this._flags.killfeed === 'eigene' && this.G.match.style === 'realistisch') });
     const p = G.player;
     // Abschuss-Bestätigung unter dem Fadenkreuz
     const k = e.killer;
-    if (k && e.victim !== p && (k === p || (k.isStreakEntity && k.owner === p))) {
+    if (k && e.victim !== p && (k === p || (k.isStreakEntity && k.owner === p)) && this.style !== 'aus') {
       const n = this.el.killico;
       setHtml(n, e.headshot ? ICON.head : ICON.skull);
       const cls = `h-killico${e.headshot ? ' is-head' : ''}`;
@@ -550,6 +654,7 @@ export class HUD {
   }
 
   _scorePopup({ points, reason }) {
+    if (this.style === 'aus') return;
     const P = this._popups;
     if (this.G.player && !this.G.player.alive) return;
     const L = this.G.data.SCORE_LABELS || {};
@@ -567,6 +672,7 @@ export class HUD {
   }
 
   _medalToast({ id, label, tier }) {
+    if (this.style === 'aus') return;
     const M = this.G.data.MEDALS || {};
     const def = M[id] || {};
     if (this.G.input && this.G.input.mode === 'touch') {
@@ -616,7 +722,7 @@ export class HUD {
 
   _damageDir({ amount, dir, attacker }) {
     const p = this.G.player;
-    if (!p) return;
+    if (!p || (this._flags && this._flags.damageDirection === false)) return;
     const src = attacker && attacker !== p && attacker.position ? attacker.position.clone() : null;
     let ang = null;
     if (!src && dir) ang = Math.atan2(dir.x, dir.z); // Quelle liegt entgegen dir
@@ -718,12 +824,11 @@ export class HUD {
 
   _onTrainingHit(e) {
     this._hitmarker(e.killed ? 'kill' : e.zone === 'head' ? 'head' : '');
-    if (!this.G.camera || !e.point) return;
-    _v.copy(e.point).project(this.G.camera);
-    if (_v.z > 1) return;
+    if (!this.G.camera || !e.point || this.style === 'aus') return;
+    if (!this._project(e.point, _proj) || _proj.behind) return;
     const n = this._dmgPool[this._dmgIdx++ % this._dmgPool.length];
-    const x = (_v.x * 0.5 + 0.5) * (this._vw || window.innerWidth);
-    const y = (-_v.y * 0.5 + 0.5) * (this._vh || window.innerHeight);
+    const x = _proj.x;
+    const y = _proj.y;
     n.textContent = String(Math.round(e.damage));
     n.className = `h-dmgnum${e.zone === 'head' ? ' is-head' : ''}${e.killed ? ' is-kill' : ''}`;
     n.style.left = `${x}px`;
@@ -786,7 +891,7 @@ export class HUD {
     toggle(this.root, 'is-dead', !!p && !alive);
     this._setDead(!!p && !alive);
     const melee = def && def.cls === 'melee';
-    const hide = !alive || scoped || ads > 0.55 || (p && p.sprinting) || (this.targeting && this.targeting.open);
+    const hide = !alive || scoped || ads > 0.55 || (p && p.sprinting) || (this.targeting && this.targeting.open) || this.style === 'aus';
     const cross = this.el.cross;
     setStyle(cross, 'opacity', hide ? '0' : w && w.isReloading ? '.45' : '1');
     if (!hide && cam) {
@@ -799,6 +904,8 @@ export class HUD {
       setStyle(cross, '--cc', G.settings.get('crosshairColor'));
       toggle(cross, 'is-enemy', !!(input && input.aimTarget));
     }
+    // Fadenkreuz, Treffermarker und Abschuss-Symbol auf dem Laufpunkt (freies Zielen, Lehnen, Körperkamera, Objektiv)
+    this._updateAim(p, alive, vw, vh);
 
     /* ---------- Treffermarker */
     if (this._hitT > 0) {
@@ -874,6 +981,7 @@ export class HUD {
       const infinite = G.mode && G.mode.def && G.mode.def.infiniteAmmo;
       setText(this.el.mag, melee ? '—' : String(st.mag));
       setText(this.el.reserve, melee ? '' : infinite ? '/ ∞' : `/ ${st.reserve}`);
+      if (this.style === 'reduziert') setStyle(this.el.magbar, 'transform', `scaleX(${melee || !(def.mag > 0) ? 1 : clamp(st.mag / def.mag, 0, 1).toFixed(3)})`);
       const lowMag = def.mag > 0 && st.mag <= Math.ceil(def.mag * 0.25);
       toggle(this.el.weapon, 'is-low', lowMag && st.mag > 0);
       toggle(this.el.weapon, 'is-empty', def.mag > 0 && st.mag === 0);
@@ -896,7 +1004,7 @@ export class HUD {
           cls = 'is-empty';
         }
         else if (def.mag > 0 && st.mag === 0) { hint = 'Nachladen'; key = this._keyFor('reload'); cls = 'is-empty'; }
-        else if (lowMag && def.mag > 5) { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
+        else if (lowMag && def.mag > 5 && this.style !== 'aus') { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
       }
       setText(this.el.ammoHintT, hint);
       setText(this.el.ammoHintK, key);
@@ -913,6 +1021,10 @@ export class HUD {
       this._updateScores(now);
       this._updateStreakPanel();
       this._updatePrompt(touch);
+      this._updateStamp();
+      this._updateStance(p);
+      // Linkshänder-Layout (gespiegelte Touch-Knöpfe): HUD-Ecken mitspiegeln (Minikarte rechts, Knöpfe links)
+      toggle(this.root, 'is-mirror', !!(touch && input.touchLayout && input.touchLayout.mirror));
       if (G.mode && G.mode.id === 'training') this._updateTraining();
       const uav = G.mode && G.mode.streaks && p ? G.mode.streaks.uavInfo(p) : null;
       const show = !!(uav && (uav.own || uav.enemy));
@@ -924,7 +1036,7 @@ export class HUD {
     }
 
     /* ---------- Kompass */
-    if (p && !touch) {
+    if (p && !touch && this.style === 'voll') {
       const heading = ((((-p.yaw * 180) / Math.PI) % 360) + 360) % 360;
       setStyle(this.el.strip, 'transform', `translateX(${(-(heading + 360) * DEG_PX).toFixed(1)}px)`);
       setText(this.el.deg, String(Math.round(heading) % 360).padStart(3, '0'));
@@ -932,6 +1044,12 @@ export class HUD {
 
     /* ---------- Flaggenmarker + Einnahmebalken */
     this._updateMarkers(vw, vh);
+
+    /* ---------- Rüstung, Einsatzkarte, Trupp-Befehl (modes-ui) */
+    this._updateArmor(p, now);
+    if (this.deploy) this.deploy.update(dt);
+    if (G.mode && G.mode.squads && p && p.alive && input && typeof input.pressed === 'function' && input.pressed('squad_order')) this._squadPing();
+    if (this._zoneT > 0) { this._zoneT -= dt; if (this._zoneT <= 0) this.el.zone.hidden = true; }
 
     /* ---------- Punkte / Medaillen / Hinweise */
     if (this._popups.t > 0) {
@@ -968,12 +1086,18 @@ export class HUD {
     } else if (!this.el.death.hidden && p && p.alive) this.el.death.hidden = true;
 
     /* ---------- Minikarte, Feed, Zielkarte */
-    if (this.minimap) this.minimap.update(dt);
+    if (this.minimap && this._mapShown) this.minimap.update(dt);
     this.feed.update(dt);
     if (this.targeting) this.targeting.update(dt);
 
     /* ---------- Punktetabelle */
     const showBoard = !!(input && input.down('scoreboard')) && G.mode;
+    const tablet = this.style === 'aus' && !!showBoard;
+    if (tablet !== this._tablet) {
+      this._tablet = tablet;
+      toggle(this.root, 'is-tablet', tablet);
+      if (tablet && this.minimap) { this.minimap.resize(); this.minimap.update(0, true); } // sofort zeichnen, nicht erst im nächsten Bild
+    }
     if (showBoard) {
       if (this.el.board.hidden) { this.el.board.hidden = false; this._boardT = 0; }
       this._boardT -= dt;
@@ -984,9 +1108,65 @@ export class HUD {
     } else if (!this.el.board.hidden) this.el.board.hidden = true;
   }
 
+  /**
+   * Welt → Bildschirm (CSS-px) mit der Objektiv-Abbildung des Renderers (renderer.lens: Fischauge der Körperkamera).
+   * out = { x, y, behind }. Gibt false zurück ohne Kamera.
+   */
+  _project(world, out) {
+    const cam = this.G.camera;
+    if (!cam || !world) return false;
+    _w.copy(world).applyMatrix4(cam.matrixWorldInverse);
+    out.behind = _w.z > 0;
+    _v.copy(world).project(cam);
+    const lens = this.G.renderer && this.G.renderer.lens;
+    if (!out.behind && lens && typeof lens.toScreen === 'function') lens.toScreen(_v);
+    out.x = (_v.x * 0.5 + 0.5) * (this._vw || window.innerWidth);
+    out.y = (-_v.y * 0.5 + 0.5) * (this._vh || window.innerHeight);
+    return Number.isFinite(out.x) && Number.isFinite(out.y);
+  }
+
+  /**
+   * Laufpunkt (player.getAimScreenPoint, NDC) durch das Objektiv → Versatz der Zielgruppe (Fadenkreuz, Treffermarker,
+   * Abschuss-Symbol) zur Bildmitte. Auf Gerätepixel gerundet, Bewegungen unter ¼ px werden nicht geschrieben.
+   */
+  _updateAim(p, alive, vw, vh) {
+    let x = 0;
+    let y = 0;
+    if (p && alive && typeof p.getAimScreenPoint === 'function') {
+      p.getAimScreenPoint(_aim);
+      const lens = this.G.renderer && this.G.renderer.lens;
+      if (lens && typeof lens.toScreen === 'function') lens.toScreen(_aim);
+      x = _aim.x * 0.5 * vw;
+      y = -_aim.y * 0.5 * vh;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) x = y = 0;
+      x = clamp(x, -vw * 0.42, vw * 0.42);
+      y = clamp(y, -vh * 0.42, vh * 0.42);
+    }
+    const dpr = window.devicePixelRatio || 1;
+    x = Math.round(x * dpr) / dpr;
+    y = Math.round(y * dpr) / dpr;
+    if (this._aimX == null || Math.abs(x - this._aimX) >= 0.25 || Math.abs(y - this._aimY) >= 0.25) {
+      this._aimX = x;
+      this._aimY = y;
+      setStyle(this.el.aim, 'translate', x || y ? `${x}px ${y}px` : '');
+    }
+  }
+
+  /** Bodycam-Einblendung: Uhrzeit (einmal je Sekunde) und erfundene Geräte-ID. */
+  _updateStamp() {
+    if (this.el.stamp.hidden) return;
+    const now = new Date();
+    const sec = Math.floor(now.getTime() / 1000);
+    if (sec === this._stampAt) return;
+    this._stampAt = sec;
+    const z = (n) => String(n).padStart(2, '0');
+    setText(this.el.stampD, `${now.getFullYear()}-${z(now.getMonth() + 1)}-${z(now.getDate())}`);
+    setText(this.el.stampT, `${z(now.getHours())}:${z(now.getMinutes())}:${z(now.getSeconds())}`);
+  }
+
   _setPostDesat(v) {
     const R = this.G.renderer;
-    if (!R || typeof R.setPost !== 'function' || !R.preset || !R.preset.grade) { this._post.desat = 0; return; }
+    if (!R || typeof R.setPost !== 'function' || !R.preset || !(R.graded ?? R.preset.grade)) { this._post.desat = 0; return; } // graded: auch low mit Bildkette (core-render)
     if (Math.abs(v - this._post.desat) < 0.03 && !(v === 0 && this._post.desat !== 0)) return;
     this._post.desat = v;
     R.setPost({ desaturate: v });
@@ -1030,12 +1210,20 @@ export class HUD {
     toggle(this.el.time, 'is-ot', !!mode.overtime);
     toggle(this.el.time, 'is-last', Number.isFinite(tl) && tl <= 30 && !mode.overtime);
     const held = id === 'dom' ? (mode.objectives || []).filter((f) => f.owner === p.team).length : 0;
-    setText(this.el.timeS, mode.overtime ? 'Verlängerung' : held && mode.tickIn != null ? `+${held} · ${Math.ceil(mode.tickIn)}\u202fs` : '');
+    let sub = mode.overtime ? 'Verlängerung' : held && mode.tickIn != null ? `+${held} · ${Math.ceil(mode.tickIn)}\u202fs` : '';
+    if (mode.flagBar && mode.ticketsMax) { // Eroberung: Flaggenmehrheit = Ausbluten
+      let a = 0;
+      let b = 0;
+      for (const f of mode.objectives || []) { if (f.owner === p.team) a++; else if (f.owner) b++; }
+      sub = a > b ? 'Gegner blutet aus' : b > a ? 'Wir bluten aus' : '';
+    }
+    setText(this.el.timeS, sub);
+    if (this._teamSeen !== p.team) this._buildModeSections(); // Infiziert: Seitenwechsel
     if (Number.isFinite(tl) && tl <= 60 && tl > 50 && !this._lastMinuteSaid && !mode.overtime && mode.timeLimit > 90) {
       this._lastMinuteSaid = true;
       this._notice('Noch eine Minute.', 'signal');
     }
-    const limit = mode.scoreLimit || 0;
+    const limit = mode.scoreMax || mode.scoreLimit || 0;
     if (mode.teams) {
       const mine = p.team === 'B' ? 'B' : 'A';
       const other = mine === 'A' ? 'B' : 'A';
@@ -1082,7 +1270,7 @@ export class HUD {
       setText(this.el.sBs, 'Treffer %');
     }
     // Flaggenleiste
-    if (id === 'dom' && this.el.flags) {
+    if ((id === 'dom' || mode.flagBar) && this.el.flags) {
       const map = new Map((mode.objectives || []).map((f) => [f.id, f]));
       for (const n of this.el.flags) {
         const f = map.get(n.dataset.id);
@@ -1199,6 +1387,7 @@ export class HUD {
     if (!objs.length || !cam || !p) { this.el.capture.hidden = true; toggle(this.root, 'is-capturing', false); return; }
     cam.updateMatrixWorld();
     const byId = new Map(objs.map((f) => [f.id, f]));
+    const lens = this.G.renderer && this.G.renderer.lens;
     const margin = 46;
     const dpr = window.devicePixelRatio || 1;
     const zones = this.G.input && this.G.input.mode === 'touch' ? this._controlZones() : null;
@@ -1211,6 +1400,7 @@ export class HUD {
       _w.copy(_v).applyMatrix4(cam.matrixWorldInverse);
       const behind = _w.z > 0;
       _v.project(cam);
+      if (!behind && lens && typeof lens.toScreen === 'function') lens.toScreen(_v); // gleiche Abbildung wie das Bild (Fischauge)
       let x = (_v.x * 0.5 + 0.5) * vw;
       let y = (-_v.y * 0.5 + 0.5) * vh;
       if (behind) { x = vw - x; y = vh - margin; }
@@ -1321,18 +1511,98 @@ export class HUD {
     for (const n of nodes) io.observe(n);
   }
 
+  /* ================================================================ modes-ui: Rüstung, Haltung, Gebiet, Trupp */
+
+  /** Westenplatten (core-mechanics: player.armor = createArmorState) + Einsetz-Fortschritt + Reserve. */
+  _updateArmor(p, now) {
+    const a = p && p.alive ? p.armor : null;
+    const show = !!(a && a.slots > 0 && a.plateHp > 0);
+    if (this.el.armor.hidden === show) this.el.armor.hidden = !show;
+    if (!show) { this._armKey = ''; return; }
+    const n = a.slots | 0;
+    const key = `${n}`;
+    if (this._armKey !== key) {
+      this._armKey = key;
+      this.el.plates.innerHTML = '<i><u></u></i>'.repeat(n);
+      this._plateEls = [...this.el.plates.querySelectorAll('u')];
+    }
+    for (let i = 0; i < n; i++) {
+      const f = clamp(((a.hp || 0) - i * a.plateHp) / a.plateHp, 0, 1);
+      setStyle(this._plateEls[i], 'transform', `scaleX(${f.toFixed(3)})`);
+    }
+    setText(this.el.carry, a.carryMax != null ? `×${a.carry | 0}` : '');
+    const ins = a.inserting;
+    let prog = 0;
+    if (ins && typeof ins === 'object' && ins.dur > 0) prog = clamp((now - ins.start) / ins.dur, 0, 1);
+    else if (typeof ins === 'number') prog = clamp(ins, 0, 1);
+    toggle(this.el.armor, 'is-ins', prog > 0);
+    setStyle(this.el.insBar, 'transform', `scaleX(${prog.toFixed(3)})`);
+    toggle(this.el.armor, 'is-empty', (a.hp || 0) <= 0.5);
+  }
+
+  /** Haltung (stehen/hocken/liegen) als kleines Symbol neben dem Leben. */
+  _updateStance(p) {
+    if (!p) return;
+    const st = p.stance || (p.prone ? 'prone' : p.crouching ? 'crouch' : 'stand');
+    if (this.el.stance.dataset.st === st) return;
+    this.el.stance.dataset.st = st;
+    setHtml(this.el.stance, ICON[st] || ICON.stand);
+  }
+
+  /** Eroberung: feindliches HQ / Kampfgebiet verlassen – Countdown in der Bildmitte. */
+  _zoneWarn({ kind, left } = {}) {
+    if (!kind) { this.el.zone.hidden = true; this._zoneT = 0; return; }
+    this.el.zone.hidden = false;
+    this._zoneT = 0.6;
+    setText(this.el.zoneT, kind === 'hq' ? 'Feindliches HQ' : 'Kampfgebiet verlassen');
+    setText(this.el.zoneS, `Kehre um – ${Math.ceil(left)} s`);
+  }
+
+  _secretToast(name) {
+    this._notice(`Geheimnis gefunden: ${name || '???'}`, 'gold', null, 5, 'secret');
+    this.G.events.emit('ui:sound', { name: 'confirm' });
+  }
+
+  /** Trupp-Befehl: Flagge in Blickrichtung (sonst die nächste) angreifen bzw. verteidigen. */
+  _squadPing() {
+    const G = this.G;
+    const m = G.mode;
+    const p = G.player;
+    if (!m || typeof m.squadOrder !== 'function' || !p || !m.objectives || !m.objectives.length) return;
+    const cam = G.camera;
+    let best = null;
+    let bestS = Infinity;
+    const fwd = new THREE.Vector3();
+    if (cam) cam.getWorldDirection(fwd);
+    for (const f of m.objectives) {
+      const to = f.position.clone().sub(p.position);
+      const d = to.length() || 1;
+      const ang = cam ? Math.acos(clamp(to.normalize().dot(fwd), -1, 1)) : 0;
+      const sc = ang < 0.45 ? ang * 10 + d / 400 : 10 + d / 100;
+      if (sc < bestS) { bestS = sc; best = f; }
+    }
+    if (best) { m.squadOrder(best.id, p); G.events.emit('ui:sound', { name: 'confirm' }); }
+  }
+
   _renderBoard() {
     const G = this.G;
     const mode = G.mode;
     if (!mode) return;
     const rows = liveRows(mode);
     const p = G.player;
-    const names = G.data.TEAM_NAMES || { A: 'Team A', B: 'Team B' };
+    const names = mode.teamNames || G.data.TEAM_NAMES || { A: 'Team A', B: 'Team B' };
     const head = `<div class="hb-head"><div><div class="hb-k">${esc(G.world ? G.world.name : '')}</div><div class="hb-t">${esc(mode.def.name || '')}<em>.</em></div></div><div class="hb-time">${Number.isFinite(mode.timeLeft) ? clock(mode.timeLeft) : '∞'}</div></div>`;
     setHtml(this.el.board, head + scoreboardHtml(rows, {
-      teams: mode.teams, playerTeam: p ? p.team : 'A', teamNames: names, teamScores: mode.teams ? mode.scores : null, live: true,
+      teams: mode.teams, playerTeam: p ? p.team : 'A', teamNames: names, teamScores: mode.teams ? mode.scores : null, live: true, squads: !!mode.squads,
     }));
   }
+}
+
+/** Erfundene Seriennummer der Körperkamera („X7A3F02“, Modell „NP-K2“ steht davor), stabil je Spielername. */
+function deviceId(name) {
+  let h = 2166136261;
+  for (const c of String(name || 'Operator')) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  return `X${(h >>> 4).toString(16).toUpperCase().padStart(7, '0').slice(0, 7)}`;
 }
 
 /**

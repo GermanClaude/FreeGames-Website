@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { getMaterial } from '../../engine/textures.js';
 import { building, wall, stairs, railing } from '../arch.js';
-import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack } from '../props.js';
+import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js';
 
 const LANES = 8, LANE_W = 5.5, FIRE_Z = 34;
 const laneX = i => -((LANES - 1) / 2) * LANE_W + i * LANE_W;
@@ -17,15 +17,20 @@ export default {
   visualBounds: { minX: -70, maxX: 70, minZ: -110, maxZ: 100 },
   chunkSize: 34,
   ambience: 'range',
+  // Fotoscan-Bibliothek (assets/lib): HDRI für Umgebungslicht + Himmel, Materialzuordnung siehe world/library.js
+  assets: { hdri: 'zwartkops_straight_morning' },
   defaultSurface: 'dirt',
   navSpacing: 1.6,
   lighting: {
     sun: { elevation: 31, azimuth: 118, color: '#fff2dc', intensity: 3.7 },
     sky: { turbidity: 3.2, rayleigh: 1.25, mieCoefficient: 0.004, mieDirectionalG: 0.8, exposure: 0.62, clouds: { coverage: 0.22, density: 0.35, scale: 0.00022 }, hazeHigh: 0.14 },
-    hemi: { sky: '#d3dbe2', ground: '#ab9775', intensity: 0.55 },
+    hemi: { sky: '#d3dbe2', ground: '#ab9775', intensity: 0.55, hdriIntensity: 0.4 },
     env: { intensity: 0.6, ground: '#9a8d74', groundIntensity: 0.6, tint: '#f2ebe0' },
-    fog: { color: '#cfdae3', near: 110, far: 620 },
+    // atmosphere-weather: Morgendunst – etwas dichter, kräftigere Gegenlicht-Einstreuung zur Morgensonne
+    fog: { color: '#cfdae3', near: 110, far: 620, density: 0.0026, falloff: 0.035, start: 30, sun: 0.65, sunExp: 4 },
     shadow: { size: 40 },
+    probes: { bounce: 1.15 },
+    atmos: { beams: 0.024, beamG: 0.45, dust: 0.8, slots: 0.5, outdoor: 0.4 },
   },
 
   build(b) {
@@ -214,12 +219,15 @@ export default {
     pallet(b, -20, 0, 59.6, { load: 'boxes', ry: 0.1 });
     for (const [x, z] of [[-26.5, 53], [-17, 47.5]]) cone(b, x, z);
 
+    dressing(b);
+
     // --- Startpunkte ----------------------------------------------------------
     const spawns = { A: [], B: [], ffa: [] };
     for (let i = 0; i < 10; i++) spawns.A.push({ x: -9 + (i % 5) * 4.5, z: 47.5 + Math.floor(i / 5) * 7, yaw: 0 });
     for (let i = 0; i < 10; i++) spawns.B.push({ x: -20 + i * 4.4, z: -70 + (i % 2) * 2, yaw: Math.PI });
     // Trainingskarte: auch „Jeder gegen jeden“ startet sicher hinter der Feuerlinie (Bahnen bleiben frei)
     for (let i = 0; i < 14; i++) spawns.ffa.push({ x: -19.5 + (i % 7) * 6.5, z: 44 + Math.floor(i / 7) * 9, yaw: 0 });
+    spawns.ffa[12].x += 0.75; // (13, 53) lag 0,2 m an der Waffenkammer-Wand
 
     // --- Ziele (instanziert, animiert) --------------------------------------
     const T = createTargets(targets);
@@ -259,6 +267,27 @@ export default {
     };
   },
 };
+
+// ---------------------------------------------------------------------------
+// Ausstattung aus der Asset-Bibliothek (Fotoscan-Kleinteile; ohne Bibliothek entfällt sie)
+// ---------------------------------------------------------------------------
+function dressing(b) {
+  const list = [];
+  const z0 = FIRE_Z - 0.3;
+  // Munitionsdosen auf den Schießtischen
+  for (let k = 0; k < LANES; k++) list.push(['ammo_box', laneX(k) + 0.35, 1.05, z0 + 0.62, hash01(k, 3) * 0.6 - 0.3]);
+  // Waffenkammer: Munition auf den Werkbänken, Kisten, Kanister
+  list.push(['ammo_box', 16.6, 0.92, 48.4, 0.1], ['ammo_box', 17.15, 0.92, 48.6, 0.5], ['ammo_box', 23.2, 0.92, 48.5, -0.2]);
+  list.push(['wooden_military_crate', 25.6, 0.12, 50.4, Math.PI / 2 + 0.06, { collide: true }]);
+  list.push(['old_military_crate', 14.0, 0.12, 49.6, Math.PI / 2, { collide: true }]);
+  list.push(['metal_jerrycan_green', 26.6, 0.12, 47.2, 0.3], ['metal_jerrycan_green', 26.95, 0.12, 47.55, 1.2]);
+  // Steine und ein Totholzstamm im Randstreifen neben den Bahnen
+  for (const [x, z, sc] of [[-24.6, -60, 3.2], [25.2, -46, 2.6], [-26.0, -28, 3.6], [24.4, -8, 2.8], [-23.8, 12, 2.4], [26.6, 20, 3.0], [-27.2, -66, 3.8], [27.0, -18, 3.4]]) {
+    list.push(['rock_07', x, 0, z, hash01(x, z) * 6.28, { s: sc, castShadow: true }]);
+  }
+  list.push(['dead_tree_trunk_02', -26.6, 0, -40, 1.45, { s: 1.0 }]);
+  dress(b, list);
+}
 
 // ---------------------------------------------------------------------------
 // Klappziele

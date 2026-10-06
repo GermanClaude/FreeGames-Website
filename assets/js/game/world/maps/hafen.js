@@ -7,7 +7,7 @@ import { building, wall, stairs, railing, catwalk, slab } from '../arch.js';
 import {
   container, CONTAINER_H, crate, crateStack, barrel, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   forklift, truck, van, car, lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
-  rack, workbench, lockers, dumpster, frame, roofVent,
+  rack, workbench, lockers, dumpster, frame, roofVent, dress,
 } from '../props.js';
 
 const H = CONTAINER_H;
@@ -20,16 +20,30 @@ export default {
   visualBounds: { minX: -140, maxX: 120, minZ: -200, maxZ: 130 },
   chunkSize: 32,
   ambience: 'harbor',
+  // Fotoscan-Bibliothek (assets/lib): HDRI für Umgebungslicht + Himmel, Materialzuordnung siehe world/library.js
+  // Büro-/Pförtnerwände: glatt gestrichener Putz statt Außenputz
+  assets: { hdri: 'freight_station', materials: { plaster_white: { id: 'plaster_painted', color: 1.6 } } },
   defaultSurface: 'concrete',
   lighting: {
     sun: { elevation: 15, azimuth: 247, color: '#ffbf80', intensity: 3.5 },
-    sky: { turbidity: 7, rayleigh: 2.4, mieCoefficient: 0.009, mieDirectionalG: 0.86, exposure: 0.5, clouds: { coverage: 0.38, density: 0.42, scale: 0.00018, elevation: 0.55 }, hazeHigh: 0.13, hazeAmount: 0.9 },
+    // hdri*: Werte mit HDRI-Umgebung (freight_station, Sonne gedeckelt) – das Foto-Umgebungslicht ist voller als der
+    // prozedurale Himmel, deshalb weniger Füllicht (die Sonne zeichnet harte Schatten wie in Fotos)
+    sky: { turbidity: 7, rayleigh: 2.4, mieCoefficient: 0.009, mieDirectionalG: 0.86, exposure: 0.5, clouds: { coverage: 0.38, density: 0.42, scale: 0.00018, elevation: 0.55 }, hazeHigh: 0.13, hazeAmount: 0.9, hdriIntensity: 0.5 },
     // Umgebung ohne Mie-Hotspot (lighting.js begrenzt die Env-Map) → Füllicht etwas angehoben
-    hemi: { sky: '#d6c2ad', ground: '#6e5a45', intensity: 0.75 },
-    env: { intensity: 1.15, ground: '#7a6650', groundIntensity: 0.55, tint: '#ffe6cc' },
-    fog: { color: '#dcb28a', near: 70, far: 420 },
+    hemi: { sky: '#d6c2ad', ground: '#6e5a45', intensity: 0.75, hdriIntensity: 0.35 },
+    env: { intensity: 1.15, ground: '#7a6650', groundIntensity: 0.55, tint: '#ffe6cc', hdriIntensity: 0.55 },
+    // Höhennebel: warmer Hafendunst über dem Wasser, dichter am Boden (Skalenhöhe ≈ 30 m), Gegenlicht der tiefen Sonne
+    fog: { color: '#dcb28a', near: 70, far: 420, density: 0.0045, falloff: 0.033, start: 25, sun: 0.6, sunExp: 4 },
     shadow: { size: 42 },
+    // Sonden-Gitter (Innenräume, Rückprall), Atmosphäre (Strahlen durch die Hallentore, Staub)
+    probes: { bounce: 1.1 },
+    // atmosphere-weather: Lichtschein – Strahlen durch die Hallentore (kräftiger), tiefe Abendsonne in Schlitzen
+    // zwischen den Containerstapeln (slots) und durch Öffnungen ins Freie (outdoor)
+    atmos: { beams: 0.032, beamG: 0.45, dust: 1.15, slots: 0.75, outdoor: 0.6 },
   },
+  // Belichtung (core-render, post/exposure): mit Sonden gemessenes L̄ draußen 0,104 (vorher 0,118) → Referenz neu,
+  // etwas kräftigere Anpassung, damit Halle/Büros (L̄ ≈ 0,032) wie bisher ≈ 1 Blende aufgehellt werden
+  grade: { exposure: { ref: 0.105, strength: 0.78 } },
 
   build(b, ctx) {
     const zones = [];
@@ -226,6 +240,7 @@ export default {
     backdrop(b);
     for (const z of [-95, -150]) gantryCrane(b, z, { backdrop: true });
     ship(b);
+    dressing(b);
 
     // -----------------------------------------------------------------------
     // Startpunkte & Flaggen
@@ -242,6 +257,39 @@ export default {
     };
   },
 };
+
+// ---------------------------------------------------------------------------
+// Ausstattung aus der Asset-Bibliothek (Fotoscan-Kleinteile; ohne Bibliothek entfällt sie)
+// ---------------------------------------------------------------------------
+function dressing(b) {
+  const Q = Math.PI / 2, wf = 0.12; // Hallenboden
+  dress(b, [
+    // Kaikante: Kanister, Kunststoffkisten, Zementsäcke, Gasflaschen, Hydranten
+    ['industrial_pastic_container', -40.5, 0, 13.3, 0.3], ['industrial_pastic_container', -39.8, 0, 12.6, 1.25],
+    ['metal_jerrycan', -37.5, 0, 24.5, 0.4], ['metal_jerrycan', -37.0, 0, 24.85, 1.9], ['metal_jerrycan', -34.3, 0, -28.3, 2.6],
+    ['cement_bag', -33.1, 0, 30.7, 0.1], ['cement_bag', -32.7, 0, 31.4, 0.2], ['cement_bag', -32.9, 0.18, 31.0, 1.6],
+    ['propane_tank', -21.9, 0, -30.3], ['propane_tank', -22.4, 0, -31.0],
+    ['fire_hydrant', -28.6, 0, -16.4, Q, { part: 'fire_hydrant', collide: true }],
+    ['fire_hydrant', 48.5, 0, 21.0, -Q, { part: 'fire_hydrant_aged', collide: true }],
+    // Containergassen: Kartons, Müllsäcke
+    ['cardboard_box_01', -22.6, 0, -6.8, 0.2], ['cardboard_box_01', -22.25, 0, -7.45, 0.9], ['cardboard_box_01', -22.45, 0.34, -7.1, 0.35],
+    ['trashbag', -20.3, 0, 33.4], ['trashbag', -19.7, 0, 33.0], ['trashbag', -21.0, 0, 33.6],
+    ['metal_trash_can', 1.9, 0, 33.4, 0.3, { part: 'metal_trash_can_rust' }],
+    // Lagerhalle 3: Werkzeug, Generator, Kartons, Warnschild
+    ['metal_tool_chest', 41.35, wf, -1.7, -Q, { collide: true }],
+    ['tool_cart', 38.7, wf, -11.6, 0.35, { collide: true }],
+    ['portable_generator', 39.5, wf, 13.4, 1.1, { collide: true }],
+    ['hand_truck', 33.9, wf, 15.7, 2.6],
+    ['cardboard_box_01', 16.9, wf, -18.4, 0.1], ['cardboard_box_01', 17.45, wf, -18.65, 1.4], ['cardboard_box_01', 17.1, wf + 0.34, -18.5, 0.3],
+    ['industrial_pastic_container', 23.4, wf, -15.6, 0.2],
+    ['wetfloorsign_01', 31.2, wf, 2.3, 0.6],
+    ['metal_trash_can', 29.6, wf, -10.35, 0.2, { part: 'metal_trash_can_handle_left' }],
+    // Terminalbüro und Pforte
+    ['metal_trash_can', 18.3, 0, -40.6, 0.5, { part: 'metal_trash_can_rust' }], ['trashbag', 18.9, 0, -40.1],
+    ['utility_box_01', 18.65, 0, -44.6, -Q, { collide: true }],
+    ['metal_trash_can', 29.55, 0, 46.7, 1.2, { part: 'metal_trash_can_handle_left' }],
+  ]);
+}
 
 // ---------------------------------------------------------------------------
 // Schilder
@@ -515,6 +563,8 @@ function warehouse(b) {
   // Dach (leicht geneigt angedeutet) + Oberlichter
   b.boxMM(x0 - 0.3, H8, z0 - 0.3, x1 + 0.3, H8 + 0.35, z1 + 0.3, 'metal_corrugated', { tint: '#8d969c', minimap: 'roof', grad: false, uv: 'world' });
   for (const zz of [-12, 0, 12]) b.box(28, H8 - 0.02, zz, 20, 0.04, 1.4, 'lamp_cool', { collide: false, minimap: false, ao: false, cast: false });
+  // Lichtbänder: nur in die Sonden gebacken (indirektes Hallenlicht, kein Echtzeitlicht)
+  for (const zz of [-12, 0, 12]) for (const xx of [20.5, 28, 35.5]) b.light('point', xx, H8 - 0.5, zz, { color: '#e6f0ff', intensity: 26, distance: 22, realtime: false });
   b.box(28, H8 + 0.35, -20.31, 28.6, 0.6, 0.1, 'metal_painted', { tint: '#14304a', collide: false, minimap: false, grad: false });
   b.noNav(x0 - 1, z0 - 1, x1 + 1, z1 + 1, H8 - 0.5, 20);
   // Binder (Stahlträger unter dem Dach)
@@ -536,6 +586,11 @@ function warehouse(b) {
   // Obergeschoss-Wände (Glasfront zur Halle)
   wall(b, { x0: ox0, z0: oz1, x1: ox1, z1: oz1, y: fy, h: 3.0, t: 0.2, mat: 'plaster_white', tint: '#dcd8cf', frameMat: 'metal_painted', frameTint: '#2a2e33', openings: [{ at: 2.2, w: 1.0, h: 2.1, kind: 'door' }, { at: 6.8, w: 4.4, h: 1.4, kind: 'window', sill: 0.9, glass: false }] });
   slab(b, x0 + t, oz0, ox1, oz1, fy - 0.2, 0.2, 'concrete', [], {});
+  // Deckenleuchten im Erdgeschoss-Büro (gebacken)
+  for (const xx of [33.5, 38.5]) {
+    b.box(xx, fy - 0.235, -15.4, 1.2, 0.03, 0.6, 'lamp_cool', { collide: false, minimap: false, ao: false, cast: false });
+    b.light('point', xx, fy - 0.5, -15.4, { color: '#eef3ff', intensity: 12, distance: 9, realtime: false });
+  }
   b.boxMM(x0 + t, fy, oz0, ox1, fy + 0.02, oz1, 'metal_tread', { grad: false, minimap: 'catwalk', collide: false });
   b.footprints.push({ x: (ox0 + ox1) / 2, z: (oz0 + oz1) / 2, hw: (ox1 - ox0) / 2, hd: (oz1 - oz0) / 2, ry: 0, y0: 0, y1: 6.6, kind: 'building' });
   // Empore (Westteil, offen zur Halle) mit Geländer
