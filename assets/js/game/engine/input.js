@@ -128,7 +128,6 @@ export class Input {
     this._los = new Map();
     this._autoPulse = 0;
     this._lastVibrate = 0;
-    this._fsTriedAt = -1e9;
     this._track = null; // Rotationshilfe: letzte Peilung des Ziels
     this._uiRefreshAt = 0;
     this._touch = null; // Touch-Oberfläche (DOM + Zeiger-Zuordnung)
@@ -629,18 +628,9 @@ export class Input {
    * bei Touch ist pointerdown keine Nutzeraktivierung, der Browser würde mit Konsolenwarnung ablehnen.
    */
   _maybeFullscreen() {
-    const el = document.documentElement;
-    if (document.fullscreenElement || !document.fullscreenEnabled || !el.requestFullscreen) return;
+    // engine/fullscreen.js: Präfix-API, Einstellung „Vollbild“, Drossel 4 s, Querformat-Sperre, nie Fehler
     const st = this.G.match && this.G.match.state;
-    if (st !== 'playing' && st !== 'countdown') return;
-    const ua = navigator.userActivation;
-    if (ua && !ua.isActive) return;
-    const now = performance.now();
-    if (now - this._fsTriedAt < 4000) return;
-    this._fsTriedAt = now;
-    el.requestFullscreen({ navigationUI: 'hide' })
-      .then(() => screen.orientation && screen.orientation.lock ? screen.orientation.lock('landscape').catch(() => {}) : null)
-      .catch(() => {});
+    if ((st === 'playing' || st === 'countdown') && this.G.fullscreen) this.G.fullscreen.auto({ throttle: 4000 });
   }
 }
 

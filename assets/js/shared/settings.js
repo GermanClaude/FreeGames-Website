@@ -12,6 +12,7 @@ export const DEFAULTS = Object.freeze({
   crosshairStyle: 'cross' /* cross|dot|circle */, crosshairColor: '#ffffff',
   showFps: false, aimAssist: true /* nur Touch */, autoFire: false /* Touch: „einfacher Modus“ */,
   difficulty: 'regulaer', lastMode: 'tdm', lastMap: 'hafen', lastLoadout: null, reducedMotion: false,
+  fullscreen: 'auto' /* auto = erste Geste, Matchstart, Fortsetzen | off = nur Knopf/Taste (engine/fullscreen.js) */,
 });
 
 /**
@@ -51,6 +52,10 @@ export const SETTINGS_SCHEMA = Object.freeze({
   lastMap: { type: 'id', label: 'Letzte Karte', group: 'intern' },
   lastLoadout: { type: 'loadout', label: 'Letzte Ausrüstung', group: 'intern' },
   reducedMotion: { type: 'boolean', label: 'Bewegung reduzieren', group: 'grafik' },
+  fullscreen: {
+    type: 'enum', label: 'Vollbild', group: 'spiel',
+    options: ['auto', 'off'], labels: { auto: 'Automatisch', off: 'Nur per Knopf/Taste' },
+  },
 });
 
 /* ------------------------------------------------------------ Validierung */

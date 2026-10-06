@@ -31,6 +31,8 @@ Link-Vorschauen (Messenger, soziale Netze) brauchen absolute Adressen. In `index
 
 **Touch:** Gespielt wird im Querformat. Links liegt ein schwebender Joystick; wer ihn bis an den Rand schiebt, sprintet dauerhaft. Rechts wischen zum Umsehen. Der große Feuerknopf erlaubt gleichzeitig Zielen per Wischen. Dazu kommen Knöpfe für Zielen, Nachladen, Springen, Ducken, Granate, Messer, Waffenwechsel und Abschussserien. Zielhilfe und Automatisches Feuern lassen sich in den Einstellungen einschalten.
 
+**Vollbild:** Das Spiel geht beim ersten Klick bzw. Tippen ins Vollbild; Alt + Eingabe oder F11 schaltet um. Auf dem iPhone erlaubt iOS kein Vollbild für Webseiten – dort über Teilen → „Zum Home-Bildschirm“ hinzufügen und vom neuen Symbol starten, dann läuft es ohne Browserleisten.
+
 Die Grafikqualität wählt sich auf „Automatisch“ selbst: niedrig auf Handys, hoch auf starken Rechnern. Bricht die Bildrate ein, senkt das Spiel die Auflösung.
 
 ## Daten und Datenschutz

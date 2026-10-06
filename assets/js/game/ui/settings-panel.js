@@ -26,6 +26,7 @@ const HINTS = {
   fov: 'Horizontales Sichtfeld (4:3).',
   reducedMotion: 'Weniger Kamerawackeln und Animationen.',
   difficulty: 'Vorgabe für die Lobby.',
+  fullscreen: 'Automatisch: Vollbild beim ersten Klick bzw. Tippen, bei Spielstart und beim Fortsetzen. Umschalten jederzeit mit Alt + Eingabe oder F11.',
   playerName: 'Erscheint in Tabelle und Abschussmeldungen.',
 };
 
