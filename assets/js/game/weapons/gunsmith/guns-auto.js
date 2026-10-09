@@ -1,6 +1,6 @@
 // Maschinenpistolen & LMG: VP-9 Viper (MP5-artig), QX-90 (P90-artiger Bullpup, Rotpunkt), HM-60 Hammer (gurtgespeist)
-import { redDot, ejectionPort, triggerGuard, slots, roundRect, ellipsePts } from './parts.js?v=20261009174243';
-import { magRounds } from './magfill.js?v=20261009174243';
+import { redDot, ejectionPort, triggerGuard, slots, roundRect, ellipsePts } from './parts.js?v=20261009181546';
+import { magRounds } from './magfill.js?v=20261009181546';
 
 // Bogenförmiges Magazin: Zentrum (cu, cv) vor dem Magazin, Radien rFront < rBack, Winkelspanne sweep
 function curvedMag(b, mat, cu, cv, rFront, rBack, sweep, width, o = {}) {

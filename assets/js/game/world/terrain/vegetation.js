@@ -14,9 +14,9 @@
 // weiches Ausblenden im Shader, spärliche Wiesenblumen (medium+). Alles aus Positions-Hashes – berührt weder die
 // Zufallsströme noch die Kollision (Felsen werden nur gelesen, um Gras aus ihnen herauszuhalten).
 import * as THREE from 'three';
-import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality } from '../atlas.js?v=20261009174243';
-import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261009174243';
-import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261009174243';
+import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality } from '../atlas.js?v=20261009181546';
+import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261009181546';
+import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261009181546';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 const _c = new THREE.Color();

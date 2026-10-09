@@ -5,8 +5,8 @@
 // Serienprämien ein. Befehle des Spielers (Befehlsrad, ai/orders.js) haben Vorrang vor Truppbefehlen, Flaggen und
 // Suchen; Ausweichen, Zurückschießen und Deckung bleiben dem Hirn.
 import * as THREE from 'three';
-import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js?v=20261009174243';
-import { commandFor, commandStep, isAnchored } from './orders.js?v=20261009174243';
+import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js?v=20261009181546';
+import { commandFor, commandStep, isAnchored } from './orders.js?v=20261009181546';
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();

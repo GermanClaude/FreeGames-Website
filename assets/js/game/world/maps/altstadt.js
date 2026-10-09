@@ -3,16 +3,16 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261009174243';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261009181546';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, acUnit, cable,
   cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js?v=20261009174243';
-import { createBell } from './altstadt-glocke.js?v=20261009174243';
+} from '../props.js?v=20261009181546';
+import { createBell } from './altstadt-glocke.js?v=20261009181546';
 import {
   setupLook, isNight, lampGlass, lampLight, parkBench, flowerBed, fountainWater, hrng,
   table, tableChairs, bed, wardrobe, dresser, nightstand, shelf, kitchen, armchair, pendant, ceilingLamp, rug, picture, barrelRack, sacks,
-} from './altstadt-ausstattung.js?v=20261009174243';
+} from './altstadt-ausstattung.js?v=20261009181546';
 
 const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe

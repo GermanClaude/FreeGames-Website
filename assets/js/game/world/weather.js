@@ -7,7 +7,7 @@
 // Strahlen, Staub, Bildraum-Strahlen) über das Verhältnis der Tabellenwerte, absolute Größen (Wolken, Dunstband,
 // Bodennebel) nur, wenn das Wetter vom Kartenwetter abweicht. Tageszeiten setzen Sonnenstand/-farbe absolut und
 // skalieren die Sonnenstärke mit der Luftmasse (f(Höhe)); das HDRI (Umgebungslicht/Himmelsfoto) folgt der Zeit.
-import { MOODS, MOOD_FOR_MAP } from '../engine/post/grade.js?v=20261009174243';
+import { MOODS, MOOD_FOR_MAP } from '../engine/post/grade.js?v=20261009181546';
 
 /**
  * Wetter-Tabelle. sun/fill/fog/beams/dust/shafts: Faktoren relativ zu „klar“; ref: Faktor auf die Belichtungs-

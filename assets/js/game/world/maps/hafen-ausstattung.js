@@ -5,7 +5,7 @@
 // Alles deterministisch (kein Math.random, Varianten nur positionsabhängig über hash01). Kollision hängt weder von der
 // Grafikstufe noch von der Bibliothek ab: Bibliotheksmodelle bekommen feste Quader in Manifest-Maßen.
 import * as THREE from 'three';
-import { frame, hash01, chair, crate, pallet, cable, CONTAINER_H, CONTAINER_W } from '../props.js?v=20261009174243';
+import { frame, hash01, chair, crate, pallet, cable, CONTAINER_H, CONTAINER_W } from '../props.js?v=20261009181546';
 
 const KEIN = { collide: false, minimap: false };
 const VG = { ...KEIN, grad: false };

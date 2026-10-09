@@ -2,17 +2,17 @@
 // (oder Finger) ist ein Operator – was er sieht, steht fett, alles hinter Deckung fällt zur Haarlinie.
 // Darüber der „Durchblick“: ein Standbild aus dem Spiel, sichtbar nur durch die Buchstaben des Kartennamens.
 // Ohne vermessenen Plan zeichnet die Seite die Karte aus Maßen und Wegen (dimensions, lanes, features).
-import { h, $, signalLost, tabs } from './dom.js?v=20261009174243';
-import { fit } from './fit.js?v=20261009174243';
-import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261009174243';
-import { makeBallistics } from './ballistics.js?v=20261009174243';
-import { ui } from './state.js?v=20261009174243';
-import { announce } from './live.js?v=20261009174243';
-import { loop } from './loop.js?v=20261009174243';
-import { reduced, pointerFine } from './motion.js?v=20261009174243';
-import { num, NNBSP } from './fmt.js?v=20261009174243';
-import { jumpTo } from './jump.js?v=20261009174243';
-import { segmentsFrom, castVisibility, boundsOf, wordFor, corners, blocked, defaultPoint, planText, polyPath, isSoft, labelBlocks } from './plan.js?v=20261009174243';
+import { h, $, signalLost, tabs } from './dom.js?v=20261009181546';
+import { fit } from './fit.js?v=20261009181546';
+import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261009181546';
+import { makeBallistics } from './ballistics.js?v=20261009181546';
+import { ui } from './state.js?v=20261009181546';
+import { announce } from './live.js?v=20261009181546';
+import { loop } from './loop.js?v=20261009181546';
+import { reduced, pointerFine } from './motion.js?v=20261009181546';
+import { num, NNBSP } from './fmt.js?v=20261009181546';
+import { jumpTo } from './jump.js?v=20261009181546';
+import { segmentsFrom, castVisibility, boundsOf, wordFor, corners, blocked, defaultPoint, planText, polyPath, isSoft, labelBlocks } from './plan.js?v=20261009181546';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');

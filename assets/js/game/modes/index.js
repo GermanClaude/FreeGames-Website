@@ -3,16 +3,16 @@
 // cq Eroberung (Tickets, Trupps, Einsatzkarte) · kc Abschuss bestätigt · inf Infiziert.
 // Gemeinsame API siehe base.js; Bot-Schnittstelle (objectives, objectiveFor, streaks) im Changelog.
 
-import { MODES } from '../../shared/modes.data.js?v=20261009174243';
-import { BaseMode } from './base.js?v=20261009174243';
-import { TdmMode } from './tdm.js?v=20261009174243';
-import { FfaMode } from './ffa.js?v=20261009174243';
-import { DomMode } from './dom.js?v=20261009174243';
-import { GunMode } from './gun.js?v=20261009174243';
-import { TrainingMode } from './training.js?v=20261009174243';
-import { ConquestMode } from './conquest.js?v=20261009174243';
-import { KillConfirmedMode } from './killconfirmed.js?v=20261009174243';
-import { InfectedMode } from './infected.js?v=20261009174243';
+import { MODES } from '../../shared/modes.data.js?v=20261009181546';
+import { BaseMode } from './base.js?v=20261009181546';
+import { TdmMode } from './tdm.js?v=20261009181546';
+import { FfaMode } from './ffa.js?v=20261009181546';
+import { DomMode } from './dom.js?v=20261009181546';
+import { GunMode } from './gun.js?v=20261009181546';
+import { TrainingMode } from './training.js?v=20261009181546';
+import { ConquestMode } from './conquest.js?v=20261009181546';
+import { KillConfirmedMode } from './killconfirmed.js?v=20261009181546';
+import { InfectedMode } from './infected.js?v=20261009181546';
 
 export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode };
 
@@ -25,6 +25,6 @@ export function createMode(G, modeId, opts = {}) {
 }
 
 export { BaseMode, TdmMode, FfaMode, DomMode, GunMode, TrainingMode, ConquestMode, KillConfirmedMode, InfectedMode };
-export { SquadSystem } from './squads.js?v=20261009174243';
-export { chooseSpawn } from './spawns.js?v=20261009174243';
-export { StreakManager } from './streaks.js?v=20261009174243';
+export { SquadSystem } from './squads.js?v=20261009181546';
+export { chooseSpawn } from './spawns.js?v=20261009181546';
+export { StreakManager } from './streaks.js?v=20261009181546';

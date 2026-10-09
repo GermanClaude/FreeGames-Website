@@ -2,8 +2,8 @@
 // Messerabschuss stuft das Opfer zurück (Medaille „Demütigung“), Selbsttötung ebenfalls. Gewinner: wer mit der
 // letzten Stufe trifft; bei Zeitende höchste Stufe (dann Abschüsse), Gleichstand → Verlängerung.
 
-import { WEAPONS, GUN_GAME_STEPS } from '../../shared/weapons.data.js?v=20261009174243';
-import { BaseMode } from './base.js?v=20261009174243';
+import { WEAPONS, GUN_GAME_STEPS } from '../../shared/weapons.data.js?v=20261009181546';
+import { BaseMode } from './base.js?v=20261009181546';
 
 export class GunMode extends BaseMode {
   constructor(G, modeId, opts) {

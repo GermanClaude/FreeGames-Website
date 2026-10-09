@@ -9,10 +9,10 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS } from './data.js?v=20261009174243';
-import { VehicleBody } from './sim.js?v=20261009174243';
-import { createVehicleModel } from './models.js?v=20261009174243';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261009174243';
+import { VEHICLES, VEHICLE_WEAPONS } from './data.js?v=20261009181546';
+import { VehicleBody } from './sim.js?v=20261009181546';
+import { createVehicleModel } from './models.js?v=20261009181546';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261009181546';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();

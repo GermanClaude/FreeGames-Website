@@ -4,12 +4,12 @@
 // Flaggen (Eroberung): A Gehöft · B Dorf · C Brücke · D Kieswerk · E Funkhügel; HQ A im Süden, HQ B im Norden.
 // Geladen von world/terrain/bigworld.js (Ortschaften je eigener MapBuilder, Boden y = 0 bzw. Plateauhöhe).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261009174243';
-import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261009174243';
-import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261009174243';
-import * as Innen from './grenzland-innen.js?v=20261009174243';
-import { mgNest } from './grenzland-stellungen.js?v=20261009174243';
-import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261009174243';
+import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261009181546';
+import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261009181546';
+import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261009181546';
+import * as Innen from './grenzland-innen.js?v=20261009181546';
+import { mgNest } from './grenzland-stellungen.js?v=20261009181546';
+import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261009181546';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 const PLASTER = ['#efe6d6', '#e8dcc4', '#f2ede2', '#e3d3b8', '#dfe0d6', '#eadbc8'];
@@ -216,7 +216,7 @@ function dorf(b) {
 }
 
 /**
- * Bauernmarkt an der Kapelle (Spielerwunsch): drei Gemüsestände in einer Reihe westlich der Kapelle (Front zur
+ * Bauernmarkt an der Kapelle (Wunsch Nathanael): drei Gemüsestände in einer Reihe westlich der Kapelle (Front zur
  * Kapellenwand, 4,5 m Gang davor), zwei Stände beidseits des Wegs zum Kapellenportal (Weg 6,8 m frei), Tafel zum
  * Dorfplatz. Theken = Hockdeckung mit Kollision, Markisen kugeldurchlässig; Lücken ≥ 2,4 m für Wege/Navigation.
  * Am Ende von dorf() gebaut und ohne b.rand → übrige Dorf-Platzierung unverändert.

@@ -3,18 +3,18 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261009174243';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261009181546';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261009174243';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261009174243';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261009174243';
+} from '../props.js?v=20261009181546';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261009181546';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261009181546';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261009174243';
+} from './werk-ausstattung.js?v=20261009181546';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle

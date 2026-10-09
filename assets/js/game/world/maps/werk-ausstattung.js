@@ -5,8 +5,8 @@
 // weder von der Grafikstufe noch von der Bibliothek ab: Bibliotheksmodelle bekommen keine eigene Kollision, sondern
 // Quader aus festen Maßen (die Modelle selbst bzw. ihr prozeduraler Ersatz sind auf jeder Stufe sichtbar).
 import * as THREE from 'three';
-import { frame, hash01, chair, sandbags } from '../props.js?v=20261009174243';
-import { railing } from '../arch.js?v=20261009174243';
+import { frame, hash01, chair, sandbags } from '../props.js?v=20261009181546';
+import { railing } from '../arch.js?v=20261009181546';
 
 const DIR = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 const KEIN = { collide: false, minimap: false };
