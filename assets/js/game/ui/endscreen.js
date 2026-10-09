@@ -3,9 +3,9 @@
 // animierter EP-Balken mit Stufen-/Dienstgrad-Aufstieg (rankIcon), neue Freischaltungen.
 // Knöpfe: Revanche · Lobby · Zur Website.
 
-import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261006151057';
-import { ICON, medalBadge } from './icons.js?v=20261006151057';
-import { scoreboardHtml } from './scoreboard.js?v=20261006151057';
+import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261009162748';
+import { ICON, medalBadge } from './icons.js?v=20261009162748';
+import { scoreboardHtml, netRows } from './scoreboard.js?v=20261009162748';
 
 const REASON = {
   score: 'Punktelimit erreicht', time: 'Zeit abgelaufen', overtime: 'In der Verlängerung entschieden', forced: 'Match beendet',
@@ -113,8 +113,9 @@ export class EndScreen {
     // ai-adapt: eine Zeile, worauf sich die lernenden Bots eingestellt haben
     const ad = !training && G.bots && G.bots.adapt && typeof G.bots.adapt.summaryLine === 'function' ? G.bots.adapt.summaryLine() : '';
     const adaptHtml = ad ? `<p class="e-adapt">${esc(ad)}</p>` : '';
+    // Mehrspieler: Ping/Host/Mensch je Zeile aus dem Roster (netRows wirkt nur online)
     const board = (r.scoreboard || []).length
-      ? scoreboardHtml(r.scoreboard, { teams: r.teams, playerTeam: mine, teamNames: names, teamScores: r.teamScores })
+      ? scoreboardHtml(netRows(G, r.scoreboard), { teams: r.teams, playerTeam: mine, teamNames: names, teamScores: r.teamScores })
       : '';
     return `
       <div class="e-wrap m-scroll" data-scrollable>

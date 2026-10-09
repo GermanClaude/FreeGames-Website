@@ -3,7 +3,7 @@
 // (syncRows). Bedienbar per Touch, Maus, Tastatur (Pfeile links/rechts am Wähler) und Gamepad (menus.js schickt
 // links/rechts als „np-step“ an fokussierte Wähler und Schieberegler).
 
-import { esc, num } from '../dom.js?v=20261006151057';
+import { esc, num } from '../dom.js?v=20261009162748';
 
 export const COLORS = ['#ffffff', '#ff5b1f', '#5fe08a', '#38b6ff', '#ffc23d', '#ff4fd8'];
 
@@ -21,6 +21,7 @@ export function fmtValue(key, v, def) {
     if (PCT.has(key)) return `${Math.round(v * 100)} %`;
     if (key === 'fov') return `${Math.round(v)}°`;
     if (MULT.has(key)) return `${num(v, 2)}×`;
+    if (def.integer && def.unit) return `${Math.round(v)} ${def.unit}`; // z. B. VR-Drehgeschwindigkeit „120 °/s“
     return num(v, 2);
   }
   if (def.type === 'enum') return (def.labels && def.labels[v]) || String(v);

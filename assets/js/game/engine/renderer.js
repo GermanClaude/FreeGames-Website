@@ -14,11 +14,11 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES } from './post/pipeline.js?v=20261006151057';
-import { estimateMemory } from './post/memory.js?v=20261006151057';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261006151057';
-import { resetFormatCache } from './post/common.js?v=20261006151057';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261006151057'; // Erweitert-Grafik (S9, ui-controls)
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261009162748';
+import { estimateMemory } from './post/memory.js?v=20261009162748';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261009162748';
+import { resetFormatCache } from './post/common.js?v=20261009162748';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261009162748'; // Erweitert-Grafik (S9, ui-controls)
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 
@@ -126,10 +126,13 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
   const initial = resolveQuality(quality);
   const reduceMQ = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   let lensCfg = lensConfigFrom(settings, reduceMQ && reduceMQ.matches);
+  // VR-Modus (Einstellung vrEnabled, engine/xr): Kontext mit MSAA – three.js gibt die Kantenglättung an den XR-Bildpuffer
+  // weiter (ohne flimmert VR stark). Wirkt erst nach dem Neuladen; ohne VR-Einstellung bleibt alles wie bisher.
+  const vrAA = !!(settings && typeof settings.get === 'function' && settings.get('vrEnabled'));
   const renderer = new THREE.WebGLRenderer({
     canvas,
     // MSAA nur für das direkte Rendern (low im Stil „Klassisch“); die Kette rendert in eigene Ziele
-    antialias: initial === 'low' && lensCfg.style === 'klassisch',
+    antialias: (initial === 'low' && lensCfg.style === 'klassisch') || vrAA,
     powerPreference: 'high-performance',
     stencil: false,
     depth: true,
@@ -300,6 +303,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
     invalidateShadows() { this._shadowDirty = true; },
 
     resize(force = false) {
+      if (renderer.xr.isPresenting) return; // VR: Größe gehört der XR-Sitzung (three.js stellt sie danach wieder her)
       if (force || !css.valid) measure(); // ohne ResizeObserver bzw. vor der ersten Meldung wie bisher
       const w = Math.max(1, Math.floor(css.w));
       const h = Math.max(1, Math.floor(css.h));
@@ -317,7 +321,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
       pipeline.setSize(_db.x, _db.y, this.resolutionScale, w, h);
     },
 
-    /** Rendert Welt + Viewmodel (Viewmodel mit gelöschter Tiefe, nie in Wänden) samt Nachbearbeitung. */
+    /** Rendert Welt + Viewmodel (Viewmodel mit gelöschter Tiefe, nie in Wänden – außer Einstellung 'clip') samt Nachbearbeitung. */
     render(scene, camera, vmScene, vmCamera) {
       const now = performance.now();
       let dt = 0;
@@ -332,6 +336,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
       this._fps = this._frames.length;
 
       if (this.lost || !scene || !camera) return;
+      if (renderer.xr.isPresenting) { this._renderXr(scene, camera, vmScene); return; }
       this.resize();
       this._lastScene = scene;
       this._lastVmScene = vmScene || null;
@@ -339,6 +344,10 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
       fitCamera(camera, aspect);
       if (vmCamera) fitCamera(vmCamera, aspect);
       renderer.info.reset();
+      // Einstellung „Waffe an Wänden und Hindernissen“: nur 'clip' zeichnet die Waffe gegen die Welttiefe (ragt sichtbar
+      // in Wände); sonst wie in den meisten Shootern über der Welt (Tiefe gelöscht)
+      const vmWorld = !!(settings && typeof settings.get === 'function' && settings.get('weaponObstruction') === 'clip');
+      pipeline.vmWorldDepth = vmWorld;
       // Gedrosselte Schatten (low): statische Welt + gleiche Kaskade → Karte nur jedes n-te Bild oder nach invalidateShadows()
       const sm = renderer.shadowMap, every = this.preset.shadowInterval || 1;
       if (sm.enabled && every > 1) {
@@ -366,11 +375,36 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
         renderer.render(scene, camera);
         if (vmScene && vmCamera && vmScene.visible !== false) {
           renderer.autoClear = false;
-          renderer.clearDepth();
-          renderer.render(vmScene, vmCamera);
+          renderViewmodel(renderer, vmScene, vmCamera, camera, vmWorld);
           renderer.autoClear = true;
         }
       }
+    },
+
+    /**
+     * VR (engine/xr): ohne Nachbearbeitung direkt in den XR-Bildpuffer – je Auge einmal Welt, dann die Waffe gegen die
+     * Welttiefe (kein Tiefe-Löschen: in Stereo muss die Waffe hinter Wänden verschwinden). camera = XR-Kamera im Rig.
+     * Belichtung wie beim direkten Rendern (ACES im Material); gedrosselte Schatten wie am Bildschirm.
+     */
+    _renderXr(scene, camera, vmScene) {
+      this._lastScene = scene;
+      this._lastVmScene = vmScene || null;
+      renderer.info.reset();
+      const sm = renderer.shadowMap, every = this.preset.shadowInterval || 1;
+      if (sm.enabled && every > 1) {
+        sm.autoUpdate = false;
+        if (this._shadowDirty || ++this._shadowFrame >= every) { sm.needsUpdate = true; this._shadowDirty = false; this._shadowFrame = 0; }
+      } else sm.autoUpdate = true;
+      const exp = renderer.toneMappingExposure;
+      renderer.toneMappingExposure = postState.exposure * 1.05;
+      renderer.autoClear = true;
+      renderer.render(scene, camera);
+      if (vmScene && vmScene.visible !== false) {
+        renderer.autoClear = false;
+        renderer.render(vmScene, camera);
+        renderer.autoClear = true;
+      }
+      renderer.toneMappingExposure = exp;
     },
 
     /** Dynamische Auflösung setzen (0,5…1); wirkt sofort. */

@@ -18,12 +18,12 @@ import * as THREE from 'three';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261006151057';
-import { LensModel, LensPass } from './lens.js?v=20261006151057';
-import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261006151057';
-import { AutoExposure } from './exposure.js?v=20261006151057';
-import { Bloom, lensDirtTexture } from './bloom.js?v=20261006151057';
-import { LightShafts } from './shafts.js?v=20261006151057';
+import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261009162748';
+import { LensModel, LensPass } from './lens.js?v=20261009162748';
+import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261009162748';
+import { AutoExposure } from './exposure.js?v=20261009162748';
+import { Bloom, lensDirtTexture } from './bloom.js?v=20261009162748';
+import { LightShafts } from './shafts.js?v=20261009162748';
 
 export const LENS_STYLES = Object.freeze(['bodycam', 'klassisch', 'aus']);
 
@@ -47,6 +47,18 @@ const CLASSIC_BLOOM = { threshold: 3.0, strength: 0.24, radius: 0.55 };
 function widen(cam, F) {
   cam.fov = (2 * Math.atan(Math.tan((cam.fov * Math.PI) / 360) * F) * 180) / Math.PI;
   cam.updateProjectionMatrix();
+}
+
+/**
+ * Viewmodel-Pass. Üblich (wie in den meisten Shootern): Tiefe löschen → Waffe immer über der Welt, ragt nie sichtbar
+ * in Wände. worldDepth (Einstellung „Waffe an Hindernissen“ = 'clip'): gegen die Welttiefe – mit near/far der
+ * Hauptkamera, dann ist die Tiefe je Pixel vergleichbar (gleiche Bildposition + Tiefe wie viewmodel._vmToWorld).
+ */
+export function renderViewmodel(r, vmScene, vmCamera, camera, worldDepth) {
+  if (!worldDepth || !camera) { r.clearDepth(); r.render(vmScene, vmCamera); return; }
+  const n = vmCamera.near, f = vmCamera.far;
+  vmCamera.near = camera.near; vmCamera.far = camera.far; vmCamera.updateProjectionMatrix();
+  try { r.render(vmScene, vmCamera); } finally { vmCamera.near = n; vmCamera.far = f; vmCamera.updateProjectionMatrix(); }
 }
 
 export class PostPipeline {
@@ -311,8 +323,7 @@ export class PostPipeline {
       if (hasVm) {
         r.setRenderTarget(this.hdr);
         r.autoClear = false;
-        r.clearDepth();
-        r.render(vmScene, vmCamera);
+        renderViewmodel(r, vmScene, vmCamera, camera, this.vmWorldDepth);
         this.stats.sceneRenders++;
       }
     } finally {

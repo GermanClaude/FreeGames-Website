@@ -11,7 +11,7 @@
 // die Schemafarbe kommt als Uniform aus dem Material → eine Geometrie je Variante × LOD für alle Schemata.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { BONE } from './rig.js?v=20261006151057';
+import { BONE } from './rig.js?v=20261009162748';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();

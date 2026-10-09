@@ -12,13 +12,15 @@
 // Belegung: frei änderbar (settings.bindings, Daten und Hilfen in shared/bindings.data.js) für Tastatur, Maus und
 // Gamepad inkl. Akkorde („Pad6+Pad10“). Zusätzlich: aimTarget, lastDevice, label(), capture(), simulate.*,
 // vibrate(), rumble(), Gyro (requestGyroPermission), Touch-Layout (applyTouchLayout, measureTouch).
+// Befehlsrad (ui/command-wheel.js): openWheel()/closeWheel(); solange offen, lenken Maus, rechter Stick bzw. Ziehen am
+// Touch-Knopf den Zeiger des Rads (wheel.x/y) statt der Kamera, Feuern/Granaten/Nahkampf/Wechsel ruhen (WHEEL_MASK).
 
 import * as THREE from 'three';
 import {
   ACTION_IDS, ACTION_BY_ID, resolveBindings, codeMap, findConflicts, codeLabel, isBindable,
   TOUCH_BUTTONS, aspectBucket, resolveTouchLayout, loadKeyboardLayout,
-} from '../../shared/bindings.data.js?v=20261006151057';
-import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261006151057';
+} from '../../shared/bindings.data.js?v=20261009162748';
+import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261009162748';
 
 /** Alle Aktionen (Reihenfolge wie ACTION_DEFS; die ursprünglichen 17 sind enthalten). */
 export const ACTIONS = ACTION_IDS;
@@ -29,10 +31,18 @@ const TOUCH_RAD_PER_PX = 0.0054;
 const MIRROR_PAIR = { leanL: 'leanR', leanR: 'leanL' };
 const PAD_YAW_RATE = 3.4; // rad/s bei Vollausschlag
 const PAD_PITCH_RATE = 2.3;
-const SOURCES = ['key', 'mouse', 'pad', 'touch', 'auto', 'sim'];
-const DIGITAL = ['key', 'mouse', 'pad', 'sim'];
+// xr: VR-Controller-Tasten (Belegung, Gerät 'xr'); xrpose: aus der Haltung abgeleitete Aktionen (Waffe am Auge = Zielen, engine/xr)
+const SOURCES = ['key', 'mouse', 'pad', 'touch', 'auto', 'sim', 'xr', 'xrpose'];
+const DIGITAL = ['key', 'mouse', 'pad', 'sim', 'xr'];
+// VR-Codes je Hand (Haupthand H, Nebenhand N; xr-standard-Tasten 0–6) – einmal erzeugt, keine Zeichenketten je Bild
+const XR_BTN = { H: [0, 1, 2, 3, 4, 5, 6].map((i) => `XrH${i}`), N: [0, 1, 2, 3, 4, 5, 6].map((i) => `XrN${i}`) };
+const XR_STICK_DZ = 0.15;
 /** Aktionen, die input.js bei „Umschalten“ selbst einrastet (Sprint/Ducken entscheidet der Spieler). */
 const LATCHABLE = new Set(['ads', 'lean_left', 'lean_right']);
+/** Ruhen, solange das Befehlsrad offen ist (Feuern bestätigt stattdessen die Auswahl). */
+const WHEEL_MASK = new Set(['fire', 'grenade', 'tactical', 'melee', 'swap', 'slot1', 'slot2', 'inspect', 'streak1', 'streak2', 'streak3', 'gadget', 'plate']);
+const WHEEL_MOUSE_PX = 150; // Mausweg (px) bis zum Rand des Rads
+const WHEEL_TOUCH_PX = 70; // Ziehweg am Touch-Knopf bis zum Rand
 const EMPTY = Object.freeze([]);
 
 const _eye = new THREE.Vector3();
@@ -121,6 +131,7 @@ const ICONS = {
   prone: I('<circle cx="35" cy="22" r="4"/><path d="M8 31h20l5-4M14 31l-3-5M26 31l3 4"/><path d="M6 38h36" opacity=".45"/>'),
   plate: I('<path d="M24 7l14 5v11c0 9-6 15-14 18-8-3-14-9-14-18V12z"/><path d="M24 17v14M17 24h14"/>'),
   gadget: I('<rect x="10" y="16" width="28" height="22" rx="3"/><path d="M19 16v-5h10v5M24 21v12M18 27h12"/>'),
+  befehl: I('<circle cx="24" cy="24" r="16"/><path d="M12.7 12.7l5.7 5.7M35.3 12.7l-5.7 5.7M12.7 35.3l5.7-5.7M35.3 35.3l-5.7-5.7" opacity=".55"/><path d="M19 12l5-4 5 4"/><circle cx="24" cy="24" r="3.5" fill="currentColor" stroke="none"/>'),
 };
 
 export class Input {
@@ -147,14 +158,24 @@ export class Input {
     this.gyro = { supported: gyroSupported(), permission: 'unknown', active: false, receiving: false };
     /** Aufgelöstes Touch-Layout (shared/bindings.data.js resolveTouchLayout) oder null vor attach(). */
     this.touchLayout = null;
+    /**
+     * Befehlsrad: open (ui/command-wheel.js setzt es über openWheel/closeWheel), Zeiger x/y (Einheitskreis, y nach unten),
+     * click = Feuertaste gedrückt (bestätigt), drag = Touch-Knopf wird gezogen, cancel = Eingaben verworfen (Fokusverlust,
+     * Pause) – das Rad löscht click/cancel selbst.
+     */
+    this.wheel = { open: false, x: 0, y: 0, click: false, drag: false, cancel: false };
+    this._padStick = { x: 0, y: 0, m: 0 }; // rechter Stick roh (Befehlsrad)
 
     this._held = {};
     for (const s of SOURCES) this._held[s] = new Set();
     this._pressed = new Set();
     this._released = new Set();
     this._latched = new Set();
-    this._maps = { kb: codeMap(this.bindings, 'kb'), pad: codeMap(this.bindings, 'pad') };
-    this._codes = { kb: new Map(), pad: new Map() }; // gehaltene Codes → { src, acts }
+    this._maps = { kb: codeMap(this.bindings, 'kb'), pad: codeMap(this.bindings, 'pad'), xr: codeMap(this.bindings, 'xr') };
+    this._codes = { kb: new Map(), pad: new Map(), xr: new Map() }; // gehaltene Codes → { src, acts }
+    /** VR (engine/xr): Sticks der Controller – move (Nebenhand, wie move), turn (Haupthand x, −1 … 1); active während der Sitzung. */
+    this.xr = { active: false, move: { x: 0, y: 0 }, turn: 0, stickY: 0 };
+    this._xrPrev = new Map();
     this._kbLayout = null;
     this._capture = null;
     this._mouseDX = 0;
@@ -202,22 +223,29 @@ export class Input {
       clear: () => { this._held.sim.clear(); this._simMove = null; },
       /** Physische Taste über die Belegung (Tests): code wie „KeyQ“, „Mouse0“, „Pad6+Pad10“ wird zerlegt. */
       code: (code, down = true) => {
-        const dev = code.startsWith('Pad') ? 'pad' : 'kb';
+        const dev = code.startsWith('Pad') ? 'pad' : code.startsWith('Xr') ? 'xr' : 'kb';
         const parts = code.split('+');
-        if (down) for (const c of parts) this._codeDown(dev === 'pad' ? 'pad' : c.startsWith('Mouse') ? 'mouse' : 'key', dev, c);
+        if (down) for (const c of parts) this._codeDown(dev === 'pad' ? 'pad' : dev === 'xr' ? 'xr' : c.startsWith('Mouse') ? 'mouse' : 'key', dev, c);
         else for (const c of parts.reverse()) this._codeUp(dev, c);
       },
       gyro: (dxRad, dyRad) => { this._gyroDX += dxRad; this._gyroDY += dyRad; },
+      /** Befehlsrad-Zeiger setzen (Tests): x/y im Einheitskreis, y nach unten. */
+      wheel: (x, y) => { this.wheel.x = clamp(x, -1, 1); this.wheel.y = clamp(y, -1, 1); },
     };
   }
 
   /* ----------------------------------------------------------- Zustand */
 
   down(action) {
-    const h = this._held;
-    return h.key.has(action) || h.mouse.has(action) || h.pad.has(action) || h.touch.has(action) || h.auto.has(action) || h.sim.has(action);
+    if (this.wheel.open && WHEEL_MASK.has(action)) return false;
+    return this._isDown(action);
   }
-  pressed(action) { return this._pressed.has(action); }
+  _isDown(action) {
+    const h = this._held;
+    return h.key.has(action) || h.mouse.has(action) || h.pad.has(action) || h.touch.has(action) || h.auto.has(action) || h.sim.has(action) ||
+      h.xr.has(action) || h.xrpose.has(action);
+  }
+  pressed(action) { return this._pressed.has(action) && !(this.wheel.open && WHEEL_MASK.has(action)); }
   released(action) { return this._released.has(action); }
   /** Drücken dieses Bildes verbrauchen (geteilte Tasten: z. B. 4 = Platte statt Serie 2). */
   consume(action) { return this._pressed.delete(action); }
@@ -238,7 +266,7 @@ export class Input {
   active(action) {
     if (LATCHABLE.has(action) && this.behavior(action) === 'toggle') {
       const h = this._held;
-      return this._latched.has(action) || h.touch.has(action) || h.sim.has(action) || h.auto.has(action);
+      return this._latched.has(action) || h.touch.has(action) || h.sim.has(action) || h.auto.has(action) || h.xrpose.has(action);
     }
     return this.down(action);
   }
@@ -258,30 +286,34 @@ export class Input {
 
   _press(action, src) {
     if (!this.enabled && src !== 'sim') return;
-    const was = this.down(action);
+    const was = this._isDown(action);
     this._held[src].add(action);
     if (!was) this._pressed.add(action);
+    if (!was && action === 'fire' && this.wheel.open) this.wheel.click = true;
     // Umschalten: Flanke eines physischen Geräts schaltet den eingerasteten Zustand
-    if (!was && LATCHABLE.has(action) && (src === 'key' || src === 'mouse' || src === 'pad') && this.behavior(action) === 'toggle') {
+    if (!was && LATCHABLE.has(action) && (src === 'key' || src === 'mouse' || src === 'pad' || src === 'xr') && this.behavior(action) === 'toggle') {
       this.setActive(action, !this._latched.has(action));
     }
   }
 
   _release(action, src) {
     if (!this._held[src].delete(action)) return;
-    if (!this.down(action)) this._released.add(action);
+    if (!this._isDown(action)) this._released.add(action);
   }
 
   _releaseSource(src) {
     for (const a of [...this._held[src]]) this._release(a, src);
     if (src === 'key' || src === 'mouse') { for (const [c, r] of [...this._codes.kb]) if (r.src === src) this._codes.kb.delete(c); }
     if (src === 'pad') this._codes.pad.clear(); // _padPrev bleibt: gehaltene Tasten lösen nicht erneut aus
+    if (src === 'xr') this._codes.xr.clear(); // _xrPrev bleibt (wie beim Gamepad)
   }
 
   releaseAll() {
+    if (this.wheel.open) this.wheel.cancel = true; // Fokusverlust/Pause: Befehlsrad ohne Befehl schließen
     for (const s of SOURCES) this._releaseSource(s);
     this._codes.kb.clear();
     this._codes.pad.clear();
+    this._codes.xr.clear();
     this._latched.clear();
     this._wheelTaps.length = 0;
     this._mouseDX = this._mouseDY = this._touchDX = this._touchDY = this._gyroDX = this._gyroDY = 0;
@@ -294,9 +326,41 @@ export class Input {
     on = !!on;
     if (on === this.enabled) return;
     this.enabled = on;
+    // VR: beim Fortsetzen gehaltene Tasten (Abzug/A, mit denen im VR-Menü „Weiter“ gewählt wurde) nicht als Druck werten
+    if (on) this._xrAbsorb = true;
     this.releaseAll();
     this._pressed.clear();
     this._released.clear();
+  }
+
+  /** Befehlsrad öffnen (ui/command-wheel.js): Zeiger in die Mitte, Blick ruht. */
+  openWheel() {
+    const W = this.wheel;
+    W.open = true;
+    W.x = W.y = 0;
+    W.click = W.drag = W.cancel = false;
+  }
+
+  /** Befehlsrad schließen: Blick wieder frei; gehaltene Feuertaste löst erst nach erneutem Drücken aus. */
+  closeWheel() {
+    const W = this.wheel;
+    if (!W.open) return;
+    W.open = false;
+    W.x = W.y = 0;
+    W.click = W.drag = W.cancel = false;
+    this._mouseDX = this._mouseDY = this._touchDX = this._touchDY = this._gyroDX = this._gyroDY = 0;
+    for (const src of SOURCES) this._held[src].delete('fire');
+  }
+
+  /** Touch: Ziehen am Befehlsrad-Knopf (Versatz in px seit dem Aufsetzen) → Zeiger des Rads. */
+  _wheelDrag(dx, dy) {
+    const W = this.wheel;
+    if (!W.open) return;
+    W.x = dx / WHEEL_TOUCH_PX;
+    W.y = dy / WHEEL_TOUCH_PX;
+    const m = Math.hypot(W.x, W.y);
+    if (m > 1) { W.x /= m; W.y /= m; }
+    if (m > 0.3) W.drag = true;
   }
 
   /** ADS beenden: Touch-Umschalter und eingerastetes Zielen (Sprint, Tod, Respawn). */
@@ -356,10 +420,13 @@ export class Input {
     this.conflicts = findConflicts(this.bindings);
     this._maps.kb = codeMap(this.bindings, 'kb');
     this._maps.pad = codeMap(this.bindings, 'pad');
+    this._maps.xr = codeMap(this.bindings, 'xr');
     // Gehaltene Tasten mit alter Bedeutung lösen
-    for (const src of ['key', 'mouse', 'pad']) for (const a of [...this._held[src]]) this._release(a, src);
+    for (const src of ['key', 'mouse', 'pad', 'xr']) for (const a of [...this._held[src]]) this._release(a, src);
     this._codes.kb.clear();
     this._codes.pad.clear();
+    this._codes.xr.clear();
+    this._xrPrev.clear();
     // Akkord-Auslöser der Tastatur auch dann verfolgen, wenn der Modifikator selbst nichts auslöst
     this._kbMods = new Set();
     for (const list of this._maps.kb.chords.values()) for (const ch of list) this._kbMods.add(ch.mod);
@@ -370,7 +437,7 @@ export class Input {
    * (Standard: zuletzt benutztes Gerät; Touch → ''). all: alle Belegungen mit „/“ verbunden.
    */
   label(action, device = null, { all = false, long = false } = {}) {
-    const dev = device || (this.mode === 'touch' ? 'touch' : this.lastDevice === 'gamepad' ? 'pad' : 'kb');
+    const dev = device || (this.mode === 'touch' ? 'touch' : this.lastDevice === 'gamepad' ? 'pad' : this.lastDevice === 'xr' ? 'xr' : 'kb');
     if (dev === 'touch') return '';
     const list = (this.bindings[dev] && this.bindings[dev][action]) || EMPTY;
     const opts = { long, layout: this._kbLayout };
@@ -668,6 +735,7 @@ export class Input {
     const G = this.G;
     const s = G.settings;
     this._pollGamepad(dt);
+    this._pollXr();
 
     // Bewegung: digitale Tasten (frei belegt), Gamepad-Stick, Touch-Stick, Tests – der stärkste Ausschlag gewinnt
     let mx = (this._digital('move_right') ? 1 : 0) - (this._digital('move_left') ? 1 : 0);
@@ -677,6 +745,7 @@ export class Input {
     let bx = mx, by = my, bm = Math.hypot(mx, my);
     const cand = (x, y) => { const m = Math.hypot(x, y); if (m > bm) { bx = x; by = y; bm = m; } };
     cand(this._padMove.x, this._padMove.y);
+    if (this.xr.active) cand(this.xr.move.x, this.xr.move.y);
     if (this._touch) { const t = this._touch.moveVector(); cand(t[0], t[1]); }
     if (this._simMove) cand(this._simMove.x, this._simMove.y);
     this.move.x = this.enabled ? bx : 0;
@@ -707,6 +776,20 @@ export class Input {
     const gyroOn = this._gyroWanted(ads);
     this.gyro.active = gyroOn && this.gyro.receiving;
     if (gyroOn) { dx += this._gyroDX * fovScale; dy += this._gyroDY * fovScale; }
+    // Befehlsrad offen: Maus bzw. rechter Stick lenken den Zeiger des Rads, die Kamera ruht
+    if (this.wheel.open) {
+      const W = this.wheel;
+      if (!W.drag) {
+        W.x += this._mouseDX / WHEEL_MOUSE_PX;
+        W.y += this._mouseDY / WHEEL_MOUSE_PX;
+        const st = this._padStick;
+        if (st.m > 0.4) { W.x = st.x / st.m; W.y = st.y / st.m; }
+        const m = Math.hypot(W.x, W.y);
+        if (m > 1) { W.x /= m; W.y /= m; }
+      }
+      dx = 0;
+      dy = 0;
+    }
     this._mouseDX = this._mouseDY = this._touchDX = this._touchDY = this._gyroDX = this._gyroDY = 0;
 
     if (!this.enabled) { dx = 0; dy = 0; }
@@ -766,6 +849,7 @@ export class Input {
     if (!pad) {
       if (this._padActive) { this._releaseSource('pad'); this._padActive = false; }
       this._padMove.x = this._padMove.y = this._padLook.x = this._padLook.y = 0;
+      this._padStick.m = 0;
       return;
     }
     const s = this.G.settings;
@@ -800,6 +884,7 @@ export class Input {
     const R = swap ? [ax[0] || 0, ax[1] || 0] : [ax[2] || 0, ax[3] || 0];
     const [lx, ly] = radial(L[0], L[1], Math.max(0.1, dz + 0.03));
     const [rx, ry, rm] = radial(R[0], R[1], dz);
+    this._padStick.x = rx; this._padStick.y = ry; this._padStick.m = rm;
     this._padMove.x = lx;
     this._padMove.y = -ly;
     const curve = s.get('padCurve') || 'classic';
@@ -826,6 +911,86 @@ export class Input {
       this._padActive = true;
       if (this.mode === 'touch') this._setMode('desktop', 'gamepad'); else this.lastDevice = 'gamepad';
     }
+  }
+
+  /* ---------------------------------------------------------- VR-Controller */
+
+  /**
+   * VR-Sitzung an/aus (engine/xr): an = Zeiger-Sperre aus, zuletzt benutztes Gerät 'xr'; aus = alle VR-Tasten lösen.
+   * Die Controller liefern ihre Gamepads nur über die XR-Sitzung (nicht navigator.getGamepads).
+   */
+  setXr(on) {
+    if (on) { this.lastDevice = 'xr'; return; }
+    this._releaseSource('xr');
+    this._releaseSource('xrpose');
+    this._xrPrev.clear();
+    this.xr.active = false;
+    this.xr.move.x = this.xr.move.y = this.xr.turn = this.xr.stickY = 0;
+    if (this.lastDevice === 'xr') this.lastDevice = this.mode === 'touch' ? 'touch' : 'keyboard';
+  }
+
+  /** Aus der Haltung abgeleitete Aktion (z. B. 'ads', wenn die Waffe am Auge ist) – zählt wie gehalten. */
+  setXrPose(action, on) {
+    const h = this._held.xrpose;
+    if (on && !h.has(action)) this._press(action, 'xrpose');
+    else if (!on && h.has(action)) this._release(action, 'xrpose');
+  }
+
+  /**
+   * VR-Controller abfragen (xr-standard): Tasten 0–6 je Hand → Codes XrH0…6 bzw. XrN0…6 über die Belegung (Abzug/Griff analog mit
+   * Hysterese 0,55/0,35), Stick der Haupthand hoch/runter → XrHUp/XrHDown, Stick der Nebenhand → Laufen (radiale
+   * Totzone), Stick der Haupthand waagerecht → xr.turn (Drehen entscheidet engine/xr: Schritte oder flüssig).
+   */
+  _pollXr() {
+    const X = this.G.xr;
+    const pads = X && X.presenting ? X.gamepads : null;
+    const xs = this.xr;
+    if (!pads) {
+      if (xs.active) this.setXr(false);
+      return;
+    }
+    xs.active = true;
+    let activity = false;
+    const absorb = !!this._xrAbsorb;
+    this._xrAbsorb = false;
+    const edge = (code, on) => {
+      if (!!this._xrPrev.get(code) === on) return;
+      this._xrPrev.set(code, on);
+      if (absorb && on) return; // nach dem Fortsetzen: erst Loslassen + erneutes Drücken zählt
+      activity = true;
+      if (on) this._codeDown('xr', 'xr', code); else this._codeUp('xr', code);
+    };
+    for (const hand of ['H', 'N']) {
+      const gp = hand === 'H' ? pads.main : pads.off;
+      const b = gp && gp.buttons ? gp.buttons : EMPTY;
+      const codes = XR_BTN[hand];
+      for (let i = 0; i < 7; i++) {
+        const bt = b[i];
+        const v = bt ? (typeof bt === 'object' ? (bt.pressed ? Math.max(bt.value || 0, 0.6) : bt.value || 0) : bt) : 0;
+        const was = !!this._xrPrev.get(codes[i]);
+        edge(codes[i], was ? v > 0.35 : v > 0.55);
+      }
+    }
+    const ax = (gp, i) => (gp && gp.axes && Number.isFinite(gp.axes[i]) ? gp.axes[i] : 0);
+    // Nebenhand: Laufen (y negativ = vorn)
+    const lx = ax(pads.off, 2), ly = ax(pads.off, 3);
+    const lm = Math.hypot(lx, ly);
+    if (lm > XR_STICK_DZ) {
+      const k = Math.min(1, (lm - XR_STICK_DZ) / (1 - XR_STICK_DZ)) / lm;
+      xs.move.x = lx * k;
+      xs.move.y = -ly * k;
+      activity = true;
+    } else xs.move.x = xs.move.y = 0;
+    // Haupthand: waagerecht drehen, senkrecht als Tasten (nur deutlich senkrecht, mit Hysterese)
+    const rx = ax(pads.main, 2), ry = ax(pads.main, 3);
+    xs.turn = rx;
+    xs.stickY = ry;
+    const vert = Math.abs(rx) < 0.5;
+    const up = this._xrPrev.get('XrHUp') ? ry < -0.4 : vert && ry < -0.7;
+    const down = this._xrPrev.get('XrHDown') ? ry > 0.4 : vert && ry > 0.7;
+    edge('XrHUp', !!up);
+    edge('XrHDown', !!down);
+    if (activity || Math.abs(rx) > 0.3) this.lastDevice = 'xr';
   }
 
   /** Gamepad-Erfassung: erste Taste merken, zweite Taste bei gehaltener erster = Akkord; fertig beim Loslassen. */
@@ -944,7 +1109,8 @@ export class Input {
     const G = this.G;
     const player = G.player;
     this.aimTarget = null;
-    if (!player || !player.alive || !this.enabled || !G.actors || !G.combat) { this._releaseSource('auto'); this._track = null; this._afTarget = null; return; }
+    // VR: keine Zielhilfe/kein Auto-Feuer (die Hand zielt; Blick dreht nur der Kopf)
+    if (!player || !player.alive || !this.enabled || !G.actors || !G.combat || this.xr.active) { this._releaseSource('auto'); this._track = null; this._afTarget = null; return; }
 
     // Stufen aus den Einstellungen (0 = aus), gedeckelt für Online (G.match.assistCap); Geräte: Touch / Controller / Maus
     const lv = assistLevels((k) => G.settings.get(k), G.match && G.match.assistCap);
@@ -1242,6 +1408,7 @@ class TouchUI {
       ${BTN_HTML('tc-lean tc-lean-r', 'lean_right', 'Rechts lehnen', ICONS.leanR, ' data-toggle="1"')}
       ${BTN_HTML('tc-light', 'light', 'Lampe', ICONS.light)}
       ${BTN_HTML('tc-prone', 'prone', 'Hinlegen', ICONS.prone)}
+      ${BTN_HTML('tc-befehl', 'befehl', 'Befehlsrad', ICONS.befehl)}
       <div class="tc-btn tc-plate" data-action="plate" role="button" aria-label="Panzerplatte einsetzen">${ICONS.plate}<span class="tc-badge">0</span></div>
       <div class="tc-btn tc-gadget" data-action="gadget" role="button" aria-label="Klassen-Ausrüstung">${ICONS.gadget}<span class="tc-badge">0</span></div>
       <div class="tc-btn tc-swap" data-action="swap" role="button" aria-label="Waffe wechseln">${ICONS.swap}<span class="tc-swap-name">—</span></div>
@@ -1348,7 +1515,7 @@ class TouchUI {
     if (btn) {
       const action = btn.dataset.action;
       const look = btn.classList.contains('tc-fire') || action === 'adsfire';
-      const p = { kind: 'button', btn, action, x: e.clientX, y: e.clientY, t: now, look };
+      const p = { kind: 'button', btn, action, x: e.clientX, y: e.clientY, t: now, look, x0: e.clientX, y0: e.clientY };
       this.pointers.set(e.pointerId, p);
       btn.classList.add('is-down');
       if (btn.dataset.toggle) {
@@ -1411,6 +1578,8 @@ class TouchUI {
       this._stickUpdate();
       return;
     }
+    // Befehlsrad-Knopf: Ziehen wählt die Richtung im Rad
+    if (p.kind === 'button' && p.action === 'befehl') { this.input._wheelDrag(e.clientX - p.x0, e.clientY - p.y0); return; }
     if (p.kind === 'look' || (p.kind === 'button' && p.look)) {
       const now = performance.now();
       const dx = e.clientX - p.x;
@@ -1554,6 +1723,12 @@ class TouchUI {
     if (kind === 'light') return !!(p && (p.flashlight || (w && (w.hasLight || w.light))));
     if (kind === 'armor') return !!(p && p.armor && p.armor.slots > 0);
     if (kind === 'gadget') return !!(p && p.gadget);
+    if (kind === 'allies') {
+      // verbündete Bots (offline/Host: KI-Bots, Client: Puppen der Host-Bots) – sonst hat das Befehlsrad nichts zu tun
+      if (!p || !p.team || (G.xr && G.xr.presenting)) return false;
+      for (const a of G.actors) if (a !== p && a.isBot && a.team === p.team) return true;
+      return false;
+    }
     return true;
   }
 
@@ -1658,6 +1833,7 @@ class TouchUI {
     set('lock', input.sprintLock, (v) => this.el.stick.classList.toggle('is-locked', v));
     set('leanL', input._held.touch.has('lean_left'), () => this._syncLean());
     set('leanR', input._held.touch.has('lean_right'), () => this._syncLean());
+    set('befehl', input.wheel.open, (v) => { if (this.items.befehl) this.items.befehl.classList.toggle('is-active', v); });
     if (this.layoutDirty && this.layout && this._visibleRoot()) input.applyTouchLayout();
     // automatische Knöpfe (taktische Granate, Lampe) erscheinen, sobald die Funktion verfügbar ist
     if (this.layout) {

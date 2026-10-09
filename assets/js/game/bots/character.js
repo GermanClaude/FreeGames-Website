@@ -9,12 +9,12 @@
 // Ein Soldat = 1 SkinnedMesh je Detailstufe (alles in einer Geometrie + einem Material zusammengeführt)
 // + Waffe (2–4 Draw Calls). Detailstufen: 0 nah, 1 mittel, 2 fern (Schwellen je Qualität).
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261006151057';
-import { Animator } from './soldier/animator.js?v=20261006151057';
-import { Ragdoll } from './soldier/ragdoll.js?v=20261006151057';
-import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261006151057';
-import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261006151057';
-import { raySphere, rayCapsule } from '../combat.js?v=20261006151057';
+import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261009162748';
+import { Animator } from './soldier/animator.js?v=20261009162748';
+import { Ragdoll } from './soldier/ragdoll.js?v=20261009162748';
+import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261009162748';
+import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261009162748';
+import { raySphere, rayCapsule } from '../combat.js?v=20261009162748';
 
 export { VARIANTS, VARIANT_IDS, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes };
 
@@ -50,6 +50,34 @@ export const HITBOXES = [
 const LOD_DIST = { low: [4.5, 22], medium: [10, 30], high: [13, 36], ultra: [18, 46] };
 
 let serial = 0;
+
+/** Prüfstand: feste Todesart ('back'|'crumple'|'forward'|'twist'|'knees'); null = zufällig. */
+export const DeathStyle = { force: null };
+
+/**
+ * Todesart (rein optisch, je Client zufällig – Leichen sind überall lokal): Kopftreffer sacken eher zusammen, Treffer von
+ * hinten werfen nach vorn, starke Treffer (Schrot, Scharfschütze) nach hinten, sonst gemischt.
+ */
+function deathStyle(zone, dir, yaw, strength) {
+  if (DeathStyle.force) return DeathStyle.force;
+  const r = Math.random();
+  // Schuss von hinten? (Schussrichtung zeigt in Blickrichtung des Getroffenen)
+  const behind = dir.x * -Math.sin(yaw) + dir.z * -Math.cos(yaw) > 0.35;
+  if (behind && r < 0.65) return 'forward';
+  if (zone === 'head') return r < 0.5 ? 'crumple' : r < 0.75 ? 'back' : r < 0.9 ? 'twist' : 'knees';
+  if (strength >= 1.4) return r < 0.6 ? 'back' : r < 0.85 ? 'twist' : 'crumple';
+  if (zone === 'limb') return r < 0.35 ? 'crumple' : r < 0.6 ? 'twist' : r < 0.8 ? 'knees' : 'back';
+  return r < 0.32 ? 'back' : r < 0.55 ? 'twist' : r < 0.78 ? 'crumple' : r < 0.9 ? 'knees' : 'forward';
+}
+
+/** Dicke von Weste (vorn) und Rucksack (hinten) ab Rumpfmitte je Ausrüstung (gear.js) – für die Leichen-Bodenlage. */
+function gearDepth(variantId) {
+  const V = VARIANTS.find((v) => v.id === variantId) || VARIANTS[0];
+  const front = V.vest === 'plate' || V.vest === 'heavy' ? 0.215 : V.vest === 'rig' ? 0.205 : V.vest === 'light' ? 0.185 : 0.15;
+  const pack = { assault: 0.32, radio: 0.29, medbag: 0.295, launcher: 0.37, hydration: 0.24 }[V.back];
+  const back = pack || (V.vest === 'plate' || V.vest === 'heavy' ? 0.18 : V.vest === 'light' ? 0.166 : 0.13);
+  return { front, back };
+}
 
 export class Soldier {
   constructor({ team = null, variant = 0, camo = null, quality = 'high', models = null, name = '' } = {}) {
@@ -109,6 +137,9 @@ export class Soldier {
     this.deadT = 0;
     this.dissolve = 0;
     this._drop = null;
+    this._pending = false; // Waffenwechsel an einer Leiche → erst beim Zurücksetzen
+    this._pendingGun = null;
+    this._pendingDef = null;
     this._hitStamp = -1;
     this._hb = HITBOXES.map(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3() }));
     this._velModel = new THREE.Vector3();
@@ -121,6 +152,11 @@ export class Soldier {
 
   /** Drittpersonen-Waffenmodell setzen (Klon aus models.createWeaponModel(..., {lod:'third'})). */
   setWeaponModel(group, def = null) {
+    // Leiche: die fallengelassene Waffe bleibt liegen und der Halter steht still – die neue Waffe kommt erst mit reset()
+    // (online trifft die neue Ausrüstung vor dem Respawn ein; sonst schwebte sie an der letzten Lebend-Pose neben der Leiche
+    // und die liegende Waffe landete später zusätzlich wieder in der Hand)
+    if (this.state === 'dead') { this._pending = true; this._pendingGun = group || null; this._pendingDef = def; return; }
+    this._pending = false; this._pendingGun = null; this._pendingDef = null;
     if (this.gun) this.gun.removeFromParent();
     this.gun = group || null;
     this.def = def;
@@ -194,7 +230,8 @@ export class Soldier {
   /**
    * params: { velocity (Welt, Vector3) | speed + strafe, aimYaw (Welt), aimPitch, crouch, sprint, ads,
    *           airborne | onGround, firing (Schuss in diesem Bild), shotStrength, reloading, reloadProgress,
-   *           reloadEmpty, perShell, throwing, cooking, meleeing, idleLook, lean (−1…1, − = links), position (Füße, Welt) }
+   *           reloadEmpty, reloadPhase, perShell, throwing, cooking, meleeing, idleLook, lean (−1…1, − = links),
+   *           position (Füße, Welt) }
    * Gibt die Körper-Gierung zurück.
    */
   animate(dt, params = {}) {
@@ -221,6 +258,7 @@ export class Soldier {
     p.reloading = !!params.reloading;
     p.reloadProgress = params.reloadProgress || 0;
     p.reloadEmpty = !!params.reloadEmpty;
+    p.reloadPhase = params.reloadPhase || null; // 'start' | 'insert' | 'end' (Patrone für Patrone: Ende erkennen)
     p.perShell = !!params.perShell;
     p.throwing = !!params.throwing;
     p.cooking = !!params.cooking;
@@ -230,6 +268,11 @@ export class Soldier {
     p.prone = !!params.prone; // bots-scale: Liegen (Pose + Trefferzonen folgen den Knochen)
     p.proneYaw = params.proneYaw;
     p.obstruct = params.obstruct || 0; // Waffe an der Wand: zurückziehen + hochnehmen
+    p.sliding = !!params.sliding; // Rutschen (Mehrspieler-Puppen)
+    p.vy = params.velocity && Number.isFinite(params.velocity.y) ? params.velocity.y : 0; // Luftphase steigend/fallend
+    // Weltlage der Füße (gepflanzte Füße im Stand): aus params.position bzw. der aktuellen Wurzel
+    const rp = params.position || this.root.position;
+    p.rootX = rp.x; p.rootZ = rp.z;
     if (params.firing) a.shot(params.shotStrength || 1);
     let bodyYaw = a.update(dt, p);
     // Schutz: kaputte Pose (nicht endliche Werte aus Eingaben) → Ruhepose statt unsichtbarem/untreffbarem Soldaten
@@ -410,13 +453,14 @@ export class Soldier {
     const a = this.anim;
     if (this.props.grenade) this.props.grenade.visible = false;
     if (this.props.knife) this.props.knife.visible = false;
-    if (a.magazine) a.magazine.visible = true;
+    a.restWeapon(); // Magazin wieder eingesetzt, Schlitten/Hebel/Deckel in Ruhelage – die Waffe fällt vollständig
     const joints = (i, out) => {
       const map = [BONE.thighL, BONE.thighR, BONE.upperArmL, BONE.upperArmR, 'head', BONE.shinL, BONE.footL, BONE.shinR, BONE.footR, BONE.foreArmL, BONE.handL, BONE.foreArmR, BONE.handR];
       return this.joint(map[i], out);
     };
     const dir = dirWorld ? _v.copy(dirWorld).normalize() : _v.set(-Math.sin(a.bodyYaw), 0, -Math.cos(a.bodyYaw)).negate();
-    this.ragdoll.start(joints, info.velocity || ZERO, dir, info.strength ?? 1, info.zone || 'body', !!info.explosive);
+    const style = info.style || deathStyle(info.zone || 'body', dir, a.bodyYaw, info.strength ?? 1);
+    this.ragdoll.start(joints, info.velocity || ZERO, dir, info.strength ?? 1, info.zone || 'body', !!info.explosive, style, gearDepth(this.variant));
     this._dropGun(dir, info);
   }
 
@@ -515,6 +559,7 @@ export class Soldier {
     for (const m of this.meshes) m.castShadow = this.castShadow;
     this.material.userData.uDissolve.value = 0;
     this.state = 'alive';
+    if (this._pending) this.setWeaponModel(this._pendingGun, this._pendingDef);
     this.deadT = 0;
     this.dissolve = 0;
     this.ragdoll.active = false;

@@ -1,6 +1,8 @@
 // NULLPUNKT — Namensschilder über Soldaten (Canvas-Sprites, konstante Bildschirmgröße).
 // Verbündete: immer sichtbar (blau, Raute, auch durch Wände); Gegner: nur unter dem Fadenkreuz oder
 // sehr nah, jeweils nur bei freier Sicht auf den Kopf (rot). Ein Draw Call pro sichtbarem Schild.
+// Spielstil: G.match.styleFlags.nameplates ('alle' | 'team' | 'aus') wertet der BotManager je Bild aus –
+// „Realistisch“ ('team') zeigt nur Mitspieler-Schilder, nie Gegner (auch nicht in FFA).
 // Alle Schilder werden ohne Tiefentest gezeichnet: Verdeckung entscheidet der BotManager einmal je Schild
 // (gedrosselter Sichtstrahl Kamera → Kopf) und blendet das ganze Schild ein/aus – eine Wandkante schneidet
 // den Namen nie pixelweise an.
@@ -10,7 +12,7 @@
 import * as THREE from 'three';
 
 const COLORS = { ally: '#38b6ff', enemy: '#ff3b3b', ffa: '#ff3b3b' };
-const POOL_MAX = 24; // mehr freie Schilder werden wirklich entsorgt (größtes Match: 15 Bots)
+const POOL_MAX = 40; // mehr freie Schilder werden wirklich entsorgt (online bis 32 Spieler; Großkarte mit mehr Bots legt den Rest neu an)
 const pool = [];
 
 let fontState = 0; // 0 = nicht angefordert, 1 = lädt, 2 = fertig (oder nicht verfügbar)

@@ -3,9 +3,9 @@
 // die Maus einen virtuellen Cursor (Linksklick setzt/bestätigt, Rechtsklick bricht ab), Gamepad: linker Stick,
 // A bestätigt, B bricht ab. Tastatur: Enter bestätigt, Rücktaste/Q bricht ab.
 
-import { el } from './dom.js?v=20261006151057';
-import { ICON } from './icons.js?v=20261006151057';
-import { drawGlyph } from './glyphs.js?v=20261006151057';
+import { el } from './dom.js?v=20261009162748';
+import { ICON } from './icons.js?v=20261009162748';
+import { drawGlyph } from './glyphs.js?v=20261009162748';
 
 const COL = { ally: '#38b6ff', enemy: '#ff3b3b', me: '#ffffff', signal: '#ff5b1f', neutral: '#e9e6df' };
 
@@ -219,17 +219,20 @@ export class StrikeTargeting {
     const streaks = mode && mode.streaks;
     const uav = streaks ? streaks.uavInfo(p) : null;
     const now = G.time.elapsed;
+    // Spielstil „Realistisch“: wie die Minikarte keine Gegnerpunkte (Schüsse, Aufklärungsdrohne)
+    const flags = (G.match && G.match.styleFlags) || {};
+    const noEnemies = flags.minimapEnemies === false;
     for (const a of G.actors) {
       if (!a.alive || a === p) continue;
       const hostile = G.combat ? G.combat.isHostile(p, a) : a.team !== p.team;
-      if (hostile && now - (a.lastFiredTime ?? -1e9) > 2) continue;
+      if (hostile && (noEnemies || now - (a.lastFiredTime ?? -1e9) > 2)) continue;
       const [x, y] = S(a.position.x, a.position.z);
       ctx.beginPath();
       ctx.arc(x, y, (hostile ? 5 : 4.5) * d, 0, Math.PI * 2);
       ctx.fillStyle = hostile ? COL.enemy : COL.ally;
       ctx.fill();
     }
-    if (uav && uav.own) {
+    if (uav && uav.own && flags.uavEnemies !== false) {
       for (const b of uav.own.blips) {
         const [x, y] = S(b.x, b.z);
         ctx.beginPath();

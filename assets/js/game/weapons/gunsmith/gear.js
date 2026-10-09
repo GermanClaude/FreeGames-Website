@@ -1,5 +1,5 @@
 // Nahkampf & Wurfwaffen: Kampfmesser, Splittergranate, Haftgranate
-import { ellipsePts } from './parts.js?v=20261006151057';
+import { ellipsePts } from './parts.js?v=20261009162748';
 
 export function knife(b) {
   // Griff (gummiert, oval) mit Ringen, Parierstange, Knauf. Klinge zeigt nach −Z (vorn), Schneide unten.

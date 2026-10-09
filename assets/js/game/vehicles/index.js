@@ -6,18 +6,18 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261006151057';
-import { Vehicle, newIntent } from './vehicle.js?v=20261006151057';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261006151057';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261006151057';
-import { readPlayerControls } from './controls.js?v=20261006151057';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261006151057';
-import { VehicleAudio } from './audio.js?v=20261006151057';
-import { upgradeVehicleMaterials, vehicleMaterials } from './materials.js?v=20261006151057';
-import { prepareVehicleModels } from './models.js?v=20261006151057';
-import { groundRay } from './sim.js?v=20261006151057';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261006151057';
-import { falloff } from '../combat.js?v=20261006151057';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261009162748';
+import { Vehicle, newIntent } from './vehicle.js?v=20261009162748';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261009162748';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261009162748';
+import { readPlayerControls } from './controls.js?v=20261009162748';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261009162748';
+import { VehicleAudio } from './audio.js?v=20261009162748';
+import { upgradeVehicleMaterials, vehicleMaterials } from './materials.js?v=20261009162748';
+import { prepareVehicleModels } from './models.js?v=20261009162748';
+import { groundRay } from './sim.js?v=20261009162748';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261009162748';
+import { falloff } from '../combat.js?v=20261009162748';
 
 export { VEHICLES, VEHICLE_WEAPONS, VEHICLE_IDS, Vehicle };
 
@@ -282,6 +282,8 @@ export class VehicleSystem {
     if (idx == null || idx < 0 || idx >= v.seats.length || v.seats[idx].actor) idx = v.seats.findIndex((s) => !s.actor);
     if (idx < 0) return -1;
     this._seat(actor, v, idx);
+    // Infanteriewaffe ruht im Sitz (kein weapon.update): laufendes Nachladen abbrechen, sonst klingt es weiter
+    if (actor.weapon && typeof actor.weapon.cancelReload === 'function') actor.weapon.cancelReload();
     if (actor.isPlayer) this._playerEnter(actor, v);
     v.body.wake();
     this.G.events.emit('vehicle:enter', { vehicle: v, actor, seat: idx });

@@ -5,7 +5,7 @@
 // führende Stille (≤ 50 ms) und mischt bei Stufe „low“ auf Mono (in Häppchen). MP3 = auf iOS sicher.
 // Speichergrenze je Stufe mit LRU-Freigabe nicht angehefteter Klänge. Fehlt die Bibliothek (404, offline),
 // bleibt die prozedurale Engine allein aktiv – nie stumm.
-import { PRIO } from './bank.js?v=20261006151057';
+import { PRIO } from './bank.js?v=20261009162748';
 
 export const LIB_URL = new URL('../../../../lib/audio/', import.meta.url);
 

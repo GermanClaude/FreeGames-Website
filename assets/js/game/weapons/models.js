@@ -6,24 +6,27 @@
 //   'showcase': zentriert im Ursprung, längste Kante = 1 Einheit (für Drehteller).
 //   group.userData = {
 //     key, lod, muzzle, ejection, magazine, sight, leftHandGrip, rightHandGrip, adsOffset (Vector3),
+//     magFill, rounds, follower (Magazininhalt, siehe gunsmith/magfill.js setMagRounds),
 //     parts: { mag, bolt, charge, pump, slide, boltHandle, hammer, cover, belt, pin, spoon, … } (nur vorhandene),
 //     anchors: { chargeGrab, magGrab, magWell, trigger, … }, info: { sight, kind, triangles, meshes, size, axis }
 //   }
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder } from './gunsmith/builder.js?v=20261006151057';
-import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261006151057';
-import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261006151057';
-import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261006151057';
-import { p9, adler } from './gunsmith/guns-pistol.js?v=20261006151057';
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261006151057';
-import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261006151057';
-import { titan, hagel, kobra, donner, rocket } from './gunsmith/guns-heavy.js?v=20261006151057';
-import { karambit, machete, tomahawk, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261006151057';
-import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261006151057';
-import { disposeMaterials } from './gunsmith/materials.js?v=20261006151057';
-import { disposeTextures } from './gunsmith/textures.js?v=20261006151057';
+import { Builder } from './gunsmith/builder.js?v=20261009162748';
+import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261009162748';
+import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261009162748';
+import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261009162748';
+import { p9, adler } from './gunsmith/guns-pistol.js?v=20261009162748';
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261009162748';
+import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261009162748';
+import { titan, hagel, kobra, donner, rocket } from './gunsmith/guns-heavy.js?v=20261009162748';
+import { karambit, machete, tomahawk, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261009162748';
+import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261009162748';
+export { setMagRounds } from './gunsmith/magfill.js?v=20261009162748';
+import { disposeMaterials } from './gunsmith/materials.js?v=20261009162748';
+import { disposeTextures } from './gunsmith/textures.js?v=20261009162748';
+import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261009162748';
 
 const BUILDERS = {
   kv47, m17, vp9, qx90, hm60, sk14, brecher, bulldog, p9, adler, knife, frag, semtex,
@@ -52,6 +55,10 @@ function buildTemplate(key, lod) {
   const b = new Builder(lod === 'third' ? 'third' : 'first');
   make(b);
   const root = b.build(key);
+  // Magazininhalt (magfill.js): Patronen + Zubringer nur in Ego/Vitrine; die Plätze reisen in den Metadaten mit
+  // (Weltmagazine der Bot-Detailstufe zeigen damit die obersten Patronen bzw. den leeren Zubringer)
+  const magFill = magFillFor(b, key);
+  if (magFill && lod !== 'third') attachMagFill(root, magFill);
   // Fehlende Pflicht-Anker im Ursprung ergänzen (Messer/Granaten haben z. B. keine Mündung)
   for (const n of REF_NAMES) if (!root.getObjectByName(n)) { const o = new THREE.Object3D(); o.name = n; root.add(o); }
   for (const n of b.meta.hidden || []) { const o = root.getObjectByName(n); if (o) o.visible = false; }
@@ -66,6 +73,7 @@ function buildTemplate(key, lod) {
     parts: PART_NAMES.filter(n => root.getObjectByName(n)),
     anchors: ANCHOR_NAMES.filter(n => root.getObjectByName(n)),
     adsOffset: [-sp.x, -sp.y, -eye - sp.z],
+    magFill,
     info: {
       sight: b.meta.sight || 'none', kind: b.meta.kind || 'gear', axis: b.meta.axis ?? 0,
       triangles: root.userData.stats.triangles, meshes: root.userData.stats.meshes,
@@ -87,6 +95,8 @@ function bindUserData(obj, meta, lookupRoot = obj) {
   ud.anchors = {};
   for (const n of meta.anchors) ud.anchors[n] = find(n);
   ud.info = { ...meta.info };
+  // Magazininhalt: setMagRounds(model, n) zeigt n Patronen (magfill.js)
+  if (meta.magFill) { ud.magFill = meta.magFill; ud.rounds = find('rounds') || null; ud.follower = find('follower') || null; }
   obj.userData = ud;
   return obj;
 }
@@ -143,6 +153,7 @@ export function preloadWeaponModels(keys = MODEL_KEYS, lods = ['first', 'third']
 export function disposeWeaponModels() {
   for (const t of cache.values()) t.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
   cache.clear();
+  disposeMagFill();
   disposeCamos();
   disposeMaterials();
   disposeTextures();

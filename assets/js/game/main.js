@@ -14,50 +14,60 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261006151057';
-import { profile } from '../shared/profile.js?v=20261006151057';
-import * as weaponsData from '../shared/weapons.data.js?v=20261006151057';
-import * as modesData from '../shared/modes.data.js?v=20261006151057';
-import * as mapsData from '../shared/maps.data.js?v=20261006151057';
-import * as classesData from '../shared/classes.data.js?v=20261006151057'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { EventBus } from './engine/events.js?v=20261006151057';
-import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261006151057';
-import { Input } from './engine/input.js?v=20261006151057';
-import { watchForUpdates } from './engine/update.js?v=20261006151057'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261006151057';
-import { DynamicResolution } from './engine/dynres.js?v=20261006151057';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261006151057'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261006151057';
-import { Combat } from './combat.js?v=20261006151057';
+import { settings } from '../shared/settings.js?v=20261009162748';
+import { profile } from '../shared/profile.js?v=20261009162748';
+import * as weaponsData from '../shared/weapons.data.js?v=20261009162748';
+import * as modesData from '../shared/modes.data.js?v=20261009162748';
+import * as mapsData from '../shared/maps.data.js?v=20261009162748';
+import * as classesData from '../shared/classes.data.js?v=20261009162748'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { EventBus } from './engine/events.js?v=20261009162748';
+import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261009162748';
+import { Input } from './engine/input.js?v=20261009162748';
+import { watchForUpdates } from './engine/update.js?v=20261009162748'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261009162748';
+import { DynamicResolution } from './engine/dynres.js?v=20261009162748';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261009162748'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261009162748';
+import { Combat } from './combat.js?v=20261009162748';
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261006151057', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261006151057', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261006151057', ['ViewModel']],
-  world: ['./world/index.js?v=20261006151057', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261006151057', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261006151057', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261006151057', ['Effects']],
-  bots: ['./bots/manager.js?v=20261006151057', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261006151057', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261009162748', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261009162748', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261009162748', ['ViewModel']],
+  world: ['./world/index.js?v=20261009162748', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261009162748', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261009162748', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261009162748', ['Effects']],
+  bots: ['./bots/manager.js?v=20261009162748', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261009162748', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261006151057', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261006151057', []],
-  modes: ['./modes/index.js?v=20261006151057', ['createMode']],
-  hud: ['./ui/hud.js?v=20261006151057', ['HUD']],
-  menus: ['./ui/menus.js?v=20261006151057', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261009162748', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261009162748', []],
+  modes: ['./modes/index.js?v=20261009162748', ['createMode']],
+  hud: ['./ui/hud.js?v=20261009162748', ['HUD']],
+  menus: ['./ui/menus.js?v=20261009162748', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261006151057', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261006151057', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261009162748', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261009162748', ['FullscreenUI']],
+  // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
+  net: ['./net/index.js?v=20261009162748', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261009162748', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261009162748', ['ClientSync']],
+  // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
+  xr: ['./engine/xr/index.js?v=20261009162748', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
   ['audio', 'Spiel läuft ohne Ton.'],
   ['fullscreen', 'Vollbild nur über den eingebauten Ersatz (Knopf, Taste, Spielstart).'],
   ['fullscreenUi', 'keine Vollbild-Knöpfe in Lobby und Pausenmenü (Taste/Alt + Eingabe gehen weiter).'],
+  ['net', 'kein Mehrspieler (Einzelspieler läuft normal).'],
+  ['netHost', 'kein Mehrspieler als Host.'],
+  ['netClient', 'kein Mehrspieler als Client.'],
+  ['xr', 'kein VR-Modus.'],
 ]);
 
 /** Stummer Ersatz für die AudioEngine, falls das Audiomodul nicht lädt oder nicht startet. */
@@ -120,6 +130,8 @@ const G = {
   mode: null,
   hud: null,
   menus: null,
+  net: null, // Mehrspieler: NetSystem (net/index.js), G.net.sync = HostSync | ClientSync während eines Online-Matches
+  xr: null, // VR (engine/xr/index.js): XRSystem; presenting = Sitzung läuft (dann taktet renderer.setAnimationLoop)
   actors: [],
   match: {
     state: 'boot', modeId: null, mapId: null, difficulty: null, allies: 0, enemies: 0, loadout: null,
@@ -127,6 +139,8 @@ const G = {
     unranked: false, awaitingLock: false,
     // core-mechanics: Spielstil-Flags, Panzerung an/aus, Online-Deckel der Hilfen, Respawn-Halt, Ausrüstung ab nächstem Spawn
     style: 'arcade', styleFlags: classesData.styleFlags('arcade'), armor: false, assistCap: null, respawnHold: false, pendingLoadout: null,
+    // Mehrspieler: cfg.net des laufenden Matches (null = Einzelspieler), Rolle ('host'|'client'|null), Simulation läuft im Pausenmenü weiter
+    net: null, netRole: null, netLive: false,
   },
   time: { dt: 0, elapsed: 0, frame: 0, real: 0 },
   timeScale: 1,
@@ -314,6 +328,8 @@ function setState(state) {
   const prev = G.match.state;
   if (prev === state) return;
   G.match.state = state;
+  // Online läuft die Simulation im Pausenmenü weiter (Host: Bots, Modus, Respawns; Client: Netz, Puppen)
+  G.match.netLive = state === 'paused' && !!G.match.netRole && G.match.pausedFrom === 'playing';
   document.body.dataset.matchState = state;
   if (state !== 'paused') setAwaitingLock(false);
   if (G.input) G.input.setEnabled(state === 'playing' || state === 'countdown');
@@ -474,10 +490,14 @@ let queuedConfig = null; // Start, der während eines laufenden Starts angeforde
 let startingKey = null; // normalisierte Konfiguration des laufenden Starts
 const configKey = (cfg) => { try { return JSON.stringify(normalizeConfig(cfg)); } catch { return String(Math.random()); } };
 
-function spawnActor(actor) {
+/**
+ * Akteur einsetzen. fixed = { position, yaw }: vorgegebener Ort (Mehrspieler-Client: Spawn vom Host), sonst wählt der
+ * Modus (mode.chooseSpawn) bzw. ein zufälliger Kartenspawn.
+ */
+function spawnActor(actor, fixed = null) {
   const mode = G.mode;
-  let spawn = null;
-  if (mode && typeof mode.chooseSpawn === 'function') spawn = safe('mode.chooseSpawn', () => mode.chooseSpawn(actor));
+  let spawn = fixed && fixed.position ? { position: fixed.position.clone ? fixed.position.clone() : new THREE.Vector3(fixed.position.x, fixed.position.y, fixed.position.z), yaw: Number(fixed.yaw) || 0 } : null;
+  if (!spawn && mode && typeof mode.chooseSpawn === 'function') spawn = safe('mode.chooseSpawn', () => mode.chooseSpawn(actor));
   if (!spawn && G.world && G.world.spawns) {
     const list = (actor.team && G.world.spawns[actor.team]) || G.world.spawns.ffa || G.world.spawns.A || [];
     const s = list[(Math.random() * list.length) | 0];
@@ -492,6 +512,8 @@ function spawnActor(actor) {
     if (actor.weapon && typeof actor.weapon.setLoadout === 'function') safe('weapon.setLoadout', () => actor.weapon.setLoadout(actor.loadout));
   }
   if (actor === G.player) G.match.respawnHold = false;
+  // Mehrspieler (Host): gemeldete Ausrüstung eines entfernten Menschen gilt ab diesem Spawn
+  if (G.match.netRole === 'host' && G.net && G.net.sync && typeof G.net.sync.beforeSpawn === 'function') safe('net.beforeSpawn', () => G.net.sync.beforeSpawn(actor));
   safe('equipActor', () => equipActor(actor));
   actor.respawn(spawn);
   actor.respawnAt = null;
@@ -499,6 +521,24 @@ function spawnActor(actor) {
   G.events.emit('actor:spawn', { actor });
 }
 G.spawnActor = spawnActor;
+
+/**
+ * Mehrspieler-Client vor dem ersten Spawn (bzw. Einstieg ins laufende Spiel): Kamera an einem Spawn des eigenen Teams,
+ * Spieler nicht am Leben (keine Waffe, kein Körper im Spiel), bis der Host 'spawn' schickt.
+ */
+function placeSpectator(p) {
+  const list = (G.world && G.world.spawns && ((p.team && G.world.spawns[p.team]) || G.world.spawns.ffa || G.world.spawns.A)) || [];
+  const s = list[0];
+  if (s) {
+    p.body.setHeight(1.8);
+    p.body.teleport(s.position.clone());
+    p.yaw = s.yaw || 0;
+    p.pitch = -0.05;
+  }
+  p.alive = false;
+  p.respawnAt = null;
+  p._deathCam = null;
+}
 
 /* ===================================================== Klassen, Panzerung, Ausrüstung im Match (core-mechanics) */
 
@@ -612,6 +652,8 @@ function respawnRemaining() {
 function deploy() {
   const p = G.player;
   holdRespawn(false);
+  // Mehrspieler-Client: der Host setzt den Spieler nach Ablauf der Wartezeit selbst ein ('spawn')
+  if (G.match.netRole === 'client') return false;
   if (!p || p.alive || G.match.state !== 'playing' || p.respawnAt == null) return false;
   const mode = G.mode;
   if (mode && typeof mode.canRespawn === 'function' && mode.canRespawn(p) === false) return false;
@@ -622,6 +664,7 @@ function deploy() {
 }
 
 G.requestLoadout = requestLoadout;
+G.pause = () => pause(); // engine/xr: Sitzung verdeckt (Systemmenü der Brille) → Pause
 G.holdRespawn = holdRespawn;
 G.deploy = deploy;
 G.respawnRemaining = respawnRemaining;
@@ -692,7 +735,7 @@ function matchAssetJobs(cfg, world) {
   // Ego: einmalige Viewmodel-Texturen (Ärmel-Tarnmuster des Teams, Stoff, Mündungsfeuer …), weapons/viewmodel.js
   const vm = G.modules.viewmodel;
   if (vm && typeof vm.viewModelWarmupSteps === 'function') {
-    const team = cfg.ffa ? null : 'A';
+    const team = cfg.ffa ? null : cfg.net && cfg.net.team === 'B' ? 'B' : 'A';
     vm.viewModelWarmupSteps({ team, world }).forEach((fn, i) => add(`v:${team || 'ffa'}:${i}`, fn));
   }
   // Bots: Drittperson-Modelle ihrer Ausrüstungen (gun: alle Stufen) + Requisiten (Granate, Messer)
@@ -814,10 +857,40 @@ function startMatch(config) {
   return startTask;
 }
 
+/**
+ * Mehrspieler: cfg.net des Matches (nur mit aktiver Sitzung) → Synchronisationsobjekt der Rolle anlegen (G.net.sync).
+ * Ohne Sitzung wird ein altes Objekt entsorgt (Einzelspieler bleibt unberührt). → netCfg | null
+ */
+function setupNetSync(config) {
+  const N = G.net;
+  const net = config && config.net && typeof config.net === 'object' ? config.net : null;
+  const role = net && N && N.online && (net.role === 'host' || net.role === 'client') && N.role === net.role ? net.role : null;
+  // je Match ein frisches Objekt (kein Zustand aus dem vorigen Match)
+  if (N && N.sync) {
+    safe('net.sync.dispose', () => N.sync.dispose());
+    N.sync = null;
+  }
+  if (!role) return null;
+  const mod = role === 'host' ? G.modules.netHost : G.modules.netClient;
+  const Cls = mod && (role === 'host' ? mod.HostSync : mod.ClientSync);
+  if (!Cls) { console.warn('[NULLPUNKT] Mehrspieler-Synchronisation nicht geladen – Match läuft ohne Netz.'); return null; }
+  const out = { ...net, role, selfId: Number.isInteger(net.selfId) ? net.selfId : N.selfId };
+  N.sync = new Cls(G, N, out);
+  return out;
+}
+
 async function runStart(config, gen) {
   const live = () => gen === matchGen;
   try {
+    // Mehrspieler: Synchronisation sofort (vor dem ersten await) – Nachrichten während des Ladens werden gepuffert
+    const netCfg = setupNetSync(config);
     const cfg = normalizeConfig(config);
+    if (netCfg) {
+      // Online: Bots je Team vom Host (absolute Teams A/B, ohne die lokalen Grenzen von limitsFor); Client erzeugt keine
+      cfg.allies = Math.max(0, netCfg.botsA | 0);
+      cfg.enemies = Math.max(0, netCfg.botsB | 0);
+      cfg.net = netCfg;
+    }
     // atmosphere-weather: Wetter/Zeit hier auflösen – „Zufall“ würfelt bei jedem Start (auch Revanche) neu, der
     // Ladebildschirm zeigt das Ergebnis; anderes Wetter/Zeit → Welt neu aufbauen
     const cond = safe('weather', () => G.modules.world?.resolveConditions?.(G.data.MAPS?.[cfg.mapId], { weather: cfg.weather, time: cfg.timeOfDay })) || null;
@@ -834,8 +907,11 @@ async function runStart(config, gen) {
       unranked: isUnranked(cfg),
       style: cfg.style, crosshair: cfg.crosshair, matchLength: cfg.matchLength, timeOfDay: cfg.timeOfDay, cls: cfg.loadout.cls || null, // modes-ui
       weather: cfg.weather, conditions: cond, // atmosphere-weather (Anfrage; aufgelöst: conditions = G.world.weather)
+      net: netCfg, netRole: netCfg ? netCfg.role : null, netLive: false, // Mehrspieler
     });
-    settings.patch({ lastMode: cfg.modeId, lastMap: cfg.mapId, difficulty: cfg.difficulty, lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
+    // Online: Modus/Karte/Schwierigkeit gehören dem Raum – die Lobby-Vorauswahl für Einzelspieler bleibt
+    if (netCfg) settings.patch({ lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
+    else settings.patch({ lastMode: cfg.modeId, lastMap: cfg.mapId, difficulty: cfg.difficulty, lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
     applyStyle(cfg); // core-mechanics: G.match.style/styleFlags/armor
     setState('loading');
     G.menus.showLoading(0);
@@ -882,12 +958,16 @@ async function runStart(config, gen) {
       time: cfg.timeLimit ?? undefined, score: cfg.scoreLimit ?? undefined,
       difficulty: cfg.difficulty, allies: cfg.allies, enemies: cfg.enemies, mapId: cfg.mapId,
     };
+    // Mehrspieler: Serienprämien online aus (Stufe 2); Client führt den Modus als Abbild (Zustand vom Host)
+    if (netCfg) { opts.streaks = false; opts.replica = netCfg.role === 'client'; }
     G.mode = G.modules.modes.createMode(G, cfg.modeId, opts);
     G.mode.attach(G);
     if (!(await nextStep(0.87))) { await teardownMatch({ keepWorld: true }); return; }
 
-    // Spieler + Viewmodel (Arme, Waffen, Viewmodel-Shader)
-    G.player.resetForMatch({ team: cfg.ffa ? null : 'A', loadout: cfg.loadout, name: settings.get('playerName') });
+    // Spieler + Viewmodel (Arme, Waffen, Viewmodel-Shader); online: Team laut Raum (absolute Teams A/B)
+    const team = cfg.ffa ? null : netCfg && netCfg.team === 'B' ? 'B' : 'A';
+    G.player.resetForMatch({ team, loadout: cfg.loadout, name: settings.get('playerName') });
+    G.player.netId = netCfg ? netCfg.selfId : null;
     G.player.godMode = DEV_GOD;
     if (DEV_TIMESCALE) G.timeScale = DEV_TIMESCALE;
     G.camera = G.player.camera;
@@ -896,12 +976,18 @@ async function runStart(config, gen) {
     if (!(await nextStep(0.88))) { await teardownMatch({ keepWorld: true }); return; }
 
     G.bots.attach(G);
-    const bots = G.bots.spawnBots({ allies: cfg.allies, enemies: cfg.enemies, ffa: cfg.ffa, difficulty: cfg.difficulty, modeId: cfg.modeId }) || [];
-    for (const b of bots) if (!G.actors.includes(b)) G.actors.push(b);
-    for (const a of G.actors) spawnActor(a);
+    if (netCfg && netCfg.role === 'client') {
+      // Client: keine eigenen Bots; Puppen kommen vom Host (Roster + Schnappschüsse), der Spieler wartet auf 'spawn'
+      safe('net.spectate', () => placeSpectator(G.player));
+    } else {
+      const bots = G.bots.spawnBots({ allies: cfg.allies, enemies: cfg.enemies, ffa: cfg.ffa, difficulty: cfg.difficulty, modeId: cfg.modeId }) || [];
+      for (const b of bots) if (!G.actors.includes(b)) G.actors.push(b);
+      for (const a of G.actors) spawnActor(a);
+    }
     if (!(await nextStep(0.9))) { await teardownMatch({ keepWorld: true }); return; }
 
-    safe('vehicles.attach', () => G.vehicles.attach(G)); // vehicles: Spawns aus world.vehicleSpawns bzw. ?vehicles=1
+    // vehicles: Spawns aus world.vehicleSpawns bzw. ?vehicles=1 – online keine Fahrzeuge (Stufe 2)
+    if (!netCfg) safe('vehicles.attach', () => G.vehicles.attach(G));
     G.hud.attach(G);
     safe('audio.startAmbience', () => G.audio.startAmbience(G.world.ambience));
     G.mode.start();
@@ -912,6 +998,13 @@ async function runStart(config, gen) {
     G.matchCount += 1;
     G.menus.hideAll();
     G.hud.show();
+    // Client ohne Körper bis zum ersten 'spawn' (Viewmodel erst nach dem Vorkompilieren ausblenden)
+    if (netCfg && netCfg.role === 'client' && !G.player.alive && G.viewmodel) G.viewmodel.scene.visible = false;
+    if (netCfg && G.net) {
+      // Client meldet seine tatsächliche Ausrüstung (nach normalizeConfig) vor 'ready' – der Host setzt die Puppe damit ein
+      if (netCfg.role === 'client') safe('net.setLoadout', () => G.net.setLoadout({ cls: cfg.loadout.cls || null, loadout: cfg.loadout }));
+      safe('net.onMatchStart', () => G.net.onMatchStart(cfg));
+    }
     beginCountdown();
   } catch (err) {
     if (live()) showFatal(err && (err.moduleKey || isFetchError(err)) ? 'module' : 'match', err);
@@ -1011,7 +1104,14 @@ function tickCountdown(dt) {
     G.events.emit('match:countdown', { value: v });
   }
   if (G.match.countdown <= 0) {
-    setState('playing');
+    // Mehrspieler-Client: erst los, wenn das Match beim Host läuft (höchstens 15 s warten)
+    const sync = G.match.netRole === 'client' && G.net ? G.net.sync : null;
+    if (sync && sync.hostPlaying !== true && G.match.countdown > -15) return;
+    if (G.match.state === 'paused') {
+      // Online im Pausenmenü: das Match beginnt trotzdem (Simulation läuft weiter), das Menü bleibt offen
+      G.match.pausedFrom = 'playing';
+      G.match.netLive = !!G.match.netRole;
+    } else setState('playing');
     G.match.startedAt = G.time.elapsed;
     G.match.startedReal = G.time.real;
     G.events.emit('match:start', { modeId: G.match.modeId, mapId: G.match.mapId });
@@ -1036,6 +1136,8 @@ function endMatch(result) {
       console.error('[NULLPUNKT] profile.recordMatch:', err);
     }
   }
+  // Mehrspieler: Host schickt jedem Client Ergebnis + eigene Zusammenfassung ('end'), Raum zurück in die Lobby
+  if (G.match.netRole && G.net) safe('net.onMatchEnd', () => G.net.onMatchEnd(res));
   G.lastResult = res;
   G.lastProgression = progression;
   safe('hud.hide', () => G.hud.hide());
@@ -1063,8 +1165,12 @@ function showEndScreen() {
  */
 async function teardownMatch({ keepWorld = false } = {}) {
   G._endScreenAt = null;
+  if (G.xr && G.xr.presenting) safe('xr.end', () => G.xr.end()); // Lobby/Laden sind 2D
   const banner = $('match-banner');
   if (banner) banner.hidden = true;
+  // Mehrspieler: zuerst die Synchronisation (Host meldet ein abgebrochenes Match an die Clients)
+  if (G.net) safe('net.onTeardown', () => G.net.onTeardown());
+  G.match.netLive = false;
   safe('input', () => G.input.releaseAll());
   safe('hud', () => { G.hud.hide(); G.hud.detach(); });
   safe('mode', () => { if (G.mode) G.mode.detach(); });
@@ -1087,6 +1193,8 @@ async function teardownMatch({ keepWorld = false } = {}) {
     G.world = null;
   }
   G.actors.length = 0;
+  G.match.net = null;
+  G.match.netRole = null;
   if (sceneBase) {
     const keep = new Set(sceneBase);
     if (G.world && G.world.group) keep.add(G.world.group);
@@ -1165,7 +1273,8 @@ function pause() {
 }
 
 /** Desktop braucht den Pointer-Lock zum Zielen: erst mit Sperre wird weitergespielt. */
-const lockRequired = () => G.input.mode === 'desktop' && !G.input.allowUnlockedMouse && typeof G.canvas.requestPointerLock === 'function';
+const lockRequired = () => G.input.mode === 'desktop' && !G.input.allowUnlockedMouse && typeof G.canvas.requestPointerLock === 'function' &&
+  !(G.xr && G.xr.presenting); // VR: Blick über das Headset, keine Zeiger-Sperre
 
 /**
  * Fortsetzen (Menü-Knopf, Esc im Pausenmenü, Gamepad). Auf dem Desktop bleibt das Match pausiert, bis der
@@ -1398,10 +1507,21 @@ let lastNow = 0;
 let idleRenderAt = 0;
 
 let capAt = 0;
-function frame(now) {
-  requestAnimationFrame(frame);
+/**
+ * Ein Bild. bg = Takt aus dem Hintergrund-Zeitgeber (Mehrspieler-Host im verborgenen Tab: requestAnimationFrame ruht,
+ * die Simulation muss für die Clients weiterlaufen) – dann ohne Zeichnen und ohne neues rAF.
+ */
+function frame(now, bg = false, xrFrame = null) {
+  // VR (bg === 'xr'): Bilder kommen aus renderer.setAnimationLoop (engine/xr) mit XRFrame; die rAF-Schleife läuft
+  // weiter, setzt aber aus, solange die Sitzung läuft (sonst doppelte Simulation)
+  const xr = bg === 'xr';
+  if (!xr) {
+    if (bg !== true) requestAnimationFrame(frame);
+    else if (!document.hidden) return;
+    if (G.xr && G.xr.presenting) return;
+  }
   // Bildratenbegrenzung (Einstellung fpsLimit): Bilder auslassen; die Zeit läuft im nächsten Bild weiter
-  const cap = fpsLimitValue(settings.get('fpsLimit'));
+  const cap = bg === true || xr ? 0 : fpsLimitValue(settings.get('fpsLimit'));
   if (cap) {
     if (now < capAt - 1.5) return;
     capAt += 1000 / cap; // Takt halten (bei 144 Hz und 60er-Grenze im Mittel 60 Bilder)
@@ -1415,38 +1535,78 @@ function frame(now) {
   G.time.dt = dt;
   G.time.frame += 1;
   const st = G.match.state;
-  const sim = st === 'countdown' || st === 'playing';
+  // Mehrspieler: im Pausenmenü läuft die Simulation weiter (der Host hält sonst alle an)
+  const netPaused = st === 'paused' && !!G.match.netRole;
+  const sim = st === 'countdown' || st === 'playing' || netPaused;
+  if (xr) step('xr:begin', () => G.xr.beginFrame(dt, xrFrame)); // Kopf-/Handposen dieses Bildes
 
   if (sim) {
     G.time.elapsed += dt;
     if (G.timeScale !== 1 || (G.player && G.player.godMode)) G.match.unranked = true;
-    if (st === 'countdown') tickCountdown(Math.min(raw, 0.25) * G.timeScale); // Echtzeit, nicht Simulationszeit
+    if (st === 'countdown' || (netPaused && G.match.pausedFrom === 'countdown')) tickCountdown(Math.min(raw, 0.25) * G.timeScale); // Echtzeit, nicht Simulationszeit
     step('input', () => G.input.update(dt));
+    if (xr) step('xr:pre', () => G.xr.preUpdate(dt)); // Drehen, Laufrichtung, Zielen am Auge, Haltung, Lehnen, Raumbewegung
     if (G.input.pressed('pause') && G.match.state !== 'paused') pause();
+    const net = G.match.netRole && G.net ? G.net : null;
+    if (net) step('net:pre', () => net.preUpdate(dt)); // Host: Zustände der Clients → Puppen; Client: Schnappschüsse → Puppen
     step('player', () => (G.player.vehicle ? G.vehicles.updateOccupant(G.player, dt) : G.player.update(dt))); // vehicles: Sitz statt Laufen
     step('bots', () => G.bots.update(dt));
-    if (st === 'playing') step('separate', () => separateActors(G.actors));
+    const live = G.match.state === 'playing' || G.match.netLive;
+    if (live) step('separate', () => separateActors(G.actors));
     step('vehicles', () => G.vehicles.update(dt));
     step('armor', () => G.combat.tickArmor(G.actors)); // core-mechanics: Platten fertig einsetzen, Bots setzen selbst ein
     step('weapons', () => G.weapons.update(dt));
     step('mode', () => { if (G.mode) G.mode.update(dt); });
-    if (G.match.state === 'playing') step('respawn', updateRespawns);
+    // Respawns entscheidet online nur der Host (Client: 'spawn' vom Host)
+    if (live && G.match.netRole !== 'client') step('respawn', updateRespawns);
+    if (net) step('net:post', () => net.postUpdate(dt)); // Host: Schnappschüsse/Modus senden; Client: eigener Zustand
     step('world', () => { if (G.world) G.world.update(dt, G.camera); });
     step('effects', () => G.effects.update(dt));
     step('hud', () => G.hud.update(dt));
     step('audio', () => G.audio.update(dt));
-    if (G.mode && G.mode.isOver && G.match.state === 'playing') G.events.emit('match:end', { result: G.mode.result });
+    if (G.mode && G.mode.isOver && (G.match.state === 'playing' || G.match.netLive)) G.events.emit('match:end', { result: G.mode.result });
   }
   if (G._endScreenAt && G.time.real >= G._endScreenAt) showEndScreen();
+  if (xr) step('xr:end', () => G.xr.endFrame(dt, sim)); // Kamera/Hände auch in der Pause, Overlay, Handgelenk, Menü
 
-  // Pausiert/Ende: Bild steht still → nur ~4×/s neu zeichnen (Akku auf Mobilgeräten)
-  if (G.world && G.camera && st !== 'loading' && (sim || now - idleRenderAt > 250)) {
+  // Pausiert/Ende: Bild steht still → nur ~4×/s neu zeichnen (Akku auf Mobilgeräten); VR zeichnet jedes Bild
+  if (bg !== true && G.world && G.camera && st !== 'loading' && (sim || xr || now - idleRenderAt > 250)) {
     idleRenderAt = now;
-    step('render', () => G.renderer.render(G.scene, G.camera, G.viewmodel.scene, G.viewmodel.camera));
+    step('render', () => G.renderer.render(G.scene, xr ? G.xr.camera : G.camera, G.viewmodel.scene, G.viewmodel.camera));
   }
   if (sim) G.input.endFrame();
   updateStats(now);
-  if (st === 'playing' && G.match.state === 'playing') updatePerf(G.time.real, performance.now() - t0, raw * 1000);
+  if (!xr && st === 'playing' && G.match.state === 'playing') updatePerf(G.time.real, performance.now() - t0, raw * 1000);
+}
+
+/**
+ * Mehrspieler-Host im verborgenen Tab: Bilder über einen Worker-Zeitgeber (20 Hz; Zeitgeber im Hauptthread werden im
+ * Hintergrund stark gedrosselt), damit Bots, Modus und Schnappschüsse für die Clients weiterlaufen.
+ */
+let bgTicker = null;
+function updateBackgroundTicker() {
+  const st = G.match.state;
+  const need = typeof document !== 'undefined' && document.hidden && G.match.netRole === 'host' && !!(G.net && G.net.online) &&
+    (st === 'countdown' || st === 'playing' || st === 'paused');
+  if (need && !bgTicker && typeof Worker === 'function' && typeof Blob === 'function') {
+    try {
+      const url = URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50);'], { type: 'text/javascript' }));
+      bgTicker = new Worker(url);
+      URL.revokeObjectURL(url);
+      // Dauert ein Bild länger als der Takt, stauen sich die Nachrichten des Workers – aufgestaute Takte verfallen (sonst wächst
+      // die Warteschlange ohne Ende und alles beim Host, auch die Schnappschüsse, läuft immer weiter hinterher)
+      let bgLast = 0;
+      bgTicker.onmessage = () => {
+        const t = performance.now();
+        if (t - bgLast < 40) return;
+        bgLast = t;
+        step('frame:bg', () => frame(t, true));
+      };
+    } catch (err) { bgTicker = null; console.warn('[NULLPUNKT] Hintergrund-Takt nicht verfügbar:', err); }
+  } else if (!need && bgTicker) {
+    bgTicker.terminate();
+    bgTicker = null;
+  }
 }
 
 function updateRespawns() {
@@ -1576,6 +1736,7 @@ G.debugApi = {
       scores: G.mode ? G.mode.scores : null, timeLeft: G.mode ? G.mode.timeLeft : null,
       unranked: G.match.unranked, awaitingLock: G.match.awaitingLock,
       modules: { ...G.moduleStatus }, listeners: G.events.count(),
+      net: G.net && G.net.online ? { role: G.net.role, selfId: G.net.selfId, match: G.match.netRole, puppets: G.bots ? G.bots.puppets().length : 0 } : null,
     };
   },
 };
@@ -1611,7 +1772,7 @@ function wireGlobal() {
     const st = G.match.state;
     if (locked && G.match.awaitingLock && st === 'paused') { finishResume(); return; }
     // Nur ein echter Verlust der Sperre pausiert (nicht eine abgelehnte Anfrage, z. B. Chrome-Wartezeit nach Esc)
-    if (!locked && !error && G.input.everLocked && G.input.mode === 'desktop' && (st === 'playing' || st === 'countdown')) pause();
+    if (!locked && !error && G.input.everLocked && G.input.mode === 'desktop' && (st === 'playing' || st === 'countdown') && !(G.xr && G.xr.presenting)) pause();
   });
   G.events.on('input:mode', () => {
     updateLockHint();
@@ -1647,7 +1808,9 @@ function wireGlobal() {
     }
   });
 
-  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+  // VR: die Sitzung meldet ihre Sichtbarkeit selbst (engine/xr → Pause), der Tab gilt dort nicht als Signal
+  document.addEventListener('visibilitychange', () => { if (document.hidden && !(G.xr && G.xr.presenting)) pause(); updateBackgroundTicker(); });
+  G.events.on('match:state', () => updateBackgroundTicker());
   const onPortrait = () => { if (portraitMQ.matches) pause(); };
   if (portraitMQ.addEventListener) portraitMQ.addEventListener('change', onPortrait);
   wireRotateOverlay();
@@ -1724,8 +1887,18 @@ async function bootstrap() {
     G.vehicles = new G.modules.vehicles.VehicleSystem(G);
     G.hud = new G.modules.hud.HUD(G);
     G.menus = new G.modules.menus.Menus(G);
+    // Mehrspieler: Sitzung/Raum (öffnet erst bei host()/join() eine Verbindung); fehlt das Modul, bleibt G.net null
+    const netMod = G.modules.net;
+    G.net = (netMod && safe('net', () => new netMod.NetSystem(G))) || null;
     const fsUi = G.modules.fullscreenUi;
     G.fullscreenUi = (fsUi && safe('fullscreenUi', () => new fsUi.FullscreenUI(G, { autoShow: !AUTOSTART, fs: basicFullscreen }))) || null;
+    // VR (optional): Start aus „VR starten“ (Pausenmenü/Knopf im Match), Ende → Pause im 2D-Menü
+    const xrMod = G.modules.xr;
+    G.xr = (xrMod && safe('xr', () => new xrMod.XRSystem(G, {
+      onFrame: (t, f) => frame(t, 'xr', f),
+      onStart: () => { if (G.match.state === 'paused') resume(); },
+      onEnd: () => pause(),
+    }))) || null;
     wireGlobal();
 
     setBoot(0.92, 'Bereite Grafik vor …');
@@ -1736,7 +1909,10 @@ async function bootstrap() {
     setState('lobby');
     hideBoot();
     if (DEBUG) console.info('[NULLPUNKT] Module:', { ...G.moduleStatus });
+    // Einladungslink spielen.html?raum=CODE → Lobby „Mehrspieler“ mit Code, Beitritt startet automatisch
+    const raum = params.get('raum');
     if (AUTOSTART) startMatch(configFromParams());
+    else if (raum && G.net && typeof G.menus.openJoin === 'function') G.menus.openJoin(raum);
     else G.menus.showLobby();
     safe('update', () => watchForUpdates({ isIdle: () => G.match.state === 'lobby' }));
   } catch (err) {

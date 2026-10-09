@@ -3,22 +3,31 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261006151057';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261009162748';
 import {
-  frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, lampPost, acUnit, cable,
-  bench, cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js?v=20261006151057';
+  frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, acUnit, cable,
+  cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
+} from '../props.js?v=20261009162748';
+import { createBell } from './altstadt-glocke.js?v=20261009162748';
+import {
+  setupLook, isNight, lampGlass, lampLight, parkBench, flowerBed, fountainWater, hrng,
+  table, tableChairs, bed, wardrobe, dresser, nightstand, shelf, kitchen, armchair, pendant, ceilingLamp, rug, picture, barrelRack, sacks,
+} from './altstadt-ausstattung.js?v=20261009162748';
 
+const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 const PLASTER = ['#f7efe2', '#f2dfbb', '#ecc98f', '#f0cfae', '#eab796', '#f5e7c6', '#e3e6dc', '#f0d9a6', '#e8c2a2', '#f6ecd8', '#e9d0b0'];
 const SHUTTERS = ['#2f6f9a', '#3c7a5a', '#2a5d7c', '#6f8f3a', '#9a4b2a', '#35626e', '#1f5f8a', '#4f7f6a'];
 const IRON = '#2b2d30';
 const STONE = '#e3d6bd';
+const CAPLESS = [0, 0, 0, 0, 1, 1];   // Quader ohne Deck-/Bodenfläche (verdeckte Stäbe, Bretter)
+// Innenräume (Geschosshöhe 3,2 m): Fußboden EG / Decke EG / Fußboden OG / Decke OG
+const G0 = 0.12, C0 = 2.95, G1 = 3.22, C1 = 6.15;
 
 export default {
   id: 'altstadt',
-  seed: 7311,
+  seed: SEED,
   // maps-expand: Ostviertel (x 46..69) – Spielfläche 92 × 104 → 115 × 104 m (+25 %)
   bounds: { minX: -46, maxX: 69, minZ: -52, maxZ: 52, minY: -2, maxY: 22 },
   visualBounds: { minX: -180, maxX: 180, minZ: -190, maxZ: 190 },
@@ -50,6 +59,8 @@ export default {
 
   build(b, ctx) {
     const zones = [];
+    // Kartenrunde 2: Tageszeit (abends Laternen an), einheitliche Putzschäden (altstadt-ausstattung.js)
+    setupLook(b, { time: this?.conditions?.time ?? null, quality: ctx.quality });
     defineSigns(b);
 
     // -----------------------------------------------------------------------
@@ -92,13 +103,13 @@ export default {
     // -----------------------------------------------------------------------
     // Mitte: Brunnenplatz, Kirche Sant Aurel, Torhaus, Werkstatt
     // -----------------------------------------------------------------------
-    plaza(b, ctx);
+    const fountains = [plaza(b, ctx)];
     church(b);
-    bellTower(b, 15, -13, 20, -8);
+    const bell = bellTower(b, 15, -13, 20, -8);
     loggia(b, 15, 8, 20, 13);
     torhaus(b);
     workshop(b);
-    eastSquare(b);   // maps-expand: Ölbaumplatz im Ostviertel
+    fountains.push(eastSquare(b, ctx));   // maps-expand: Ölbaumplatz im Ostviertel
 
     // -----------------------------------------------------------------------
     // Beide Hälften (Süd = Team A, Nord = Team B)
@@ -126,6 +137,8 @@ export default {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 29, radius: 5 }, { id: 'B', x: -7.5, z: 0, radius: 5.5 }, { id: 'C', x: -5, z: -29, radius: 5 }] },
       zones,
+      // Glocke: Stundenschlag (echte Uhrzeit) + Geläut nach der gemeinsamen Uhr (online Host-Zeit); Brunnenwasser ebenso
+      attach(world, G) { bell.attach(world, G); for (const f of fountains) f.attach(G); },
     };
   },
 };
@@ -138,15 +151,18 @@ function dressing(b) {
   for (const s of [1, -1]) {
     const R = s > 0 ? 0 : Math.PI;
     // Marktgasse (West): Müll, Kartons, Zementsäcke an den Hauswänden (x −37,4)
-    list.push(['trashbag', -36.9, 0, s * 24.4], ['trashbag', -36.95, 0, s * 25.0], ['cardboard_box_01', -36.9, 0, s * 9.0, 0.3]);
+    list.push(['trashbag', -36.9, 0, s * 27.7], ['trashbag', -36.95, 0, s * 28.3], ['cardboard_box_01', -36.9, 0, s * 9.0, 0.3]);
     list.push(['cement_bag', -36.85, 0, s * 14.4, 0.1 + R], ['cement_bag', -36.9, 0.18, s * 14.5, 1.5]);
     list.push(['metal_jerrycan_green', -36.95, 0, s * 7.6, 0.6]);
     // Ostgasse (x 31,4 … 35,0)
     list.push(['trashbag', 34.6, 0, s * 21.2], ['cardboard_box_01', 31.8, 0, s * 18.6, 0.8]);
-    // Torvorplatz (Sand): ausgedientes Sofa + Fernseher an der Stadtmauer, Kisten, Müll
-    list.push(['sofa_01', -30.0, 0, s * 50.45, R, { collide: true }], ['television_01', -28.55, 0, s * 50.55, R + 0.3]);
+    // Torvorplatz (Sand): Kisten, Müll an der Stadtmauer (Kartenrunde 2: Sofa + Fernseher entfernt – lagen auf der Straße)
     list.push(['trashbag', -27.9, 0, s * 50.7], ['cardboard_box_01', 18.6, 0, s * 50.6, 0.4], ['cardboard_box_01', 19.2, 0, s * 50.75, 1.3]);
-    list.push(['wooden_military_crate', 36.2, 0, s * 50.6, R + 0.05, { collide: true }]);
+    // Kiste mit Kollision: auf jedem Rechner gleich – fester Quader in Manifest-Maßen (auch ohne Bibliothek; vorher
+    // kam die Kollision aus dem Modell und fehlte ohne Bibliothek), ohne Bibliothek dieselbe Kiste prozedural
+    const cx = 36.2, cz = s * 50.6, cry = R + 0.05;
+    b.box(cx, 0, cz, 1.242, 0.464, 0.52, 'black', { ry: cry, visual: false, minimap: 'cover' });
+    b.model('wooden_military_crate', cx, 0, cz, { ry: cry, collide: false, fallback: (bb) => bb.box(cx, 0, cz, 1.24, 0.46, 0.52, 'wood_crate', { ry: cry, uv: 'fit', tint: '#8a7a52', collide: false, minimap: false }) });
     list.push(['metal_jerrycan_green', 9.4, 0, s * 50.8, 2.0], ['cement_bag', -9.6, 0, s * 50.7, 0.3]);
   }
   dress(b, list);
@@ -190,6 +206,18 @@ function mirror(s) {
     lr: lr => (s > 0 ? lr : lr === 'left' ? 'right' : 'left'),
   };
 }
+/**
+ * Ergänzungen mit eigenem, festem Zufall (Saat): der Kartenzufall b.rand wird währenddessen ersetzt und danach
+ * wiederhergestellt → alles, was danach gebaut wird (Hausfarben, Läden, Pflanzen …), bleibt wie bisher.
+ * Deterministisch (auf allen Rechnern gleich), unabhängig von der Grafikstufe.
+ */
+function withRng(b, seed, fn) {
+  const keep = b.rand;
+  let s = (seed >>> 0) || 1;
+  b.rand = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  try { return fn(); } finally { b.rand = keep; }
+}
+
 /** Blickrichtung (ry) nach außen für eine Hausseite. */
 const SIDE_RY = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 };
 
@@ -211,6 +239,8 @@ function mapOpening(M, op, shutter) {
   const side = M.side(op.side);
   const at = side === 'e' || side === 'w' ? op.at * M.s : op.at;
   const r = { ...op, side, at };
+  // Balkontür (Fenstertür): Fenster bis zum Boden, verglast/mit Läden → kein Durchgang (Glas/Läden kollidieren)
+  if (op.fd) { r.sill = 0.05; r.h = op.fdH ?? 2.2; }
   if (op.shutters === true) r.shutters = shutter;
   if (op.closed === true) r.closed = shutter;
   if (op.leaf && !op.leafTint) r.leafTint = shutter;
@@ -277,8 +307,11 @@ function house(b, M, o) {
   }
   const res = { B, x0, x1, z0, z1, x, z, w, d, roofY, color, shutter, fh };
   if (o.dress !== false) dressFacade(b, M, res, o);
-  // Balkone, Klimageräte, Kletterpflanzen
-  for (const bl of o.balconies || []) balcony(b, M, res, bl);
+  // Balkone, Klimageräte, Kletterpflanzen (neue Balkone mit eigenem Zufall: Farben/Plätze der übrigen Karte bleiben)
+  for (const bl of o.balconies || []) {
+    if (bl.extra) withRng(b, Math.imul(Math.round(x * 10) + 7, 73856093) ^ Math.imul(Math.round(z * 10) + 3, 19349663) ^ Math.imul(Math.round(bl.at * 10) + 11, 83492791), () => balcony(b, M, res, bl));
+    else balcony(b, M, res, bl);
+  }
   for (const a of o.ac || []) {
     const [px, pz, ry] = onWall(M, res, a.side, a.at, 0.21);
     acUnit(b, px, a.y ?? fh + 1.0, pz, { ry, pipe: a.pipe });
@@ -297,8 +330,10 @@ function dressFacade(b, M, h, o) {
   for (const op of o.open || []) {
     const fl = op.floor ?? 0;
     if (op.kind === 'window' && fl >= 1 && !op.closed && b.rand() < 0.45) {
-      const [px, pz, ry] = onWall(M, h, op.side, op.at, 0.14);
-      const y = fl * h.fh + (op.sill ?? 0.95) - 0.3;
+      // Balkontür: Blumenkasten außen am Balkongeländer statt an der Fensterbank (gleicher Zufallsverbrauch)
+      const bl = op.fd ? (o.balconies || []).find(q => q.side === op.side && q.at === op.at && (q.floor ?? 1) === fl) : null;
+      const [px, pz, ry] = onWall(M, h, op.side, op.at, bl ? (bl.d ?? 0.85) + 0.15 : 0.14);
+      const y = bl ? fl * h.fh + 0.7 : fl * h.fh + (op.sill ?? 0.95) - 0.3;
       const f = frame(b, px, y, pz, ry);
       f.box(0, 0, 0, op.w + 0.1, 0.22, 0.24, 'tiles_terracotta', { tint: '#c47a52', collide: false, minimap: false, grad: false, ao: false });
       const n = Math.max(2, Math.round(op.w / 0.32));
@@ -314,6 +349,9 @@ function dressFacade(b, M, h, o) {
     const col = b.pick(['#8a8f94', '#b8694c', '#6f7a72']);
     b.cyl(cx, 0, cz, 0.055, h.roofY - 0.1, 'metal_painted', { tint: col, seg: 6, collide: false, minimap: false, ao: false });
     b.cyl(cx, h.roofY - 0.25, cz, 0.08, 0.25, 'metal_painted', { tint: col, seg: 6, collide: false, minimap: false, ao: false });
+    // Rohrschellen zur Wand (Kartenrunde 2: das Rohr stand vorher frei 4 cm vor der Fassade)
+    const wz = cz < h.z ? h.z0 : h.z1;
+    for (const yy of [0.9, h.roofY * 0.5, h.roofY - 0.7]) b.box(cx, yy, (cz + wz) / 2, 0.04, 0.035, Math.abs(cz - wz) + 0.02, 'metal_painted', { tint: col, collide: false, minimap: false, grad: false, ao: false });
   }
 }
 
@@ -327,21 +365,81 @@ function onWall(M, h, side, at, off = 0.2) {
   return sd === 'e' ? [h.x1 + off, zz, ry] : [h.x0 - off, zz, ry];
 }
 
-/** Balkon vor einer Fenstertür im Obergeschoss. */
+/**
+ * Balkon vor einer Fenstertür im Obergeschoss. o: { side, at, floor, w, d, style: 'iron' (Steinplatte + Schmiedeeisen,
+ * Standard) | 'wood' (Holzbalkon auf Kragbalken mit Kopfbändern) | 'stone' (Steinplatte mit Docken-Balustrade),
+ * corbels (false: ohne Konsolen, z. B. über dem Torbogen), pots (false: ohne Töpfe), chair (Stuhl), extra (neu, eigener
+ * Zufall) }. Platte + Brüstung kollidieren (nicht durchlaufbar/-springbar), Geländerstäbe nur Optik + Kugeln.
+ */
 function balcony(b, M, h, o) {
   const fy = (o.floor ?? 1) * h.fh, w = o.w ?? 2.2, dep = o.d ?? 0.85;
   const [px, pz, ry] = onWall(M, h, o.side, o.at, 0);
   const f = frame(b, px, fy, pz, ry);
+  if (o.style === 'wood' || o.style === 'stone') {
+    (o.style === 'wood' ? woodBalcony : stoneBalcony)(b, f, w, dep, o);
+    if (o.pots !== false) { const [qx, qz] = f.P(-w / 2 + 0.35, dep - 0.32); pot(b, qx, fy, qz, { r: 0.2, h: 0.32, collide: false, plant: b.rand() < 0.5 ? 'flowers' : 'bush', s: 0.45 }); }
+    if (o.chair) { const [qx, qz] = f.P(w / 2 - 0.42, 0.42); chair(b, qx, qz, { y: fy, ry: ry - 0.5, tint: o.chair === true ? '#2f6f9a' : o.chair, model: true }); }
+    return;
+  }
   f.box(0, -0.16, dep / 2, w, 0.16, dep, 'stone_wall', { tint: STONE, collide: true, minimap: false, grad: false });
   for (const sx of [-w / 2 + 0.2, w / 2 - 0.2]) f.box(sx, -0.42, 0.2, 0.12, 0.26, 0.4, 'stone_wall', { tint: STONE, collide: false, minimap: false, grad: false });
   // schmiedeeisernes Geländer
   const n = Math.round(w / 0.12);
-  for (let i = 0; i <= n; i++) f.box(-w / 2 + 0.04 + (i * (w - 0.08)) / n, 0, dep - 0.05, 0.018, 0.95, 0.018, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
-  for (let i = 1; i < Math.round(dep / 0.12); i++) for (const sx of [-w / 2 + 0.04, w / 2 - 0.04]) f.box(sx, 0, i * 0.12, 0.018, 0.95, 0.018, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
+  for (let i = 0; i <= n; i++) f.box(-w / 2 + 0.04 + (i * (w - 0.08)) / n, 0, dep - 0.05, 0.018, 0.95, 0.018, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false, skip: CAPLESS });
+  for (let i = 1; i < Math.round(dep / 0.12); i++) for (const sx of [-w / 2 + 0.04, w / 2 - 0.04]) f.box(sx, 0, i * 0.12, 0.018, 0.95, 0.018, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false, skip: CAPLESS });
   f.box(0, 0.95, dep - 0.05, w, 0.04, 0.05, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
   for (const sx of [-w / 2 + 0.04, w / 2 - 0.04]) f.box(sx, 0.95, dep / 2, 0.05, 0.04, dep, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
   f.solid(0, 0, dep - 0.05, w, 1.0, 0.06, { minimap: false, bullet: false });
-  if (o.pots !== false) for (const sx of [-w / 2 + 0.35, w / 2 - 0.35]) { const [qx, qz] = f.P(sx, dep - 0.3); pot(b, qx, fy, qz, { r: 0.2, h: 0.32, collide: false, plant: b.rand() < 0.5 ? 'flowers' : 'bush', s: 0.45 }); }
+  if (o.pots !== false) for (const sx of o.chair ? [-w / 2 + 0.35] : [-w / 2 + 0.35, w / 2 - 0.35]) { const [qx, qz] = f.P(sx, dep - 0.3); pot(b, qx, fy, qz, { r: 0.2, h: 0.32, collide: false, plant: b.rand() < 0.5 ? 'flowers' : 'bush', s: 0.45 }); }
+  if (o.chair) { const [qx, qz] = f.P(w / 2 - 0.42, 0.42); chair(b, qx, qz, { y: fy, ry: ry - 0.5, tint: o.chair === true ? '#2f6f9a' : o.chair, model: true }); }
+}
+
+/** Holzbalkon: Kragbalken mit sichtbaren Köpfen, Bohlenboden, Kopfbänder zur Wand, Brettergeländer mit Handlauf. */
+function woodBalcony(b, f, w, dep, o) {
+  const V = { collide: false, minimap: false, grad: false };
+  const beam = '#5a3f2b', wood = o.tint || '#86603e';
+  for (const sx of [-w / 2 + 0.1, 0, w / 2 - 0.1]) f.box(sx, -0.3, (dep + 0.12) / 2, 0.12, 0.17, dep + 0.12, 'wood_dark', { tint: beam, ...V });
+  f.box(0, -0.13, dep / 2, w, 0.13, dep, 'wood_planks', { tint: '#a07c56', collide: true, minimap: false, grad: false });
+  for (const sx of [-w / 2 + 0.1, w / 2 - 0.1]) f.box(sx, -1.0, 0.04, 0.08, 0.9, 0.08, 'wood_dark', { tint: beam, ...V, rx: 0.68 });
+  // Pfosten, Handlauf, Fußleiste, Bretter (vorn + seitlich)
+  for (const sx of [-w / 2 + 0.04, w / 2 - 0.04]) f.box(sx, 0, dep - 0.04, 0.08, 1.0, 0.08, 'wood_dark', { tint: beam, ...V });
+  f.box(0, 0.94, dep - 0.04, w, 0.06, 0.11, 'wood_planks', { tint: wood, ...V });
+  for (const sx of [-w / 2 + 0.04, w / 2 - 0.04]) f.box(sx, 0.94, dep / 2, 0.1, 0.06, dep, 'wood_planks', { tint: wood, ...V });
+  f.box(0, 0.06, dep - 0.04, w, 0.06, 0.06, 'wood_planks', { tint: wood, ...V });
+  const n = Math.round((w - 0.16) / 0.15);
+  for (let i = 0; i < n; i++) f.box(-w / 2 + 0.08 + (i + 0.5) * (w - 0.16) / n, 0.12, dep - 0.04, 0.075, 0.82, 0.022, 'wood_planks', { tint: wood, ...V, ao: false, skip: CAPLESS });
+  const ns = Math.max(2, Math.round((dep - 0.12) / 0.15));
+  for (let i = 0; i < ns; i++) for (const sx of [-w / 2 + 0.04, w / 2 - 0.04]) f.box(sx, 0.06, 0.04 + (i + 0.5) * (dep - 0.12) / ns, 0.022, 0.88, 0.075, 'wood_planks', { tint: wood, ...V, ao: false, skip: CAPLESS });
+  f.solid(0, 0, dep - 0.04, w, 1.0, 0.08, { minimap: false, bullet: false });
+}
+
+/** Steinbalkon: Platte mit Profilkante (+ Konsolen), Eckpfeiler, Docken-Balustrade, breiter Handlauf. */
+function stoneBalcony(b, f, w, dep, o) {
+  const V = { collide: false, minimap: false, grad: false }, dark = '#d2c4a6', rail = dep - 0.09;
+  f.box(0, -0.22, dep / 2, w, 0.22, dep, 'stone_wall', { tint: STONE, collide: true, minimap: false, grad: false });
+  f.box(0, -0.28, dep / 2 - 0.03, w - 0.12, 0.06, dep - 0.06, 'stone_wall', { tint: dark, ...V });
+  if (o.corbels !== false) for (const sx of [-w / 2 + 0.28, w / 2 - 0.28]) {
+    f.box(sx, -0.72, 0.16, 0.2, 0.44, 0.32, 'stone_wall', { tint: dark, ...V });
+    f.box(sx, -0.48, 0.42, 0.2, 0.2, 0.22, 'stone_wall', { tint: dark, ...V });
+  }
+  // Sockelleiste, Eckpfeiler, Handlauf (vorn + seitlich)
+  f.box(0, 0, rail, w, 0.1, 0.18, 'stone_wall', { tint: STONE, ...V });
+  for (const sx of [-1, 1]) {
+    f.box(sx * (w / 2 - 0.09), 0, dep / 2, 0.18, 0.1, dep, 'stone_wall', { tint: STONE, ...V });
+    f.box(sx * (w / 2 - 0.1), 0.1, rail, 0.2, 0.76, 0.2, 'stone_wall', { tint: STONE, ...V });
+    f.box(sx * (w / 2 - 0.09), 0.86, dep / 2, 0.22, 0.12, dep, 'stone_wall', { tint: STONE, ...V });
+  }
+  f.box(0, 0.86, rail, w + 0.04, 0.12, 0.22, 'stone_wall', { tint: STONE, ...V });
+  // Docken: zwei Kegelstümpfe (Bauch in der Mitte)
+  const dock = (lx, lz) => {
+    f.cyl(lx, 0.1, lz, 0.045, 0.38, 'stone_wall', { r1: 0.075, seg: 8, caps: false, tint: '#e9dec8', ...V, ao: false });
+    f.cyl(lx, 0.48, lz, 0.075, 0.38, 'stone_wall', { r1: 0.045, seg: 8, caps: false, tint: '#e9dec8', ...V, ao: false });
+  };
+  const nb = Math.max(3, Math.round((w - 0.4) / 0.21));
+  for (let i = 0; i < nb; i++) dock(-w / 2 + 0.2 + (i + 0.5) * (w - 0.4) / nb, rail);
+  const ns = Math.max(1, Math.round((dep - 0.3) / 0.21));
+  for (let i = 0; i < ns; i++) for (const sx of [-1, 1]) dock(sx * (w / 2 - 0.09), 0.06 + (i + 0.5) * (dep - 0.3) / ns);
+  f.solid(0, 0, rail, w, 1.0, 0.2, { minimap: false, bullet: false });
 }
 
 /** Außentreppe (gemauert) mit Podest bis Dach-/Geschosshöhe. */
@@ -422,16 +520,8 @@ function lowWall(b, x0, z0, x1, z1, o = {}) {
   wall(b, { x0, z0, x1, z1, h, t, mat: 'stone_wall', tint: o.tint || '#dccdb2', cap: { mat: 'plaster_white', tint: '#f2ece0', h: 0.08, over: 0.05 }, minimap: 'cover', openings: o.openings || [] });
 }
 
-function planter(b, x, z, w, d, o = {}) {
-  const h = o.h ?? 0.75;
-  b.box(x, 0, z, w, h, d, 'stone_wall', { tint: o.tint || '#e0d2b8', minimap: 'cover', ry: o.ry || 0 });
-  b.box(x, h, z, w + 0.1, 0.06, d + 0.1, 'plaster_white', { tint: '#f2ece0', collide: false, minimap: false, grad: false, ry: o.ry || 0 });
-  b.box(x, h - 0.08, z, w - 0.3, 0.1, d - 0.3, 'dirt', { collide: false, minimap: false, grad: false, ao: false, ry: o.ry || 0 });
-  const n = Math.max(1, Math.round((w * d) / 1.6));
-  const f = frame(b, x, h - 0.1, z, o.ry || 0);
-  for (let i = 0; i < n; i++) { const [px, pz] = f.P((b.rand() - 0.5) * (w - 0.6), (b.rand() - 0.5) * (d - 0.6)); b.plant(o.plant || (b.rand() < 0.35 ? 'flowers' : 'bush'), px, h - 0.1, pz, { s: 0.6 + b.rand() * 0.4 }); }
-  if (o.tree) tree(b, x, z, { y: h - 0.1, kind: o.tree, h: 2.4 });
-}
+/** Blumenbeet (Kartenrunde 2: Trog mit Deckplatten, sichtbarer Erde und gemischten Blüten – altstadt-ausstattung.js). */
+function planter(b, x, z, w, d, o = {}) { flowerBed(b, x, z, w, d, o); }
 
 function handcart(b, x, z, ry, o = {}) {
   const f = frame(b, x, 0, z, ry);
@@ -472,11 +562,33 @@ function trike(b, x, z, ry, color = '#3a7aa8') {
   f.solid(0, 0, -0.2, 1.4, 1.5, 3.2, { minimap: 'vehicle' });
 }
 
+/** Wandlaterne (Wandplatte, Ausleger, hängende Laterne mit Bügel); abends Licht + Lichtpfütze vor der Wand. */
 function wallLamp(b, x, y, z, ry) {
-  const f = frame(b, x, y, z, ry);
-  f.box(0, 0.25, 0.25, 0.04, 0.04, 0.5, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
-  f.box(0, -0.15, 0.48, 0.22, 0.32, 0.22, 'white', { collide: false, minimap: false, ao: false, tint: '#f3e8cf' });
-  f.box(0, 0.17, 0.48, 0.28, 0.06, 0.28, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
+  const f = frame(b, x, y, z, ry), V = { tint: IRON, collide: false, minimap: false, grad: false, ao: false };
+  f.box(0, 0.16, 0.02, 0.12, 0.2, 0.04, 'metal_painted', V);
+  f.box(0, 0.25, 0.27, 0.04, 0.04, 0.5, 'metal_painted', V);
+  f.box(0, 0.22, 0.48, 0.03, 0.04, 0.03, 'metal_painted', V);
+  f.box(0, -0.15, 0.48, 0.22, 0.32, 0.22, lampGlass(), { collide: false, minimap: false, ao: false, tint: '#f3e8cf', cast: false });
+  f.box(0, 0.17, 0.48, 0.28, 0.06, 0.28, 'metal_painted', V);
+  const [gx, gz] = f.P(0, 0.48);
+  lampLight(b, gx, y, gz, { glow: 1.25, intensity: 6, distance: 8, pool: 1.9, poolAt: f.P(0, 1.0), poolI: 0.2 });
+}
+
+/**
+ * Mastleuchte wie props.lampPost (gleiche Maße + Kollision: Sockel 0,14 m, Mast 0,07 m), aber mit Laternenglas der
+ * Tageszeit: tagsüber mattweiß, abends leuchtend mit Lichthof. → [x, z] des Leuchtenkopfs
+ */
+function streetLamp(b, x, z, o = {}) {
+  const h = o.h ?? 4.6, ry = o.ry || 0, f = frame(b, x, 0, z, ry), arm = o.arm ?? 0.9;
+  const V = { tint: IRON, collide: false, minimap: false, grad: false };
+  b.cyl(x, 0, z, 0.14, 0.35, 'concrete', { seg: 10, minimap: 'prop', tint: '#bdb8ad' });
+  b.cyl(x, 0.35, z, 0.07, h - 0.35, 'metal_painted', { r1: 0.05, tint: IRON, seg: 8, collide: true, minimap: false });
+  f.box(arm / 2, h - 0.08, 0, arm, 0.08, 0.08, 'metal_painted', V);
+  f.box(arm, h - 0.2, 0, 0.6, 0.16, 0.3, 'metal_painted', V);
+  f.box(arm, h - 0.23, 0, 0.5, 0.03, 0.24, lampGlass(), { tint: '#efe6d2', collide: false, minimap: false, ao: false, cast: false });
+  const [lx, lz] = f.P(arm, 0);
+  if (isNight()) b.glow(lx, h - 0.3, lz, { color: '#ffd090', size: 2.0 });
+  return [lx, lz];
 }
 
 function streetSign(b, x, y, z, ry, key) { b.sign(x, y, z, 1.5, 0.42, key, { ry, depth: 0.02 }); }
@@ -488,17 +600,17 @@ function plaza(b, ctx) {
   // Pflasterring um den Brunnen + Rinnen
   b.cyl(0, 0, 0, 5.2, 0.03, 'cobble', { seg: 24, collide: false, minimap: false, tint: '#d8cdb8', ao: false });
   b.cyl(0, 0, 0, 5.45, 0.025, 'stone_wall', { seg: 24, collide: false, minimap: false, tint: '#cbbd9f', ao: false });
-  well(b, 0, 0, ctx);
-  // Platzrand: Poller + Laternen
+  const water = well(b, 0, 0, ctx);
+  // Platzrand: Poller + Laternen (abends: echte Punktlichter ab „hoch“, sonst gebacken)
   for (const [x, z] of [[-14.6, -4], [-14.6, 4], [13.6, -9], [13.6, 9]]) b.cyl(x, 0, z, 0.16, 0.7, 'stone_wall', { r1: 0.12, tint: STONE, seg: 8, minimap: 'prop' });
-  for (const [x, z] of [[-9.5, -9.5], [9.5, 9.5], [9.5, -9.5], [-9.5, 9.5]]) ornateLamp(b, x, z);
-  // Olivenbäume in Pflanzkübeln (Deckung)
-  planter(b, 7.5, -4.5, 2.2, 2.2, { tree: 'olive', plant: 'flowers' });
-  planter(b, 7.5, 4.5, 2.2, 2.2, { tree: 'olive' });
-  // Bänke
-  bench(b, 4.6, -7.6, { ry: Math.PI });
-  bench(b, 4.6, 7.6, { ry: 0 });
-  bench(b, -3.5, -8.2, { ry: Math.PI });
+  for (const [x, z] of [[-9.5, -9.5], [9.5, 9.5], [9.5, -9.5], [-9.5, 9.5]]) ornateLamp(b, x, z, { realtime: 'high' });
+  // Olivenbäume in Blumenbeeten (Deckung)
+  flowerBed(b, 7.5, -4.5, 2.2, 2.2, { tree: 'olive', plant: 'flowers', set: 0 });
+  flowerBed(b, 7.5, 4.5, 2.2, 2.2, { tree: 'olive', set: 3 });
+  // Bänke (Kartenrunde 2: zum Brunnen gewandt, Lehne an den Wangen befestigt)
+  parkBench(b, 4.6, -7.6, { ry: 0 });
+  parkBench(b, 4.6, 7.6, { ry: Math.PI });
+  parkBench(b, -3.5, -8.2, { ry: 0 });
   // Ziehwagen & Kisten als Deckung
   handcart(b, -11.2, -5.8, 0.4);
   crateStack(b, 11.6, 0.6, { ry: 0.3, pattern: [[0, 0, 0, 1.1], [0, 0, 1.15, 1.0], [0.05, 1, 0.55, 0.9]] });
@@ -518,23 +630,35 @@ function plaza(b, ctx) {
   b.decal(0, 0.03, 3.6, 2.4, 1.6, 'puddle', { opacity: 0.8, ry: 0.3 });
   b.decal(-2.8, 0.03, -2.4, 1.8, 1.4, 'puddle', { opacity: 0.7 });
   b.sign(-15.97, 2.9, 10.6, 1.5, 0.42, 'st_platz', { ry: Math.PI / 2, depth: 0.02 });
+  return water;
 }
 
-function ornateLamp(b, x, z) {
+/**
+ * Platzlaterne: Mast, zwei Arme mit hängenden Laternen (Bügel bis zum Arm). Abends leuchtet das Glas, je Laterne ein
+ * Lichthof, darunter eine Lichtpfütze; Licht gebacken bzw. echt ab o.realtime ('high' | 'ultra').
+ */
+function ornateLamp(b, x, z, o = {}) {
   b.cyl(x, 0, z, 0.2, 0.5, 'metal_painted', { r1: 0.12, tint: IRON, seg: 8, minimap: 'prop' });
   b.cyl(x, 0.5, z, 0.06, 3.2, 'metal_painted', { r1: 0.045, tint: IRON, seg: 8, collide: true, minimap: false });
   for (const a of [0, Math.PI]) {
     const f = frame(b, x, 3.5, z, a);
     f.box(0.35, 0, 0, 0.7, 0.04, 0.04, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
-    f.box(0.68, -0.42, 0, 0.24, 0.34, 0.24, 'white', { tint: '#f3e8cf', collide: false, minimap: false, ao: false });
+    f.box(0.68, -0.42, 0, 0.24, 0.34, 0.24, lampGlass(), { tint: '#f3e8cf', collide: false, minimap: false, ao: false, cast: false });
     f.box(0.68, -0.1, 0, 0.3, 0.06, 0.3, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false });
+    f.box(0.68, -0.04, 0, 0.03, 0.05, 0.03, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false }); // Bügel
+    f.box(0.68, -0.46, 0, 0.16, 0.04, 0.16, 'metal_painted', { tint: IRON, collide: false, minimap: false, grad: false, ao: false }); // Boden
+    if (isNight()) { const [gx, gz] = f.P(0.68, 0); b.glow(gx, 3.25, gz, { color: '#ffc47a', size: 1.7, intensity: 0.9 }); }
   }
   b.geom(sphereGeom(), x, 3.6, z, 'metal_painted', { sx: 0.09, sy: 0.09, sz: 0.09, tint: IRON, collide: false, minimap: false, ao: false });
+  lampLight(b, x, 3.2, z, { glow: false, intensity: 15, distance: 13, pool: 3.6, poolI: 0.24, realtime: o.realtime });
 }
 
-/** Achteckiger Brunnen mit Säule, oberer Schale und Wasser. */
+/**
+ * Achteckiger Brunnen mit Säule, oberer Schale und Wasserspiel (Kartenrunde 2): vier Speier an der Säule, vier
+ * Überlaufbahnen aus der Schale, kleine Fontänen am Aufsatz, Wellenringe – nach der gemeinsamen Uhr (alle sehen dasselbe).
+ */
 function well(b, x, z, ctx) {
-  const R = 2.25, t = 0.38, h = 0.78;
+  const R = 2.25, t = 0.38, h = 0.78, wy = h - 0.12;
   b.cyl(x, 0, z, R + 0.35, 0.16, 'stone_wall', { seg: 8, tint: '#d9ccb2', minimap: false, collide: true, ry: Math.PI / 8 });
   const side = 2 * R * Math.tan(Math.PI / 8);
   for (let i = 0; i < 8; i++) {
@@ -545,27 +669,45 @@ function well(b, x, z, ctx) {
     b.box(x + Math.cos(a) * (R - t / 2 + 0.02), h, z + Math.sin(a) * (R - t / 2 + 0.02), side + 0.1, 0.08, t + 0.12, 'plaster_white', { ry, tint: '#efe9dc', collide: false, minimap: false, grad: false });
   }
   b.cyl(x, 0.16, z, R - t + 0.02, 0.2, 'stone_wall', { seg: 8, tint: '#6f7a72', collide: false, minimap: false, ry: Math.PI / 8 });
-  // Wasser (achteckig)
-  const w = ctx.water({ x0: x - 1, z0: z - 1, x1: x + 1, z1: z + 1, y: h - 0.12, color: '#2f6a6e', scale: 2.5 });
+  // Wasser (achteckig) im Becken, rund in der Schale
+  const w = ctx.water({ x0: x - 1, z0: z - 1, x1: x + 1, z1: z + 1, y: wy, color: '#2f6a6e', scale: 2.5 });
   const g = new THREE.CircleGeometry((R - t + 0.04) / Math.cos(Math.PI / 8), 8);
-  g.rotateX(-Math.PI / 2); g.rotateY(Math.PI / 8); g.translate(x, h - 0.12, z);
+  g.rotateX(-Math.PI / 2); g.rotateY(Math.PI / 8); g.translate(x, wy, z);
   const p = g.attributes.position, uv = g.attributes.uv;
   for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 2.5, -p.getZ(i) / 2.5);
   w.mesh.geometry.dispose(); w.mesh.geometry = g;
+  const bowlY = 2.135; // 1,5 cm über der Schalenoberkante (2,12) – kein Flimmern auf Distanz
+  const w2 = ctx.water({ x0: x - 1, z0: z - 1, x1: x + 1, z1: z + 1, y: bowlY, color: '#2f6a6e', scale: 2.0 });
+  const g2 = new THREE.CircleGeometry(0.94, 20);
+  g2.rotateX(-Math.PI / 2); g2.translate(x, bowlY, z);
+  const p2 = g2.attributes.position, uv2 = g2.attributes.uv;
+  for (let i = 0; i < p2.count; i++) uv2.setXY(i, p2.getX(i) / 2.0, -p2.getZ(i) / 2.0);
+  w2.mesh.geometry.dispose(); w2.mesh.geometry = g2;
   // Säule, obere Schale, Aufsatz
   b.cyl(x, 0.3, z, 0.42, 0.5, 'stone_wall', { seg: 8, tint: '#d9ccb2', minimap: false });
   b.cyl(x, 0.8, z, 0.26, 1.0, 'stone_wall', { seg: 10, r1: 0.2, tint: '#e6dcc8', minimap: false });
   b.cyl(x, 1.8, z, 0.25, 0.22, 'stone_wall', { seg: 12, r1: 1.0, tint: '#e6dcc8', collide: false, minimap: false });
   b.cyl(x, 2.02, z, 1.02, 0.1, 'stone_wall', { seg: 12, tint: '#d9ccb2', collide: false, minimap: false });
-  b.cyl(x, 2.12, z, 0.92, 0.02, 'glass', { seg: 12, tint: '#5a8a8a', collide: false, minimap: false, ao: false });
   b.cyl(x, 2.1, z, 0.12, 0.7, 'stone_wall', { seg: 8, tint: '#e6dcc8', collide: false, minimap: false });
   b.geom(sphereGeom(), x, 2.95, z, 'stone_wall', { sx: 0.22, sy: 0.26, sz: 0.22, tint: '#e6dcc8', collide: false, minimap: false, ao: false });
-  // Wasserspeier
+  // Wasserspeier: Maske + Bronzerohr an der Säule (diagonal), Düsen am Aufsatz
+  const jets = [], sheets = [];
   for (let i = 0; i < 4; i++) {
-    const a = i * Math.PI / 2 + Math.PI / 4;
-    b.cyl(x + Math.cos(a) * 0.75, 1.15, z + Math.sin(a) * 0.75, 0.025, 0.9, 'glass', { seg: 5, collide: false, minimap: false, ao: false, tint: '#b8d8d8', bullet: false, cast: false });
+    const a = i * Math.PI / 2 + Math.PI / 4, dx = Math.sin(a), dz = Math.cos(a);
+    const f = frame(b, x, 0, z, a);
+    f.box(0, 1.2, 0.235, 0.15, 0.19, 0.1, 'stone_wall', { tint: '#d6c9ad', collide: false, minimap: false, grad: false });
+    f.cyl(0, 1.29, 0.33, 0.026, 0.12, 'metal_painted', { axis: 'z', tint: '#8a6a32', seg: 6, collide: false, minimap: false, ao: false });
+    jets.push({ from: [x + dx * 0.39, 1.29, z + dz * 0.39], dir: [dx, dz], v: 2.2, vy: 0.9, yEnd: wy, r0: 0.02, r1: 0.038, strands: 3 });
+    f.cyl(0, 2.62, 0.135, 0.016, 0.04, 'metal_painted', { axis: 'z', tint: '#8a6a32', seg: 6, collide: false, minimap: false, ao: false });
+    jets.push({ from: [x + dx * 0.155, 2.62, z + dz * 0.155], dir: [dx, dz], v: 1.15, vy: 0.6, yEnd: bowlY, r0: 0.01, r1: 0.018, strands: 2, splash: 0.6 });
+    // Überlaufbahnen aus der Schale (zwischen den Speiern, auf den Achsen)
+    const am = i * Math.PI / 2;
+    sheets.push({ x, z, r0: 1.03, y0: bowlY - 0.005, yEnd: wy, v: 0.32, a0: am - 0.2, a1: am + 0.2 });
   }
+  const water = fountainWater(b, { jets, sheets, pools: [{ x, z, y: wy + 0.004, r: (R - t + 0.02) / Math.cos(Math.PI / 8), seg: 8, rot: Math.PI / 8 }, { x, z, y: bowlY + 0.004, r: 0.93, seg: 20 }] });
   b.navPoint(x + 3.2, 0.2, z); b.navPoint(x - 3.2, 0.2, z); b.navPoint(x, 0.2, z + 3.2); b.navPoint(x, 0.2, z - 3.2);
+  b.noNav(x - 1.85, z - 1.85, x + 1.85, z + 1.85, -1, 3);
+  return water;
 }
 
 // ---------------------------------------------------------------------------
@@ -655,7 +797,8 @@ function church(b) {
   }
   // Kronleuchter + Licht
   for (const xx of [22.4, 26.4]) {
-    b.cyl(xx, 6.2, 0, 0.015, H - 6.6, 'metal_galvanized', { seg: 4, collide: false, minimap: false, ao: false });
+    b.cyl(xx, 6.2, 0, 0.015, H - 0.25 - 6.2, 'metal_galvanized', { seg: 4, collide: false, minimap: false, ao: false }); // Kette bis zur Holzdecke
+    b.cyl(xx, H - 0.31, 0, 0.09, 0.06, 'metal_painted', { tint: '#6a5020', seg: 8, collide: false, minimap: false, ao: false });
     b.cyl(xx, 6.0, 0, 0.7, 0.08, 'metal_painted', { tint: '#6a5020', seg: 12, collide: false, minimap: false, ao: false });
     for (let k = 0; k < 8; k++) b.cyl(xx + Math.cos(k * 0.785) * 0.65, 6.08, Math.sin(k * 0.785) * 0.65, 0.03, 0.14, 'lamp_warm', { seg: 5, collide: false, minimap: false, ao: false, cast: false });
   }
@@ -709,10 +852,9 @@ function bellTower(b, x0, z0, x1, z1) {
     b.box(ax, y, az, ry ? 0.6 : span, 0.9, ry ? span : 0.6, mat, { tint: dark, collide: false, minimap: false, grad: false });
   }
   b.boxMM(x0 + 0.3, y, z0 + 0.3, x1 - 0.3, y + 0.1, z1 - 0.3, 'wood_dark', { tint: '#5a4030', collide: false, minimap: false, grad: false });
-  // Glocke
-  b.box(x, y + BH - 0.5, z, 3.0, 0.22, 0.22, 'wood_dark', { tint: '#4a3426', collide: false, minimap: false, grad: false });
-  b.cyl(x, y + 1.35, z, 0.75, 1.5, 'metal_painted', { r1: 0.4, tint: '#9a7a3a', seg: 16, collide: false, minimap: false });
-  b.cyl(x, y + 1.25, z, 0.82, 0.14, 'metal_painted', { tint: '#8a6a2a', seg: 16, collide: false, minimap: false });
+  // Glocke im Glockenstuhl: schwingt beim Stundenschlag (echte Uhrzeit) und beim Geläut (gemeinsame Uhr), Turmuhr-
+  // Zeiger zeigen die echte Uhrzeit (altstadt-glocke.js)
+  const bell = createBell(b, { x, z, pivotY: y + BH - 0.45, seed: SEED, faces: [[x0 - 0.06, 13.9, z, -Math.PI / 2], [x, 13.9, z1 + 0.06, 0]] });
   // Dach: Pyramide + Kreuzblume
   b.boxMM(x0 - 0.25, y + BH, z0 - 0.25, x1 + 0.25, y + BH + 0.35, z1 + 0.25, mat, { tint: dark, collide: false, minimap: false, grad: false });
   b.cyl(x, y + BH + 0.35, z, (w / 2 + 0.2) * Math.SQRT2, 4.2, 'roof_tiles', { r1: 0.05, seg: 4, ry: Math.PI / 4, tint: '#c27154', collide: false, minimap: false, uv: 'keep' });
@@ -720,6 +862,7 @@ function bellTower(b, x0, z0, x1, z1) {
   b.cyl(x, y + BH + 4.6, z, 0.03, 1.1, 'metal_painted', { tint: '#b08a3a', seg: 5, collide: false, minimap: false, ao: false });
   b.noNav(x0 - 0.5, z0 - 0.5, x1 + 0.5, z1 + 0.5, 3.0, 40);
   b.navPoint(x0 - 1.0, 0.2, z); b.navPoint(x, 0.2, z); b.navPoint(x1 + 1.0, 0.2, z);
+  return bell;
 }
 
 function clockFace(b, x, y, z, ry) {
@@ -730,9 +873,8 @@ function clockFace(b, x, y, z, ry) {
     const a = (i / 12) * Math.PI * 2;
     f.box(Math.sin(a) * 0.7, Math.cos(a) * 0.7 - 0.06, 0.1, 0.05, 0.12, 0.01, 'black', { rz: -a, collide: false, minimap: false, ao: false, grad: false });
   }
-  // Zeiger: 12:10 Uhr (Mittag)
-  f.box(0.05, -0.02, 0.11, 0.06, 0.6, 0.015, 'black', { rz: -0.1, collide: false, minimap: false, ao: false, grad: false });
-  f.box(0.1, -0.02, 0.12, 0.05, 0.45, 0.015, 'black', { rz: -1.05, collide: false, minimap: false, ao: false, grad: false });
+  // Zeiger beweglich (echte Uhrzeit, altstadt-glocke.js) – hier nur die Achskappe
+  f.cyl(0, 0, 0.13, 0.045, 0.03, 'metal_painted', { axis: 'z', tint: '#2b2d30', collide: false, minimap: false, seg: 8, ao: false });
 }
 
 // ---------------------------------------------------------------------------
@@ -755,7 +897,7 @@ function loggia(b, x0, z0, x1, z1) {
   pitchedRoof(b, { x, z, w: x1 - x0, d: z1 - z0, y: H + 0.8, ridge: 'z', pitch: 0.35, over: 0.3, gableMat: mat, gableTint: tint, tint: '#c47a5a' });
   b.interior(x0, z0, x1, z1, -0.1, H, 0.8);
   b.noNav(x0 - 0.5, z0 - 0.5, x1 + 0.5, z1 + 0.5, 2.5, 40);
-  bench(b, x, z + 1.4, { ry: Math.PI, back: true });
+  parkBench(b, x, z + 1.4, { ry: Math.PI });
   b.decal(x, 0.11, z - 0.8, 1.6, 1.6, 'leaves', { opacity: 0.9 });
 }
 
@@ -776,7 +918,7 @@ function torhaus(b) {
       { side: 'e', at: -4.6, w: 1.1, h: 1.3, kind: 'window', sill: 1.2, bars: true },
       { side: 'e', at: 4.6, w: 1.1, h: 1.3, kind: 'window', sill: 1.2, closed: true },
       { side: 'w', at: -3.8, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
-      { side: 'w', at: 0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true },
+      { side: 'w', at: 0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true, fd: true },
       { side: 'w', at: 3.8, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
       { side: 'e', at: -3.8, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
       { side: 'e', at: 0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
@@ -784,6 +926,8 @@ function torhaus(b) {
       { side: 'n', at: 0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true },
       { side: 's', at: 0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true },
     ],
+    // Steinbalkon über dem Torbogen zur Marktgasse (ohne Konsolen: liegt auf dem Bogenscheitel)
+    balconies: [{ side: 'w', at: 0, floor: 1, w: 2.6, d: 0.85, style: 'stone', corbels: false, extra: true }],
   });
   // Durchgangswände + Gewölbe
   for (const zz of [-2.08, 2.08]) wall(b, { x0: x0 + 0.3, z0: zz, x1: x1 - 0.3, z1: zz, y: 0.12, h: 3.13, t: 0.16, mat: 'plaster_warm', tint: '#dcc6a0', minimap: false });
@@ -830,7 +974,16 @@ function workshop(b) {
   barrelGroup(b, 37.2, 6.9, { n: 3, y: 0.12, colors: ['#c8402f', '#3a6f8a'] });
   b.sign(34.97, 2.75, 0, 3.2, 0.7, 'werkstatt', { ry: -Math.PI / 2, depth: 0.03 });
   b.light('point', 41, 2.7, 0, { color: '#ffe2b0', intensity: 10, distance: 10 });
-  b.box(41, 3.08, 0, 1.4, 0.06, 0.25, 'lamp_warm', { collide: false, minimap: false, ao: false, cast: false });
+  // Leuchtbalken an der Decke (Unterseite 3,15 m): Mitte mit Echtzeitlicht, vorn/hinten gebacken (Kartenrunde 2)
+  for (const zz of [-5.2, 0, 5.2]) {
+    b.box(41, 3.06, zz, 1.5, 0.09, 0.3, 'metal_painted', { tint: '#d8d4cc', collide: false, minimap: false, grad: false, ao: false });
+    b.box(41, 3.03, zz, 1.4, 0.04, 0.22, 'lamp_warm', { collide: false, minimap: false, ao: false, cast: false });
+    if (zz) b.light('point', 41, 2.6, zz, { color: '#ffe2b0', intensity: 7, distance: 9, realtime: false });
+  }
+  withRng(b, 0x525c, () => {
+    shelf(b, 38.4, G0, -8.49, 0, { w: 2.0, d: 0.4, goods: 'tools', tint: '#5a5f66' });
+    shelf(b, 38.4, G0, 8.49, Math.PI, { w: 2.0, d: 0.4, goods: 'boxes', tint: '#5a5f66' });
+  });
   // Dach: Solarwarmwasser, Wassertank
   waterTank(b, 43.5, 3.425, -5);
   waterTank(b, 43.5, 3.425, 5);
@@ -868,6 +1021,7 @@ function half(b, M) {
       { side: 'e', at: -2, w: 2.4, h: 2.4, kind: 'window', sill: 0.3, closed: '#8a8f94' },
       { side: 'e', at: 2.4, w: 1.1, h: 2.3, kind: 'door', leaf: 'closed' },
       ...[-2.4, 2.4].flatMap(at => [1, 2].map(fl => ({ side: 'e', at, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: fl, shutters: b.rand() < 0.6 || undefined, closed: b.rand() < 0.4 || undefined, glass: true }))),
+      { side: 'e', at: 0, w: 1.1, h: 1.6, kind: 'window', floor: 1, closed: true, fd: true },
     ],
     balconies: [{ side: 'e', at: 0, floor: 1, w: 2.4 }],
   });
@@ -876,8 +1030,9 @@ function half(b, M) {
     x0: -46, x1: -38, z0: 0.0, z1: 7, floors: 3, closed: true, roof: 'pitched', ridge: 'z', fh: 3.3,
     open: [
       { side: 'e', at: 0, w: 1.2, h: 2.3, kind: 'door', leaf: 'closed' },
-      ...[1, 2].map(fl => ({ side: 'e', at: 0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: fl, shutters: true, glass: true })),
+      ...[1, 2].map(fl => ({ side: 'e', at: 0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: fl, shutters: true, glass: true, fd: fl === 1 || undefined })),
     ],
+    balconies: [{ side: 'e', at: 0, floor: 1, w: 2.0, style: 'iron', extra: true, chair: south ? '#c8402f' : undefined }],
   });
   // Laden (begehbar) mit Hinterzimmer
   const shop = house(b, M, {
@@ -885,10 +1040,11 @@ function half(b, M) {
     open: [
       { side: 'e', at: 1.5, w: 2.6, h: 2.5, kind: 'door', frame: true },
       { side: 'e', at: -3.0, w: 2.0, h: 1.5, kind: 'window', sill: 0.9 },
-      { side: 'e', at: -2.5, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
+      { side: 'e', at: -2.5, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true, fd: true },
       { side: 'e', at: 2.6, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true },
     ],
     ac: [{ side: 'e', at: 0.2, y: 4.6 }],
+    balconies: [{ side: 'e', at: -2.5, floor: 1, w: 1.8, d: 0.8, style: 'wood', extra: true, tint: south ? '#86603e' : '#3c6a5a' }],
   });
   wall(b, { x0: -42.4, z0: Z(16.3), x1: -42.4, z1: Z(27.7), y: 0.12, h: 2.85, t: 0.14, mat: 'plaster_white', tint: shop.color, minimap: false, openings: [{ at: 5.7, w: 1.0, h: 2.1, kind: 'door' }] });
   shopInterior(b, M, south ? 'spice' : 'tex');
@@ -899,7 +1055,7 @@ function half(b, M) {
     open: [
       { side: 'e', at: -3.5, w: 1.2, h: 2.3, kind: 'door', leaf: 'closed' },
       { side: 'e', at: 2.5, w: 2.6, h: 2.4, kind: 'window', sill: 0.3, closed: '#7a5a3a' },
-      ...[-4, 0, 4].flatMap(at => [1, 2].map(fl => ({ side: 'e', at, w: 1.0, h: 1.5, kind: 'window', sill: 0.95, floor: fl, shutters: b.rand() < 0.7 || undefined, glass: true, closed: b.rand() < 0.3 || undefined }))),
+      ...[-4, 0, 4].flatMap(at => [1, 2].map(fl => ({ side: 'e', at, w: 1.0, h: 1.5, kind: 'window', sill: 0.95, floor: fl, shutters: b.rand() < 0.7 || undefined, glass: true, closed: b.rand() < 0.3 || undefined, fd: (at === 4 && fl === 2) || undefined }))),
     ],
     balconies: [{ side: 'e', at: 4, floor: 2, w: 1.8 }],
     vines: [{ side: 'e', at: -5.6, n: 4 }],
@@ -922,7 +1078,10 @@ function half(b, M) {
   crateStack(b, -28.4, Z(16.4), { ry: -0.15, pattern: [[0, 0, 0, 0.8], [0, 1, 0, 0.7]] });
   if (south) trike(b, -33.2, Z(40.0), Math.PI * 0.95, '#3a7aa8');
   else trike(b, -31.4, Z(40.5), 0.15, '#c8402f');
-  barrel(b, -37.2, 0, Z(24.6), { color: '#3a6f8a' }); barrel(b, -37.4, 0, Z(25.4), { color: '#8a3a2a' });
+  // Fässer neben (nicht mehr vor) dem 2,6 m breiten Ladeneingang (z 22,2 … 24,8)
+  barrel(b, -37.2, 0, Z(26.1), { color: '#3a6f8a' }); barrel(b, -37.4, 0, Z(26.9), { color: '#8a3a2a' });
+  // Wandlaternen der Marktgasse (abends an): je Seite zwei, zwischen Türen, Fenstern, Balkonen und Markisen
+  for (const [lx, lz, lry] of [[-37.98, 6.2, Math.PI / 2], [-37.98, 34.0, Math.PI / 2], [-27.02, 10.0, -Math.PI / 2], [-27.02, 28.0, -Math.PI / 2]]) wallLamp(b, lx, 2.9, Z(lz), lry);
   for (let i = 0; i < 10; i++) {
     const x = b.rnd(-37, -28), z = Z(b.rnd(1, 41)), k = b.rand();
     b.decal(x, 0.012, z, b.rnd(0.6, 1.6), b.rnd(0.6, 1.6), k < 0.5 ? 'leaves' : k < 0.8 ? 'paper' : 'stain', { opacity: 0.85 });
@@ -950,16 +1109,30 @@ function half(b, M) {
     balconies: [{ side: 'e', at: 1.0, floor: 1, w: 2.0 }],
     ac: [{ side: 's', at: 2.2, y: 4.2 }],
   });
-  // Möblierung WM1 (Wohnküche)
+  // Möblierung WM1 (Kartenrunde 2): Wohnküche im EG, Schlafzimmer im OG – Möbel an den Wänden, Türachsen frei
   {
-    const [tx, tz] = [-22.5, Z(11.5)];
-    b.box(tx, 0.12, tz, 1.8, 0.76, 0.95, 'wood_planks', { tint: '#9a7a52', minimap: 'cover' });
-    for (const [cx, cz] of [[-0.6, -0.8], [0.6, -0.8], [-0.6, 0.8], [0.6, 0.8]]) chair(b, tx + cx, tz + cz * s, { y: 0.12, ry: cz * s > 0 ? Math.PI : 0, tint: '#7a5a3a' });
-    b.box(-26.1, 0.12, Z(14.6), 1.1, 0.9, 2.6, 'wood_dark', { tint: '#7a5a40', minimap: 'cover' });
-    b.box(-26.4, 1.5, Z(14.6), 0.5, 0.8, 2.4, 'wood_dark', { tint: '#7a5a40', minimap: false });
-    b.box(-21, 3.2, Z(9.0), 2.0, 0.55, 0.9, 'tarp', { tint: '#c8b89a', minimap: 'cover' });
-    b.box(-24.9, 3.2, Z(12.2), 1.0, 1.9, 0.5, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
-    crateStack(b, -18.0, Z(9.2), { y: 3.2, ry: 0.3, pattern: [[0, 0, 0, 0.8], [0.85, 0, 0, 0.7]] });
+    crateStack(b, -17.6, Z(16.5), { y: G1, ry: 0.3, pattern: [[0, 0, 0, 0.8], [0.85, 0, 0, 0.7]] }); // Abstellecke OG (Kartenzufall wie bisher)
+    withRng(b, 0x51a1 + (south ? 0 : 7), () => {
+      kitchen(b, -26.4, G0, Z(14.65), M.ry(Math.PI / 2), { len: 2.4 });
+      ceilingLamp(b, -24.9, C0, Z(14.6));
+      rug(b, -22.5, G0, Z(11.5), 2.8, 2.0, 0, south ? '#8a3a2a' : '#2f4f6e');
+      table(b, -22.5, G0, Z(11.5), { w: 1.8, d: 0.95, cloth: '#efe6d4' });
+      tableChairs(b, -22.5, G0, Z(11.5), { w: 1.8, d: 0.95, n: 2 });
+      pendant(b, -22.5, C0, Z(11.5), { tint: '#2f5f4a' });
+      dresser(b, -19.6, G0, Z(7.54), M.ry(0), { w: 1.3 });
+      picture(b, -19.6, 1.45, Z(7.3), M.ry(0), 0.8, 0.55, '#6a8a9a');
+      shelf(b, -25.8, G0, Z(7.49), M.ry(0), { w: 1.0, d: 0.36, h: 1.7, goods: 'jars' });
+      // OG: Bett am Nordgiebel, Schrank an der Westwand, Tisch am Ostfenster, Bücherregal neben dem Treppenaustritt
+      bed(b, -23.0, G1, Z(8.35), M.ry(0), { w: 1.4, tint: south ? '#6f86a8' : '#a8776f' });
+      nightstand(b, -24.05, G1, Z(7.52), M.ry(0)); nightstand(b, -21.95, G1, Z(7.52), M.ry(0));
+      wardrobe(b, -26.41, G1, Z(12.0), M.ry(Math.PI / 2), { w: 1.2 });
+      table(b, -17.3, G1, Z(11.8), { w: 0.9, d: 0.7, ry: Math.PI / 2 });
+      tableChairs(b, -17.3, G1, Z(11.8), { w: 0.9, d: 0.7, n: 1, sides: [-1], ry: Math.PI / 2 });
+      shelf(b, -25.9, G1, Z(18.42), M.ry(Math.PI), { w: 1.2, goods: 'books' });
+      armchair(b, -25.5, G1, Z(16.0), M.ry(Math.PI / 2 + 0.7), south ? '#7a3a2a' : '#2f5f4a');
+      rug(b, -22.2, G1, Z(12.6), 2.4, 1.6, 0, '#2f4f6e');
+      pendant(b, -21.8, C1, Z(12.0), { tint: '#8a3a2a' });
+    });
   }
   // Gasse zwischen WM1 und WM2 (z 19..22.5): Wäsche, Kabel
   laundry(b, -26.8, 5.4, Z(19.1), -16.2, 5.6, Z(22.4), { n: 5 });
@@ -972,18 +1145,23 @@ function half(b, M) {
       { side: 'e', at: -1.0, w: 1.2, h: 2.3, kind: 'door' },
       { side: 'w', at: 2.0, w: 1.1, h: 1.4, kind: 'window', sill: 1.0, shutters: true, glass: true },
       { side: 'w', at: -3.0, w: 1.1, h: 2.3, kind: 'door', leaf: 'closed' },
-      { side: 'w', at: -2.6, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
+      { side: 'w', at: -2.6, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true, fd: true },
       { side: 'w', at: 2.4, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true },
       { side: 'e', at: 2.6, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
       { side: 'n', at: -2.5, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true },
     ],
     gaps: [{ side: 's', a: -26.95, b: -25.7 }],
     vines: [{ side: 'w', at: 4.6, n: 3 }],
+    balconies: [{ side: 'w', at: -2.6, floor: 1, w: 1.8, style: 'iron', extra: true }],
   });
   // Erdgeschoss WM2: Lagerraum mit Kisten (Deckung)
   crateStack(b, -24.6, Z(26.0), { y: 0.12, ry: 0.15 });
   palletStackSmall(b, -18.4, Z(31.6));
   b.box(-25.8, 0.12, Z(31.8), 1.4, 1.2, 0.8, 'wood_planks', { tint: '#8a6a4a', minimap: 'cover' });
+  withRng(b, 0x5207 + (south ? 0 : 7), () => {
+    shelf(b, -21.0, G0, Z(33.51), M.ry(Math.PI), { w: 2.0, goods: 'boxes' });
+    ceilingLamp(b, -21.5, C0, Z(25.8)); ceilingLamp(b, -21.5, C0, Z(31.0));
+  });
   extStairs(b, M, { x: -17.5, z: 34.75, dir: 'w', y1: wm2.roofY, w: 1.2, open: 'left', run: 8.2, wallGap: 0.15 });
   terraceDeco(b, M, wm2, { pots: [[-17.2, 23.4], [-26.2, 24.0]], laundry: [[-25.5, 26.5, -25.5, 31.5]], tank: [-17.8, 28.5], chairs: [[-20.5, 31.8]] });
   // Hof südlich von WM2 (x −27..−16, z 34..42): Mauer, Olivenbaum, Brunnentrog
@@ -1002,7 +1180,7 @@ function half(b, M) {
       { side: 'n', at: 2.2, w: 2.4, h: 1.6, kind: 'window', sill: 0.85 },
       { side: 'e', at: 2.6, w: 1.4, h: 2.4, kind: 'door' },
       { side: 's', at: -2.8, w: 1.2, h: 2.3, kind: 'door' },
-      ...[-3.2, 0, 3.2].map(at => ({ side: 'n', at, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true })),
+      ...[-3.2, 0, 3.2].map(at => ({ side: 'n', at, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true, fd: at === 0 || undefined })),
       { side: 'e', at: -2.5, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, closed: true },
       { side: 's', at: 2.0, w: 1.1, h: 1.6, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
     ],
@@ -1031,20 +1209,22 @@ function half(b, M) {
       { side: 'n', at: -1.5, w: 1.2, h: 2.2, kind: 'door', leaf: 'closed' },
       { side: 'n', at: 2.5, w: 1.1, h: 1.3, kind: 'window', sill: 1.0, bars: true },
       { side: 's', at: 0, w: 1.1, h: 1.3, kind: 'window', sill: 1.0, closed: true },
-      ...[-2.5, 2.5].map(at => ({ side: 'n', at, w: 1.0, h: 1.5, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true })),
+      ...[-2.5, 2.5].map(at => ({ side: 'n', at, w: 1.0, h: 1.5, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true, fd: at > 0 || undefined })),
       ...[-2.5, 2.5].map(at => ({ side: 's', at, w: 1.0, h: 1.5, kind: 'window', sill: 0.9, floor: 1, closed: true })),
     ],
     vines: [{ side: 'n', at: 4.2, n: 3 }],
+    balconies: [{ side: 'n', at: 2.5, floor: 1, w: 1.8, style: 'wood', extra: true, tint: south ? '#6a4a32' : '#2f5f7a', chair: true }],
   });
   house(b, M, {
     x0: 6, x1: 15, z0: 34, z1: 42, floors: 2, closed: true, roof: 'flat', fh: 3.0,
     open: [
       { side: 'n', at: 1.5, w: 1.2, h: 2.2, kind: 'door', leaf: 'closed' },
       { side: 'w', at: 0, w: 2.4, h: 2.3, kind: 'window', sill: 0.3, closed: '#6f7a80' },
-      ...[-2.2, 2.2].map(at => ({ side: 'n', at, w: 1.0, h: 1.5, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true })),
+      ...[-2.2, 2.2].map(at => ({ side: 'n', at, w: 1.0, h: 1.5, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true, fd: at < 0 || undefined })),
       { side: 'w', at: 0, w: 1.0, h: 1.5, kind: 'window', sill: 0.9, floor: 1, shutters: true, glass: true },
     ],
     ac: [{ side: 'w', at: 2.6, y: 3.9 }],
+    balconies: [{ side: 'n', at: -2.2, floor: 1, w: 1.8, style: 'iron', extra: true }],
   });
   // Platz A / C (x −16..15, z 24..34): Deckung rund um die Flagge
   squareCover(b, M, south);
@@ -1053,9 +1233,12 @@ function half(b, M) {
   if (south) { scooter(b, 4.4, Z(17.5), 0.3, '#2f6f9a'); handcart(b, -3.6, Z(38.6), 0.15, { goods: ['#e6c53a', '#e8862a'] }); barrelGroup(b, 4.6, Z(36.4), { n: 3, colors: ['#3a6f8a', '#3a6f8a', '#8a3a2a'] }); }
   else { trike(b, 3.4, Z(19.0), Math.PI + 0.12, '#e8e4dc'); crateStack(b, -4.2, Z(37.6), { ry: 0.5 }); planter(b, 4.2, Z(38.2), 1.0, 2.4, { h: 0.75 }); }
   pot(b, -5.6, 0, Z(21.0), { r: 0.32 }); pot(b, 5.6, 0, Z(15.4), { r: 0.28, plant: 'flowers' });
-  // Laternen + Straßenschilder
-  lampPost(b, -6.4, Z(33.2), { h: 4.6, arm: 0.9, ry: s > 0 ? -Math.PI / 2 : -Math.PI / 2, kind: 'warm', tint: IRON });
-  lampPost(b, 14.4, Z(25.0), { h: 4.6, arm: 0.9, ry: Math.PI, kind: 'warm', tint: IRON });
+  // Laternen (Kartenrunde 2: Ausleger zur Gasse – im Süden steckte der Leuchtenkopf vorher in der Hauswand; abends an)
+  // (Mast 1 m weiter zur Straße: stand vorher mitten in der Kletterpflanze an der Hausecke)
+  for (const [lx, lz, lry] of [[-5.5, Z(33.4), south ? Math.PI / 2 : -Math.PI / 2], [14.4, Z(25.0), Math.PI]]) {
+    const [hx, hz] = streetLamp(b, lx, lz, { h: 4.6, arm: 0.9, ry: lry });
+    lampLight(b, hx, 4.35, hz, { glow: false, intensity: 12, distance: 12, pool: 3.0 });
+  }
 
   // ===== Ostmitte (x 15..31) =============================================
   // EM1: begehbar mit Obergeschoss (Fenster zur Kirchgasse und Gasse)
@@ -1077,12 +1260,29 @@ function half(b, M) {
     stairsIn: { x: 29.4, z: 22.1, dir: 'w', w: 1.1, open: 'right' },
     vines: [{ side: 'w', at: 3.6, n: 3 }],
   });
+  // Möblierung EM1 (Kartenrunde 2): Küche + Esstisch im EG, Schlafzimmer + Schreibtisch im OG
   {
-    b.box(23.0, 0.12, Z(16.4), 2.2, 0.76, 1.0, 'wood_planks', { tint: '#9a7a52', minimap: 'cover' });
-    b.box(20.0, 0.12, Z(21.8), 1.1, 0.9, 1.9, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
-    b.box(26.5, 3.2, Z(14.3), 2.4, 0.5, 1.0, 'tarp', { tint: '#b8a888', minimap: 'cover' });
-    b.box(20.6, 3.2, Z(17.6), 0.6, 1.8, 1.4, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
-    crateStack(b, 24.4, Z(20.4), { y: 3.2, ry: -0.2, pattern: [[0, 0, 0, 0.8], [0.85, 0, 0.05, 0.8]] });
+    crateStack(b, 20.1, Z(20.7), { y: G1, ry: -0.2, pattern: [[0, 0, 0, 0.8], [0.85, 0, 0.05, 0.8]] }); // Abstellecke OG (Kartenzufall wie bisher)
+    withRng(b, 0x51b2 + (south ? 0 : 7), () => {
+      kitchen(b, 21.6, G0, Z(22.4), M.ry(Math.PI), { len: 2.4 });
+      ceilingLamp(b, 21.6, C0, Z(21.2));
+      table(b, 22.4, G0, Z(19.6), { w: 1.8, d: 0.9, cloth: '#e8dcc4' });
+      tableChairs(b, 22.4, G0, Z(19.6), { w: 1.8, d: 0.9, n: 2 });
+      pendant(b, 22.4, C0, Z(19.6), { tint: '#b08a3a' });
+      dresser(b, 25.3, G0, Z(13.54), M.ry(0), { w: 1.4 });
+      picture(b, 25.3, 1.45, Z(13.3), M.ry(0), 0.9, 0.6, '#8a6a3a');
+      shelf(b, 19.49, G0, Z(14.4), M.ry(Math.PI / 2), { w: 1.4, goods: 'books' });
+      ceilingLamp(b, 26.0, C0, Z(17.0));
+      // OG
+      bed(b, 27.2, G1, Z(14.35), M.ry(0), { w: 1.4, tint: south ? '#7a8a5a' : '#6f86a8' });
+      nightstand(b, 28.2, G1, Z(13.52), M.ry(0));
+      wardrobe(b, 19.59, G1, Z(16.2), M.ry(Math.PI / 2), { w: 1.2 });
+      table(b, 30.4, G1, Z(18.0), { w: 1.2, d: 0.6, ry: Math.PI / 2 });
+      tableChairs(b, 30.4, G1, Z(18.0), { w: 1.2, d: 0.6, n: 1, sides: [-1], ry: Math.PI / 2 });
+      shelf(b, 21.0, G1, Z(22.51), M.ry(Math.PI), { w: 1.2, goods: 'books' });
+      rug(b, 26.2, G1, Z(17.2), 2.2, 1.6, 0, '#7a4a3a');
+      pendant(b, 25.6, C1, Z(17.4), { tint: '#2f5f4a' });
+    });
   }
   // Gasse EM1/EM2 (z 23..26)
   laundry(b, 19.2, 5.2, Z(22.9), 30.8, 5.5, Z(26.1), { n: 6 });
@@ -1100,11 +1300,20 @@ function half(b, M) {
     ],
     gaps: [{ side: 'e', a: 29.3, b: 30.9 }],
   });
-  b.box(24.0, 0.12, Z(31.5), 2.6, 0.8, 1.0, 'wood_planks', { tint: '#8a6a4a', minimap: 'cover' });
-  b.box(29.6, 0.12, Z(28.0), 1.0, 1.6, 2.0, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
+  // EM2 EG (Kartenrunde 2): Vorratskammer – Arbeitstisch, Vorratsschrank, Regal, Weinfässer, Säcke
+  withRng(b, 0x51e5 + (south ? 0 : 7), () => {
+    table(b, 24.0, G0, Z(31.5), { w: 2.4, d: 1.0, h: 0.86, tint: '#9a7a52' });
+    wardrobe(b, 30.41, G0, Z(27.2), M.ry(-Math.PI / 2), { w: 1.6, h: 1.9, tint: '#5a4030' });
+    shelf(b, 19.49, G0, Z(28.5), M.ry(Math.PI / 2), { w: 1.6, goods: 'jars' });
+    barrelRack(b, 30.27, G0, Z(35.8), M.ry(-Math.PI / 2), 2);
+    sacks(b, 20.4, G0, Z(36.6), 0, 6, '#d8ccb0');
+    ceilingLamp(b, 24.0, C0, Z(29.5)); ceilingLamp(b, 26.0, C0, Z(35.0));
+  });
   terraceDeco(b, M, em2, { pots: [[19.9, 26.9], [30.1, 37.1], [19.9, 37.1]], parasol: [24.5, 33.5], chairs: [[23.4, 34.5], [25.6, 34.3]], laundry: [[21.0, 28.0, 21.0, 35.0]] });
   // Hof südlich EM2 (x 15..31, z 38..42)
-  tree(b, 17.0, Z(40.0), { kind: 'olive', h: 2.6 });
+  // Olivenbaum etwas kleiner und von den Hauswänden weg (Krone ragte in die Ostwand des Nachbarhauses); feste Größe →
+  // die frühere Zufallszahl der Größe wird verworfen, der übrige Kartenzufall bleibt gleich
+  tree(b, 17.2, Z(40.4), { kind: 'olive', h: 2.6, s: 0.68 }); b.rand();
   lowWall(b, 19.0, Z(39.6), 23.5, Z(39.6), { h: 0.95 });
   dumpster(b, 29.6, Z(40.3), { ry: Math.PI / 2, color: '#3a6a4a' });
   // Kirchgasse (z 8..13): Stufen, Bank, Wäsche
@@ -1140,12 +1349,27 @@ function half(b, M) {
     stairsIn: { x: 44.4, z: 20.1, dir: 'w', w: 1.1, open: 'right' },
     gaps: [{ side: 's', a: 35.6, b: 45.4 }, { side: 'n', a: 40.0, b: 41.6 }],
   });
-  {
-    b.box(38.0, 0.12, Z(12.0), 1.0, 0.95, 2.2, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
-    b.box(42.5, 0.12, Z(14.0), 1.8, 0.76, 1.0, 'wood_planks', { tint: '#9a7a52', minimap: 'cover' });
-    b.box(39.5, 3.2, Z(12.4), 2.0, 0.55, 0.9, 'tarp', { tint: '#b8a888', minimap: 'cover' });
-    b.box(44.6, 3.2, Z(11.0), 1.4, 1.8, 0.5, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
-  }
+  // Möblierung EP1 (Kartenrunde 2): Wohnküche im EG (Durchgang West–Ost frei), Schlafzimmer im OG
+  withRng(b, 0x51c3 + (south ? 0 : 7), () => {
+    kitchen(b, 40.5, G0, Z(9.6), M.ry(0), { len: 2.4 });
+    ceilingLamp(b, 40.5, C0, Z(10.7));
+    table(b, 41.0, G0, Z(12.3), { w: 1.6, d: 0.9, cloth: '#efe6d4' });
+    tableChairs(b, 41.0, G0, Z(12.3), { w: 1.6, d: 0.9, n: 2 });
+    pendant(b, 41.0, C0, Z(12.3), { tint: '#8a3a2a' });
+    dresser(b, 35.54, G0, Z(10.1), M.ry(Math.PI / 2), { w: 1.2 });
+    shelf(b, 37.2, G0, Z(20.49), M.ry(Math.PI), { w: 1.4, goods: 'jars' });
+    armchair(b, 36.3, G0, Z(18.7), M.ry(Math.PI / 2 + 0.6), '#3c6a5a');
+    ceilingLamp(b, 38.5, C0, Z(17.0));
+    // OG
+    bed(b, 41.2, G1, Z(10.35), M.ry(0), { w: 1.4, tint: '#a8806f' });
+    nightstand(b, 39.95, G1, Z(9.52), M.ry(0)); nightstand(b, 42.45, G1, Z(9.52), M.ry(0));
+    wardrobe(b, 45.41, G1, Z(12.0), M.ry(-Math.PI / 2), { w: 1.2 });
+    table(b, 35.6, G1, Z(14.8), { w: 1.2, d: 0.6, ry: Math.PI / 2 });
+    tableChairs(b, 35.6, G1, Z(14.8), { w: 1.2, d: 0.6, n: 1, sides: [1], ry: Math.PI / 2 });
+    shelf(b, 37.0, G1, Z(20.51), M.ry(Math.PI), { w: 1.2, goods: 'books' });
+    rug(b, 40.6, G1, Z(14.6), 2.4, 1.6, 0, '#6a4a6a');
+    pendant(b, 40.8, C1, Z(14.2), { tint: '#2f5f4a' });
+  });
   // Absprung-Kante zum Werkstattdach
   b.navPoint(40.8, 3.8, Z(7.6));
   const ep2 = house(b, M, {
@@ -1158,8 +1382,15 @@ function half(b, M) {
     gaps: [{ side: 'n', a: 35.6, b: 45.4 }, { side: 'w', a: 29.3, b: 30.9 }, { side: 's', a: 39.05, b: 40.35 }],
     ac: [{ side: 'w', at: 4.6, y: 5.2 }],
   });
-  b.box(41.0, 0.12, Z(24.5), 2.6, 0.9, 1.0, 'wood_planks', { tint: '#8a6a4a', minimap: 'cover' });
   crateStack(b, 43.8, Z(30.6), { y: 0.12, ry: 0.2 });
+  // EP2 EG (Kartenrunde 2): Lager des Krämers – Packtisch, Regale mit Kisten und Gläsern, Säcke
+  withRng(b, 0x51f6 + (south ? 0 : 7), () => {
+    table(b, 41.0, G0, Z(24.5), { w: 2.4, d: 0.95, h: 0.9, tint: '#8a6a4a' });
+    shelf(b, 45.51, G0, Z(25.5), M.ry(-Math.PI / 2), { w: 1.8, goods: 'boxes' });
+    shelf(b, 38.6, G0, Z(21.49), M.ry(0), { w: 1.8, goods: 'jars' });
+    sacks(b, 37.0, G0, Z(31.6), 0, 6, '#cbb894');
+    ceilingLamp(b, 40.0, C0, Z(25.0)); ceilingLamp(b, 41.0, C0, Z(30.5));
+  });
   // EP3: eingeschossig, Dachterrasse per Außentreppe vom Startbereich
   const ep3 = house(b, M, {
     x0: 35, x1: 46, z0: 33, z1: 42, floors: 1, fh: 3.4, roof: 'terrace', color: south ? '#f0dcc2' : '#ecd3c4', closed: true,
@@ -1184,7 +1415,10 @@ function half(b, M) {
   // ===== Startbereich + Stadtmauer ===========================================
   cityWall(b, M);
   spawnDeco(b, M);
-  eastBlock(b, M);   // maps-expand: Ostviertel (Gasse, Eckhaus, Hof, Dachhaus, Hintergasse)
+  const h2 = eastBlock(b, M);   // maps-expand: Ostviertel (Gasse, Eckhaus, Hof, Dachhaus, Hintergasse)
+
+  // ===== Grills auf den Dachterrassen (eigener Zufall: die übrige Karte bleibt unverändert) =====================
+  withRng(b, 0x6a11 + (south ? 1 : 2), () => roofGrills(b, M, { wm2, em2, ep2, h2 }));
 }
 
 /** Kleiner Palettenstapel mit Säcken (für Innenräume). */
@@ -1208,6 +1442,85 @@ function terraceDeco(b, M, h, o) {
   const ax = h.x0 + 0.8, az = h.z0 + 0.8;
   b.cyl(ax, y, az, 0.025, 2.2, 'metal_galvanized', { seg: 5, collide: false, minimap: false, ao: false });
   b.box(ax, y + 1.9, az, 1.0, 0.03, 0.03, 'metal_galvanized', { collide: false, minimap: false, ao: false, ry: 0.4 });
+}
+
+// --- Grills auf den Dachterrassen --------------------------------------------------
+const grillGeo = {};
+/** Kugelgrill-Schale (untere Halbkugel) und Deckel (flache Kuppel), einmal erzeugt. */
+function kettleGeoms() {
+  if (!grillGeo.bowl) {
+    grillGeo.bowl = new THREE.SphereGeometry(0.3, 12, 4, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+    grillGeo.lid = new THREE.SphereGeometry(0.305, 12, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+  }
+  return grillGeo;
+}
+
+/** Kugelgrill (Holzkohle) auf drei Beinen mit Aschenteller, Deckel zu; Kollision als Quader (bewegt sich nicht). */
+function kettleGrill(b, x, y, z, ry, o = {}) {
+  const f = frame(b, x, y, z, ry), V = { collide: false, minimap: false, grad: false };
+  const col = o.color || '#1d1f22', H = 0.66, g = kettleGeoms();
+  f.geom(g.bowl, 0, H, 0, 'metal_painted', { ...V, tint: col, uv: 'world' });
+  f.geom(g.lid, 0, H + 0.004, 0, 'metal_painted', { ...V, tint: col, uv: 'world', sy: 0.82 });
+  f.cyl(0, H - 0.01, 0, 0.307, 0.025, 'metal_galvanized', { ...V, seg: 12, caps: false, ao: false });
+  f.cyl(0, H + 0.245, 0, 0.05, 0.02, 'metal_galvanized', { ...V, seg: 8, ao: false });
+  for (const sx of [-0.08, 0.08]) f.box(sx, H + 0.24, 0.0, 0.02, 0.06, 0.02, 'metal_galvanized', { ...V, ao: false });
+  f.box(0, H + 0.3, 0, 0.22, 0.035, 0.045, 'wood_dark', { ...V, tint: '#3a2a1e' });
+  f.box(0.31, H - 0.06, 0, 0.03, 0.03, 0.16, 'wood_dark', { ...V, tint: '#3a2a1e' });
+  for (let i = 0; i < 3; i++) {
+    const a = 0.5 + (i * Math.PI * 2) / 3, lx = Math.cos(a) * 0.31, lz = Math.sin(a) * 0.31;
+    f.cyl(lx, 0, lz, 0.014, H - 0.02, 'metal_galvanized', { ...V, seg: 5, caps: false, ry: -a, rz: 0.22, ao: false });
+  }
+  f.cyl(0, 0.2, 0, 0.13, 0.03, 'metal_galvanized', { ...V, seg: 8, ao: false });
+  f.solid(0, 0, 0, 0.66, 0.96, 0.66, { minimap: 'prop', bullet: false });
+}
+
+/** Klapptisch neben dem Grill: Teller, Grillzange, Flasche. */
+function grillTable(b, x, y, z, ry) {
+  const f = frame(b, x, y, z, ry), V = { collide: false, minimap: false, grad: false };
+  f.box(0, 0.7, 0, 0.62, 0.03, 0.42, 'wood_planks', { ...V, tint: '#a07a52' });
+  for (const sx of [-0.27, 0.27]) for (const sz of [-0.17, 0.17]) f.box(sx, 0, sz, 0.025, 0.7, 0.025, 'metal_painted', { ...V, tint: IRON, ao: false });
+  f.cyl(-0.12, 0.73, 0.03, 0.11, 0.015, 'white', { ...V, seg: 12, tint: '#efe9dc', ao: false });
+  f.box(0.12, 0.73, -0.04, 0.03, 0.012, 0.3, 'metal_galvanized', { ...V, ry: 0.35, ao: false });
+  f.cyl(0.2, 0.73, 0.12, 0.035, 0.24, 'glass', { ...V, seg: 8, tint: '#3a6a3a', ao: false });
+  f.solid(0, 0, 0, 0.64, 0.75, 0.44, { minimap: 'prop', bullet: false });
+}
+
+/** Gemauerter Grill mit Rost, Rauchfang und Schornstein; Rückseite an einer Brüstung (lokal −z), Holzstapel daneben. */
+function brickGrill(b, x, y, z, ry) {
+  const f = frame(b, x, y, z, ry), V = { collide: false, minimap: false, grad: false };
+  const W = 1.3, D = 0.62, BR = '#b46e52', CAP = '#d8ccb2';
+  f.box(0, 0, 0, W, 0.82, D, 'brick', { tint: BR, ...V });
+  f.box(0, 0.28, D / 2 + 0.004, 0.72, 0.38, 0.02, 'black', { ...V, ao: false });
+  f.box(0, 0.82, 0, W + 0.1, 0.06, D + 0.08, 'stone_wall', { tint: CAP, ...V });
+  f.box(0, 0.88, 0.05, 0.74, 0.03, 0.42, 'black', { ...V, ao: false });
+  for (let i = 0; i < 8; i++) f.box(-0.35 + i * 0.1, 0.93, 0.05, 0.012, 0.012, 0.46, 'metal_galvanized', { ...V, ao: false });
+  for (const s of [-1, 1]) f.box(0, 0.93, 0.05 + s * 0.23, 0.74, 0.015, 0.015, 'metal_galvanized', { ...V, ao: false });
+  for (const sx of [-1, 1]) f.box(sx * (W / 2 - 0.12), 0.88, -0.02, 0.24, 0.62, D - 0.04, 'brick', { tint: BR, ...V });
+  f.box(0, 0.88, -D / 2 + 0.08, W - 0.48, 0.62, 0.14, 'brick', { tint: BR, ...V });
+  f.box(0, 1.5, -0.03, W, 0.3, D - 0.06, 'brick', { tint: BR, ...V });
+  f.box(0, 1.8, -0.06, 0.4, 0.6, 0.36, 'brick', { tint: BR, ...V });
+  f.box(0, 2.4, -0.06, 0.52, 0.05, 0.48, 'stone_wall', { tint: CAP, ...V });
+  f.box(0, 1.5, D / 2 - 0.08, W + 0.04, 0.05, 0.06, 'stone_wall', { tint: CAP, ...V });
+  // Holzstapel + Kohlesack (flach, ohne Kollision)
+  for (let i = 0; i < 5; i++) f.cyl(W / 2 + 0.3 + (i % 3) * 0.13 - (i >= 3 ? -0.065 : 0), 0.06 + (i >= 3 ? 0.11 : 0), -0.05, 0.055, 0.5, 'wood_dark', { ...V, axis: 'z', seg: 6, tint: '#8a6a4a', ao: false });
+  f.box(-W / 2 - 0.28, 0, 0.0, 0.34, 0.48, 0.2, 'tarp', { ...V, tint: '#3a3a36', rx: -0.12 });
+  f.solid(0, 0, 0, W + 0.1, 2.0, D + 0.08, { minimap: 'cover', bullet: false });
+}
+
+/**
+ * Grills auf begehbaren Dachterrassen (eigener Zufall, Südkoordinaten über M gespiegelt): Kugelgrill + Tisch auf WM2,
+ * EM2 und dem Dachhaus im Ostviertel, gemauerter Grill an der Ostbrüstung von EP2. Abseits der Treppen-/Brückenzugänge.
+ */
+function roofGrills(b, M, h) {
+  const Z = M.z, south = M.s > 0, y = (r) => r.roofY + 0.025;
+  kettleGrill(b, -19.6, y(h.wm2), Z(24.3), 0.3, { color: south ? '#1d1f22' : '#7a2420' });
+  grillTable(b, -20.75, y(h.wm2), Z(23.3), M.ry(0));
+  chair(b, -21.3, Z(24.6), { y: y(h.wm2), ry: M.ry(-Math.PI / 2 - 0.3), tint: '#3c7a5a', model: true });
+  kettleGrill(b, 28.3, y(h.em2), Z(35.4), -0.4, { color: south ? '#7a2420' : '#1d1f22' });
+  grillTable(b, 29.35, y(h.em2), Z(36.55), M.ry(Math.PI));
+  brickGrill(b, 45.4, y(h.ep2), Z(30.4), -Math.PI / 2);
+  kettleGrill(b, 54.3, y(h.h2), Z(31.4), 1.1, { color: '#2a3f5c' });
+  chair(b, 55.5, Z(32.3), { y: y(h.h2), ry: M.ry(Math.PI * 0.85), tint: '#c8402f', model: true });
 }
 
 /** Gemauerte Bogenbrücke zwischen zwei Dachterrassen über die Ostgasse. */
@@ -1241,6 +1554,15 @@ function shopInterior(b, M, kind) {
   // Hinterzimmer
   crateStack(b, -44.6, Z(19.0), { y: 0.12, ry: 0.1, pattern: [[0, 0, 0, 0.9], [0, 0, 1.0, 0.9], [0, 1, 0.5, 0.8]] });
   b.box(-44.8, 0.12, Z(25.6), 1.2, 0.9, 1.6, 'wood_planks', { tint: '#8a6a4a', minimap: 'cover' });
+  // Kartenrunde 2: Ladenleuchten, Regal + Säcke im Hinterzimmer
+  withRng(b, 0x5218 + (M.s > 0 ? 0 : 7), () => {
+    const lt = kind === 'spice' ? '#9a4b2a' : '#2a5d7c';
+    pendant(b, -40.3, C0, Z(19.2), { tint: lt }); pendant(b, -40.3, C0, Z(24.6), { tint: lt });
+    ceilingLamp(b, -44.2, C0, Z(22.0));
+    shelf(b, -45.51, G0, Z(22.0), M.ry(Math.PI / 2), { w: 1.6, goods: kind === 'spice' ? 'jars' : 'cloth' });
+    if (kind === 'spice') sacks(b, -43.3, G0, Z(17.1), 0, 4, '#c9a878');
+    else rug(b, -40.2, G0, Z(21.6), 2.2, 1.3, 0, '#9a2a2a');
+  });
 }
 
 function cafe(b, M, h) {
@@ -1254,9 +1576,17 @@ function cafe(b, M, h) {
   b.box(-14.6, 1.22, Z(17.2), 0.5, 0.4, 0.4, 'metal_galvanized', { collide: false, minimap: false, grad: false });
   // Tische drinnen
   for (const [x, z] of [[-10.6, 16.0], [-8.2, 19.6], [-11.2, 20.6]]) cafeTable(b, x, Z(z), { y: 0.12, chairs: 2, chairTint: '#2f2f2f' });
-  b.sign(-11.0, 2.7, Z(13) - 0.03 * M.s, 3.6, 0.6, 'cafe', { ry: M.ry(Math.PI), depth: 0.03 });
+  // Schild über dem Geschossband links vom Balkon (vorher hinter der Markise verborgen)
+  b.sign(-14.0, 3.31, Z(13) - 0.03 * M.s, 2.3, 0.44, 'cafe', { ry: M.ry(Math.PI), depth: 0.03 });
   b.sign(-6.0 + 0.03, 1.2, Z(19.5), 0.9, 1.1, 'menu', { ry: Math.PI / 2, depth: 0.02 });
   b.light('point', -11.0, 2.6, Z(18.5), { color: '#ffd6a0', intensity: 9, distance: 9 });
+  // Kartenrunde 2: Leuchte zum Echtzeitlicht + Pendelleuchten über den Tischen (gebacken), Bild, Pflanze
+  withRng(b, 0x5229, () => {
+    ceilingLamp(b, -11.0, C0, Z(18.5), { light: false });
+    for (const [x, z] of [[-10.6, 16.0], [-8.2, 19.6]]) pendant(b, x, C0, Z(z), { tint: '#1f5f8a', intensity: 7, drop: 0.85 });
+    picture(b, -6.31, 1.4, Z(16.2), -Math.PI / 2, 0.9, 0.6, '#b8783a');
+    pot(b, -6.75, G0, Z(23.2), { r: 0.32, h: 0.5 });
+  });
   // Terrasse auf dem Platz mit Sonnenschirmen + Pflanzkübeln (Deckung)
   awning(b, -11.0, 3.0, Z(13.0) - 0.1 * M.s, 9.0, 2.6, { ry: M.ry(Math.PI), design: 1, drop: 0.6 });
   for (const [x, z] of [[-13.6, 10.6], [-10.2, 10.2], [-6.8, 10.8]]) cafeTable(b, x, Z(z), { chairs: 3, chairTint: '#2f6f9a', chairModel: true });
@@ -1270,10 +1600,19 @@ function pension(b, M, h) {
   b.box(-14.8, 0.12, Z(17.0), 0.9, 1.05, 3.0, 'wood_dark', { tint: '#4a3426', minimap: 'cover' });
   b.box(-15.6, 1.2, Z(17.0), 0.1, 1.2, 1.6, 'wood_dark', { tint: '#6a4a32', collide: false, minimap: false, grad: false });
   for (let i = 0; i < 8; i++) b.box(-15.54, 1.3 + Math.floor(i / 4) * 0.5, Z(16.4 + (i % 4) * 0.4), 0.02, 0.08, 0.05, 'metal_painted', { tint: '#b08a3a', collide: false, minimap: false, ao: false });
-  b.box(-9.0, 0.12, Z(21.8), 2.6, 0.85, 0.9, 'tarp', { tint: '#8a4a3a', minimap: 'cover' });
   b.box(-11.2, 0.12, Z(16.5), 1.2, 0.5, 1.2, 'wood_planks', { tint: '#9a7a52', minimap: 'cover' });
+  // Kartenrunde 2: Sitzecke (zwei Sessel + Tischchen) statt des Polsterklotzes, Leuchten, Teppich, Bild
+  withRng(b, 0x523a, () => {
+    rug(b, -10.6, G0, Z(22.7), 3.0, 1.6, 0, '#6a2a2a');
+    armchair(b, -11.7, G0, Z(22.9), M.ry(Math.PI / 2), '#8a4a3a');
+    armchair(b, -9.5, G0, Z(22.9), M.ry(-Math.PI / 2), '#8a4a3a');
+    table(b, -10.6, G0, Z(22.9), { w: 0.6, d: 0.6, h: 0.45, tint: '#6a4a32' });
+    pendant(b, -10.6, C0, Z(22.6), { tint: '#b08a3a', intensity: 8 });
+    ceilingLamp(b, -12.5, C0, Z(17.2));
+    picture(b, -6.31, 1.45, Z(16.5), -Math.PI / 2, 0.8, 0.55, '#3c6a8a');
+  });
   pot(b, -7.0, 0.12, Z(14.0), { r: 0.35, h: 0.6 });
-  b.sign(-11.0, 2.7, Z(13) - 0.03 * M.s, 3.6, 0.6, 'pension', { ry: M.ry(Math.PI), depth: 0.03 });
+  b.sign(-14.0, 3.31, Z(13) - 0.03 * M.s, 2.3, 0.44, 'pension', { ry: M.ry(Math.PI), depth: 0.03 });
   awning(b, -13.6, 2.9, Z(13.0) - 0.1 * M.s, 3.2, 1.4, { ry: M.ry(Math.PI), design: 2 });
   // Vorplatz: Zeitungskiosk + Moped + Kübel
   b.box(-12.4, 0, Z(9.4), 1.6, 2.2, 1.4, 'metal_painted', { tint: '#2f5f4a', minimap: 'cover' });
@@ -1288,20 +1627,23 @@ function bakery(b, M, h, south) {
   const Z = M.z;
   b.box(10.0, 0.12, Z(16.6), 3.4, 1.0, 0.8, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
   b.box(10.0, 1.12, Z(16.6), 3.5, 0.05, 0.9, 'stone_wall', { tint: '#efe8da', collide: false, minimap: false, grad: false });
-  // Regal + Brote / Medizinschrank
-  b.box(10.4, 0.12, Z(22.4), 4.2, 2.1, 0.6, 'wood_dark', { tint: '#7a5a40', minimap: 'cover' });
-  for (let i = 0; i < 16; i++) b.geom(lowSphereGeom(), 8.6 + (i % 8) * 0.5, 0.75 + Math.floor(i / 8) * 0.6, Z(22.2), 'wood_crate', { sx: 0.2, sy: 0.12, sz: 0.14, tint: south ? '#c98a4a' : '#e8e4dc', collide: false, minimap: false, ao: false, bullet: false });
+  // Regal mit Broten / Arzneischrank (Kartenrunde 2: offenes Regal an der Rückwand statt Klotz mit davorschwebenden Broten)
+  withRng(b, 0x524b, () => {
+    shelf(b, 10.4, G0, Z(23.42), M.ry(Math.PI), { w: 4.0, h: 2.1, d: 0.56, n: 5, goods: south ? 'bread' : 'pharma', tint: south ? '#7a5a40' : '#e8e4dc' });
+    pendant(b, 10.0, C0, Z(17.6), { tint: south ? '#9a4b2a' : '#1f7a46' }); pendant(b, 10.6, C0, Z(21.2), { tint: south ? '#9a4b2a' : '#1f7a46' });
+    if (south) sacks(b, 13.9, G0, Z(21.7), 0, 4, '#ece6da');
+  });
   if (south) {
     // Ofen
     b.box(13.8, 0.12, Z(19.0), 1.6, 1.8, 2.2, 'brick', { tint: '#c8a080', minimap: 'cover' });
     b.box(13.0, 0.7, Z(19.0), 0.05, 0.5, 0.9, 'black', { collide: false, minimap: false, ao: false });
     b.box(13.0, 0.75, Z(19.0), 0.06, 0.4, 0.8, 'lamp_sodium', { collide: false, minimap: false, ao: false, cast: false });
   } else b.box(13.6, 0.12, Z(19.0), 1.4, 1.0, 2.2, 'metal_painted', { tint: '#e8e8e2', minimap: 'cover' });
-  b.sign(10.5, 2.7, Z(13) - 0.03 * M.s, 3.4, 0.6, south ? 'bakery' : 'pharmacy', { ry: M.ry(Math.PI), depth: 0.03 });
+  b.sign(10.5, 3.31, Z(13) - 0.03 * M.s, 2.6, 0.46, south ? 'bakery' : 'pharmacy', { ry: M.ry(Math.PI), depth: 0.03 });
   awning(b, 8.6, 2.95, Z(13.0) - 0.1 * M.s, 3.2, 1.3, { ry: M.ry(Math.PI), design: south ? 3 : 1 });
   // Brotkörbe / Bank vor dem Laden
   if (south) basketRow(b, 13.6, Z(11.6), 0, 2);
-  else bench(b, 12.6, Z(11.8), { ry: M.ry(Math.PI) });
+  else parkBench(b, 12.6, Z(11.8), { ry: M.ry(Math.PI) });
   // N-S-Gasse x 15..19 (zwischen Laden und EM1)
   crateStack(b, 16.2, Z(19.5), { ry: 0.2, pattern: [[0, 0, 0, 0.9], [0, 1, 0, 0.8]] });
   pot(b, 18.4, 0, Z(14.6), { r: 0.3 });
@@ -1322,7 +1664,8 @@ function squareCover(b, M, south) {
   sandbags(b, -15.6, Z(23.0), -15.6, Z(25.7), { rows: 4 });
   barrelGroup(b, 12.8, Z(32.4), { n: 3, colors: ['#8a3a2a', '#3a6f8a'] });
   planter(b, 3.4, Z(32.6), 2.4, 1.0, { h: 0.8 });
-  palm(b, -14.6, Z(32.6), { h: 6.5 });
+  // Palme mit Abstand zu WM2 und zum Haus am Startbereich (Wedel steckten in Wand, Brüstung und Dach)
+  palm(b, -12.6, Z(30.2), { h: 6.5, s: 0.85 }); b.rand();
   for (let i = 0; i < 6; i++) b.decal(b.rnd(-15, 14), 0.012, Z(b.rnd(24.5, 33.5)), b.rnd(1, 2.5), b.rnd(1, 2.5), b.pick(['stain', 'leaves', 'cracks']), { opacity: 0.7 });
   b.decal(-5, 0.013, Z(29), 3.0, 2.0, 'sanddrift', { opacity: 0.6 });
 }
@@ -1347,6 +1690,8 @@ function cityWall(b, M) {
   // Seitenmauern am Startbereich
   for (const sx of [-1, 1]) b.boxMM(sx < 0 ? -46.6 : 68.4, 0, Math.min(Z(42), zc), sx < 0 ? -45.4 : 69.6, H, Math.max(Z(42), zc), mat, { tint, minimap: 'wall' });
   b.sign(0, 5.0, zi + s * 0.02, 4.4, 1.0, south ? 'gate_s' : 'gate_n', { ry: M.ry(Math.PI), back: false, depth: 0 });
+  // Torlaternen beidseits des Tors (Innenseite, abends an)
+  for (const x of [-3.7, 3.7]) wallLamp(b, x, 3.3, zi - s * 0.02, M.ry(Math.PI));
   // Strebepfeiler + Wappen
   for (const x of [-30, -14, 14, 30, 54]) b.box(x, 0, zi - s * 0.35, 1.2, 5.2, 0.7, mat, { tint: '#cdbd9c', minimap: 'cover' });
   // Kulisse jenseits der Mauer (Türme)
@@ -1358,14 +1703,16 @@ function cityWall(b, M) {
 
 function spawnDeco(b, M) {
   const Z = M.z, south = M.s > 0;
+  // Kartenrunde 2: Bäume weiter von der Stadtmauer (Kronen ragten durch Mauer und Zinnen) und zwischen die Startplätze
   if (south) {
-    for (const x of [-34, -10, 10, 22]) palm(b, x, Z(50.4), { h: 6.5 + b.rand() * 1.5 });
+    // feste Kronengröße (s): die frühere Zufallszahl dafür wird verworfen → übriger Kartenzufall unverändert
+    for (const x of [-37, -18.8, 9, 27]) { palm(b, x, Z(47.7), { h: 6.5 + b.rand() * 1.5, s: 0.82 }); b.rand(); }
     car(b, -20.5, Z(45.6), { style: 'sedan', ry: Math.PI / 2 + 0.05, color: '#2f4f6e' });
     jerseyLike(b, 8.4, Z(44.6), 0.2);
     crateStack(b, 33.5, Z(45.2), { ry: 0.4 });
-    bench(b, -4.0, Z(50.4), { ry: M.ry(Math.PI) });
+    parkBench(b, -4.0, Z(50.4), { ry: M.ry(Math.PI) });
   } else {
-    for (const x of [-26, -8, 8, 30]) tree(b, x, Z(50.4), { kind: 'olive', h: 2.8 });
+    for (const x of [-26, -8, 8, 27]) { tree(b, x, Z(48.4), { kind: 'olive', h: 2.8, s: 0.82 }); b.rand(); }
     van(b, 20.5, Z(46.0), { ry: Math.PI / 2 - 0.05, color: '#e8e4dc' });
     jerseyLike(b, -9.0, Z(44.6), -0.2);
     crateStack(b, -33.5, Z(45.2), { ry: -0.4 });
@@ -1405,9 +1752,31 @@ function eastBlock(b, M) {
     ],
     stairsIn: { x: 60.6, z: 18.6, dir: 'w', w: 1.1, open: 'right' },
   });
-  b.box(55.0, 0.12, Z(15.6), 1.8, 0.76, 1.0, 'wood_planks', { tint: '#9a7a52', minimap: 'cover' });
-  b.box(53.0, 0.12, Z(11.2), 1.0, 0.95, 2.0, 'wood_dark', { tint: '#6a4a32', minimap: 'cover' });
-  b.box(58.6, 3.32, Z(11.0), 2.0, 0.55, 0.9, 'tarp', { tint: '#b8a888', minimap: 'cover' });
+  // Dachterrasse des Eckhauses hat keinen Zugang → keine Navigationspunkte (vorher: „nicht erreichbare Fläche“ bei 52,8 / 6,4)
+  b.noNav(51.5, Math.min(Z(9), Z(19.5)), 62, Math.max(Z(9), Z(19.5)), h1.roofY - 0.6, 40);
+  // Kartenrunde 2: EG Weinstube (Theke, Flaschenregal, Fässer, zwei Tische), OG Schlafzimmer – vorher schwebte im OG
+  // ein „Bett“ 10 cm über dem Boden
+  withRng(b, 0x526d + (south ? 0 : 7), () => {
+    b.box(60.35, G0, Z(11.6), 0.6, 1.02, 2.6, 'wood_dark', { tint: '#4a3426', minimap: 'cover' });
+    b.box(60.35, G0 + 1.02, Z(11.6), 0.72, 0.05, 2.72, 'stone_wall', { tint: '#e6dcc8', collide: false, minimap: false, grad: false });
+    shelf(b, 61.51, G0, Z(11.6), M.ry(-Math.PI / 2), { w: 1.8, h: 2.0, n: 5, goods: 'bottles' });
+    barrelRack(b, 57.0, G0, Z(9.75), M.ry(0), 3);
+    for (const [tx, tz] of [[54.4, 15.8], [57.8, 15.6]]) {
+      table(b, tx, G0, Z(tz), { w: 0.85, d: 0.85, cloth: '#c8402f' });
+      tableChairs(b, tx, G0, Z(tz), { w: 0.85, d: 0.85, n: 1 });
+      pendant(b, tx, C0, Z(tz), { tint: '#b08a3a', intensity: 8 });
+    }
+    ceilingLamp(b, 58.6, C0, Z(11.8));
+    picture(b, 51.81, 1.45, Z(15.6), Math.PI / 2, 0.9, 0.6, '#6a3a2a');
+    // OG
+    bed(b, 52.83, G1, Z(14.05), Math.PI / 2, { w: 1.4, tint: south ? '#6f86a8' : '#8a6aa8' });
+    nightstand(b, 52.0, G1, Z(12.85), Math.PI / 2); nightstand(b, 52.0, G1, Z(15.25), Math.PI / 2);
+    wardrobe(b, 56.8, G1, Z(9.59), M.ry(0), { w: 1.4 });
+    shelf(b, 61.51, G1, Z(13.0), M.ry(-Math.PI / 2), { w: 1.2, goods: 'books' });
+    armchair(b, 60.6, G1, Z(15.6), M.ry(-Math.PI / 2 - 0.5), '#7a3a2a');
+    rug(b, 55.6, G1, Z(14.2), 2.2, 1.6, 0, '#3a5a7a');
+    pendant(b, 56.2, C1, Z(13.8), { tint: '#2f5f4a' });
+  });
   // Durchgang Hof ↔ Hintergasse (z 19,5..21,5) + Hof mit Mäuerchen, Olivenbaum, Trog, Karren
   lowWall(b, 51.5, Z(21.5), 51.5, Z(24.0), { h: 1.1 });
   lowWall(b, 51.5, Z(26.6), 51.5, Z(29.2), { h: 1.1 });
@@ -1450,37 +1819,64 @@ function eastBlock(b, M) {
   crateStack(b, 66.4, Z(43.2), { ry: 0.3 * M.s });
   if (south) car(b, 62.0, Z(45.0), { style: 'sedan', ry: Math.PI / 2 + 0.05, color: '#b98b3a' });
   else { b.box(61.6, 0, Z(45.0), 2.6, 0.75, 1.0, 'stone_wall', { tint: '#d8ccb2', minimap: 'cover' }); handcart(b, 64.6, Z(45.2), M.ry(1.2)); }
-  for (const x of [52, 65]) (south ? palm(b, x, Z(50.4), { h: 6.2 }) : tree(b, x, Z(50.4), { kind: 'olive', h: 2.8 }));
+  for (const x of [52, 65]) { (south ? palm(b, x, Z(47.8), { h: 6.2, s: 0.82 }) : tree(b, x, Z(48.4), { kind: 'olive', h: 2.8, s: 0.82 })); b.rand(); }
+  return h2;
 }
 
 /** Ölbaumplatz (x 50..69, z −8..8): Brunnen, Pflanztröge, Bänke, Café-Tische – Deckung in Brust- und Kniehöhe. */
-function eastSquare(b) {
+function eastSquare(b, ctx) {
   b.boxMM(68.6, 0, -8, 69.4, 6.4, 8, 'stone_wall', { tint: '#d9c9a8', minimap: 'wall' });
   arch(b, 68.55, 2.4, 0, 3.4, 0.9, 1.0, 0.3, 'stone_wall', { ry: Math.PI / 2, tint: '#cdbd9c' });
-  b.cyl(59.5, 0, 0, 1.9, 0.75, 'stone_wall', { seg: 16, tint: '#dccdb2', minimap: 'cover' });
-  b.cyl(59.5, 0.6, 0, 1.6, 0.06, 'metal_painted', { seg: 16, tint: '#35606a', collide: false, minimap: false, ao: false });
-  b.cyl(59.5, 0, 0, 0.35, 1.7, 'stone_wall', { seg: 10, tint: '#e3d6bd', minimap: false });
-  b.cyl(59.5, 1.7, 0, 0.6, 0.18, 'stone_wall', { seg: 10, tint: '#e3d6bd', collide: false, minimap: false });
+  // Brunnen (Kartenrunde 2): offenes Becken mit Wasser – vorher lag die „Wasserscheibe“ im Vollzylinder verborgen.
+  // Beckenrand 0,75 m (Deckung wie bisher) mit Kollision wie sichtbar, Beckenboden 0,35 m; Wasser fällt in vier Bahnen
+  // von der Schale am Aufsatz.
+  const FX = 59.5, RB = 1.9, TB = 0.26, HB = 0.75, WY = 0.62;
+  const sideB = 2 * RB * Math.tan(Math.PI / 16);
+  for (let i = 0; i < 16; i++) {
+    const a = (i * Math.PI) / 8, ry = Math.atan2(-Math.cos(a), -Math.sin(a));
+    b.box(FX + Math.cos(a) * (RB - TB / 2), 0, Math.sin(a) * (RB - TB / 2), sideB + 0.02, HB - 0.07, TB, 'stone_wall', { ry, tint: '#dccdb2', minimap: 'cover', uv: 'local' });
+    b.box(FX + Math.cos(a) * (RB - TB / 2 + 0.02), HB - 0.07, Math.sin(a) * (RB - TB / 2 + 0.02), sideB + 0.08, 0.07, TB + 0.1, 'stone_wall', { ry, tint: '#ece3d0', minimap: false, grad: false });
+  }
+  b.cyl(FX, 0, 0, RB - TB + 0.02, 0.35, 'stone_wall', { seg: 16, tint: '#6f7a72', minimap: false });
+  const wq = ctx.water({ x0: FX - 1, z0: -1, x1: FX + 1, z1: 1, y: WY, color: '#2f6a6e', scale: 2.5 });
+  const gq = new THREE.CircleGeometry(RB - TB + 0.02, 24);
+  gq.rotateX(-Math.PI / 2); gq.translate(FX, WY, 0);
+  const pq = gq.attributes.position, uq = gq.attributes.uv;
+  for (let i = 0; i < pq.count; i++) uq.setXY(i, pq.getX(i) / 2.5, -pq.getZ(i) / 2.5);
+  wq.mesh.geometry.dispose(); wq.mesh.geometry = gq;
+  b.cyl(FX, 0, 0, 0.35, 1.7, 'stone_wall', { seg: 10, tint: '#e3d6bd', minimap: false });
+  b.cyl(FX, 1.7, 0, 0.6, 0.18, 'stone_wall', { seg: 10, tint: '#e3d6bd', collide: false, minimap: false });
+  b.cyl(FX, 1.88, 0, 0.12, 0.26, 'stone_wall', { seg: 8, r1: 0.08, tint: '#e3d6bd', collide: false, minimap: false });
+  b.geom(sphereGeom(), FX, 2.2, 0, 'stone_wall', { sx: 0.13, sy: 0.15, sz: 0.13, tint: '#e3d6bd', collide: false, minimap: false, ao: false });
+  const sheets = [], jets = [];
+  for (let i = 0; i < 4; i++) {
+    const am = (i * Math.PI) / 2 + Math.PI / 4;
+    sheets.push({ x: FX, z: 0, r0: 0.61, y0: 1.875, yEnd: WY, v: 0.26, a0: am - 0.28, a1: am + 0.28 });
+    jets.push({ from: [FX + Math.sin(am) * 0.12, 2.12, Math.cos(am) * 0.12], dir: [Math.sin(am), Math.cos(am)], v: 0.9, vy: 0.45, yEnd: 1.885, r0: 0.01, r1: 0.016, strands: 2, splash: 0 });
+  }
+  const water = fountainWater(b, { jets, sheets, pools: [{ x: FX, z: 0, y: WY + 0.004, r: RB - TB, seg: 24 }] });
+  b.noNav(FX - 1.6, -1.6, FX + 1.6, 1.6, -1, 3);
   for (const s of [1, -1]) {
     planter(b, 53.6, 5.4 * s, 2.4, 1.0, { tree: s > 0 ? 'olive' : undefined });
     planter(b, 66.4, 4.6 * s, 1.0, 2.4, {});
-    bench(b, 56.6, 6.9 * s, { ry: s > 0 ? Math.PI : 0 });
+    parkBench(b, 56.6, 6.9 * s, { ry: s > 0 ? Math.PI : 0 });
     lowWall(b, 62.6, 7.6 * s, 65.2, 7.6 * s, { h: 0.95 });
   }
   cafeTable(b, 64.3, 1.6, {}); cafeTable(b, 64.6, -1.8, {});
   parasol(b, 64.4, -0.1, {});
   marketStall(b, 52.4, 0, { ry: Math.PI / 2 });
-  ornateLamp(b, 62.5, 5.6);
-  ornateLamp(b, 56.0, -5.6);
+  ornateLamp(b, 62.5, 5.6, { realtime: 'ultra' });
+  ornateLamp(b, 56.0, -5.6, { realtime: 'ultra' });
   b.sign(68.58, 2.6, 0, 1.5, 0.42, 'st_dach', { ry: -Math.PI / 2, depth: 0.02 });
+  return water;
 }
 
 function jerseyLike(b, x, z, ry) {
-  // Steinbank / Pflanztrog als Deckung im Startbereich
-  b.box(x, 0, z, 3.0, 0.8, 0.8, 'stone_wall', { ry, tint: '#ddd0b4', minimap: 'cover' });
-  b.box(x, 0.8, z, 3.1, 0.06, 0.9, 'plaster_white', { ry, tint: '#f2ece0', collide: false, minimap: false, grad: false });
-  const f = frame(b, x, 0.75, z, ry);
-  for (const lx of [-1, 0, 1]) { const [px, pz] = f.P(lx, 0); b.plant('bush', px, 0.75, pz, { s: 0.7 }); }
+  // Pflanztrog als Deckung im Startbereich (Kartenrunde 2: Erde + Blüten wie die Blumenbeete; Kollision unverändert
+  // 3,0 × 0,8 × 0,8 m; drei Sträucher verbrauchen den Kartenzufall wie bisher)
+  flowerBed(b, x, z, 3.0, 0.8, { h: 0.8, ry, tint: '#ddd0b4', mainLoop: false });
+  const f = frame(b, x, 0.73, z, ry);
+  for (const lx of [-1, 0, 1]) { const [px, pz] = f.P(lx, 0); b.plant('bush', px, 0.71, pz, { s: 0.38 }); }
 }
 
 // ---------------------------------------------------------------------------

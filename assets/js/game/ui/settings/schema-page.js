@@ -1,6 +1,6 @@
 // NULLPUNKT — Einfache Einstellungsseite: alle Schlüssel einer Schema-Gruppe als Zeilen (Audio, Profil, Spiel).
 
-import { rowHtml, bindRows, syncRows } from './rows.js?v=20261006151057';
+import { rowHtml, bindRows, syncRows } from './rows.js?v=20261009162748';
 
 /** Kurze Erklärungen unter den Beschriftungen (alle Seiten). */
 export const HINTS = {
@@ -46,10 +46,13 @@ export const HINTS = {
   sharpness: 'Nachschärfen nach der Hochskalierung.',
   upscaler: 'FSR 1.0 hält das Bild bei verkleinerter Auflösung scharf.',
   weaponPose: 'Körperkamera: Waffe tiefer und mittiger, verdeckt weniger vom Bild.',
+  weaponObstruction: 'Ruhig: Die Waffe bleibt vor Wänden in Haltung und wird über allem gezeichnet (wie in den meisten Shootern). Hochnehmen/An den Körper ziehen: nur, wenn wirklich etwas vor der Mündung steht. Keine Anpassung: Die Waffe ragt sichtbar in Wände. Schüsse starten immer am Auge.',
   hudStyle: 'Realismus: kein Fadenkreuz, keine Munitions- und Lebensanzeige, keine Minikarte – wie bei Bodycam.',
   bodycamStamp: 'Uhrzeit und erfundene Geräte-ID in der Bildecke, wie bei einer Körperkamera-Aufnahme.',
   showFps: 'Bildrate unten links.',
   audioMix: 'Handy: hebt Schritte und Stimmen hervor, nimmt tiefe Bässe weg.',
+  glocke: 'Die Turmglocke in der Altstadt schlägt zu jeder vollen Stunde der echten Uhrzeit die Stundenzahl (21 Uhr: 9 Schläge).',
+  leichen: 'Wie lange gefallene Soldaten liegen bleiben. Zum Schutz der Bildrate gilt je Grafikstufe eine Obergrenze (Niedrig 24, Mittel 48, Hoch 96, Ultra 160) – darüber verschwinden die ältesten zuerst.',
 };
 
 /**

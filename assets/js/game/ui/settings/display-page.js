@@ -2,10 +2,10 @@
 // einmal), Sichtfeld, Komfort gegen Reiseübelkeit (Kamerabewegung, Waffenschwanken, Fischauge, Rauschen,
 // Bewegung reduzieren) und Bild. Alles Weitere unter „Erweitert“.
 
-import { esc } from '../dom.js?v=20261006151057';
-import { ICON } from '../icons.js?v=20261006151057';
-import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261006151057';
-import { HINTS } from './schema-page.js?v=20261006151057';
+import { esc } from '../dom.js?v=20261009162748';
+import { ICON } from '../icons.js?v=20261009162748';
+import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261009162748';
+import { HINTS } from './schema-page.js?v=20261009162748';
 
 /** Bildstil-Vorlagen: jede setzt diese Werte (alles andere bleibt). */
 export const LOOKS = [
@@ -68,7 +68,7 @@ export function displayPage(P) {
     qualitaet: ['quality'],
     sicht: ['fov'],
     komfort: ['cameraMotion', 'weaponSway', 'lensStrength', 'grain', 'reducedMotion'],
-    bild: ['lensStyle', 'lensArtifacts', 'lensBorder', 'autoExposure', 'weaponPose'],
+    bild: ['lensStyle', 'lensArtifacts', 'lensBorder', 'autoExposure', 'weaponPose', 'weaponObstruction'],
   };
 
   function syncLooks() {
@@ -82,7 +82,7 @@ export function displayPage(P) {
   }
 
   return {
-    keys: ['quality', 'fov', ...LOOK_KEYS, 'reducedMotion'],
+    keys: ['quality', 'fov', ...LOOK_KEYS, 'reducedMotion', 'weaponObstruction'],
     resetLabel: 'Grafik',
     mount(h) {
       host = h;

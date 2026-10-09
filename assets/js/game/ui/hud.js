@@ -5,7 +5,8 @@
 // hinweise, Granaten-Kochzeit, Zielfernrohr (Sniper) + ACOG-Tunnel, Flaggenmarker in der Welt, Einnahmebalken,
 // Punktetabelle (Tab/Touch), Start-Countdown-Banner, Todes-/Wiedereinstiegsbanner, Hinweise (Serien, Flaggen,
 // Verlängerung, Führung), Schießstand-Panel (Statistik, Parcours) und die Zielkarte des Präzisionsschlags.
-// Interaktive Teile liegen in #hud-top (über der Touch-Steuerung, unter den Menüs).
+// Interaktive Teile liegen in #hud-top (über der Touch-Steuerung, unter den Menüs), dort auch das Befehlsrad für
+// verbündete Bots samt Weltmarkierungen (ui/command-wheel.js).
 // HUD-Stil (Einstellung hudStyle, Realismus-Plan §5.3/§11.1): „voll“, „reduziert“ (ohne Minikarte/Kompass, Munition als
 // Balken, Leben nur nach Treffern) und „aus“ = Realismus wie Bodycam (kein Fadenkreuz, keine Treffermarker, keine
 // Munitions-/Lebensanzeige; Punktetabelle halten zeigt Minikarte, Stand und Flaggen wie ein Taktik-Tablet).
@@ -14,17 +15,20 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261006151057';
-import { ICON, medalBadge } from './icons.js?v=20261006151057';
-import { Minimap } from './minimap.js?v=20261006151057';
-import { Killfeed } from './killfeed.js?v=20261006151057';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261006151057';
-import { StrikeTargeting } from './strike-target.js?v=20261006151057';
-import { actionKey } from './settings/keys.js?v=20261006151057';
-import { DeployScreen } from './deploy.js?v=20261006151057';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261009162748';
+import { ICON, medalBadge } from './icons.js?v=20261009162748';
+import { Minimap } from './minimap.js?v=20261009162748';
+import { Killfeed } from './killfeed.js?v=20261009162748';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261009162748';
+import { StrikeTargeting } from './strike-target.js?v=20261009162748';
+import { actionKey } from './settings/keys.js?v=20261009162748';
+import { DeployScreen } from './deploy.js?v=20261009162748';
+import { CommandWheel } from './command-wheel.js?v=20261009162748';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
+const _eye = new THREE.Vector3(); // Sichtprüfung der Treffermarker (Spielstil „Realistisch“)
+const _tgt = new THREE.Vector3();
 const COMPASS = [[0, 'N'], [45, 'NO'], [90, 'O'], [135, 'SO'], [180, 'S'], [225, 'SW'], [270, 'W'], [315, 'NW']];
 const DEG_PX = 2.4;
 const _aim = { x: 0, y: 0 };
@@ -128,6 +132,7 @@ export class HUD {
       <div class="h-stamp" hidden aria-hidden="true"><b></b><span><i></i> <em></em></span></div>
       <div class="h-cook"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="19"/><circle class="fg" cx="22" cy="22" r="19"/></svg><b></b></div>
       <div class="h-ammo-hint"><span class="t"></span><kbd></kbd><i class="bar"></i></div>
+      <div class="h-readout" aria-live="polite"><b></b><span></span></div>
       <div class="h-tl"><div class="h-mm"></div><div class="h-uav" hidden>${ICON.radar}<span></span></div></div>
       <div class="h-feed" aria-live="off"></div>
       <div class="h-top">
@@ -147,6 +152,7 @@ export class HUD {
       <div class="h-medal"></div>
       <div class="h-death" hidden><div class="k">Ausgeschaltet<em>.</em></div><div class="by"></div><div class="info"></div><div class="re"><span></span><i><u></u></i></div></div>
       <div class="h-health"><b>100</b><i><u></u><s></s></i></div>
+      <div class="h-stam" aria-hidden="true"><i><u></u><em></em></i></div>
       <div class="h-armor" hidden><span class="h-armico">${ICON.plate}</span><div class="h-plates"></div><b class="h-carry"></b><i class="h-ins"><u></u></i></div>
       <div class="h-stance" data-st="stand" aria-hidden="true"></div>
       <div class="h-zone" hidden><b></b><span></span></div>
@@ -161,6 +167,7 @@ export class HUD {
       dirs: [...r.querySelectorAll('.h-hitdir')], aim: q('.h-aim'), cross: q('.h-cross'), hit: q('.h-hit'), killico: q('.h-killico'), cook: q('.h-cook'), cookFg: q('.h-cook .fg'), cookT: q('.h-cook b'),
       stamp: q('.h-stamp'), stampId: q('.h-stamp b'), stampD: q('.h-stamp i'), stampT: q('.h-stamp em'), magbar: q('.h-magbar u'),
       ammoHint: q('.h-ammo-hint'), ammoHintT: q('.h-ammo-hint .t'), ammoHintK: q('.h-ammo-hint kbd'), ammoHintBar: q('.h-ammo-hint .bar'),
+      readout: q('.h-readout'), readoutT: q('.h-readout b'), readoutS: q('.h-readout span'),
       mm: q('.h-mm'), uav: q('.h-uav'), uavT: q('.h-uav span'), feed: q('.h-feed'), top: q('.h-top'), mtag: q('.h-mtag'),
       sA: q('.h-s-a'), sAv: q('.h-s-a b'), sAbar: q('.h-s-a u'), sAs: q('.h-s-a small'), sB: q('.h-s-b'), sBv: q('.h-s-b b'), sBbar: q('.h-s-b u'), sBs: q('.h-s-b small'),
       time: q('.h-time'), timeT: q('.h-time span'), timeS: q('.h-time small'), sub: q('.h-sub'),
@@ -170,6 +177,7 @@ export class HUD {
       pop: q('.h-pop'), popTotal: q('.h-pop b'), popLines: q('.h-pop .lines'), medal: q('.h-medal'),
       death: q('.h-death'), deathBy: q('.h-death .by'), deathInfo: q('.h-death .info'), deathRe: q('.h-death .re span'), deathBar: q('.h-death .re u'),
       health: q('.h-health'), hpN: q('.h-health b'), hpBar: q('.h-health u'), hpLag: q('.h-health s'),
+      stam: q('.h-stam'), stamBar: q('.h-stam u'), stamMark: q('.h-stam em'),
       weapon: q('.h-weapon'), wName: q('.h-wname .n'), wMode: q('.h-wname .m'), mag: q('.h-ammo b'), reserve: q('.h-ammo span'), equip: q('.h-equip'), next: q('.h-next'),
       streaks: q('.h-streaks'), train: q('.h-train'), board: q('.h-board'),
       armor: q('.h-armor'), plates: q('.h-plates'), carry: q('.h-carry'), ins: q('.h-ins'), insBar: q('.h-ins u'), stance: q('.h-stance'),
@@ -241,6 +249,8 @@ export class HUD {
     this.orderBtn.innerHTML = `${ICON.squad}<span>Befehl</span>`;
     this.orderBtn.addEventListener('click', (e) => { e.preventDefault(); this._squadPing(); });
     this.topUi.appendChild(this.orderBtn);
+    // Befehlsrad (verbündete Bots): Rad + Weltmarkierungen, Rückmeldung als Hinweis
+    this.wheel = new CommandWheel(this.G, top, { notice: (text, tone) => this._notice(text, tone, null, NOTICE_LIFE, 'befehl') });
   }
 
   /* ================================================================ Lebenszyklus */
@@ -264,6 +274,7 @@ export class HUD {
     this.el.armor.hidden = true;
     this.el.zone.hidden = true;
     if (this.deploy) this.deploy.attach(G);
+    if (this.wheel) this.wheel.attach(G);
     this.orderBtn.hidden = !(mode && mode.squads);
     // Touch-Knöpfe ohne Funktion im Modus ausblenden (Serien im Waffenspiel/Schießstand, Granaten im Waffenspiel)
     document.body.dataset.streaks = mode && mode.streaks ? '1' : '0';
@@ -286,7 +297,12 @@ export class HUD {
     const P = () => G.player;
     const mine = (a) => a && (a === P() || (a.isStreakEntity && a.owner === P()));
     s.on('actor:hit', (e) => {
-      if (mine(e.attacker) && e.target !== P()) this._hitmarker(e.killed ? 'kill' : e.zone === 'head' ? 'head' : '');
+      if (!mine(e.attacker) || e.target === P()) return;
+      // Realistisch: nur bei freier Sicht (kein Marker durch Wände/hinter Deckung); _onKill übernimmt das Ergebnis
+      const seen = this._hitVisible(e.target, e.point);
+      this._hitSeen = e.target;
+      this._hitSeenOk = seen;
+      if (seen) this._hitmarker(e.killed ? 'kill' : e.zone === 'head' ? 'head' : '');
     });
     s.on('streak:hit', (e) => { if (mine(e.attacker)) this._hitmarker(e.destroyed ? 'kill' : 'metal'); });
     s.on('training:hit', (e) => this._onTrainingHit(e));
@@ -353,6 +369,7 @@ export class HUD {
 
   detach() {
     if (this.deploy) this.deploy.detach();
+    if (this.wheel) this.wheel.detach();
     if (this._subs) this._subs.dispose();
     this._subs = null;
     if (this._onResize) window.removeEventListener('resize', this._onResize);
@@ -425,6 +442,7 @@ export class HUD {
   }
 
   hide() {
+    if (this.wheel) this.wheel.close(false, true);
     if (this.root) this.root.hidden = true;
     if (this.topUi) this.topUi.hidden = true;
     if (this.el) this.el.board.hidden = true;
@@ -555,6 +573,28 @@ export class HUD {
     return actionKey(G, action === 'breath' ? 'sprint' : action);
   }
 
+  /**
+   * Ablesung beim Inspizieren (nur bei verdeckter Munition): Viewmodel meldet rig.readout { kind, rounds, cap,
+   * chambered, reserve, seq } in dem Moment, in dem die Patronen sichtbar sind → ehrliche Schätzung für 2,8 s.
+   */
+  _updateReadout(dt, w, def, show) {
+    const el = this.el.readout;
+    if (!el) return;
+    const ro = this._realAmmo && w && w.viewModel ? w.viewModel.readout : null;
+    if (ro && ro.seq !== this._roSeq) {
+      this._roSeq = ro.seq;
+      if (def && ro.weaponId === def.id) {
+        const [t, sub] = readoutText(ro);
+        setText(this.el.readoutT, t);
+        setText(this.el.readoutS, sub);
+        this._roT = 2.8;
+      }
+    }
+    if (this._roT > 0) this._roT -= dt;
+    if (w && w.isReloading) this._roT = 0;
+    toggle(el, 'is-on', show && this._roT > 0);
+  }
+
   /** HUD-Stil + Bodycam-Einblendung aus den Einstellungen übernehmen. */
   _applyStyle() {
     if (!this.root) return;
@@ -568,6 +608,12 @@ export class HUD {
     const changed = this.style !== st;
     this.style = st;
     if (this.root.dataset.hud !== st) this.root.dataset.hud = st;
+    // Munition verdeckt (Spielstil Realistisch bzw. HUD „aus“): kein Zähler, kein Vorrat, kein Füllbalken – den Stand
+    // zeigt nur das Inspizieren (Magazin-/Kammer-Check im Viewmodel, Schätzung in .h-readout). Touch (kein Inspizieren):
+    // grober Füllbalken ohne Zahlen bleibt (game.css)
+    this._realAmmo = fl.id === 'realistisch' || st === 'aus';
+    const am = this._realAmmo ? 'verdeckt' : '';
+    if (this.root.dataset.ammo !== am) this.root.dataset.ammo = am;
     const stamp = !!S.get('bodycamStamp');
     this.el.stamp.hidden = !stamp;
     toggle(this.root, 'has-stamp', stamp);
@@ -609,13 +655,35 @@ export class HUD {
     this._play(h, 'hit');
   }
 
+  /**
+   * Treffermarker erlaubt? Spielstil „Realistisch“ (styleFlags.hitmarkers 'sicht' bzw. hitmarkerThroughWalls false):
+   * nur bei freier Sicht der Kamera auf den Trefferpunkt (sonst Körpermitte) – Treffer durch Wände oder hinter Deckung
+   * (Durchschuss, Granate) bleiben unbestätigt. Arcade: immer.
+   */
+  _hitVisible(target, point) {
+    const fl = this._flags;
+    if (!fl || (fl.hitmarkers !== 'sicht' && fl.hitmarkerThroughWalls !== false)) return true;
+    const G = this.G;
+    const W = G.world;
+    if (!W || typeof W.lineOfSight !== 'function' || !G.camera) return true;
+    if (point) _tgt.copy(point);
+    else if (target && target.position) {
+      _tgt.copy(target.position);
+      _tgt.y += target.body && target.body.height ? target.body.height * 0.6 : 1.1;
+    } else return true;
+    G.camera.getWorldPosition(_eye);
+    return W.lineOfSight(_eye, _tgt);
+  }
+
   _onKill(e) {
     const G = this.G;
     if (!(this._flags && this._flags.killfeed === 'eigene') || e.killer === this.G.player || e.victim === this.G.player) this.feed.pushKill(e, { weapons: !(this._flags && this._flags.killfeed === 'eigene' && this.G.match.style === 'realistisch') });
     const p = G.player;
-    // Abschuss-Bestätigung unter dem Fadenkreuz
+    // Abschuss-Bestätigung unter dem Fadenkreuz (Realistisch: nur bei freier Sicht – Ergebnis des letzten Treffers)
     const k = e.killer;
-    if (k && e.victim !== p && (k === p || (k.isStreakEntity && k.owner === p)) && this.style !== 'aus') {
+    const seen = e.victim === this._hitSeen ? this._hitSeenOk : this._hitVisible(e.victim, null);
+    this._hitSeen = null;
+    if (k && e.victim !== p && (k === p || (k.isStreakEntity && k.owner === p)) && this.style !== 'aus' && seen) {
       const n = this.el.killico;
       setHtml(n, e.headshot ? ICON.head : ICON.skull);
       const cls = `h-killico${e.headshot ? ' is-head' : ''}`;
@@ -865,6 +933,13 @@ export class HUD {
   update(simDt) {
     if (!this.root || !this._visible) return;
     const G = this.G;
+    // VR (engine/xr): die Seite ist in der Brille unsichtbar (Anzeige am Handgelenk) – HUD nur ~10×/s fortschreiben
+    // (Einsatzkarte, Hinweise, Zeitgeber laufen in Echtzeit weiter), spart Hauptthread-Zeit auf der Quest
+    if (G.xr && G.xr.presenting) {
+      this._xrSkip = (this._xrSkip || 0) + (simDt || 0);
+      if (this._xrSkip < 0.1) return;
+      this._xrSkip = 0;
+    }
     // UI-Zeitgeber laufen in Echtzeit (auch bei Zeitlupe/niedrigen FPS)
     const real = G.time.real || 0;
     const dt = this._realAt != null ? Math.min(0.5, Math.max(0, real - this._realAt)) : simDt;
@@ -895,7 +970,7 @@ export class HUD {
     toggle(this.root, 'is-dead', !!p && !alive);
     this._setDead(!!p && !alive);
     const melee = def && def.cls === 'melee';
-    const hide = !alive || scoped || ads > 0.55 || (p && p.sprinting) || (this.targeting && this.targeting.open) || this.style === 'aus';
+    const hide = !alive || scoped || ads > 0.55 || (p && p.sprinting) || (this.targeting && this.targeting.open) || (this.wheel && this.wheel.isOpen) || this.style === 'aus';
     const cross = this.el.cross;
     setStyle(cross, 'opacity', hide ? '0' : w && w.isReloading ? '.45' : '1');
     if (!hide && cam) {
@@ -906,7 +981,7 @@ export class HUD {
       const st = melee ? 'dot' : def && def.pellets > 1 && style === 'cross' ? 'circle' : style;
       if (cross.dataset.style !== st) cross.dataset.style = st;
       setStyle(cross, '--cc', G.settings.get('crosshairColor'));
-      toggle(cross, 'is-enemy', !!(input && input.aimTarget));
+      toggle(cross, 'is-enemy', !!(input && input.aimTarget) && !(this._flags && this._flags.enemyMarkers === false)); // Realistisch: Fadenkreuz verrät keine Gegner
     }
     // Fadenkreuz, Treffermarker und Abschuss-Symbol auf dem Laufpunkt (freies Zielen, Lehnen, Körperkamera, Objektiv)
     this._updateAim(p, alive, vw, vh);
@@ -950,6 +1025,17 @@ export class HUD {
       setStyle(this.el.lowhp, 'opacity', (low * 0.95).toFixed(2));
       setStyle(this.el.flash, 'opacity', (this._flashT / 0.18 * 0.45).toFixed(2));
       this._setPostDesat(alive ? clamp((0.35 - hpR) / 0.35, 0, 1) * 0.55 : 0.4);
+      // Ausdauer (stamina.js): nur unter vollem Wert sichtbar, blendet aus; erschöpft mit Marke der Wiederkehr (30 %)
+      const st = p.stamina;
+      if (st) {
+        const sr = alive ? clamp(st.ratio, 0, 1) : 1;
+        setStyle(this.el.stamBar, 'transform', `scaleX(${sr.toFixed(3)})`);
+        toggle(this.el.stam, 'is-on', alive && sr < 0.995);
+        toggle(this.el.stam, 'is-low', alive && sr < 0.3);
+        toggle(this.el.stam, 'is-ex', alive && st.exhausted);
+        toggle(this.el.stam, 'is-deny', alive && st.deniedT > 0);
+        setStyle(this.el.stamMark, 'left', `${(st.resumeRatio * 100).toFixed(1)}%`);
+      }
     }
 
     /* ---------- Trefferrichtung */
@@ -1008,7 +1094,7 @@ export class HUD {
           cls = 'is-empty';
         }
         else if (def.mag > 0 && st.mag === 0) { hint = 'Nachladen'; key = this._keyFor('reload'); cls = 'is-empty'; }
-        else if (lowMag && def.mag > 5 && this.style !== 'aus') { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
+        else if (lowMag && def.mag > 5 && this.style !== 'aus' && !this._realAmmo) { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
       }
       setText(this.el.ammoHintT, hint);
       setText(this.el.ammoHintK, key);
@@ -1017,6 +1103,9 @@ export class HUD {
       toggle(this.el.ammoHint, 'is-on', !!hint && !hide);
       setStyle(this.el.ammoHintBar, 'transform', `scaleX(${w.isReloading ? clamp(w.reloadProgress || 0, 0, 1).toFixed(3) : '0'})`);
     }
+
+    /* ---------- Munition schätzen (Realistisch): Ablesung beim Inspizieren (weapons/anim/inspects.js) */
+    this._updateReadout(dt, w, def, alive && !scoped);
 
     /* ---------- langsame Teile (≈ 8 Hz) */
     this._slowT -= dt;
@@ -1052,6 +1141,7 @@ export class HUD {
     /* ---------- Rüstung, Einsatzkarte, Trupp-Befehl (modes-ui) */
     this._updateArmor(p, now);
     if (this.deploy) this.deploy.update(dt);
+    if (this.wheel) this.wheel.update(dt);
     if (G.mode && G.mode.squads && p && p.alive && input && typeof input.pressed === 'function' && input.pressed('squad_order')) this._squadPing();
     if (this._zoneT > 0) { this._zoneT -= dt; if (this._zoneT <= 0) this.el.zone.hidden = true; }
 
@@ -1633,4 +1723,40 @@ function avoidZones(x, y, zones, b, prev = null) {
     }
   }
   return [x, y];
+}
+
+// ---------------------------------------------------------------- Munition schätzen (Realistisch)
+
+/** Füllstand in Worten – bewusst grob (so viel sieht/fühlt man beim kurzen Blick ins Magazin). */
+function fillWords(n, cap) {
+  if (!(cap > 0)) return n > 0 ? 'geladen' : 'leer';
+  if (n <= 0) return 'leer';
+  const r = n / cap;
+  if (r >= 0.95) return 'voll';
+  if (r >= 0.65) return 'fast voll';
+  if (r >= 0.35) return 'etwa halb';
+  if (r > 0.12) return 'fast leer';
+  return 'nur noch wenige';
+}
+
+/** Ablesung → [Zeile, Unterzeile]. Vorrat: volle Ersatzmagazine (+ angebrochenes), lose Patronen gerundet. */
+export function readoutText(ro) {
+  const cap = ro.cap | 0, n = ro.rounds | 0;
+  let t;
+  if (ro.kind === 'chamber') t = ro.chambered ? 'Patrone im Lauf' : 'Lauf leer';
+  else if (ro.kind === 'cylinder') t = `Trommel: ${n} von ${cap}`;
+  else if (ro.kind === 'tube') t = `Röhre: ${fillWords(Math.max(0, n - 1), Math.max(1, cap - 1))}`;
+  else t = `${ro.kind === 'belt' ? 'Gurt' : ro.kind === 'drum' ? 'Trommel' : 'Magazin'}: ${fillWords(n, cap)}`;
+  let sub = '';
+  if (ro.infinite) sub = 'Vorrat: unbegrenzt';
+  else if (Number.isFinite(ro.reserve)) {
+    const r = Math.max(0, ro.reserve | 0);
+    if (ro.perShell || ro.cylinder) sub = r <= 0 ? 'Keine Patronen mehr dabei' : `Patronen dabei: ${r <= 10 ? r : 'etwa ' + Math.round(r / 5) * 5}`;
+    else if (cap > 0) {
+      const full = Math.floor(r / cap), part = r % cap > 0;
+      const what = ro.belt ? 'Ersatzgurte' : 'Ersatzmagazine';
+      sub = full + (part ? 1 : 0) === 0 ? `Keine ${what} mehr` : `${what}: ${full}${part ? (full ? ' + 1 angebrochenes' : ' (1 angebrochenes)') : ''}`;
+    }
+  }
+  return [t, sub];
 }

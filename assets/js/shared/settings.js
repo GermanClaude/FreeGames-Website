@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261006151057';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261009162748';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -22,6 +22,8 @@ export const DEFAULTS = Object.freeze({
   touchOpacity: 1.0, touchButtonScale: 1.0, bindings: Object.freeze({}), touchLayout: DEFAULT_TOUCH_LAYOUT,
   // Waffengefühl (Realismus-Plan F2/F9; weapons-feel)
   weaponPose: 'auto', weaponSway: 1.0,
+  // Waffe an Hindernissen: overlay = ruhig, über der Welt gezeichnet (wie die meisten Shooter) | raise | tuck | clip
+  weaponObstruction: 'overlay',
   // Bild: Objektiv, Farbe, Belichtung, Hochskalierung (Realismus-Plan R2/R3/R4/R12; core-render)
   // Standard = Vorlage „Realistisch“ (dezentes Objektiv); kräftiges Fischauge nur über die Vorlage „Bodycam“
   lensStyle: 'bodycam', lensStrength: 0.15, grain: 0.2, lensArtifacts: 0.05, lensBorder: false,
@@ -42,6 +44,14 @@ export const DEFAULTS = Object.freeze({
   lastWeather: 'standard', lastTime: 'standard',
   // Lernende Bots (ai-adapt): Gegner stellen sich auf den Spielstil ein (Stärke nach Schwierigkeit)
   adaptiveBots: true,
+  // Kirchenglocke der Altstadt (world/maps/altstadt-glocke.js): Stundenschlag zur echten Uhrzeit an/aus
+  glocke: true,
+  // Leichen (bots/corpses.js): 'bleiben' | '10min' | '2min'; zusätzlich Obergrenze je Grafikstufe (älteste zuerst weg)
+  leichen: 'bleiben',
+  // VR-Modus (Beta, engine/xr/): nur mit Einstellung + laufender WebXR-Sitzung wirksam; Bedeutung in docs/planung/vr.md
+  vrEnabled: false, vrHand: 'rechts', vrTurn: 'schritt', vrTurnStep: '30', vrTurnSpeed: 120, vrMoveDir: 'kopf',
+  vrVignette: true, vrVignetteStrength: 0.6, vrSeated: false, vrPhysical: true, vrHeight: 0,
+  vrQuality: 'auto', vrScale: 'auto', vrLaser: true,
 });
 
 const HOLD_TOGGLE = Object.freeze({ options: ['hold', 'toggle'], labels: { hold: 'Halten', toggle: 'Umschalten' } });
@@ -127,6 +137,11 @@ export const SETTINGS_SCHEMA = Object.freeze({
     options: ['auto', 'standard', 'bodycam'], labels: { auto: 'Automatisch', standard: 'Standard (Hüfte)', bodycam: 'Körperkamera (tief, mittig)' },
   },
   weaponSway: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Waffenträgheit und -schwanken', group: 'grafik' },
+  weaponObstruction: {
+    type: 'enum', label: 'Waffe an Wänden und Hindernissen', group: 'grafik',
+    options: ['overlay', 'raise', 'tuck', 'clip'],
+    labels: { overlay: 'Ruhig (Standard)', raise: 'Hochnehmen', tuck: 'An den Körper ziehen', clip: 'Keine Anpassung' },
+  },
   // Bild (core-render; Bedeutung im Changelog „core-render“)
   lensStyle: {
     type: 'enum', label: 'Bildstil', group: 'grafik',
@@ -225,10 +240,36 @@ export const SETTINGS_SCHEMA = Object.freeze({
     options: ['touch', 'alle'], labels: { touch: 'Nur Touch', alle: 'Alle Geräte (auch Maus & Controller)' },
   },
   adaptiveBots: { type: 'boolean', label: 'Lernende Bots', group: 'spiel' },
+  glocke: { type: 'boolean', label: 'Kirchenglocke (Altstadt)', group: 'audio' },
+  leichen: {
+    type: 'enum', label: 'Leichen', group: 'spiel',
+    options: ['bleiben', '10min', '2min'], labels: { bleiben: 'Bleiben liegen', '10min': '10 Minuten', '2min': '2 Minuten' },
+  },
   fullscreen: {
     type: 'enum', label: 'Vollbild', group: 'spiel',
     options: ['auto', 'off'], labels: { auto: 'Automatisch', off: 'Nur per Knopf/Taste' },
   },
+  // VR-Modus (Beta): Gruppe 'vr' – nur im Spiel unter Steuerung → VR (nicht auf der Website)
+  vrEnabled: { type: 'boolean', label: 'VR-Modus (Beta)', group: 'vr' },
+  vrHand: { type: 'enum', label: 'Haupthand (Waffe)', group: 'vr', options: ['rechts', 'links'], labels: { rechts: 'Rechts', links: 'Links' } },
+  vrTurn: { type: 'enum', label: 'Drehen', group: 'vr', options: ['schritt', 'fluessig'], labels: { schritt: 'In Schritten', fluessig: 'Flüssig' } },
+  vrTurnStep: { type: 'enum', label: 'Schrittwinkel', group: 'vr', options: ['15', '30', '45'], labels: { 15: '15°', 30: '30°', 45: '45°' } },
+  vrTurnSpeed: { type: 'number', min: 45, max: 240, step: 15, integer: true, unit: '°/s', label: 'Drehgeschwindigkeit (flüssig)', group: 'vr' },
+  vrMoveDir: { type: 'enum', label: 'Laufrichtung', group: 'vr', options: ['kopf', 'controller'], labels: { kopf: 'Blickrichtung', controller: 'Controller-Richtung' } },
+  vrVignette: { type: 'boolean', label: 'Rand abdunkeln beim Bewegen (Vignette)', group: 'vr' },
+  vrVignetteStrength: { type: 'number', min: 0.1, max: 1, step: 0.05, label: 'Stärke der Vignette', group: 'vr' },
+  vrSeated: { type: 'boolean', label: 'Sitzend spielen', group: 'vr' },
+  vrPhysical: { type: 'boolean', label: 'Echtes Ducken, Hinlegen und Lehnen (Kopfbewegung)', group: 'vr' },
+  vrHeight: { type: 'number', min: 0, max: 2.5, step: 0.001, unit: 'm', label: 'Kalibrierte Kopfhöhe (0 = beim VR-Start messen)', group: 'intern' },
+  vrQuality: {
+    type: 'enum', label: 'VR-Grafik', group: 'vr',
+    options: ['auto', 'niedrig', 'wie'], labels: { auto: 'Automatisch', niedrig: 'Niedrig (Quest-Brille)', wie: 'Wie am Bildschirm' },
+  },
+  vrScale: {
+    type: 'enum', label: 'VR-Auflösung', group: 'vr',
+    options: ['auto', '0.6', '0.7', '0.8', '0.9', '1'], labels: { auto: 'Automatisch', 0.6: '60 %', 0.7: '70 %', 0.8: '80 %', 0.9: '90 %', 1: '100 %' },
+  },
+  vrLaser: { type: 'boolean', label: 'Zielpunkt der Waffe anzeigen', group: 'vr' },
 });
 
 /**

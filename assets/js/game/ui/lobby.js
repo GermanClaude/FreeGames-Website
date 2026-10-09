@@ -1,15 +1,17 @@
 // NULLPUNKT — Lobby: Einsatz (Modus-Karten, Kartenwahl mit Vorschau, Schwierigkeit, Teamgrößen mit Ausgleich)
 // und Ausrüstung (Primär/Sekundär/Granate mit Werte-Balken aus computeStats, Vergleich, Stufen-Sperren,
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
+// Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261006151057';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261006151057'; // atmosphere-weather
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261006151057';
-import { esc, num, secs, meters } from './dom.js?v=20261006151057';
-import { ICON } from './icons.js?v=20261006151057';
-import { drawMapArt } from './mapart.js?v=20261006151057';
-import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261006151057';
-import { ProgressView } from './progress.js?v=20261006151057';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261009162748';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261009162748'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261009162748'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261009162748';
+import { esc, num, secs, meters } from './dom.js?v=20261009162748';
+import { ICON } from './icons.js?v=20261009162748';
+import { drawMapArt } from './mapart.js?v=20261009162748';
+import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261009162748';
+import { ProgressView } from './progress.js?v=20261009162748';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -147,10 +149,11 @@ export class Lobby {
     return ids.filter((id) => id !== 'range');
   }
 
-  /** Tageszeit der gewählten Karte (null = Kartenzeit; gemerkte Zeit, die die Karte nicht hat → null). atmosphere-weather */
+  /** Tageszeit der gewählten Karte (null = Kartenzeit; gemerkte Zeit, die die Karte nicht hat → null). atmosphere-weather
+   *  'zufall' und 'echtzeit' bleiben stehen – aufgelöst wird beim Start (world/weather.js resolveConditions). */
   _todFor(c) {
     const t = c.timeOfDay;
-    if (!t || t === 'zufall') return t || null;
+    if (!t || t === 'zufall' || t === 'echtzeit') return t || null;
     const map = this._data().MAPS[c.mapId] || {};
     return (Array.isArray(map.times) ? map.times : []).some((x) => x.id === t) ? t : null;
   }
@@ -196,6 +199,7 @@ export class Lobby {
             <button type="button" class="m-tab" role="tab" data-tab="deploy" aria-selected="${this.tab === 'deploy'}">${ICON.map}<span>Einsatz</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="loadout" aria-selected="${this.tab === 'loadout'}">${ICON.target}<span>Ausrüstung</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="progress" aria-selected="${this.tab === 'progress'}">${ICON.trophy}<span>Fortschritt</span></button>
+            <button type="button" class="m-tab" role="tab" data-tab="online" aria-selected="${this.tab === 'online'}">${ICON.globe}<span>Mehrspieler</span><i class="m-tab-beta" title="Erste Fassung – Fehler gerne melden">Beta</i></button>
           </div>
           <div class="lb-me"><button type="button" class="lb-profile" data-act="profile" title="Rufzeichen ändern"></button></div>
           <div class="lb-tools">
@@ -208,6 +212,7 @@ export class Lobby {
           <div class="lb-pane m-scroll" data-scrollable data-pane="deploy"${this.tab === 'deploy' ? '' : ' hidden'}></div>
           <div class="lb-pane lb-pane-loadout" data-pane="loadout"${this.tab === 'loadout' ? '' : ' hidden'}></div>
           <div class="lb-pane m-scroll" data-scrollable data-pane="progress"${this.tab === 'progress' ? '' : ' hidden'}></div>
+          <div class="lb-pane m-scroll" data-scrollable data-pane="online"${this.tab === 'online' ? '' : ' hidden'}></div>
           <aside class="lb-side">
             <div class="lb-stage" aria-label="Waffenvorschau – ziehen zum Drehen"><div class="lb-stage-name"></div><div class="lb-stage-hint">Ziehen zum Drehen</div></div>
             <div class="lb-kit"></div>
@@ -219,7 +224,8 @@ export class Lobby {
         </footer>
       </div>`;
     this.el = {
-      screen, deploy: screen.querySelector('[data-pane="deploy"]'), loadout: screen.querySelector('[data-pane="loadout"]'), progress: screen.querySelector('[data-pane="progress"]'),
+      screen, deploy: screen.querySelector('[data-pane="deploy"]'), loadout: screen.querySelector('[data-pane="loadout"]'), progress: screen.querySelector('[data-pane="progress"]'), online: screen.querySelector('[data-pane="online"]'),
+      start: screen.querySelector('.lb-start'),
       stage: screen.querySelector('.lb-stage'), stageName: screen.querySelector('.lb-stage-name'), kit: screen.querySelector('.lb-kit'),
       summary: screen.querySelector('.lb-summary'), side: screen.querySelector('.lb-side'), profile: screen.querySelector('.lb-profile'),
     };
@@ -282,7 +288,13 @@ export class Lobby {
     this.el.deploy.hidden = this.tab !== 'deploy';
     this.el.loadout.hidden = this.tab !== 'loadout';
     this.el.progress.hidden = this.tab !== 'progress';
+    this.el.online.hidden = this.tab !== 'online';
     if (this.tab === 'progress') this.progress.mount(this.el.progress); else this.progress.unmount();
+    // Mehrspieler (ui/net-menus.js): Reiter nur beobachten (öffentliche Spiele), solange er sichtbar ist
+    const nm = this.menus.net;
+    if (nm) { if (this.tab === 'online') nm.mountPane(this.el.online); else nm.unmountPane(); }
+    this._renderStart();
+    this._renderSummary();
     s.querySelector('.lb').dataset.tab = this.tab;
     if (this.tab === 'loadout') { this.view = this.view || this.cfg[this.slot]; this._showView(); }
     else this._showView(this.cfg.primary);
@@ -337,8 +349,15 @@ export class Lobby {
     const wxs = (Array.isArray(map.weathers) ? map.weathers : []).filter((w) => WEATHERS[w]);
     const wxSel = c.weather === 'zufall' || wxs.includes(c.weather) ? c.weather : 'standard';
     const todSel = this._todFor(c);
+    // Echtzeit: Vorschau, welche Tageszeit der Karte jetzt gespielt würde (aufgelöst wird beim Start erneut)
+    let rtNote = '';
+    if (todSel === 'echtzeit') {
+      const rt = realTimePreset(map);
+      const rtName = rt ? (times.find((t) => t.id === rt) || {}).name || rt : map.timeOfDay || 'Kartenzeit';
+      rtNote = `<p class="lb-note">Passend zur echten Uhrzeit – jetzt: <b>${esc(rtName)}</b></p>`;
+    }
     const extra = `${m.matchLengths ? `<div><h2 class="m-h2">Matchlänge</h2><div class="m-seg" role="radiogroup" aria-label="Matchlänge">${LENGTHS.map(([id, l]) => `<button type="button" role="radio" data-len="${id}" aria-checked="${id === c.matchLength}">${l}</button>`).join('')}</div></div>` : ''}
-      ${times.length ? `<div><h2 class="m-h2">Tageszeit</h2><div class="m-seg" role="radiogroup" aria-label="Tageszeit"><button type="button" role="radio" data-tod="" aria-checked="${!todSel}">${esc(map.timeOfDay || 'Standard')}</button>${times.map((t) => `<button type="button" role="radio" data-tod="${esc(t.id)}" aria-checked="${t.id === todSel}">${esc(t.name || t.label || t.id)}</button>`).join('')}<button type="button" role="radio" data-tod="zufall" aria-checked="${todSel === 'zufall'}">Zufall</button></div></div>` : ''}
+      ${times.length ? `<div><h2 class="m-h2">Tageszeit</h2><div class="m-seg" role="radiogroup" aria-label="Tageszeit"><button type="button" role="radio" data-tod="" aria-checked="${!todSel}">${esc(map.timeOfDay || 'Standard')}</button>${times.map((t) => `<button type="button" role="radio" data-tod="${esc(t.id)}" aria-checked="${t.id === todSel}">${esc(t.name || t.label || t.id)}</button>`).join('')}<button type="button" role="radio" data-tod="echtzeit" aria-checked="${todSel === 'echtzeit'}" title="Passend zur echten Uhrzeit">Echtzeit</button><button type="button" role="radio" data-tod="zufall" aria-checked="${todSel === 'zufall'}">Zufall</button></div>${rtNote}</div>` : ''}
       ${wxs.length ? `<div><h2 class="m-h2">Wetter</h2><div class="m-seg" role="radiogroup" aria-label="Wetter">${[['standard', 'Standard', map.weather || ''], ...wxs.map((w) => [w, WEATHERS[w].name, WEATHERS[w].short || '']), ['zufall', 'Zufall', 'Zufälliges Wetter beim Start']].map(([id, l, t]) => `<button type="button" role="radio" data-wx="${id}" aria-checked="${id === wxSel}"${t ? ` title="${esc(t)}"` : ''}>${esc(l)}</button>`).join('')}</div></div>` : ''}`;
     this.el.deploy.innerHTML = `
       <section class="lb-sec"><h2 class="m-h2">Modus</h2><div class="lb-modes" role="group" aria-label="Modus">${modes}</div>
@@ -404,7 +423,21 @@ export class Lobby {
     });
   }
 
+  /** Fußknopf: „Einsatz starten“ – im Mehrspieler-Reiter „Raum erstellen“ (menus.js: data-act net-host). */
+  _renderStart() {
+    const b = this.el && this.el.start;
+    if (!b) return;
+    const online = this.tab === 'online';
+    const act = online ? 'net-host' : 'start';
+    b.disabled = online && !(this.menus.net && this.menus.net.net);
+    if (b.dataset.act === act) return;
+    b.dataset.act = act;
+    b.classList.remove('is-go');
+    b.innerHTML = online ? `${ICON.userPlus}<span>Raum erstellen<em>.</em></span>` : `${ICON.play}<span>Einsatz starten<em>.</em></span>`;
+  }
+
   _renderSummary() {
+    if (this.tab === 'online' && this.menus.net) { this.el.summary.innerHTML = this.menus.net.summaryHtml(); return; }
     const d = this._data();
     const c = this.cfg;
     const m = d.MODES[c.modeId] || {};
@@ -625,6 +658,7 @@ export class Lobby {
 
   unmount() {
     this.progress.unmount();
+    if (this.menus.net) this.menus.net.unmountPane();
     for (const off of this._offs) off();
     this._offs = [];
     this.el = null;

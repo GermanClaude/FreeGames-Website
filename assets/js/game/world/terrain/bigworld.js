@@ -7,36 +7,37 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261006151057';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261006151057';
-import { createWorldAssets } from '../library.js?v=20261006151057';
-import { MapBuilder, SURFACES } from '../builder.js?v=20261006151057';
-import { createLighting } from '../lighting.js?v=20261006151057';
-import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261006151057';
-import { createAtmosphere } from '../atmos.js?v=20261006151057';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261006151057';
-import { createWater } from '../water.js?v=20261006151057';
-import { TriangleBVH } from '../bvh.js?v=20261006151057';
-import { makeTests } from '../navbuild.js?v=20261006151057';
-import { foliageUniforms } from '../atlas.js?v=20261006151057';
-import { Heightfield } from './heightfield.js?v=20261006151057';
-import { makeCoarse } from './generate.js?v=20261006151057';
-import { CompositeBVH } from './composite.js?v=20261006151057';
-import { TerrainCollider } from './collide.js?v=20261006151057';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261006151057';
-import { createTerrainMaterial } from './splat.js?v=20261006151057';
-import { Vegetation } from './vegetation.js?v=20261006151057';
-import { RoadNetwork } from './roads.js?v=20261006151057';
-import { bigNavFromData } from './bignav.js?v=20261006151057';
-import { createBigMinimap } from './bigminimap.js?v=20261006151057';
-import { terrainJob, worldJob } from './bigjob.js?v=20261006151057';
+import { MAPS } from '../../../shared/maps.data.js?v=20261009162748';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261009162748';
+import { createWorldAssets } from '../library.js?v=20261009162748';
+import { MapBuilder, SURFACES } from '../builder.js?v=20261009162748';
+import { createLighting } from '../lighting.js?v=20261009162748';
+import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261009162748';
+import { createAtmosphere } from '../atmos.js?v=20261009162748';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261009162748';
+import { createWater } from '../water.js?v=20261009162748';
+import { TriangleBVH } from '../bvh.js?v=20261009162748';
+import { makeTests } from '../navbuild.js?v=20261009162748';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261009162748';
+import { Heightfield } from './heightfield.js?v=20261009162748';
+import { makeCoarse } from './generate.js?v=20261009162748';
+import { CompositeBVH } from './composite.js?v=20261009162748';
+import { TerrainCollider } from './collide.js?v=20261009162748';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261009162748';
+import { createTerrainMaterial } from './splat.js?v=20261009162748';
+import { Vegetation } from './vegetation.js?v=20261009162748';
+import { RoadNetwork } from './roads.js?v=20261009162748';
+import { bigNavFromData } from './bignav.js?v=20261009162748';
+import { createBigMinimap } from './bigminimap.js?v=20261009162748';
+import { terrainJob, worldJob } from './bigjob.js?v=20261009162748';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261006151057'),
+  grenzland: () => import('../maps/grenzland.js?v=20261009162748'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
-/** Budgets je Qualitätsstufe (GROSSKAMPF_PLAN §3.4; Handy = low). */
+/** Budgets je Qualitätsstufe (GROSSKAMPF_PLAN §3.4; Handy = low). density: Anteil der kollisionslosen Büsche/Schilf –
+ * Bäume und Felsen (Kollision) stehen auf jeder Stufe vollständig (Mehrspieler, terrain/vegetation.js). */
 export const BIG_TIERS = {
   low: { view: 340, steps: [2, 4, 8, 16], dists: [56, 150, 260], treeNear: 55, treeFar: 330, grass: 12, grassStep: 1.7, grassCap: 220, treeShadow: false, density: 0.55, far: 700, mapPx: 512, siteCull: 210, shadow: 24 },
   medium: { view: 600, steps: [1, 2, 4, 8], dists: [48, 150, 330], treeNear: 90, treeFar: 580, grass: 25, grassStep: 1.4, grassCap: 1600, grassBlades: 10, treeShadow: false, density: 0.8, far: 900, mapPx: 1024, siteCull: 520, shadow: 40 },
@@ -51,7 +52,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261006151057', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261009162748', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -130,6 +131,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const progress = (p, label) => { try { onProgress?.(Math.min(1, Math.max(0, p)), label || ''); } catch { /* UI */ } };
   progress(0, 'Karte wird vorbereitet');
   const renderer = G.renderer?.renderer || G.renderer;
+  attachFoliageClock(G); // Wind (Gras/Laub) an der gemeinsamen Uhr (online Host-Zeit)
   const quality = ['low', 'medium', 'high', 'ultra'].includes(G.renderer?.quality) ? G.renderer.quality : (['low', 'medium', 'high', 'ultra'].includes(G.settings?.get?.('quality')) ? G.settings.get('quality') : 'high');
   const tier = BIG_TIERS[quality];
   const debug = !!(G.debug || G.params?.get?.('debug') === '1');
@@ -165,6 +167,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       const vb = { minX: s.bounds.minX - 12, maxX: s.bounds.maxX + 12, minZ: s.bounds.minZ - 12, maxZ: s.bounds.maxZ + 12 };
       const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + k * 101, chunkSize: s.chunkSize || (quality === 'low' ? 64 : 48), groundNoise: s.groundNoise ?? 0.12, interiorTint: s.interiorTint });
       b.lookQuality = quality; // env-look: Detailformen ab medium
+      b.timeOfDay = conditions.time || meta.timeDefault || null; // props.js lampsOn (Laternen nur abends)
       if (libOk) {
         b.lib = lib.modelIds();
         b.library = async (req, onProg) => { const r = await lib.load({ ...req, plan: libPlan }, onProg); resolveLibraryMaterials(r.sets); return r; };
@@ -185,6 +188,24 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const terr = await terrainP;
   const hf = Heightfield.fromData(terr.data);
   hf.riverLine = terr.river;
+  // 3b) Ortschaften, die Geländehöhen brauchen (z. B. Grenzanlage entlang der Kartengrenze): def.lateSites – wie
+  // def.sites, build(b, ctx) bekommt zusätzlich ctx.hf (Höhenfeld) und ctx.roads (Gelände-Straßen mit samples);
+  // Rückgabe { clearLines: [{ pts, r }] } hält Bäume/Gras aus Streifen fern. Ohne Navigation (nav: false).
+  for (let k = 0; k < (def.lateSites || []).length; k++) {
+    const s = def.lateSites[k];
+    progress(0.52, s.name);
+    const vb = { minX: s.bounds.minX - 12, maxX: s.bounds.maxX + 12, minZ: s.bounds.minZ - 12, maxZ: s.bounds.maxZ + 12 };
+    const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + 7919 + k * 101, chunkSize: s.chunkSize || 64, groundNoise: 0, interiorTint: s.interiorTint });
+    b.lookQuality = quality;
+    b.timeOfDay = conditions.time || meta.timeDefault || null;
+    if (libOk) {
+      b.lib = lib.modelIds();
+      b.library = async (req, onProg) => { const r = await lib.load({ ...req, plan: libPlan }, onProg); resolveLibraryMaterials(r.sets); return r; };
+    }
+    const res = s.build(b, { ...ctx, hf, roads: terr.roads }) || {};
+    const built = await b.build({ quality, anisotropy: Math.min(G.renderer?.preset?.anisotropy || 4, maxAniso), onProgress: (p, l) => progress(0.52, `${s.name}: ${l}`) });
+    sites.push({ def: { ...s, nav: false }, b, res, built });
+  }
   const pb = def.bounds;
   const group = new THREE.Group();
   group.name = 'world:' + id;
@@ -227,11 +248,20 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   for (const f of [...(def.flags?.cq || []), ...(def.flags?.dom || [])]) mark(f.x, f.z, 5);
   for (const v of def.vehicles || []) mark(v.x, v.z, 7);
   for (const c of def.clearings || []) mark(c[0], c[1], c[2]);
+  // Startpunkte (kein Baum auf dem Spawn) und Streifen späterer Ortschaften (Kontrollstreifen der Grenzanlage)
+  for (const t of ['A', 'B', 'ffa']) for (const p of def.spawns?.[t] || []) mark(p[0], p[1], 3);
+  for (const t of ['A', 'B']) for (const p of def.spawns?.hq?.[t] || []) mark(p[0], p[1], 3);
+  for (const s of sites) for (const L of s.res?.clearLines || []) {
+    for (let k = 0; k + 1 < L.pts.length; k++) {
+      const [ax, az] = L.pts[k], [bx, bz] = L.pts[k + 1], n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / BR));
+      for (let i = 0; i <= n; i++) mark(ax + (bx - ax) * i / n, az + (bz - az) * i / n, L.r);
+    }
+  }
   const blocked = (x, z) => {
     const i = Math.round((x - hf.minX) / BR), j = Math.round((z - hf.minZ) / BR);
     return i < 0 || j < 0 || i >= bn || j >= bn ? false : block[j * bn + i] === 1;
   };
-  const veg = new Vegetation({ hf, spec: def.vegetation, quality, tier, blocked, bounds: pb });
+  const veg = new Vegetation({ hf, spec: def.vegetation, quality, tier, blocked, bounds: pb, fields: def.terrain?.fields || [] });
   const vegCol = veg.colliders();
   group.add(veg.build(getMaterial));
   ms.vegetation = Math.round(performance.now() - tV);
@@ -477,7 +507,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     update(dt, camera) {
       light.update(dt, camera);
       atmos?.update(dt, camera);
-      foliageUniforms.uTime.value += dt;
+      foliageUniforms.uTime.value += dt; // nur Rückfall ohne Spielzeit (Dev-Seiten); im Spiel gilt die gemeinsame Uhr
       water.update(dt);
       if (!camera) return;
       if (camera.isPerspectiveCamera && camera.far < tier.view + 60) { camera.far = tier.view + 60; camera.updateProjectionMatrix(); }

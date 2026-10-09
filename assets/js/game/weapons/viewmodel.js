@@ -9,22 +9,30 @@
 //
 // API (Vertrag §7, Erweiterungen siehe docs/ARCHITECTURE.md Changelog):
 //   new ViewModel(G)          G.viewmodel.{scene,camera} (werden angelegt, falls nicht vorhanden)
-//   setWeapon(weaponId, def?) update(dt, s) onShot(strength?, info?) playReload(empty) playMelee()
-//   playGrenade(type?, opts?) releaseGrenade() playInspect() cancelAction() getMuzzleWorldPosition(out)
-//   setVisible(bool) setLighting(lighting) showScopeOverlay warmup(renderer) dispose()
+//   setWeapon(weaponId, def?) update(dt, s) onShot(strength?, info?) playReload(empty, variant?) playMelee(opts?)
+//   playGrenade(type?, opts?) releaseGrenade() playInspect(variant?) playReady() playFidget() cancelAction()
+//   getMuzzleWorldPosition(out) setVisible(bool) setLighting(lighting) showScopeOverlay warmup(renderer) dispose()
+//   readout   letzte Munitions-Ablesung beim Inspizieren { kind, rounds, cap, chambered, reserve, seq } (ui/hud.js)
+// Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
+// Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel } from './models.js?v=20261006151057';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261006151057';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261006151057';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261006151057';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261006151057';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261006151057';
-import { applyCamo } from './gunsmith/camos.js?v=20261006151057';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261006151057';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261006151057';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261006151057';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261006151057';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261006151057';
+import { createWeaponModel, setMagRounds } from './models.js?v=20261009162748';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261009162748';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261009162748';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261009162748';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261009162748';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261009162748';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261009162748';
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261009162748';
+import { COSMETIC } from './anim/reloads.js?v=20261009162748';
+import { magWellOf } from './anim/magwell.js?v=20261009162748';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261009162748';
+import { applyCamo } from './gunsmith/camos.js?v=20261009162748';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261009162748';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261009162748';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261009162748';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261009162748';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261009162748';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -188,6 +196,7 @@ export class ViewModel {
     this._strafeRoll = 0;
     this._lean = 0;
     this._obstruct = 0;
+    this._obsPose = 'raise'; // Ausweichhaltung der laufenden Überblendung ('raise' | 'tuck')
     this._mantle = 0;
     this._breathPh = Math.random() * 6;
     this._stepIdx = 0;
@@ -204,6 +213,7 @@ export class ViewModel {
     this._boltT = 1; this._slideLocked = false; this._hammerT = 1;
     this._ctrlReload = false;
     this._visible = true;
+    this._vrOn = false; // VR (engine/xr): Wurzel in der Hand, siehe _xrRoot()
     this._shotCount = 0;
     this._led = 0;
 
@@ -250,6 +260,7 @@ export class ViewModel {
     entry.contactMemo = new Map();
     this._models.set(id, entry);
     this._prepareGrips(entry);
+    magWellOf(entry);   // Schachtachse + Freigang vorab (anim/magwell.js, wenige ms je Modell)
     return entry;
   }
 
@@ -322,28 +333,42 @@ export class ViewModel {
     return this.action;
   }
 
-  /** Nachladen starten. empty = Magazin leer (inkl. Durchladen). */
-  playReload(empty = false) {
+  /**
+   * Nachladen starten. empty = Magazin leer (inkl. Durchladen). variant = optische Variante (Standard: zufällig, nie
+   * zweimal dieselbe hintereinander – anim/reloads.js); Dauer und Munition bleiben die der Waffendaten.
+   */
+  playReload(empty = false, variant) {
     if (!this.cur || this.h.reload === 'none') return;
     const d = this.def;
-    if (this.h.reload === 'shell') {
+    const style = this.h.reload;
+    const v = this._pickVariant('reload:' + style + (empty ? ':leer' : ''), this._reloadVariants(style, empty), variant);
+    if (style === 'shell') {
       const timing = d?.shellTiming || { start: 0.3, insert: 0.48, end: 0.42 };
       const mag = d?.mag ?? 6;
-      this._start('shells', 1e9, { empty, timing, shells: empty ? mag : Math.max(1, Math.round(mag / 2)), phase: 'start', pt: 0, inserted: 0 });
+      this._start('shells', 1e9, { empty, timing, shells: empty ? mag : Math.max(1, Math.round(mag / 2)), phase: 'start', pt: 0, inserted: 0, variant: v });
       return;
     }
     const dur = empty ? (d?.reloadEmptyTime ?? this.h.emptyTime) : (d?.reloadTime ?? this.h.reloadTime);
-    this._start('reload', dur, { empty, style: this.h.reload });
+    this._start('reload', dur, { empty, style, variant: v });
   }
 
-  /** Nahkampf. opts: { style ('slash'|'hook'|'chop'|'overhead'|'stab'), backstab, duration } – Standard aus der Nahkampfwaffe. */
+  /**
+   * Nahkampf. opts: { style ('slash'|'hook'|'chop'|'overhead'|'stab'|'backhand'), backstab, duration, variant } – Standard
+   * aus der Nahkampfwaffe. Optische Varianten (zufällig, Treffermoment gleich): mit Schusswaffe 0 = Hieb der Klinge,
+   * 1 = Stich, 2 = Stoß mit der Waffe selbst; Messer als Hauptwaffe 0 = Hieb der Klinge, 1 = Rückhand, 2 = Stich.
+   */
   playMelee(opts = {}) {
     if (!this.cur) return;
-    const md = this.h.action === 'knife' ? this.def : this._defFor(this._meleeId);
+    const knife = this.h.action === 'knife';
+    const md = knife ? this.def : this._defFor(this._meleeId);
     const spec = md?.melee || WEAPONS.knife?.melee || {};
-    const style = opts.backstab ? 'stab' : opts.style || spec.style || 'slash';
     const dur = opts.duration ?? spec.swingTime ?? 0.75;
-    this._start(this.h.action === 'knife' ? 'slash' : 'melee', dur, { hit: false, style });
+    const v = opts.backstab || opts.style ? 0 : this._pickVariant(knife ? 'slash' : 'melee', 3, opts.variant);
+    let style = opts.backstab ? 'stab' : opts.style || spec.style || 'slash';
+    if (v === 1) style = knife ? 'backhand' : 'stab';
+    else if (v === 2 && knife) style = 'stab';
+    const type = knife ? 'slash' : v === 2 ? 'strike' : 'melee';
+    this._start(type, dur, { hit: false, style, variant: v });
   }
 
   /** Nahkampfwaffe für Hiebe mit Schusswaffe in der Hand (Requisit der linken Hand). */
@@ -412,15 +437,12 @@ export class ViewModel {
   /** Granatwurf. type: 'frag' | 'semtex'. opts.hold = true hält nach dem Abziehen (Vorkochen) bis releaseGrenade(). */
   playGrenade(type = 'frag', opts = {}) {
     if (!this.cur) return;
-    this._start('grenade', 1.0, { gtype: this.props[type] ? type : 'frag', hold: !!opts.hold, released: false });
+    // Variante: über Kopf (0) bzw. von unten (1) – aus der Hocke/im Liegen automatisch von unten (anim/moves.js)
+    const low = opts.variant != null ? opts.variant === 1 : this._crouch > 0.5 || (this._prone || 0) > 0.4;
+    this._start('grenade', 1.0, { gtype: this.props[type] ? type : 'frag', hold: !!opts.hold, released: false, low, variant: low ? 1 : 0 });
   }
 
   releaseGrenade() { if (this.action?.type === 'grenade') this.action.hold = false; }
-
-  playInspect() {
-    if (!this.cur || this.action) return;
-    this._start('inspect', this.h.inspect, { style: this.h.inspectStyle || 'rifle' });
-  }
 
   /** Schutzplatte einsetzen (Rüstung): Dauer in s (Standard 1,6). Bricht laufende Aktionen ab. */
   playPlate(duration = 1.6) {
@@ -433,7 +455,8 @@ export class ViewModel {
     if (this.action && !this.action.cancel) { this.action.cancel = true; }
   }
 
-  get isBusy() { return !!this.action || this._equipT < 1 || this._lowering; }
+  // Kosmetische Aktionen (Bereitmachen, Leerlauf-Geste) blockieren nichts (anim/moves.js)
+  get isBusy() { return (!!this.action && !COSMETIC.has(this.action.type)) || this._equipT < 1 || this._lowering; }
   get actionName() { return this.action ? this.action.type : null; }
 
   /**
@@ -481,7 +504,7 @@ export class ViewModel {
     if (info.empty && h.action === 'pistol') this._slideLocked = true;
     if (h.action === 'revolver') this._cylTarget = (this._cylTarget || 0) + Math.PI / 3;
     if (info.empty && (h.action === 'auto' || h.action === 'semi')) this._boltLocked = true;
-    if (h.action === 'bolt') this._start('boltCycle', Math.max(0.6, Math.min(1.0, (this.def ? 60 / this.def.rpm : 1.3) - 0.35)), { delay: 0.12, ejected: false });
+    if (h.action === 'bolt') this._start('boltCycle', Math.max(0.6, Math.min(1.0, (this.def ? 60 / this.def.rpm : 1.3) - 0.35)), { delay: 0.12, ejected: false, variant: this._pickVariant('bolt', 2) });
     else if (h.action === 'pump') this._start('pumpCycle', Math.max(0.42, Math.min(0.6, (this.def ? 60 / this.def.rpm : 0.8) - 0.25)), { delay: 0.1, ejected: false });
     else this._eject();
   }
@@ -518,6 +541,7 @@ export class ViewModel {
     const main = this.G.camera, vm = this.camera;
     _pv.copy(local);
     this.root.localToWorld(_pv);
+    if (this._vrOn) return out.copy(_pv); // VR: die Wurzel liegt schon in Weltkoordinaten
     _pv.applyMatrix4(vm.matrixWorldInverse);
     const depth = Math.max(0.05, -_pv.z);
     _pv.applyMatrix4(vm.projectionMatrix);
@@ -529,7 +553,7 @@ export class ViewModel {
     const fx = this.G?.effects, main = this.G?.camera;
     if (!fx || !main || typeof fx.dropCasing !== 'function') return;
     const wp = this._vmToWorld(pos, _pv2.set(0, 0, 0));
-    main.getWorldQuaternion(_q);
+    if (this._vrOn) this.root.getWorldQuaternion(_q); else main.getWorldQuaternion(_q);
     const wv = _s1.copy(vel).applyQuaternion(_q);
     const bv = this.G.player?.body?.velocity;
     if (bv) wv.add(bv);
@@ -550,14 +574,15 @@ export class ViewModel {
     this.root.worldToLocal(_v);
     const wp = this._vmToWorld(_v, _pv2.set(0, 0, 0)).clone();
     const main = this.G.camera;
-    main.getWorldQuaternion(_q);
+    if (this._vrOn) this.root.getWorldQuaternion(_q); else main.getWorldQuaternion(_q);
     const wv = _s1.set((Math.random() - 0.5) * 0.4, -0.9 - Math.random() * 0.3, 0.1).applyQuaternion(_q);
     const bv = this.G.player?.body?.velocity;
     if (bv) wv.add(bv);
     part.getWorldQuaternion(_q2);
     this.root.getWorldQuaternion(_e2q || (_e2q = new THREE.Quaternion()));
     _q2.premultiply(_e2q.invert()).premultiply(_q);
-    try { this.G.effects.dropMagazine(this.cur.key, wp, wv.clone(), _q2.clone(), { actor: this.G.player || null }); } catch { /* Welt im Abbau */ }
+    // Weltmagazin mit dem alten Füllstand (leer bleibt leer, angebrochen zeigt die obersten Patronen)
+    try { this.G.effects.dropMagazine(this.cur.key, wp, wv.clone(), _q2.clone(), { actor: this.G.player || null, rounds: this._magRaw ?? 0 }); } catch { /* Welt im Abbau */ }
   }
 
   // ---------------------------------------------------------------- Licht
@@ -702,10 +727,13 @@ export class ViewModel {
   }
 
   _updateLights(dt) {
-    // Hauptkamera-Drehung → Licht-/Umgebungsrichtung im Kameraraum
+    // Hauptkamera-Drehung → Licht-/Umgebungsrichtung im Kameraraum (VR: die Wurzel liegt in Weltkoordinaten in der
+    // Hand – Lichter relativ zur Wurzel drehen, Umgebung ohne Drehung)
     const cam = this.G?.camera;
     const q = this._mainQuat;
-    if (cam) cam.getWorldQuaternion(q); else q.identity();
+    const vr = this._vrOn;
+    if (vr) this.root.getWorldQuaternion(q);
+    else if (cam) cam.getWorldQuaternion(q); else q.identity();
     // Schatten/Innenraum: Licht der Umgebung folgen (sonst wirken Arme und Waffe wie aufgeklebt)
     this._updateProbe(dt, cam);
     this._applyIntensities();
@@ -714,9 +742,56 @@ export class ViewModel {
     this.sun.position.copy(_v).multiplyScalar(5);
     this.hemi.position.set(0, 1, 0).applyQuaternion(inv);
     if (this.scene.environment) {
-      _e.setFromQuaternion(q, 'XYZ');
-      this.scene.environmentRotation.set(-_e.x, -_e.y, -_e.z, 'XYZ');
+      if (vr) this.scene.environmentRotation.set(0, 0, 0);
+      else {
+        _e.setFromQuaternion(q, 'XYZ');
+        this.scene.environmentRotation.set(-_e.x, -_e.y, -_e.z, 'XYZ');
+      }
     }
+  }
+
+  // ---------------------------------------------------------------- VR (engine/xr)
+
+  /** VR aktiv und Haupthand verfolgt: Wurzel = Griff (Position) + Zielstrahl (Drehung) in Weltkoordinaten. */
+  _xrRoot() {
+    const xr = this.G?.xr;
+    this._vrOn = !!(xr && xr.presenting && typeof xr.gunPose === 'function' && xr.gunPose(this.root.position, this.root.quaternion));
+    return this._vrOn;
+  }
+
+  /** Lage des Pistolengriffs (rightHandGrip) im Raum der Waffengruppe – je Modell einmal. */
+  _gripOffset(entry) {
+    if (entry.xrGrip) return entry.xrGrip;
+    const out = new THREE.Vector3();
+    const rg = entry.ud.rightHandGrip;
+    if (rg) {
+      const m = new THREE.Matrix4();
+      for (let o = rg; o && o !== this.gun; o = o.parent) { o.updateMatrix(); m.premultiply(o.matrix); }
+      out.setFromMatrixPosition(m);
+    }
+    entry.xrGrip = out;
+    return out;
+  }
+
+  /**
+   * VR-Pose der Waffe (Kameraraum = Raum der Hand): Pistolengriff in der Handfläche, Lauf entlang des Zielstrahls.
+   * Rückstoß (Federn + Hochklettern), Ziehen/Wegstecken (halb so weit) und Aktionen (Nachladen, Nahkampf …) bleiben.
+   */
+  _xrGunPose(P, R, rp, rr, act, eq) {
+    const g = this._gripOffset(this.cur);
+    P.set(-g.x, -g.y, -g.z);
+    R.set(0, 0, 0);
+    P.x += rp.x; P.y += rp.y; P.z += rp.z + this._climb * 0.03;
+    R.x += rr.x + this._climb * 0.5; R.y += rr.y; R.z += rr.z;
+    if (eq > 0) { P.y -= 0.12 * eq; P.z += 0.04 * eq; R.x -= 0.6 * eq; R.z += 0.3 * eq; }
+    if (act) { P.x += act.p[0]; P.y += act.p[1]; P.z += act.p[2]; R.x += act.r[0]; R.y += act.r[1]; R.z += act.r[2]; }
+  }
+
+  /** VR, Simulation steht (Pause, Matchende): Waffe der Hand nachführen, ohne Animationen fortzuschreiben. */
+  syncXr() {
+    if (!this.cur || !this._xrRoot()) return;
+    this.root.updateMatrixWorld(true);
+    this._rootInv.copy(this.root.matrixWorld).invert();
   }
 
   // ---------------------------------------------------------------- Haltung, Handhabung, Komfort
@@ -754,6 +829,23 @@ export class ViewModel {
     return 'standard';
   }
 
+  /**
+   * Einstellung „Waffe an Wänden und Hindernissen“ (weaponObstruction): 'overlay' (Standard: Waffe bleibt in Haltung,
+   * über der Welt gezeichnet) | 'raise' (hochnehmen) | 'tuck' (an den Körper ziehen) | 'clip' (keine Anpassung, gegen
+   * die Welttiefe gezeichnet – renderer). setObstruction() überschreibt (Prüfseiten).
+   */
+  _obstructionMode() {
+    if (this._forcedObstruction) return this._forcedObstruction;
+    const st = this.G?.settings;
+    const v = st && typeof st.get === 'function' ? st.get('weaponObstruction') : undefined;
+    return v === 'raise' || v === 'tuck' || v === 'clip' ? v : 'overlay';
+  }
+
+  /** Verhalten an Hindernissen erzwingen ('overlay' | 'raise' | 'tuck' | 'clip' | null = Einstellung). */
+  setObstruction(mode) {
+    this._forcedObstruction = mode === 'overlay' || mode === 'raise' || mode === 'tuck' || mode === 'clip' ? mode : null;
+  }
+
   /** Haltung erzwingen ('standard' | 'bodycam' | null = Einstellung). instant = ohne Überblendung. */
   setPose(pose, instant = true) {
     this._forcedPose = pose === 'standard' || pose === 'bodycam' ? pose : null;
@@ -778,15 +870,20 @@ export class ViewModel {
 
   update(dt, s = {}) {
     this._magNow = s.mag ?? 1;
+    this._magRaw = typeof s.mag === 'number' ? s.mag : null;   // Magazininhalt (ohne Controller: voll)
     const player = this.G?.player;
     if (player && (player.team ?? null) !== this._team) this._syncCamo();
     if (!this.G?.world?.lighting && !this._lighting) this._ensureOwnEnv();
     else if (this.G?.world?.lighting && this.G.world.lighting !== this._lighting) this.setLighting(this.G.world.lighting);
     dt = Math.min(Math.max(dt || 0, 0), 0.05);
     this._time += dt;
-    // Wurzel folgt der Viewmodel-Kamera
-    this.camera.updateMatrixWorld();
-    this.camera.matrixWorld.decompose(this.root.position, this.root.quaternion, _s1);
+    // Wurzel folgt der Viewmodel-Kamera – in VR (engine/xr) dem Griff der Haupthand (Welt, Lauf entlang des Zielstrahls)
+    const vr = this._xrRoot();
+    if (!vr) {
+      this.camera.updateMatrixWorld();
+      this.camera.matrixWorld.decompose(this.root.position, this.root.quaternion, _s1);
+    }
+    if (vr !== !!this._armsHiddenVr) { this._armsHiddenVr = vr; this.arms.group.visible = !vr; } // VR: die echten Hände halten die Waffe
     if (this._pending && (!this.cur || !this._lowering)) this._swapNow();
     if (!this.cur) return;
     const h = this.h;
@@ -817,7 +914,7 @@ export class ViewModel {
     if (typeof s.mag === 'number' && (h.action === 'auto' || h.action === 'semi') && !inReload) this._boltLocked = s.mag === 0;
 
     // ---- Zustände glätten
-    const busy = this.action && ['reload', 'shells', 'melee', 'grenade', 'slash', 'inspect'].includes(this.action.type);
+    const busy = this.action && ['reload', 'shells', 'melee', 'strike', 'grenade', 'slash', 'inspect'].includes(this.action.type);
     if (typeof s.adsProgress === 'number') this._ads = clamp(s.adsProgress, 0, 1);
     else {
       const adsTime = this.def?.adsTime ?? 0.25;
@@ -827,7 +924,7 @@ export class ViewModel {
     }
     const a = this._ads;
     const na = 1 - a;
-    const sprintWant = s.sprinting && a < 0.2 && !(this.action && ['reload', 'shells', 'grenade', 'melee', 'slash'].includes(this.action.type)) ? 1 : 0;
+    const sprintWant = s.sprinting && a < 0.2 && !(this.action && ['reload', 'shells', 'grenade', 'melee', 'strike', 'slash'].includes(this.action.type)) ? 1 : 0;
     this._sprint = damp(this._sprint, sprintWant, sprintWant ? 7 : 10, dt);
     this._crouch = damp(this._crouch, s.crouching ? 1 : 0, 8, dt);
     const onGround = s.onGround !== false;
@@ -976,12 +1073,11 @@ export class ViewModel {
       P.x += 0.03 * m; P.y -= 0.13 * m; P.z += 0.04 * m;
       R.x -= 0.55 * m; R.y += 0.15 * m; R.z += 0.35 * m;
     }
-    // Ziehen / Wegstecken
+    // Ziehen / Wegstecken je Waffenklasse (anim/moves.js); eq bleibt für VR (halb so weit, _xrGunPose)
     const eq = this._lowering ? 1 - smooth(1 - this._lowerT) : 1 - easeOut(this._equipT);
-    if (eq > 0) {
-      P.x += 0.02 * eq; P.y += -0.3 * eq; P.z += 0.08 * eq;
-      R.x += -0.95 * eq; R.y += 0.25 * eq; R.z += 0.55 * eq;
-    }
+    if (!vr) this._drawPose(P, R);
+    // Rutschen, Hinlegen-Übergang, Ducken-Ruck, Bereitmachen nach dem Spawn, Leerlauf-Gesten
+    this._moveExtras(P, R, s, dt, na);
 
     // ---- Aktion (Nachladen, Nahkampf, Granate …)
     const act = this._evalAction(dt, s);
@@ -990,46 +1086,53 @@ export class ViewModel {
       R.x += act.r[0]; R.y += act.r[1]; R.z += act.r[2];
     }
 
-    // walls 2: Wandprüfung NACH Überklettern/Ziehen/Aktion (Nachladen kippt die Waffe) und mit der Drehung um das Auge
-    // (freies Zielen, Nachlauf im Anschlag) – geprüft wird die Lage, die tatsächlich im Bild steht
-    let eyeQw = null;
-    {
-      const fa = s.freeAim;
-      let fx = 0, fy = 0;
-      if (fa && (fa.x || fa.y)) {
-        const main = this.G?.camera;
-        const kf = main && main.fov ? Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) / Math.tan(THREE.MathUtils.degToRad(main.fov) / 2) : 1;
-        fx = Math.atan(Math.tan(fa.x || 0) * kf); fy = Math.atan(Math.tan(fa.y || 0) * kf);
-      }
-      const ey = -fx + lagY * a, ep = fy + lagP * a;
-      if (ey || ep) eyeQw = (this._wallEyeQ || (this._wallEyeQ = new THREE.Quaternion())).setFromEuler(_e.set(ep, ey, 0, 'YXZ'));
-    }
-    // Wandkollision (F3; walls 2): wallFit() tastet die Waffe selbst ab (Strahlen Auge → Stützpunkte, Kolben → Mündung)
-    // und passt die Lage an – kein sichtbarer Punkt liegt hinter Wand, Kante, Brüstung. Ohne s.wallDist über `obstruct`.
-    this._obstruct = damp(this._obstruct, clamp(s.obstruct || 0, 0, 1), s.obstruct > this._obstruct ? 14 : 7, dt);
+    // Waffe an Wänden und Hindernissen (F3, Einstellung weaponObstruction): `s.obstruct` (Controller, Strahlen entlang
+    // der Laufrichtung bis zur Waffenlänge – nur was wirklich vor der Mündung steht, nicht Fahrzeug/Container daneben).
+    // 'overlay' (Standard, wie die meisten Shooter) und 'clip': Waffe bleibt in Haltung (über der Welt bzw. gegen die
+    // Welttiefe gezeichnet, renderer). 'raise'/'tuck': feste Ausweichhaltung, weich überblendet – erst zurückziehen
+    // (o1), dann hochnehmen bzw. flach an den Oberkörper (o2). Die Waffe wird immer über der Welt gezeichnet, ragt
+    // also auch auf dem Weg dorthin nicht sichtbar in die Wand.
+    const wm = this._obstructionMode(), adapt = wm === 'raise' || wm === 'tuck';
+    const obT = adapt && h.action !== 'knife' ? clamp(s.obstruct || 0, 0, 1) : 0;
+    this._obstruct = damp(this._obstruct, obT, obT > this._obstruct ? 14 : 7, dt);
+    if (this._obstruct < 1e-4) this._obstruct = 0;
     const ob = smooth(this._obstruct);
-    s.wallNeed = 0; s.wallAds = false; // Rückmeldung an den Controller (walls 2), von wallFit gesetzt
-    if (typeof s.wallDist === 'number' && this.cur && h.action !== 'knife') {
-      wallFit(this, P, R, s.wallDist, a, h.action === 'pistol', dt, s, eyeQw);
-    } else if (ob > 1e-3) {
-      const o1 = clamp(ob / 0.5, 0, 1) * na, o2 = smooth(clamp((ob - 0.4) / 0.6, 0, 1)) * na;
-      if (h.action === 'pistol') {
-        P.z += 0.1 * o1; P.y -= 0.025 * o1; P.x -= 0.03 * o2;
-        R.x += 0.35 * o2; R.y += 0.2 * o2; R.z += 0.1 * o2;
-      } else if (h.action !== 'knife') {
-        P.z += 0.12 * o1; P.y -= 0.04 * o2; P.x -= 0.02 * o2;
-        R.x -= 0.55 * o2; R.y += 0.32 * o2; R.z += 0.26 * o2;
+    if (ob > 1e-3 && h.action !== 'knife') {
+      // Pose der laufenden Ausweichhaltung merken: Umschalten im Spiel blendet in der begonnenen Haltung aus
+      if (adapt) this._obsPose = wm;
+      const pistol = h.action === 'pistol';
+      const o1 = clamp(ob / 0.5, 0, 1) * na, o2 = smooth(clamp((ob - 0.3) / 0.7, 0, 1)) * na;
+      if (this._obsPose === 'raise') {
+        // Hochnehmen: Mündung schräg nach oben um die Griffhand, zurück und etwas tiefer – Verschluss/Optik bleiben
+        // unten rechts im Bild statt vor das Auge zu schwenken
+        if (pistol) {
+          P.z += 0.08 * o1; P.y -= 0.02 * o1;
+          R.x += 0.65 * o2; R.y += 0.12 * o2; P.y -= 0.03 * o2; P.x -= 0.01 * o2;
+        } else {
+          P.z += 0.1 * o1; P.y -= 0.03 * o1;
+          R.x += 0.7 * o2; R.y += 0.15 * o2; R.z -= 0.1 * o2; P.y -= 0.07 * o2; P.x += 0.02 * o2;
+        }
+      } else if (pistol) {
+        // An den Körper: Pistole kompakt vor die Brust (Compressed Ready), Mündung leicht ab, nach innen gekantet
+        P.z += 0.1 * o1; P.y -= 0.03 * o1;
+        R.x -= 0.2 * o2; R.y += 0.5 * o2; R.z += 0.5 * o2; P.x -= 0.06 * o2; P.y -= 0.04 * o2;
+      } else {
+        // An den Körper: Gewehr flach vor den Oberkörper – eingedreht, Mündung leicht ab, nach innen gekantet, tiefer
+        P.z += 0.12 * o1; P.y -= 0.04 * o1;
+        R.x -= 0.22 * o2; R.y += 0.75 * o2; R.z += 0.45 * o2; P.x -= 0.05 * o2; P.y -= 0.06 * o2; P.z += 0.03 * o2;
       }
     }
     // Nachladen einrahmen (hands): die Arbeitsstelle der Stützhand (Magazinschacht, Ladeöffnung, Trommel, Rohrmündung)
     // wird während der Aktion ins untere Bilddrittel gehoben/geschoben – wie bei echten Ego-Shootern dreht und hebt
     // man die Waffe zur Kamera, statt unter dem Bildrand zu hantieren. Nur anheben/wegschieben, höchstens 0,22 m.
-    if (act && act.frame > 1e-3 && this.cur.workRest) this._frameWork(P, R, act.frame);
+    if (act && act.frame > 1e-3 && this.cur.workRest && !vr) this._frameWork(P, R, act.frame);
+    // VR: Hand = Waffe – statt Hüft-/Anschlagpose, Wippen, Nachlauf und Ausweichen nur Rückstoß, Ziehen und Aktionen
+    if (vr) this._xrGunPose(P, R, rp, rr, act, eq);
     this.gun.position.copy(P);
     this.gun.rotation.set(R.x, R.y, R.z, 'YXZ');
     // Drehung um das Auge: freies Zielen (Waffe zeigt in die Laufrichtung, Visierlinie bleibt am Auge) und der
     // Nachlauf im Anschlag – so wandert das ganze Visierbild, statt dass Kimme und Korn auseinanderlaufen.
-    const fa = s.freeAim;
+    const fa = vr ? null : s.freeAim;
     let faX = 0, faY = 0;
     if (fa && (fa.x || fa.y)) {
       // gleicher Bildpunkt wie das Fadenkreuz (projizierter Laufpunkt der Hauptkamera): Winkel ins Viewmodel-FOV umrechnen
@@ -1038,7 +1141,7 @@ export class ViewModel {
       faX = Math.atan(Math.tan(fa.x || 0) * kf);
       faY = Math.atan(Math.tan(fa.y || 0) * kf);
     }
-    const eyeYaw = -faX + lagY * a, eyePitch = faY + lagP * a;
+    const eyeYaw = vr ? 0 : -faX + lagY * a, eyePitch = vr ? 0 : faY + lagP * a;
     if (eyeYaw || eyePitch) {
       this._eyeQ.setFromEuler(_e.set(eyePitch, eyeYaw, 0, 'YXZ'));
       this.gun.position.applyQuaternion(this._eyeQ);
@@ -1048,8 +1151,8 @@ export class ViewModel {
     // ---- Bewegliche Teile: Verschluss/Schlitten/Hahn
     this._animParts(dt, act);
 
-    // ---- Zielfernrohr: voll im Anschlag → Overlay, Waffe ausblenden
-    const scoped = this._scopeOverlay === 'sniper' && a > 0.96 && (!this.action || this.action.type === 'boltCycle');
+    // ---- Zielfernrohr: voll im Anschlag → Overlay, Waffe ausblenden (nicht in VR: dort gibt es kein Bildschirm-Overlay)
+    const scoped = !vr && this._scopeOverlay === 'sniper' && a > 0.96 && (!this.action || this.action.type === 'boltCycle');
     this.showScopeOverlay = scoped;
     this.root.visible = this._visible && !scoped;
     if (scoped) this.flash.hide();
@@ -1057,7 +1160,7 @@ export class ViewModel {
     // ---- Hände
     this.root.updateMatrixWorld(true);
     this._rootInv.copy(this.root.matrixWorld).invert();
-    this._solveHands(act);
+    this._solveHands(act || this._mantleAct());
 
     // ---- Effekte
     this.cur.ud.muzzle.getWorldPosition(_v);
@@ -1067,7 +1170,7 @@ export class ViewModel {
     // Hitzeflimmern über dem Lauf (high/ultra): ab ~⅓ Erwärmung, im Anschlag halb so stark
     {
       const hz = smooth(clamp((this._heat - 0.3) / 0.6, 0, 1)) * (1 - 0.5 * a);
-      if (hz > 0.01 && this.haze.enabled && !this.showScopeOverlay && this._visible) {
+      if (hz > 0.01 && this.haze.enabled && !vr && !this.showScopeOverlay && this._visible) { // VR: kein Hitzeflimmern (Bildkopie)
         const mz = this.cur.ud.muzzle;
         mz.getWorldPosition(_s1);
         this.root.worldToLocal(_s1);
@@ -1275,6 +1378,7 @@ export class ViewModel {
       this._setPartOffset(n, o[0] || 0, o[1] || 0, o[2] || 0, o[3] || 0, o[4] || 0, o[5] || 0);
     }
     if (act && act.parts && act.parts._vis) for (const [n, v] of Object.entries(act.parts._vis)) { const p = this._part(n); if (p) p.visible = v; }
+    this._updateMagFill();
     // Semtex-LED in der Hand blinkt
     this._led += dt;
     const led = this.props.semtex.userData.parts.led;
@@ -1305,8 +1409,11 @@ export class ViewModel {
       case 'melee': done = this._actMelee(A, out); break;
       case 'slash': done = this._actSlash(A, out); break;
       case 'grenade': done = this._actGrenade(A, out); break;
-      case 'inspect': done = A.style && A.style !== 'rifle' ? this._actInspectStyle(A, out, A.style) : this._actInspect(A, out); break;
+      case 'inspect': done = this._actInspectV(A, out); break;
       case 'plate': done = this._actPlate(A, out); break;
+      case 'ready': done = this._actReady(A, out); break;
+      case 'fidget': done = this._actFidget(A, out); break;
+      case 'strike': done = this._actGunStrike(A, out); break;
       default: done = true;
     }
     const f = A.cancel ? Math.max(0, A.fade) : 1;
@@ -1323,94 +1430,53 @@ export class ViewModel {
 
   _hideProps() {
     for (const p of Object.values(this.props)) p.visible = false;
+    const ch = this.cur?.chamber;
+    if (ch) ch.mesh.visible = false;   // Kammer-Patrone (Inspizieren, anim/inspects.js)
   }
 
-  _actReload(A, out) {
-    const u = clamp(A.t / A.dur, 0, 1);
-    const ud = this.cur.ud, style = A.style, empty = A.empty;
-    const anchors = ud.anchors;
-    if (style === 'pistol') return this._actReloadPistol(A, out, u);
-    if (style === 'gripmag') return this._actReloadGripMag(A, out, u);
-    if (style === 'bullpup') return this._actReloadBullpup(A, out, u);
-    if (style === 'drum') return this._actReloadDrum(A, out, u);
-    if (style === 'revolver') return this._actReloadRevolver(A, out, u);
-    if (style === 'rocket') return this._actReloadRocket(A, out, u);
-    if (style === 'belt') return this._actReloadBelt(A, out, u);
-    if (style === 'top') return this._actReloadTop(A, out, u);
-    // Standard-Magazinwechsel (optional mit Durchladen am Ende)
-    const k = empty ? 0.74 : 1;     // Magazin-Teil wird bei Leer-Nachladen gestaucht
-    const m = u / k;
-    // Waffe kippen
-    // Waffe anheben, heranziehen und im Uhrzeigersinn rollen: Magazinschacht zur Stützhand
-    curve(m, [[0, ZERO3], [0.13, [0.16, 0.2, -0.46]], [0.8, [0.18, 0.22, -0.5]], [0.95, ZERO3]], out.r);
-    curve(m, [[0, ZERO3], [0.13, [-0.045, 0.045, 0.05]], [0.8, [-0.045, 0.05, 0.05]], [0.95, ZERO3]], out.p);
-    // Magazin: raus nach unten, aus dem Bild, neues hinein
-    // Stützhand zieht das Magazin, lässt es fallen (Welt-Kopie ab 0,3), taucht nur kurz unter den Bildrand zur Tasche
-    // und kommt mit dem neuen Magazin zurück (hands: früher 0,5 m tief und lange außerhalb des Bildes)
-    const mag = curve(m, [[0.26, ZERO3], [0.36, [0, -0.07, 0.012]], [0.425, [-0.08, -0.22, 0.06]], [0.435, [-0.07, -0.21, 0.055]], [0.56, [0, -0.08, 0.014]], [0.65, [0, -0.01, 0.002]], [0.67, ZERO3]]);
-    const magRot = curve(m, [[0.26, 0], [0.4, 0.25], [0.44, 0.25], [0.56, 0.12], [0.67, 0]]);
-    out.parts.mag = [mag[0], mag[1], mag[2], magRot, 0, 0];
-    this._magWindow(A, out, m, 0.3, 0.43);
-    out.frame = windowW(m, 0.08, 0.22, 0.7, 0.86);
-    if (m > 0.66 && m < 0.7 && !A.slapped) { A.slapped = true; this._jolt.kick(1.2, 0, 0); this._recoilPos.kick(0, 0.004, 0); }
-    // Linke Hand: zum Magazin, mit ihm hinaus und zurück
-    const wMag = windowW(m, 0.14, 0.25, 0.68, 0.8);
-    if (wMag > 0 && ud.anchors.magGrab) req(out.left, wMag, { anchor: ud.anchors.magGrab, style: 'mag' });
-    if (empty) {
-      const c = (u - 0.74) / 0.26;   // 0..1 Durchladen
-      const ch = anchors.chargeGrab;
-      if (ch && ch.userData.style === 'release' && anchors.boltCatch && c > -0.05) {
-        // Verschlussfang mit dem Handballen schlagen: Verschluss schnellt vor
-        const wC = windowW(c, 0.0, 0.32, 0.55, 0.85);
-        if (wC > 0) req(out.left, wC, { anchor: anchors.boltCatch, style: 'slapSide' });
-        if (c > 0.45 && !A.charged) { A.charged = true; this._boltLocked = false; this._boltT = 0.3; this._jolt.kick(0.9, 0.25, 0); }
-        const rc = windowW(c, 0.0, 0.25, 0.55, 0.95);
-        out.r[2] += 0.12 * rc; out.r[1] += 0.06 * rc;
-      } else if (ch && c > -0.05) {
-        const st = ch.userData.style || 'pull';
-        const travel = ch.userData.travel || [0, 0, 0.06];
-        const pull = curve(c, [[0.2, 0], [0.42, 1], [0.52, 1], [0.56, 0]]);
-        const partName = ch.parent?.name || 'charge';
-        const lift = st === 'hkslap' ? -0.6 * windowW(c, 0.3, 0.42, 0.5, 0.56) : 0;
-        out.parts[partName] = [travel[0] * pull, travel[1] * pull, travel[2] * pull, 0, 0, lift];
-        const wC = windowW(c, 0.0, 0.18, 0.6, 0.85);
-        // Ladehebel rechts (KV-47): die Schusshand verlässt kurz den Griff; sonst greift die Stützhand
-        if (wC > 0) req(st === 'right' ? out.right : out.left, wC, { anchor: ch, style: st === 'right' ? 'pinchRight' : 'pinchSide' });
-        // Waffe zum Durchladen drehen (Hebelseite zur Kamera)
-        const rc = windowW(c, 0.0, 0.2, 0.62, 0.95);
-        out.r[2] += (st === 'right' ? 0.38 : 0.18) * rc; out.r[0] += 0.08 * rc; out.r[1] += (st === 'right' ? 0.12 : 0.1) * rc;
-        out.p[0] += (st === 'right' ? -0.03 : -0.02) * rc; out.p[1] += (st === 'right' ? 0.02 : 0) * rc;
-        if (c > 0.55 && c < 0.6 && !A.charged) { A.charged = true; this._jolt.kick(0.8, 0.3, 0); }
-      }
-      // Repetierer: Kammerstängel nach dem Magazinwechsel
-      if (this.h.action === 'bolt' && c > 0) this._boltMotion(c, out, true);
-    }
-    return u >= 1;
+  /** Füllstand des neuen Magazins – wie WeaponController._addAmmo (reicht der Vorrat nicht, ist es nicht voll). */
+  _freshMag() {
+    const cap = this.def?.mag ?? 0;
+    const w = this.G?.player?.weapon, st = w && w.viewModel === this ? w.current : null;
+    if (!st || this._magRaw == null || w.infiniteAmmo) return cap;
+    return Math.min(cap, st.mag + Math.max(0, st.reserve || 0));
   }
 
-  /** Altes Magazin fällt bei t ≥ from in die Welt (einmal je Nachladen); bis `to` (neues Magazin) ausgeblendet. */
-  _magWindow(A, out, t, from, to) {
-    if (t >= from && !A.dropped && !A.cancel) { A.dropped = true; this._dropMag(); }
-    if (A.dropped && t >= from && t < to && this._worldFx()) (out.parts._vis || (out.parts._vis = {})).mag = false;
+  /**
+   * Magazininhalt (gunsmith/magfill.js): Patronen im Magazin-Teil = Munitionsstand des Controllers, während des
+   * Nachladens ab dem Herausziehen das neue Magazin (A.magNew); Revolver: Trommelstellung dreht die Kammern mit.
+   * Ändert sich nichts, kostet es nichts (setMagRounds vergleicht den letzten Stand).
+   */
+  _updateMagFill() {
+    const A = this.action;
+    let n = this._magRaw ?? this.def?.mag ?? 0;
+    if (A && A.magNew != null && !A.cancel && (A.type === 'reload' || A.type === 'shells')) n = A.magNew;
+    setMagRounds(this.cur.model, n, this._cylTarget || 0);
   }
 
-  _boltMotion(c, out, inReload) {
+  /**
+   * Kammerstängel: hoch, zurück (Hülse fliegt), vor, runter. flick (Repetieren, Variante 2): kürzerer Griff, Waffe
+   * kräftiger gekantet und kurz abgesenkt – der Stängel wird mit Schwung „durchgeschlagen“ (gleiche Dauer).
+   */
+  _boltMotion(c, out, inReload, flick = false) {
     const bg = this.cur.ud.anchors.boltGrab;
     if (!bg) return;
     const rot = bg.userData.rot ?? 1.05, travel = bg.userData.travel?.[2] ?? 0.09;
-    const up = curve(c, [[0.18, 0], [0.3, 1], [0.66, 1], [0.78, 0]]);
-    const back = curve(c, [[0.3, 0], [0.45, 1], [0.52, 1], [0.66, 0]]);
+    const up = flick ? curve(c, [[0.22, 0], [0.3, 1], [0.6, 1], [0.68, 0]]) : curve(c, [[0.18, 0], [0.3, 1], [0.66, 1], [0.78, 0]]);
+    const back = flick ? curve(c, [[0.3, 0], [0.4, 1], [0.46, 1], [0.58, 0]]) : curve(c, [[0.3, 0], [0.45, 1], [0.52, 1], [0.66, 0]]);
     out.parts.boltHandle = [0, 0, travel * back, 0, 0, rot * up];
-    const w = windowW(c, 0.02, 0.17, 0.8, 0.96);
+    const w = flick ? windowW(c, 0.06, 0.2, 0.7, 0.86) : windowW(c, 0.02, 0.17, 0.8, 0.96);
     if (w > 0) req(out.right, w, { anchor: bg, style: 'boltKnob' });
-    const rc = windowW(c, 0.0, 0.18, 0.8, 1.0);
-    out.r[2] += 0.16 * rc; out.r[0] += 0.05 * rc; out.r[1] += 0.06 * rc; out.p[1] += -0.015 * rc;
+    const rc = flick ? windowW(c, 0.0, 0.22, 0.62, 0.92) : windowW(c, 0.0, 0.18, 0.8, 1.0);
+    if (flick) { out.r[2] += 0.32 * rc; out.r[0] -= 0.04 * rc; out.r[1] += 0.1 * rc; out.p[1] += -0.03 * rc; out.p[0] -= 0.01 * rc; }
+    else { out.r[2] += 0.16 * rc; out.r[0] += 0.05 * rc; out.r[1] += 0.06 * rc; out.p[1] += -0.015 * rc; }
+    if (flick && c > 0.58 && this.action && !this.action.flicked) { this.action.flicked = true; this._jolt.kick(0.6, 0.3, 0); }
     if (!inReload && c > 0.47 && this.action && !this.action.ejected) { this.action.ejected = true; this._eject(); }
   }
 
   _actBolt(A, out) {
     const c = clamp(A.t / A.dur, 0, 1);
-    this._boltMotion(c, out, false);
+    this._boltMotion(c, out, false, A.variant === 1);
     return c >= 1;
   }
 
@@ -1426,49 +1492,6 @@ export class ViewModel {
     return c >= 1;
   }
 
-  _actShells(A, out, dt) {
-    const T = A.timing, ud = this.cur.ud;
-    // Phasen: start → insert × n → end (Pumpe bei leer)
-    A.pt += dt;
-    if (A.phase === 'start' && A.pt >= T.start) { A.phase = 'insert'; A.pt = 0; }
-    else if (A.phase === 'insert' && A.pt >= T.insert) {
-      A.inserted++; A.pt = 0;
-      const ctrl = this._ctrlReload;
-      if (A.stop || (!ctrl && A.inserted >= A.shells)) { A.phase = 'end'; }
-    } else if (A.phase === 'end' && A.pt >= T.end + (A.empty ? 0.45 : 0)) return true;
-    if (A.phase === 'insert' && A.stop) { A.phase = 'end'; A.pt = 0; }
-    // Kippen: Ladeöffnung zur linken Hand
-    let tilt;
-    if (A.phase === 'start') tilt = smooth(clamp(A.pt / T.start, 0, 1));
-    else if (A.phase === 'insert') tilt = 1;
-    else tilt = 1 - smooth(clamp(A.pt / T.end, 0, 1));
-    out.r[0] = 0.18 * tilt; out.r[1] = 0.12 * tilt; out.r[2] = -0.42 * tilt;
-    out.p[0] = -0.03 * tilt; out.p[1] = 0.03 * tilt; out.p[2] = 0.02 * tilt;
-    out.frame = 0.8 * tilt;   // Ladeöffnung ins Bild (hands)
-    // Linke Hand: Patrone holen und von unten einschieben
-    const port = ud.anchors.shellPort;
-    if (A.phase === 'insert' && port) {
-      const c = clamp(A.pt / T.insert, 0, 1);
-      const shellOff = curve(c, [[0, [-0.05, -0.18, 0.05]], [0.45, [0, -0.045, 0.02]], [0.62, [0, -0.012, 0.004]], [0.78, [0, 0.008, -0.03]]]);
-      out.parts.shell = [shellOff[0], shellOff[1], shellOff[2], 0.3 * (1 - c), 0, 0];
-      out.parts._vis = { shell: c < 0.8 };
-      // Hand hält die Patrone (folgt dem Patronen-Teil)
-      req(out.left, 1, { part: 'shell', style: 'mag', offset: [0, -0.012, 0.02] });
-      if (c > 0.62 && c < 0.7 && !A.pushed) { A.pushed = true; this._jolt.kick(0.6, 0, 0); }
-      if (c < 0.1) A.pushed = false;
-    } else {
-      const w = A.phase === 'start' ? smooth(clamp(A.pt / T.start, 0, 1)) : A.phase === 'end' ? 1 - smooth(clamp(A.pt / Math.max(0.1, T.end * 0.6), 0, 1)) : 1;
-      if (w > 0 && port) req(out.left, w * 0.85, { anchor: port, style: 'mag', dy: -0.12 * (1 - w) });
-      // Pumpen nach Leer-Nachladen
-      if (A.phase === 'end' && A.empty) {
-        const c = clamp((A.pt - T.end * 0.5) / 0.45, 0, 1);
-        const travel = ud.anchors.pumpGrab?.userData.travel?.[2] ?? 0.085;
-        out.parts.pump = [0, 0, travel * curve(c, [[0, 0], [0.4, 1], [0.5, 1], [0.85, 0]])];
-      }
-    }
-    return false;
-  }
-
   // Zielhand an einem Teil (Patrone, Magazin) ausrichten
   _partTarget(part, style, out, offset, side = -1) {
     const p = this._part(part);
@@ -1481,95 +1504,6 @@ export class ViewModel {
     this._anchorTarget(tmp, style, null, out, side);
     p.remove(tmp);
     return out;
-  }
-
-  _actReloadPistol(A, out, u) {
-    const ud = this.cur.ud, empty = A.empty;
-    curve(u, [[0, ZERO3], [0.12, [0.36, 0.22, -0.42]], [0.8, [0.38, 0.24, -0.45]], [0.95, ZERO3]], out.r);
-    curve(u, [[0, ZERO3], [0.12, [-0.035, 0.06, 0.04]], [0.8, [-0.035, 0.062, 0.04]], [0.95, ZERO3]], out.p);
-    // Magazin fällt entlang der Griffachse heraus, neues kommt von unten links
-    const mag = curve(u, [[0.12, ZERO3], [0.2, [0, -0.07, 0.025]], [0.3, [0.02, -0.5, 0.15]], [0.31, [-0.08, -0.22, 0.07]], [0.44, [-0.02, -0.07, 0.028]], [0.56, [0, -0.012, 0.004]], [0.62, ZERO3]]);
-    out.parts.mag = [mag[0], mag[1], mag[2]];
-    this._magWindow(A, out, u, 0.17, 0.305);
-    out.frame = windowW(u, 0.06, 0.16, 0.66, 0.84);
-    if (u > 0.6 && !A.slapped) { A.slapped = true; this._jolt.kick(1.4, 0, 0); this._recoilPos.kick(0, 0.005, 0); }
-    // Linke Hand verlässt den Stützgriff, holt das neue Magazin, setzt es ein
-    // Stützhand: kurz zur Magazintasche (knapp unter dem Bildrand), dann mit dem neuen Magazin von unten zum Schacht
-    const wAway = windowW(u, 0.1, 0.2, 0.66, 0.82);
-    if (wAway > 0) {
-      if (u < 0.3) req(out.left, wAway, { free: [[-0.11, -0.25, -0.27], [0.4, 0.5, -0.7], [-0.7, 0.4, 0.2], 'relaxed'] });
-      else req(out.left, wAway, { anchor: ud.anchors.magGrab || ud.magazine, style: 'mag' });
-    }
-    // Schlittenfang lösen (leer): Schlitten schnellt vor
-    if (empty) {
-      if (u < 0.74) this._slideLocked = true;
-      else if (this._slideLocked) { this._slideLocked = false; this._boltT = 0.3; this._jolt.kick(0.9, 0.2, 0); }
-    }
-    return u >= 1;
-  }
-
-  _actReloadTop(A, out, u) {
-    // Magazin oben (QX-90): nach oben-hinten abziehen, neues von vorn auflegen und einrasten
-    const ud = this.cur.ud, empty = A.empty;
-    const k = empty ? 0.78 : 1, m = u / k;
-    curve(m, [[0, ZERO3], [0.14, [0.1, 0.24, 0.42]], [0.8, [0.1, 0.24, 0.44]], [0.95, ZERO3]], out.r);
-    curve(m, [[0, ZERO3], [0.14, [-0.01, -0.05, -0.03]], [0.8, [-0.01, -0.05, -0.03]], [0.95, ZERO3]], out.p);
-    const mag = curve(m, [[0.25, ZERO3], [0.33, [0, 0.022, 0.03]], [0.42, [-0.13, -0.2, 0.09]], [0.43, [-0.12, -0.18, -0.03]], [0.57, [0, 0.03, -0.02]], [0.66, [0, 0.008, 0]], [0.69, ZERO3]]);
-    const magRot = curve(m, [[0.25, 0], [0.33, -0.18], [0.43, -0.3], [0.57, -0.1], [0.69, 0]]);
-    out.parts.mag = [mag[0], mag[1], mag[2], magRot, 0, 0];
-    this._magWindow(A, out, m, 0.3, 0.425);
-    out.frame = windowW(m, 0.08, 0.22, 0.72, 0.88);
-    if (m > 0.68 && !A.slapped) { A.slapped = true; this._jolt.kick(1.3, 0, 0); }
-    const wMag = windowW(m, 0.14, 0.25, 0.7, 0.82);
-    if (wMag > 0 && ud.anchors.magGrab) req(out.left, wMag, { anchor: ud.anchors.magGrab, style: 'magTop' });
-    if (empty) {
-      const c = (u - 0.78) / 0.22;
-      const ch = ud.anchors.chargeGrab;
-      if (ch && c > -0.05) {
-        const travel = ch.userData.travel || [0, 0, 0.06];
-        const pull = curve(c, [[0.2, 0], [0.45, 1], [0.55, 1], [0.6, 0]]);
-        out.parts.charge = [0, 0, travel[2] * pull];
-        const wC = windowW(c, 0.0, 0.2, 0.62, 0.9);
-        if (wC > 0) req(out.left, wC, { anchor: ch, style: 'pinchSide' });
-        if (c > 0.58 && !A.charged) { A.charged = true; this._jolt.kick(0.8, 0.2, 0); }
-      }
-    }
-    return u >= 1;
-  }
-
-  _actReloadBelt(A, out, u) {
-    // Gurtwechsel (HM-60): Deckel auf, Kasten raus, neuer Kasten + Gurt, Deckel zu, ggf. durchladen
-    const ud = this.cur.ud, empty = A.empty;
-    curve(u, [[0, ZERO3], [0.08, [0.1, 0.3, 0.36]], [0.86, [0.1, 0.32, 0.38]], [0.97, ZERO3]], out.r);
-    curve(u, [[0, ZERO3], [0.08, [0.0, -0.035, -0.02]], [0.86, [0.0, -0.035, -0.02]], [0.97, ZERO3]], out.p);
-    const cover = curve(u, [[0.1, 0], [0.18, -1.15], [0.66, -1.15], [0.74, 0]]);
-    out.parts.cover = [0, 0, 0, cover, 0, 0];
-    if (u > 0.735 && !A.slapped) { A.slapped = true; this._jolt.kick(1.5, 0, 0); }
-    const box = curve(u, [[0.26, ZERO3], [0.34, [-0.04, -0.08, 0.02]], [0.42, [-0.14, -0.3, 0.07]], [0.43, [-0.13, -0.28, 0.04]], [0.56, [-0.02, -0.06, 0.01]], [0.6, ZERO3]]);
-    out.frame = windowW(u, 0.06, 0.16, 0.8, 0.94);
-    out.parts.mag = [box[0], box[1], box[2]];
-    const belt = curve(u, [[0.58, [0, -0.02, 0]], [0.66, ZERO3]]);
-    out.parts.belt = [belt[0], belt[1], belt[2]];
-    out.parts._vis = { belt: !(u > 0.3 && u < 0.6) };
-    this._magWindow(A, out, u, 0.32, 0.425);
-    // Hand: Deckel öffnen → Kasten → Gurt einlegen → Deckel schließen
-    const coverReq = { part: 'cover', style: 'pinchSide', offset: [-0.028, 0.02, 0.232] };
-    if (u < 0.24) req(out.left, windowW(u, 0.06, 0.12, 0.2, 0.26), coverReq);
-    else if (u < 0.62) { if (ud.anchors.magGrab) req(out.left, windowW(u, 0.2, 0.28, 0.58, 0.64), { anchor: ud.anchors.magGrab, style: 'mag' }); }
-    else if (u < 0.8) req(out.left, windowW(u, 0.6, 0.66, 0.74, 0.82), coverReq);
-    if (empty) {
-      const c = (u - 0.8) / 0.18;
-      const ch = ud.anchors.chargeGrab;
-      if (ch && c > -0.05) {
-        const travel = ch.userData.travel || [0, 0, 0.1];
-        out.parts.charge = [0, 0, travel[2] * curve(c, [[0.2, 0], [0.45, 1], [0.55, 1], [0.62, 0]])];
-        const wC = windowW(c, 0.0, 0.2, 0.62, 0.9);
-        if (wC > 0) req(out.right, wC, { anchor: ch, style: 'pinchRight' });
-        const rc = windowW(c, 0.0, 0.2, 0.62, 0.95);
-        out.r[2] += 0.2 * rc; out.r[1] += 0.08 * rc;
-      }
-    }
-    return u >= 1;
   }
 
   _actMelee(A, out) {
@@ -1614,9 +1548,16 @@ export class ViewModel {
     out.r[0] = -0.85 * gw; out.r[1] = 0.2 * gw; out.r[2] = 0.35 * gw;
     // Rechte Hand: Granate halten, ausholen, werfen
     const rw = windowW(u, 0.05, 0.2, 0.8, 0.96);
-    const rp = curve(u, [[0.05, [0.2, -0.4, -0.2]], [0.2, [0.09, -0.12, -0.3]], [0.47, [0.07, -0.1, -0.29]], [0.58, [0.22, -0.02, -0.2]], [0.68, [0.03, 0.04, -0.48]], [0.8, [-0.06, -0.32, -0.36]], [0.96, [0.0, -0.45, -0.25]]]);
-    const rF = curve(u, [[0.05, [-0.4, 0.6, -0.6]], [0.2, [-0.45, 0.55, -0.55]], [0.47, [-0.45, 0.55, -0.55]], [0.58, [-0.1, 0.9, 0.2]], [0.68, [0.0, 0.3, -0.95]], [0.8, [-0.1, -0.6, -0.7]]]);
-    req(out.right, rw, { free: [rp, rF, [0.75, 0.2, 0.45], 'ball'] });
+    let rp, rF, rB;
+    if (A.low) {
+      // von unten: tief nach hinten ausholen, flach nach vorn oben loslassen (gleiche Zeitpunkte)
+      rp = curve(u, GRENADE_LOW.pos); rF = curve(u, GRENADE_LOW.F); rB = curve(u, GRENADE_LOW.B);
+    } else {
+      rp = curve(u, [[0.05, [0.2, -0.4, -0.2]], [0.2, [0.09, -0.12, -0.3]], [0.47, [0.07, -0.1, -0.29]], [0.58, [0.22, -0.02, -0.2]], [0.68, [0.03, 0.04, -0.48]], [0.8, [-0.06, -0.32, -0.36]], [0.96, [0.0, -0.45, -0.25]]]);
+      rF = curve(u, [[0.05, [-0.4, 0.6, -0.6]], [0.2, [-0.45, 0.55, -0.55]], [0.47, [-0.45, 0.55, -0.55]], [0.58, [-0.1, 0.9, 0.2]], [0.68, [0.0, 0.3, -0.95]], [0.8, [-0.1, -0.6, -0.7]]]);
+      rB = [0.75, 0.2, 0.45];
+    }
+    req(out.right, rw, { free: [rp, rF, rB, 'ball'] });
     this._attachProp(g, this.arms.right.handBone, 'grenade', 1);
     g.visible = u > 0.06 && u < 0.67;
     // Linke Hand: Splint ziehen
@@ -1635,18 +1576,6 @@ export class ViewModel {
       pin.visible = u < 0.52;
     }
     if (u >= 0.66 && !A.released) { A.released = true; this.onGrenadeRelease?.(A.gtype); }
-    return u >= 1;
-  }
-
-  _actInspect(A, out) {
-    const u = clamp(A.t / A.dur, 0, 1);
-    // Linke Seite (Waffe im Uhrzeigersinn gerollt), dann rechte Seite mit Auswurffenster
-    curve(u, [[0, ZERO3], [0.14, [-0.05, 0.035, 0.04]], [0.42, [-0.05, 0.04, 0.04]], [0.56, [-0.07, 0.03, 0.03]], [0.84, [-0.07, 0.035, 0.03]], [1, ZERO3]], out.p);
-    curve(u, [[0, ZERO3], [0.14, [0.2, -0.12, -0.62]], [0.42, [0.22, -0.15, -0.66]], [0.56, [-0.05, 0.7, 0.75]], [0.84, [-0.08, 0.75, 0.8]], [1, ZERO3]], out.r);
-    // Stützhand wechselt in der ersten Phase ans Magazin
-    const mg = this.cur.ud.anchors.magGrab;
-    const wm = windowW(u, 0.04, 0.16, 0.4, 0.54);
-    if (mg && wm > 0 && this.h.reload !== 'top' && this.h.reload !== 'belt') req(out.left, wm, { anchor: mg, style: 'mag' });
     return u >= 1;
   }
 
@@ -1681,7 +1610,7 @@ export class ViewModel {
     if (!this.cur) return main ? main.getWorldPosition(out) : out.set(0, 0, 0);
     this.root.updateMatrixWorld(true);
     this.cur.ud.muzzle.getWorldPosition(out);
-    if (!main) return out;
+    if (!main || this._vrOn) return out; // VR: Viewmodel liegt in Weltkoordinaten (Hand)
     // Bildschirmposition im Viewmodel → gleiche Bildposition + Tiefe in der Hauptkamera
     const vm = this.camera;
     vm.updateMatrixWorld();
@@ -1746,542 +1675,11 @@ export class ViewModel {
 /** Empfohlenes vertikales Sichtfeld der Viewmodel-Kamera (Positionen sind darauf abgestimmt). */
 ViewModel.FOV = 54;
 
-/* ---------------------------------------------------------------- Wandkollision nach Modelllänge (walls) */
-
-const WALL_MARGIN = 0.04;   // m Abstand der sichtbaren Waffenpunkte zur Fläche
-const WALL_BACK = 0.12;     // m Anziehen (Pistole 0,10; im Anschlag höchstens 0,08)
-const WALL_TILT = 1.3;      // rad größtes Kippen in Hauptrichtung (Gewehr: absenken + eindrehen, Pistole: an die Brust)
-const WALL_TILT2 = 1.0;     // rad Gegenrichtung (Gewehr: Mündung hoch über Kante/Brüstung, Pistole: Mündung ab)
-const WALL_NEAR = 0.45;     // m: Fläche, die der Strahl eines anderen Stützpunkts fand, gilt in diesem Umkreis um den Treffer
-const WALL_PLANES = 64;
-const WALL_OK = 0.01;       // m Rest, der bei der Strahlprüfung als frei gilt
-const WALL_DROP = 0.32;     // m (walls 3) größtes zusätzliches Absenken, wenn Anziehen + Kippen nicht frei werden
-const WALL_LIFT = 0.1;      // m (hv3) größtes Anheben (Auflegen auf eine brusthohe Deckung statt aus dem Bild kippen)
-const WALL_CARRY_T = 0.25;  // s (hv3) Flächen der letzten Bilder (Welt) so lange weiterführen
-const WALL_CARRY_N = 24;    // höchstens so viele weitergeführte Flächen je Bild
-const _wq = new THREE.Quaternion(), _wq0 = new THREE.Quaternion(), _we = new THREE.Euler(), _we0 = new THREE.Euler(), _wv = new THREE.Vector3();
-const _wb = new THREE.Vector3(), _wpiv = new THREE.Vector3(), _woff = new THREE.Vector3();
-const _wcp = new THREE.Vector3(), _wcq = new THREE.Quaternion(), _wcqi = new THREE.Quaternion();
-const _wro = new THREE.Vector3(), _wrd = new THREE.Vector3(), _wn = new THREE.Vector3(), _wvel = new THREE.Vector3();
-const _whit = { t: 0, nx: 0, ny: 0, nz: 0 };
-const _wn2 = new THREE.Vector3(), _whp = new THREE.Vector3();
-let _wvis = [];
-/** Zustand der Wandprüfung je Bild: Flächen (Hauptkamera-Blickraum) + Abbildung Viewmodel → Hauptkamera. */
-const _wW = {
-  n: 0, d: Infinity, kx: 1, ky: 1, tanV: 1, tanH: 1, ok: false, w: null, bvh: null, eq: null, lead: 0, ahead: 0, feetY: -Infinity, rays: 0,
-  veh: null, hp: null, hpShift: 0, hpl: { nx: 0, ny: 0, nz: 1, c: 0, hz: 1 },
-  pl: Array.from({ length: WALL_PLANES }, () => ({ nx: 0, ny: 0, nz: 0, c: 0, hx: 0, hy: 0, hz: 0, src: -1 })),
-};
-
-/**
- * Stützpunkte des Modells (Modellraum): vordere Ecken der Hüllbox, Zwischenpunkte zum Kolben, Mittellinie, Oberkante,
- * Mündung + Stützhand (Marker), ohne Effekte. Einmal je Modell. `_wallSeg` = Indizes der Vorderpunkte für die
- * Kolben → Mündung-Strahlen (dünne Hindernisse zwischen den Augenstrahlen).
- */
-function wallPoints(vm, entry) {
-  if (entry._wallPts) return entry._wallPts;
-  const model = entry.model;
-  const skip = new Set();
-  for (const fx of [vm.flash && vm.flash.group, vm.smoke && vm.smoke.group, vm.shells && vm.shells.group, vm.haze && vm.haze.mesh]) if (fx) fx.traverse((o) => skip.add(o));
-  model.updateMatrixWorld(true);
-  const inv = new THREE.Matrix4().copy(model.matrixWorld).invert();
-  // Hüllbox exakt aus den Eckpunkten im Modellraum (die gedrehte Hüllbox je Teil blähte sich z. B. beim Titan auf
-  // 1,8 × 1,8 m auf → Stützpunkte weit neben der Waffe); unsichtbare Teile (Mündungsfeuer o. ä.) zählen nicht
-  const box = new THREE.Box3(), mw = new THREE.Matrix4(), v = new THREE.Vector3();
-  model.traverseVisible((o) => {
-    const pos = o.isMesh && !skip.has(o) && o.geometry && o.geometry.attributes.position;
-    if (!pos) return;
-    mw.multiplyMatrices(inv, o.matrixWorld);
-    for (let i = 0; i < pos.count; i++) box.expandByPoint(v.fromBufferAttribute(pos, i).applyMatrix4(mw));
-  });
-  const pts = [];
-  entry._wallSeg = [];
-  if (!box.isEmpty()) {
-    const { min, max } = box;
-    const cx = (min.x + max.x) / 2, cy = (min.y + max.y) / 2;
-    const back = new THREE.Vector3(cx, cy, max.z);
-    const corners = [];
-    for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) corners.push(new THREE.Vector3(x, y, min.z));
-    const fc = new THREE.Vector3(cx, cy, min.z);
-    for (const c of corners) { entry._wallSeg.push(pts.length); pts.push(c); pts.push(back.clone().lerp(c, 0.6)); }
-    entry._wallSeg.push(pts.length);
-    pts.push(fc, back.clone().lerp(fc, 0.35), back.clone().lerp(fc, 0.7));
-    pts.push(new THREE.Vector3(cx, max.y, (min.z + max.z) / 2));
-    // Unterkante Mitte (Magazin/Griff) und Mitte unten vorn (Handschutz/Stützhand)
-    pts.push(new THREE.Vector3(cx, min.y, (min.z + max.z) / 2), new THREE.Vector3(cx, min.y, min.z * 0.75 + max.z * 0.25));
-    const ud = entry.ud || model.userData || {};
-    for (const k of ['muzzle', 'leftHandGrip']) {
-      const o = ud[k];
-      if (o && o.isObject3D) pts.push(o.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv));
-    }
-    entry._wallBack = back.clone();
-    entry._wallBackIdx = pts.length;
-    pts.push(back.clone());
-  }
-  entry._wallPts = pts;
-  return pts;
-}
-
-/**
- * Lage der Waffe beim Wandausweichen: setzt _wq (Drehung im Kamera-/Wurzelraum) und _woff (Versatz zu P inkl.
- * Drehpunkt an der Kolbenkappe). th > 0 = Hauptrichtung, th < 0 = Gegenrichtung (s. WALL_TILT/WALL_TILT2).
- */
-function wallPose(vm, R, th, back, pistol) {
-  const u = Math.abs(th);
-  _woff.set(0, 0, 0);
-  if (pistol) {
-    if (th >= 0) { _we.set(R.x + u, R.y + u * 0.35, R.z + u * 0.2, 'YXZ'); _woff.x = -0.03 * (u / WALL_TILT); }
-    else { _we.set(R.x - u, R.y + u * 0.25, R.z + u * 0.1, 'YXZ'); _woff.x = -0.02 * u; _woff.y = -0.03 * u; }
-    _woff.y -= 0.02 * Math.min(1, back / 0.1);
-  } else if (th >= 0) {
-    _we.set(R.x - u, R.y + u * 0.58, R.z + u * 0.47, 'YXZ');
-    _woff.x = -0.02 * (u / WALL_TILT); _woff.y = -0.05 * u;
-  } else {
-    _we.set(R.x + u, R.y + u * 0.3, R.z - u * 0.12, 'YXZ');
-    _woff.x = 0.01 * u; _woff.y = -0.04 * u;
-  }
-  _wq.setFromEuler(_we);
-  // Gewehre kippen um die Kolbenkappe (Schulter/Hüfte) statt um den Griff – der Kolben schwenkt nicht ins Gesicht
-  if (!pistol && u > 0 && vm.cur._wallBack) {
-    _wb.copy(vm.cur._wallBack).applyMatrix4(vm.cur.model.matrix);
-    _wq0.setFromEuler(_we0.set(R.x, R.y, R.z, 'YXZ'));
-    _wpiv.copy(_wb).applyQuaternion(_wq0);
-    _woff.add(_wpiv.sub(_wb.applyQuaternion(_wq)));
-  }
-  return _wq;
-}
-
-/**
- * Strahl gegen die sichtbare Geometrie (Kugel-BVH, allokationsfrei; sonst world.raycast ohne Ziele). walls-3: dazu
- * Fahrzeuge (nicht im BVH, world.raycast kennt sie über die Fahrzeug-Hülle) – die Waffe ragte sonst in Panzer/Jeeps.
- */
-function wallRay(W, o, d, len) {
-  let hit = null;
-  if (W.bvh) hit = W.bvh.raycast(o.x, o.y, o.z, d.x, d.y, d.z, len, _whit) ? _whit : null;
-  else {
-    const r = W.w.raycast(o, d, len);
-    if (r && r.targetId === undefined && Number.isFinite(r.distance)) { _whit.t = r.distance; _whit.nx = r.normal.x; _whit.ny = r.normal.y; _whit.nz = r.normal.z; hit = _whit; }
-    return hit; // world.raycast enthält die Fahrzeuge bereits
-  }
-  const vs = W.veh;
-  if (vs) {
-    const vh = vs.raycastVehicles(o, d, hit ? hit.t : len, null);
-    if (vh && Number.isFinite(vh.distance) && vh.normal) { _whit.t = vh.distance; _whit.nx = vh.normal.x; _whit.ny = vh.normal.y; _whit.nz = vh.normal.z; hit = _whit; }
-  }
-  return hit;
-}
-
-/** Bildzustand der Wandprüfung: Hauptkamera, Abbildung Viewmodel → Hauptkamera (gleiche Bildposition + Tiefe), Vorhalt. */
-function wallBegin(vm, d, dt, eq, hit) {
-  const W = _wW;
-  W.n = 0; W.d = d; W.eq = eq || null; W.ok = false; W.rays = 0; W.hp = null; W.hpShift = 0; W.veh = null;
-  const cam = vm.camera;
-  const tv = Math.tan(((cam.fov || 54) * Math.PI) / 360);
-  W.tanV = tv; W.tanH = tv * (cam.aspect || 1.78);
-  W.kx = W.ky = 1;
-  const G = vm.G, main = G && G.camera, w = G && G.world;
-  if (!main || !w || typeof w.raycast !== 'function') return W;
-  W.ok = true; W.w = w;
-  W.bvh = (w.debugData && (w.debugData.compositeBullet || w.debugData.bulletBVH)) || null;
-  const tm = Math.tan(((main.fov || 70) * Math.PI) / 360) / (main.zoom || 1);
-  W.ky = tm / tv; W.kx = (W.ky * (main.aspect || 1.78)) / (cam.aspect || 1.78);
-  main.getWorldPosition(_wcp); main.getWorldQuaternion(_wcq); _wcqi.copy(_wcq).invert();
-  W.cp = _wcp; W.cq = _wcq; // Prüfstand: Kamera der Wandprüfung
-  const body = G.player && G.player.body;
-  if (body && body.velocity) _wvel.copy(body.velocity).applyQuaternion(_wcqi); else _wvel.set(0, 0, 0);
-  W.lead = 3 * Math.min(dt, 0.05) + 0.04;
-  W.ahead = Math.min(1.2, _wvel.length() * W.lead);
-  W.feetY = body && body.position ? body.position.y : -Infinity;
-  const vs = G.vehicles;
-  if (vs && vs.list && vs.list.length && typeof vs.raycastVehicles === 'function') W.veh = vs;
-  // walls-3 (HV2-W5): Fläche des nächsten Controller-Treffers als echte Ebene (Hauptkamera-Blickraum, Vorhalt entlang
-  // der Blickachse) statt einer Tiefenebene quer zur Blickachse – blickt man auf die Oberseite einer brusthohen
-  // Deckung, lag vorher jeder sichtbare Punkt „hinter“ der Tiefe und die Waffe verschwand ganz aus dem Bild
-  if (hit && Number.isFinite(d)) {
-    _wn2.set(hit.nx, hit.ny, hit.nz).applyQuaternion(_wcqi);
-    _whp.set(hit.px - _wcp.x, hit.py - _wcp.y, hit.pz - _wcp.z).applyQuaternion(_wcqi);
-    let c = -_wn2.dot(_whp);
-    if (c < 0) { _wn2.negate(); c = -c; }
-    const hp = W.hpl;
-    hp.nx = _wn2.x; hp.ny = _wn2.y; hp.nz = _wn2.z;
-    hp.c = c - _wn2.z * (hit.lead || 0);
-    hp.hz = Math.hypot(hit.nx, hit.nz);
-    W.hp = hp;
-  }
-  // hv3 (W-VMDEEP): Flächen der letzten Bilder (Weltraum) weiterführen. Dünne Hindernisse (Geländer, Pfosten, Rohre)
-  // trafen die wenigen Strahlen nur in manchen Bildern – im nächsten galt die Grundlage als frei, die Waffe sprang
-  // zurück und steckte bis 0,8 m darin. Weitergeführte Flächen gelten nur im Umkreis WALL_NEAR um ihren Treffer.
-  const car = vm._wallCarry;
-  if (car && car.length) {
-    const now = vm._time;
-    let k = 0;
-    for (let i = 0; i < car.length; i++) {
-      const q = car[i];
-      if (now - q.t > WALL_CARRY_T || now < q.t) continue;
-      car[k++] = q;
-      if (W.n >= WALL_CARRY_N) continue;
-      _whp.set(q.px - _wcp.x, q.py - _wcp.y, q.pz - _wcp.z).applyQuaternion(_wcqi);
-      if (_whp.lengthSq() > 4) continue;
-      _wn2.set(q.nx, q.ny, q.nz).applyQuaternion(_wcqi);
-      const pl = W.pl[W.n++];
-      pl.hx = _whp.x; pl.hy = _whp.y; pl.hz = _whp.z;
-      pl.nx = _wn2.x; pl.ny = _wn2.y; pl.nz = _wn2.z;
-      pl.c = -(pl.nx * pl.hx + pl.ny * pl.hy + pl.nz * pl.hz);
-      pl.src = -1;
-    }
-    car.length = k;
-  }
-  W.nCarry = W.n;
-  return W;
-}
-
-/** hv3: neu gefundene Flächen dieses Bildes (src ≥ 0) für die nächsten Bilder merken (Weltraum, ähnliche zusammengelegt). */
-function wallRemember(vm, W) {
-  const car = vm._wallCarry || (vm._wallCarry = []);
-  const now = vm._time;
-  for (let i = W.nCarry || 0; i < W.n; i++) {
-    const pl = W.pl[i];
-    if (pl.src < 0) continue;
-    _whp.set(pl.hx, pl.hy, pl.hz).applyQuaternion(_wcq).add(_wcp);
-    _wn2.set(pl.nx, pl.ny, pl.nz).applyQuaternion(_wcq);
-    let same = null;
-    for (const q of car) {
-      const dx = q.px - _whp.x, dy = q.py - _whp.y, dz = q.pz - _whp.z;
-      if (dx * dx + dy * dy + dz * dz < 0.0025 && q.nx * _wn2.x + q.ny * _wn2.y + q.nz * _wn2.z > 0.96) { same = q; break; }
-    }
-    if (same) { same.t = now; continue; }
-    let q;
-    if (car.length < 32) car.push((q = {}));
-    else { q = car[0]; for (const c of car) if (c.t < q.t) q = c; }
-    q.px = _whp.x; q.py = _whp.y; q.pz = _whp.z; q.nx = _wn2.x; q.ny = _wn2.y; q.nz = _wn2.z; q.t = now;
-  }
-}
-
-/**
- * Stützpunkt i in der zuletzt mit wallPose gesetzten Lage (+ Anziehen back) → _wv (Viewmodel-Kameraraum); true = im
- * Bild. f = Bildrand-Zugabe: Prüfen/Lösen mit 1,25 – eine Lösung „Waffe aus dem Bild“ muss deutlich jenseits des
- * Randes liegen (sonst ragt sie während des Glättens sichtbar in die Wand), Zählen der sichtbaren Punkte mit 1.
- */
-function wallPoint(vm, pts, i, P, back, W, f = 1.25) {
-  _wv.copy(pts[i]).applyMatrix4(vm.cur.model.matrix).applyQuaternion(_wq);
-  _wv.x += P.x + _woff.x; _wv.y += P.y + _woff.y; _wv.z += P.z + _woff.z + back;
-  if (W.eq) _wv.applyQuaternion(W.eq);
-  const depth = -_wv.z;
-  return depth >= 0.02 && Math.abs(_wv.x) <= depth * W.tanH * f && Math.abs(_wv.y) <= depth * W.tanV * f;
-}
-
-/**
- * Strahl zum Punkt (x, y, z; Viewmodel-Raum → Hauptkamera) ab o (Hauptkamera-Blickraum, Standard Auge), um `extra`
- * verlängert. Treffer (außer Boden unter den Füßen) → Fläche für Stützpunkt src (src < 0: keine). Rückgabe:
- * Eindringtiefe entlang des Strahls (m; > 0 = Punkt liegt hinter der Fläche) oder -Infinity.
- */
-function wallCast(W, src, x, y, z, extra, ox = 0, oy = 0, oz = 0, minT = 0) {
-  const X = x * W.kx - ox, Y = y * W.ky - oy, Z = z - oz, L = Math.hypot(X, Y, Z);
-  if (L < 0.03) return -Infinity;
-  _wn.set(X / L, Y / L, Z / L);
-  _wrd.copy(_wn).applyQuaternion(_wcq);
-  _wro.set(ox, oy, oz).applyQuaternion(_wcq).add(_wcp);
-  W.rays++;
-  const hit = wallRay(W, _wro, _wrd, L + extra);
-  if (!hit || hit.t < minT) return -Infinity;
-  const t = hit.t;
-  if (hit.ny > 0.7 && _wro.y + _wrd.y * t < W.feetY + 0.25) return -Infinity; // Boden, auf dem der Spieler steht/liegt
-  if (src >= 0 && W.n < WALL_PLANES) {
-    _wn2.set(hit.nx, hit.ny, hit.nz).applyQuaternion(_wcqi);
-    if (_wn2.dot(_wn) > 0) _wn2.negate();
-    const pl = W.pl[W.n++];
-    pl.hx = ox + _wn.x * t; pl.hy = oy + _wn.y * t; pl.hz = oz + _wn.z * t;
-    pl.nx = _wn2.x; pl.ny = _wn2.y; pl.nz = _wn2.z;
-    // ohne Vorhalt: der steckt in der Wandtiefe des Controllers (Ebene quer zur Blickachse); verschobene Einzelflächen
-    // machten beim Hinlaufen jede kleine Neigung ungültig → die Waffe sprang spät und weit aus dem Bild
-    pl.c = -(pl.nx * pl.hx + pl.ny * pl.hy + pl.nz * pl.hz);
-    pl.src = src;
-  }
-  return L - t;
-}
-
-/**
- * Abtasten in der unveränderten Lage (walls 2): Strahlen vom Auge zu jedem sichtbaren Stützpunkt (verlängert um
- * 0,3 m + Vorhalt der Annäherung) und vom Kolben zu den Vorderpunkten (Lauf/Handschutz durch Geländer, Pfosten,
- * Fensterkreuze). Jeder Treffer wird eine Fläche für seinen Punkt und Punkte in WALL_NEAR um den Treffer.
- */
-function wallProbe(vm, pts, P, R, pistol, W) {
-  if (!W.ok) return;
-  const entry = vm.cur;
-  const base = entry._wallBase || (entry._wallBase = pts.map(() => new THREE.Vector3()));
-  if (_wvis.length < pts.length) _wvis = new Array(pts.length).fill(false);
-  wallPose(vm, R, 0, 0, pistol);
-  for (let i = 0; i < pts.length; i++) { _wvis[i] = wallPoint(vm, pts, i, P, 0, W); base[i].copy(_wv); }
-  const bi = entry._wallBackIdx;
-  let backFree = true;
-  for (let i = 0; i < pts.length; i++) {
-    const b = base[i];
-    if (i === bi) { if (wallCast(W, _wvis[i] ? i : -1, b.x, b.y, b.z, _wvis[i] ? 0.3 + W.ahead : 0) > 0) backFree = false; continue; }
-    if (_wvis[i]) wallCast(W, i, b.x, b.y, b.z, 0.3 + W.ahead);
-  }
-  if (backFree && bi != null) {
-    const B = base[bi];
-    for (const j of entry._wallSeg) { const F = base[j]; wallCast(W, j, F.x, F.y, F.z, 0.05, B.x * W.kx, B.y * W.ky, B.z, 0.04); }
-  }
-}
-
-/** Größte Verletzung (m; ≤ 0 = frei) der sichtbaren Stützpunkte gegen die Flächen, Lage back/th. */
-function wallViol(vm, pts, P, R, back, th, pistol, W, f = 1.25) {
-  wallPose(vm, R, th, back, pistol);
-  const pl = W.pl, n = W.n, nr2 = WALL_NEAR * WALL_NEAR;
-  const tgt = W.d - WALL_MARGIN;
-  let worst = -Infinity;
-  const hp = W.hp;
-  for (let i = 0; i < pts.length; i++) {
-    if (!wallPoint(vm, pts, i, P, back, W, f)) continue;
-    const z = _wv.z;
-    const X = _wv.x * W.kx, Y = _wv.y * W.ky;
-    if (hp) { const v = WALL_MARGIN - (hp.nx * X + hp.ny * Y + hp.nz * z + hp.c - W.hpShift); if (v > worst) worst = v; }
-    else if (-z - tgt > worst) worst = -z - tgt;
-    for (let j = 0; j < n; j++) {
-      const p = pl[j];
-      if (p.src !== i) {
-        const dx = X - p.hx, dy = Y - p.hy, dz = z - p.hz;
-        if (dx * dx + dy * dy + dz * dz > nr2) continue;
-      }
-      const v = WALL_MARGIN - (p.nx * X + p.ny * Y + p.nz * z + p.c);
-      if (v > worst) worst = v;
-    }
-  }
-  return worst;
-}
-
-/** Strahlprüfung einer Lage: größte Eindringtiefe sichtbarer Punkte (m); Treffer werden Flächen (nächste Runde). */
-function wallVerify(vm, pts, P, R, back, th, pistol, W, f = 1.25) {
-  if (!W.ok) return -Infinity;
-  wallPose(vm, R, th, back, pistol);
-  let worst = -Infinity;
-  for (let i = 0; i < pts.length; i++) {
-    if (!wallPoint(vm, pts, i, P, back, W, f)) continue;
-    const pen = wallCast(W, i, _wv.x, _wv.y, _wv.z, 0.02);
-    if (pen > worst) worst = pen;
-  }
-  return worst;
-}
-
-/**
- * Kippen in Richtung sg (±1) bis höchstens max: Halbierungssuche gegen die Flächen, dann Strahlprüfung der Lösung;
- * findet sie neue Flächen (die gekippte Waffe ragt in Geometrie, die in der Grundlage nicht im Weg war), bis zu
- * drei Runden. Flächen je Richtung getrennt (ab nBase). → { th (vorzeichenbehaftet), ok, res }
- */
-function wallSolveTilt(vm, pts, P, R, back, pistol, W, sg, max, nBase, out) {
-  W.n = nBase;
-  let th = max, ver = Infinity;
-  for (let round = 0; round < 3; round++) {
-    if (wallViol(vm, pts, P, R, back, sg * max, pistol, W) > 0) th = max;
-    else {
-      let lo = 0, hi = max;
-      for (let i = 0; i < 9; i++) { const mid = (lo + hi) / 2; if (wallViol(vm, pts, P, R, back, sg * mid, pistol, W) > 0) lo = mid; else hi = mid; }
-      th = hi;
-    }
-    const n0 = W.n;
-    ver = wallVerify(vm, pts, P, R, back, sg * th, pistol, W);
-    if (ver <= WALL_OK || W.n === n0) break;
-  }
-  out.th = sg * th; out.ok = ver <= WALL_OK; out.res = Math.max(0, ver);
-  out.vis = wallVisible(vm, pts, P, R, back, sg * th, pistol, W);
-  return out;
-}
-
-/** Anzahl sichtbarer Stützpunkte in der Lage back/th (Lösungen, die die Waffe ganz aus dem Bild kippen, verlieren). */
-function wallVisible(vm, pts, P, R, back, th, pistol, W) {
-  wallPose(vm, R, th, back, pistol);
-  let n = 0;
-  for (let i = 0; i < pts.length; i++) if (wallPoint(vm, pts, i, P, back, W, 1)) n++;
-  return n;
-}
-const _wt1 = { th: 0, ok: false, res: 0, vis: 0 }, _wt2 = { th: 0, ok: false, res: 0, vis: 0 }, _wt3 = { th: 0, ok: false, res: 0, vis: 0 };
-
-/**
- * Waffe vor Wänden und Hindernissen halten (walls 2): erst anziehen, dann (an der Hüfte) kippen – Gewehre absenken
- * und eindrehen oder, wenn das tiefer in eine Kante/Brüstung führt, die Mündung anheben; Pistolen an die Brust oder
- * Mündung ab –, so weit, bis kein sichtbarer Punkt mehr hinter einer Fläche liegt (Flächen aus Strahlen, Lösung per
- * Strahl nachgeprüft). Im Anschlag nur Anziehen; bleibt etwas in der Fläche, meldet `s.wallAds` dem Controller, das
- * Zielen zu beenden. `s.wallNeed` (0..1, Kippen) sperrt dort den Schuss bei stark gekippter Waffe. Ergebnis
- * geglättet (schnell hinein, langsamer zurück). eq = Drehung um das Auge (freies Zielen, Nachlauf) oder null.
- */
-function wallFit(vm, P, R, d, a, pistol, dt, s, eq) {
-  const pts = wallPoints(vm, vm.cur);
-  const st = vm._wallFit || (vm._wallFit = { back: 0, th: 0, dir: 1 });
-  let wantBack = 0, wantTh = 0, resid = 0, wantDrop = 0, adsBlock = false;
-  if (pts.length) {
-    const W = wallBegin(vm, d, dt, eq, s && s.wallHit);
-    wallProbe(vm, pts, P, R, pistol, W);
-    vm._wallW = W; // Prüfstand (tools/out/walls2): Flächen/Strahlen dieses Bildes
-    if ((W.n > 0 || W.d < 4) && wallViol(vm, pts, P, R, 0, 0, pistol, W) > 0) {
-      const maxBack = (pistol ? 0.1 : WALL_BACK) * (1 - a) + 0.08 * a;
-      let backOk = false;
-      if (wallViol(vm, pts, P, R, maxBack, 0, pistol, W) > 0) wantBack = maxBack;
-      else {
-        let lo = 0, hi = maxBack;
-        for (let i = 0; i < 7; i++) { const mid = (lo + hi) / 2; if (wallViol(vm, pts, P, R, mid, 0, pistol, W) > 0) lo = mid; else hi = mid; }
-        wantBack = hi;
-        backOk = wallVerify(vm, pts, P, R, wantBack, 0, pistol, W) <= WALL_OK;
-        if (!backOk) wantBack = maxBack;
-      }
-      // walls 3: hält Anziehen allein die Waffe nicht frei, wird auch im Anschlag gekippt (vorher blieb sie dort bis
-      // zum Ende des Zielens – Titan/Donner bis 1 m in der Wand); `s.wallAds` beendet das Zielen
-      const na = backOk ? 1 - a : 1;
-      adsBlock = !backOk && a > 0.5;
-      if (!backOk) {
-        if (na > 0.02) {
-          const nBase = W.n;
-          // immer zuerst die Hauptrichtung (Gewehr ab/ein, Pistole an die Brust: löst Wände in jeder Nähe); die
-          // Gegenrichtung nur, wenn die Hauptrichtung nicht frei wird oder die Waffe ganz aus dem Bild nähme – sonst
-          // kippte die Waffe vor einer näher kommenden Wand erst hoch, dann (durch die Wand) herunter
-          const first = 1;
-          const vis0 = Math.max(1, wallVisible(vm, pts, P, R, 0, 0, pistol, W));
-          const tA = wallSolveTilt(vm, pts, P, R, wantBack, pistol, W, first, first > 0 ? WALL_TILT : WALL_TILT2, nBase, _wt1);
-          let pick = tA, tB0 = null;
-          // Gegenrichtung prüfen, wenn die erste nicht frei wird, weit kippt oder die Waffe großteils aus dem Bild
-          // nimmt (an einer hüfthohen Kiste lieber Mündung hoch als die Waffe unter den Bildrand)
-          if (!tA.ok || Math.abs(tA.th) > 0.5 || tA.vis < vis0 * 0.3) {
-            const tB = wallSolveTilt(vm, pts, P, R, wantBack, pistol, W, -first, first > 0 ? WALL_TILT2 : WALL_TILT, nBase, _wt2);
-            tB0 = tB;
-            // Gegenrichtung nur über niedrigen Hindernissen: hält sie nicht mehr, wenn die Wand vor dem Auge 0,35 m
-            // näher käme, ist es eine Wand – dann gleich die Hauptrichtung (kein Umschwenken durch die Wand beim Hinlaufen)
-            // walls-3: mit Fläche nur um deren waagerechten Anteil verschieben – die Oberseite einer Deckung ist keine Wand
-            if (tB.ok && W.d < 4) {
-              const d0 = W.d; W.d = d0 - 0.35; W.hpShift = W.hp ? 0.35 * W.hp.hz : 0;
-              if (wallViol(vm, pts, P, R, wantBack, tB.th, pistol, W) > 0) { tB.ok = false; tB.res = Math.max(tB.res, 0.05); }
-              W.d = d0; W.hpShift = 0;
-            }
-            const score = (t) => Math.abs(t.th) + (t.vis < vis0 * 0.3 ? 0.6 : 0);
-            if (tA.ok && tB.ok) pick = score(tA) <= score(tB) + 0.15 ? tA : tB;
-            else if (tB.ok) pick = tB;
-            else if (!tA.ok) pick = tA.res <= tB.res + 0.02 ? tA : tB;
-          }
-          // hv3 (W-COVER): Auflegen – nähme die Lösung die Waffe (fast) ganz aus dem Bild (brusthohe Deckung, Blick auf
-          // oder über die Oberkante), die Waffe stattdessen anheben (Kamera-Hochachse, höchstens WALL_LIFT), bei Bedarf
-          // mit etwas Mündung hoch (≤ 0,5 rad): kleinster Hub per Halbierung, per Strahl geprüft. An einer echten Wand
-          // hilft Anheben nicht (die Fläche bleibt vor den Punkten) – dort bleibt es beim Kippen/Absenken.
-          let lift = 0;
-          if (!pick.ok || pick.vis < vis0 * 0.3) {
-            // die Controller-Fläche gilt hier nicht als unendliche Ebene (die Stirnseite einer Deckung reicht nicht
-            // über deren Oberkante) – geprüft wird der Hub mit den Strahlflächen und per Strahl
-            const y0 = P.y, hp0 = W.hp;
-            W.hp = null;
-            P.y = y0 + WALL_LIFT;
-            let lt = null;
-            if (wallViol(vm, pts, P, R, wantBack, 0, pistol, W) <= 0) { _wt3.th = 0; lt = _wt3; }
-            else { const t = wallSolveTilt(vm, pts, P, R, wantBack, pistol, W, -1, 0.5, nBase, _wt3); if (t.ok) lt = t; }
-            if (lt) {
-              let lo = 0, hi = WALL_LIFT;
-              for (let i = 0; i < 6; i++) { const mid = (lo + hi) / 2; P.y = y0 + mid; if (wallViol(vm, pts, P, R, wantBack, lt.th, pistol, W) > 0) lo = mid; else hi = mid; }
-              P.y = y0 + hi;
-              if (wallVerify(vm, pts, P, R, wantBack, lt.th, pistol, W) <= WALL_OK) {
-                const vis = wallVisible(vm, pts, P, R, wantBack, lt.th, pistol, W);
-                if (vis >= vis0 * 0.3 || vis > pick.vis) { lift = hi; lt.ok = true; lt.res = 0; lt.vis = vis; pick = lt; }
-              }
-            }
-            P.y = y0; W.hp = hp0;
-          }
-          st.dir = pick.th >= 0 ? 1 : -1;
-          if (vm._wallDbgOn) st.dbg = { vis0, lift, A: { ...tA }, B: tB0 ? { ...tB0 } : null, pick: pick === tA ? 'A' : pick === _wt3 ? 'L' : 'B' };
-          wantTh = pick.th * na;
-          wantDrop = -lift;
-          resid = pick.ok ? 0 : pick.res;
-          // walls 3: bleibt trotz Kippen ein sichtbarer Punkt in der Fläche (Auge dicht an der Wand, lange Waffe beim
-          // Lehnen/Liegen, Pistole an Brüstung/Engstelle), die Waffe zusätzlich nach unten aus der Fläche nehmen –
-          // Halbierungssuche, per Strahl geprüft
-          if (!pick.ok) {
-            const y0 = P.y;
-            P.y = y0 - WALL_DROP;
-            const full = wallVerify(vm, pts, P, R, wantBack, wantTh, pistol, W);
-            if (full <= WALL_OK) {
-              let lo = 0, hi = WALL_DROP;
-              for (let i = 0; i < 6; i++) { const mid = (lo + hi) / 2; P.y = y0 - mid; if (wallVerify(vm, pts, P, R, wantBack, wantTh, pistol, W) > WALL_OK) lo = mid; else hi = mid; }
-              wantDrop = hi; resid = 0;
-            } else { wantDrop = WALL_DROP; resid = Math.max(0, full); }
-            P.y = y0;
-          }
-          // walls-3 (HV2-W5): nie ganz verschwinden – liegt die Lösung vollständig unter/neben dem Bildrand (das Auge
-          // klebt aber nicht an der Wand), so weit zur Ausgangslage zurück, wie sie frei bleibt (Bildrand ohne Zugabe):
-          // die Waffe ragt dann gesenkt/eingedreht von unten ins Bild (Low-Ready) statt aus dem Bild zu fallen
-          if (resid <= 0 && vis0 > 0) {
-            const y0 = P.y;
-            P.y = y0 - wantDrop;
-            if (wallVisible(vm, pts, P, R, wantBack, wantTh, pistol, W) === 0) {
-              let lo = 0, hi = 1;
-              for (let i = 0; i < 7; i++) {
-                const mid = (lo + hi) / 2;
-                P.y = y0 - wantDrop * (1 - mid);
-                if (wallViol(vm, pts, P, R, wantBack, wantTh * (1 - mid), pistol, W, 1) <= 0) lo = mid; else hi = mid;
-              }
-              if (lo > 0.01) {
-                P.y = y0 - wantDrop * (1 - lo);
-                if (wallVisible(vm, pts, P, R, wantBack, wantTh * (1 - lo), pistol, W) > 0 && wallVerify(vm, pts, P, R, wantBack, wantTh * (1 - lo), pistol, W, 1) <= WALL_OK) {
-                  wantTh *= 1 - lo; wantDrop *= 1 - lo; st.lowReady = lo;
-                }
-              }
-            }
-            P.y = y0;
-          }
-        } else resid = Math.max(0, wallVerify(vm, pts, P, R, wantBack, 0, pistol, W));
-      }
-    }
-  }
-  st.want = wantTh; st.wantBack = wantBack; st.resid = resid; st.a = a; // Prüfstand
-  let nBack = damp(st.back, wantBack, wantBack > st.back ? 45 : 8, dt);
-  const grow = Math.abs(wantTh) > Math.abs(st.th) && wantTh * st.th >= 0;
-  // Richtungswechsel schnell (der Weg führt durch die Ausgangslage, also durch die Wand), Zurücknehmen langsam
-  let nTh = damp(st.th, wantTh, grow || wantTh * st.th < 0 ? 40 : 7, dt);
-  let nDrop = damp(st.drop || 0, wantDrop, Math.abs(wantDrop) > Math.abs(st.drop || 0) ? 45 : 6, dt); // < 0 = Anheben (hv3)
-  // walls-3 (HV2-W2): die geglättete Lage selbst prüfen. Vorher galt nur das Ziel als frei – auf dem Weg dorthin
-  // (Zurücknehmen nach dem Kippen über eine Brüstung/einen Busch, Nachlauf beim Hinlaufen, Lehnen, Drehen) lag die
-  // Waffe bis 1,4 m in der Geometrie. Liegt ein sichtbarer Punkt hinter einer Fläche, rückt die Lage so weit zum
-  // (geprüften) Ziel, bis sie frei ist (Halbierung gegen die Flächen, Strahl-Nachprüfung).
-  st.fix = 0;
-  if (_wW.ok && pts.length && (Math.abs(nBack - wantBack) > 2e-3 || Math.abs(nTh - wantTh) > 2e-3 || Math.abs(nDrop - wantDrop) > 2e-3)) {
-    const W = _wW, y0 = P.y;
-    P.y = y0 - nDrop;
-    if (wallVerify(vm, pts, P, R, nBack, nTh, pistol, W) > WALL_OK) {
-      const lb = (k) => nBack + (wantBack - nBack) * k, lt = (k) => nTh + (wantTh - nTh) * k, ld = (k) => nDrop + (wantDrop - nDrop) * k;
-      let lo = 0, hi = 1;
-      for (let i = 0; i < 6; i++) { const mid = (lo + hi) / 2; P.y = y0 - ld(mid); if (wallViol(vm, pts, P, R, lb(mid), lt(mid), pistol, W) > 0) lo = mid; else hi = mid; }
-      if (hi < 1) { P.y = y0 - ld(hi); if (wallVerify(vm, pts, P, R, lb(hi), lt(hi), pistol, W) > WALL_OK) hi = 1; }
-      // hv3 (W-VMDEEP): steckt auch das Ziel nachweislich in einer Fläche (die Strahlen der Grundlage hatten sie
-      // verfehlt), nicht dorthin springen – die Lage des letzten Bildes halten, wenn sie frei ist
-      if (hi >= 1) {
-        P.y = y0 - wantDrop;
-        if (wallVerify(vm, pts, P, R, wantBack, wantTh, pistol, W) > WALL_OK) {
-          P.y = y0 - (st.drop || 0);
-          if (wallVerify(vm, pts, P, R, st.back, st.th, pistol, W) <= WALL_OK) hi = -1;
-        }
-      }
-      st.fix = hi;
-      if (hi < 0) { nBack = st.back; nTh = st.th; nDrop = st.drop || 0; }
-      else { nBack = lb(hi); nTh = lt(hi); nDrop = ld(hi); }
-    }
-    P.y = y0;
-  }
-  st.back = nBack; st.th = nTh; st.drop = nDrop;
-  if (_wW.ok && pts.length) wallRemember(vm, _wW);
-  if (s) {
-    s.wallNeed = Math.min(1, Math.max(Math.abs(st.th) / 0.9, st.drop / (WALL_DROP * 0.5), 0));
-    s.wallAds = a > 0.5 && (resid > 0.02 || adsBlock);
-  }
-  if (vm._wallDbgOn && pts.length) { // Prüfstand: berechnete Lage der Stützpunkte (Vergleich mit dem Bild)
-    wallPose(vm, R, st.th, st.back, pistol);
-    vm._wallDbgInfo = { d: _wW.d, n: _wW.n, viol: +wallViol(vm, pts, P, R, st.back, st.th, pistol, _wW).toFixed(3), violWant: +wallViol(vm, pts, P, R, wantBack, wantTh, pistol, _wW).toFixed(3), ver: +wallVerify(vm, pts, P, R, wantBack, wantTh, pistol, _wW).toFixed(3) };
-    wallPose(vm, R, st.th, st.back, pistol);
-    vm._wallDbgPts = pts.map((_, i) => { const v = wallPoint(vm, pts, i, P, st.back, _wW); return [+_wv.x.toFixed(3), +_wv.y.toFixed(3), +_wv.z.toFixed(3), v]; });
-  }
-  if (st.back < 1e-4 && Math.abs(st.th) < 1e-4 && Math.abs(st.drop) < 1e-4) return;
-  P.z += st.back;
-  P.y -= st.drop;
-  wallPose(vm, R, st.th, st.back, pistol);
-  P.add(_woff);
-  R.set(_we.x, _we.y, _we.z);
-}
-
-// Welle 2 (Arsenal): zusätzliche Choreografien (Nachladen je Mechanik, Inspizieren je Klasse, Platte, Klingenhiebe)
-Object.assign(ViewModel.prototype, EXTRA_ACTIONS);
+// Welle 2 (Arsenal): zusätzliche Choreografien (Nachladen je Mechanik, Inspizieren je Klasse, Platte, Klingenhiebe);
+// Animationen 09.10.: Nachladen mit Varianten, Magazin entlang der Schachtachse (anim/reloads.js, anim/magwell.js),
+// vier Inspektionen je Mechanik mit Munitionsschätzung (anim/inspects.js), Ziehen je Klasse, Bereitmachen,
+// Leerlauf-Gesten, Bewegungsposen, Nahkampf-/Wurfvarianten (anim/moves.js)
+Object.assign(ViewModel.prototype, EXTRA_ACTIONS, RELOAD_ACTIONS, INSPECT_ACTIONS, MOVE_ACTIONS);
 
 // Zubehör der Klassen-Arme (Binde, Stulpen, Wickel, Band) – Materialien modulweit, überdauern Matches
 let _accMats = null;

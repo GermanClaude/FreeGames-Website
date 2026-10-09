@@ -30,15 +30,19 @@ function cached(key, fn) { if (!geoCache.has(key)) geoCache.set(key, fn()); retu
 
 /**
  * Ausstattung aus der Asset-Bibliothek (Kleinteile, Möbel, Technik): Liste [id, x, y, z, ry?, opts?]
- * (Positionen = Unterkante-Mitte). Standard ohne Bewegungskollision (Kugeln treffen trotzdem); opts.collide für
- * Möbel/Geräte, die wie Deckung wirken. Ohne Bibliothek (KTX2/Transcoder fehlt) entfällt die Ausstattung – die
- * Karte ist ohne sie vollständig.
+ * (Positionen = Unterkante-Mitte). Ohne Bewegungskollision (Kugeln treffen das Modell trotzdem). Ohne Bibliothek
+ * (KTX2/Transcoder fehlt, „niedrig“ ohne komprimierte Texturen) entfällt die Ausstattung – die Karte ist ohne sie
+ * vollständig. Mehrspieler: Möbel/Kisten, die wie Deckung wirken, bekommen opts.solid = [w, h, d] (Manifest-Maße):
+ * ein fester Kollisionsquader, der auf JEDEM Rechner steht – auch ohne Bibliothek (früher opts.collide: Quader nur,
+ * wenn die Bibliothek lud → unsichtbare/fehlende Hindernisse je nach Gerät).
  */
 export function dress(b, list) {
-  if (!b.lib) return;
   for (const [id, x, y, z, ry, o] of list) {
-    if (!b.lib.has(id)) continue;
-    b.model(id, x, y, z, { ry: ry ?? hash01(x, z, 9) * Math.PI * 2, collide: false, ...(o || {}) });
+    const rr = ry ?? hash01(x, z, 9) * Math.PI * 2;
+    const { solid, minimap, ...mo } = o || {};
+    if (solid) b.box(x, y, z, solid[0], solid[1], solid[2], 'black', { ry: rr, visual: false, minimap: minimap ?? 'cover' });
+    if (!b.lib || !b.lib.has(id)) continue;
+    b.model(id, x, y, z, { ry: rr, ...mo, minimap: minimap ?? false, collide: false });
   }
 }
 
@@ -109,25 +113,29 @@ export function crateStack(b, x, z, o = {}) {
 
 export function barrel(b, x, y, z, o = {}) {
   const color = o.color || b.pick(['#2d5f94', '#b8392c', '#3e7a4c', '#c9a227', '#3a3d40']);
+  // Mehrspieler: Kollision immer derselbe Zylinder – unabhängig von Bibliothek, Grafikstufe und geladenem Modell
+  if (o.tipped) b.cyl(x, y + 0.3, z, 0.3, 0.88, 'black', { axis: 'x', ry: o.ry || 0, visual: false, minimap: 'cover' });
+  else b.cyl(x, y, z, 0.3, 0.88, 'black', { visual: false, minimap: 'cover' });
   if (b.hasModel('barrel_01')) {
     // Fotoscan-Fässer: Rot (Stahl, Gefahrzeichen), Blau (Stahl), Blau (Kunststoff) – nach gewünschter Farbe/Ort
     const c = new THREE.Color(color), h = hash01(x, z, 3);
     const id = c.r > c.b * 1.4 ? 'barrel_01' : c.b > c.r * 1.3 ? (h < 0.6 ? 'barrel_03' : 'barrel_02') : (h < 0.5 ? 'barrel_01' : 'barrel_03');
     const fb = (bb) => barrelProc(bb, x, y, z, { ...o, color });
-    if (o.tipped) b.model(id, x, y + 0.3, z, { pivot: 'center', rz: Math.PI / 2, ry: o.ry || 0, minimap: 'cover', fallback: fb });
-    else b.model(id, x, y, z, { ry: hash01(x, z, 4) * Math.PI * 2, minimap: 'cover', fallback: fb });
+    if (o.tipped) b.model(id, x, y + 0.3, z, { pivot: 'center', rz: Math.PI / 2, ry: o.ry || 0, collide: false, fallback: fb });
+    else b.model(id, x, y, z, { ry: hash01(x, z, 4) * Math.PI * 2, collide: false, fallback: fb });
     return;
   }
   barrelProc(b, x, y, z, { ...o, color });
 }
 
+/** Prozedurales Fass – nur Optik (Kollision setzt barrel()). */
 function barrelProc(b, x, y, z, o) {
   const color = o.color;
   if (o.tipped) {
-    b.cyl(x, y + 0.3, z, 0.3, 0.88, 'metal_painted', { axis: 'x', ry: o.ry || 0, tint: color, minimap: 'cover' });
+    b.cyl(x, y + 0.3, z, 0.3, 0.88, 'metal_painted', { axis: 'x', ry: o.ry || 0, tint: color, collide: false, minimap: false });
     return;
   }
-  b.cyl(x, y, z, 0.3, 0.88, 'metal_painted', { tint: color, minimap: 'cover', seg: 14, aoFloor: y });
+  b.cyl(x, y, z, 0.3, 0.88, 'metal_painted', { tint: color, collide: false, minimap: false, seg: 14, aoFloor: y });
   for (const ry of [0.28, 0.58]) b.cyl(x, y + ry, z, 0.31, 0.03, 'metal_painted', { tint: shade(color, 0.8), collide: false, seg: 14, minimap: false, ao: false });
   b.cyl(x, y + 0.875, z, 0.285, 0.015, 'metal_painted', { tint: shade(color, 0.6), collide: false, seg: 14, minimap: false, ao: false });
   b.cyl(x + 0.14, y + 0.88, z + 0.05, 0.035, 0.02, 'metal_galvanized', { collide: false, seg: 6, minimap: false, ao: false });
@@ -252,9 +260,12 @@ export function sandbags(b, x0, z0, x1, z1, o = {}) {
         const lz = (k - (depth - 1) / 2) * 0.33 - uz * 0;
         const nx = -uz * lz, nz = ux * lz;
         const jx = (b.rand() - 0.5) * 0.03, jz = (b.rand() - 0.5) * 0.03, jr = (b.rand() - 0.5) * 0.12, tint = b.pick(tints);
-        // env-look: leichte Neigung je Sack (liegen nie exakt eben), nur mit der Detailform
-        const tilt = hd ? { rx: (b.rand() - 0.5) * 0.06, rz: (b.rand() - 0.5) * 0.08, sy: 0.92 + b.rand() * 0.16 } : {};
-        b.geom(g, x0 + ux * s + nx + jx, y + r * 0.145, z0 + uz * s + nz + jz, 'sandbag', { ry: ry + jr, ...tilt, tint, collide: false, minimap: false, uv: 'keep', grad: false, aoFloor: y });
+        const px = x0 + ux * s + nx + jx, pz = z0 + uz * s + nz + jz;
+        // env-look: leichte Neigung je Sack (liegen nie exakt eben), nur mit der Detailform. Mehrspieler: aus der
+        // Position (hash01), NICHT aus dem Kartenzufall – sonst verschöbe „ab mittel“ alle späteren Platzierungen
+        const hk = 40 + r * 8 + k * 3;
+        const tilt = hd ? { rx: (hash01(px, pz, hk) - 0.5) * 0.06, rz: (hash01(px, pz, hk + 1) - 0.5) * 0.08, sy: 0.92 + hash01(px, pz, hk + 2) * 0.16 } : {};
+        b.geom(g, px, y + r * 0.145, pz, 'sandbag', { ry: ry + jr, ...tilt, tint, collide: false, minimap: false, uv: 'keep', grad: false, aoFloor: y });
       }
     }
   }
@@ -319,9 +330,15 @@ export function cone(b, x, z, o = {}) {
 // ---------------------------------------------------------------------------
 // Fahrzeuge
 // ---------------------------------------------------------------------------
+/**
+ * Rad: Achse quer zur Fahrzeuglänge (lokal x, wie rad() in maps/hafen-fahrzeuge.js), (lx, ly, lz) = Radmitte –
+ * mit ly = r steht der Reifen auf dem Boden. Felge leicht nach außen versetzt. (Früher drehte ry: π/2 die Achse
+ * in Längsrichtung: Räder standen quer zur Fahrtrichtung.)
+ */
 function wheel(f, lx, ly, lz, r, w) {
-  f.cyl(lx, ly, lz, r, w, 'rubber', { axis: 'x', ry: Math.PI / 2, collide: false, minimap: false, seg: 14 });
-  f.cyl(lx + 0, ly, lz, r * 0.55, w + 0.02, 'metal_galvanized', { axis: 'x', ry: Math.PI / 2, collide: false, minimap: false, seg: 10 });
+  const side = Math.sign(lx) || 1;
+  f.cyl(lx, ly, lz, r, w, 'rubber', { axis: 'x', collide: false, minimap: false, seg: 14, grad: false });
+  f.cyl(lx + side * 0.012, ly, lz, r * 0.55, w + 0.012, 'metal_galvanized', { axis: 'x', collide: false, minimap: false, seg: 10, ao: false });
 }
 
 /** PKW (lokal z = Länge). style: 'sedan'|'hatch'|'wreck' */
@@ -392,8 +409,9 @@ export function truck(b, x, z, o = {}) {
   for (const sx of [-1, 1]) { wheel(f, sx * 1.05, 0.52, cabZ + 0.2, 0.52, 0.35); wheel(f, sx * 1.05, 0.52, cabZ - 2.6, 0.52, 0.4); }
   f.solid(0, 0, cabZ, 2.5, 3.4, 2.4, { minimap: 'vehicle' });
   if (o.trailer === null) return;
-  // Auflieger
-  const tl = 12.2, tz = cabZ - 1.7 - tl / 2 + 1.2;
+  // Auflieger: Vorderkante 0,5 m hinter der Kabine (Kabine bis cabZ − 1,1; vorher ragte er 0,6 m hinein – wie lkw()
+  // in maps/hafen-fahrzeuge.js)
+  const tl = 12.2, tz = cabZ - 1.6 - tl / 2;
   const tt = o.trailer || 'box';
   f.box(0, 1.05, tz, 2.5, 0.25, tl, 'metal_painted', { tint: '#3a3d40', collide: false, minimap: false, grad: false });
   for (const sx of [-1, 1]) for (const k of [0, 1, 2]) wheel(f, sx * 1.05, 0.52, tz - tl / 2 + 1.2 + k * 1.3, 0.52, 0.4);
@@ -436,14 +454,17 @@ export function forklift(b, x, z, o = {}) {
 // ---------------------------------------------------------------------------
 /** Klimagerät an Wand (Normale ry zeigt nach außen) oder auf Dach. */
 export function acUnit(b, x, y, z, o = {}) {
+  // Mehrspieler: Kollision (o.collide) als fester Quader – gleich mit und ohne Bibliothek (das Modell wird als Teil
+  // gewählt und bekäme keine automatische Kollision; in der Ersatzform verwirft der Builder Kollision ohnehin)
+  if (o.collide) frame(b, x, y, z, o.ry || 0).solid(0, 0, 0, 0.95, 0.65, 0.38, { minimap: false });
   if (b.hasModel('exterior_aircon_unit') && o.model !== false) {
     // Fotoscan-Klimagerät (zwei Varianten: neu/verrostet); Halterung und Kondensatleitung sind im Modell
     const part = hash01(x, z, 7) < 0.55 ? 'exterior_aircon_unit_rusted' : 'exterior_aircon_unit';
-    b.model('exterior_aircon_unit', x, y - (o.bracket === false ? 0 : 0.1), z, { part, ry: o.ry || 0, s: o.s ?? 0.95, collide: o.collide ?? false, minimap: false, fallback: (bb) => acUnit(bb, x, y, z, { ...o, model: false }) });
+    b.model('exterior_aircon_unit', x, y - (o.bracket === false ? 0 : 0.1), z, { part, ry: o.ry || 0, s: o.s ?? 0.95, collide: false, minimap: false, fallback: (bb) => acUnit(bb, x, y, z, { ...o, model: false }) });
     return;
   }
   const f = frame(b, x, y, z, o.ry || 0);
-  f.box(0, 0, 0, 0.95, 0.65, 0.38, 'metal_painted', { tint: o.tint || '#d8d9d4', collide: o.collide ?? false, minimap: false, grad: false });
+  f.box(0, 0, 0, 0.95, 0.65, 0.38, 'metal_painted', { tint: o.tint || '#d8d9d4', collide: false, minimap: false, grad: false });
   f.cyl(0.18, 0.33, 0.2, 0.22, 0.02, 'black', { axis: 'z', collide: false, minimap: false, seg: 14 });
   for (let i = 0; i < 5; i++) f.box(0.18, 0.13 + i * 0.09, 0.205, 0.44, 0.012, 0.012, 'metal_galvanized', { collide: false, minimap: false, ao: false });
   f.box(-0.3, 0.1, 0.2, 0.22, 0.45, 0.01, 'metal_galvanized', { collide: false, minimap: false, ao: false });
@@ -503,7 +524,19 @@ export function cable(b, a, c, o = {}) {
   }
 }
 
-/** Straßenlaterne / Mastleuchte. kind: 'sodium'|'cool'|'warm'. light: echtes Punktlicht */
+/**
+ * Leuchten an? Nur abends (oder dunkler): Tageszeit der Karte bzw. die gewählte/aufgelöste Zeit (MapBuilder.timeOfDay,
+ * gesetzt von world/index.js und terrain/bigworld.js; online gleich für alle, „Echtzeit“ löst der Host auf).
+ */
+export function lampsOn(b) {
+  const t = b.timeOfDay;
+  return t === 'abend' || t === 'nacht';
+}
+
+/**
+ * Straßenlaterne / Mastleuchte. kind: 'sodium'|'cool'|'warm'. light: echtes Punktlicht, glow: Lichthof. Tagsüber
+ * (lampsOn = false) mattes Glas ohne Leuchten, Lichthof und Licht – wie streetLamp in maps/altstadt.js.
+ */
 export function lampPost(b, x, z, o = {}) {
   const y = o.y ?? 0, h = o.h ?? 6, ry = o.ry || 0, f = frame(b, x, y, z, ry);
   const tint = o.tint || '#3a3e43';
@@ -512,24 +545,25 @@ export function lampPost(b, x, z, o = {}) {
   const arm = o.arm ?? 1.3;
   f.box(arm / 2, h - 0.08, 0, arm, 0.08, 0.08, 'metal_painted', { tint, collide: false, minimap: false, grad: false });
   f.box(arm, h - 0.2, 0, 0.6, 0.16, 0.3, 'metal_painted', { tint, collide: false, minimap: false, grad: false });
-  const lampMat = o.kind === 'cool' ? 'lamp_cool' : o.kind === 'warm' ? 'lamp_warm' : 'lamp_sodium';
-  f.box(arm, h - 0.23, 0, 0.5, 0.03, 0.24, lampMat, { collide: false, minimap: false, ao: false, cast: false });
+  const on = lampsOn(b);
+  const lampMat = !on ? 'white' : o.kind === 'cool' ? 'lamp_cool' : o.kind === 'warm' ? 'lamp_warm' : 'lamp_sodium';
+  f.box(arm, h - 0.23, 0, 0.5, 0.03, 0.24, lampMat, { tint: on ? undefined : '#e4e2dc', collide: false, minimap: false, ao: false, cast: false });
   const [lx, lz] = f.P(arm, 0);
-  if (o.light) b.light('point', lx, y + h - 0.45, lz, { color: o.kind === 'cool' ? '#dfe9ff' : o.kind === 'warm' ? '#ffd59a' : '#ffad55', intensity: o.intensity ?? 18, distance: o.distance ?? 16, priority: o.priority ?? 1 });
-  if (o.glow) b.glow(lx, y + h - 0.3, lz, { color: o.kind === 'cool' ? '#cfe0ff' : o.kind === 'warm' ? '#ffd090' : '#ffa040', size: o.glowSize ?? 2.4, intensity: o.glow === true ? 1 : o.glow });
+  if (on && o.light) b.light('point', lx, y + h - 0.45, lz, { color: o.kind === 'cool' ? '#dfe9ff' : o.kind === 'warm' ? '#ffd59a' : '#ffad55', intensity: o.intensity ?? 18, distance: o.distance ?? 16, priority: o.priority ?? 1 });
+  if (on && o.glow) b.glow(lx, y + h - 0.3, lz, { color: o.kind === 'cool' ? '#cfe0ff' : o.kind === 'warm' ? '#ffd090' : '#ffa040', size: o.glowSize ?? 2.4, intensity: o.glow === true ? 1 : o.glow });
   return [lx, lz];
 }
 
-/** Flutlicht-Mast (mehrere Strahler). */
+/** Flutlicht-Mast (mehrere Strahler). Wie lampPost: Strahlerglas leuchtet (+ Lichthof) nur abends (lampsOn). */
 export function floodMast(b, x, z, o = {}) {
-  const y = o.y ?? 0, h = o.h ?? 10, ry = o.ry || 0, f = frame(b, x, y, z, ry);
+  const y = o.y ?? 0, h = o.h ?? 10, ry = o.ry || 0, f = frame(b, x, y, z, ry), on = lampsOn(b);
   b.cyl(x, y, z, 0.22, 0.6, 'concrete', { seg: 10, minimap: 'pillar' });
   b.cyl(x, y + 0.6, z, 0.12, h - 0.6, 'metal_galvanized', { r1: 0.08, seg: 8, minimap: false });
   f.box(0, h, 0, 2.0, 0.1, 0.1, 'metal_galvanized', { collide: false, minimap: false, grad: false });
   for (const sx of [-0.7, 0, 0.7]) {
     f.box(sx, h + 0.1, 0.05, 0.5, 0.4, 0.25, 'metal_painted', { tint: '#2f3236', collide: false, minimap: false, grad: false, rx: -0.4 });
-    f.box(sx, h + 0.16, 0.19, 0.42, 0.3, 0.02, o.kind === 'sodium' ? 'lamp_sodium' : 'lamp_cool', { collide: false, minimap: false, ao: false, rx: -0.4, cast: false });
-    if (o.glow) { const [gx, gz] = f.P(sx, 0.35); b.glow(gx, y + h + 0.3, gz, { color: o.kind === 'sodium' ? '#ffa040' : '#d8e6ff', size: o.glowSize ?? 2.6 }); }
+    f.box(sx, h + 0.16, 0.19, 0.42, 0.3, 0.02, !on ? 'white' : o.kind === 'sodium' ? 'lamp_sodium' : 'lamp_cool', { tint: on ? undefined : '#dcdad4', collide: false, minimap: false, ao: false, rx: -0.4, cast: false });
+    if (on && o.glow) { const [gx, gz] = f.P(sx, 0.35); b.glow(gx, y + h + 0.3, gz, { color: o.kind === 'sodium' ? '#ffa040' : '#d8e6ff', size: o.glowSize ?? 2.6 }); }
   }
 }
 
@@ -569,25 +603,22 @@ export function dumpster(b, x, z, o = {}) {
   f.solid(0, 0, 0, 1.95, 1.25, 1.15, { minimap: 'cover' });
 }
 
-/** Reifenstapel */
+/** Reifenstapel. Mehrspieler: Kollision immer derselbe Zylinder (n × 0,2 m – Reifenhöhe des Fotoscans); der
+ *  prozedurale Stapel (ohne Bibliothek) hat dieselbe Reifenhöhe (vorher 0,24 m → Stapel ohne Bibliothek höher). */
 export function tires(b, x, z, o = {}) {
-  const n = o.n ?? 4, y = o.y ?? 0;
-  if (b.hasModel('old_tyre')) {
-    // gestapelte Altreifen (liegend), Kollision als ein Zylinder wie bisher
-    for (let i = 0; i < n; i++) {
-      const ox = (b.rand() - 0.5) * 0.08, oz = (b.rand() - 0.5) * 0.08;
-      b.model('old_tyre', x + ox, y + i * 0.2 + 0.1, z + oz, { pivot: 'center', rx: Math.PI / 2, ry: hash01(x, z, i) * 6.28, s: 1.18, collide: false,
-        fallback: (bb) => { bb.cyl(x + ox, y + i * 0.24, z + oz, 0.36, 0.24, 'rubber', { seg: 14, collide: false, minimap: false, grad: i === 0 }); } });
-    }
-    b.cyl(x, y, z, 0.37, n * 0.2, 'black', { visual: false, minimap: 'cover' });
-    return;
-  }
+  const n = o.n ?? 4, y = o.y ?? 0, th = 0.2;
+  const proc = (bb, i, ox, oz) => {
+    bb.cyl(x + ox, y + i * th, z + oz, 0.36, th, 'rubber', { seg: 14, collide: false, minimap: false, grad: i === 0 });
+    bb.cyl(x + ox, y + i * th + 0.005, z + oz, 0.2, th - 0.005, 'black', { seg: 10, collide: false, minimap: false, ao: false });
+  };
+  const lib = b.hasModel('old_tyre');
   for (let i = 0; i < n; i++) {
     const ox = (b.rand() - 0.5) * 0.08, oz = (b.rand() - 0.5) * 0.08;
-    b.cyl(x + ox, y + i * 0.24, z + oz, 0.36, 0.24, 'rubber', { seg: 14, collide: false, minimap: false, grad: i === 0 });
-    b.cyl(x + ox, y + i * 0.24 + 0.005, z + oz, 0.2, 0.235, 'black', { seg: 10, collide: false, minimap: false, ao: false });
+    // gestapelte Altreifen (liegend)
+    if (lib) b.model('old_tyre', x + ox, y + i * th + th / 2, z + oz, { pivot: 'center', rx: Math.PI / 2, ry: hash01(x, z, i) * 6.28, s: 1.18, collide: false, fallback: (bb) => proc(bb, i, ox, oz) });
+    else proc(b, i, ox, oz);
   }
-  b.cyl(x, y, z, 0.37, n * 0.24, 'black', { visual: false, minimap: 'cover' });
+  b.cyl(x, y, z, 0.37, n * th, 'black', { visual: false, minimap: 'cover' });
 }
 
 /** Kabeltrommel */
@@ -624,11 +655,19 @@ export function electricBox(b, x, y, z, o = {}) {
 // ---------------------------------------------------------------------------
 // Stadtmöbel
 // ---------------------------------------------------------------------------
+/** Bank (lokal: Sitzende blicken nach +z, Lehne hinten). Lehne an Stützen, die aus den hinteren Beinen aufsteigen
+ *  (vorher schwebten die Lehnenlatten hinter den Beinen, wie die Parkbank in maps/altstadt-ausstattung.js). */
 export function bench(b, x, z, o = {}) {
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0);
-  for (const sx of [-0.7, 0.7]) f.box(sx, 0, 0, 0.08, 0.42, 0.45, 'metal_painted', { tint: '#2b2d30', collide: false, minimap: false });
+  const IRON = { tint: '#2b2d30', collide: false, minimap: false };
+  for (const sx of [-0.7, 0.7]) {
+    f.box(sx, 0, 0, 0.08, 0.42, 0.45, 'metal_painted', IRON);
+    // Lehnenstütze: Verlängerung des hinteren Beins über die Sitzfläche (leicht nach hinten geneigt)
+    if (o.back !== false) f.box(sx, 0.4, -0.2, 0.06, 0.5, 0.05, 'metal_painted', { ...IRON, grad: false, rx: -0.1 });
+  }
   for (let i = 0; i < 3; i++) f.box(0, 0.42, -0.15 + i * 0.15, 1.7, 0.04, 0.12, 'wood_planks', { tint: '#b58a5a', collide: false, minimap: false, grad: false });
-  if (o.back !== false) for (let i = 0; i < 2; i++) f.box(0, 0.6 + i * 0.16, -0.24, 1.7, 0.1, 0.04, 'wood_planks', { tint: '#b58a5a', collide: false, minimap: false, grad: false });
+  // Lehnenlatten vorn an den Stützen (Neigung wie die Stützen: je 0,1 m Höhe ≈ 1 cm nach hinten)
+  if (o.back !== false) for (let i = 0; i < 2; i++) { const yl = 0.58 + i * 0.16; f.box(0, yl, -0.155 - (yl + 0.05 - 0.4) * 0.1, 1.7, 0.1, 0.04, 'wood_planks', { tint: '#b58a5a', collide: false, minimap: false, grad: false, rx: -0.1 }); }
   f.solid(0, 0, 0, 1.75, 0.5, 0.5, { minimap: 'prop' });
 }
 
@@ -760,10 +799,12 @@ export function tree(b, x, z, o = {}) {
 export function pot(b, x, y, z, o = {}) {
   const r = o.r ?? 0.28, h = o.h ?? 0.45;
   if (b.hasModel('planter_pot_clay') && o.model !== false) {
-    // Fotoscan-Terrakottatopf (0,27 × 0,22 m) auf Topfmaß skaliert; Erde + Pflanze wie bisher
+    // Fotoscan-Terrakottatopf (0,27 × 0,22 m) auf Topfmaß skaliert; Erde + Pflanze wie bisher. Kollision (Mehrspieler):
+    // derselbe Kegelstumpf wie beim prozeduralen Topf, unabhängig davon, ob das Modell lädt
     const k = (2 * r) / 0.27;
-    b.model('planter_pot_clay', x, y, z, { sx: k, sz: k, sy: h / 0.22, ry: hash01(x, z, 5) * 6.28, collide: o.collide ?? true, minimap: 'prop',
-      fallback: (bb) => bb.cyl(x, y, z, r * 0.8, h, 'tiles_terracotta', { r1: r, seg: 12, tint: '#c47a52', minimap: 'prop', collide: o.collide ?? true, uv: 'keep' }) });
+    if (o.collide ?? true) b.cyl(x, y, z, r * 0.8, h, 'black', { r1: r, seg: 12, visual: false, minimap: 'prop' });
+    b.model('planter_pot_clay', x, y, z, { sx: k, sz: k, sy: h / 0.22, ry: hash01(x, z, 5) * 6.28, collide: false,
+      fallback: (bb) => bb.cyl(x, y, z, r * 0.8, h, 'tiles_terracotta', { r1: r, seg: 12, tint: '#c47a52', minimap: false, collide: false, uv: 'keep' }) });
     b.cyl(x, y + h - 0.07, z, r * 0.86, 0.04, 'dirt', { seg: 12, collide: false, minimap: false, ao: false });
     b.plant(o.plant || 'bush', x, y + h - 0.15, z, { s: o.s ?? (r * 1.4) });
     return;

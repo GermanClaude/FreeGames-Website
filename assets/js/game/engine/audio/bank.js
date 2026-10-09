@@ -3,7 +3,7 @@
 // Ergebnisse nur noch in AudioBuffer. Ohne Worker-Unterstützung rendert der Hauptthread in Leerlauf-
 // Häppchen. Schlüssel: `${name}#${variante}@${abtastrate}` – die Abtastrate ist je Eintrag fest, daher kann
 // schon vor dem AudioContext (Lobby, noch keine Nutzergeste) vorgerendert werden.
-import { renderEntry, renderSteps } from './render.js?v=20261006151057';
+import { renderEntry, renderSteps } from './render.js?v=20261009162748';
 
 /** Prioritäten der Warteschlange (höher = früher; bei Gleichstand erst Variante 0 aller Klänge). */
 export const PRIO = { urgent: 100, ui: 90, loadout: 85, music: 82, core: 80, amb: 60, t1: 50, t2: 40, lazy: 20 };
@@ -233,7 +233,7 @@ class SoundBank {
       if (typeof Worker === 'undefined') throw new Error('Keine Web Worker');
       const hc = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 2;
       const n = Math.max(1, Math.min(2, hc - 2));
-      const url = new URL('./synth.worker.js?v=20261006151057', import.meta.url);
+      const url = new URL('./synth.worker.js?v=20261009162748', import.meta.url);
       this.pool = [];
       for (let i = 0; i < n; i++) {
         const w = new Worker(url, { type: 'module', name: 'nullpunkt-audio' });

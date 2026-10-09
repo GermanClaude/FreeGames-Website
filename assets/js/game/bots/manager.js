@@ -5,17 +5,27 @@
 //
 // API: new BotManager(G); attach(G); detach(); spawnBots({ allies, enemies, ffa, difficulty, modeId }) → Bot[];
 //      removeAll(); update(dt); bots; handlesStreaks (= true: Bots setzen Serienprämien selbst ein)
+// Mehrspieler (docs/planung/mehrspieler.md §1/§7): spawnPuppet({ netId, name, team, cls, loadout, variant, scheme, isHuman,
+//      spawn }) → Bot (Puppe); removeBot(bot) (auch mitten im Match); addBot({ team, difficulty, modeId }) → ein KI-Bot wie
+//      spawnBots (Aufrufer spawnt ihn über G.spawnActor); puppetFired(bot, n) (Schüsse einer Puppe, nur Darstellung);
+//      setPuppet(bot, on); byNetId(id); puppets(); isPuppet(actor); weaponIndex(). Puppen laufen jedes Bild (kein
+//      Simulationstakt), ohne Trupptaktik, Lernen und Gehör; Gefechte mit entfernten Menschen laufen in voller Rate.
+// Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
+//      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261006151057';
-import { difficultyProfile } from './difficulty.js?v=20261006151057';
-import { pickNames } from './names.js?v=20261006151057';
-import { Nameplate } from './nameplates.js?v=20261006151057';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261006151057';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261006151057';
-import { analyze } from './ai/tactics.js?v=20261006151057';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261006151057';
-import { BotAdapt } from './ai/spielstil.js?v=20261006151057';
-import { CLASSES, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261006151057';
+import { Bot } from './bot.js?v=20261009162748';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261009162748'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261009162748';
+import { pickNames } from './names.js?v=20261009162748';
+import { Nameplate } from './nameplates.js?v=20261009162748';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261009162748';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261009162748';
+import { analyze } from './ai/tactics.js?v=20261009162748';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261009162748';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261009162748';
+import { BotAdapt } from './ai/spielstil.js?v=20261009162748';
+import { CorpseStore } from './corpses.js?v=20261009162748';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261009162748';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -25,6 +35,11 @@ const _cam = new THREE.Vector3();
 const _tc = new THREE.Vector3(); // canTeleport
 const _tw = new THREE.Vector3();
 const _tv = new THREE.Vector3();
+const _pe = new THREE.Vector3(); // Puppen-Schuss: Auge, Richtung, Mündung, Ende
+const _pd = new THREE.Vector3();
+const _pm = new THREE.Vector3();
+const _pt = new THREE.Vector3();
+const _pray = new THREE.Ray();
 const NO_SMOOTH = { smooth: false };
 
 const LOS_BASE = 48, LOS_BASE_LOW = 26; // Sichtstrahlen pro Bild (Grundbudget)
@@ -76,11 +91,17 @@ export class BotManager {
     this._plateLos = new Map();
     this.tactics = new TeamTactics(this);
     this.adapt = new BotAdapt(this); // ai-adapt: lernende Bots (Spielermodell + Anpassung der Gegner)
+    this.corpses = new CorpseStore(this); // Leichen bleiben liegen (eingefroren, Obergrenze je Grafikstufe)
     this.lodEnabled = true;
     this._stepEv = { actor: null, sprint: false, crouch: false }; // Simulations-Detailstufen (Prüfstand/Messung: false = alle Bots jedes Bild)
     this.lodCount = [0, 0, 0, 0];
     this.activity = []; // jüngste Gefechtslärm-Positionen { pos, time, actor } (hörbar über die ganze Karte)
     this.debug = { los: 0, paths: 0, ms: 0, losUsed: 0, pathsUsed: 0 };
+    // Mehrspieler: Darstellung der Puppen-Schüsse (Einschläge ohne Schaden, Vorbeiflug am Spieler) – abschaltbar, falls das
+    // Sync-Modul Einschläge selbst nachspielt
+    this.puppetFx = { impacts: true, whiz: true };
+    this._humans = []; // entfernte Menschen (Puppen) dieses Bildes
+    this._weaponIdx = null;
   }
 
   attach(G) {
@@ -129,46 +150,20 @@ export class BotManager {
     if (!this._subs) this.attach(G);
     const diff = difficultyProfile(difficulty, G.data && G.data.DIFFICULTIES);
     this.adapt.begin(diff, modeId); // ai-adapt: gelerntes Spielermodell laden, Anpassungsstärke nach Schwierigkeit
+    this._adaptOnline();
     const used = new Set(G.actors.map((a) => a.name));
     if (G.player && G.player.name) used.add(G.player.name);
     const total = ffa ? allies + enemies : allies + enemies;
     const names = pickNames(total, used);
     const created = [];
-    const loadoutPool = (n) => {
-      const W = (G.data && G.data.WEAPONS) || {};
-      const all = ((G.data && G.data.DEFAULT_LOADOUTS) || [{ primary: 'ar_m17', secondary: 'pi_p9', lethal: 'frag' }]);
-      const cls = (l) => (W[l.primary] ? W[l.primary].cls : 'ar');
-      // Grundmix ohne Scharfschützen; Schrot höchstens jeder vierte
-      const base = all.filter((l) => cls(l) !== 'sniper');
-      const list = [];
-      let shotguns = 0;
-      while (list.length < n) {
-        for (const l of shuffle(base.slice())) {
-          if (list.length >= n) break;
-          if (cls(l) === 'shotgun') { if (shotguns >= Math.max(1, Math.floor(n / 4))) continue; shotguns++; }
-          list.push(l);
-        }
-        if (!base.length) list.push({ primary: 'ar_m17', secondary: 'pi_p9', lethal: 'frag' });
-      }
-      // genau ein Scharfschütze je Gruppe ab 4 Bots
-      const sniper = all.find((l) => cls(l) === 'sniper') || (W.sr_brecher ? SNIPER_LOADOUT : null);
-      if (n >= 4 && sniper) list[(Math.random() * n) | 0] = sniper;
-      return shuffle(list);
-    };
     const make = (team, i, lo, variant, scheme, lane) => {
-      const bot = new Bot(this, {
-        team, name: names.shift() || `Bot ${this.bots.length + 1}`, diff: this.adapt.diffFor(diff, team, ffa),
-        loadout: { primary: lo.primary, secondary: lo.secondary, lethal: lo.lethal, tactical: lo.tactical, cls: lo.cls }, variant, scheme, modeId, lane,
-      });
-      this.bots.push(bot);
-      if (!G.actors.includes(bot)) G.actors.push(bot);
-      this._plate(bot);
+      const bot = this._newBot(team, names.shift() || `Bot ${this.bots.length + 1}`, diff, ffa, lo, variant, scheme, modeId, lane);
       created.push(bot);
       return bot;
     };
     if (ffa) {
       const n = allies + enemies;
-      const los = loadoutPool(n);
+      const los = this._loadoutPool(n);
       const vars = shuffle(VARIANTS.map((_, i) => i));
       const schemes = ffaSchemes(G.world); // je Karte gut sichtbare Tarnschemata
       const off = (Math.random() * schemes.length) | 0;
@@ -201,6 +196,42 @@ export class BotManager {
     // Analyse der Karte vorab (Spuren/Machtpositionen)
     if (G.world) analyze(G.world);
     return created;
+  }
+
+  /** Neuer KI-Bot (spawnBots/addBot): Schwierigkeit (lernende Anpassung offline), Liste, Akteure, Namensschild. */
+  _newBot(team, name, diff, ffa, lo, variant, scheme, modeId, lane) {
+    const G = this.G;
+    const bot = new Bot(this, {
+      team, name, diff: this._online() ? diff : this.adapt.diffFor(diff, team, ffa),
+      loadout: { primary: lo.primary, secondary: lo.secondary, lethal: lo.lethal, tactical: lo.tactical, cls: lo.cls }, variant, scheme, modeId, lane,
+    });
+    this.bots.push(bot);
+    if (!G.actors.includes(bot)) G.actors.push(bot);
+    this._plate(bot);
+    return bot;
+  }
+
+  /** FFA-Ausrüstungen (Standard-Loadouts): Grundmix ohne Scharfschützen, Schrot höchstens jeder vierte, ab 4 Bots genau ein
+   *  Scharfschütze. */
+  _loadoutPool(n) {
+    const G = this.G;
+    const W = (G.data && G.data.WEAPONS) || {};
+    const all = ((G.data && G.data.DEFAULT_LOADOUTS) || [{ primary: 'ar_m17', secondary: 'pi_p9', lethal: 'frag' }]);
+    const cls = (l) => (W[l.primary] ? W[l.primary].cls : 'ar');
+    const base = all.filter((l) => cls(l) !== 'sniper');
+    const list = [];
+    let shotguns = 0;
+    while (list.length < n) {
+      for (const l of shuffle(base.slice())) {
+        if (list.length >= n) break;
+        if (cls(l) === 'shotgun') { if (shotguns >= Math.max(1, Math.floor(n / 4))) continue; shotguns++; }
+        list.push(l);
+      }
+      if (!base.length) list.push({ primary: 'ar_m17', secondary: 'pi_p9', lethal: 'frag' });
+    }
+    const sniper = all.find((l) => cls(l) === 'sniper') || (W.sr_brecher ? SNIPER_LOADOUT : null);
+    if (n >= 4 && sniper) list[(Math.random() * n) | 0] = sniper;
+    return shuffle(list);
   }
 
   /** Ausrüstung einer Klasse/Rolle (Waffen aus den Wunschlisten + Waffenklassen, Werfer für Pioniere, Rauch/Blend). */
@@ -262,12 +293,320 @@ export class BotManager {
     for (const p of this._plates.values()) p.release();
     this._plates.clear();
     this._plateLos.clear();
+    this.corpses.clear(); // eingefrorene Leichen (Matchende/Kartenwechsel)
     this.bots = [];
     this._paths.clear();
     this._pathQ.length = 0;
     this._hostileCache.clear();
     this._hostileFrame.clear();
     this._targetCount.clear();
+  }
+
+  /* ================================================================ Mehrspieler: Puppen, Bots im laufenden Match */
+
+  _online() { const N = this.G.net; return !!(N && N.online); }
+
+  /** Online lernen die Bots nicht (Spielermodell gilt nur für den lokalen Spieler; kein Anpassen gegen ein Team). */
+  _adaptOnline() {
+    if (!this._online()) return;
+    this.adapt.active = false;
+    this.adapt.level = 0;
+  }
+
+  /** Ist der Akteur eine Puppe (Zustand aus dem Netz)? */
+  isPuppet(actor) { return !!(actor && actor.puppet === true); }
+
+  /** Alle Puppen (neue Liste). */
+  puppets() { return this.bots.filter((b) => b.puppet); }
+
+  /** Bot/Puppe mit dieser Netz-Id (oder null). */
+  byNetId(netId) {
+    if (netId == null) return null;
+    for (let i = 0; i < this.bots.length; i++) if (this.bots[i].netId === netId) return this.bots[i];
+    return null;
+  }
+
+  /** Waffen-Ids stabil nach Id sortiert (Rückfall für Waffenindex im Netz, falls G.data.WEAPON_INDEX fehlt). */
+  weaponIndex() {
+    const W = (this.G.data && this.G.data.WEAPONS) || {};
+    const n = Object.keys(W).length;
+    if (!this._weaponIdx || this._weaponIdx.length !== n) this._weaponIdx = Object.keys(W).sort();
+    return this._weaponIdx;
+  }
+
+  /**
+   * Puppe anlegen (Host: entfernter Mensch; Client: jeder andere Akteur). Liegt danach tot/unsichtbar bereit wie ein frisch
+   * erzeugter Bot – Spawn über bot.respawn({ position, yaw }) bzw. G.spawnActor(bot) (Host), oder sofort mit `spawn`.
+   * opts: { netId, name, team ('A'|'B'|null), cls, loadout { primary, secondary, lethal, tactical, melee }, variant (Index/Id),
+   *         scheme (Tarnschema), isHuman, spawn { position: Vector3|[x,y,z], yaw } }
+   */
+  spawnPuppet({ netId = null, name = null, team = null, cls = null, loadout = null, variant = null, scheme = null, isHuman = false, spawn = null } = {}) {
+    const G = this.G;
+    if (!this._subs) this.attach(G);
+    const W = (G.data && G.data.WEAPONS) || {};
+    const diff = difficultyProfile((G.match && G.match.difficulty) || 'regulaer', G.data && G.data.DIFFICULTIES);
+    const lo0 = loadout || {};
+    const c = CLASSES[cls] ? cls : CLASSES[lo0.cls] ? lo0.cls : DEFAULT_CLASS;
+    const lo = { primary: lo0.primary, secondary: lo0.secondary, lethal: lo0.lethal, tactical: lo0.tactical, cls: c };
+    if (lo0.melee) lo.melee = lo0.melee;
+    if (!W[lo.primary]) lo.primary = this._classLoadout(c, null).primary;
+    if (lo.secondary !== null && lo.secondary !== undefined && !W[lo.secondary]) lo.secondary = undefined;
+    const t = team === 'A' || team === 'B' ? team : null;
+    const id = Number.isFinite(netId) ? netId | 0 : this.bots.length;
+    const look = variant !== null && variant !== undefined ? variant : this._lookForNet(c, lo, id);
+    let sch = scheme;
+    if (!sch) { const ff = ffaSchemes(G.world); sch = t ? schemeForTeam(t, G.world) : ff[id % ff.length]; }
+    const bot = new Bot(this, {
+      team: t, name: name || `Spieler ${id}`, diff, loadout: lo, variant: look, scheme: sch,
+      modeId: (G.match && G.match.modeId) || 'tdm', lane: 1, puppet: true,
+    });
+    bot.netId = Number.isFinite(netId) ? netId | 0 : null;
+    bot.isRemoteHuman = !!isHuman;
+    bot.isBot = !isHuman; // Anzeige (Rangliste): Puppe eines Host-Bots bleibt „Bot“
+    if (bot.netId !== null) {
+      let pid = `net_${bot.netId}`;
+      if (G.actors.some((a) => a.id === pid)) pid += `_${bot.id}`;
+      bot.id = pid;
+    }
+    bot.cls = c;
+    bot.classDef = CLASSES[c];
+    bot.loadout.cls = c;
+    this.bots.push(bot);
+    if (!G.actors.includes(bot)) G.actors.push(bot);
+    this._plate(bot);
+    if (spawn) {
+      const pos = spawn.position || spawn.pos;
+      const p = pos && pos.isVector3 ? pos.clone() : Array.isArray(pos) ? new THREE.Vector3(pos[0], pos[1], pos[2]) : null;
+      if (p) bot.respawn({ position: p, yaw: Number.isFinite(spawn.yaw) ? spawn.yaw : 0 });
+    }
+    return bot;
+  }
+
+  /** Aussehen einer Puppe ohne Angabe vom Host: wie _lookFor, aber aus der Netz-Id statt Zufall (gleich auf allen Rechnern). */
+  _lookForNet(cls, lo, id) {
+    const W = (this.G.data && this.G.data.WEAPONS) || {};
+    const pcls = W[lo.primary] ? W[lo.primary].cls : 'ar';
+    if (cls === 'pionier' && W[lo.secondary] && W[lo.secondary].cls === 'launcher') return 'panzerpionier';
+    if (cls === 'aufklaerer' && (pcls === 'sniper' || pcls === 'marksman')) return 'scharfschuetze';
+    const ids = (CLASS_LOOKS[cls] || CLASS_LOOKS.sturm).filter((v) => VARIANTS.some((x) => x.id === v));
+    return ids.length ? ids[Math.abs(id | 0) % ids.length] : 0;
+  }
+
+  /**
+   * Einen KI-Bot mitten im Match hinzufügen – genau wie spawnBots (Name, Klasse/Rolle aus der Truppplanung, Ausrüstung,
+   * Aussehen, Spur, Trupp). Der Aufrufer spawnt ihn (G.spawnActor(bot)). team null = FFA. → Bot
+   */
+  addBot({ team = null, difficulty = null, modeId = null } = {}) {
+    const G = this.G;
+    if (!this._subs) this.attach(G);
+    const mId = modeId || (G.match && G.match.modeId) || 'tdm';
+    let diff = difficultyProfile(difficulty || (G.match && G.match.difficulty) || 'regulaer', G.data && G.data.DIFFICULTIES);
+    // gleiche Stufe: dasselbe Grundprofil wie die übrigen Bots (die lernende Anpassung teilt sich ein Profil je Stufe)
+    if (this.adapt._base && this.adapt._base.id === diff.id) diff = this.adapt._base;
+    this.adapt.begin(diff, mId);
+    this._adaptOnline();
+    const used = new Set(G.actors.map((a) => a.name));
+    if (G.player && G.player.name) used.add(G.player.name);
+    const name = pickNames(1, used)[0] || `Bot ${this.bots.length + 1}`;
+    const t = team === 'A' || team === 'B' ? team : null;
+    let bot;
+    if (!t) {
+      const cls = pickBotClass();
+      const lo = this._loadoutPool(1)[0];
+      const schemes = ffaSchemes(G.world);
+      bot = this._newBot(null, name, diff, true, lo, (Math.random() * VARIANTS.length) | 0, schemes[(Math.random() * schemes.length) | 0], mId, (Math.random() * 3) | 0);
+      bot.cls = cls; bot.classDef = CLASSES[cls]; bot.loadout.cls = cls;
+    } else {
+      // Rolle wie in einer um einen Bot größeren Gruppe (planRoles), Trupp/Spur der vorhandenen Kameraden
+      const k = this.bots.filter((b) => !b.puppet && b.team === t).length;
+      const plan = planRoles(k + 1)[k];
+      const cls = pickBotClass(Math.random, plan.role);
+      const lo = this._classLoadout(cls, plan.role);
+      const mate = this.bots.find((b) => !b.puppet && b.tsquad && b.tsquad.id === `${t}:${plan.squad}`);
+      bot = this._newBot(t, name, diff, false, lo, this._lookFor(cls, plan.role, lo, plan.ft), schemeForTeam(t, G.world), mId, mate ? mate.lane : (Math.random() * 3) | 0);
+      if (this.adapt.on(bot)) bot.lane = this.adapt.laneFor(bot.lane);
+      bot.cls = cls;
+      bot.classDef = CLASSES[cls];
+      this.tactics.register(bot, plan);
+    }
+    if (G.world) analyze(G.world);
+    return bot;
+  }
+
+  /**
+   * Bot/Puppe entfernen (auch mitten im Match): Figur(en)/Leiche/Waffe entsorgen, aus bots und G.actors nehmen, Schild
+   * zurückgeben, aus dem Trupp austragen, Verweise anderer Bots (Gedächtnis, Ziel, Befehl, Funk, Lärm) löschen.
+   * Meldet 'actor:remove' { actor }. → true, wenn entfernt
+   */
+  removeBot(bot) {
+    const i = this.bots.indexOf(bot);
+    if (i < 0) return false;
+    const G = this.G;
+    // Fahrzeugsitz räumen (Rückfall: nichts tun)
+    if (bot.vehicle && G.vehicles && typeof G.vehicles.removeFromSeat === 'function') {
+      try { G.vehicles.removeFromSeat(bot, { teleport: false }); } catch (err) { console.warn('[NULLPUNKT] Bot aus Fahrzeug nehmen:', err); }
+    }
+    this._leaveSquad(bot);
+    this.bots.splice(i, 1);
+    const k = G.actors.indexOf(bot);
+    if (k >= 0) G.actors.splice(k, 1);
+    const plate = this._plates.get(bot);
+    if (plate) { plate.release(); this._plates.delete(bot); }
+    this._plateLos.delete(bot);
+    this._paths.delete(bot);
+    const q = this._pathQ.indexOf(bot);
+    if (q >= 0) this._pathQ.splice(q, 1);
+    this._targetCount.delete(bot);
+    this._hostileCache.delete(bot);
+    this._hostileFrame.clear(); // Feindlisten im selben Bild neu aufbauen
+    for (const m of this._intel.values()) m.delete(bot);
+    for (let j = this.activity.length - 1; j >= 0; j--) if (this.activity[j].actor === bot) this.activity.splice(j, 1);
+    for (const b of this.bots) {
+      b.memory.remove(bot);
+      if (b.gunner.rec && b.gunner.rec.actor === bot) b.gunner.clear();
+      if (b.order && b.order.target === bot) { b.order.kind = null; b.order.target = null; }
+      if (b.command && (b.command.by === bot || b.command.target === bot)) b.command = null; // Befehlsrad
+      if (b.goal && b.goal.data === bot) b.goal.data = null;
+    }
+    if (G.input && G.input.aimTarget === bot) G.input.aimTarget = null;
+    bot.dispose();
+    G.events.emit('actor:remove', { actor: bot });
+    return true;
+  }
+
+  /** Aus dem Trupp austragen (Trupp ohne Mitglieder verschwindet). */
+  _leaveSquad(bot) {
+    const sq = bot.tsquad;
+    if (!sq) return;
+    const T = this.tactics;
+    const rm = (a) => { const j = a.indexOf(bot); if (j >= 0) a.splice(j, 1); };
+    rm(sq.members);
+    for (const f of sq.ft) rm(f);
+    if (sq.lead === bot) sq.lead = null;
+    if (sq.room && Array.isArray(sq.room.team)) rm(sq.room.team);
+    sq.lastAlive = Math.min(sq.lastAlive || 0, sq.members.length);
+    if (!sq.members.length) {
+      const j = T.squads.indexOf(sq);
+      if (j >= 0) T.squads.splice(j, 1);
+      if (T._byKey) T._byKey.delete(sq.id);
+    }
+    bot.tsquad = null;
+    if (bot.order) bot.order.kind = null;
+  }
+
+  /** KI-Bot ↔ Puppe umschalten (z. B. Host übergibt einen Bot an das Netz). Puppen verlassen ihren Trupp. */
+  setPuppet(bot, on = true) {
+    if (!bot || !this.bots.includes(bot)) return false;
+    if (on) {
+      this._leaveSquad(bot);
+      this._paths.delete(bot);
+      const q = this._pathQ.indexOf(bot);
+      if (q >= 0) this._pathQ.splice(q, 1);
+    }
+    bot.setPuppet(on);
+    return true;
+  }
+
+  /* ================================================================ Mehrspieler: Schüsse einer Puppe (Darstellung) */
+
+  /**
+   * Puppe hat geschossen (nur Darstellung, kein Treffer/Schaden): 'weapon:fire' wie WeaponController._fire (+ cosmetic) →
+   * Mündungsfeuer, Schussgeräusch, Gehör der Bots, Statistik; Leuchtspur von der Mündung entlang der Zielrichtung bis zum
+   * ersten Hindernis (Welt bzw. Trefferzonen eines Gegners, höchstens Reichweite); Einschlag ohne Schütze (keine Wirkung
+   * auf Fahrzeuge/Serienprämien) und Vorbeiflug am Spieler (puppetFx). → Anzahl gemeldeter Schüsse
+   */
+  puppetFired(bot, count = 1) {
+    const G = this.G;
+    const w = bot && bot.weapon;
+    const def = w && w.currentDef;
+    if (!def || !bot.alive) return 0;
+    const n = Math.max(1, Math.min(4, count | 0));
+    const now = G.time.elapsed;
+    const interval = 60 / Math.max(1, def.rpm || 600);
+    const pellets = Math.max(1, def.pellets || 1);
+    const mode = def.fireMode || 'auto';
+    const semi = mode !== 'auto' && mode !== 'burst';
+    for (let k = 0; k < n; k++) {
+      w.shotIndex = now - w.lastShotTime > Math.max(0.28, interval * 2.2) ? 0 : (w.shotIndex || 0) + 1;
+      w.lastShotTime = now;
+      bot.getEyePosition(_pe);
+      bot.getAimDirection(_pd);
+      bot.getMuzzlePosition(_pm);
+      G.events.emit('weapon:fire', {
+        actor: bot, weaponId: def.id, origin: _pe.clone(), dir: _pd.clone(), suppressed: !!def.suppressed,
+        muzzle: _pm.clone(), pellets, shotIndex: w.shotIndex, ads: w.adsProgress || 0, cosmetic: true,
+      });
+      if (def.projectile || def.cls === 'melee') continue; // Rakete/Messer: Wirkung kommt vom Host
+      // Leuchtspur wie bei Bots: jede 2. Kugel, Einzelfeuer jede, Schrot 2
+      const tracers = pellets > 1 ? 2 : semi || w.shotIndex % 2 === 0 ? 1 : 0;
+      this._puppetShot(bot, def, tracers, k === 0);
+    }
+    return n;
+  }
+
+  _puppetShot(bot, def, tracers, impact) {
+    const G = this.G;
+    const W = G.world;
+    const range = def.range || 100;
+    let dist = range;
+    let wh = null;
+    if (W && typeof W.raycast === 'function') {
+      wh = W.raycast(_pe, _pd, range);
+      if (wh && wh.distance <= range) dist = wh.distance; else wh = null;
+    }
+    const ad = this._puppetActorHit(bot, _pe, _pd, dist);
+    if (ad > 0) { dist = ad; wh = null; }
+    const hit = ad > 0 ? 'actor' : wh ? 'world' : null;
+    if (tracers > 0) {
+      const from = _pm.clone();
+      for (let i = 0; i < tracers; i++) {
+        _pt.copy(_pd);
+        if (i > 0) { const s = def.hipSpread || 0.05; _pt.x += (Math.random() - 0.5) * s; _pt.y += (Math.random() - 0.5) * s; _pt.z += (Math.random() - 0.5) * s; _pt.normalize(); }
+        G.events.emit('tracer', { from, to: _pt.multiplyScalar(dist).add(_pe).clone(), actor: bot, weaponId: def.id, hit, cosmetic: true });
+      }
+    }
+    if (wh && impact && this.puppetFx.impacts) {
+      const nrm = wh.normal ? wh.normal.clone() : _pd.clone().negate();
+      if (nrm.dot(_pd) > 0) nrm.negate(); // zum Schützen (doppelseitige Flächen)
+      const point = wh.point.clone();
+      G.events.emit('impact', { point, normal: nrm, surface: wh.surface || 'concrete', weaponId: def.id, actor: bot, cosmetic: true });
+      this._onImpact({ point, shooter: bot }); // Gehör der Bots (Einschläge in der Nähe)
+    }
+    if (this.puppetFx.whiz) this._puppetWhiz(bot, dist);
+  }
+
+  /** Abstand zur ersten getroffenen Trefferzone eines Gegners auf dem Strahl (0 = keine; nur Darstellung). */
+  _puppetActorHit(bot, eye, dir, maxDist) {
+    const G = this.G;
+    const C = G.combat;
+    const actors = G.actors;
+    _pray.origin.copy(eye);
+    _pray.direction.copy(dir);
+    let best = maxDist, found = false;
+    for (let i = 0; i < actors.length; i++) {
+      const a = actors[i];
+      if (a === bot || !a.alive || !a.position || typeof a.raycastHitboxes !== 'function' || (C && !C.isHostile(bot, a))) continue;
+      _v.copy(a.position); _v.y += 0.9;
+      const along = (_v.x - eye.x) * dir.x + (_v.y - eye.y) * dir.y + (_v.z - eye.z) * dir.z;
+      if (along < -1 || along > best + 1.6) continue;
+      if (_pray.distanceSqToPoint(_v) > 4) continue;
+      const h = a.raycastHitboxes(_pray, best);
+      if (h && h.distance < best) { best = h.distance; found = true; }
+    }
+    return found ? best : 0;
+  }
+
+  /** Vorbeiflug am lokalen Spieler ('bullet:whiz' wie combat._whiz). */
+  _puppetWhiz(bot, len) {
+    const G = this.G;
+    const p = G.player;
+    if (!p || !p.alive || p === bot || !G.combat || !G.combat.isHostile(bot, p)) return;
+    const head = p.getEyePosition(_v);
+    const t = _w.copy(head).sub(_pe).dot(_pd);
+    if (t < 2 || t > len) return;
+    _w.copy(_pd).multiplyScalar(t).add(_pe);
+    const d = _w.distanceTo(head);
+    if (d < 2.2 && d > 0.25) G.events.emit('bullet:whiz', { position: _w.clone(), shooter: bot, distance: d, cosmetic: true });
   }
 
   /** Drittpersonen-Waffenmodell (Klon) für eine Waffe. */
@@ -291,7 +630,14 @@ export class BotManager {
     // wachsend – bei niedriger Bildrate fallen pro Bild mehr Wahrnehmungsschritte an
     const base = low ? LOS_BASE_LOW : LOS_BASE;
     let demand = 0;
-    for (let i = 0; i < this.bots.length; i++) { const b = this.bots[i]; if (b.alive) demand += b.diff.senseHz; }
+    // Mehrspieler: entfernte Menschen (Puppen) – Gefechte und Nähe zu ihnen wie zum Spieler (volle Simulationsrate)
+    const humans = this._humans;
+    humans.length = 0;
+    for (let i = 0; i < this.bots.length; i++) {
+      const b = this.bots[i];
+      if (!b.alive) continue;
+      if (b.puppet) { if (b.isRemoteHuman) humans.push(b); } else demand += b.diff.senseHz;
+    }
     this._losLeft = Math.min(base * 3, Math.max(base, Math.ceil(demand * dt * LOS_PER_SENSE)));
     const losStart = this._losLeft;
     const bots = this.bots;
@@ -342,13 +688,17 @@ export class BotManager {
       _sphere.radius = 1.5;
       const inView = !cam || this._frustum.intersectsSphere(_sphere);
       b.inView = inView;
-      // Animationsrate: nah jedes Bild … fern seltener; außerhalb des Bildes 1/6, fern und unsichtbar eingefroren (nur Lage)
-      b.animEvery = !inView ? (d > 50 ? 0 : 6) : d < (low ? 16 : 26) ? 1 : d < (low ? 40 : 60) ? 2 : d < 110 ? 3 : 5;
-      // Simulations-Detailstufe nach Abstand/Sicht; Gefecht mit dem Spieler = volle Rate
-      const pl = G.player;
-      const duel = !!pl && ((b.gunner.rec && b.gunner.rec.actor === pl && now - (b.gunner.rec.seenAt || -1e9) < 3) || (aimT === b));
+      // Animationsrate: nah jedes Bild … fern seltener; außerhalb des Bildes 1/6, fern und unsichtbar eingefroren (nur Lage).
+      // Puppen nie ganz eingefroren: Haltung/Trefferzonen folgen dem Netz auch außer Sicht (Treffer der Bots auf Menschen)
+      b.animEvery = !inView ? (d > 50 && !b.puppet ? 0 : 6) : d < (low ? 16 : 26) ? 1 : d < (low ? 40 : 60) ? 2 : d < 110 ? 3 : 5;
+      // Simulations-Detailstufe nach Abstand/Sicht; Gefecht mit einem Menschen (Spieler oder entfernter Mensch) = volle Rate
+      const r = b.gunner.rec;
+      const duel = (!!r && !!r.actor && (r.actor.isPlayer || r.actor.isRemoteHuman) && now - (r.seenAt || -1e9) < 3) || aimT === b;
+      // Abstand zum nächsten Menschen (offline: Kamera)
+      let dh = d;
+      for (let h = 0; h < humans.length; h++) { const hd = humans[h] === b ? Infinity : b.position.distanceTo(humans[h].position); if (hd < dh) dh = hd; }
       // (Sichtkegel ohne Verdeckung: auf der Großkarte liegt fast jeder im Bild → Abstand entscheidet, Sicht hebt eine Stufe an)
-      const tier = !this.lodEnabled ? 0 : !b.alive || duel || d < 50 || (inView && d < 90) ? 0 : d < 120 || (inView && d < 220) ? 1 : d < 260 || inView ? 2 : 3;
+      const tier = !this.lodEnabled || b.puppet ? 0 : !b.alive || duel || dh < 50 || (inView && d < 90) ? 0 : dh < 120 || (inView && d < 220) ? 1 : dh < 260 || inView ? 2 : 3;
       b.simTier = tier;
       const L = SIM_LOD[tier];
       b.simEvery = L.every; b.lodSense = L.sense; b.lodThink = L.think;
@@ -368,13 +718,22 @@ export class BotManager {
         }
       }
     }
-    // Trupptaktik (gestaffelt je Trupp)
+    // Trupptaktik (gestaffelt je Trupp); lernende Bots nur offline
     this.tactics.update(dt, now);
+    if (this.adapt.active && this._online()) this._adaptOnline();
     this.adapt.update(dt, now);
     // Bots (ferne Detailstufen nur jedes n-te Bild mit aufgelaufener Zeit, Phase je Bot verteilt)
     let simmed = 0;
     for (let i = 0; i < bots.length; i++) {
       const b = bots[i];
+      if (b.puppet) {
+        // Puppe: jedes Bild (Netz-Pose ist bereits interpoliert; ein Simulationstakt würde sie verzerren)
+        b._simAcc = 0;
+        b.update(dt);
+        simmed++;
+        if (b.alive) b.updateCorpsesOnly(dt);
+        continue;
+      }
       const every = b.alive ? b.simEvery || 1 : 1;
       b._simAcc += dt;
       if (every > 1 && (this._frame + b.simPhase) % every !== 0) {
@@ -395,6 +754,8 @@ export class BotManager {
       if (b.alive) b.updateCorpsesOnly(sdt);
     }
     this.debug.simmed = simmed;
+    // Eingefrorene Leichen: Pakete nachbauen, Lebensdauer (Einstellung „Leichen“)
+    this.corpses.update(dt, cam ? this._frustum : null);
     // Schatten (nächste N sichtbare)
     this._shadowT -= dt;
     if (this._shadowT <= 0) { this._shadowT = 0.5; this._assignShadows(); }
@@ -526,6 +887,8 @@ export class BotManager {
   /** Unsichtbar umsetzen erlaubt? Weder der Bot noch der Zielpunkt `to` dürfen für den Spieler sichtbar sein:
    *  außerhalb des Bildes, vom Auge aus verdeckt, oder (mit Zoom/Zielfernrohr gerechnet) weiter als 220 m. */
   canTeleport(bot, to = null) {
+    // Mehrspieler (Host): auch nicht vor den Augen entfernter Menschen
+    if (this._humans.length && this._humanSees(bot, to)) return false;
     const cam = this.G.camera;
     if (!cam) return true;
     _tc.setFromMatrixPosition(cam.matrixWorld);
@@ -550,6 +913,24 @@ export class BotManager {
       if (seen(to, inView) || to.distanceTo(_tc) < 18) return false;
     }
     return true;
+  }
+
+  /** Sieht ein entfernter Mensch (Puppe) den Bot bzw. den Zielpunkt? Nah (< 18 m) oder freie Sicht bis 220 m (ohne Blickkegel). */
+  _humanSees(bot, to) {
+    const W = this.G.world;
+    for (let i = 0; i < this._humans.length; i++) {
+      const h = this._humans[i];
+      if (!h.alive || h === bot) continue;
+      const eye = h.getEyePosition(_tc);
+      for (const p of to ? [bot.position, to] : [bot.position]) {
+        const d = p.distanceTo(eye);
+        if (d < 18) return true;
+        if (d > 220) continue;
+        _tw.set(p.x, p.y + 1.2, p.z);
+        if (!W || typeof W.lineOfSight !== 'function' || W.lineOfSight(eye, _tw)) return true;
+      }
+    }
+    return false;
   }
 
   /** Nav-Knoten an `p` für diesen Match verteuern (Verbindung scheitert wiederholt, Bot darf nicht versetzt werden). */
@@ -592,7 +973,7 @@ export class BotManager {
     const bots = this.bots;
     for (let i = 0; i < bots.length; i++) {
       const b = bots[i];
-      if (!b.alive || b === actor || !G.combat.isHostile(b, actor)) continue;
+      if (!b.alive || b.puppet || b === actor || !G.combat.isHostile(b, actor)) continue;
       const d = b.position.distanceTo(actor.position);
       const r = range * b.diff.hearing;
       if (d > r) continue;
@@ -655,7 +1036,7 @@ export class BotManager {
   }
 
   _onFlashed({ actor, strength = 1, duration = 2 } = {}) {
-    if (actor && actor.isBot && this.bots.includes(actor)) actor.onFlashed(strength, duration);
+    if (actor && this.bots.includes(actor)) actor.onFlashed(strength, duration); // auch Puppen entfernter Menschen (Schutzhaltung)
   }
 
   _onImpact({ point, shooter } = {}) {
@@ -664,7 +1045,7 @@ export class BotManager {
     const bots = this.bots;
     for (let i = 0; i < bots.length; i++) {
       const b = bots[i];
-      if (!b.alive || b === shooter || !this.G.combat.isHostile(b, shooter)) continue;
+      if (!b.alive || b.puppet || b === shooter || !this.G.combat.isHostile(b, shooter)) continue;
       if (b.position.distanceToSquared(point) > 6.25) continue;
       b.memory.hear(shooter, shooter.position, now, 3, 'sound');
       if (!b.gunner.rec || !b.gunner.rec.visible) b.alert(shooter.position, now);
@@ -677,7 +1058,7 @@ export class BotManager {
     const bots = this.bots;
     for (let i = 0; i < bots.length; i++) {
       const b = bots[i];
-      if (!b.alive || b === target || b.team !== target.team || b.position.distanceTo(target.position) > 30) continue;
+      if (!b.alive || b.puppet || b === target || b.team !== target.team || b.position.distanceTo(target.position) > 30) continue;
       if (!this.G.combat.isHostile(b, attacker)) continue;
       b.memory.hear(attacker, attacker.position, now, 5, 'team');
     }
@@ -689,7 +1070,7 @@ export class BotManager {
     for (const b of this.bots) {
       b.memory.remove(victim);
       if (b.gunner.rec && b.gunner.rec.actor === victim) b.gunner.clear();
-      if (!b.alive || !killer || !killer.position || killer === b || !victim.team || b.team !== victim.team) continue;
+      if (!b.alive || b.puppet || !killer || !killer.position || killer === b || !victim.team || b.team !== victim.team) continue;
       if (b.position.distanceTo(victim.position) < 28 && this.G.combat.isHostile(b, killer)) b.memory.hear(killer, killer.position, now, 4, 'team');
     }
     for (const m of this._intel.values()) m.delete(victim);
@@ -721,6 +1102,10 @@ export class BotManager {
     const lens = R && R.lens && typeof R.lens.toScreen === 'function' ? R.lens : null;
     const now = G.time.real || G.time.elapsed;
     const playerAlive = G.player && G.player.alive;
+    // Spielstil (G.match.styleFlags.nameplates): 'alle' | 'team' (Realistisch: nur Mitspieler; FFA: keine) | 'aus'.
+    // Je Bild gelesen → ein neues Match mit anderem Stil gilt sofort, ohne die Schilder neu anzulegen.
+    const fl = G.match && G.match.styleFlags;
+    const plates = (fl && fl.nameplates) || 'alle';
     cam.getWorldPosition(_cam); // Sichtstrahlen von der Kamera aus (das Schild wird aus ihrer Sicht gezeichnet)
     const list = this._plateList || (this._plateList = []);
     list.length = 0;
@@ -738,6 +1123,7 @@ export class BotManager {
       const pos = p._pos || (p._pos = new THREE.Vector3());
       if (s && bot.alive) s.getHeadPosition(pos); else pos.copy(bot.position).setY(bot.position.y + 1.7);
       if (!bot.alive) fade = 16;
+      else if (plates === 'aus' || (plates === 'team' && p.kind !== 'ally')) fade = 16; // Stil verbietet das Schild
       else if (bot.inView) {
         if (p.kind === 'ally') target = d < 40 ? 1 : d < 60 ? (60 - d) / 20 : 0;
         else {
@@ -813,14 +1199,16 @@ export class BotManager {
     const states = {};
     let broken = 0, leaning = 0, staggered = 0;
     const now = this.G.time ? this.G.time.elapsed : 0;
+    let puppets = 0;
     for (const b of this.bots) {
+      if (b.puppet) puppets++;
       if (!b.alive) continue;
       states[b.goal.kind] = (states[b.goal.kind] || 0) + 1;
       if (!this._soldierSane(b)) broken++;
       if (Math.abs(b.lean) > 0.5) leaning++;
       if (now < b.staggerUntil) staggered++;
     }
-    let prone = 0, ordered = 0, corpses = 0, sunk = 0;
+    let prone = 0, ordered = 0, corpses = 0, sunk = 0, commanded = 0;
     const W = this.G.world;
     for (const b of this.bots) {
       // Leichen: Becken nicht unter dem Boden (Ragdoll gegen world.groundHeight)
@@ -834,8 +1222,52 @@ export class BotManager {
       if (!b.alive) continue;
       if (b.stance === 'prone') prone++;
       if (b.order && b.order.kind && now < b.order.until) ordered++;
+      if (!b.puppet && isCommanded(b, now)) commanded++;
     }
-    return { bots: this.bots.length, alive: this.bots.filter((b) => b.alive).length, states, ms: +this.debug.ms.toFixed(2), losPerFrame: this.debug.losUsed, pathQueue: this._paths.size, broken, leaning, staggered, prone, ordered, corpses, sunk, lod: this.lodCount.slice(), simmed: this.debug.simmed, tactics: { ...this.tactics.counts }, squads: this.tactics.squads.length, fabric: soldierDetailInfo().kind };
+    return { bots: this.bots.length, alive: this.bots.filter((b) => b.alive).length, states, ms: +this.debug.ms.toFixed(2), losPerFrame: this.debug.losUsed, pathQueue: this._paths.size, broken, leaning, staggered, prone, ordered, commanded, corpses, frozenCorpses: this.corpses.order.length, sunk, lod: this.lodCount.slice(), simmed: this.debug.simmed, puppets, tactics: { ...this.tactics.counts }, squads: this.tactics.squads.length, fabric: soldierDetailInfo().kind };
+  }
+
+  /* ================================================================ Befehle (Befehlsrad) */
+
+  /**
+   * Spielerbefehl an verbündete KI-Bots (ai/orders.js). order: 'follow' | 'hold' | 'regroup' | 'formation' | 'attack' | 'defend' |
+   * 'spread' | 'free'; leader: befehlender Akteur (Spieler bzw. Puppe eines Clients auf dem Host); point: Punkt unter dem
+   * Fadenkreuz (Vector3), target: Gegner im Fadenkreuz, formation: 'reihe' | 'keil' | 'kreis'. Empfänger: lebende KI-Bots seines
+   * Teams im Umkreis (radius, die nächsten ORDER_MAX) und alle, die schon einen Befehl dieses Anführers ausführen.
+   * Meldet 'bot:command' { leader, order, count, point, formation, bots }. → Anzahl der Empfänger
+   */
+  issueOrder({ leader, order, point = null, target = null, formation = null, radius = ORDER_RADIUS } = {}) {
+    const G = this.G;
+    if (!leader || !leader.team || !ORDER_DEFS[order] || !leader.alive) return 0;
+    const now = G.time.elapsed;
+    const near = this.orderableNear(leader, radius);
+    const mine = this.commandedBy(leader);
+    const set = new Set(near.slice(0, ORDER_MAX));
+    for (const b of mine) if (set.size < ORDER_MAX || order === 'free') set.add(b);
+    const bots = [...set];
+    if (target && (!target.alive || !G.combat || !G.combat.isHostile(leader, target))) target = null;
+    const n = bots.length ? issueCommand(G, bots, leader, order, { point, target, formation }, now) : 0;
+    G.events.emit('bot:command', { leader, order, count: n, point: point || (target ? target.position : null), formation, bots });
+    return n;
+  }
+
+  /** Verbündete KI-Bots (lebend, keine Puppen) ≤ radius m um den Anführer, nach Abstand. */
+  orderableNear(leader, radius = ORDER_RADIUS) {
+    const out = [];
+    if (!leader || !leader.team) return out;
+    const r2 = radius * radius;
+    for (const b of this.bots) {
+      if (b.puppet || !b.alive || b.team !== leader.team || b === leader) continue;
+      if (b.position.distanceToSquared(leader.position) <= r2) out.push(b);
+    }
+    out.sort((a, b) => a.position.distanceToSquared(leader.position) - b.position.distanceToSquared(leader.position));
+    return out;
+  }
+
+  /** KI-Bots mit aktivem Befehl dieses Anführers. */
+  commandedBy(leader) {
+    const now = this.G.time.elapsed;
+    return this.bots.filter((b) => !b.puppet && b.command && b.command.by === leader && isCommanded(b, now));
   }
 
   /** Diagnose: Pose/Trefferzonen eines lebenden Bots endlich und am Körper (≤ 3 m von den Füßen)? */

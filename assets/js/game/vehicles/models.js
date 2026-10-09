@@ -11,9 +11,9 @@
 // }
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boxUV } from '../engine/textures.js?v=20261006151057';
-import { VEHICLES, mountY, staticComp } from './data.js?v=20261006151057';
-import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261006151057';
+import { boxUV } from '../engine/textures.js?v=20261009162748';
+import { VEHICLES, mountY, staticComp } from './data.js?v=20261009162748';
+import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261009162748';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const PI = Math.PI, HP = PI / 2;

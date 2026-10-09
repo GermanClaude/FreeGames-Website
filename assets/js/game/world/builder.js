@@ -1,9 +1,10 @@
 // NULLPUNKT — MapBuilder: sammelt statische Geometrie, verschmilzt sie pro Material/Chunk,
 // backt Ambient Occlusion in Vertexfarben, erzeugt Kollisions- und Kugel-Geometrie (Owner: world)
 import * as THREE from 'three';
-import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261006151057';
-import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261006151057';
-import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261006151057';
+import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261009162748';
+import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261009162748';
+import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261009162748';
+import { assets } from '../../../lib/loader.js?v=20261009162748';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric', 'flesh'];
 const SURF_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s, i]));
@@ -220,6 +221,7 @@ export class MapBuilder {
     this.interiorScale = null; // 0..1: Anteil des gebackenen Innenraumlichts (null = voll; mit Sonden-Gitter gesetzt)
     this.lib = null;      // Set verfügbarer Modell-IDs (Bibliothek nutzbar) oder null (nur prozedural)
     this.library = null;  // async ({ names, models }, onProgress) → { models: Map id → Vorlage|null } (loadWorld)
+    this.timeOfDay = null; // Tageszeit-Id ('morgen' … 'abend'; Kartenzeit, falls nicht gewählt) – props.js lampsOn
     this.stats = { prims: 0 };
     this._m = new THREE.Matrix4();
     this._q = new THREE.Quaternion();
@@ -325,6 +327,7 @@ export class MapBuilder {
   }
 
   _collTris(prim, m) {
+    if (this._noCollide) return; // Ersatzform einer Bibliotheks-Requisite: nur Optik (siehe _resolveModels)
     const e = m.elements, lp = prim.p, n = lp.length / 3;
     this.colTris.ensure(n * 3);
     const C = this.colTris.a; let ci = this.colTris.n;
@@ -375,6 +378,11 @@ export class MapBuilder {
       const oo = uvMode === 'local' && !o.uvOffset ? { ...o, uv: 'local', uvOffset: [x * 0.37 % 1, z * 0.53 % 1] } : { ...o, uv: uvMode };
       this._emit(prim, m, mat, oo, [x, y, z]);
       if (mat.startsWith('plaster') && o.damage !== false && !rotated && h >= 1.8 && w >= 1.2 && d <= 0.6) this._plasterDamage(x, y, z, w, h, d, o);
+      // wandartige Quader merken (Putzschäden: Geschoss darunter? Sockelhöhe?) – nur für den Standard-Stil
+      if (!rotated && h >= 0.2 && Math.min(w, d) <= 0.8 && this._plasterDamage === MapBuilder.prototype._plasterDamage) {
+        const L = this._wallish || (this._wallish = new FBuf(4096));
+        L.ensure(7); L.a[L.n] = x; L.a[L.n + 1] = y; L.a[L.n + 2] = z; L.a[L.n + 3] = w; L.a[L.n + 4] = h; L.a[L.n + 5] = d; L.a[L.n + 6] = o.ry || 0; L.n += 7;
+      }
     }
     if (o.collide !== false) {
       this._collTris(collBox(w, h, d), m);
@@ -456,6 +464,7 @@ export class MapBuilder {
 
   /** Unsichtbarer Kollisionsquader (Kartengrenzen, Wasser-Kante). Kugeln fliegen hindurch. */
   collider(x, y, z, w, h, d, o = {}) {
+    if (this._noCollide) return this;
     this._collTris(collBox(w, h, d), this._matrix(x, y, z, o));
     if (o.minimap) this._footprint(x, z, w, d, o.ry, y, y + h, o.minimap);
     if (o.navBlock !== false) this.navBlockers.push({ x, z, hw: w / 2 + 0.2, hd: d / 2 + 0.2, ry: o.ry || 0 });
@@ -494,11 +503,19 @@ export class MapBuilder {
     return this;
   }
 
-  /** Großer Boden in Kacheln (aufgeteilt in Chunks für Culling). */
+  /**
+   * Großer Boden in Kacheln (aufgeteilt in Chunks für Culling). Kollision als EIN Quader über die ganze Fläche:
+   * die Chunkgröße hängt auf Großkarten von der Grafikstufe ab – die Kollision muss auf jedem Rechner gleich sein.
+   */
   groundTiled(x0, z0, x1, z1, mat, o = {}) {
     const cs = this.chunkSize;
+    const tile = o.collide === false ? o : { ...o, collide: false };
     for (let z = z0; z < z1 - 1e-6; z += cs) for (let x = x0; x < x1 - 1e-6; x += cs) {
-      this.ground(x, z, Math.min(x1, x + cs), Math.min(z1, z + cs), mat, o);
+      this.ground(x, z, Math.min(x1, x + cs), Math.min(z1, z + cs), mat, tile);
+    }
+    if (o.collide !== false) {
+      const t = o.thickness ?? 0.5;
+      this._collTris(collBox(x1 - x0, t, z1 - z0), this._matrix((x0 + x1) / 2, (o.y ?? 0) - t, (z0 + z1) / 2, {}));
     }
     return this;
   }
@@ -539,29 +556,99 @@ export class MapBuilder {
   }
 
   /**
-   * Putzschäden an Putzwänden (F41: statt identischer Flecken alle 3 m in der Kacheltextur): je Wandseite
-   * 0–2 Stellen pro 4 m, weltweit zufällig (eigener, positionsabhängiger Zufall – der Karten-Zufall bleibt
-   * unberührt): ausgebrochener Putz mit Bruchstein/Ziegel, ausgebesserte Stellen, aufsteigende Feuchte.
+   * Putzschäden an Putzwänden – ein einheitlicher Stil für alle Karten (wie die Altstadt seit Kartenrunde 2): auf der
+   * Außenseite ein durchgehender Feuchtesockel über dem Sockel (bzw. dem Boden) und vereinzelt eine Abplatzung an der
+   * Wandkante mit Bruchstein darunter; Obergeschosse nur selten eine Abplatzung unter dem Gesims. Nie auf der
+   * Raumseite (Innenraum-Volumen, Gebäude-/Dach-Grundriss vor der Wand): dort wirkten die früheren zufälligen
+   * Stein-/Ziegel-/Flickstellen wie Blutflecken (Grenzland: über dem Altarkreuz der Kapelle, am Flaschenregal im
+   * Gasthaus). Hier nur vormerken – aufgelöst in build() (_resolvePlasterDamage), wenn alle Innenräume, Sockel und
+   * Geschosse bekannt sind. Eigener, positionsabhängiger Zufall (der Karten-Zufall bleibt unberührt).
+   * Karten können den Stil je Aufbau ersetzen (b._plasterDamage = …, siehe maps/altstadt-ausstattung.js).
    */
   _plasterDamage(x, y, z, w, h, d, o) {
-    let seed = (Math.imul(Math.round(x * 100), 73856093) ^ Math.imul(Math.round(z * 100), 19349663) ^ Math.imul(Math.round(y * 100) + 7, 83492791)) >>> 0;
-    const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const ry = o.ry || 0, c = Math.cos(ry), sn = Math.sin(ry);
-    const tx = c, tz = -sn, nzx = sn, nzz = c; // lokale +x (Wandlänge) und +z (Wandnormale) in Welt
-    for (const side of [1, -1]) {
-      const n = Math.min(Math.floor(rnd() * 1.8 * (w / 4) + rnd() * 0.6), Math.ceil(w / 4) * 2);
-      for (let i = 0; i < n; i++) {
-        const k = rnd();
-        const cell = k < 0.42 ? 'chip_stone' : k < 0.6 ? 'chip_brick' : k < 0.85 ? 'plaster_patch' : 'damp';
-        const sw = cell === 'damp' ? 1.2 + rnd() * 1.6 : 0.45 + rnd() * 0.85, sh = cell === 'damp' ? 0.6 + rnd() * 0.5 : sw * (0.55 + rnd() * 0.35);
-        if (sw > w - 0.3 || sh > h - 0.5) continue;
-        const u = (rnd() - 0.5) * (w - sw - 0.2);
-        const v = cell === 'damp' ? sh / 2 + 0.02 : 0.3 + sh / 2 + rnd() * Math.max(0, h - 0.6 - sh);
-        const off = side * (d / 2);
-        this.decal(x + tx * u + nzx * off, y + v, z + tz * u + nzz * off, sw, sh, cell, {
-          normal: [nzx * side, 0, nzz * side], tangent: [tx * side, 0, tz * side],
-          tint: cell === 'plaster_patch' ? o.tint : undefined, opacity: cell === 'damp' ? 0.8 : 1,
-        });
+    (this._plasterQ || (this._plasterQ = [])).push({ x, y, z, w, h, d, ry: o.ry || 0 });
+  }
+
+  /** Vorgemerkte Putzschäden als Wand-Decals anlegen (siehe _plasterDamage). */
+  _resolvePlasterDamage() {
+    const Q = this._plasterQ, WL = this._wallish;
+    this._plasterQ = null; this._wallish = null;
+    if (!Q || !Q.length) return;
+    // Raster (4 m) über die wandartigen Quader [x, y, z, w, h, d, ry]
+    const A = WL ? WL.a : new Float32Array(0), nW = WL ? WL.n / 7 : 0, cs = 4, cells = new Map();
+    for (let i = 0; i < nW; i++) {
+      const k = i * 7, r = Math.hypot(A[k + 3], A[k + 5]) / 2;
+      for (let gx = Math.floor((A[k] - r) / cs); gx <= Math.floor((A[k] + r) / cs); gx++) {
+        for (let gz = Math.floor((A[k + 2] - r) / cs); gz <= Math.floor((A[k + 2] + r) / cs); gz++) {
+          const key = gx * 8192 + gz;
+          let c = cells.get(key);
+          if (!c) cells.set(key, c = []);
+          c.push(i);
+        }
+      }
+    }
+    // erster wandartiger Quader, der den Punkt enthält und test(i) erfüllt (lokal: Länge x, Dicke z, Höhe ab Unterkante)
+    const find = (px, py, pz, test) => {
+      const list = cells.get(Math.floor(px / cs) * 8192 + Math.floor(pz / cs));
+      if (!list) return -1;
+      for (const i of list) {
+        const k = i * 7, c = Math.cos(A[k + 6]), sn = Math.sin(A[k + 6]), dx = px - A[k], dz = pz - A[k + 2];
+        const lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+        if (Math.abs(lx) <= A[k + 3] / 2 + 0.02 && Math.abs(lz) <= A[k + 5] / 2 + 0.02 && py >= A[k + 1] - 0.02 && py <= A[k + 1] + A[k + 4] + 0.02 && (!test || test(k))) return i;
+      }
+      return -1;
+    };
+    // Raumseite? Innenraum-Volumen, Gebäude-Grundriss (auch Bauten ohne Innenraum-Volumen) oder überdacht – Dach
+    // über dem Punkt vor der Wand UND 1,2 m weiter draußen (ein Dachüberstand allein macht die Außenseite nicht innen)
+    const roofs = this.footprints.filter(f => f.kind === 'building' || f.kind === 'roof');
+    const covered = (px, py, pz, kind) => {
+      for (const f of roofs) {
+        if (f.kind !== kind) continue;
+        const c = Math.cos(f.ry || 0), sn = Math.sin(f.ry || 0), dx = px - f.x, dz = pz - f.z;
+        if (Math.abs(dx * c - dz * sn) > f.hw || Math.abs(dx * sn + dz * c) > f.hd) continue;
+        if (kind === 'building' ? (py >= f.y0 && py <= f.y1) : (f.y0 > py && f.y0 - py < 8)) return true;
+      }
+      return false;
+    };
+    const indoor = (fx, py, fz, nx, nz) => {
+      const px = fx + nx * 0.25, pz = fz + nz * 0.25;
+      if (this.interiors.length && this._interiorAt(px, py, pz)) return true;
+      if (covered(px, py, pz, 'building')) return true;
+      return covered(px, py, pz, 'roof') && covered(fx + nx * 1.2, py, fz + nz * 1.2, 'roof');
+    };
+    for (const q of Q) {
+      const { x, y, z, w, h, d } = q;
+      let seed = (Math.imul(Math.round(x * 100), 73856093) ^ Math.imul(Math.round(z * 100), 19349663) ^ Math.imul(Math.round(y * 100) + 7, 83492791)) >>> 0;
+      const R = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      const c = Math.cos(q.ry), sn = Math.sin(q.ry);
+      const tx = c, tz = -sn, nx0 = sn, nz0 = c; // lokale +x (Wandlänge) und +z (Wandnormale) in Welt
+      // Erdgeschoss: steht die Wand auf keinem anderen Wandquader (Geschoss/Sturz darunter)?
+      let ground = true;
+      for (const u of [-w / 2 + 0.3, 0, w / 2 - 0.3]) if (find(x + tx * u, y - 0.15, z + tz * u) >= 0) { ground = false; break; }
+      for (const side of [1, -1]) {
+        const off = side * (d / 2), nx = nx0 * side, nz = nz0 * side;
+        const fx = x + nx0 * off, fz = z + nz0 * off;
+        if (indoor(fx, y + 1.0, fz, nx, nz)) continue; // Raumseite: glatt verputzt
+        const dec = (u, v, sw, sh, cell, opacity) => this.decal(fx + tx * u, y + v, fz + tz * u, sw, sh, cell, { normal: [nx, 0, nz], tangent: [tx * side, 0, tz * side], opacity });
+        if (ground) {
+          // Sockel (niedriger Quader an derselben Unterkante, z. B. Steinsockel aus arch.wall plinth) → Feuchte darüber
+          const bi = find(fx + nx * 0.01, y + 0.1, fz + nz * 0.01, (k) => Math.abs(A[k + 1] - y) < 0.06 && A[k + 4] <= 0.95);
+          const base = bi >= 0 ? A[bi * 7 + 4] : 0, b0 = Math.max(0, base - 0.07);
+          if (w >= 0.9) {
+            // Feuchtesockel durchgehend, lange Wände in Abschnitten ≤ 4 m (ein gestrecktes Decal würde verschmieren)
+            const n = Math.ceil((w - 0.1) / 4), sw = (w - 0.1) / n;
+            for (let i = 0; i < n; i++) { const sh = 0.5 + R() * 0.22; if (b0 + sh < h - 0.3) dec(-w / 2 + 0.05 + (i + 0.5) * sw, b0 + sh / 2, sw + 0.02, sh, 'damp', 0.42 + R() * 0.14); }
+          }
+          // Abplatzung an der Kante (Ecke/Laibung) direkt über dem Sockel – Bruchstein darunter
+          if (w >= 1.3 && R() < 0.38) {
+            const sw = Math.min(w * 0.42, 0.5 + R() * 0.4), sh = sw * (0.55 + R() * 0.2), e = R() < 0.5 ? -1 : 1;
+            dec(e * (w / 2 - sw / 2 - 0.03), base + 0.03 + sh / 2, sw, sh, 'chip_stone', 1);
+          }
+        } else if (w >= 1.3 && h >= 2 && R() < 0.16) {
+          // Obergeschoss: vereinzelt unter dem Gesims an der Kante
+          const sw = 0.42 + R() * 0.3, sh = sw * (0.55 + R() * 0.2), e = R() < 0.5 ? -1 : 1;
+          dec(e * (w / 2 - sw / 2 - 0.03), h - 0.32 - sh / 2, sw, sh, 'chip_stone', 1);
+        }
       }
     }
   }
@@ -598,12 +685,14 @@ export class MapBuilder {
   /**
    * Requisite aus der Asset-Bibliothek (glb, instanziert, LOD nach Abstand). (x, y, z) = Unterkante-Mitte des
    * Hüllquaders (o.pivot 'center': Mitte), Drehung ry/rx/rz um diesen Punkt, Skalierung s bzw. sx/sy/sz.
-   * o: { part (Teil/Variante, z. B. 'exterior_aircon_unit_rusted'), collide (true; ab 0,25 m Höhe Quader-Kollision),
+   * o: { part (Teil/Variante, z. B. 'exterior_aircon_unit_rusted'), collide (Standard false; nur ausdrücklich true:
+   *      Quader in Manifest-Maßen ab 0,25 m Höhe – Mehrspieler: fehlt ohne Bibliothek (lib=0, „niedrig“ ohne
+   *      komprimierte Texturen), daher Kollision lieber als fester Quader daneben setzen, vgl. props.js dress solid),
    *      shrink (Kollisionsquader waagerecht verkleinern, 0..1), bullet (true: Dreiecke der gröbsten Stufe), minimap,
    *      surface, tint (Instanzfarbe), interior (false: kein gebackenes Innenraumlicht), maxDist, castShadow,
    *      fallback: (b) => … prozeduraler Ersatz, falls das Modell nicht lädt }
    */
-  model(id, x, y, z, o = {}) { this.models.push({ id, x, y, z, o }); return this; }
+  model(id, x, y, z, o = {}) { this.models.push({ id, x, y, z, o: this._noCollide ? { ...o, collide: false } : o }); return this; }
 
   // ---------------------------------------------------------------------------
   // Fertigstellung
@@ -780,7 +869,8 @@ export class MapBuilder {
     }
     await step(0.62, 'Details');
 
-    // Decals, Schilder, Foliage
+    // Decals, Schilder, Foliage (Putzschäden erst jetzt: alle Innenräume/Sockel/Geschosse sind bekannt)
+    this._resolvePlasterDamage();
     const decalMeshes = this._buildDecals(group);
     const signMesh = this._buildSigns(group, meshes);
     const foliage = createFoliage(this.plants, quality);
@@ -883,6 +973,7 @@ export class MapBuilder {
     this.interiors = [];
     this.navBlockers = [];
     this.decals = [];
+    this._plasterQ = null; this._wallish = null;
     this.signs = [];
     this.signDefs = {};
     this.plants = [];
@@ -896,6 +987,14 @@ export class MapBuilder {
   /**
    * Bibliotheks-Requisiten auflösen (nach dem Laden): Instanzen anlegen, Kollision, Footprint, Kugeltreffer;
    * fehlt ein Modell, zeichnet der prozedurale Ersatz (o.fallback) in die Buckets.
+   *
+   * Mehrspieler: Die Bewegungskollision darf nicht davon abhängen, ob das Modell geladen wurde (Grafikstufe „niedrig“
+   * überspringt Modelle über dem Download-Budget, Zeitlimit, Netz). Deshalb: Kollisionsquader immer aus den
+   * Manifest-Maßen (`size`, gleich für alle Texturstufen) – geladen oder nicht –, und der Ersatz ist reine Optik
+   * (seine eigenen Kollisionsaufrufe werden verworfen). Teil-Auswahl (o.part) hat keine Manifest-Maße → keine
+   * automatische Kollision (die Karte setzt dann einen festen Quader, vgl. festesModell in hafen-ausstattung.js).
+   * Seit dem Mehrspieler-Abgleich nur noch auf ausdrücklichen Wunsch (o.collide === true): Ohne Bibliothek gibt es
+   * weder Modell noch Manifest – alle Karten setzen ihre Kollision daher als feste Quader neben das Modell.
    */
   _resolveModels(templates) {
     if (!this.models.length) return;
@@ -903,10 +1002,30 @@ export class MapBuilder {
     const bullet = { tris: new FBuf(65536), surf: [], group: [] };
     let fallbacks = 0;
     const col = new THREE.Color(), tmpBox = new THREE.Box3(), v = new THREE.Vector3(), mCol = new THREE.Matrix4(), tr = new THREE.Matrix4();
+    const sizeBox = new THREE.Box3();
+    const manifest = assets.manifest && assets.manifest.models;
     for (const pl of this.models) {
       const { id, x, y, z, o } = pl;
       const tpl = templates.get(id);
-      if (!tpl) { if (o.fallback) { o.fallback(this); fallbacks++; } continue; }
+      // Kollision (unabhängig vom Laden): Hüllquader in Manifest-Maßen, Unterkante-Mitte im Ursprung
+      const ms = manifest && manifest[id] && manifest[id].size;
+      if (o.collide === true && !o.part && Array.isArray(ms) && ms.length === 3) {
+        sizeBox.min.set(-ms[0] / 2, 0, -ms[2] / 2); sizeBox.max.set(ms[0] / 2, ms[1], ms[2] / 2);
+        this._modelCollision(sizeBox, x, y, z, o, tmpBox, v, mCol, tr);
+      }
+      if (!tpl) {
+        if (o.fallback) {
+          this._noCollide = (this._noCollide || 0) + 1;
+          try { o.fallback(this); } finally { this._noCollide--; }
+          fallbacks++;
+        } else if (o.collide === true && !o.part && Array.isArray(ms) && ms.length === 3) {
+          // ohne Ersatzform: schlichter Quader in Manifest-Maßen, damit die (überall gleiche) Kollision sichtbar ist
+          const k = o.s ?? 1, sx = ms[0] * (o.sx ?? 1) * k, sy = ms[1] * (o.sy ?? 1) * k, sz = ms[2] * (o.sz ?? 1) * k;
+          this.box(x, o.pivot === 'center' ? y - sy / 2 : y, z, sx, sy, sz, 'metal_painted', { ry: o.ry || 0, tint: o.tint || '#7d8388', collide: false, minimap: false });
+          fallbacks++;
+        }
+        continue;
+      }
       const parts = PropInstances.selectParts(tpl, o.part);
       const box = PropInstances.boxOf(tpl, parts);
       const M = placementMatrix(box, x, y, z, o);
@@ -919,21 +1038,8 @@ export class MapBuilder {
         if (iv) { color = color || new THREE.Color(1, 1, 1); color.multiplyScalar(iv.factor); if (iv.tint) color.multiply(col.setRGB(iv.tint[0], iv.tint[1], iv.tint[2])); }
       }
       const g = props.add(tpl, parts, M, color, o);
-      const size = box.getSize(new THREE.Vector3());
-      const sc = new THREE.Vector3(); M.decompose(new THREE.Vector3(), new THREE.Quaternion(), sc);
-      const h = size.y * sc.y;
-      if (o.collide !== false && h >= (o.minCollideH ?? 0.25)) {
-        const k = o.shrink ?? 1;
-        tr.makeTranslation((box.min.x + box.max.x) / 2, box.min.y, (box.min.z + box.max.z) / 2);
-        mCol.multiplyMatrices(M, tr);
-        // Quader in Modellmaßen (die Skalierung steckt in mCol); waagerecht ggf. verkleinert
-        this._collTris(collBox(size.x * k, Math.min(size.y, (o.collideH ?? Infinity) / sc.y), size.z * k), mCol);
-        tmpBox.copy(box).applyMatrix4(M);
-        const tilted = !!(o.rx || o.rz);
-        const kind = o.minimap ?? (h > 1.0 ? 'cover' : 'prop');
-        if (tilted) this._footprint((tmpBox.min.x + tmpBox.max.x) / 2, (tmpBox.min.z + tmpBox.max.z) / 2, (tmpBox.max.x - tmpBox.min.x) * k, (tmpBox.max.z - tmpBox.min.z) * k, 0, tmpBox.min.y, tmpBox.max.y, kind);
-        else { v.set((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2).applyMatrix4(M); this._footprint(v.x, v.z, size.x * sc.x * k, size.z * sc.z * k, o.ry || 0, tmpBox.min.y, tmpBox.max.y, kind); }
-      }
+      // ohne Manifest-Maße (sollte nicht vorkommen): wie bisher aus der geladenen Vorlage
+      if (o.collide === true && !o.part && !(Array.isArray(ms) && ms.length === 3)) this._modelCollision(box, x, y, z, o, tmpBox, v, mCol, tr);
       if (o.bullet !== false) {
         const sid = SURF_INDEX[o.surface || MODEL_SURFACE[id] || 'metal'] ?? 1;
         forEachBulletTri(tpl, parts, M, (...t) => {
@@ -943,9 +1049,45 @@ export class MapBuilder {
       }
     }
     this._props = props.stats.instances ? props : null;
+    if (globalThis.__npCheckModelSizes) this._checkModelSizes(templates);
     this.modelIdsUsed = [...new Set(this.models.filter(m => templates.get(m.id)).map(m => m.id))];
     this._propBullet = bullet;
     this._propFallbacks = fallbacks;
+  }
+
+  /** Kollisionsquader + Footprint einer Bibliotheks-Platzierung (box = Hüllquader in Modellmaßen). */
+  _modelCollision(box, x, y, z, o, tmpBox, v, mCol, tr) {
+    const M = placementMatrix(box, x, y, z, o);
+    const size = box.getSize(v);
+    const sx = size.x, sy = size.y, sz = size.z;
+    const sc = new THREE.Vector3(); M.decompose(new THREE.Vector3(), new THREE.Quaternion(), sc);
+    const h = sy * sc.y;
+    if (h < (o.minCollideH ?? 0.25)) return;
+    const k = o.shrink ?? 1;
+    tr.makeTranslation((box.min.x + box.max.x) / 2, box.min.y, (box.min.z + box.max.z) / 2);
+    mCol.multiplyMatrices(M, tr);
+    // Quader in Modellmaßen (die Skalierung steckt in mCol); waagerecht ggf. verkleinert
+    this._collTris(collBox(sx * k, Math.min(sy, (o.collideH ?? Infinity) / sc.y), sz * k), mCol);
+    tmpBox.copy(box).applyMatrix4(M);
+    const tilted = !!(o.rx || o.rz);
+    const kind = o.minimap ?? (h > 1.0 ? 'cover' : 'prop');
+    if (tilted) this._footprint((tmpBox.min.x + tmpBox.max.x) / 2, (tmpBox.min.z + tmpBox.max.z) / 2, (tmpBox.max.x - tmpBox.min.x) * k, (tmpBox.max.z - tmpBox.min.z) * k, 0, tmpBox.min.y, tmpBox.max.y, kind);
+    else { v.set((box.min.x + box.max.x) / 2, 0, (box.min.z + box.max.z) / 2).applyMatrix4(M); this._footprint(v.x, v.z, sx * sc.x * k, sz * sc.z * k, o.ry || 0, tmpBox.min.y, tmpBox.max.y, kind); }
+  }
+
+  /** Prüfhilfe (globalThis.__npCheckModelSizes = true): Manifest-Maße gegen geladene Vorlagen; Abweichungen > 1 cm
+   *  landen in globalThis.__npModelSizeMismatch. */
+  _checkModelSizes(templates) {
+    const manifest = assets.manifest && assets.manifest.models, s = new THREE.Vector3();
+    const out = [];
+    for (const [id, tpl] of templates) {
+      const ms = tpl && manifest && manifest[id] && manifest[id].size;
+      if (!ms) continue;
+      tpl.box.getSize(s);
+      const d = Math.max(Math.abs(s.x - ms[0]), Math.abs(s.y - ms[1]), Math.abs(s.z - ms[2]));
+      if (d > 0.01) out.push(`${id}: Vorlage ${s.x.toFixed(3)}×${s.y.toFixed(3)}×${s.z.toFixed(3)} / Manifest ${ms.join('×')}`);
+    }
+    (globalThis.__npModelSizeMismatch ||= []).push(...out);
   }
 
   _buildGlows(group) {

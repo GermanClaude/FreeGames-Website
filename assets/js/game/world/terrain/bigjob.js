@@ -2,11 +2,11 @@
 // Gelände erzeugen, Kollisions-/Kugel-BVH, Startpunkte einrasten, Navigation (feine Graphen in Ortschaften über
 // navbuild.js + implizites 4-m-Gitter im freien Gelände, an den Rändern verknüpft). Ohne three – läuft im Welt-Worker
 // (bigjob.worker.js) parallel zum Hauptthread, als Rückfall direkt im Hauptthread.
-import { TriangleBVH } from '../bvh.js?v=20261006151057';
-import { buildNavData, makeTests, AGENT_R, KNEE, DIRS8 } from '../navbuild.js?v=20261006151057';
-import { Heightfield } from './heightfield.js?v=20261006151057';
-import { CompositeBVH } from './composite.js?v=20261006151057';
-import { generateTerrain } from './generate.js?v=20261006151057';
+import { TriangleBVH } from '../bvh.js?v=20261009162748';
+import { buildNavData, makeTests, AGENT_R, KNEE, DIRS8 } from '../navbuild.js?v=20261009162748';
+import { Heightfield } from './heightfield.js?v=20261009162748';
+import { CompositeBVH } from './composite.js?v=20261009162748';
+import { generateTerrain } from './generate.js?v=20261009162748';
 
 /** Gelände erzeugen → { hf (Heightfield), data (toData), roads } */
 export async function terrainJob(spec, onStage) {
@@ -113,6 +113,12 @@ function buildBigNav(job, hf, col, comp) {
       const len = Math.hypot(B.x - A.x, dy, B.z - A.z), ux = (B.x - A.x) / len, uy = dy / len, uz = (B.z - A.z) / len;
       if (col.occluded(A.x, A.y + 0.5, A.z, ux, uy, uz, len)) continue;
       if (col.occluded(A.x, A.y + 1.25, A.z, ux, uy, uz, len)) continue;
+      // Körperbreite: seitlich versetzte Strahlen (Fuß-/Knie-/Hüfthöhe) – sonst streift die Verbindung Mauer-/Felsenden
+      // und Stämme nur mit der Mittellinie frei, und Bots bleiben an der Kante hängen (z. B. Lesesteinmauer −59/−59)
+      const hl = Math.hypot(B.x - A.x, B.z - A.z) || 1, ox = -(B.z - A.z) / hl * AGENT_R, oz = (B.x - A.x) / hl * AGENT_R;
+      let side = false;
+      for (const h of [0.35, 0.5, 0.9]) if (col.occluded(A.x + ox, A.y + h, A.z + oz, ux, uy, uz, len) || col.occluded(A.x - ox, A.y + h, A.z - oz, ux, uy, uz, len)) { side = true; break; }
+      if (side) continue;
       link(a, c); coarseLinks++;
     }
     // Deckung (Bäume, Felsen, Mauern) auf Brusthöhe

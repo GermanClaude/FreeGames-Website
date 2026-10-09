@@ -11,9 +11,11 @@
 // freies Zielen; getAimScreenPoint() liefert den Laufpunkt auf dem Bildschirm (Fadenkreuz).
 
 import * as THREE from 'three';
-import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261006151057';
-import { raycastHumanoid, PRONE } from './combat.js?v=20261006151057';
-import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS } from '../shared/classes.data.js?v=20261006151057';
+import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261009162748';
+import { raycastHumanoid, PRONE } from './combat.js?v=20261009162748';
+import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS } from '../shared/classes.data.js?v=20261009162748';
+import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261009162748';
+import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261009162748';
 
 const STAND_H = 1.8;
 const CROUCH_H = 1.15;
@@ -137,6 +139,8 @@ export class Player {
     this.team = 'A';
     this.isPlayer = true;
     this.isBot = false;
+    /** Mehrspieler: Netz-Id im Online-Match (Host 1, Clients ihre Roster-Id; offline null) – main.runStart setzt sie. */
+    this.netId = null;
     this.alive = false;
     this.health = 100;
     this.maxHealth = 100;
@@ -188,6 +192,8 @@ export class Player {
     this._jumpBuffer = 0;
     /** 0…1: Anstrengung nach dem Sprint (Atmung, Waffenschwanken). */
     this.exertion = 0;
+    /** Ausdauer (stamina.js): Sprint/Rutschen/Sprung zehren, erschöpft = kein Sprint/Rutschen bis 30 %. */
+    this.stamina = new Stamina();
 
     // Haltung (core-mechanics): stance 'stand'|'crouch'|'prone', Übergang stanceT 0…1, proneBlend für Trefferzonen/Animation
     this.prone = false;
@@ -228,6 +234,9 @@ export class Player {
     this.leanOffset = new THREE.Vector3();
     /** Kamera-Rollwinkel durch Lehnen (rad, ohne Komfortfaktor). */
     this.leanRoll = 0;
+    /** VR (engine/xr): System während einer Sitzung (setzt es selbst) und Lehnwunsch aus dem Kopfversatz (−1 … 1). */
+    this.xr = null;
+    this.xrLean = 0;
 
     // Freies Zielen (F4)
     /** Laufrichtung relativ zur Sicht (rad): x > 0 rechts, y > 0 oben. */
@@ -330,6 +339,7 @@ export class Player {
     this.killer = null;
     this._lastKilledBy = null;
     this._damageLog = [];
+    this.stamina.reset();
     this.godMode = !!this.godMode;
     if (this.weapon && typeof this.weapon.dispose === 'function') this.weapon.dispose();
     this.weapon = null;
@@ -377,6 +387,7 @@ export class Player {
     this._kick = this._kickVel = this._flinchP = this._flinchY = 0;
     this.trauma = 0;
     this.exertion = 0;
+    this.stamina.reset();
     this._deathCam = null;
     this._regenning = false;
     this.killer = null;
@@ -424,6 +435,8 @@ export class Player {
   /* ------------------------------------------------------- Actor-API */
 
   getEyePosition(out = new THREE.Vector3()) {
+    const xr = this.xr;
+    if (xr && xr.presenting && xr.ready) return out.copy(xr.eye); // VR: echter Kopf (engine/xr)
     const p = this.body.position;
     const lo = this.leanOffset;
     return out.set(p.x + lo.x, p.y + this._eye + this._stepSmooth + lo.y, p.z + lo.z);
@@ -431,6 +444,9 @@ export class Player {
 
   /** Laufrichtung (Schüsse): Sicht + Rückstoß + Zucken, dazu die Auslenkung des freien Zielens. */
   getAimDirection(out = new THREE.Vector3()) {
+    const xr = this.xr;
+    // VR: Auge → Punkt, auf den der Lauf zeigt (engine/xr), Rückstoß/Zucken kippen diese Richtung
+    if (xr && xr.presenting && xr.ready) return xr.aimDirection(out, this.recoilYaw + this._flinchY, this.recoilPitch + this._flinchP);
     const yaw = this.yaw + this.recoilYaw + this._flinchY;
     const pitch = clamp(this.pitch + this.recoilPitch + this._flinchP, -PITCH_LIMIT, PITCH_LIMIT);
     const ox = this.aimOffset.x, oy = this.aimOffset.y;
@@ -610,6 +626,7 @@ export class Player {
         v.y = JUMP_V;
         body.onGround = false;
         this.exertion = Math.min(1, this.exertion + 0.04);
+        this.stamina.drain(STAMINA_COST.jump);
         G.events.emit('player:jump', { velocity: v.y });
       }
     }
@@ -632,7 +649,9 @@ export class Player {
     }
     const blockSprint = frozen || my < 0.35 || adsHeld || fireHeld || this.sliding || this.prone || stanceBusy || this.plating || (w && w.canSprint === false);
     if (blockSprint) this._sprintLatch = false;
-    let sprint = this._sprintLatch && (body.onGround || this.sprinting);
+    // Ausdauer: erschöpft kein Sprint – die Absicht (Latch/Touch-Sperre) bleibt und setzt ab 30 % wieder ein
+    if (!frozen && this._sprintLatch && !this.stamina.canSprint && (input.pressed('sprint') || lockEdge || this.sprinting)) this.stamina.deny();
+    let sprint = this._sprintLatch && (body.onGround || this.sprinting) && this.stamina.canSprint;
     if (sprint && this.crouching) {
       if (body.canStand(world)) this.crouching = false; else sprint = false;
     }
@@ -672,15 +691,8 @@ export class Player {
     _wish.multiplyScalar(base * speedMult * dirMult * terrain * gear);
 
     if (this.sliding) {
-      this.slideTime += dt;
-      // leicht lenkbar, Tempo nimmt ab
-      const steer = mx * 0.9 * dt;
-      if (steer) this.slideDir.applyAxisAngle(THREE.Object3D.DEFAULT_UP, -steer).normalize();
-      const cur = Math.hypot(v.x, v.z); // nach _startSlide() bereits mit Schub
-      const sp = Math.max(0, cur * Math.exp(-SLIDE_FRICTION * dt) - 0.6 * dt);
-      v.x = this.slideDir.x * sp;
-      v.z = this.slideDir.z * sp;
-      if (this.slideTime > SLIDE_TIME || sp < 3.4 || (!body.onGround && this.slideTime > 0.15)) this._endSlide();
+      // leicht lenkbar, Tempo nimmt ab – am Hang mit Hangabtrieb (slide.js: bergab länger/schneller, bergauf kürzer)
+      if (slideStep(this, dt, mx, GRAVITY, SLIDE_TIME, SLIDE_FRICTION)) this._endSlide();
     } else if (body.onGround) {
       // Gewicht: Sprint baut Schwung langsam auf und ab, Umkehren bremst kräftig, schwere Waffen etwas träger
       const wishSq = _wish.lengthSq();
@@ -788,6 +800,13 @@ export class Player {
     // Anstrengung: Sprint baut auf (≈ 8 s bis voll), Ruhe baut ab
     if (this.sprinting) this.exertion = Math.min(1, this.exertion + dt / 8);
     else this.exertion = Math.max(0, this.exertion - dt * (hs > 0.6 ? 0.06 : 0.11));
+    // Ausdauer: Sprint zehrt, Erholung nach 1 s (Stand/geduckt schneller; Rutschen/Klettern/Luft keine);
+    // knappe Ausdauer hält die Anstrengung oben (Atmung, Zielwandern)
+    const sta = this.stamina;
+    sta.setStyle(G.match && G.match.styleFlags);
+    if (this.sprinting && !frozen) sta.sprint(dt);
+    sta.update(dt, this.sliding || this.mantling || !body.onGround ? RECOVER.none : hs > 0.6 && !this.crouching && !this.prone ? RECOVER.move : RECOVER.still);
+    this.exertion = Math.max(this.exertion, sta.strain);
 
     this._updateLean(dt, frozen, input);
     this._updateStance(dt);
@@ -909,6 +928,8 @@ export class Player {
       if (input.pressed('lean_right')) this._leanLast = 1;
       const L = input.active('lean_left'), R = input.active('lean_right');
       want = L && R ? this._leanLast : L ? -1 : R ? 1 : 0;
+      // VR: seitlicher Kopfversatz zur Körpermitte (engine/xr, −1 … 1) – Tasten haben Vorrang
+      if (!want && this.xr && this.xr.presenting && this.xrLean) want = clamp(this.xrLean, -1, 1);
     }
     // Sprint, Rutschen und Klettern beenden das Lehnen (eingerastetes Lehnen wird gelöst)
     if (want && (this.sprinting || this.sliding || this.mantling || this._stanceBusy())) {
@@ -974,14 +995,21 @@ export class Player {
       this._proneHoldUsed = false;
       if (this.prone) { if (!busy) this._leaveProne('crouch'); this._proneHoldUsed = true; } // aus dem Liegen in die Hocke
       else if (busy) { /* Übergang läuft */ }
-      else if (this.sprinting && body.onGround && this.slideCooldown <= 0 && hSpeed > 5) this._startSlide();
+      else if (this.slideCooldown <= 0 && slideAllowed(this, hSpeed) && this.stamina.canSlide) this._startSlide();
+      else if (this.sprinting && this.slideCooldown <= 0 && hSpeed > 5 && !this.stamina.canSlide) {
+        // zu wenig Ausdauer zum Rutschen: nur ducken (Sprint endet), Balken blinkt
+        this.stamina.deny();
+        this._sprintLatch = false;
+        this.sprinting = false;
+        this.crouching = true;
+      }
       else if (this.sliding) this._endSlide();
       else if (crouchHold) this.crouching = true;
       else if (this.crouching) { if (body.canStand(world)) this.crouching = false; }
       else this.crouching = true;
     }
     // Controller/Touch: Ducken halten → Hinlegen (Konsole/CoD Mobile), nur im Umschalt-Modus
-    const longOk = !crouchHold && (input.mode === 'touch' || input.lastDevice === 'gamepad');
+    const longOk = !crouchHold && (input.mode === 'touch' || input.lastDevice === 'gamepad' || input.lastDevice === 'xr');
     if (longOk && input.down('crouch') && !this.prone && !this.sliding && !this._proneHoldUsed && !busy) {
       this._crouchHeld += dt;
       if (this._crouchHeld >= PRONE_HOLD) { this._proneHoldUsed = true; this._enterProne(); }
@@ -1293,6 +1321,7 @@ export class Player {
       this.boostUntil = now + def.duration;
       this._boostMult = def.speedMult;
       this.exertion = 0;
+      this.stamina.reset();
     } else if (g.id === 'medkit') {
       let healed = 0;
       for (const a of G.actors || []) {
@@ -1411,6 +1440,7 @@ export class Player {
     this._cam.p.v -= 0.5;
     this._cam.y.v -= 0.25;
     this.exertion = Math.min(1, this.exertion + 0.05);
+    this.stamina.drain(STAMINA_COST.mantle);
     G.events.emit('player:mantle', { phase: 'start', height: Math.round(h * 100) / 100, vault: ledge.vault, position: start.clone() });
   }
 
@@ -1521,7 +1551,10 @@ export class Player {
     const v = this.body.velocity;
     const hs = Math.hypot(v.x, v.z) || 1;
     this.slideDir.set(v.x / hs, 0, v.z / hs);
-    const sp = Math.max(hs, SPEED_SPRINT * 0.95) + SLIDE_BOOST;
+    // aus dem Sprint wie bisher; bergab aus dem Laufen/Gehen (slide.js) mit kleinerem Schub – der Hang trägt weiter
+    const sp = this.sprinting || hs > 5 ? Math.max(hs, SPEED_SPRINT * 0.95) + SLIDE_BOOST : Math.max(hs + SLIDE_BOOST * 0.6, 6.5);
+    this.stamina.drain(STAMINA_COST.slide);
+    slideBegin(this);
     v.x = this.slideDir.x * sp;
     v.z = this.slideDir.z * sp;
     this.sliding = true;
@@ -1823,5 +1856,7 @@ export class Player {
       cam.updateProjectionMatrix();
     }
     cam.updateMatrixWorld();
+    // VR: Kamera = echter Kopf über dem Körper (engine/xr: Rig, Wandabstand, Hände, Zielpunkt); Federn/Rückstoß oben laufen weiter
+    if (this.xr && this.xr.presenting) this.xr.poseCamera(cam);
   }
 }

@@ -2,10 +2,10 @@
 // der aktuellen Belegung (input.bindings, shared/bindings.data.js) – eigene Tasten erscheinen hier sofort.
 // „Belegung ändern“ führt in Einstellungen → Belegung (bzw. zum Touch-Layout-Editor).
 
-import { esc } from './dom.js?v=20261006151057';
-import { ICON } from './icons.js?v=20261006151057';
-import { ACTION_DEFS, ACTION_GROUPS, resolveBindings } from '../../shared/bindings.data.js?v=20261006151057';
-import { keyHtml } from './settings/keys.js?v=20261006151057';
+import { esc } from './dom.js?v=20261009162748';
+import { ICON } from './icons.js?v=20261009162748';
+import { ACTION_DEFS, ACTION_GROUPS, resolveBindings } from '../../shared/bindings.data.js?v=20261009162748';
+import { keyHtml } from './settings/keys.js?v=20261009162748';
 
 // Positionen wie in game.css (Querformat), in % der Bildschirmbreite/-höhe → nummerierte Marken + Legende
 const TOUCH = [
@@ -21,6 +21,7 @@ const TOUCH = [
   [80, 89, 'Messer', '', ''],
   [50, 92, 'Waffe wechseln', '', 'pill'],
   [86, 21, 'Serienprämien', 'Der Ring füllt sich mit jedem Abschuss.', ''],
+  [80, 8, 'Befehlsrad', 'Nur mit verbündeten Bots: halten und in Richtung ziehen oder antippen und Befehl wählen.', 'sm'],
   [96, 8, 'Pause', '', 'sm'],
   [89, 8, 'Punktetabelle', '', 'sm'],
   [8, 15, 'Minikarte', '', 'big'],
