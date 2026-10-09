@@ -12,7 +12,7 @@
 // Einbau (altstadt.js): const bell = createBell(b, { x, z, pivotY, seed, faces }); im Ergebnis der Karte
 // attach(world, G) { bell.attach(world, G); }. Prüfhilfe: __game.world.glocke.test(9) bzw. .test('laeuten').
 import * as THREE from 'three';
-import { craneClock, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261009171007';
+import { craneClock, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261009174243';
 
 // Stundenschlag (Wanduhr): Schwingdauer, Ausschlag, Anlauf vor dem ersten Schlag (Schlag 1 genau zur vollen Stunde)
 const T_HOUR = 4.2, A_HOUR = 0.27, RAMP_HOUR = 2 * T_HOUR;

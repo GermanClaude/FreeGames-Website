@@ -3,7 +3,7 @@
 // Eingang: intent.moveTo (Vector3) oder intent.path (Vector3[]); Ausgang: intent.{throttle, steer, brake,
 // handbrake} (werden vom Fahrzeug übernommen) sowie intent.arrived / intent.stuck / intent.blocked.
 import * as THREE from 'three';
-import { collisionRay } from '../engine/physics.js?v=20261009171007';
+import { collisionRay } from '../engine/physics.js?v=20261009174243';
 
 const _t = new THREE.Vector3(), _l = new THREE.Vector3(), _o = new THREE.Vector3(), _d = new THREE.Vector3(), _f = new THREE.Vector3();
 const _hit = {};

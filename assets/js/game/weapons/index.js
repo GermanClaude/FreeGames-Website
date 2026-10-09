@@ -2,13 +2,13 @@
 // hilft Bots beim Granatwurf (Wurfwinkel, Gefahrenabfrage) und räumt beim Matchende auf.
 
 import * as THREE from 'three';
-import { WeaponController } from './controller.js?v=20261009171007';
-import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261009171007';
-import { RocketSystem } from './ballistics/rockets.js?v=20261009171007';
-import { EQUIPMENT as DATA_EQUIPMENT } from '../../shared/weapons.data.js?v=20261009171007';
-import { clamp } from './ballistics/math.js?v=20261009171007';
+import { WeaponController } from './controller.js?v=20261009174243';
+import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261009174243';
+import { RocketSystem } from './ballistics/rockets.js?v=20261009174243';
+import { EQUIPMENT as DATA_EQUIPMENT } from '../../shared/weapons.data.js?v=20261009174243';
+import { clamp } from './ballistics/math.js?v=20261009174243';
 
-export { WeaponController } from './controller.js?v=20261009171007';
+export { WeaponController } from './controller.js?v=20261009174243';
 
 const _eye = new THREE.Vector3();
 

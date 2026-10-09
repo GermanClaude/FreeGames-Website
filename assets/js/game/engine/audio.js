@@ -9,26 +9,26 @@
 //   sfx ← q (leise Klänge: Schritte, Foley …, HDR-Fenster) ;  amb → Duck → HDR
 //   sfx/amb → world → muffle(Tiefpass: Pause, Tod, Gehör, wenig Leben) ┐
 //   fb/ui/music ──────────────────────────────────────────────────────── master → EQ(Profil) → Glue → Makeup → Limiter → Softclip
-import { CATALOG, SOUND_GROUPS, GUN_PROFILES, SURFACES, AMBIENCES, STEM_IDS, REC_ONLY, EXTRA_VOICES, entryOf } from './audio/catalog.js?v=20261009171007';
-import { bank, PRIO, makeBuffer } from './audio/bank.js?v=20261009171007';
-import { makeRng, hashString, clamp, lerp } from './audio/dsp.js?v=20261009171007';
-import { MusicPlayer } from './audio/music.js?v=20261009171007';
-import { MAP_AMBIENCE } from './audio/ambience.js?v=20261009171007';
-import { spaceFor, roomIR, outdoorIR } from './audio/space.js?v=20261009171007';
-import { library, SAMPLE_TIERS } from './audio/samples.js?v=20261009171007';
-import { Acoustics } from './audio/acoustics.js?v=20261009171007';
-import { EarlyReflections } from './audio/reflect.js?v=20261009171007';
-import { Hearing, SHOT_DOSE, NO_MUFFLE } from './audio/hearing.js?v=20261009171007';
-import { MIX_PRESETS, MixChain, HdrWindow, resolveMix } from './audio/mix.js?v=20261009171007';
-export { createUiSounds } from './audio/ui-sounds.js?v=20261009171007';
+import { CATALOG, SOUND_GROUPS, GUN_PROFILES, SURFACES, AMBIENCES, STEM_IDS, REC_ONLY, EXTRA_VOICES, entryOf } from './audio/catalog.js?v=20261009174243';
+import { bank, PRIO, makeBuffer } from './audio/bank.js?v=20261009174243';
+import { makeRng, hashString, clamp, lerp } from './audio/dsp.js?v=20261009174243';
+import { MusicPlayer } from './audio/music.js?v=20261009174243';
+import { MAP_AMBIENCE } from './audio/ambience.js?v=20261009174243';
+import { spaceFor, roomIR, outdoorIR } from './audio/space.js?v=20261009174243';
+import { library, SAMPLE_TIERS } from './audio/samples.js?v=20261009174243';
+import { Acoustics } from './audio/acoustics.js?v=20261009174243';
+import { EarlyReflections } from './audio/reflect.js?v=20261009174243';
+import { Hearing, SHOT_DOSE, NO_MUFFLE } from './audio/hearing.js?v=20261009174243';
+import { MIX_PRESETS, MixChain, HdrWindow, resolveMix } from './audio/mix.js?v=20261009174243';
+export { createUiSounds } from './audio/ui-sounds.js?v=20261009174243';
 export { SOUND_GROUPS, GUN_PROFILES, SURFACES, MIX_PRESETS, SAMPLE_TIERS };
 
 // Waffendaten defensiv laden (Datei gehört einem anderen Modul und kann noch fehlen)
 let WEAPONS = null;
-const loadWeapons = () => import('../../shared/weapons.data.js?v=20261009171007').then(m => { WEAPONS = m.WEAPONS || m.default?.WEAPONS || null; }).catch(() => {});
+const loadWeapons = () => import('../../shared/weapons.data.js?v=20261009174243').then(m => { WEAPONS = m.WEAPONS || m.default?.WEAPONS || null; }).catch(() => {});
 loadWeapons();
 let MEDALS = null; // Medaillenstufe → Tonhöhe der Fanfare (bronze/silber/gold)
-import('../../shared/modes.data.js?v=20261009171007').then(m => { MEDALS = m.MEDALS || null; }).catch(() => {});
+import('../../shared/modes.data.js?v=20261009174243').then(m => { MEDALS = m.MEDALS || null; }).catch(() => {});
 const MEDAL_PITCH = { bronze: 0.94, silber: 1, silver: 1, gold: 1.1 };
 
 const CLASS_PROFILE = { ar: 'ar', br: 'ar_heavy', smg: 'smg', lmg: 'lmg', sniper: 'sniper', marksman: 'ar_heavy', shotgun: 'shotgun', pistol: 'pistol' };

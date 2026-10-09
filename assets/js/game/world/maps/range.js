@@ -1,9 +1,9 @@
 // NULLPUNKT — Karte „Schießstand“: Trainingsanlage mit 8 Bahnen, Klappzielen 10–100 m,
 // Schießstand-Überdachung, Waffenkammer und Einschieß-Parcours. Klarer Morgen. (Owner: world)
 import * as THREE from 'three';
-import { getMaterial } from '../../engine/textures.js?v=20261009171007';
-import { building, wall, stairs, railing } from '../arch.js?v=20261009171007';
-import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261009171007';
+import { getMaterial } from '../../engine/textures.js?v=20261009174243';
+import { building, wall, stairs, railing } from '../arch.js?v=20261009174243';
+import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261009174243';
 
 const LANES = 8, LANE_W = 5.5, FIRE_Z = 34;
 const laneX = i => -((LANES - 1) / 2) * LANE_W + i * LANE_W;

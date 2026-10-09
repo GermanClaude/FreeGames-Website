@@ -2,7 +2,7 @@
 // ohne Browser-Cache geholt wird. Gibt es eine neuere, erscheint (nur in der Lobby) „Neue Version verfügbar“.
 // „Jetzt aktualisieren“ holt alle vorgeladenen Module und Stile am Cache vorbei neu und lädt die Seite neu –
 // so laufen nach einem Update keine alten Dateien aus dem Browser-Cache weiter.
-import { BUILD } from '../../shared/build.js?v=20261009171007';
+import { BUILD } from '../../shared/build.js?v=20261009174243';
 
 export function watchForUpdates({ isIdle = () => true, interval = 5 * 60 * 1000 } = {}) {
   if (BUILD === 'dev' || typeof fetch !== 'function' || typeof document === 'undefined') return;

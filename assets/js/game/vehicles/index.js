@@ -6,18 +6,18 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261009171007';
-import { Vehicle, newIntent } from './vehicle.js?v=20261009171007';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261009171007';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261009171007';
-import { readPlayerControls } from './controls.js?v=20261009171007';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261009171007';
-import { VehicleAudio } from './audio.js?v=20261009171007';
-import { upgradeVehicleMaterials, vehicleMaterials } from './materials.js?v=20261009171007';
-import { prepareVehicleModels } from './models.js?v=20261009171007';
-import { groundRay } from './sim.js?v=20261009171007';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261009171007';
-import { falloff } from '../combat.js?v=20261009171007';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261009174243';
+import { Vehicle, newIntent } from './vehicle.js?v=20261009174243';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261009174243';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261009174243';
+import { readPlayerControls } from './controls.js?v=20261009174243';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261009174243';
+import { VehicleAudio } from './audio.js?v=20261009174243';
+import { upgradeVehicleMaterials, vehicleMaterials } from './materials.js?v=20261009174243';
+import { prepareVehicleModels } from './models.js?v=20261009174243';
+import { groundRay } from './sim.js?v=20261009174243';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261009174243';
+import { falloff } from '../combat.js?v=20261009174243';
 
 export { VEHICLES, VEHICLE_WEAPONS, VEHICLE_IDS, Vehicle };
 

@@ -21,7 +21,7 @@
 //           löscht encode selbst (nach vr).
 //   vr:     null | { aimYaw, aimPitch, main: [x,y,z] | null, off: [x,y,z] | null } (decode liefert immer das Feld vr).
 // Pure Logik ohne DOM/three.js – läuft auch in Node (tools/net-proto-test.mjs).
-import { WEAPON_IDS } from '../../shared/weapons.data.js?v=20261009171007';
+import { WEAPON_IDS } from '../../shared/weapons.data.js?v=20261009174243';
 
 export const PKT_SNAPSHOT = 1;
 export const PKT_STATE = 2;

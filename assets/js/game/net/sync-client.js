@@ -19,11 +19,11 @@
 //   • 'hit'/'kill' → lokale Ereignisse (Blut, Trefferrichtung, Abschussliste, Todesbildschirm), 'ev' → Granaten, Raketen,
 //     Explosionen, eigene Punkte/Medaillen; 'end' → Endbildschirm mit Ergebnis + Zusammenfassung des Hosts.
 import * as THREE from 'three';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261009171007';
-import { netPoseOf } from '../bots/bot.js?v=20261009171007';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261009171007';
-import { HOST_ID } from './index.js?v=20261009171007';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261009171007';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261009174243';
+import { netPoseOf } from '../bots/bot.js?v=20261009174243';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261009174243';
+import { HOST_ID } from './index.js?v=20261009174243';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261009174243';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -43,7 +43,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261009171007').NetSystem} net
+   * @param {import('./index.js?v=20261009174243').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {

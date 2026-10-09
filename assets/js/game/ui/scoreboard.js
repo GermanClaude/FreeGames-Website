@@ -4,8 +4,8 @@
 // „ping“ hat (oder opts.online gesetzt ist), erscheint die Ping-Spalte; Menschen bekommen das Symbol ihres Geräts
 // (PC/Handy/VR-Brille), der Host ein Abzeichen. Offline wie bisher.
 
-import { esc, kd } from './dom.js?v=20261009171007';
-import { ICON, deviceOf } from './icons.js?v=20261009171007';
+import { esc, kd } from './dom.js?v=20261009174243';
+import { ICON, deviceOf } from './icons.js?v=20261009174243';
 
 /** Ping-Zelle: Bots „BOT“, Host „–“ (läuft dort), sonst Millisekunden mit Farbstufe. */
 function pingCell(r) {

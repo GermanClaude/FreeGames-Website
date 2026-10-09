@@ -5,11 +5,11 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261009171007';
-import { ICON, deviceOf } from './icons.js?v=20261009171007';
-import { LoadoutPanel } from './loadout-panel.js?v=20261009171007';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261009171007';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261009171007';
+import { esc, el } from './dom.js?v=20261009174243';
+import { ICON, deviceOf } from './icons.js?v=20261009174243';
+import { LoadoutPanel } from './loadout-panel.js?v=20261009174243';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261009174243';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261009174243';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
@@ -32,7 +32,8 @@ const DIRECT_FAIL = 'Direkte Verbindung nicht möglich – manche Router oder Mo
 export const NET_UI_ERRORS = Object.freeze({
   'kein-relay': 'Vermittlungsserver nicht erreichbar – Internetverbindung prüfen.',
   'kein-host': 'Kein Raum mit diesem Code gefunden. Code prüfen – vielleicht ist der Raum schon geschlossen.',
-  'keine-antwort': 'Der Host antwortet nicht. Vielleicht ist sein Spiel gerade im Hintergrund – gleich noch einmal versuchen.',
+  'keine-antwort': 'Der Host antwortet nicht. Bitte gleich noch einmal versuchen; hilft das nicht, sollten Host und du die Seite neu laden (gleiche Fassung) und der Host einen neuen Raum öffnen.',
+  'keine-begruessung': 'Verbindung steht, aber der Host hat den Beitritt nicht bestätigt. Bitte noch einmal versuchen.',
   'abgelehnt:voll': 'Der Raum ist voll. Frag den Host, ob er mehr Plätze freigibt – oder such dir ein anderes Spiel.',
   'abgelehnt:version': 'Anderer Spielstand – Seite neu laden (beide Seiten brauchen dieselbe Fassung).',
   'abgelehnt:gekickt': 'Der Host hat dich aus diesem Raum entfernt.',
@@ -603,7 +604,8 @@ export class NetMenus {
       weather: c.weather || 'standard',
       difficulty: DIFF_ORDER.includes(c.difficulty) ? c.difficulty : 'regulaer',
       style: GAME_STYLES[c.style] ? c.style : 'arcade',
-      maxPlayers: clampInt(Math.min(8, rec), 2, MAX_PLAYERS),
+      // Empfehlung kann von einem überlasteten früheren Lauf stammen → beim Öffnen mindestens 4 Plätze
+      maxPlayers: clampInt(Math.min(8, Math.max(4, rec)), 2, MAX_PLAYERS),
       teamSize,
       botFill: true,
       pvp: 'pvp',
