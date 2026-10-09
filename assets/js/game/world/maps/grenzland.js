@@ -4,12 +4,12 @@
 // Flaggen (Eroberung): A Gehöft · B Dorf · C Brücke · D Kieswerk · E Funkhügel; HQ A im Süden, HQ B im Norden.
 // Geladen von world/terrain/bigworld.js (Ortschaften je eigener MapBuilder, Boden y = 0 bzw. Plateauhöhe).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261009162748';
-import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261009162748';
-import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261009162748';
-import * as Innen from './grenzland-innen.js?v=20261009162748';
-import { mgNest } from './grenzland-stellungen.js?v=20261009162748';
-import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261009162748';
+import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261009171007';
+import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261009171007';
+import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261009171007';
+import * as Innen from './grenzland-innen.js?v=20261009171007';
+import { mgNest } from './grenzland-stellungen.js?v=20261009171007';
+import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261009171007';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 const PLASTER = ['#efe6d6', '#e8dcc4', '#f2ede2', '#e3d3b8', '#dfe0d6', '#eadbc8'];

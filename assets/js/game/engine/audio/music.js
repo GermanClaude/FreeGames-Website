@@ -3,7 +3,7 @@
 import {
   TAU, len, buf, white, brown, filt, sweep, expGlide, env, ad, ahr, bell, mix, mixAt, drive, normalize,
   sine, click, burst, reverb, reverbSteps, wrapLoop, mtof, Saw, Square, clamp,
-} from './dsp.js?v=20261009162748';
+} from './dsp.js?v=20261009171007';
 
 export const MUSIC_SR = 32000;
 export const BPM = 100;

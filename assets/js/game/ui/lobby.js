@@ -3,15 +3,15 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261009162748';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261009162748'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261009162748'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261009162748';
-import { esc, num, secs, meters } from './dom.js?v=20261009162748';
-import { ICON } from './icons.js?v=20261009162748';
-import { drawMapArt } from './mapart.js?v=20261009162748';
-import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261009162748';
-import { ProgressView } from './progress.js?v=20261009162748';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261009171007';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261009171007'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261009171007'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261009171007';
+import { esc, num, secs, meters } from './dom.js?v=20261009171007';
+import { ICON } from './icons.js?v=20261009171007';
+import { drawMapArt } from './mapart.js?v=20261009171007';
+import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261009171007';
+import { ProgressView } from './progress.js?v=20261009171007';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];

@@ -17,17 +17,17 @@
 // botFill, maxPlayers, botsA, botsB, humans:{A,B}, stamina}; Wetter/Zeit sind aufgelöst (nie 'zufall'/'echtzeit').
 // stamina false (Raum-Einstellung „Ausdauer“ aus) = unbegrenzte Ausdauer für alle: beim Matchstart (match:state)
 // setzt NetSystem G.match.styleFlags.staminaMult = 0 (stamina.js: 0 = unbegrenzt).
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261009162748';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261009162748';
-import { hex, randomBytes } from './crypto.js?v=20261009162748';
-import { BUILD } from '../../shared/build.js?v=20261009162748';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261009162748';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009162748';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261009162748';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261009162748';
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261009162748';
-import { recommend, UploadMeter } from './recommend.js?v=20261009162748';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261009162748';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261009171007';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261009171007';
+import { hex, randomBytes } from './crypto.js?v=20261009171007';
+import { BUILD } from '../../shared/build.js?v=20261009171007';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261009171007';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009171007';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261009171007';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261009171007';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261009171007';
+import { recommend, UploadMeter } from './recommend.js?v=20261009171007';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261009171007';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD). */
 export const NET_VERSION = 1;
@@ -489,7 +489,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261009162748').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261009171007').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {

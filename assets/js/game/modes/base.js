@@ -3,11 +3,11 @@
 // Unterklassen überschreiben die Haken onKillScored / onSuicide / tick / decide / extraRow.
 
 import * as THREE from 'three';
-import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261009162748';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261009162748';
-import { chooseSpawn } from './spawns.js?v=20261009162748';
-import { MedalTracker } from './medals.js?v=20261009162748';
-import { StreakManager } from './streaks.js?v=20261009162748';
+import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261009171007';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261009171007';
+import { chooseSpawn } from './spawns.js?v=20261009171007';
+import { MedalTracker } from './medals.js?v=20261009171007';
+import { StreakManager } from './streaks.js?v=20261009171007';
 
 const STREAK_WEAPONS = new Set(['strike', 'sentry', 'uav']);
 export const OVERTIME_SECONDS = 60;

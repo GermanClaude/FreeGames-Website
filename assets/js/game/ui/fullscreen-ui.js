@@ -4,7 +4,7 @@
 // bleiben unberührt; Klicks laufen über einen eigenen Listener (data-fs). Logik: engine/fullscreen.js (G.fullscreen) oder,
 // falls dieses Modul nicht geladen werden konnte, der kleine Ersatz aus main.js (opts.fs; nur Umschalter, keine Anleitung).
 
-import { codeLabel } from '../../shared/bindings.data.js?v=20261009162748';
+import { codeLabel } from '../../shared/bindings.data.js?v=20261009171007';
 
 const GUIDE_FLAG = 'nullpunkt:fullscreenGuide';
 

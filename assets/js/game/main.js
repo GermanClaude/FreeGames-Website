@@ -14,50 +14,50 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261009162748';
-import { profile } from '../shared/profile.js?v=20261009162748';
-import * as weaponsData from '../shared/weapons.data.js?v=20261009162748';
-import * as modesData from '../shared/modes.data.js?v=20261009162748';
-import * as mapsData from '../shared/maps.data.js?v=20261009162748';
-import * as classesData from '../shared/classes.data.js?v=20261009162748'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { EventBus } from './engine/events.js?v=20261009162748';
-import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261009162748';
-import { Input } from './engine/input.js?v=20261009162748';
-import { watchForUpdates } from './engine/update.js?v=20261009162748'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261009162748';
-import { DynamicResolution } from './engine/dynres.js?v=20261009162748';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261009162748'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261009162748';
-import { Combat } from './combat.js?v=20261009162748';
+import { settings } from '../shared/settings.js?v=20261009171007';
+import { profile } from '../shared/profile.js?v=20261009171007';
+import * as weaponsData from '../shared/weapons.data.js?v=20261009171007';
+import * as modesData from '../shared/modes.data.js?v=20261009171007';
+import * as mapsData from '../shared/maps.data.js?v=20261009171007';
+import * as classesData from '../shared/classes.data.js?v=20261009171007'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { EventBus } from './engine/events.js?v=20261009171007';
+import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261009171007';
+import { Input } from './engine/input.js?v=20261009171007';
+import { watchForUpdates } from './engine/update.js?v=20261009171007'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261009171007';
+import { DynamicResolution } from './engine/dynres.js?v=20261009171007';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261009171007'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261009171007';
+import { Combat } from './combat.js?v=20261009171007';
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261009162748', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261009162748', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261009162748', ['ViewModel']],
-  world: ['./world/index.js?v=20261009162748', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261009162748', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261009162748', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261009162748', ['Effects']],
-  bots: ['./bots/manager.js?v=20261009162748', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261009162748', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261009171007', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261009171007', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261009171007', ['ViewModel']],
+  world: ['./world/index.js?v=20261009171007', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261009171007', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261009171007', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261009171007', ['Effects']],
+  bots: ['./bots/manager.js?v=20261009171007', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261009171007', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261009162748', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261009162748', []],
-  modes: ['./modes/index.js?v=20261009162748', ['createMode']],
-  hud: ['./ui/hud.js?v=20261009162748', ['HUD']],
-  menus: ['./ui/menus.js?v=20261009162748', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261009171007', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261009171007', []],
+  modes: ['./modes/index.js?v=20261009171007', ['createMode']],
+  hud: ['./ui/hud.js?v=20261009171007', ['HUD']],
+  menus: ['./ui/menus.js?v=20261009171007', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261009162748', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261009162748', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261009171007', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261009171007', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261009162748', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261009162748', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261009162748', ['ClientSync']],
+  net: ['./net/index.js?v=20261009171007', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261009171007', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261009171007', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261009162748', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261009171007', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
