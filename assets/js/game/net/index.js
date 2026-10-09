@@ -16,18 +16,20 @@
 // bzw. beim Einstieg ins laufende Spiel (welcome.cfg) genauso. cfg.net = {role, roomCode, selfId, team, teamSize, pvp,
 // botFill, maxPlayers, botsA, botsB, humans:{A,B}, stamina}; Wetter/Zeit sind aufgelöst (nie 'zufall'/'echtzeit').
 // stamina false (Raum-Einstellung „Ausdauer“ aus) = unbegrenzte Ausdauer für alle: beim Matchstart (match:state)
-// setzt NetSystem G.match.styleFlags.staminaMult = 0 (stamina.js: 0 = unbegrenzt).
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261009181546';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261009181546';
-import { hex, randomBytes } from './crypto.js?v=20261009181546';
-import { BUILD } from '../../shared/build.js?v=20261009181546';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261009181546';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009181546';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261009181546';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261009181546';
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261009181546';
-import { recommend, UploadMeter } from './recommend.js?v=20261009181546';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261009181546';
+// setzt NetSystem G.match.styleFlags.staminaMult = 0 (stamina.js: 0 = unbegrenzt). killAmmo false (Raum-Einstellung
+// „Munition pro Abschuss“ aus): kein Munitionsgewinn je Abschuss – jedes Gerät liest cfg.net.killAmmo selbst
+// (weapons/index.js killAmmoEnabled, Gutschrift beim eigenen Spieler).
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261009184713';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261009184713';
+import { hex, randomBytes } from './crypto.js?v=20261009184713';
+import { BUILD } from '../../shared/build.js?v=20261009184713';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261009184713';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009184713';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261009184713';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261009184713';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261009184713';
+import { recommend, UploadMeter } from './recommend.js?v=20261009184713';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261009184713';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD). */
 export const NET_VERSION = 1;
@@ -59,6 +61,7 @@ export const DEFAULT_ROOM = Object.freeze({
   name: '', mode: 'tdm', map: 'hafen', time: 'standard', weather: 'standard', difficulty: 'regulaer',
   maxPlayers: 8, botFill: true, teamSize: 6, pvp: 'pvp', public: false, style: 'arcade', scoreLimit: null, timeLimit: null,
   stamina: true, // Ausdauer an (aus = unbegrenzte Ausdauer für alle)
+  killAmmo: true, // Munition pro Abschuss an (jedes Gerät schreibt sie seinem Spieler selbst gut)
 });
 
 const TIME_SYNC_MS = 2000;
@@ -136,6 +139,7 @@ export function normalizeSettings(partial = {}, base = DEFAULT_ROOM, hostName = 
     scoreLimit: limit(pick('scoreLimit'), 1, 9999),
     timeLimit: limit(pick('timeLimit'), 30, 7200),
     stamina: pick('stamina') !== false,
+    killAmmo: pick('killAmmo') !== false,
   };
 }
 
@@ -490,7 +494,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261009181546').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261009184713').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
@@ -794,6 +798,7 @@ export class NetSystem {
         roomCode: this.room.code, teamSize: s.teamSize, pvp: s.pvp, botFill: s.botFill, maxPlayers: s.maxPlayers,
         botsA, botsB, humans, ffa, conditions: cond, startedAt: this.serverTime(),
         stamina: s.stamina !== false, // Raum-Einstellung „Ausdauer“ (aus = unbegrenzt für alle, _applyMatchRules)
+        killAmmo: s.killAmmo !== false, // Raum-Einstellung „Munition pro Abschuss“ (weapons/index.js)
       },
     };
     if (s.timeLimit != null) cfg.timeLimit = s.timeLimit;

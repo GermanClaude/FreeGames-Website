@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261009181546';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261009184713';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -44,6 +44,8 @@ export const DEFAULTS = Object.freeze({
   lastWeather: 'standard', lastTime: 'standard',
   // Lernende Bots (ai-adapt): Gegner stellen sich auf den Spielstil ein (Stärke nach Schwierigkeit)
   adaptiveBots: true,
+  // Munition pro Abschuss (weapons/index.js, offline; online gilt die Raum-Einstellung des Hosts)
+  killAmmo: true,
   // Kirchenglocke der Altstadt (world/maps/altstadt-glocke.js): Stundenschlag zur echten Uhrzeit an/aus
   glocke: true,
   // Leichen (bots/corpses.js): 'bleiben' | '10min' | '2min'; zusätzlich Obergrenze je Grafikstufe (älteste zuerst weg)
@@ -240,6 +242,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
     options: ['touch', 'alle'], labels: { touch: 'Nur Touch', alle: 'Alle Geräte (auch Maus & Controller)' },
   },
   adaptiveBots: { type: 'boolean', label: 'Lernende Bots', group: 'spiel' },
+  killAmmo: { type: 'boolean', label: 'Munition pro Abschuss', group: 'spiel' },
   glocke: { type: 'boolean', label: 'Kirchenglocke (Altstadt)', group: 'audio' },
   leichen: {
     type: 'enum', label: 'Leichen', group: 'spiel',

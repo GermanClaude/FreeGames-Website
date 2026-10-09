@@ -1,8 +1,8 @@
 // NULLPUNKT — Abschussmeldungen: Schütze · Waffen-Silhouette (aus den Daten) · Kopfschuss/Explosion · Opfer.
 // Farben: du (gold), Verbündete (blau), Gegner (rot). Einträge blenden nach 5 s aus.
 
-import { esc, weaponName } from './dom.js?v=20261009181546';
-import { ICON } from './icons.js?v=20261009181546';
+import { esc, weaponName } from './dom.js?v=20261009184713';
+import { ICON } from './icons.js?v=20261009184713';
 
 const LIFE = 5.2;
 

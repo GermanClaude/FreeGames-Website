@@ -5,11 +5,11 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261009181546';
-import { ICON, deviceOf } from './icons.js?v=20261009181546';
-import { LoadoutPanel } from './loadout-panel.js?v=20261009181546';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261009181546';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261009181546';
+import { esc, el } from './dom.js?v=20261009184713';
+import { ICON, deviceOf } from './icons.js?v=20261009184713';
+import { LoadoutPanel } from './loadout-panel.js?v=20261009184713';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261009184713';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261009184713';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
@@ -852,7 +852,7 @@ export class NetMenus {
       ${teams ? item('Spielart', s.pvp === 'coop' ? 'Gemeinsam gegen Bots' : 'Gegeneinander') : ''}
       ${item(teams ? 'Teamgröße' : 'Teilnehmer', teams ? `${size} gegen ${size}` : `${size * 2}`)}
       ${item('Bots', s.botFill ? 'füllen auf' : 'keine')}${item('Max. Spieler', String(s.maxPlayers || '–'))}
-      ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}
+      ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}${item('Munition pro Abschuss', s.killAmmo === false ? 'aus' : 'an')}
     </div>`;
   }
 
@@ -917,6 +917,7 @@ export class NetMenus {
         </div>
         <div class="nr-two">
           ${sw('stamina', 'Ausdauer', s.stamina === false ? 'Aus: unbegrenzt sprinten, rutschen, springen – für alle' : 'Sprinten, Rutschen und Springen kosten Ausdauer', s.stamina !== false)}
+          ${sw('killAmmo', 'Munition pro Abschuss', s.killAmmo === false ? 'Aus: nur die Startmunition' : 'Jeder Abschuss bringt ein Magazin (MG: 20 Schuss)', s.killAmmo !== false)}
         </div>
         <div class="nr-field nr-namefield">
           <h3 class="nr-lab">Raumname</h3>
@@ -1018,8 +1019,9 @@ export class NetMenus {
     }
     if (ds.toggle) {
       const s = net.room.settings;
-      // Standard an (fehlt der Wert, gilt an): botFill, stamina
-      this._update({ [ds.toggle]: ds.toggle === 'botFill' || ds.toggle === 'stamina' ? s[ds.toggle] === false : !s[ds.toggle] }, 'toggle');
+      // Standard an (fehlt der Wert, gilt an): botFill, stamina, killAmmo
+      const defOn = ds.toggle === 'botFill' || ds.toggle === 'stamina' || ds.toggle === 'killAmmo';
+      this._update({ [ds.toggle]: defOn ? s[ds.toggle] === false : !s[ds.toggle] }, 'toggle');
     }
   }
 

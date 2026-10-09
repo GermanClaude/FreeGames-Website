@@ -1,12 +1,12 @@
 // §00 Einschießen: Fünf Schuss auf den orangefarbenen Punkt. Löcher im Papier, Glyphen-Kick,
 // Streukreis in mm, Treffpunktlage in Klick – danach gleitet der Nullpunkt unter die Gruppe.
-import { Kinetic, split } from './kinetic.js?v=20261009181546';
-import { glyphModel, fit } from './fit.js?v=20261009181546';
-import { spread, hit } from './cursor.js?v=20261009181546';
-import { site } from './state.js?v=20261009181546';
-import { announce } from './live.js?v=20261009181546';
-import { reduced, SPRINGS } from './motion.js?v=20261009181546';
-import { num, NNBSP } from './fmt.js?v=20261009181546';
+import { Kinetic, split } from './kinetic.js?v=20261009184713';
+import { glyphModel, fit } from './fit.js?v=20261009184713';
+import { spread, hit } from './cursor.js?v=20261009184713';
+import { site } from './state.js?v=20261009184713';
+import { announce } from './live.js?v=20261009184713';
+import { reduced, SPRINGS } from './motion.js?v=20261009184713';
+import { num, NNBSP } from './fmt.js?v=20261009184713';
 
 const $ = (s) => document.querySelector(s);
 const CLICK_PX = 8;

@@ -1,8 +1,8 @@
 // Welle 2 – schwere & besondere Waffen: Titan .50 (Anti-Material, halbautomatisch, Zweibein),
 // HF-12 Hagel (Selbstladeflinte mit Kastenmagazin), R-6 Kobra (Revolver mit Schwenktrommel + Schnelllader),
 // RW-90 Donnerkeil (Panzerabwehr-Rohr, vorn geladene Raketengranate) und die fliegende Rakete.
-import { sniperScope, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts } from './parts.js?v=20261009181546';
-import { magRounds } from './magfill.js?v=20261009181546';
+import { sniperScope, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts } from './parts.js?v=20261009184713';
+import { magRounds } from './magfill.js?v=20261009184713';
 
 // Doppelkammer-Mündungsbremse (Anti-Material): breite Seitenfenster
 function bigBrake(b, u0, axis) {

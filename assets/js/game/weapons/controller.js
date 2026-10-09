@@ -10,8 +10,8 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261009181546';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261009181546';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261009184713';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261009184713';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -70,7 +70,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261009181546').WeaponSystem} system
+   * @param {import('./index.js?v=20261009184713').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -813,6 +813,20 @@ export class WeaponController {
     st.mag += add;
     if (!this.infiniteAmmo) st.reserve -= add;
     else if (st.reserve < (st.def.mag || 1)) st.reserve = st.def.reserve || st.reserve;
+  }
+
+  /**
+   * Munition gutschreiben (Munition pro Abschuss, weapons/index.js): n Schuss für den Platz `st` (Eintrag aus slots).
+   * belt = Gurt/Trommel zuerst direkt auffüllen (bis mag), der Rest geht in den Vorrat, höchstens bis cap. Lädt nie
+   * selbst nach. → { mag, reserve } (tatsächlich gutgeschrieben) oder null, wenn nichts mehr hineinpasst.
+   */
+  grantAmmo(st, n, { belt = false, cap = Infinity } = {}) {
+    if (!st || !st.def || !(n > 0) || !this.slots.includes(st)) return null;
+    const toMag = belt ? Math.min(n, Math.max(0, (st.def.mag || 0) - st.mag)) : 0;
+    st.mag += toMag;
+    const toRes = Math.min(n - toMag, Math.max(0, cap - st.reserve));
+    st.reserve += toRes;
+    return toMag || toRes ? { mag: toMag, reserve: toRes } : null;
   }
 
   /** cause (nur bei Abbruch, optional): 'sprint' – Audio pumpt dann eine leer nachgeladene Flinte wie die Ego-Animation. */

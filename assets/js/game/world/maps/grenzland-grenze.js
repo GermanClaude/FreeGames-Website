@@ -8,7 +8,7 @@
 // überklettrbar), Kugeln fliegen durch den Maschendraht. Die alte unsichtbare Wand (wallMargin) bleibt dahinter als
 // Sicherheitsnetz.
 import * as THREE from 'three';
-import { frame, hash01 } from '../props.js?v=20261009181546';
+import { frame, hash01 } from '../props.js?v=20261009184713';
 
 const H = 2.5;          // Maschendraht-Höhe
 const COL_H = 3.2;      // Kollision über dem höheren Pfosten (inkl. Übersteigschutz)

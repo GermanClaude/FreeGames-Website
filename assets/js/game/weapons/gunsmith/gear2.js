@@ -1,6 +1,6 @@
 // Welle 2 – Nahkampf & Wurfmittel: Karambit, Machete, Kampfbeil; Aufschlag-, Brand-, Blend- und Rauchgranate;
 // Schutzplatte (Westen-Einschub, Requisit der Ego-Ansicht). Ursprung = Griffmitte; Klinge/Kopf nach −Z bzw. oben.
-import { ellipsePts } from './parts.js?v=20261009181546';
+import { ellipsePts } from './parts.js?v=20261009184713';
 
 // Gummierter Griff entlang u (Länge len, Radius r, Ringe)
 function handle(b, mat, u0, len, r, rings = 5) {
