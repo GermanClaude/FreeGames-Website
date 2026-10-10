@@ -9,26 +9,26 @@
 //   sfx ← q (leise Klänge: Schritte, Foley …, HDR-Fenster) ;  amb → Duck → HDR
 //   sfx/amb → world → muffle(Tiefpass: Pause, Tod, Gehör, wenig Leben) ┐
 //   fb/ui/music ──────────────────────────────────────────────────────── master → EQ(Profil) → Glue → Makeup → Limiter → Softclip
-import { CATALOG, SOUND_GROUPS, GUN_PROFILES, SURFACES, AMBIENCES, STEM_IDS, REC_ONLY, EXTRA_VOICES, entryOf } from './audio/catalog.js?v=20261009184713';
-import { bank, PRIO, makeBuffer } from './audio/bank.js?v=20261009184713';
-import { makeRng, hashString, clamp, lerp } from './audio/dsp.js?v=20261009184713';
-import { MusicPlayer } from './audio/music.js?v=20261009184713';
-import { MAP_AMBIENCE } from './audio/ambience.js?v=20261009184713';
-import { spaceFor, roomIR, outdoorIR } from './audio/space.js?v=20261009184713';
-import { library, SAMPLE_TIERS } from './audio/samples.js?v=20261009184713';
-import { Acoustics } from './audio/acoustics.js?v=20261009184713';
-import { EarlyReflections } from './audio/reflect.js?v=20261009184713';
-import { Hearing, SHOT_DOSE, NO_MUFFLE } from './audio/hearing.js?v=20261009184713';
-import { MIX_PRESETS, MixChain, HdrWindow, resolveMix } from './audio/mix.js?v=20261009184713';
-export { createUiSounds } from './audio/ui-sounds.js?v=20261009184713';
+import { CATALOG, SOUND_GROUPS, GUN_PROFILES, SURFACES, AMBIENCES, STEM_IDS, REC_ONLY, EXTRA_VOICES, entryOf } from './audio/catalog.js?v=20261009231635';
+import { bank, PRIO, makeBuffer } from './audio/bank.js?v=20261009231635';
+import { makeRng, hashString, clamp, lerp } from './audio/dsp.js?v=20261009231635';
+import { MusicPlayer } from './audio/music.js?v=20261009231635';
+import { MAP_AMBIENCE } from './audio/ambience.js?v=20261009231635';
+import { spaceFor, roomIR, outdoorIR } from './audio/space.js?v=20261009231635';
+import { library, SAMPLE_TIERS } from './audio/samples.js?v=20261009231635';
+import { Acoustics } from './audio/acoustics.js?v=20261009231635';
+import { EarlyReflections } from './audio/reflect.js?v=20261009231635';
+import { Hearing, SHOT_DOSE, NO_MUFFLE } from './audio/hearing.js?v=20261009231635';
+import { MIX_PRESETS, MixChain, HdrWindow, resolveMix } from './audio/mix.js?v=20261009231635';
+export { createUiSounds } from './audio/ui-sounds.js?v=20261009231635';
 export { SOUND_GROUPS, GUN_PROFILES, SURFACES, MIX_PRESETS, SAMPLE_TIERS };
 
 // Waffendaten defensiv laden (Datei gehört einem anderen Modul und kann noch fehlen)
 let WEAPONS = null;
-const loadWeapons = () => import('../../shared/weapons.data.js?v=20261009184713').then(m => { WEAPONS = m.WEAPONS || m.default?.WEAPONS || null; }).catch(() => {});
+const loadWeapons = () => import('../../shared/weapons.data.js?v=20261009231635').then(m => { WEAPONS = m.WEAPONS || m.default?.WEAPONS || null; }).catch(() => {});
 loadWeapons();
 let MEDALS = null; // Medaillenstufe → Tonhöhe der Fanfare (bronze/silber/gold)
-import('../../shared/modes.data.js?v=20261009184713').then(m => { MEDALS = m.MEDALS || null; }).catch(() => {});
+import('../../shared/modes.data.js?v=20261009231635').then(m => { MEDALS = m.MEDALS || null; }).catch(() => {});
 const MEDAL_PITCH = { bronze: 0.94, silber: 1, silver: 1, gold: 1.1 };
 
 const CLASS_PROFILE = { ar: 'ar', br: 'ar_heavy', smg: 'smg', lmg: 'lmg', sniper: 'sniper', marksman: 'ar_heavy', shotgun: 'shotgun', pistol: 'pistol' };
@@ -38,7 +38,7 @@ const RELOAD_TIME = { ar: 2.1, ar_heavy: 2.3, smg: 1.9, lmg: 4.2, sniper: 2.8, s
 const SUPERSONIC = { ar: 1, ar_heavy: 1, lmg: 1, sniper: 1, pistol_heavy: 1 };
 /** Mündungsgeschwindigkeit (m/s) → Ankunft des Geschosses / Überschallknalls vor dem Mündungsknall. */
 const BULLET_SPEED = { ar: 900, ar_heavy: 720, lmg: 820, sniper: 880, pistol_heavy: 450, smg: 380, pistol: 360, shotgun: 400 };
-const STREAK_SOUND = { uav: 'uav', strike: 'airstrike', airstrike: 'airstrike', sentry: 'sentry' };
+const STREAK_SOUND = { uav: 'uav', strike: 'airstrike', airstrike: 'airstrike', sentry: 'sentry', drohne: 'uav' };
 const SURFACE_ALIAS = { asphalt: 'concrete', stone: 'concrete', plaster: 'concrete', brick: 'concrete', rubber: 'fabric', sandbag: 'sand', mud: 'dirt', gravel: 'dirt', ceramic: 'tile', carpet: 'fabric', snow: 'grass' };
 const GESTURES = ['pointerdown', 'keydown', 'touchend', 'mousedown'];
 const AC = typeof window !== 'undefined' ? (window.AudioContext || window.webkitAudioContext) : null;

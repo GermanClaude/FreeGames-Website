@@ -12,8 +12,8 @@
 // VR: noch ohne Rad (die Seite ist in der Brille nicht sichtbar) – das Rad bleibt dort geschlossen.
 
 import * as THREE from 'three';
-import { el, esc, setStyle, setText, toggle, meters, clamp } from './dom.js?v=20261009184713';
-import { ORDER_DEFS, FORMATIONS, FORMATION_LABELS, ORDER_RADIUS } from '../bots/ai/orders.js?v=20261009184713';
+import { el, esc, setStyle, setText, toggle, meters, clamp } from './dom.js?v=20261009231635';
+import { ORDER_DEFS, FORMATIONS, FORMATION_LABELS, ORDER_RADIUS } from '../bots/ai/orders.js?v=20261009231635';
 
 const _eye = new THREE.Vector3();
 const _dir = new THREE.Vector3();
@@ -132,6 +132,7 @@ export class CommandWheel {
     const G = this.G;
     const p = G.player;
     if (!p || !p.alive || !p.team || !G.mode || !G.mode.teams) return false;
+    if (p.piloting) return false; // FPV-Drohne im Flug: Feuern sprengt, kein Rad
     if (G.match.state !== 'playing' || (G.xr && G.xr.presenting)) return false;
     if (G.hud && G.hud.targeting && G.hud.targeting.open) return false;
     return true;

@@ -5,12 +5,12 @@
 // In der Lobby ist noch keine Karte geladen: Karteninhalt dann aus der letzten Messung dieser Stufe bzw. dem Modell
 // des Plans (§4.2), Bildpuffer immer gemessen.
 
-import { esc, num } from '../dom.js?v=20261009184713';
-import { ICON } from '../icons.js?v=20261009184713';
-import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261009184713';
-import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261009184713';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261009184713';
-import { HINTS } from './schema-page.js?v=20261009184713';
+import { esc, num } from '../dom.js?v=20261009231635';
+import { ICON } from '../icons.js?v=20261009231635';
+import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261009231635';
+import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261009231635';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261009231635';
+import { HINTS } from './schema-page.js?v=20261009231635';
 
 const MB = 1024 * 1024;
 const MEM_KEY = 'nullpunkt:gfxmem';

@@ -3,7 +3,7 @@
 // das eigentliche Spiel läuft danach direkt zwischen den Browsern (WebRTC).
 // Mehrere Relays gleichzeitig: Fällt eines aus, laufen die anderen weiter. Ereignisse werden über ihre ID entdoppelt
 // und vor der Weitergabe auf eine gültige Signatur geprüft.
-import { verifyEvent, netNow } from './crypto.js?v=20261009184713';
+import { verifyEvent, netNow } from './crypto.js?v=20261009231635';
 
 const RETRY_MIN = 1000;
 const RETRY_MAX = 30000;

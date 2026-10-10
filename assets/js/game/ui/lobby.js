@@ -3,15 +3,15 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261009184713';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261009184713'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261009184713'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261009184713';
-import { esc, num, secs, meters } from './dom.js?v=20261009184713';
-import { ICON } from './icons.js?v=20261009184713';
-import { drawMapArt } from './mapart.js?v=20261009184713';
-import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261009184713';
-import { ProgressView } from './progress.js?v=20261009184713';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261009231635';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261009231635'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261009231635'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261009231635';
+import { esc, num, secs, meters } from './dom.js?v=20261009231635';
+import { ICON } from './icons.js?v=20261009231635';
+import { drawMapArt } from './mapart.js?v=20261009231635';
+import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261009231635';
+import { ProgressView } from './progress.js?v=20261009231635';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -638,7 +638,7 @@ export class Lobby {
     const p = d.W[c.primary];
     const s = d.W[c.secondary];
     const g = d.EQ[c.lethal];
-    const streaks = (d.MODES[c.modeId] || {}).streaks ? Object.values(d.STREAKS) : [];
+    const streaks = (d.MODES[c.modeId] || {}).streaks ? Object.values(d.STREAKS).sort((a, b) => a.kills - b.kills) : [];
     this.el.kit.innerHTML = `
       <div class="lb-kit-row"><small>Primär</small><span class="ico">${p && p.icon ? p.icon : ''}</span><b>${esc(p ? p.name : '—')}</b></div>
       <div class="lb-kit-row"><small>Sekundär</small><span class="ico">${s && s.icon ? s.icon : ''}</span><b>${esc(s ? s.name : '—')}</b></div>

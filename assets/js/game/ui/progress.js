@@ -2,11 +2,11 @@
 // Meilensteine (Bronze → Nullpunkt), Tarnungen je Waffe (weapons.data.js CAMOS, Freischaltung aus dem Profil),
 // Outfit-Ausführungen je Klasse und die Sammlung der Geheimnisse (Easter Eggs).
 
-import { challengeView, milestoneState, MILESTONE_TIERS, SECRETS, OPERATOR_TIERS, dayKey } from '../../shared/modes.data.js?v=20261009184713';
-import { CLASSES, SOLDIER_CLASS_ORDER } from '../../shared/classes.data.js?v=20261009184713';
-import { esc, num } from './dom.js?v=20261009184713';
-import { ICON } from './icons.js?v=20261009184713';
-import { camoCtx, swatch } from './loadout-panel.js?v=20261009184713';
+import { challengeView, milestoneState, MILESTONE_TIERS, SECRETS, OPERATOR_TIERS, dayKey } from '../../shared/modes.data.js?v=20261009231635';
+import { CLASSES, SOLDIER_CLASS_ORDER } from '../../shared/classes.data.js?v=20261009231635';
+import { esc, num } from './dom.js?v=20261009231635';
+import { ICON } from './icons.js?v=20261009231635';
+import { camoCtx, swatch } from './loadout-panel.js?v=20261009231635';
 
 const SECTIONS = [['challenges', 'Herausforderungen'], ['camos', 'Tarnungen'], ['outfits', 'Outfits'], ['secrets', 'Geheimnisse']];
 

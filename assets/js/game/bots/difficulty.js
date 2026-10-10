@@ -1,7 +1,7 @@
 // NULLPUNKT — Schwierigkeitsgrade der Bots: Grundwerte aus shared/modes.data.js (DIFFICULTIES, einzige
 // Quelle) + abgeleitete Größen für Wahrnehmung, Zielen, Taktik. Fairness: keine Sofort-Treffer, keine
 // Sicht durch Wände.
-import { DIFFICULTIES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009184713';
+import { DIFFICULTIES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009231635';
 
 // Abgeleitete Werte je Stufe (nur KI-intern, nicht in den geteilten Daten). bots-scale: teamTactics = Trupptaktik
 // (Feuerteams, Überwachen/Vorgehen, Niederhalten + Flanke, Rauch, Raumräumen, Sammeln/Ausweichen), tacticRate = Häufigkeit,

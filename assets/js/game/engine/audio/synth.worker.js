@@ -1,7 +1,7 @@
 // NULLPUNKT — Synthese-Worker (Owner: audio). Rendert Klangrezepte abseits des Hauptthreads.
 // Eingang: { key, name, v, sr } · Ausgang: { key, chs: Float32Array[], ms } mit übertragenen Puffern
 // oder { key, error }. Der Hauptthread kopiert die Kanäle nur noch in einen AudioBuffer.
-import { renderEntry } from './render.js?v=20261009184713';
+import { renderEntry } from './render.js?v=20261009231635';
 
 const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 

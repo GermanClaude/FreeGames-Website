@@ -15,8 +15,8 @@
 // Ausgaben wie die Basisaktionen: out.p/out.r (Waffe, Kameraraum), out.left/out.right (Handanfragen),
 // out.parts (Teilversätze [dx, dy, dz, rx, ry, rz] im Elternraum, _vis), out.frame (Arbeitsstelle ins Bild).
 import * as THREE from 'three';
-import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261009184713';
-import { magWellOf, magOffset } from './magwell.js?v=20261009184713';
+import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261009231635';
+import { magWellOf, magOffset } from './magwell.js?v=20261009231635';
 
 const Z3 = [0, 0, 0];
 const _f = [0, 0, 0, 0, 0, 0];

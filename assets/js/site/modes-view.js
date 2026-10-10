@@ -1,12 +1,12 @@
 // §02 Modi: Regelwerk. Fünf Zeilen als Aufklapper; jeder Name spielt seine Regel vor
 // (Fokus, Öffnen, Mitte des Bildschirms beim Scrollen, Maus als Zugabe). Dazu SERIEN.
-import { h, $, signalLost } from './dom.js?v=20261009184713';
-import { fit } from './fit.js?v=20261009184713';
-import { split, Kinetic } from './kinetic.js?v=20261009184713';
-import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261009184713';
-import { ui } from './state.js?v=20261009184713';
-import { calm, reduced, pointerFine, ease } from './motion.js?v=20261009184713';
-import { clamp } from './fmt.js?v=20261009184713';
+import { h, $, signalLost } from './dom.js?v=20261009231635';
+import { fit } from './fit.js?v=20261009231635';
+import { split, Kinetic } from './kinetic.js?v=20261009231635';
+import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261009231635';
+import { ui } from './state.js?v=20261009231635';
+import { calm, reduced, pointerFine, ease } from './motion.js?v=20261009231635';
+import { clamp } from './fmt.js?v=20261009231635';
 
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -273,8 +273,8 @@ export async function init(sec, D, ctx = {}) {
   const box = $('#streaks', sec);
   const notes = $('#streak-notes', sec);
   if (box && M.STREAK_ORDER?.length) {
-    const items = M.STREAK_ORDER.map((sid) => M.STREAKS[sid]).filter(Boolean);
     const n = (x) => x.kills ?? x.cost ?? '';
+    const items = M.STREAK_ORDER.map((sid) => M.STREAKS[sid]).filter(Boolean).sort((a, b) => (Number(n(a)) || 0) - (Number(n(b)) || 0));
     box.replaceChildren(...items.map((x) => h('li', {},
       h('span.sn', {}, String(n(x))), h('span.sdash', { 'aria-hidden': 'true' }, '\u00a0— '), h('span.snm', {}, `${x.name}.`),
       h('span.sr-only', {}, ` ${n(x)} Abschüsse ohne Tod.`))));

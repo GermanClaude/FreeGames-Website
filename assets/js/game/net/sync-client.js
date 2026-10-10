@@ -18,12 +18,15 @@
 //   • Würfe/Raketen: localThrow/localRocket → 'throw' an den Host + Darstellungs-Geschoss; Zündung kommt als 'ev'.
 //   • 'hit'/'kill' → lokale Ereignisse (Blut, Trefferrichtung, Abschussliste, Todesbildschirm), 'ev' → Granaten, Raketen,
 //     Explosionen, eigene Punkte/Medaillen; 'end' → Endbildschirm mit Ergebnis + Zusammenfassung des Hosts.
+//   • Serienprämien (online nur die FPV-Drohne; mode.streaks als Abbild, modes/streaks.js): 'ev' sk eigener Fortschritt,
+//     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
+//     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261009184713';
-import { netPoseOf } from '../bots/bot.js?v=20261009184713';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261009184713';
-import { HOST_ID } from './index.js?v=20261009184713';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261009184713';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261009231635';
+import { netPoseOf } from '../bots/bot.js?v=20261009231635';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261009231635';
+import { HOST_ID } from './index.js?v=20261009231635';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261009231635';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -43,7 +46,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261009184713').NetSystem} net
+   * @param {import('./index.js?v=20261009231635').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {
@@ -655,6 +658,18 @@ export class ClientSync {
       case 'ap':
         this._applyArmor(m.ar);
         return;
+      case 'sk': case 'sa': case 'sv': case 'dr': case 'de': {
+        // Serienprämien/FPV-Drohne (mode.streaks läuft auf dem Client als Abbild)
+        const st = G.mode && G.mode.streaks;
+        if (!st || typeof st.applyNetProgress !== 'function') return;
+        const find = (id) => this._actor(id);
+        if (m.e === 'sk') st.applyNetProgress(m);
+        else if (m.e === 'sa') st.applyNetActivate(m);
+        else if (m.e === 'sv') st.applyNetOther(m, find);
+        else if (m.e === 'dr') st.applyNetDrones(m.l, find);
+        else st.applyNetDroneEnd(m, find);
+        return;
+      }
       case 'sc':
         if (Number.isFinite(m.p)) G.events.emit('score', { actor: G.player, points: m.p, reason: m.r || 'kill', net: true });
         return;
@@ -771,6 +786,18 @@ export class ClientSync {
     });
     if (opts.inHand || !G.weapons) return null;
     return G.weapons.grenadeSystem.throw(actor, type, { ...opts, remote: true, cid });
+  }
+
+  /** Serienprämie beim Host anfragen ('streak' {id, p, y, pi}) – Antwort kommt als 'ev' sa. */
+  sendStreak(msg) {
+    if (!this.active || this.ended || !msg || typeof msg.id !== 'string') return;
+    this.net.send(HOST_ID, { ...msg, t: 'streak' });
+  }
+
+  /** Eigene FPV-Drohne an den Host ('drone' {a: 'p' Lage | 'x' Sprengung | 'e' Ende | 'h' Treffer auf eine Drohne, d, …}). */
+  sendDrone(msg) {
+    if (!this.active || !msg || typeof msg.a !== 'string') return;
+    this.net.send(HOST_ID, { ...msg, t: 'drone' });
   }
 
   /** Eigener Raketenschuss (WeaponSystem.fireProjectile): Meldung an den Host + Darstellungs-Rakete. */

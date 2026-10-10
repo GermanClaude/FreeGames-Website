@@ -18,23 +18,26 @@
 // stamina false (Raum-Einstellung „Ausdauer“ aus) = unbegrenzte Ausdauer für alle: beim Matchstart (match:state)
 // setzt NetSystem G.match.styleFlags.staminaMult = 0 (stamina.js: 0 = unbegrenzt). killAmmo false (Raum-Einstellung
 // „Munition pro Abschuss“ aus): kein Munitionsgewinn je Abschuss – jedes Gerät liest cfg.net.killAmmo selbst
-// (weapons/index.js killAmmoEnabled, Gutschrift beim eigenen Spieler).
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261009184713';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261009184713';
-import { hex, randomBytes } from './crypto.js?v=20261009184713';
-import { BUILD } from '../../shared/build.js?v=20261009184713';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261009184713';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009184713';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261009184713';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261009184713';
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261009184713';
-import { recommend, UploadMeter } from './recommend.js?v=20261009184713';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261009184713';
+// (weapons/index.js killAmmoEnabled, Gutschrift beim eigenen Spieler). cheatMenu false (Raum-Einstellung „Cheat-Menü (Nur
+// Messer)“ verboten): das Cheat-Menü des Modus öffnet sich nicht (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu).
+// Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host
+// vermerkt es und verteilt das Roster; bei jedem Matchstart/-ende zurückgesetzt.
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261009231635';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261009231635';
+import { hex, randomBytes } from './crypto.js?v=20261009231635';
+import { BUILD } from '../../shared/build.js?v=20261009231635';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261009231635';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009231635';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261009231635';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261009231635';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261009231635';
+import { recommend, UploadMeter } from './recommend.js?v=20261009231635';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261009231635';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD). */
 export const NET_VERSION = 1;
 /** Stufe 1: nur diese Modi online (cq/gun/inf/training folgen in Stufe 2). */
-export const ONLINE_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'kc']);
+export const ONLINE_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'kc', 'messer']);
 export const HOST_ID = 1;
 export const FIRST_CLIENT_ID = 2;
 export const FIRST_BOT_ID = 1000;
@@ -62,6 +65,7 @@ export const DEFAULT_ROOM = Object.freeze({
   maxPlayers: 8, botFill: true, teamSize: 6, pvp: 'pvp', public: false, style: 'arcade', scoreLimit: null, timeLimit: null,
   stamina: true, // Ausdauer an (aus = unbegrenzte Ausdauer für alle)
   killAmmo: true, // Munition pro Abschuss an (jedes Gerät schreibt sie seinem Spieler selbst gut)
+  cheatMenu: true, // Nur Messer: Cheat-Menü erlaubt (aus = vom Host deaktiviert; Aktive tragen ein Symbol in der Punktetabelle)
 });
 
 const TIME_SYNC_MS = 2000;
@@ -77,9 +81,10 @@ const BYTE_OVERHEAD = 60; // grobe Kopfdaten je Paket (IP/UDP/DTLS/SCTP) für di
 const LOCAL_RELAY = /^wss?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/;
 
 /** Typen, die NetSystem selbst kennt: Clients dürfen sie nicht an andere Clients weiterleiten lassen ('order': Befehlsrad
- *  eines Clients an die Bots um seine Puppe – nur der Host wertet ihn aus, net/sync-host.js). */
+ *  eines Clients an die Bots um seine Puppe; 'streak'/'drone': Serienprämie bzw. FPV-Drohne eines Clients – nur der Host
+ *  wertet sie aus, net/sync-host.js; 'cheat': Cheat-Menü aktiv – nur der Host vermerkt es im Roster). */
 const RESERVED = new Set([
-  'join', 'ready', 'loadout', 'hit', 'melee', 'throw', 'leave', 'hold', 'plate', 'dev', 'order',
+  'join', 'ready', 'loadout', 'hit', 'melee', 'throw', 'leave', 'hold', 'plate', 'dev', 'order', 'streak', 'drone', 'cheat',
   'welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject',
 ]);
 /** Nur der Host darf sie senden (der Host verwirft sie von Clients). */
@@ -140,6 +145,7 @@ export function normalizeSettings(partial = {}, base = DEFAULT_ROOM, hostName = 
     timeLimit: limit(pick('timeLimit'), 30, 7200),
     stamina: pick('stamina') !== false,
     killAmmo: pick('killAmmo') !== false,
+    cheatMenu: pick('cheatMenu') !== false,
   };
 }
 
@@ -384,6 +390,20 @@ export class NetSystem {
   }
 
   /**
+   * Nur Messer: Cheat-Menü aktiv (cheats.js) → Host: eigener Roster-Eintrag; Client: 'cheat' {on} an den Host (der verteilt
+   * das Roster). → true, wenn gemeldet.
+   */
+  setCheat(on) {
+    on = !!on;
+    if (!this.online) return false;
+    if (this.role === 'client') return this.send(HOST_ID, { t: 'cheat', on }) > 0;
+    const me = this.role === 'host' ? this.roster.find((r) => r.id === HOST_ID) : null;
+    if (!me) return false;
+    if (!!me.cheat !== on) { me.cheat = on; this._rosterChanged(); }
+    return true;
+  }
+
+  /**
    * Raumregeln, die nicht über die Spielstil-Flags kommen, auf das laufende Match legen (Host und Clients gleich, aus
    * cfg.net = G.match.net). main.applyStyle setzt G.match.styleFlags vor setState('loading') neu – daher bei jedem
    * Zustandswechsel (idempotent). Ausdauer aus → staminaMult 0 (stamina.js: unbegrenzt, Spieler und Bots).
@@ -494,7 +514,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261009184713').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261009231635').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
@@ -567,6 +587,12 @@ export class NetSystem {
       case 'dev': {
         const d = normDevice(m.d);
         if (entry.device !== d) { entry.device = d; this._rosterChanged(); }
+        break;
+      }
+      case 'cheat': { // Nur Messer: Cheat-Menü aktiv (Symbol in der Punktetabelle)
+        const on = m.on === true;
+        if (!!entry.cheat !== on) { entry.cheat = on; this._rosterChanged(); }
+        m = { t: 'cheat', on };
         break;
       }
       case 'loadout': {
@@ -799,6 +825,7 @@ export class NetSystem {
         botsA, botsB, humans, ffa, conditions: cond, startedAt: this.serverTime(),
         stamina: s.stamina !== false, // Raum-Einstellung „Ausdauer“ (aus = unbegrenzt für alle, _applyMatchRules)
         killAmmo: s.killAmmo !== false, // Raum-Einstellung „Munition pro Abschuss“ (weapons/index.js)
+        cheatMenu: s.cheatMenu !== false, // Raum-Einstellung „Cheat-Menü (Nur Messer)“ (cheats.js)
       },
     };
     if (s.timeLimit != null) cfg.timeLimit = s.timeLimit;
@@ -827,7 +854,7 @@ export class NetSystem {
     this._matchCfg = this._buildBaseCfg();
     this.room.state = 'match';
     this._readySent = false;
-    for (const r of this.roster) r.ready = false;
+    for (const r of this.roster) { r.ready = false; r.cheat = false; }
     if (this.anticheat) {
       this.anticheat.reset();
       const st = GAME_STYLES[this.room.settings.style];
@@ -873,7 +900,7 @@ export class NetSystem {
     if (this.role !== 'host' || !this.room || this.room.state !== 'match') return;
     this.room.state = 'lobby';
     this._matchCfg = null;
-    for (const r of this.roster) r.ready = false;
+    for (const r of this.roster) { r.ready = false; r.cheat = false; }
     this._roomChanged();
     this._rosterChanged();
   }

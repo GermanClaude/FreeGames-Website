@@ -47,6 +47,7 @@ export const ACTION_DEFS = Object.freeze([
   { id: 'streak1', label: 'Serienprämie 1 (Aufklärer)', short: 'Serie 1', group: 'serien' },
   { id: 'streak2', label: 'Serienprämie 2 (Präzisionsschlag)', short: 'Serie 2', group: 'serien' },
   { id: 'streak3', label: 'Serienprämie 3 (Wachgeschütz)', short: 'Serie 3', group: 'serien' },
+  { id: 'streak4', label: 'Serienprämie 4 (FPV-Drohne)', short: 'Serie 4', group: 'serien' },
   { id: 'interact', label: 'Interagieren', group: 'sonstiges' },
   { id: 'inspect', label: 'Waffe inspizieren (nur PC)', short: 'Inspizieren', group: 'sonstiges' },
   { id: 'loadout', label: 'Ausrüsten (nach dem Tod / im Pausemenü)', short: 'Ausrüsten', group: 'sonstiges' },
@@ -66,6 +67,8 @@ export const MOVE_ACTIONS = Object.freeze(['move_forward', 'move_back', 'move_le
  * Gamepad wie CoD: LB Granate, RB taktisch, R3 Nahkampf, L3 Sprint; Lehnen = LT halten + L3/R3 (wie Siege).
  * Befehlsrad: Tastatur KeyY (auf QWERTZ beschriftet „Z“), Gamepad LT + ▲ halten (▲ allein bleibt Serie 1), Auswahl mit Maus
  * bzw. rechtem Stick, Loslassen bestätigt; VR noch ohne Rad (Anzeige ist dort nicht sichtbar).
+ * Serie 4 (FPV-Drohne): Taste 6, Gamepad LT + ▼ (alle Tasten des Gamepads sind vergeben; ▼ allein bleibt Lampe/Platte,
+ * LT + ▼ ebenso, solange die Drohne nicht bereit ist – input._chordIdle / streaks.chordReady).
  */
 export const DEFAULT_BINDINGS = deepFreeze({
   kb: {
@@ -73,7 +76,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     sprint: ['ShiftLeft', 'ShiftRight'], jump: ['Space'], crouch: ['KeyC'], lean_left: ['KeyQ'], lean_right: ['KeyE'],
     fire: ['Mouse0'], ads: ['Mouse2'], reload: ['KeyR'], melee: ['KeyV', 'Mouse3'], grenade: ['KeyG'], tactical: ['KeyX'],
     swap: ['Mouse4', 'Wheel'], slot1: ['Digit1'], slot2: ['Digit2'], light: ['KeyT'],
-    streak1: ['Digit3'], streak2: ['Digit4'], streak3: ['Digit5'], interact: ['KeyF'], scoreboard: ['Tab'], pause: ['Escape'], fullscreen: ['F11'],
+    streak1: ['Digit3'], streak2: ['Digit4'], streak3: ['Digit5'], streak4: ['Digit6'], interact: ['KeyF'], scoreboard: ['Tab'], pause: ['Escape'], fullscreen: ['F11'],
     prone: ['KeyZ'], plate: ['Digit4'], gadget: ['KeyB'], inspect: ['KeyI'], loadout: ['KeyL'], squad_order: ['Mouse1', 'KeyH'],
     befehl: ['KeyY'],
   },
@@ -82,7 +85,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     sprint: ['Pad10'], jump: ['Pad0'], crouch: ['Pad1'], lean_left: ['Pad6+Pad10'], lean_right: ['Pad6+Pad11'],
     fire: ['Pad7'], ads: ['Pad6'], reload: ['Pad2'], melee: ['Pad11'], grenade: ['Pad4'], tactical: ['Pad5'],
     swap: ['Pad3'], slot1: [], slot2: [], light: ['Pad13'],
-    streak1: ['Pad12'], streak2: ['Pad14'], streak3: ['Pad15'], interact: ['Pad2'], scoreboard: ['Pad8'], pause: ['Pad9'], fullscreen: [],
+    streak1: ['Pad12'], streak2: ['Pad14'], streak3: ['Pad15'], streak4: ['Pad6+Pad13'], interact: ['Pad2'], scoreboard: ['Pad8'], pause: ['Pad9'], fullscreen: [],
     prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'],
   },
   // VR-Controller (wie gängige VR-Shooter, Haupthand rechts): Abzug feuern, Griff anlegen (zusätzlich: Waffe ans Auge),
@@ -94,7 +97,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     sprint: ['XrN3'], jump: ['XrH4'], crouch: ['XrH5'], lean_left: [], lean_right: [],
     fire: ['XrH0'], ads: ['XrH1'], reload: ['XrN4'], melee: ['XrH3'], grenade: ['XrN0'], tactical: ['XrN1'],
     swap: ['XrHUp'], slot1: [], slot2: [], light: [],
-    streak1: [], streak2: [], streak3: [], interact: ['XrN4'], scoreboard: [], pause: ['XrN5'], fullscreen: [],
+    streak1: [], streak2: [], streak3: [], streak4: [], interact: ['XrN4'], scoreboard: [], pause: ['XrN5'], fullscreen: [],
     prone: [], plate: ['XrHDown'], gadget: [], inspect: [], loadout: [], squad_order: [], befehl: [],
   },
 });
@@ -237,10 +240,18 @@ export function resolveBindings(overrides) {
   const out = { kb: {}, pad: {}, xr: {} };
   for (const dev of DEVICES) {
     const o = overrides && typeof overrides === 'object' ? overrides[dev] : null;
+    // Eigene Belegungen zuerst: ein Standard-Code, den der Spieler schon einer anderen Aktion gegeben hat, entfällt bei
+    // der nicht überschriebenen Aktion (neue Aktionen wie Serie 4 auf 6 übernehmen sonst still seine Taste; erlaubte Paare bleiben)
+    const own = {};
+    const taken = new Map(); // Code → Aktionen mit eigener Belegung
+    for (const a of ACTION_IDS) {
+      if (!(o && Array.isArray(o[a]) && !isFixed(a, dev))) continue;
+      own[a] = cleanList(o[a], dev, a);
+      for (const c of own[a]) { if (!taken.has(c)) taken.set(c, []); taken.get(c).push(a); }
+    }
     for (const a of ACTION_IDS) {
       const def = DEFAULT_BINDINGS[dev][a] || [];
-      const own = o && Array.isArray(o[a]) && !isFixed(a, dev) ? o[a] : null;
-      out[dev][a] = own ? cleanList(own, dev, a) : [...def];
+      out[dev][a] = own[a] || def.filter((c) => !(taken.get(c) || []).some((b) => !shareOk(a, b)));
     }
   }
   return out;

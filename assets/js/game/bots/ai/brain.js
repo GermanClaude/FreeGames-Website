@@ -5,8 +5,8 @@
 // Serienprämien ein. Befehle des Spielers (Befehlsrad, ai/orders.js) haben Vorrang vor Truppbefehlen, Flaggen und
 // Suchen; Ausweichen, Zurückschießen und Deckung bleiben dem Hirn.
 import * as THREE from 'three';
-import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js?v=20261009184713';
-import { commandFor, commandStep, isAnchored } from './orders.js?v=20261009184713';
+import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js?v=20261009231635';
+import { commandFor, commandStep, isAnchored } from './orders.js?v=20261009231635';
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -488,6 +488,8 @@ export function useStreaks(bot, now) {
         const t = typeof st.suggestStrikeTarget === 'function' ? st.suggestStrikeTarget(bot) : null;
         if (t && st.activate(bot, 'strike', { target: t })) return;
       } else if (id === 'sentry' && !fighting) { if (st.activate(bot, 'sentry')) return; }
+      // FPV-Drohne: Autopilot zum nächsten Gegner (modes/drone.js) – nur mit einem Gegner in Reichweite, nicht im Feuergefecht
+      else if (id === 'drohne' && !fighting && typeof st.droneTargetFor === 'function' && st.droneTargetFor(bot)) { if (st.activate(bot, 'drohne')) return; }
     } catch (err) { /* Modus lehnt ab → später erneut */ void err; }
   }
 }

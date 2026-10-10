@@ -11,11 +11,11 @@
 // freies Zielen; getAimScreenPoint() liefert den Laufpunkt auf dem Bildschirm (Fadenkreuz).
 
 import * as THREE from 'three';
-import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261009184713';
-import { raycastHumanoid, PRONE } from './combat.js?v=20261009184713';
-import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS } from '../shared/classes.data.js?v=20261009184713';
-import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261009184713';
-import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261009184713';
+import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261009231635';
+import { raycastHumanoid, PRONE } from './combat.js?v=20261009231635';
+import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS } from '../shared/classes.data.js?v=20261009231635';
+import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261009231635';
+import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261009231635';
 
 const STAND_H = 1.8;
 const CROUCH_H = 1.15;
@@ -339,6 +339,8 @@ export class Player {
     this.killer = null;
     this._lastKilledBy = null;
     this._damageLog = [];
+    this.piloting = null; // FPV-Drohne (modes/drone.js)
+    this._fireGate = false;
     this.stamina.reset();
     this.godMode = !!this.godMode;
     if (this.weapon && typeof this.weapon.dispose === 'function') this.weapon.dispose();
@@ -359,6 +361,8 @@ export class Player {
     this._deathCam = null;
     this._endMantle(false);
     this._resetPose();
+    this.piloting = null;
+    this._fireGate = false;
     if (this.G.viewmodel) this.G.viewmodel.scene.visible = true;
   }
 
@@ -370,6 +374,7 @@ export class Player {
     this.pitch = 0;
     this.health = this.maxHealth;
     this.alive = true;
+    this.piloting = null;
     this.crouching = this.sliding = this.sprinting = false;
     this._sprintLatch = false;
     this._resetStance();
@@ -568,14 +573,17 @@ export class Player {
     const input = G.input;
     const world = G.world;
     const body = this.body;
-    const frozen = !G.match || G.match.state !== 'playing';
+    // FPV-Drohne (modes/drone.js, this.piloting): der Körper steht still und bleibt verwundbar, Blick und Eingaben steuern
+    // die Drohne (wie im Countdown: keine Bewegung, kein Feuer, Waffe ruht)
+    const piloting = !!this.piloting;
+    const frozen = !G.match || G.match.state !== 'playing' || piloting;
     const now = G.time.elapsed;
     const w = this.weapon;
     const def = w ? w.currentDef : null;
     const touch = input.mode === 'touch';
 
     // Blick (auch im Countdown) – beim freien Zielen bewegt sich zuerst die Waffe, die Sicht folgt am Rand der Totzone
-    this._applyLook(input.look.dx, input.look.dy, dt, touch, w);
+    if (!piloting) this._applyLook(input.look.dx, input.look.dy, dt, touch, w);
     // Liegen: Blickgrenzen, Körper reicht nach hinten (Wand schiebt nach vorn, sonst kein Drehen)
     if (this.proneBlend > 0) {
       const b = this.proneBlend;
@@ -833,8 +841,10 @@ export class Player {
       const busy = this._busy(now);
       const crawlBlock = this.crawling && !!(fl && fl.id === 'realistisch');
       const blocked = frozen || this.mantling || !!busy || crawlBlock;
-      it.fire = !blocked && input.down('fire');
-      it.firePressed = !blocked && input.pressed('fire');
+      // nach dem Sprengen der Drohne: gehaltene Feuertaste erst loslassen
+      if (this._fireGate && !input.down('fire')) this._fireGate = false;
+      it.fire = !blocked && !this._fireGate && input.down('fire');
+      it.firePressed = !blocked && !this._fireGate && input.pressed('fire');
       it.ads = adsHeld && !this.sprinting && !this.mantling && !busy && !crawlBlock;
       it.reload = !frozen && !busy && input.pressed('reload');
       it.swap = !blocked && input.pressed('swap');

@@ -3,10 +3,10 @@
 // Ausführung des Outfits. Touch-first (große Kacheln), per Pfeiltasten/Gamepad über die räumliche Navigation bedienbar.
 // API: new LoadoutPanel(G); mount(host, loadout?) ; value() → loadout ; save() (Klassenausrüstung merken) ; unmount().
 
-import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261009184713';
-import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261009184713';
-import { esc } from './dom.js?v=20261009184713';
-import { ICON } from './icons.js?v=20261009184713';
+import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261009231635';
+import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261009231635';
+import { esc } from './dom.js?v=20261009231635';
+import { ICON } from './icons.js?v=20261009231635';
 
 const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['lethal', 'Granate']];
 

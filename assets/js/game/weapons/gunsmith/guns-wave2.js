@@ -2,9 +2,9 @@
 // G-7 Wächter (Kampfgewehr, Trommeldiopter), KM-7 Wespe (Kompakt-MP, Magazin im Griff),
 // SM-45 Keiler (schwere MP, Rotpunkt), LM-8 Bär (Trommel-LMG mit Zweibein).
 // Koordinaten wie alle Waffen: x rechts, v oben, u vorn (Lauf), Ursprung = Pistolengriff der rechten Hand.
-import { redDot, acog, birdcage, brake, akBrake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts } from './parts.js?v=20261009184713';
-import { arLower, arMag, octagon } from './guns-ar.js?v=20261009184713';
-import { magRounds } from './magfill.js?v=20261009184713';
+import { redDot, acog, birdcage, brake, akBrake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts } from './parts.js?v=20261009231635';
+import { arLower, arMag, octagon } from './guns-ar.js?v=20261009231635';
+import { magRounds } from './magfill.js?v=20261009231635';
 
 // Klappbares Kimme-/Korn-Paar (Ersatzvisier) – Korn vorn auf Höhe der Visierlinie
 function postFront(b, mat, u, v, axis) {

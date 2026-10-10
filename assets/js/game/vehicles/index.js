@@ -6,18 +6,18 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261009184713';
-import { Vehicle, newIntent } from './vehicle.js?v=20261009184713';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261009184713';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261009184713';
-import { readPlayerControls } from './controls.js?v=20261009184713';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261009184713';
-import { VehicleAudio } from './audio.js?v=20261009184713';
-import { upgradeVehicleMaterials, vehicleMaterials } from './materials.js?v=20261009184713';
-import { prepareVehicleModels } from './models.js?v=20261009184713';
-import { groundRay } from './sim.js?v=20261009184713';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261009184713';
-import { falloff } from '../combat.js?v=20261009184713';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261009231635';
+import { Vehicle, newIntent } from './vehicle.js?v=20261009231635';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261009231635';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261009231635';
+import { readPlayerControls } from './controls.js?v=20261009231635';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261009231635';
+import { VehicleAudio } from './audio.js?v=20261009231635';
+import { upgradeVehicleMaterials, vehicleMaterials } from './materials.js?v=20261009231635';
+import { prepareVehicleModels } from './models.js?v=20261009231635';
+import { groundRay } from './sim.js?v=20261009231635';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261009231635';
+import { falloff } from '../combat.js?v=20261009231635';
 
 export { VEHICLES, VEHICLE_WEAPONS, VEHICLE_IDS, Vehicle };
 
@@ -566,7 +566,8 @@ export class VehicleSystem {
     } else {
       if (this.spot) this.spot.intensity = 0;
       // Einsteigen in Reichweite?
-      this._near = p.alive ? this._nearestEnterable(p) : null;
+      // nicht im Drohnenflug (Interagieren bricht dort die FPV-Drohne ab, modes/drone.js)
+      this._near = p.alive && !p.piloting ? this._nearestEnterable(p) : null;
       if (this._near) {
         const v = this._near;
         const idx = v.seats.findIndex((s) => !s.actor);

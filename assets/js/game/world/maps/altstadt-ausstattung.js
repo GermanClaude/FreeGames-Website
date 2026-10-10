@@ -13,8 +13,8 @@
 // Grafikstufe und mit/ohne Asset-Bibliothek). Neue Teile verbrauchen den Kartenzufall nicht (Positions-Hash bzw.
 // withRng in altstadt.js) – Farben/Plätze der übrigen Karte bleiben unverändert.
 import * as THREE from 'three';
-import { frame, chair, tree } from '../props.js?v=20261009184713';
-import { craneClock } from '../crane-anim.js?v=20261009184713';
+import { frame, chair, tree } from '../props.js?v=20261009231635';
+import { craneClock } from '../crane-anim.js?v=20261009231635';
 
 const IRON = '#2b2d30';
 const VIS = { collide: false, minimap: false };            // nur Optik (Kugeln treffen trotzdem)
