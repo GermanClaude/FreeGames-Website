@@ -2,11 +2,11 @@
 // Controller (Kurve mit Live-Vorschau, Totzonen, Stick-Anzeige), Touch und Gyro (Erlaubnis, Kalibrierung des
 // Nullpunkts, Live-Anzeige). Sprungmarken oben; Reihenfolge nach dem gerade benutzten Gerät.
 
-import { esc, num } from '../dom.js?v=20261010113749';
-import { ICON } from '../icons.js?v=20261010113749';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled } from './rows.js?v=20261010113749';
-import { HINTS } from './schema-page.js?v=20261010113749';
-import { VR_KEYS, vrSectionHtml, vrSectionSync } from './vr-section.js?v=20261010113749';
+import { esc, num } from '../dom.js?v=20261010152042';
+import { ICON } from '../icons.js?v=20261010152042';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled } from './rows.js?v=20261010152042';
+import { HINTS } from './schema-page.js?v=20261010152042';
+import { VR_KEYS, vrSectionHtml, vrSectionSync } from './vr-section.js?v=20261010152042';
 
 const SECTIONS = {
   touch: { label: 'Touch', keys: ['touchSensitivity', 'touchOpacity', 'touchButtonScale'] },
@@ -23,14 +23,16 @@ const SECTIONS = {
     label: 'Controller',
     keys: ['padSensitivity', 'padCurve', 'padDeadzone', 'padOuterDeadzone', 'padSwapSticks', 'padVibration'],
   },
+  // Fahrzeuge (panzer-mp.md §A.5): Panzer-Getriebe „Gang halten“ (W/S tippen) oder Automatik
+  fahrzeug: { label: 'Fahrzeuge', keys: ['vehGearbox'] },
   // VR-Modus (Beta, engine/xr): Schalter nur mit VR-fähigem Browser, sonst Hinweis (ui/settings/vr-section.js)
   vr: { label: 'VR (Beta)', keys: VR_KEYS },
 };
 // VR steht vorn, sobald eine Brille erkannt wurde (Quest-Browser, PC mit Air Link), sonst am Ende
 const ORDER = {
-  touch: ['touch', 'zielhilfe', 'gyro', 'zielen', 'modus', 'pad', 'maus', 'vr'],
-  pad: ['pad', 'zielhilfe', 'zielen', 'modus', 'maus', 'touch', 'gyro', 'vr'],
-  desktop: ['maus', 'zielen', 'modus', 'zielhilfe', 'pad', 'touch', 'gyro', 'vr'],
+  touch: ['touch', 'zielhilfe', 'gyro', 'zielen', 'modus', 'fahrzeug', 'pad', 'maus', 'vr'],
+  pad: ['pad', 'zielhilfe', 'zielen', 'modus', 'fahrzeug', 'maus', 'touch', 'gyro', 'vr'],
+  desktop: ['maus', 'zielen', 'modus', 'fahrzeug', 'zielhilfe', 'pad', 'touch', 'gyro', 'vr'],
 };
 const LABELS = { adsSensitivity: 'Im Anschlag · 1×', adsSensitivityMid: 'Im Anschlag · 2–4×', adsSensitivityHigh: 'Im Anschlag · ab 6×' };
 

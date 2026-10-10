@@ -5,7 +5,7 @@
 // Sattelzug: Auflieger mit Abstand hinter der Kabine (vorher ragte er 0,6 m in die Kabine), Stützbeine paarweise.
 // Kollision wie bisher als einfache Quader (unabhängig von Grafikstufe und Bibliothek).
 import * as THREE from 'three';
-import { frame, container, pallet, crateStack } from '../props.js?v=20261010113749';
+import { frame, container, pallet, crateStack } from '../props.js?v=20261010152042';
 
 const KEIN = { collide: false, minimap: false };
 const shade = (hex, k) => { const c = new THREE.Color(hex); c.multiplyScalar(k); return '#' + c.getHexString(); };

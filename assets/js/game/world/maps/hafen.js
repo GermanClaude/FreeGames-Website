@@ -2,20 +2,20 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261010113749';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261010152042';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261010113749';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261010113749';
+} from '../props.js?v=20261010152042';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261010152042';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261010113749';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261010152042';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261010113749';
+} from './hafen-ausstattung.js?v=20261010152042';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -722,10 +722,11 @@ function warehouse(b) {
   wall(b, { ...wmat, x0: x1 - t / 2, z0: z0, x1: x1 - t / 2, z1: z1, openings: [
     { at: 12, w: 1.3, h: 2.3, kind: 'door' }, { at: 30, w: 3.6, h: 4.2, kind: 'gap' }] });
   // Rolltore (halb offen) über den Toröffnungen
+  // beweglich (game/doors.js): Schaltpult innen und außen neben jedem Tor (F), Tor fährt hoch/runter
   for (const zz of [10, 0, -10]) {
     const open = zz === 0 ? 2.35 : 3.3;
-    b.box(x0 + 0.05, open, zz, 0.12, 4.6 - open, 4.2, 'metal_corrugated', { tint: '#d0d4d0', minimap: false, grad: false, collide: false });
-    b.box(x0 + 0.05, open, zz, 0.12, 4.6 - open, 4.2, 'black', { visual: false, minimap: false });
+    (b.gates || (b.gates = [])).push({ x: x0 + 0.05, z: zz, axis: 'z', w: 4.2, h: 4.6, t: 0.12, y: 0, bottom: open, tint: '#d0d4d0',
+      panels: [[x0 + 0.65, zz + 2.7, Math.PI / 2], [x0 - 0.65, zz - 2.7, -Math.PI / 2]] });
     b.box(x0 - 0.15, 4.6, zz, 0.6, 0.6, 4.6, 'metal_painted', { tint: '#5a5f66', minimap: false, grad: false, collide: false });
   }
   // Dach (leicht geneigt angedeutet) + Oberlichter

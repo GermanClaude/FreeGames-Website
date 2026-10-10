@@ -18,7 +18,7 @@
 // tot ist, ruhen die anführerbezogenen Befehle (follow/formation/regroup) – der Bot handelt dann frei.
 // Quittung: nach dem Befehl dreht sich der Bot kurz zum Anführer (≤ 35 m, ohne sichtbaren Gegner).
 import * as THREE from 'three';
-import { analyze, findCover } from './tactics.js?v=20261010113749';
+import { analyze, findCover } from './tactics.js?v=20261010152042';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();

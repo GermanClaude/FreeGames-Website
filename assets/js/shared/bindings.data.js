@@ -18,7 +18,7 @@ export const MAX_SLOTS = 3;
 export const DEVICES = Object.freeze(['kb', 'pad', 'xr']);
 
 /**
- * Alle Aktionen. group: bewegung | kampf | serien | sonstiges. modes: Halten/Umschalten wählbar
+ * Alle Aktionen. group: bewegung | kampf | serien | sonstiges | fahrzeug. modes: Halten/Umschalten wählbar
  * (Einstellung `<modeKey>`), fixed: nicht änderbar (Pause bleibt Esc/Menü).
  */
 export const ACTION_DEFS = Object.freeze([
@@ -44,6 +44,8 @@ export const ACTION_DEFS = Object.freeze([
   { id: 'light', label: 'Lampe / Laser', short: 'Lampe', group: 'kampf' },
   { id: 'plate', label: 'Panzerplatte einsetzen (halten: alle)', short: 'Platte', group: 'kampf' },
   { id: 'gadget', label: 'Klassen-Ausrüstung (Spritze, Verbandskasten, Reparatur, Markieren)', short: 'Ausrüstung', group: 'kampf' },
+  { id: 'bauen', label: 'Bauen (Sandsäcke, Schützenloch; Pionier auch MG-Nest und Bunker) – erneut drücken wechselt', short: 'Bauen', group: 'kampf' },
+  { id: 'faehigkeit', label: 'Klassen-Fähigkeit (Kampfrausch, Regeneration, Nachschub, Aufklärungspuls)', short: 'Fähigkeit', group: 'kampf' },
   { id: 'streak1', label: 'Serienprämie 1 (Aufklärer)', short: 'Serie 1', group: 'serien' },
   { id: 'streak2', label: 'Serienprämie 2 (Präzisionsschlag)', short: 'Serie 2', group: 'serien' },
   { id: 'streak3', label: 'Serienprämie 3 (Wachgeschütz)', short: 'Serie 3', group: 'serien' },
@@ -56,10 +58,15 @@ export const ACTION_DEFS = Object.freeze([
   { id: 'scoreboard', label: 'Punktetabelle', group: 'sonstiges' },
   { id: 'fullscreen', label: 'Vollbild umschalten (auch Alt + Eingabe)', short: 'Vollbild', group: 'sonstiges' },
   { id: 'pause', label: 'Pause', group: 'sonstiges', fixed: true },
+  // Fahrzeuge (panzer-mp.md §A.5/§B.2): Tastatur schaltet mit W/S tippen und wechselt Sitze mit 1–4
+  { id: 'gear_up', label: 'Hochschalten (Panzer)', short: 'Gang hoch', group: 'fahrzeug' },
+  { id: 'gear_down', label: 'Herunterschalten (Panzer)', short: 'Gang runter', group: 'fahrzeug' },
+  { id: 'seat_next', label: 'Nächster Sitz (Fahrzeug)', short: 'Sitz vor', group: 'fahrzeug' },
+  { id: 'seat_prev', label: 'Vorheriger Sitz (Fahrzeug)', short: 'Sitz zurück', group: 'fahrzeug' },
 ]);
 export const ACTION_IDS = Object.freeze(ACTION_DEFS.map((a) => a.id));
 export const ACTION_BY_ID = Object.freeze(Object.fromEntries(ACTION_DEFS.map((a) => [a.id, a])));
-export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges' });
+export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges', fahrzeug: 'Fahrzeug' });
 export const MOVE_ACTIONS = Object.freeze(['move_forward', 'move_back', 'move_left', 'move_right']);
 
 /**
@@ -77,8 +84,9 @@ export const DEFAULT_BINDINGS = deepFreeze({
     fire: ['Mouse0'], ads: ['Mouse2'], reload: ['KeyR'], melee: ['KeyV', 'Mouse3'], grenade: ['KeyG'], tactical: ['KeyX'],
     swap: ['Mouse4', 'Wheel'], slot1: ['Digit1'], slot2: ['Digit2'], light: ['KeyT'],
     streak1: ['Digit3'], streak2: ['Digit4'], streak3: ['Digit5'], streak4: ['Digit6'], interact: ['KeyF'], scoreboard: ['Tab'], pause: ['Escape'], fullscreen: ['F11'],
-    prone: ['KeyZ'], plate: ['Digit4'], gadget: ['KeyB'], inspect: ['KeyI'], loadout: ['KeyL'], squad_order: ['Mouse1', 'KeyH'],
+    prone: ['KeyZ'], plate: ['Digit4'], gadget: ['KeyB'], faehigkeit: ['KeyJ'], bauen: ['KeyK'], inspect: ['KeyI'], loadout: ['KeyL'], squad_order: ['Mouse1', 'KeyH'],
     befehl: ['KeyY'],
+    gear_up: [], gear_down: [], seat_next: [], seat_prev: [],
   },
   pad: {
     move_forward: [], move_back: [], move_left: [], move_right: [],
@@ -86,7 +94,8 @@ export const DEFAULT_BINDINGS = deepFreeze({
     fire: ['Pad7'], ads: ['Pad6'], reload: ['Pad2'], melee: ['Pad11'], grenade: ['Pad4'], tactical: ['Pad5'],
     swap: ['Pad3'], slot1: [], slot2: [], light: ['Pad13'],
     streak1: ['Pad12'], streak2: ['Pad14'], streak3: ['Pad15'], streak4: ['Pad6+Pad13'], interact: ['Pad2'], scoreboard: ['Pad8'], pause: ['Pad9'], fullscreen: [],
-    prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'],
+    prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], faehigkeit: ['Pad6+Pad14'], bauen: ['Pad6+Pad15'], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'],
+    gear_up: ['Pad5'], gear_down: ['Pad4'], seat_next: ['Pad15'], seat_prev: ['Pad14'],
   },
   // VR-Controller (wie gängige VR-Shooter, Haupthand rechts): Abzug feuern, Griff anlegen (zusätzlich: Waffe ans Auge),
   // A springen, B ducken (halten: hinlegen), Stick drücken Nahkampf, Stick hoch Waffe wechseln, Stick runter Platte;
@@ -98,7 +107,8 @@ export const DEFAULT_BINDINGS = deepFreeze({
     fire: ['XrH0'], ads: ['XrH1'], reload: ['XrN4'], melee: ['XrH3'], grenade: ['XrN0'], tactical: ['XrN1'],
     swap: ['XrHUp'], slot1: [], slot2: [], light: [],
     streak1: [], streak2: [], streak3: [], streak4: [], interact: ['XrN4'], scoreboard: [], pause: ['XrN5'], fullscreen: [],
-    prone: [], plate: ['XrHDown'], gadget: [], inspect: [], loadout: [], squad_order: [], befehl: [],
+    prone: [], plate: ['XrHDown'], gadget: [], faehigkeit: [], bauen: [], inspect: [], loadout: [], squad_order: [], befehl: [],
+    gear_up: [], gear_down: [], seat_next: ['XrH3'], seat_prev: [],
   },
 });
 
@@ -111,7 +121,9 @@ export function isFixed(action, device) {
 /** Aktionspaare, die sich eine Taste teilen dürfen (kein Konflikt): X = Nachladen + Interagieren wie in CoD. */
 // Platte teilt sich 4 mit Serie 2 bzw. ▼ mit der Lampe: player.js entscheidet (Serie bereit → Serie; Platte nötig → Platte).
 // Ausrüsten teilt Y mit dem Waffenwechsel (nur nach dem Tod/in Menüs wirksam).
-export const ALLOWED_SHARES = Object.freeze([['reload', 'interact'], ['plate', 'streak2'], ['plate', 'light'], ['loadout', 'swap']]);
+// Fahrzeugaktionen teilen sich Tasten mit Infanterie-Aktionen, die im Fahrzeug ruhen (RB/LB, Steuerkreuz ◀/▶, VR-Stick).
+export const ALLOWED_SHARES = Object.freeze([['reload', 'interact'], ['plate', 'streak2'], ['plate', 'light'], ['loadout', 'swap'],
+  ['gear_up', 'tactical'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2']]);
 const shareOk = (a, b) => ALLOWED_SHARES.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 
 /** Nicht belegbar: Esc (verlässt den Pointer-Lock), Browser-/Systemtasten, Home-Taste des Gamepads. */
@@ -413,6 +425,8 @@ export const TOUCH_BUTTONS = Object.freeze([
   { id: 'prone', sel: '.tc-prone', label: 'Hinlegen', def: { x: 85.5, y: 92.5, s: 46 } },
   { id: 'plate', sel: '.tc-plate', label: 'Panzerplatte', auto: 'armor', def: { x: 65, y: 56, s: 46 } },
   { id: 'gadget', sel: '.tc-gadget', label: 'Klassen-Ausrüstung', auto: 'gadget', def: { x: 65, y: 42, s: 46 } },
+  { id: 'bauen', sel: '.tc-bauen', label: 'Bauen', auto: 'bauen', def: { x: 58, y: 28, s: 46 } },
+  { id: 'faehigkeit', sel: '.tc-faehigkeit', label: 'Klassen-Fähigkeit', auto: 'faehigkeit', def: { x: 58, y: 42, s: 46 } },
   // Befehlsrad: nur mit verbündeten Bots; oben rechts in der Reihe von Punktetabelle/Pause (frei auf 4:3 bis 20:9)
   { id: 'befehl', sel: '.tc-befehl', label: 'Befehlsrad', auto: 'allies', def: { x: 80, y: 8, s: 42 } },
   { id: 'streaks', sel: '.tc-streaks', label: 'Serienprämien', kind: 'group' },

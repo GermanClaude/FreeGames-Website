@@ -14,30 +14,37 @@
 // Spielstart: startMatch() (Host) baut die Konfiguration (§6), schickt 'start' {cfg} an alle Clients und startet
 // selbst über this.startGame(cfg) – Standard: G.menus.onStart(cfg) (= main.startMatch). Clients starten bei 'start'
 // bzw. beim Einstieg ins laufende Spiel (welcome.cfg) genauso. cfg.net = {role, roomCode, selfId, team, teamSize, pvp,
-// botFill, maxPlayers, botsA, botsB, humans:{A,B}, stamina}; Wetter/Zeit sind aufgelöst (nie 'zufall'/'echtzeit').
-// stamina false (Raum-Einstellung „Ausdauer“ aus) = unbegrenzte Ausdauer für alle: beim Matchstart (match:state)
-// setzt NetSystem G.match.styleFlags.staminaMult = 0 (stamina.js: 0 = unbegrenzt). killAmmo false (Raum-Einstellung
-// „Munition pro Abschuss“ aus): kein Munitionsgewinn je Abschuss – jedes Gerät liest cfg.net.killAmmo selbst
-// (weapons/index.js killAmmoEnabled, Gutschrift beim eigenen Spieler). cheatMenu false (Raum-Einstellung „Cheat-Menü“
-// verboten): das Cheat-Menü des Modus öffnet sich nicht (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu).
-// Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host
-// vermerkt es und verteilt das Roster; bei jedem Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261010113749';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261010113749';
-import { hex, randomBytes } from './crypto.js?v=20261010113749';
-import { BUILD } from '../../shared/build.js?v=20261010113749';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261010113749';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261010113749';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261010113749';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261010113749';
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261010113749';
-import { recommend, UploadMeter } from './recommend.js?v=20261010113749';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261010113749';
+// botFill, maxPlayers, botsA, botsB, humans:{A,B}, stamina, vehicles, thirdPerson, vehReload}; Wetter/Zeit sind aufgelöst
+// (nie 'zufall'/'echtzeit'). stamina false (Raum-Einstellung „Ausdauer“ aus) = unbegrenzte Ausdauer für alle: beim
+// Matchstart (match:state) setzt NetSystem G.match.styleFlags.staminaMult = 0 (stamina.js: 0 = unbegrenzt).
+// vehicles (Raum-Einstellung „Fahrzeuge“, Standard VEHICLES_ONLINE_DEFAULT): Host simuliert die Fahrzeuge, Clients führen
+// ein Abbild (vehicles/net.js); thirdPerson = Außenansicht in Fahrzeugen erlaubt; vehReload 'manuell' | 'automatisch'.
+// killAmmo false (Raum-Einstellung „Munition pro Abschuss“ aus): kein Munitionsgewinn je Abschuss – jedes Gerät liest
+// cfg.net.killAmmo selbst (weapons/index.js killAmmoEnabled, Gutschrift beim eigenen Spieler).
+// cheatMenu false (Raum-Einstellung „Cheat-Menü“, alle Modi, verboten): das Cheat-Menü des Modus öffnet sich nicht
+// (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu). Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der
+// Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host vermerkt es und verteilt das Roster; bei jedem
+// Matchstart/-ende zurückgesetzt.
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261010152042';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261010152042';
+import { hex, randomBytes } from './crypto.js?v=20261010152042';
+import { BUILD } from '../../shared/build.js?v=20261010152042';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261010152042';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261010152042';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261010152042';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261010152042';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261010152042';
+import { recommend, UploadMeter } from './recommend.js?v=20261010152042';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261010152042';
 
-/** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD). */
-export const NET_VERSION = 1;
+/** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD).
+ *  2: Fahrzeuge online (Snapshot-Anhang, Fahrzeug-Absicht, 'veh'/'vhit'/'vehicles' – panzer-mp.md §C).
+ *  3: Fähigkeiten, Kartenpunkte, Beute, Bauwerke, Türen/Tore ('ability'/'point'/'loot'/'build'/'door', 'ev' bs/bd/dr), TDM Ultimate. */
+export const NET_VERSION = 3;
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). */
-export const ONLINE_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'kc', 'messer', 'inf', 'gun']);
+export const ONLINE_MODES = Object.freeze(['tdm', 'ult', 'ffa', 'dom', 'kc', 'messer', 'inf', 'gun']);
+/** Modi mit Fahrzeugen online (Nur Messer, Waffenspiel und Infiziert bleiben ohne – Ausrüstung kommt dort vom Modus). */
+export const VEHICLE_MODES = Object.freeze(new Set(['tdm', 'ffa', 'dom', 'kc']));
 export const HOST_ID = 1;
 export const FIRST_CLIENT_ID = 2;
 export const FIRST_BOT_ID = 1000;
@@ -59,12 +66,21 @@ export const NET_ERROR_TEXT = Object.freeze({
   abgebrochen: 'Beitritt abgebrochen.',
 });
 
+/**
+ * Fahrzeuge online (panzer-mp.md §C.1): Standard der Raum-Einstellung „Fahrzeuge“. Freigabe-Schalter – false: online
+ * verhält sich alles wie ohne Fahrzeuge (Host kann sie je Raum trotzdem einschalten).
+ */
+export const VEHICLES_ONLINE_DEFAULT = true;
+
 /** Raum-Einstellungen (§6) – Standardwerte. */
 export const DEFAULT_ROOM = Object.freeze({
   name: '', mode: 'tdm', map: 'hafen', time: 'standard', weather: 'standard', difficulty: 'regulaer',
   maxPlayers: 8, botFill: true, teamSize: 6, pvp: 'pvp', public: false, style: 'arcade', scoreLimit: null, timeLimit: null,
   stamina: true, // Ausdauer an (aus = unbegrenzte Ausdauer für alle)
+  // Fahrzeuge (Panzer + Geländewagen für beide Teams), Außenansicht in Fahrzeugen, Nachladen der Panzerkanone
+  vehicles: VEHICLES_ONLINE_DEFAULT, thirdPerson: true, vehReload: 'manuell',
   killAmmo: true, // Munition pro Abschuss an (jedes Gerät schreibt sie seinem Spieler selbst gut)
+  lootWeapons: true, // Waffen von Leichen aufheben (der Host erlaubt die Waffe danach für die Puppe)
   cheatMenu: true, // Cheat-Menü erlaubt (alle Modi) (aus = vom Host deaktiviert; Aktive tragen ein Symbol in der Punktetabelle)
 });
 
@@ -81,14 +97,16 @@ const BYTE_OVERHEAD = 60; // grobe Kopfdaten je Paket (IP/UDP/DTLS/SCTP) für di
 const LOCAL_RELAY = /^wss?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/;
 
 /** Typen, die NetSystem selbst kennt: Clients dürfen sie nicht an andere Clients weiterleiten lassen ('order': Befehlsrad
- *  eines Clients an die Bots um seine Puppe; 'streak'/'drone': Serienprämie bzw. FPV-Drohne eines Clients – nur der Host
- *  wertet sie aus, net/sync-host.js; 'cheat': Cheat-Menü aktiv – nur der Host vermerkt es im Roster). */
+ *  eines Clients an die Bots um seine Puppe – nur der Host wertet ihn aus, net/sync-host.js; 'veh'/'vhit': Fahrzeug-
+ *  Anfragen und -Treffer an den Host, 'actors'/'vehicles': Listen des Hosts; 'streak'/'drone': Serienprämie bzw.
+ *  FPV-Drohne eines Clients – nur der Host wertet sie aus; 'cheat': Cheat-Menü aktiv – nur der Host vermerkt es;
+ *  'ability'/'point': Klassen-Fähigkeit bzw. Heilung an einem Kartenpunkt eines Clients – nur der Host wertet sie aus). */
 const RESERVED = new Set([
-  'join', 'ready', 'loadout', 'hit', 'melee', 'throw', 'leave', 'hold', 'plate', 'dev', 'order', 'streak', 'drone', 'cheat',
-  'welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject',
+  'join', 'ready', 'loadout', 'hit', 'melee', 'throw', 'leave', 'hold', 'plate', 'dev', 'order', 'veh', 'vhit', 'streak', 'drone', 'cheat', 'ability', 'point', 'loot', 'build', 'door',
+  'welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject', 'actors', 'vehicles',
 ]);
 /** Nur der Host darf sie senden (der Host verwirft sie von Clients). */
-const HOST_ONLY = new Set(['welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject']);
+const HOST_ONLY = new Set(['welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject', 'actors', 'vehicles']);
 
 /** Gerät eines Menschen im Roster (Symbol in Punktetabelle und Spielerliste): PC, Handy/Tablet (Touch), VR-Brille. */
 export const DEVICES = Object.freeze(['pc', 'mobile', 'vr']);
@@ -135,15 +153,21 @@ export function normalizeSettings(partial = {}, base = DEFAULT_ROOM, hostName = 
     time: time === 'zufall' || time === 'echtzeit' || times.includes(time) ? time : 'standard',
     weather: weather === 'zufall' || weathers.includes(weather) ? weather : 'standard',
     difficulty: DIFFICULTY_ORDER.includes(pick('difficulty')) ? pick('difficulty') : DIFFICULTY_ORDER.includes(b.difficulty) ? b.difficulty : 'regulaer',
-    maxPlayers: clampInt(pick('maxPlayers'), 2, MAX_PLAYERS, 8),
+    maxPlayers: clampInt(pick('maxPlayers'), 2, mode === 'ult' ? 8 : MAX_PLAYERS, 8), // TDM Ultimate: höchstens 8
     botFill: pick('botFill') !== false,
-    teamSize: clampInt(pick('teamSize'), 1, 16, 6),
+    teamSize: clampInt(pick('teamSize'), 1, mode === 'ult' ? 4 : 16, mode === 'ult' ? 4 : 6),
     pvp: pick('pvp') === 'coop' ? 'coop' : 'pvp',
     public: pick('public') === true,
     style: GAME_STYLES[pick('style')] ? pick('style') : 'arcade',
-    scoreLimit: limit(pick('scoreLimit'), 1, 9999),
+    // Punkteziel gilt je Modus: Moduswechsel ohne neues Ziel → Standard des Modus
+    scoreLimit: p.mode !== undefined && p.mode !== b.mode && p.scoreLimit === undefined ? null : limit(pick('scoreLimit'), 1, 9999),
     timeLimit: limit(pick('timeLimit'), 30, 7200),
     stamina: pick('stamina') !== false,
+    lootWeapons: pick('lootWeapons') !== false, // Waffen von Leichen aufheben (Standard an)
+    // Fahrzeuge: fehlt der Wert (alter Raum) → Standard; Außenansicht nur ausdrücklich aus; Nachladen 'manuell' | 'automatisch'
+    vehicles: pick('vehicles') === true,
+    thirdPerson: pick('thirdPerson') !== false,
+    vehReload: pick('vehReload') === 'automatisch' ? 'automatisch' : 'manuell',
     killAmmo: pick('killAmmo') !== false,
     cheatMenu: pick('cheatMenu') !== false,
   };
@@ -336,6 +360,14 @@ export class NetSystem {
     this._pid = tabPid();
     this._handlers = new Map();
     this._fastHandlers = new Set();
+    // Seite wird geschlossen/verlassen: Austritt sofort melden – sonst merkt die Gegenseite es erst am Zeitlimit der
+    // Verbindung (≈ 20 s; z. B. bliebe ein Fahrzeugsitz so lange belegt). Aus dem bfcache (persisted) kann sie zurückkehren.
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('pagehide', (e) => {
+        if ((e && e.persisted) || !this.online) return;
+        try { this.leave('verlassen'); } catch { /* Seite geht ohnehin */ }
+      });
+    }
     this._timers = [];
     this._signal = null;
     this._hostLink = null;
@@ -514,7 +546,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261010113749').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261010152042').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
@@ -824,7 +856,10 @@ export class NetSystem {
         roomCode: this.room.code, teamSize: s.teamSize, pvp: s.pvp, botFill: s.botFill, maxPlayers: s.maxPlayers,
         botsA, botsB, humans, ffa, conditions: cond, startedAt: this.serverTime(),
         stamina: s.stamina !== false, // Raum-Einstellung „Ausdauer“ (aus = unbegrenzt für alle, _applyMatchRules)
+        // Fahrzeuge (panzer-mp.md §C.1): an/aus, Außenansicht erlaubt, Nachladen der Panzerkanone
+        vehicles: s.vehicles === true && VEHICLE_MODES.has(s.mode), thirdPerson: s.thirdPerson !== false, vehReload: s.vehReload === 'automatisch' ? 'automatisch' : 'manuell',
         killAmmo: s.killAmmo !== false, // Raum-Einstellung „Munition pro Abschuss“ (weapons/index.js)
+        lootWeapons: s.lootWeapons !== false, // Raum-Einstellung „Waffen von Leichen“ (mappoints.js)
         cheatMenu: s.cheatMenu !== false, // Raum-Einstellung „Cheat-Menü“ (cheats.js)
       },
     };
@@ -1405,8 +1440,10 @@ export class NetSystem {
     // Akteure im Match: mit Bot-Auffüllung 2 × teamSize (Schnappschüsse tragen auch die Bots), sonst nur die Menschen
     const st = this.room && this.room.settings ? this.room.settings : DEFAULT_ROOM;
     const actors = st.botFill !== false ? Math.min(MAX_PLAYERS, 2 * (st.teamSize || DEFAULT_ROOM.teamSize)) : 0;
+    // Fahrzeuge der Karte (Grenzland: je Team 2 Panzer + 3 Geländewagen, sonst je Team 1 + 1)
+    const vehicles = st.vehicles ? (st.map === 'grenzland' ? 10 : 4) : 0;
     return recommend({
-      actors,
+      actors, vehicles,
       cores: Number.isFinite(nav.hardwareConcurrency) ? nav.hardwareConcurrency : null,
       memory: Number.isFinite(nav.deviceMemory) ? nav.deviceMemory : null,
       fps: this._fps,

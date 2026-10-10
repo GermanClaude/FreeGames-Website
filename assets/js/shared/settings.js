@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261010113749';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261010152042';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -46,10 +46,14 @@ export const DEFAULTS = Object.freeze({
   adaptiveBots: true,
   // Munition pro Abschuss (weapons/index.js, offline; online gilt die Raum-Einstellung des Hosts)
   killAmmo: true,
+  lootWeapons: true,
   // Kirchenglocke der Altstadt (world/maps/altstadt-glocke.js): Stundenschlag zur echten Uhrzeit an/aus
   glocke: true,
   // Leichen (bots/corpses.js): 'bleiben' | '10min' | '2min'; zusätzlich Obergrenze je Grafikstufe (älteste zuerst weg)
   leichen: 'bleiben',
+  // Fahrzeuge (panzer-mp.md §A.5/§B.5): Panzer-Getriebe „Gang halten“ (W/S tippen, wie Squad 44) oder Automatik;
+  // Panzer nachladen offline (online entscheidet die Raumeinstellung des Hosts)
+  vehGearbox: 'halten', vehReload: 'manuell',
   // VR-Modus (Beta, engine/xr/): nur mit Einstellung + laufender WebXR-Sitzung wirksam; Bedeutung in docs/planung/vr.md
   vrEnabled: false, vrHand: 'rechts', vrTurn: 'schritt', vrTurnStep: '30', vrTurnSpeed: 120, vrMoveDir: 'kopf',
   vrVignette: true, vrVignetteStrength: 0.6, vrSeated: false, vrPhysical: true, vrHeight: 0,
@@ -242,11 +246,20 @@ export const SETTINGS_SCHEMA = Object.freeze({
     options: ['touch', 'alle'], labels: { touch: 'Nur Touch', alle: 'Alle Geräte (auch Maus & Controller)' },
   },
   adaptiveBots: { type: 'boolean', label: 'Lernende Bots', group: 'spiel' },
-  killAmmo: { type: 'boolean', label: 'Munition pro Abschuss', group: 'spiel' },
+  killAmmo: { type: 'boolean', label: 'Munition pro Abschuss (Realistisch: an der Leiche aufsammeln)', group: 'spiel' },
+  lootWeapons: { type: 'boolean', label: 'Waffen von Leichen aufheben', group: 'spiel' },
   glocke: { type: 'boolean', label: 'Kirchenglocke (Altstadt)', group: 'audio' },
   leichen: {
     type: 'enum', label: 'Leichen', group: 'spiel',
     options: ['bleiben', '10min', '2min'], labels: { bleiben: 'Bleiben liegen', '10min': '10 Minuten', '2min': '2 Minuten' },
+  },
+  vehGearbox: {
+    type: 'enum', label: 'Panzer-Getriebe', group: 'steuerung',
+    options: ['halten', 'automatik'], labels: { halten: 'Gang halten (wie Squad 44)', automatik: 'Automatik (W/S halten)' },
+  },
+  vehReload: {
+    type: 'enum', label: 'Panzer nachladen', group: 'spiel',
+    options: ['manuell', 'automatisch'], labels: { manuell: 'Manuell (Ladeschütze)', automatisch: 'Automatisch' },
   },
   fullscreen: {
     type: 'enum', label: 'Vollbild', group: 'spiel',
@@ -312,7 +325,7 @@ export function assistAppliesTo(devices, device) {
 
 const ID_RE = /^[a-z0-9_-]{1,32}$/;
 // Ausrüstungsfelder (additiv: cls/armor/helmet/tactical für Klassen und Panzerung, core-mechanics)
-const LOADOUT_FIELDS = ['id', 'primary', 'secondary', 'lethal', 'tactical', 'cls', 'armor', 'helmet'];
+const LOADOUT_FIELDS = ['id', 'primary', 'secondary', 'lethal', 'tactical', 'melee', 'cls', 'armor', 'helmet'];
 function validateLoadout(value) {
   if (!value || typeof value !== 'object') return undefined;
   const out = {};

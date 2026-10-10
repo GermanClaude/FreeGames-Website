@@ -14,50 +14,54 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261010113749';
-import { profile } from '../shared/profile.js?v=20261010113749';
-import * as weaponsData from '../shared/weapons.data.js?v=20261010113749';
-import * as modesData from '../shared/modes.data.js?v=20261010113749';
-import * as mapsData from '../shared/maps.data.js?v=20261010113749';
-import * as classesData from '../shared/classes.data.js?v=20261010113749'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { EventBus } from './engine/events.js?v=20261010113749';
-import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261010113749';
-import { Input } from './engine/input.js?v=20261010113749';
-import { watchForUpdates } from './engine/update.js?v=20261010113749'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261010113749';
-import { DynamicResolution } from './engine/dynres.js?v=20261010113749';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261010113749'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261010113749';
-import { Combat } from './combat.js?v=20261010113749';
+import { settings } from '../shared/settings.js?v=20261010152042';
+import { profile } from '../shared/profile.js?v=20261010152042';
+import * as weaponsData from '../shared/weapons.data.js?v=20261010152042';
+import * as modesData from '../shared/modes.data.js?v=20261010152042';
+import * as mapsData from '../shared/maps.data.js?v=20261010152042';
+import * as classesData from '../shared/classes.data.js?v=20261010152042'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { EventBus } from './engine/events.js?v=20261010152042';
+import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261010152042';
+import { Input } from './engine/input.js?v=20261010152042';
+import { watchForUpdates } from './engine/update.js?v=20261010152042'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261010152042';
+import { DynamicResolution } from './engine/dynres.js?v=20261010152042';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261010152042'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261010152042';
+import { Combat } from './combat.js?v=20261010152042';
+import { MapPoints } from './mappoints.js?v=20261010152042'; // Interaktionspunkte der Karten (Taste F)
+import { Building } from './building.js?v=20261010152042'; // Bauen (Taste K)
+import { Doors } from './doors.js?v=20261010152042'; // bewegliche Türen und Tore (Taste F)
+import { WallHoles } from './wallholes.js?v=20261010152042'; // durchlöcherte Wände
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261010113749', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261010113749', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261010113749', ['ViewModel']],
-  world: ['./world/index.js?v=20261010113749', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261010113749', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261010113749', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261010113749', ['Effects']],
-  bots: ['./bots/manager.js?v=20261010113749', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261010113749', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261010152042', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261010152042', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261010152042', ['ViewModel']],
+  world: ['./world/index.js?v=20261010152042', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261010152042', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261010152042', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261010152042', ['Effects']],
+  bots: ['./bots/manager.js?v=20261010152042', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261010152042', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261010113749', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261010113749', []],
-  modes: ['./modes/index.js?v=20261010113749', ['createMode']],
-  hud: ['./ui/hud.js?v=20261010113749', ['HUD']],
-  menus: ['./ui/menus.js?v=20261010113749', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261010152042', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261010152042', []],
+  modes: ['./modes/index.js?v=20261010152042', ['createMode']],
+  hud: ['./ui/hud.js?v=20261010152042', ['HUD']],
+  menus: ['./ui/menus.js?v=20261010152042', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261010113749', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261010113749', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261010152042', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261010152042', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261010113749', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261010113749', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261010113749', ['ClientSync']],
+  net: ['./net/index.js?v=20261010152042', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261010152042', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261010152042', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261010113749', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261010152042', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
@@ -430,6 +434,7 @@ function normalizeConfig(cfg = {}) {
     primary: [lo.primary, last.primary].find((id) => okW(id, 'primary')) || def.primary,
     secondary: [lo.secondary, last.secondary].find((id) => okW(id, 'secondary')) || def.secondary,
     lethal: [lo.lethal, last.lethal].find(okEq) || def.lethal,
+    melee: [lo.melee, last.melee].find((id) => okW(id, 'melee')) || 'knife', // Messer-Wahl (Lobby)
   };
   // modes-ui: Klasse, Tarnungen, Outfit, Spielstil, Matchlänge, Tageszeit (Lobby bzw. URL style=/cls=)
   const CL = classesData.CLASSES; // core-mechanics: Klassen/Spielstile aus shared/classes.data.js
@@ -918,6 +923,7 @@ async function runStart(config, gen) {
       style: cfg.style, crosshair: cfg.crosshair, matchLength: cfg.matchLength, timeOfDay: cfg.timeOfDay, cls: cfg.loadout.cls || null, // modes-ui
       weather: cfg.weather, conditions: cond, // atmosphere-weather (Anfrage; aufgelöst: conditions = G.world.weather)
       net: netCfg, netRole: netCfg ? netCfg.role : null, netLive: false, // Mehrspieler
+      vehicles: netCfg ? !!netCfg.vehicles : undefined, // online: Raum-Einstellung „Fahrzeuge“ (vor spawnBots – Werfer der Bots)
     });
     // Online: Modus/Karte/Schwierigkeit gehören dem Raum – die Lobby-Vorauswahl für Einzelspieler bleibt
     if (netCfg) settings.patch({ lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
@@ -968,7 +974,7 @@ async function runStart(config, gen) {
       time: cfg.timeLimit ?? undefined, score: cfg.scoreLimit ?? undefined,
       difficulty: cfg.difficulty, allies: cfg.allies, enemies: cfg.enemies, mapId: cfg.mapId,
     };
-    // Mehrspieler: von den Serienprämien online nur die FPV-Drohne (ONLINE_STREAKS, Einsatz bestätigt der Host –
+    // Mehrspieler: von den Serienprämien online Aufklärer, FPV-Drohne und Präzisionsschlag (ONLINE_STREAKS, Einsatz bestätigt der Host –
     // net/sync-host.js); Client führt den Modus als Abbild (Zustand vom Host)
     if (netCfg) { opts.streakIds = modesData.ONLINE_STREAKS || []; opts.replica = netCfg.role === 'client'; }
     G.mode = G.modules.modes.createMode(G, cfg.modeId, opts);
@@ -997,8 +1003,14 @@ async function runStart(config, gen) {
     }
     if (!(await nextStep(0.9))) { await teardownMatch({ keepWorld: true }); return; }
 
-    // vehicles: Spawns aus world.vehicleSpawns bzw. ?vehicles=1 – online keine Fahrzeuge (Stufe 2)
+    // vehicles: Spawns aus world.vehicleSpawns bzw. ?vehicles=1; online nur mit Raum-Einstellung „Fahrzeuge“ – der Host
+    // simuliert, Clients führen ein Abbild (vehicles/net.js, panzer-mp.md §C)
     if (!netCfg) safe('vehicles.attach', () => G.vehicles.attach(G));
+    else if (netCfg.vehicles) safe('vehicles.attach', () => G.vehicles.attach(G, { replica: netCfg.role === 'client' }));
+    safe('points', () => { G.points = new MapPoints(G, cfg.mapId); });
+    safe('building', () => { G.building = new Building(G); });
+    safe('doors', () => { G.doors = new Doors(G); });
+    safe('holes', () => { G.holes = new WallHoles(G); });
     G.hud.attach(G);
     safe('audio.startAmbience', () => G.audio.startAmbience(G.world.ambience));
     G.mode.start();
@@ -1204,6 +1216,10 @@ async function teardownMatch({ keepWorld = false } = {}) {
     G.world = null;
   }
   G.actors.length = 0;
+  if (G.points) { safe('points', () => G.points.dispose()); G.points = null; }
+  if (G.doors) { safe('doors', () => G.doors.dispose()); G.doors = null; }
+  if (G.holes) { safe('holes', () => G.holes.dispose()); G.holes = null; }
+  if (G.building) { safe('building', () => G.building.dispose()); G.building = null; }
   G.match.net = null;
   G.match.netRole = null;
   if (sceneBase) {
@@ -1566,6 +1582,9 @@ function frame(now, bg = false, xrFrame = null) {
     const live = G.match.state === 'playing' || G.match.netLive;
     if (live) step('separate', () => separateActors(G.actors));
     step('vehicles', () => G.vehicles.update(dt));
+    if (G.points) step('points', () => G.points.update(dt));
+    if (G.building) step('building', () => G.building.update(dt));
+    if (G.doors) step('doors', () => G.doors.update(dt));
     step('armor', () => G.combat.tickArmor(G.actors)); // core-mechanics: Platten fertig einsetzen, Bots setzen selbst ein
     step('weapons', () => G.weapons.update(dt));
     step('mode', () => { if (G.mode) G.mode.update(dt); });

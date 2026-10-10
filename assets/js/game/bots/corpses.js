@@ -12,8 +12,8 @@
 // die älteste Leiche zuerst. Leichen sind reine Optik (keine Treffer, keine Kollision) und überall lokal (offline,
 // Host, Clients). Prüfhilfe: G.bots.corpses.stats(), .debugFill(n).
 import * as THREE from 'three';
-import { BONE_COUNT } from './soldier/rig.js?v=20261010113749';
-import { soldierMaterial, releaseSoldierMaterial } from './soldier/materials.js?v=20261010113749';
+import { BONE_COUNT } from './soldier/rig.js?v=20261010152042';
+import { soldierMaterial, releaseSoldierMaterial } from './soldier/materials.js?v=20261010152042';
 
 /**
  * Obergrenze je Grafikstufe. Gemessen (Hafen, 09.10.): je Leiche niedrig 727 Dreiecke/48 KB (ferne Stufe), sonst

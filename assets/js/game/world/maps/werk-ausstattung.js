@@ -5,8 +5,9 @@
 // weder von der Grafikstufe noch von der Bibliothek ab: Bibliotheksmodelle bekommen keine eigene Kollision, sondern
 // Quader aus festen Maßen (die Modelle selbst bzw. ihr prozeduraler Ersatz sind auf jeder Stufe sichtbar).
 import * as THREE from 'three';
-import { frame, hash01, chair, sandbags } from '../props.js?v=20261010113749';
-import { railing } from '../arch.js?v=20261010113749';
+import { frame, hash01, chair, sandbags } from '../props.js?v=20261010152042';
+import { railing } from '../arch.js?v=20261010152042';
+import { addEmplacement } from './grenzland-stellungen.js?v=20261010152042';
 
 const DIR = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 const KEIN = { collide: false, minimap: false };
@@ -300,6 +301,7 @@ export function mgNest(b, x, z, ry, o = {}) {
   }
   // Dreibein (Lafette) hinter der Brüstung, Waffe über den Säcken
   const hz = R - 0.62, hy = 0.82;
+  addEmplacement(b, f, 0, hz, hy + 0.12); // benutzbar (game/mappoints.js)
   const head = [0, hy, hz];
   const W = (lx, ly, lz) => { const [wx, wz] = f.P(lx, lz); return [wx, ly, wz]; };
   for (const [lx, lz] of [[0, hz + 0.55], [-0.45, hz - 0.42], [0.45, hz - 0.42]]) stab(b, W(...head), W(lx, 0.02, lz), 0.018, 'metal_painted', { tint: '#3a3f2e' });

@@ -4,7 +4,7 @@
 // pulsierender roter Rand bei gegnerischem Aufklärer. Beschriftungen (N, Flaggen) als Schrift-Sprites (glyphs.js):
 // fillText erzwänge je Bild eine Stilberechnung des Dokuments.
 
-import { drawGlyph } from './glyphs.js?v=20261010113749';
+import { drawGlyph } from './glyphs.js?v=20261010152042';
 
 const COL = {
   ally: '#38b6ff', enemy: '#ff3b3b', me: '#ffffff', gold: '#ffc23d', signal: '#ff5b1f', neutral: '#e9e6df',
@@ -195,9 +195,18 @@ export class Minimap {
       }
       if (noEnemies) continue; // Spielstil „Realistisch“: keine Gegnerpunkte
       const fired = now - (a.lastFiredTime ?? -1e9) < FIRE_SHOW && !a._suppressedShot;
-      if (fired) {
+      // markiert (Aufklärer: Markieren/Aufklärungspuls) – nur für das eigene Team (FFA: für den, der markiert hat)
+      const spotted = (a.spottedUntil || 0) > now && a.spottedBy != null && (a.spottedBy === p.team || a.spottedBy === p);
+      if (fired || spotted) {
         toScreen(a.position.x, a.position.z, pt);
-        dot(ctx, pt.x, pt.y, 4.2 * d, COL.enemy, 1 - (now - a.lastFiredTime) / FIRE_SHOW * 0.5);
+        dot(ctx, pt.x, pt.y, 4.2 * d, COL.enemy, spotted ? 1 : 1 - (now - a.lastFiredTime) / FIRE_SHOW * 0.5);
+        if (spotted) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 7 * d, 0, Math.PI * 2);
+          ctx.lineWidth = 1.2 * d;
+          ctx.strokeStyle = COL.enemy;
+          ctx.stroke();
+        }
       }
     }
     if (blips) {

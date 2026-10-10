@@ -8,7 +8,7 @@
 // am Rand der Nahkaskade auf die Fernkarte über. low: keine Fernkarte – dort übernimmt die Sonnensicht des
 // Sonden-Gitters (world/probes.js) die Ferne.
 import * as THREE from 'three';
-import { WS, initShading, dropShadingContext, resetFarMap } from './shading.js?v=20261010113749';
+import { WS, initShading, dropShadingContext, resetFarMap } from './shading.js?v=20261010152042';
 
 /** Halbe Kantenlänge der Nahkaskade (m), wenn eine Fernkarte die Ferne übernimmt. */
 export const NEAR_CAP = Object.freeze({ medium: 22, high: 18, ultra: 16 });

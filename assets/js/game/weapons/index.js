@@ -3,13 +3,13 @@
 // und räumt beim Matchende auf.
 
 import * as THREE from 'three';
-import { WeaponController } from './controller.js?v=20261010113749';
-import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261010113749';
-import { RocketSystem } from './ballistics/rockets.js?v=20261010113749';
-import { EQUIPMENT as DATA_EQUIPMENT, killAmmoFor } from '../../shared/weapons.data.js?v=20261010113749';
-import { clamp } from './ballistics/math.js?v=20261010113749';
+import { WeaponController } from './controller.js?v=20261010152042';
+import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261010152042';
+import { RocketSystem } from './ballistics/rockets.js?v=20261010152042';
+import { EQUIPMENT as DATA_EQUIPMENT, killAmmoFor } from '../../shared/weapons.data.js?v=20261010152042';
+import { clamp } from './ballistics/math.js?v=20261010152042';
 
-export { WeaponController } from './controller.js?v=20261010113749';
+export { WeaponController } from './controller.js?v=20261010152042';
 
 const _eye = new THREE.Vector3();
 
@@ -215,6 +215,8 @@ export class WeaponSystem {
     if (!p || !v || v === p || killer !== p || e.suicide || !p.alive) return;
     if (G.combat && typeof G.combat.isHostile === 'function' && !G.combat.isHostile(p, v)) return;
     if (!this.killAmmoEnabled()) return;
+    // Spielstil Realistisch: Munition nicht automatisch – an der Leiche aufsammeln (mappoints.js, Beute)
+    if (G.match && G.match.style === 'realistisch') return;
     const w = p.weapon;
     if (!w || !Array.isArray(w.slots) || typeof w.grantAmmo !== 'function') return;
     if (this._killAmmoSeen.has(v)) return;

@@ -10,8 +10,8 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261010113749';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261010113749';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261010152042';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261010152042';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -72,7 +72,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261010113749').WeaponSystem} system
+   * @param {import('./index.js?v=20261010152042').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -160,7 +160,7 @@ export class WeaponController {
   get currentDef() { const s = this.slots[this.index]; return s ? s.def : null; }
   /** { mag, reserve, magSize } der aktuellen Waffe (HUD-Komfort). */
   get ammo() { const s = this.current; return s ? { mag: s.mag, reserve: s.reserve, magSize: s.def.mag || 0 } : null; }
-  get infiniteAmmo() { const m = this.G.mode; return !!(this.actor.isBot || (m && m.def && m.def.infiniteAmmo)); }
+  get infiniteAmmo() { const m = this.G.mode; return !!(this.actor.isBot || this.actor.mounted || (m && m.def && m.def.infiniteAmmo)); }
   /** Außer Atem nach dem Atemanhalten im Zielfernrohr (HUD-Anzeige). */
   get exhausted() { return this._exhausted > 0; }
 
@@ -659,6 +659,7 @@ export class WeaponController {
     if (it.crouching && !it.moving) k *= 0.85;
     if (it.airborne) k *= 1.2;
     if (actor.isPlayer && G.input && G.input.mode === 'touch') k *= 0.72; // Touch: wie COD Mobile deutlich ruhiger
+    k *= this._rush('rushRecoil') * (actor.mounted ? 0.35 : 1); // MG-Stellung (mappoints.js): Waffe liegt auf der Lafette
     const pitch = r.vertical * e[1] * first * k * (0.94 + Math.random() * 0.12);
     const yaw = r.horizontal * (e[0] + (Math.random() * 0.7 - 0.35)) * k;
     // Freies Zielen (core, nur an der Hüfte): ein Teil des Stoßes bewegt den Lauf innerhalb der Totzone statt der
@@ -765,6 +766,12 @@ export class WeaponController {
     return true;
   }
 
+  /** Faktor der Klassen-Fähigkeit Kampfrausch (player.rushUntil/rushReload/rushRecoil), sonst 1. */
+  _rush(key) {
+    const a = this.actor;
+    return a && a.rushUntil > 0 && this.G.time && this.G.time.elapsed < a.rushUntil && a[key] > 0 ? a[key] : 1;
+  }
+
   /** Nachladen abbrechen (bereits eingesetzte Munition bleibt). */
   cancelReload() {
     if (this._reload) this._finishReload(true);
@@ -773,6 +780,7 @@ export class WeaponController {
   _updateReload(dt, it) {
     const st = this.current;
     const def = st.def;
+    dt *= this._rush('rushReload'); // Klassen-Fähigkeit Kampfrausch: schneller nachladen (Ego-Bild folgt reloadProgress)
     if (!this._reload) {
       if (it.reload) this.reload();
       this.reloadProgress = 0;
@@ -916,15 +924,15 @@ export class WeaponController {
     const target = this._findMeleeTarget(spec);
     let lunge = false;
     let dist = 0;
+    // Cheat-Menü „Messer ohne Abklingzeit“ (cheats.js): Treffer sofort auf Ausfallschritt-Distanz, ohne Anlauf
+    const fast = !!actor.cheatFastKnife;
     if (target) {
       dist = this._meleeDistance(target);
-      lunge = dist > (spec.range || 2.4) * 0.85;
+      lunge = !fast && dist > (spec.range || 2.4) * 0.85;
     }
     const lungeSpeed = spec.lungeSpeed || 10;
     const travel = lunge ? Math.max(0, dist - (spec.range || 2.4) * 0.7) : 0;
     const arrive = lunge ? travel / lungeSpeed : 0;
-    // Cheat-Menü „Messer ohne Abklingzeit“ (cheats.js): Treffer sofort, kein Nachlauf – direkt wieder zustechen
-    const fast = !!actor.cheatFastKnife;
     const swing = fast ? FAST_SWING : spec.swingTime || 0.75;
     this._melee = {
       t: 0, target, lunge, hit: false, arrive, maxLunge: arrive + 0.18,
@@ -1018,7 +1026,7 @@ export class WeaponController {
     const G = this.G;
     const a = this.actor;
     const spec = m.spec;
-    const range = (spec.range || 2.4) + 0.45;
+    const range = m.fast ? (spec.lungeRange || 4.5) + 0.6 : (spec.range || 2.4) + 0.45;
     let target = m.target && m.target.alive ? m.target : null;
     if (target && this._meleeDistance(target) > range) target = null;
     if (!target) target = this._findMeleeTarget({ ...spec, lungeRange: range - 0.35 });
@@ -1037,6 +1045,22 @@ export class WeaponController {
       const wid = (m.def && m.def.id) || 'knife';
       const dealt = G.combat.damage(target, { amount: dmg, attacker: a, weaponId: wid, zone: 'body', dir, point, distance: point.distanceTo(_eye) });
       G.events.emit('weapon:meleeHit', { actor: a, target, backstab, killed: !target.alive, damage: dealt, weaponId: wid });
+      // Spezial „Spaltschlag“ (Machete): jeder weitere Gegner im Bogen wird ebenfalls getroffen
+      if (spec.cleave) {
+        for (const t of G.actors) {
+          if (t === target || t === a || !t.alive || !G.combat.isHostile(a, t)) continue;
+          _to.copy(t.position);
+          _to.y += (t.body ? t.body.height : 1.8) * 0.6;
+          _to.sub(_eye);
+          const d = _to.length();
+          if (d > (spec.range || 2.4) + 0.45 || d < 1e-3) continue;
+          if (Math.acos(clamp(_to.dot(_aim) / d, -1, 1)) > (spec.arc || 0.6) + 0.25) continue;
+          const pt = new THREE.Vector3().copy(t.position);
+          pt.y += (t.body ? t.body.height : 1.8) * 0.62;
+          const dd = G.combat.damage(t, { amount: ((m.def && m.def.damage && m.def.damage.max) || 60) * scale, attacker: a, weaponId: wid, zone: 'body', dir: pt.clone().sub(_eye).normalize(), point: pt, distance: d });
+          G.events.emit('weapon:meleeHit', { actor: a, target: t, backstab: false, killed: !t.alive, damage: dd, weaponId: wid, cleave: true });
+        }
+      }
       return;
     }
     // Daneben: Einschlag an Wand/Ziel (Funken/Staub, Schießstand-Klappziele)

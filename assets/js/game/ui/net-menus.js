@@ -5,22 +5,40 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261010113749';
-import { ICON, deviceOf } from './icons.js?v=20261010113749';
-import { LoadoutPanel } from './loadout-panel.js?v=20261010113749';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261010113749';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261010113749';
+import { esc, el } from './dom.js?v=20261010152042';
+import { ICON, deviceOf } from './icons.js?v=20261010152042';
+import { LoadoutPanel } from './loadout-panel.js?v=20261010152042';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261010152042';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261010152042';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
 const devIcon = (r) => { const d = deviceOf(r.device); return `<span class="sb-human" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}</span>`; };
 
 /** Stufe 1: nur diese Modi online (Spiegel von net/index.js – ohne Import, damit die Lobby keine Netz-Module lädt). */
-export const ONLINE_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'kc', 'messer', 'inf', 'gun']);
+export const ONLINE_MODES = Object.freeze(['tdm', 'ult', 'ffa', 'dom', 'kc', 'messer', 'inf', 'gun']);
 /** Raumcodes (= net/signal.js): 6 Zeichen ohne I, O, 0, 1. */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const CODE_LENGTH = 6;
 const MAX_PLAYERS = 32;
+/** Raum-Einstellung „Fahrzeuge“: Standard an (wie net/index.js VEHICLES_ONLINE_DEFAULT – fehlt der Wert, gilt er). */
+const VEH_DEFAULT_ON = true;
+/** Modi mit Fahrzeugen online (Spiegel von net/index.js VEHICLE_MODES). */
+const VEH_MODES = new Set(['tdm', 'ffa', 'dom', 'kc']);
+// Rundendauer (s; 0 = Standard des Modus, höchstens 60 min) und Punkteziel (Vielfache des Modus-Standards; nicht im
+// Waffenspiel – dort zählen die Waffenstufen – und nicht in Modi ohne Punkteziel)
+const TIME_STEPS = [0, 180, 300, 480, 600, 900, 1200, 1800, 2700, 3600];
+const timeIdx = (m, s) => (s.timeLimit ? Math.max(0, TIME_STEPS.findIndex((t) => t >= s.timeLimit)) : 0);
+const scoreSteps = (m) => {
+  if (!m || !(m.scoreLimit > 0) || m.id === 'gun') return [];
+  return [...new Set([0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6].map((f) => Math.max(1, Math.round(m.scoreLimit * f))))].sort((a, b) => a - b);
+};
+const minText = (sec) => `${Math.round(sec / 60)} min`;
+const limitText = (m, s) => ({
+  time: s.timeLimit ? minText(s.timeLimit) : m && m.timeLimit > 0 ? `Standard (${minText(m.timeLimit)})` : 'Standard (offen)',
+  score: s.scoreLimit ? String(s.scoreLimit) : m && m.scoreLimit > 0 ? `Standard (${m.scoreLimit})` : 'Standard',
+});
+const vehOn = (s) => VEH_MODES.has(s.mode) && (s.vehicles === undefined ? VEH_DEFAULT_ON : s.vehicles === true);
 const MAX_TEAM = 16;
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const IN_MATCH = ['loading', 'countdown', 'playing', 'paused'];
@@ -852,7 +870,11 @@ export class NetMenus {
       ${teams ? item('Spielart', s.pvp === 'coop' ? 'Gemeinsam gegen Bots' : 'Gegeneinander') : ''}
       ${item(teams ? 'Teamgröße' : 'Teilnehmer', teams ? `${size} gegen ${size}` : `${size * 2}`)}
       ${item('Bots', s.botFill ? 'füllen auf' : 'keine')}${item('Max. Spieler', String(s.maxPlayers || '–'))}
-      ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}${item('Munition pro Abschuss', s.killAmmo === false ? 'aus' : 'an')}
+      ${item('Rundendauer', limitText(this._data().MODES[s.mode], s).time)}${scoreSteps(this._data().MODES[s.mode]).length ? item('Punkteziel', limitText(this._data().MODES[s.mode], s).score) : ''}
+      ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}${item('Munition pro Abschuss', s.killAmmo === false ? 'aus' : s.style === 'realistisch' ? 'an der Leiche' : 'an')}
+      ${item('Waffen von Leichen', s.lootWeapons === false ? 'aus' : 'erlaubt')}
+      ${item('Fahrzeuge', vehOn(s) ? 'Panzer + Geländewagen' : 'aus')}
+      ${vehOn(s) ? `${item('Außenansicht (Fahrzeuge)', s.thirdPerson === false ? 'aus' : 'erlaubt')}${item('Panzer nachladen', s.vehReload === 'automatisch' ? 'automatisch' : 'manuell')}` : ''}
       ${item('Cheat-Menü', s.cheatMenu === false ? 'verboten' : 'erlaubt')}
     </div>`;
   }
@@ -881,6 +903,8 @@ export class NetMenus {
         <button type="button" class="m-icon" data-step="${k}" data-d="1" data-fk="${k}-p" aria-label="${esc(label)} erhöhen"${v >= max ? ' disabled' : ''}>${ICON.plusSmall}</button></div>`;
     const sw = (k, label, sub, on) => `<div class="nr-switch"><span class="nr-lab2"><b>${esc(label)}</b><small>${esc(sub)}</small></span><button type="button" class="m-switch" role="switch" data-toggle="${k}" data-fk="sw-${k}" aria-checked="${!!on}" aria-label="${esc(label)}"><i></i></button></div>`;
     const humans = Array.isArray(this.net.roster) ? this.net.roster.length : 1;
+    const mdef = d.MODES[s.mode] || {};
+    const sSteps = scoreSteps(mdef);
     const teamNote = !teams
       ? `${size * 2} Teilnehmer, jeder für sich${s.botFill ? ' – Bots füllen freie Plätze auf.' : '.'}`
       : s.pvp === 'coop'
@@ -912,14 +936,30 @@ export class NetMenus {
             <div data-room-rec></div>
           </div>
         </div>
+        <div class="nr-two nr-counts">
+          <div class="nr-field">
+            <h3 class="nr-lab">Rundendauer</h3>
+            ${stepper('timeLimit', 'Rundendauer', timeIdx(mdef, s), 0, TIME_STEPS.length - 1, esc(limitText(mdef, s).time))}
+          </div>
+          ${sSteps.length ? `<div class="nr-field">
+            <h3 class="nr-lab">Punkteziel</h3>
+            ${stepper('scoreLimit', 'Punkteziel', sSteps.indexOf(s.scoreLimit ?? mdef.scoreLimit), 0, sSteps.length - 1, esc(limitText(mdef, s).score))}
+          </div>` : ''}
+        </div>
         <div class="nr-two">
           ${sw('botFill', 'Bots füllen auf', 'Freie Plätze bekommen Bots', s.botFill !== false)}
           ${sw('public', 'Öffentlich', 'In der Liste öffentlicher Spiele und für „Schnell spielen“', !!s.public)}
         </div>
         <div class="nr-two">
           ${sw('stamina', 'Ausdauer', s.stamina === false ? 'Aus: unbegrenzt sprinten, rutschen, springen – für alle' : 'Sprinten, Rutschen und Springen kosten Ausdauer', s.stamina !== false)}
-          ${sw('killAmmo', 'Munition pro Abschuss', s.killAmmo === false ? 'Aus: nur die Startmunition' : 'Jeder Abschuss bringt ein Magazin (MG: 20 Schuss)', s.killAmmo !== false)}
+          ${VEH_MODES.has(s.mode) ? sw('vehicles', 'Fahrzeuge', 'Panzer und Geländewagen für beide Teams', vehOn(s)) : ''}
+          ${sw('killAmmo', 'Munition pro Abschuss', s.killAmmo === false ? 'Aus: nur die Startmunition' : s.style === 'realistisch' ? 'Realistisch: Munition an der Leiche aufsammeln (Taste F)' : 'Jeder Abschuss bringt ein Magazin (MG: 20 Schuss)', s.killAmmo !== false)}
+          ${sw('lootWeapons', 'Waffen von Leichen', s.lootWeapons === false ? 'Aus: nur die eigene Ausrüstung' : 'Waffe eines Gefallenen aufheben (Taste F halten)', s.lootWeapons !== false)}
         </div>
+        ${vehOn(s) ? `<div class="nr-two">
+          ${sw('thirdPerson', 'Außenansicht (Fahrzeuge)', '3P-Kamera in Fahrzeugen erlaubt', s.thirdPerson !== false)}
+          ${seg('vehReload', [['manuell', 'Manuell', 'Ladeschütze lädt von Hand'], ['automatisch', 'Automatisch', 'Nachladen nach Zeit']], s.vehReload === 'automatisch' ? 'automatisch' : 'manuell', 'Panzer nachladen')}
+        </div>` : ''}
         <div class="nr-two">
           ${sw('cheatMenu', 'Cheat-Menü', s.cheatMenu === false ? 'Verboten: das Menü öffnet sich bei niemandem' : 'Erlaubt (alle Modi): wer es nutzt, trägt ein Symbol in der Punktetabelle', s.cheatMenu !== false)}
         </div>
@@ -1019,13 +1059,24 @@ export class NetMenus {
       const d = Number(ds.d) || 0;
       if (ds.step === 'maxPlayers') this._update({ maxPlayers: clampInt((s.maxPlayers || 8) + d, Math.max(2, (net.roster || []).length), MAX_PLAYERS) });
       else if (ds.step === 'teamSize') this._update({ teamSize: clampInt((s.teamSize || 6) + d, 1, MAX_TEAM) });
+      else if (ds.step === 'timeLimit') {
+        const m = this._data().MODES[s.mode] || {};
+        const i = clampInt(timeIdx(m, s) + d, 0, TIME_STEPS.length - 1);
+        this._update({ timeLimit: TIME_STEPS[i] || null });
+      } else if (ds.step === 'scoreLimit') {
+        const m = this._data().MODES[s.mode] || {};
+        const st = scoreSteps(m);
+        const i = clampInt(st.indexOf(s.scoreLimit ?? m.scoreLimit) + d, 0, st.length - 1);
+        this._update({ scoreLimit: st[i] === m.scoreLimit ? null : st[i] });
+      }
       return;
     }
     if (ds.toggle) {
       const s = net.room.settings;
-      // Standard an (fehlt der Wert, gilt an): botFill, stamina, killAmmo, cheatMenu
-      const defOn = ds.toggle === 'botFill' || ds.toggle === 'stamina' || ds.toggle === 'killAmmo' || ds.toggle === 'cheatMenu';
-      this._update({ [ds.toggle]: defOn ? s[ds.toggle] === false : !s[ds.toggle] }, 'toggle');
+      // Standard an (fehlt der Wert, gilt an): botFill, stamina, killAmmo, cheatMenu, thirdPerson, vehicles (solange VEH_DEFAULT_ON)
+      const defOn = ['botFill', 'stamina', 'killAmmo', 'cheatMenu', 'thirdPerson', 'lootWeapons'];
+      if (VEH_DEFAULT_ON) defOn.push('vehicles');
+      this._update({ [ds.toggle]: defOn.includes(ds.toggle) ? s[ds.toggle] === false : !s[ds.toggle] }, 'toggle');
     }
   }
 

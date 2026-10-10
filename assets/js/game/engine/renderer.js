@@ -14,11 +14,11 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261010113749';
-import { estimateMemory } from './post/memory.js?v=20261010113749';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261010113749';
-import { resetFormatCache } from './post/common.js?v=20261010113749';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261010113749'; // Erweitert-Grafik (S9, ui-controls)
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261010152042';
+import { estimateMemory } from './post/memory.js?v=20261010152042';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261010152042';
+import { resetFormatCache } from './post/common.js?v=20261010152042';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261010152042'; // Erweitert-Grafik (S9, ui-controls)
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 

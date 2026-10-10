@@ -16,16 +16,16 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261010113749';
-import { ICON, medalBadge } from './icons.js?v=20261010113749';
-import { Minimap } from './minimap.js?v=20261010113749';
-import { Killfeed } from './killfeed.js?v=20261010113749';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261010113749';
-import { StrikeTargeting } from './strike-target.js?v=20261010113749';
-import { actionKey } from './settings/keys.js?v=20261010113749';
-import { DeployScreen } from './deploy.js?v=20261010113749';
-import { CommandWheel } from './command-wheel.js?v=20261010113749';
-import { DroneHud } from './drone-hud.js?v=20261010113749';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261010152042';
+import { ICON, medalBadge } from './icons.js?v=20261010152042';
+import { Minimap } from './minimap.js?v=20261010152042';
+import { Killfeed } from './killfeed.js?v=20261010152042';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261010152042';
+import { StrikeTargeting } from './strike-target.js?v=20261010152042';
+import { actionKey } from './settings/keys.js?v=20261010152042';
+import { DeployScreen } from './deploy.js?v=20261010152042';
+import { CommandWheel } from './command-wheel.js?v=20261010152042';
+import { DroneHud } from './drone-hud.js?v=20261010152042';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -328,6 +328,36 @@ export class HUD {
     s.on('streak:ready', ({ actor, streakId }) => { if (actor === P()) this._notice(`${this._streakName(streakId)} bereit.`, 'gold', this._keyFor(`streak${this._streakIndex(streakId) + 1}`), NOTICE_LIFE, `ready:${streakId}`); });
     s.on('streak:denied', ({ streakId, need }) => this._notice(`${this._streakName(streakId)}: noch ${need} ${need === 1 ? 'Abschuss' : 'Abschüsse'}.`, 'dim'));
     s.on('streak:activate', (e) => this._onStreakActivate(e));
+    // Interaktionspunkte der Karte (mappoints.js)
+    s.on('point:use', ({ actor, point, count }) => {
+      if (actor !== P()) return;
+      const e = point.def.effect;
+      const text = e === 'ammo' ? 'Munition aufgefüllt.' : e === 'heal' ? 'Vollständig geheilt.' : `${point.def.name}: ${count} Gegner markiert.`;
+      this._notice(text, 'gold', null, NOTICE_LIFE, 'point');
+    });
+    s.on('point:denied', ({ actor, point, reason, left }) => {
+      if (actor !== P()) return;
+      this._notice(reason === 'voll' ? 'Munition ist schon voll.' : reason === 'gesund' ? 'Du bist unverletzt.' : `${point.def.name}: noch ${Math.ceil(left)} s.`, 'dim', null, NOTICE_LIFE, 'point');
+    });
+    s.on('loot:take', ({ actor, kind, amount, weaponId }) => {
+      if (actor !== P()) return;
+      const w = weaponId && this.G.data && this.G.data.WEAPONS ? this.G.data.WEAPONS[weaponId] : null;
+      this._notice(kind === 'ammo' ? (amount ? `Munition aufgenommen (+${amount}).` : 'Keine passende Munition.') : `${w ? w.name : 'Waffe'} aufgehoben.`, kind === 'ammo' && !amount ? 'dim' : 'gold', null, NOTICE_LIFE, 'point');
+    });
+    // Bauen (building.js)
+    s.on('build:start', ({ actor, name }) => { if (actor === P()) this._notice(`${name} wird gebaut …`, 'gold', null, NOTICE_LIFE, 'build'); });
+    s.on('build:done', ({ actor, name }) => { if (actor === P()) this._notice(`${name} fertig.`, 'gold', null, NOTICE_LIFE, 'build'); });
+    s.on('build:destroyed', ({ owner, name }) => { if (owner === P()) this._notice(`${name} zerstört!`, 'dim', null, NOTICE_LIFE, 'build'); });
+    s.on('build:denied', ({ actor }) => { if (actor === P()) this._notice('Hier ist kein Platz zum Bauen.', 'dim', null, NOTICE_LIFE, 'build'); });
+    // Klassen-Fähigkeit (Taste J): Einsatz, Abklingzeit, wieder bereit
+    const abName = (id) => (P() && P().ability && P().ability.id === id ? P().ability.name : 'Fähigkeit');
+    s.on('ability:ready', ({ actor, id }) => { if (actor === P()) this._notice(`${abName(id)} bereit.`, 'gold', this._keyFor('faehigkeit'), NOTICE_LIFE, 'ability'); });
+    s.on('ability:denied', ({ actor, id, left, reason }) => { if (actor === P()) this._notice(reason === 'voll' ? 'Munition ist schon voll.' : `${abName(id)}: noch ${Math.ceil(left)} s.`, 'dim', null, NOTICE_LIFE, 'ability'); });
+    s.on('ability:use', ({ actor, id, count }) => {
+      if (actor !== P()) return;
+      const text = id === 'aufklaerungspuls' ? `Aufklärungspuls: ${count} Gegner markiert.` : id === 'nachschub' ? 'Nachschub: Munition aufgefüllt.' : `${abName(id)} aktiv!`;
+      this._notice(text, 'gold', null, NOTICE_LIFE, 'ability');
+    });
     s.on('streak:destroyed', (e) => this._onStreakDestroyed(e));
     s.on('streak:expired', ({ owner, streakId }) => { if (owner === P() && streakId !== 'drohne') this._notice('Wachgeschütz abgebaut.', 'dim'); });
     s.on('streak:refused', ({ actor, streakId, reason }) => {
@@ -340,6 +370,7 @@ export class HUD {
     s.on('objective:captured', (e) => this._onFlag(e, 'captured'));
     s.on('objective:neutral', (e) => this._onFlag(e, 'neutral'));
     s.on('mode:overtime', () => this._notice(this._overtimeText(), 'signal', null, 4));
+    s.on('mode:notice', ({ text, tone } = {}) => { if (text) this._notice(text, tone || 'signal', null, 4, 'mode'); }); // z. B. TDM Ultimate (Runden)
     s.on('gun:promote', (e) => this._onGunPromote(e));
     s.on('gun:demote', (e) => { if (e.actor === P()) this._notice(e.by ? `Zurückgestuft von ${e.by.name}.` : 'Zurückgestuft.', 'enemy'); });
     s.on('training:parcours', (e) => this._onParcours(e));
@@ -1457,7 +1488,7 @@ export class HUD {
       for (const b of btns) {
         const id = b.dataset.streak;
         const d = id && st.byId[id];
-        // in diesem Spiel nicht verfügbare Prämie (online nur die Drohne): Knopf ausblenden
+        // in diesem Spiel nicht verfügbare Prämie (online ohne Wachgeschütz): Knopf ausblenden
         const off = id && !d ? '1' : '';
         if ((b.dataset.off || '') !== off) { if (off) b.dataset.off = off; else delete b.dataset.off; }
         if (!d) continue;
@@ -1474,10 +1505,18 @@ export class HUD {
     const G = this.G;
     const mode = G.mode;
     let pr = null;
-    if (mode && mode.id === 'training' && G.player && G.player.alive && mode.targets && mode.targets.length) {
+    const B = G.building && G.building.mode;
+    if (B) {
+      pr = { text: `Bauen: ${B.ok ? '' : '(kein Platz) '}${B.name} · Klick setzt · ${this._keyFor('bauen') || 'K'} weiter`, key: this._keyFor('interact'), action: () => G.building.close() };
+    } else if (mode && mode.id === 'training' && G.player && G.player.alive && mode.targets && mode.targets.length) {
       const P = mode.parcours;
       const running = P.state === 'running' || P.state === 'countdown';
       pr = { text: running ? 'Parcours abbrechen' : 'Parcours starten', key: this._keyFor('interact'), action: () => mode.interact() };
+    } else if (G.doors && G.doors.near && !(G.points && G.points.near)) {
+      pr = { text: G.doors.near.text, key: this._keyFor('interact'), action: () => G.doors.request(G.doors.near.i, 't') };
+    } else if (G.points && G.points.near) {
+      const { point, left, text } = G.points.near;
+      pr = { text: text || `${point.def.name} · ${left > 0 ? `noch ${left} s` : point.def.act}`, key: this._keyFor('interact'), action: () => G.points.use() };
     }
     this._prompt = pr;
     const b = this.promptBtn;

@@ -15,6 +15,9 @@
 //   • Positionsverlauf (G.net.history) jedes Bild für die Trefferprüfung.
 //   • VR: Zustände eines VR-Clients tragen den VR-Zusatz (Kopf/Hände/Schussrichtung, protocol.js) → puppet.netPose.vr und
 //     unverändert in die Schnappschüsse; der Host-Spieler in VR schickt seinen eigenen (sync-common vrPoseOf).
+//   • Fahrzeuge (Raum-Einstellung „Fahrzeuge“, panzer-mp.md §C): G.vehicles.net (vehicles/net.js) – Liste bei Änderung,
+//     Block-Anhang je Empfänger im Schnappschuss, Sitz-Absicht aus dem Zustand; eine sitzende Puppe prüft der Anti-Cheat
+//     nicht (der Host heftet sie an den Sitz).
 //   • Serienprämien (online nur die FPV-Drohne, modes/streaks.js): Fortschritt jedes Clients läuft hier (Puppe), der Client
 //     bekommt ihn als 'ev' sk; Anfrage 'streak' {id, p, y, pi} → mode.streaks.activate (Host bestätigt) → 'ev' sa an ihn,
 //     'ev' sv an alle anderen. Drohne eines Clients: 'drone' {a:'p'} Lage (geprüft: Weg-Budget, Reichweite), {a:'x'}
@@ -22,11 +25,13 @@
 //     {a:'h'} Treffer eines Clients auf eine Drohne (Waffe, Feuerrate, Reichweite, Sicht). Alle Drohnen gehen mit 12 Hz als
 //     'ev' dr an alle, ihr Ende als 'ev' de.
 import * as THREE from 'three';
-import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261010113749';
-import { netPoseOf } from '../bots/bot.js?v=20261010113749';
-import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261010113749';
-import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261010113749';
-import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261010113749';
+import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261010152042';
+import { ABILITIES } from '../../shared/classes.data.js?v=20261010152042';
+import { MOUNT_WEAPON } from '../mappoints.js?v=20261010152042';
+import { netPoseOf } from '../bots/bot.js?v=20261010152042';
+import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261010152042';
+import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261010152042';
+import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261010152042';
 
 const nowSec = () => performance.now() / 1000;
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -50,7 +55,7 @@ const INTEREST_MIN = 12;
 export class HostSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261010113749').NetSystem} net
+   * @param {import('./index.js?v=20261010152042').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'host', teamSize, botFill, pvp, ffa …)
    */
   constructor(G, net, cfg = {}) {
@@ -67,6 +72,8 @@ export class HostSync {
     this._lastThrow = new Map();
     this._lastOrder = new Map();
     this._lastStreak = new Map();
+    this._abilityAt = new Map(); // Client → nächste erlaubte Klassen-Fähigkeit (Echtzeit)
+    this._regens = new Map(); // Client → {until, rate}: Regeneration der Puppe (Klassen-Fähigkeit)
     this._droneAt = 0;
     this._lastEnv = new Map();
     this._hitSerial = new Map(); // Client → letzte Schussnummer mit Treffer (Trefferstatistik)
@@ -94,6 +101,11 @@ export class HostSync {
       net.on('hold', (m, from) => this._onHold(m, from)),
       net.on('order', (m, from) => this._onOrder(m, from)),
       net.on('streak', (m, from) => this._onStreak(m, from)),
+      net.on('ability', (m, from) => this._onAbility(m, from)),
+      net.on('loot', (m, from) => this._onLoot(m, from)),
+      net.on('door', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.doors) this.G.doors.netRequest(p, m); }),
+      net.on('build', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.building) this.G.building.netRequest(p, m); }),
+      net.on('point', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && m && this.G.points) this.G.points.netUse(p, m.i, from); }),
       net.on('drone', (m, from) => this._onDrone(m, from)),
       net.onFast((buf, from) => this._onFast(buf, from)),
     ];
@@ -218,14 +230,23 @@ export class HostSync {
     if (net.history) for (const a of G.actors) if (Number.isInteger(a.netId) && a.position) net.history.record(a.netId, t, a.position.x, a.position.y, a.position.z);
     const now = nowSec();
     if (this._holds.size) this._tickHolds(now);
+    if (this._regens.size) this._tickRegens();
     if (now >= this._rebalanceAt) { this._rebalanceAt = now + 2; this._rebalance(); }
     if (this._actorsDirty) this._sendActors();
+    const vn = this._vn();
+    if (vn) vn.hostTick();
     this._sendMode(false);
     this._relayDrones(now);
     if (now - this._snapAt >= 1 / SNAPSHOT_HZ - 0.002 && this._ready.size) {
       this._snapAt = now;
       this._sendSnapshot(t);
     }
+  }
+
+  /** Fahrzeug-Vermittler des Hosts (vehicles/net.js) oder null (keine Fahrzeuge in diesem Match). */
+  _vn() {
+    const V = this.G.vehicles;
+    return V && V.attached && V.net && V.net.host ? V.net : null;
   }
 
   _sendSnapshot(t) {
@@ -245,26 +266,35 @@ export class HostSync {
     }
     const tick = ++this._tick;
     const st = this.snapStats;
-    if (!this.interest || ents.length < INTEREST_MIN) {
-      const buf = encodeSnapshot(tick, t, ents);
-      for (const id of this._ready) if (this.net.sendFast(id, buf)) { st.sent++; st.bytes += buf.byteLength; st.ents += ents.length; st.full++; }
+    // Fahrzeugblöcke (einmal je Takt gebaut; Rate je Empfänger unabhängig von INTEREST_MIN – vehicles/net.js blocksFor)
+    const vn = this._vn();
+    const vall = vn ? vn.blocks(tick) : null;
+    if (!this.interest || (ents.length < INTEREST_MIN && !vall)) {
+      const buf = encodeSnapshot(tick, t, ents, vall);
+      const vb = vall ? 2 + vall.length * 60 : 0;
+      for (const id of this._ready) if (this.net.sendFast(id, buf)) { st.sent++; st.bytes += buf.byteLength; st.ents += ents.length; st.full++; st.vbytes = (st.vbytes || 0) + vb; }
       return;
     }
     // Interessenfilter je Empfänger: nah + eigener Eintrag jeden Takt, fern/tot nur im eigenen Fünftel-Takt
     const far2 = FAR_DIST * FAR_DIST;
     const list = [];
+    const filter = ents.length >= INTEREST_MIN;
     for (const id of this._ready) {
       const me = this._puppet(id);
       const mp = me && me.position;
       list.length = 0;
       for (const e of ents) {
-        if (e.id === id || !mp || (tick + e.id) % FAR_EVERY === 0) { list.push(e); continue; }
+        if (!filter || e.id === id || !mp || (tick + e.id) % FAR_EVERY === 0) { list.push(e); continue; }
         if ((e.flags & FLAGS.ALIVE) === 0) continue;
         const dx = e.x - mp.x, dz = e.z - mp.z;
         if (dx * dx + dz * dz <= far2) list.push(e);
       }
-      const buf = encodeSnapshot(tick, t, list);
-      if (this.net.sendFast(id, buf)) { st.sent++; st.bytes += buf.byteLength; st.ents += list.length; if (list.length === ents.length) st.full++; }
+      const vl = vall ? vn.blocksFor(id, me, tick, vall, this.interest) : null;
+      const buf = encodeSnapshot(tick, t, list, vl);
+      if (this.net.sendFast(id, buf)) {
+        st.sent++; st.bytes += buf.byteLength; st.ents += list.length; if (list.length === ents.length) st.full++;
+        if (vl) { st.vbytes = (st.vbytes || 0) + 2 + vl.length * 60; st.vblocks = (st.vblocks || 0) + vl.length; }
+      }
     }
   }
 
@@ -331,12 +361,26 @@ export class HostSync {
     this._ready.add(id);
     this._sendActors(id);
     this._sendActors();
+    const vn = this._vn();
+    if (vn) vn.onAdmit(id); // volle Fahrzeugliste + 1 s alle Blöcke
     this._rebalance();
     if (!p.alive && p.respawnAt == null) G.spawnActor(p);
     this._modeKey = '';
     this._sendMode(true);
     this._sendStreakState(p);
+    // Bauwerke (building.js) des laufenden Matches nachreichen
+    if (G.building) for (const b of G.building.snapshot()) this.net.send(id, { t: 'ev', e: 'bs', ...b });
+    if (G.doors) for (const d of G.doors.snapshot()) this.net.send(id, { t: 'ev', e: 'dr', ...d }); // Türen/Tore (doors.js)
   }
+
+  /** Bauwerk an alle Clients ('ev' bs, building.js spawn). */
+  relayBuild(msg) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'bs', ...msg }); }
+
+  /** Tür/Tor geändert ('ev' dr, doors.js). */
+  relayDoor(msg) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'dr', ...msg }); }
+
+  /** Bauwerk entfernt/zerstört ('ev' bd). */
+  relayBuildEnd(id) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'bd', id }); }
 
   /** Mensch hat den Raum verlassen (Austritt, Kick, Verbindungsabbruch): Puppe entfernen, Bots ausgleichen. */
   _drop(id) {
@@ -348,6 +392,8 @@ export class HostSync {
     this._lastStreak.delete(id);
     this._lastEnv.delete(id);
     this._hitSerial.delete(id);
+    const vn = this._vn();
+    if (vn) vn.onDrop(id);
     if (!this.active) return;
     const p = this._puppet(id);
     if (p) {
@@ -489,9 +535,16 @@ export class HostSync {
     p._netSeq = d.seq;
     const e = d.entity;
     const clientAlive = (e.flags & FLAGS.ALIVE) !== 0;
+    // Fahrzeug: Sitz-Absicht übernehmen (nur wenn die Puppe dort sitzt); sitzend prüft der Anti-Cheat die Lage nicht –
+    // der Host heftet die Puppe an den Sitz (Aussteigen setzt den Anker neu: vehicles/net.js 'vo')
+    if (p.vehicle) {
+      const vn = this._vn();
+      if (vn && e.veh) vn.applyInput(p, e.veh);
+    }
     // Anker nur bei Tod der Puppe neu setzen – meldet der Client „tot“, während sie lebt (Spawn unterwegs), bleibt er
-    const r = this.net.checkState(from, { x: e.x, y: e.y, z: e.z, flags: e.flags }, {
+    const r = p.vehicle ? { ok: true, reason: 'fahrzeug' } : this.net.checkState(from, { x: e.x, y: e.y, z: e.z, flags: e.flags }, {
       alive: p.alive, clientAlive, rtt: this.net.peerRtt(from) / 1000, hostGap: this._frameAt != null ? nowSec() - this._frameAt : 0, ct: d.clientTime,
+      carry: this._carrySpeed(p),
     });
     if (!p.alive || !clientAlive || !r || !r.ok) return; // Rücksetzung/veraltet: Puppe bleibt an der letzten gültigen Stelle
     const np = p._ownPose || (p._ownPose = { pos: [0, 0, 0], vel: [0, 0, 0] });
@@ -507,6 +560,24 @@ export class HostSync {
     p.netPose = np;
   }
 
+  /**
+   * Zusatztempo auf/neben fahrenden Fahrzeugen (Deck, ≤ 4 m von der Wanne): Fahrzeugtempo (m/s) – wer mitfährt, bewegt
+   * sich schneller als zu Fuß (Anti-Cheat ctx.carry). 0 ohne Fahrzeuge.
+   */
+  _carrySpeed(p) {
+    const V = this.G.vehicles;
+    if (!V || !V.attached || !V.list.length || !p.position) return 0;
+    let best = 0;
+    for (const v of V.list) {
+      const sp = v.body.vel.length();
+      if (sp < 0.5 || sp <= best) continue;
+      if (v.body.pos.distanceToSquared(p.position) > 100) continue;
+      if (typeof V._boxDistance === 'function' && V._boxDistance(v, p.position, 0.9) > 4) continue;
+      best = sp;
+    }
+    return best;
+  }
+
   /** Waffen, die der Mensch hinter der Puppe tragen darf (Roster, gemeldete/aktuelle Ausrüstung, Messer). */
   _weaponsOf(p, id) {
     const out = new Set(['knife']);
@@ -516,6 +587,10 @@ export class HostSync {
     const lw = loadoutWeapons(this.net.rosterEntry(id) && this.net.rosterEntry(id).loadout);
     if (lw) for (const w of lw) out.add(w);
     if (p.weapon && Array.isArray(p.weapon.slots)) for (const s of p.weapon.slots) if (s && s.id) out.add(s.id);
+    if (p._lootWeapons) for (const w of p._lootWeapons) out.add(w); // von Leichen aufgehoben (_onLoot)
+    // an einer MG-Stellung (mappoints.js mount): deren Waffe
+    const em = this.G.world && this.G.world.emplacements;
+    if (em && p.position && em.some((e) => Math.hypot(e.x - p.position.x, e.z - p.position.z) < 3)) out.add(MOUNT_WEAPON);
     for (const id2 of Object.keys(WEAPONS)) if (WEAPONS[id2].cls === 'melee') out.add(id2); // Nahkampfwaffe gehört zur Klasse
     // Modus-Ausrüstung mit Übergang (Waffenspiel: Nachbarstufen, solange der Client die neue Stufe noch nicht hat)
     const mode = this.G.mode;
@@ -592,7 +667,7 @@ export class HostSync {
     // Cheat-Menü „Messer ohne Abklingzeit“: bei erlaubtem Menü (Raum-Einstellung) und gemeldetem Cheat keine Feuerrate
     const room = this.net.room && this.net.room.settings;
     const entry = this.net.rosterEntry(from);
-    if (!(room && room.cheatMenu === false) && entry && entry.cheat === true) ctx.noRate = true;
+    if (!(room && room.cheatMenu === false) && entry && entry.cheat === true) { ctx.noRate = true; ctx.meleeReach = 2.6; }
     const r = this.net.checkHit(from, { ...m, t: 'melee' }, ctx);
     if (!r || !r.ok || !(r.dmg > 0)) return;
     p.getEyePosition(_eye);
@@ -681,14 +756,59 @@ export class HostSync {
     if (st.byId[m.id] && p.alive) {
       const opts = {};
       if (m.id === 'drohne') { opts.position = vec3(m.p); opts.yaw = Number(m.y); opts.pitch = Number(m.pi); }
+      // Luftschlag: Ziel des Clients (Zielkarte), höchstens 500 m von der Puppe – sonst wählt der Host
+      if (m.id === 'strike') { const tp = vec3(m.t); if (tp && tp.distanceTo(p.position) < 500) opts.target = tp; }
       try { ok = !!st.activate(p, m.id, opts); } catch (err) { ok = false; console.error('[net] Prämie', err); }
       if (ok && m.id === 'drohne') d = st.droneOf(p);
     }
+    const uavLeft = ok && m.id === 'uav' ? this._uavLeft(p) : undefined;
     this.net.send(from, {
-      t: 'ev', e: 'sa', id: m.id.slice(0, 16), ok: ok ? 1 : 0, d: d ? d.netId : 0,
+      t: 'ev', e: 'sa', id: m.id.slice(0, 16), ok: ok ? 1 : 0, d: d ? d.netId : 0, r: uavLeft,
       p: d ? arr3(d.position, 2) : undefined, pi: d ? rnd(d.pitch, 3) : undefined, bt: d ? rnd(d.battery, 2) : undefined,
     });
     if (!ok) this._sendStreakState(p);
+  }
+
+  /**
+   * Klassen-Fähigkeit eines Clients ('ability' {id}): passt sie zur Klasse der Puppe und ist sie wieder bereit (Echtzeit,
+   * 10 % Spielraum für langsame Geräte), heilt der Host die Puppe bei Regeneration (_tickRegens). Kampfrausch,
+   * Nachschub und Aufklärungspuls wirken nur beim Client selbst (Nachladen, Rückstoß, Munition, eigene Minikarte).
+   */
+  _onAbility(m, from) {
+    if (!this.active || this.ended || !m || typeof m.id !== 'string') return;
+    const p = this._puppet(from);
+    const ab = ABILITIES[m.id];
+    if (!p || !p.alive || !ab || ab.cls !== (p.cls || (p.loadout && p.loadout.cls))) return;
+    const t = nowSec();
+    if (t < (this._abilityAt.get(from) || 0)) return;
+    this._abilityAt.set(from, t + ab.cooldown * 0.9);
+    if (ab.regen) this._regens.set(from, { until: this.G.time.elapsed + ab.duration, rate: ab.regen }); // Spielzeit (wie die Heilung)
+  }
+
+  /**
+   * Waffe von einer Leiche ('loot' {w, v}): Raum erlaubt es, der Gefallene (Netz-Id v) ist tot, liegt höchstens 6 m
+   * von der Puppe und trug diese Waffe → für die Puppe bis zu ihrem Tod erlaubt (_weaponsOf).
+   */
+  _onLoot(m, from) {
+    const G = this.G;
+    const p = this._puppet(from);
+    if (!this.active || this.ended || !p || !p.alive || !m || typeof m.w !== 'string' || !WEAPONS[m.w]) return;
+    if (this.net.room && this.net.room.settings && this.net.room.settings.lootWeapons === false) return;
+    const v = G.actors.find((a) => a.netId === m.v);
+    if (!v || v.alive || !v.position || v.position.distanceTo(p.position) > 6) return;
+    const vw = [v.weapon && v.weapon.currentDef && v.weapon.currentDef.id, v.loadout && v.loadout.primary, v.loadout && v.loadout.secondary];
+    if (!vw.includes(m.w)) return;
+    if (!p._lootWeapons) p._lootWeapons = new Set();
+    p._lootWeapons.add(m.w);
+  }
+
+  _tickRegens() {
+    const { dt, elapsed } = this.G.time;
+    for (const [id, r] of this._regens) {
+      const p = this._puppet(id);
+      if (!p || !p.alive || elapsed >= r.until) { this._regens.delete(id); continue; }
+      if (p.health < p.maxHealth) p.health = Math.min(p.maxHealth, p.health + r.rate * dt);
+    }
   }
 
   /** Drohne eines Clients ('drone' {a: 'p'|'x'|'e'|'h', d, …}): Prüfung und Wirkung in mode.streaks (net*-Methoden). */
@@ -729,7 +849,17 @@ export class HostSync {
     const a = e && e.actor;
     if (!a || !Number.isInteger(a.netId) || !this.net.online || typeof e.streakId !== 'string') return;
     this._sendStreakState(a);
-    this.net.send('others', { t: 'ev', e: 'sv', o: a.netId, id: e.streakId }, a.isRemoteHuman ? a.netId : null);
+    const msg = { t: 'ev', e: 'sv', o: a.netId, id: e.streakId };
+    if (e.streakId === 'uav') msg.r = this._uavLeft(a); // Aufklärer: Restdauer → Abbild zeigt die Gegner seiner Seite
+    if (e.streakId === 'strike' && e.target) msg.p = arr3(e.target, 1);
+    this.net.send('others', msg, a.isRemoteHuman ? a.netId : null);
+  }
+
+  /** Restdauer (s) des Aufklärers der Seite von a (Host-Zeit), sonst undefined. */
+  _uavLeft(a) {
+    const st = this.G.mode && this.G.mode.streaks;
+    const u = st && st.uav ? st.uav.get(st._uavKey(a)) : null;
+    return u ? rnd(Math.max(0, u.until - this.G.time.elapsed), 1) : undefined;
   }
 
   /** Ende einer Drohne an alle ('ev' de: Netz-Id, Besitzer, Grund, Schütze beim Abschuss). */

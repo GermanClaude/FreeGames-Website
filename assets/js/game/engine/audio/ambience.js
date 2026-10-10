@@ -3,7 +3,7 @@
 import {
   TAU, len, buf, white, pink, brown, filt, sweep, sweepSteps, expGlide, env, ad, ahr, bell, mix, mixAt, drive, normalize,
   sine, modal, metalModes, click, burst, grains, glottal, formant, reverb, reverbSteps, echoes, panMix, wrapLoop, Saw, clamp, lerp,
-} from './dsp.js?v=20261010113749';
+} from './dsp.js?v=20261010152042';
 
 // Abtastraten nach gemessener Bandbreite (Anteil oberhalb 0,45 · Rate ≤ ca. −40 dB)
 export const BED_RATE = { harbor: 16000, desert: 22050, industrial: 16000, range: 22050 };
@@ -12,7 +12,7 @@ export const EVENT_RATE = {
   amb_drip: 16000, amb_steam: 32000, amb_groan: 16000, amb_arc: 32000, amb_bird: 22050, amb_crow: 16000, amb_pa: 16000, loop_drone: 24000,
   amb_bell: 22050,
 };
-export const MAP_AMBIENCE = { hafen: 'harbor', altstadt: 'desert', werk: 'industrial', range: 'range', grenzland: 'range' };
+export const MAP_AMBIENCE = { hafen: 'harbor', altstadt: 'desert', werk: 'industrial', bibliothek: 'industrial', range: 'range', grenzland: 'range' };
 
 /** Weich interpolierte Zufallskurve (Kosinus) mit Stützstellen alle step Sekunden. */
 function smoothRandom(R, T, step, lo, hi) {

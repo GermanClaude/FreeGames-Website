@@ -9,8 +9,8 @@
 //   width, shoulder, pts, bridge? { a: [x, z], b: [x, z], y } }], fields [{ x, z, w, d, ry, kind 'acker'|'wiese' }],
 //   forests [{ x, z, r }]
 // Reihenfolge: Grundform → Details → Fluss → Bauflächen → Dämme → Straßen (planieren) → Felder → Splat/Maske.
-import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261010113749';
-import { Heightfield } from './heightfield.js?v=20261010113749';
+import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261010152042';
+import { Heightfield } from './heightfield.js?v=20261010152042';
 
 /** Catmull-Rom-Kurve durch pts ([[x, z], …]), Abtastung ~step m. → [[x, z], …] */
 export function sampleSpline(pts, step = 2) {

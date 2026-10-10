@@ -18,15 +18,17 @@
 //   • Würfe/Raketen: localThrow/localRocket → 'throw' an den Host + Darstellungs-Geschoss; Zündung kommt als 'ev'.
 //   • 'hit'/'kill' → lokale Ereignisse (Blut, Trefferrichtung, Abschussliste, Todesbildschirm), 'ev' → Granaten, Raketen,
 //     Explosionen, eigene Punkte/Medaillen; 'end' → Endbildschirm mit Ergebnis + Zusammenfassung des Hosts.
+//   • Fahrzeuge (panzer-mp.md §C): Fahrzeug-Anhang der Schnappschüsse → G.vehicles.net (Abbild, gleiche Abspieluhr),
+//     eigene Sitz-Absicht als Anhang des Zustands; die Liste 'vehicles' wird gepuffert, bis das Abbild steht.
 //   • Serienprämien (online nur die FPV-Drohne; mode.streaks als Abbild, modes/streaks.js): 'ev' sk eigener Fortschritt,
 //     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
 //     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261010113749';
-import { netPoseOf } from '../bots/bot.js?v=20261010113749';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261010113749';
-import { HOST_ID } from './index.js?v=20261010113749';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261010113749';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261010152042';
+import { netPoseOf } from '../bots/bot.js?v=20261010152042';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261010152042';
+import { HOST_ID } from './index.js?v=20261010152042';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261010152042';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -46,7 +48,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261010113749').NetSystem} net
+   * @param {import('./index.js?v=20261010152042').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {
@@ -91,6 +93,8 @@ export class ClientSync {
       net.on('ev', (m) => this._onEv(m)),
       net.on('end', (m) => this._onEnd(m)),
       net.on('correct', (m) => this._onCorrect(m)),
+      // Fahrzeugliste (vehicles/net.js wertet sie aus; vor dem Anschluss des Abbilds hier gepuffert)
+      net.on('vehicles', (m, from) => { if (from === HOST_ID && m && Array.isArray(m.list)) this.lastVehicles = m; }),
       net.onFast((buf) => this._onFast(buf)),
     ];
     // Wiedereinstieg anhalten („Ausrüsten“ im Todesbildschirm) bzw. „Einsatz“: der Host hält die Puppe genauso an
@@ -215,7 +219,16 @@ export class ClientSync {
     s.lean = np.lean; s.shots = np.shots; s.proneBlend = np.proneBlend;
     // VR: Kopf/Hände/Schussrichtung als Zusatzblock (sonst null – Paket wie ohne VR)
     s.vr = vrPoseOf(this.G, p, this._vr || (this._vr = newVrPose()));
+    // Fahrzeug: eigene Sitz-Absicht (sonst null – Paket wie ohne Fahrzeug)
+    const vn = this._vn();
+    s.veh = vn ? vn.inputState() : null;
     this.net.sendFast(HOST_ID, encodeState(++this._seq, this.net.serverTime(), s));
+  }
+
+  /** Fahrzeug-Abbild (vehicles/net.js) oder null. */
+  _vn() {
+    const V = this.G.vehicles;
+    return V && V.attached && V.net && V.net.replica ? V.net : null;
   }
 
   /* ================================================================ Schnappschüsse */
@@ -243,6 +256,7 @@ export class ClientSync {
       c.jit = c.jit * 0.92 + Math.min(0.5, c.off - o) * 0.08;
     }
     c.lastArr = now;
+    if (d.vehicles && d.vehicles.length) { const vn = this._vn(); if (vn) vn.onSnapshot(t, d.vehicles); }
     for (const e of d.entities) {
       if (e.id === this.selfId) { this.self = { t, e }; continue; }
       let list = this.buf.get(e.id);
@@ -554,8 +568,10 @@ export class ClientSync {
     }
     if (target.alive && Number.isFinite(m.hp)) target.health = m.hp;
     target.lastDamageTime = G.time.elapsed;
-    // eigene Treffer wurden schon vorhergesagt angezeigt (claimDamage) – nur die Körperreaktion fehlt noch
-    if (attacker !== p) G.events.emit('actor:hit', payload);
+    // eigene Treffer wurden schon vorhergesagt angezeigt (claimDamage) – nur die Körperreaktion fehlt noch; Treffer der
+    // eigenen Fahrzeugwaffe (MG/Kanone, Überfahren) rechnet nur der Host → hier anzeigen
+    const vehWeapon = !!(m.weapon && G.vehicles && typeof G.vehicles.weaponName === 'function' && G.vehicles.weaponName(m.weapon));
+    if (attacker !== p || vehWeapon) G.events.emit('actor:hit', payload);
     if (typeof target.onDamaged === 'function' && target.alive) target.onDamaged(payload);
   }
 
@@ -618,6 +634,9 @@ export class ClientSync {
     const W = G.weapons;
     const owner = this._actor(m.o);
     switch (m.e) {
+      case 'bs': if (G.building) G.building.applyNet(m, (id) => (id === this.selfId ? G.player : this._actor(id))); return; // Bauwerk (building.js)
+      case 'bd': if (G.building) G.building.remove(m.id); return;
+      case 'dr': if (G.doors) G.doors.applyNet(m); return; // Tür/Tor (doors.js)
       case 'gr': {
         if (!W) return;
         const gs = W.grenadeSystem;
@@ -795,6 +814,37 @@ export class ClientSync {
     });
     if (opts.inHand || !G.weapons) return null;
     return G.weapons.grenadeSystem.throw(actor, type, { ...opts, remote: true, cid });
+  }
+
+  /** Klassen-Fähigkeit eingesetzt ('ability' {id}): der Host überträgt die Regeneration auf die Leben der Puppe. */
+  sendAbility(id) {
+    if (!this.active || this.ended || typeof id !== 'string') return;
+    this.net.send(HOST_ID, { t: 'ability', id: id.slice(0, 24) });
+  }
+
+  /** Tür/Tor ('door' {i, a: t|k|h, d}): der Host schaltet bzw. verrechnet den Treffer und verteilt 'ev' dr. */
+  sendDoor(i, a, d = 0) {
+    if (!this.active || this.ended || !Number.isInteger(i)) return;
+    this.net.send(HOST_ID, { t: 'door', i, a: a === 'k' || a === 'h' ? a : 't', d: Math.round(d) });
+  }
+
+  /** Bauwunsch ('build' {k, p, ry}): der Host prüft und verteilt das Bauwerk ('ev' bs). */
+  sendBuild(k, p, ry) {
+    if (!this.active || this.ended || typeof k !== 'string' || !p) return;
+    const r2 = (v) => Math.round(v * 100) / 100;
+    this.net.send(HOST_ID, { t: 'build', k: k.slice(0, 16), p: [r2(p.x), r2(p.y), r2(p.z)], ry: Math.round(ry * 1000) / 1000 });
+  }
+
+  /** Waffe von einer Leiche aufgehoben ('loot' {w, v}): der Host erlaubt sie danach für die Puppe (Anti-Cheat). */
+  sendLoot(w, v) {
+    if (!this.active || this.ended || typeof w !== 'string') return;
+    this.net.send(HOST_ID, { t: 'loot', w: w.slice(0, 24), v: Number.isInteger(v) ? v : -1 });
+  }
+
+  /** Heilung an einem Kartenpunkt ('point' {i}, mappoints.js): der Host heilt die Puppe. */
+  sendPoint(i) {
+    if (!this.active || this.ended || !Number.isInteger(i)) return;
+    this.net.send(HOST_ID, { t: 'point', i });
   }
 
   /** Serienprämie beim Host anfragen ('streak' {id, p, y, pi}) – Antwort kommt als 'ev' sa. */

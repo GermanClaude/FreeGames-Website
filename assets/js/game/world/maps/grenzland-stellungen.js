@@ -2,7 +2,7 @@
 // Engstellen (Brückenköpfe, Ortseingang, Gehöft-Zufahrt, Kieswerk-Einfahrt, Funkhügel-Aufgang) mit Blick auf die
 // Zugangswege. Statisch, Kollision unabhängig von der Grafikstufe; Platzierung ohne b.rand (nur die Sandsack-
 // Unregelmäßigkeit aus props.sandbags nutzt den Ortschafts-Zufall wie jede andere Sandsackreihe).
-import { frame, sandbags } from '../props.js?v=20261010113749';
+import { frame, sandbags } from '../props.js?v=20261010152042';
 
 /** Zylinder von Bodenpunkt G zu Punkt M (Welt), z. B. Dreibein-Bein. */
 function strut(b, gx, gy, gz, mx, my, mz, r, mat, o = {}) {
@@ -49,4 +49,15 @@ export function mgNest(b, x, z, o = {}) {
   f.box(0.55, 0, zr - 0.7, 0.3, 0.19, 0.14, 'metal_painted', { ...gm, tint: '#4b5a3a', ry: 0.4 });
   f.box(0.62, 0.19, zr - 0.72, 0.3, 0.19, 0.14, 'metal_painted', { ...gm, tint: '#56653f', ry: 0.25 });
   f.solid(0, 0, zr + 0.15, 0.62, gy + 0.12, 1.5, { minimap: false, bullet: false });
+  addEmplacement(b, f, y, zr, gy);
+}
+
+/**
+ * Benutzbare MG-Stellung melden (game/mappoints.js): Platz des Schützen hinter der Waffe, Feuerrichtung, Höhe der Waffe.
+ * b.emplacements sammelt sie je Bauabschnitt; loadWorld/bigworld hängen sie als world.emplacements an.
+ */
+export function addEmplacement(b, f, y, zr, gy) {
+  const [ox, oz] = f.P(0, zr - 0.9), [gx, gz] = f.P(0, zr), [hx, hz] = f.P(0, zr + 1);
+  const L = Math.hypot(hx - gx, hz - gz) || 1;
+  (b.emplacements || (b.emplacements = [])).push({ kind: 'mg', x: ox, y, z: oz, gx, gz, gunY: y + gy, dx: (hx - gx) / L, dz: (hz - gz) / L, arc: (250 * Math.PI) / 180 });
 }

@@ -20,8 +20,8 @@
 // Meldet der Client „tot“, während seine Puppe beim Host lebt (Spawn unterwegs), bleibt der Anker unverändert.
 // Verstöße sind gewichtet und klingen mit der Zeit ab; ab `threshold` wird einmalig onKick(peer, grund, text) gerufen
 // (und das Ergebnis trägt `kick`). Protokoll: ac.log = [{t, peer, reason, text, weight, score}] (für das Host-Menü).
-import { damageAt, zoneMult } from '../../shared/weapons.data.js?v=20261010113749';
-import { FLAGS } from './protocol.js?v=20261010113749';
+import { damageAt, zoneMult } from '../../shared/weapons.data.js?v=20261010152042';
+import { FLAGS } from './protocol.js?v=20261010152042';
 
 /** Gewicht je Verstoß (Summe ≥ threshold → Kick). */
 export const AC_WEIGHTS = Object.freeze({
@@ -274,7 +274,8 @@ export class AntiCheat {
    * Zustand eines Clients prüfen. state: {x,y,z,flags} (decodeState().entity) oder {pos:[x,y,z], flags}.
    * ctx: { alive?: bool (Puppe lebt beim Host), clientAlive?: bool (Client meldet „lebt“), rtt?: s,
    *   hostGap?: s (Zeit seit dem letzten Bildbeginn des Hosts – hing er, kommen die Zustände gebündelt),
-   *   ct?: s (Sendestempel des Zustands, Host-Zeit laut Client – decodeState().clientTime) }.
+   *   ct?: s (Sendestempel des Zustands, Host-Zeit laut Client – decodeState().clientTime),
+   *   carry?: m/s (Zusatztempo: steht auf/neben einem fahrenden Fahrzeug – Deck, ≤ 4 m; sync-host _carrySpeed) }.
    *   alive === false → nicht geprüft, neuer Anker beim nächsten Spawn/Zustand.
    *   clientAlive === false bei lebender Puppe (Spawn unterwegs) → verworfen, Anker bleibt.
    * → { ok, reason, correct?: [x,y,z] (Rücksetzposition, Host schickt 'correct'), kick: grund|null }
@@ -333,8 +334,10 @@ export class AntiCheat {
     // Budget nach dem gemeldeten Zustand; der einzelne Schritt darf bei Übergängen (Sprint → Rutschen, Rutschen →
     // Sprung) das schnellere der beiden Zustandstempi nutzen
     const speed = this._speedFor(flags);
-    const vMax = speed * o.boost * (1 + o.tolerance);
-    const vStep = Math.max(speed, this._speedFor(p.flags)) * o.boost * (1 + o.tolerance);
+    // Fahrzeug unter/neben dem Spieler: dessen Tempo kommt hinzu (Mitfahren auf dem Deck)
+    const carry = num(ctx.carry) ? Math.min(40, Math.max(0, ctx.carry)) * (1 + o.tolerance) : 0;
+    const vMax = speed * o.boost * (1 + o.tolerance) + carry;
+    const vStep = Math.max(speed, this._speedFor(p.flags)) * o.boost * (1 + o.tolerance) + carry;
     // Obergrenze des Budgets: budgetWindow – hing der Host länger (langes Bild, die Zustände der Lücke kommen danach
     // gebündelt an), gilt für dieses Bündel (0,25 s Host-Zeit) die ganze Lücke (höchstens win, s. o.)
     const climb = o.climb * (1 + o.tolerance);
@@ -342,7 +345,7 @@ export class AntiCheat {
     const gap = Math.min(dtHost, win);
     if (vMax * gap + o.slack > this._capH(speed)) { p.capH = vMax * gap + o.slack; p.capUp = climb * gap + o.stepUp; p.capUntil = nowSec + 0.25; }
     const burst = nowSec <= (p.capUntil || -1);
-    const capH = burst ? Math.max(this._capH(speed), p.capH) : this._capH(speed);
+    const capH = (burst ? Math.max(this._capH(speed), p.capH) : this._capH(speed)) + carry * o.budgetWindow;
     const budgetH = Math.min(capH, p.budgetH + vMax * dt);
     const budgetUp = Math.min(burst ? Math.max(this._capUp(), p.capUp) : this._capUp(), p.budgetUp + climb * dt);
     const hd = distH(pos, p.pos);
@@ -546,11 +549,12 @@ export class AntiCheat {
       if (samples.length) {
         let best = Infinity;
         for (const s of samples) best = Math.min(best, distH(shooterPos, readPos(s)));
-        if (best > (def.range || 2.5) + o.meleeSlack) return this._reject(id, 'reichweite', nowSec, Math.round(best * 10) / 10);
+        // ctx.meleeReach: Zusatzreichweite bei erlaubtem Cheat-Menü („Messer ohne Abklingzeit“ trifft auf Ausfallschritt-Distanz)
+        if (best > (def.range || 2.5) + o.meleeSlack + (num(ctx.meleeReach) ? ctx.meleeReach : 0)) return this._reject(id, 'reichweite', nowSec, Math.round(best * 10) / 10);
       }
     }
     const cap = this._damageCap(def, ctx);
     const want = num(claim.dmg) ? claim.dmg : def.damage.max * cap.mult;
-    return { ok: true, dmg: Math.max(0, Math.min(want, cap.abs)), reason: 'ok', kick: null };
+    return { ok: true, dmg: Math.max(0, Math.min(want, cap.abs * 2)), reason: 'ok', kick: null }; // ×2: Rückenstich
   }
 }
