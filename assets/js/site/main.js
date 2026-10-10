@@ -1,14 +1,14 @@
 // NULLPUNKT — Website. Start: Chrom und Hero sofort, Daten parallel, Abschnitte erst in Sichtnähe.
-import { loadData } from './data.js?v=20261009231635';
-import { initNav, setNavSound } from './nav.js?v=20261009231635';
-import { initCursor } from './cursor.js?v=20261009231635';
-import { initZero } from './zero.js?v=20261009231635';
-import { fitAll, fontsReady } from './fit.js?v=20261009231635';
-import { initDeploy } from './deploy.js?v=20261009231635';
-import { sound } from './sound.js?v=20261009231635';
-import { setSettingReduced } from './motion.js?v=20261009231635';
-import { signalLost } from './dom.js?v=20261009231635';
-import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261009231635';
+import { loadData } from './data.js?v=20261010022058';
+import { initNav, setNavSound } from './nav.js?v=20261010022058';
+import { initCursor } from './cursor.js?v=20261010022058';
+import { initZero } from './zero.js?v=20261010022058';
+import { fitAll, fontsReady } from './fit.js?v=20261010022058';
+import { initDeploy } from './deploy.js?v=20261010022058';
+import { sound } from './sound.js?v=20261010022058';
+import { setSettingReduced } from './motion.js?v=20261010022058';
+import { signalLost } from './dom.js?v=20261010022058';
+import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261010022058';
 
 const html = document.documentElement;
 const DEBUG = /[?&]debug=1/.test(location.search);
@@ -74,13 +74,13 @@ const fontsP = (document.fonts?.ready || Promise.resolve()).then(() => {
 setTimeout(() => { if (!fontsDone) { fontsReady(); fitAll(document, { now: true }); } }, 3000);
 
 const VIEWS = {
-  modes: () => import('./modes-view.js?v=20261009231635'),
-  maps: () => import('./maps-view.js?v=20261009231635'),
-  arsenal: () => import('./arsenal-view.js?v=20261009231635'),
-  profile: () => import('./profile-view.js?v=20261009231635'),
-  settings: () => import('./settings-view.js?v=20261009231635'),
-  controls: () => import('./controls-view.js?v=20261009231635'),
-  about: () => import('./about-view.js?v=20261009231635'),
+  modes: () => import('./modes-view.js?v=20261010022058'),
+  maps: () => import('./maps-view.js?v=20261010022058'),
+  arsenal: () => import('./arsenal-view.js?v=20261010022058'),
+  profile: () => import('./profile-view.js?v=20261010022058'),
+  settings: () => import('./settings-view.js?v=20261010022058'),
+  controls: () => import('./controls-view.js?v=20261010022058'),
+  about: () => import('./about-view.js?v=20261010022058'),
 };
 
 function heroData(D) {
@@ -211,7 +211,7 @@ async function boot() {
   if (D.profile) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 400));
     idle(async () => {
-      try { (await import('./fahne.js?v=20261009231635')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
+      try { (await import('./fahne.js?v=20261010022058')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
     });
   }
 }

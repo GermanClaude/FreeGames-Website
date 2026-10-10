@@ -7,32 +7,32 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261009231635';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261009231635';
-import { createWorldAssets } from '../library.js?v=20261009231635';
-import { MapBuilder, SURFACES } from '../builder.js?v=20261009231635';
-import { createLighting } from '../lighting.js?v=20261009231635';
-import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261009231635';
-import { createAtmosphere } from '../atmos.js?v=20261009231635';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261009231635';
-import { createWater } from '../water.js?v=20261009231635';
-import { TriangleBVH } from '../bvh.js?v=20261009231635';
-import { makeTests } from '../navbuild.js?v=20261009231635';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261009231635';
-import { Heightfield } from './heightfield.js?v=20261009231635';
-import { makeCoarse } from './generate.js?v=20261009231635';
-import { CompositeBVH } from './composite.js?v=20261009231635';
-import { TerrainCollider } from './collide.js?v=20261009231635';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261009231635';
-import { createTerrainMaterial } from './splat.js?v=20261009231635';
-import { Vegetation } from './vegetation.js?v=20261009231635';
-import { RoadNetwork } from './roads.js?v=20261009231635';
-import { bigNavFromData } from './bignav.js?v=20261009231635';
-import { createBigMinimap } from './bigminimap.js?v=20261009231635';
-import { terrainJob, worldJob } from './bigjob.js?v=20261009231635';
+import { MAPS } from '../../../shared/maps.data.js?v=20261010022058';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261010022058';
+import { createWorldAssets } from '../library.js?v=20261010022058';
+import { MapBuilder, SURFACES } from '../builder.js?v=20261010022058';
+import { createLighting } from '../lighting.js?v=20261010022058';
+import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261010022058';
+import { createAtmosphere } from '../atmos.js?v=20261010022058';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261010022058';
+import { createWater } from '../water.js?v=20261010022058';
+import { TriangleBVH } from '../bvh.js?v=20261010022058';
+import { makeTests } from '../navbuild.js?v=20261010022058';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261010022058';
+import { Heightfield } from './heightfield.js?v=20261010022058';
+import { makeCoarse } from './generate.js?v=20261010022058';
+import { CompositeBVH } from './composite.js?v=20261010022058';
+import { TerrainCollider } from './collide.js?v=20261010022058';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261010022058';
+import { createTerrainMaterial } from './splat.js?v=20261010022058';
+import { Vegetation } from './vegetation.js?v=20261010022058';
+import { RoadNetwork } from './roads.js?v=20261010022058';
+import { bigNavFromData } from './bignav.js?v=20261010022058';
+import { createBigMinimap } from './bigminimap.js?v=20261010022058';
+import { terrainJob, worldJob } from './bigjob.js?v=20261010022058';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261009231635'),
+  grenzland: () => import('../maps/grenzland.js?v=20261010022058'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -52,7 +52,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261009231635', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261010022058', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;

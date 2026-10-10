@@ -13,13 +13,13 @@
 // prüft Lage, Sprengung und Treffer (net*-Methoden, aufgerufen von net/sync-host.js).
 
 import * as THREE from 'three';
-import { STREAKS, STREAK_ORDER } from '../../shared/modes.data.js?v=20261009231635';
-import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261009231635';
-import { falloff } from '../combat.js?v=20261009231635';
-import { Sentry, sentryResources } from './sentry.js?v=20261009231635';
-import { Strike, strikeResources, groundAt } from './strike.js?v=20261009231635';
-import { Drone, DroneAudio, droneResources, launchSpot, realNow } from './drone.js?v=20261009231635';
-import { collisionRay } from '../engine/physics.js?v=20261009231635';
+import { STREAKS, STREAK_ORDER } from '../../shared/modes.data.js?v=20261010022058';
+import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261010022058';
+import { falloff } from '../combat.js?v=20261010022058';
+import { Sentry, sentryResources } from './sentry.js?v=20261010022058';
+import { Strike, strikeResources, groundAt } from './strike.js?v=20261010022058';
+import { Drone, DroneAudio, droneResources, launchSpot, realNow } from './drone.js?v=20261010022058';
+import { collisionRay } from '../engine/physics.js?v=20261010022058';
 
 const _v = new THREE.Vector3();
 const _d = new THREE.Vector3();

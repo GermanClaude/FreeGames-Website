@@ -22,11 +22,11 @@
 //     {a:'h'} Treffer eines Clients auf eine Drohne (Waffe, Feuerrate, Reichweite, Sicht). Alle Drohnen gehen mit 12 Hz als
 //     'ev' dr an alle, ihr Ende als 'ev' de.
 import * as THREE from 'three';
-import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261009231635';
-import { netPoseOf } from '../bots/bot.js?v=20261009231635';
-import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261009231635';
-import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261009231635';
-import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261009231635';
+import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261010022058';
+import { netPoseOf } from '../bots/bot.js?v=20261010022058';
+import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261010022058';
+import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261010022058';
+import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261010022058';
 
 const nowSec = () => performance.now() / 1000;
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -50,7 +50,7 @@ const INTEREST_MIN = 12;
 export class HostSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261009231635').NetSystem} net
+   * @param {import('./index.js?v=20261010022058').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'host', teamSize, botFill, pvp, ffa …)
    */
   constructor(G, net, cfg = {}) {
@@ -564,7 +564,12 @@ export class HostSync {
     const p = this._puppet(from);
     const target = this.net.actorById(Number(m.target));
     if (!p || !target || target === p) return;
-    const r = this.net.checkHit(from, { ...m, t: 'melee' }, this._ctxFor(p, from, target, m));
+    const ctx = this._ctxFor(p, from, target, m);
+    // Cheat-Menü „Messer ohne Abklingzeit“: bei erlaubtem Menü (Raum-Einstellung) und gemeldetem Cheat keine Feuerrate
+    const room = this.net.room && this.net.room.settings;
+    const entry = this.net.rosterEntry(from);
+    if (!(room && room.cheatMenu === false) && entry && entry.cheat === true) ctx.noRate = true;
+    const r = this.net.checkHit(from, { ...m, t: 'melee' }, ctx);
     if (!r || !r.ok || !(r.dmg > 0)) return;
     p.getEyePosition(_eye);
     const point = target.position.clone();

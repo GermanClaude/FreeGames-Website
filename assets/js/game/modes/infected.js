@@ -3,8 +3,8 @@
 // Die Infizierten gewinnen, sobald niemand mehr übrig ist; sonst gewinnen die Überlebenden nach Ablauf der Zeit.
 // Punkte: Infizieren, Überlebens-Takt (alle surviveTick s), normale Abschüsse.
 
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261009231635';
-import { BaseMode } from './base.js?v=20261009231635';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261010022058';
+import { BaseMode } from './base.js?v=20261010022058';
 
 export class InfectedMode extends BaseMode {
   constructor(G, modeId, opts) {

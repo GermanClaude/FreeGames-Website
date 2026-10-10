@@ -4,7 +4,7 @@
 // Repetierer im Anschlag), Anschlag auf Distanz, Freund-im-Schussfeld-Prüfung, Nahkampf, Bewegung im
 // Gefecht (Seitwärts, Vor/Zurück auf Idealdistanz, Ducken-Spähen, seltener Sprungschuss).
 import * as THREE from 'three';
-import { targetPoints } from './perception.js?v=20261009231635';
+import { targetPoints } from './perception.js?v=20261010022058';
 
 const _p = new THREE.Vector3();
 const _h = new THREE.Vector3();

@@ -1,5 +1,5 @@
 // Ruheschnitte aus Daten: Breite ist Reichweite, Stärke ist Schaden (Arsenal, Profil, Duell).
-import { clamp } from './fmt.js?v=20261009231635';
+import { clamp } from './fmt.js?v=20261010022058';
 
 /** Breitenachse einer Waffe: 62 + 0,63 × Reichweitenwert. */
 export const cutW = (def) => clamp(62 + 0.63 * (def?.stats?.range ?? 50), 62, 125);

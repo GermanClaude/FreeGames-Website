@@ -5,8 +5,8 @@
 // Regeln: Platzierung nur aus festen Koordinaten bzw. hash01 (kein b.rand → übrige Karten-Platzierung unverändert);
 // Kollision unabhängig von der Grafikstufe; große Möbel mit Kollision (Kugeln treffen sie), Kleinkram ohne; Türen
 // und Wege bleiben frei (Durchgänge ≥ 0,9 m, Türbereiche ≥ 1,5 m). Möbel ohne Minikarten-Eintrag.
-import { frame, hash01, workbench, lockers, rack } from '../props.js?v=20261009231635';
-import { railing } from '../arch.js?v=20261009231635';
+import { frame, hash01, workbench, lockers, rack } from '../props.js?v=20261010022058';
+import { railing } from '../arch.js?v=20261010022058';
 
 const NOMAP = { minimap: false };
 const DECO = { collide: false, minimap: false };

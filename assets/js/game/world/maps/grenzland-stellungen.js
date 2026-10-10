@@ -2,7 +2,7 @@
 // Engstellen (Brückenköpfe, Ortseingang, Gehöft-Zufahrt, Kieswerk-Einfahrt, Funkhügel-Aufgang) mit Blick auf die
 // Zugangswege. Statisch, Kollision unabhängig von der Grafikstufe; Platzierung ohne b.rand (nur die Sandsack-
 // Unregelmäßigkeit aus props.sandbags nutzt den Ortschafts-Zufall wie jede andere Sandsackreihe).
-import { frame, sandbags } from '../props.js?v=20261009231635';
+import { frame, sandbags } from '../props.js?v=20261010022058';
 
 /** Zylinder von Bodenpunkt G zu Punkt M (Welt), z. B. Dreibein-Bein. */
 function strut(b, gx, gy, gz, mx, my, mz, r, mat, o = {}) {

@@ -18,21 +18,21 @@
 // stamina false (Raum-Einstellung „Ausdauer“ aus) = unbegrenzte Ausdauer für alle: beim Matchstart (match:state)
 // setzt NetSystem G.match.styleFlags.staminaMult = 0 (stamina.js: 0 = unbegrenzt). killAmmo false (Raum-Einstellung
 // „Munition pro Abschuss“ aus): kein Munitionsgewinn je Abschuss – jedes Gerät liest cfg.net.killAmmo selbst
-// (weapons/index.js killAmmoEnabled, Gutschrift beim eigenen Spieler). cheatMenu false (Raum-Einstellung „Cheat-Menü (Nur
-// Messer)“ verboten): das Cheat-Menü des Modus öffnet sich nicht (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu).
+// (weapons/index.js killAmmoEnabled, Gutschrift beim eigenen Spieler). cheatMenu false (Raum-Einstellung „Cheat-Menü“
+// verboten): das Cheat-Menü des Modus öffnet sich nicht (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu).
 // Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host
 // vermerkt es und verteilt das Roster; bei jedem Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261009231635';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261009231635';
-import { hex, randomBytes } from './crypto.js?v=20261009231635';
-import { BUILD } from '../../shared/build.js?v=20261009231635';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261009231635';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261009231635';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261009231635';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261009231635';
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261009231635';
-import { recommend, UploadMeter } from './recommend.js?v=20261009231635';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261009231635';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261010022058';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261010022058';
+import { hex, randomBytes } from './crypto.js?v=20261010022058';
+import { BUILD } from '../../shared/build.js?v=20261010022058';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261010022058';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261010022058';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261010022058';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261010022058';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261010022058';
+import { recommend, UploadMeter } from './recommend.js?v=20261010022058';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261010022058';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD). */
 export const NET_VERSION = 1;
@@ -65,7 +65,7 @@ export const DEFAULT_ROOM = Object.freeze({
   maxPlayers: 8, botFill: true, teamSize: 6, pvp: 'pvp', public: false, style: 'arcade', scoreLimit: null, timeLimit: null,
   stamina: true, // Ausdauer an (aus = unbegrenzte Ausdauer für alle)
   killAmmo: true, // Munition pro Abschuss an (jedes Gerät schreibt sie seinem Spieler selbst gut)
-  cheatMenu: true, // Nur Messer: Cheat-Menü erlaubt (aus = vom Host deaktiviert; Aktive tragen ein Symbol in der Punktetabelle)
+  cheatMenu: true, // Cheat-Menü erlaubt (alle Modi) (aus = vom Host deaktiviert; Aktive tragen ein Symbol in der Punktetabelle)
 });
 
 const TIME_SYNC_MS = 2000;
@@ -390,7 +390,7 @@ export class NetSystem {
   }
 
   /**
-   * Nur Messer: Cheat-Menü aktiv (cheats.js) → Host: eigener Roster-Eintrag; Client: 'cheat' {on} an den Host (der verteilt
+   * Cheat-Menü aktiv (cheats.js) → Host: eigener Roster-Eintrag; Client: 'cheat' {on} an den Host (der verteilt
    * das Roster). → true, wenn gemeldet.
    */
   setCheat(on) {
@@ -514,7 +514,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261009231635').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261010022058').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
@@ -589,7 +589,7 @@ export class NetSystem {
         if (entry.device !== d) { entry.device = d; this._rosterChanged(); }
         break;
       }
-      case 'cheat': { // Nur Messer: Cheat-Menü aktiv (Symbol in der Punktetabelle)
+      case 'cheat': { // Cheat-Menü aktiv (Symbol in der Punktetabelle)
         const on = m.on === true;
         if (!!entry.cheat !== on) { entry.cheat = on; this._rosterChanged(); }
         m = { t: 'cheat', on };
@@ -825,7 +825,7 @@ export class NetSystem {
         botsA, botsB, humans, ffa, conditions: cond, startedAt: this.serverTime(),
         stamina: s.stamina !== false, // Raum-Einstellung „Ausdauer“ (aus = unbegrenzt für alle, _applyMatchRules)
         killAmmo: s.killAmmo !== false, // Raum-Einstellung „Munition pro Abschuss“ (weapons/index.js)
-        cheatMenu: s.cheatMenu !== false, // Raum-Einstellung „Cheat-Menü (Nur Messer)“ (cheats.js)
+        cheatMenu: s.cheatMenu !== false, // Raum-Einstellung „Cheat-Menü“ (cheats.js)
       },
     };
     if (s.timeLimit != null) cfg.timeLimit = s.timeLimit;

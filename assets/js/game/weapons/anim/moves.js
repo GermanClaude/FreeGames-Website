@@ -3,9 +3,9 @@
 // für Nahkampf (Messerhieb, Stich, Schlag mit der Waffe) und Granatwurf (über Kopf, aus der Hocke/im Liegen von unten).
 // Alles rein optisch: Spielzeiten (Ziehen = equipTime, Nahkampf = swingTime, Wurf = controller GRENADE) bleiben gleich.
 // Bereitmachen und Leerlauf-Gesten sind kosmetisch (COSMETIC): sie blockieren nichts und brechen bei jeder Aktion ab.
-import { curve, windowW, clamp, smooth, damp, easeOutBack } from '../gunsmith/anim.js?v=20261009231635';
-import { req, COSMETIC } from './reloads.js?v=20261009231635';
-import { inspectMech } from './inspects.js?v=20261009231635';
+import { curve, windowW, clamp, smooth, damp, easeOutBack } from '../gunsmith/anim.js?v=20261010022058';
+import { req, COSMETIC } from './reloads.js?v=20261010022058';
+import { inspectMech } from './inspects.js?v=20261010022058';
 
 const Z3 = [0, 0, 0];
 

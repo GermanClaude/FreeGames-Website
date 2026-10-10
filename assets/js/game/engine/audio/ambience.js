@@ -3,7 +3,7 @@
 import {
   TAU, len, buf, white, pink, brown, filt, sweep, sweepSteps, expGlide, env, ad, ahr, bell, mix, mixAt, drive, normalize,
   sine, modal, metalModes, click, burst, grains, glottal, formant, reverb, reverbSteps, echoes, panMix, wrapLoop, Saw, clamp, lerp,
-} from './dsp.js?v=20261009231635';
+} from './dsp.js?v=20261010022058';
 
 // Abtastraten nach gemessener Bandbreite (Anteil oberhalb 0,45 · Rate ≤ ca. −40 dB)
 export const BED_RATE = { harbor: 16000, desert: 22050, industrial: 16000, range: 22050 };

@@ -13,8 +13,8 @@
 // smoke, stack, clear_grenade, enter, fallback, regroup, medic, heal, spot, at, prone).
 // Bots mit einem Spielerbefehl (Befehlsrad, ai/orders.js) zählen für den Trupp nicht mit und bekommen keine Truppbefehle.
 import * as THREE from 'three';
-import { analyze } from './tactics.js?v=20261009231635';
-import { isCommanded } from './orders.js?v=20261009231635';
+import { analyze } from './tactics.js?v=20261010022058';
+import { isCommanded } from './orders.js?v=20261010022058';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();

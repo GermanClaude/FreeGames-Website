@@ -5,11 +5,11 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261009231635';
-import { ICON, deviceOf } from './icons.js?v=20261009231635';
-import { LoadoutPanel } from './loadout-panel.js?v=20261009231635';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261009231635';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261009231635';
+import { esc, el } from './dom.js?v=20261010022058';
+import { ICON, deviceOf } from './icons.js?v=20261010022058';
+import { LoadoutPanel } from './loadout-panel.js?v=20261010022058';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261010022058';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261010022058';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
@@ -853,7 +853,7 @@ export class NetMenus {
       ${item(teams ? 'Teamgröße' : 'Teilnehmer', teams ? `${size} gegen ${size}` : `${size * 2}`)}
       ${item('Bots', s.botFill ? 'füllen auf' : 'keine')}${item('Max. Spieler', String(s.maxPlayers || '–'))}
       ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}${item('Munition pro Abschuss', s.killAmmo === false ? 'aus' : 'an')}
-      ${s.mode === 'messer' ? item('Cheat-Menü', s.cheatMenu === false ? 'verboten' : 'erlaubt') : ''}
+      ${item('Cheat-Menü', s.cheatMenu === false ? 'verboten' : 'erlaubt')}
     </div>`;
   }
 
@@ -920,9 +920,9 @@ export class NetMenus {
           ${sw('stamina', 'Ausdauer', s.stamina === false ? 'Aus: unbegrenzt sprinten, rutschen, springen – für alle' : 'Sprinten, Rutschen und Springen kosten Ausdauer', s.stamina !== false)}
           ${sw('killAmmo', 'Munition pro Abschuss', s.killAmmo === false ? 'Aus: nur die Startmunition' : 'Jeder Abschuss bringt ein Magazin (MG: 20 Schuss)', s.killAmmo !== false)}
         </div>
-        ${s.mode === 'messer' ? `<div class="nr-two">
-          ${sw('cheatMenu', 'Cheat-Menü (Nur Messer)', s.cheatMenu === false ? 'Verboten: das Menü öffnet sich bei niemandem' : 'Erlaubt: wer es nutzt, trägt ein Symbol in der Punktetabelle', s.cheatMenu !== false)}
-        </div>` : ''}
+        <div class="nr-two">
+          ${sw('cheatMenu', 'Cheat-Menü', s.cheatMenu === false ? 'Verboten: das Menü öffnet sich bei niemandem' : 'Erlaubt (alle Modi): wer es nutzt, trägt ein Symbol in der Punktetabelle', s.cheatMenu !== false)}
+        </div>
         <div class="nr-field nr-namefield">
           <h3 class="nr-lab">Raumname</h3>
           <input type="text" class="m-input" data-room-name data-fk="room-name" maxlength="24" spellcheck="false" aria-label="Raumname" value="${esc(s.name || '')}">
