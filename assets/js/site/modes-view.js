@@ -1,12 +1,12 @@
 // §02 Modi: Regelwerk. Fünf Zeilen als Aufklapper; jeder Name spielt seine Regel vor
 // (Fokus, Öffnen, Mitte des Bildschirms beim Scrollen, Maus als Zugabe). Dazu SERIEN.
-import { h, $, signalLost } from './dom.js?v=20261010022058';
-import { fit } from './fit.js?v=20261010022058';
-import { split, Kinetic } from './kinetic.js?v=20261010022058';
-import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261010022058';
-import { ui } from './state.js?v=20261010022058';
-import { calm, reduced, pointerFine, ease } from './motion.js?v=20261010022058';
-import { clamp } from './fmt.js?v=20261010022058';
+import { h, $, signalLost } from './dom.js?v=20261010113749';
+import { fit } from './fit.js?v=20261010113749';
+import { split, Kinetic } from './kinetic.js?v=20261010113749';
+import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261010113749';
+import { ui } from './state.js?v=20261010113749';
+import { calm, reduced, pointerFine, ease } from './motion.js?v=20261010113749';
+import { clamp } from './fmt.js?v=20261010113749';
 
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
 const pad2 = (n) => String(n).padStart(2, '0');

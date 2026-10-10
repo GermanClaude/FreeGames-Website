@@ -5,18 +5,18 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261010022058';
-import { ICON, deviceOf } from './icons.js?v=20261010022058';
-import { LoadoutPanel } from './loadout-panel.js?v=20261010022058';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261010022058';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261010022058';
+import { esc, el } from './dom.js?v=20261010113749';
+import { ICON, deviceOf } from './icons.js?v=20261010113749';
+import { LoadoutPanel } from './loadout-panel.js?v=20261010113749';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261010113749';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261010113749';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
 const devIcon = (r) => { const d = deviceOf(r.device); return `<span class="sb-human" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}</span>`; };
 
 /** Stufe 1: nur diese Modi online (Spiegel von net/index.js – ohne Import, damit die Lobby keine Netz-Module lädt). */
-export const ONLINE_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'kc', 'messer']);
+export const ONLINE_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'kc', 'messer', 'inf', 'gun']);
 /** Raumcodes (= net/signal.js): 6 Zeichen ohne I, O, 0, 1. */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const CODE_LENGTH = 6;

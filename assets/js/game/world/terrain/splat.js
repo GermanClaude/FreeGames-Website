@@ -10,8 +10,8 @@
 // meadowTintAt) für die Grashalme (vegetation.js): Halme tragen die Wiesenfarbe des Bodens an ihrer Stelle, ferne
 // Halme gehen nahtlos in den Boden über.
 import * as THREE from 'three';
-import { LIB_MATERIALS } from '../library.js?v=20261010022058';
-import { getDetailNormalTexture } from '../../engine/textures.js?v=20261010022058';
+import { LIB_MATERIALS } from '../library.js?v=20261010113749';
+import { getDetailNormalTexture } from '../../engine/textures.js?v=20261010113749';
 
 /** Schichten: Bibliotheks-ID, prozeduraler Ersatz, Kachelgröße (m), Rauheit, Normalen-Rang (−1 = keine). */
 export const TERRAIN_LAYERS = [

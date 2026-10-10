@@ -6,7 +6,7 @@
 //   Lafetten-Sitze (gun/cmg/mg): yaw/pitch = gewünschte Zielrichtung in Welt (Turm folgt mit Richtgeschwindigkeit)
 //   freie Sitze (Fahrer Geländewagen, Mitfahrer): relYaw/relPitch relativ zur Wanne
 import * as THREE from 'three';
-import { collisionRay, keepClear } from '../engine/physics.js?v=20261010022058';
+import { collisionRay, keepClear } from '../engine/physics.js?v=20261010113749';
 
 const _p = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion(), _e = new THREE.Euler(0, 0, 0, 'YXZ');
 const _piv = new THREE.Vector3(), _t = new THREE.Vector3(), _hit = {};
