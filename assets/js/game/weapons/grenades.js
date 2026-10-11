@@ -8,8 +8,8 @@
 // actor:flashed / player:flashed), Rauchgranate (Wolke im Rauch-Register von WeaponSystem → Sichtdämpfung).
 
 import * as THREE from 'three';
-import { EQUIPMENT as DATA_EQUIPMENT } from '../../shared/weapons.data.js?v=20261011220206';
-import { clamp } from './ballistics/math.js?v=20261011220206';
+import { EQUIPMENT as DATA_EQUIPMENT } from '../../shared/weapons.data.js?v=20261011221619';
+import { clamp } from './ballistics/math.js?v=20261011221619';
 
 export const GRENADE_GRAVITY = 16; // m/s² (weniger als Spieler – weite, gut lesbare Bögen wie in COD)
 const RADIUS = 0.06;

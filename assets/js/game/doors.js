@@ -8,7 +8,7 @@
 // zerbricht die Scheibe (Splitter, Klirren) – danach offen zum Durchsteigen/-schießen. Gezeichnet gebündelt (zwei
 // InstancedMesh für alle Scheiben und Rahmen), Reihenfolge der Einträge: Türen, Fenster, Tore (gleich auf allen Geräten).
 import * as THREE from 'three';
-import { worldPartsFrom } from './building.js?v=20261011220206';
+import { worldPartsFrom } from './building.js?v=20261011221619';
 
 const DOOR_HP = 140;
 const DOOR_T = 0.06;

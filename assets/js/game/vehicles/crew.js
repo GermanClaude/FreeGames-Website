@@ -7,7 +7,7 @@
 // Ladefolge (Ladeschütze, Sicht 'innen', Blick nur über die Gier im Turmraum geprüft):
 //   'munition' (Sorte wählen) → Blick aufs Gestell → 'greifen' 1,0 s → Blick zum Verschluss → 'einschieben' 0,8 s
 //   → 'schliessen' 0,4 s → geladen. Automatik: 5,0 s mit besetztem Ladeschützensitz, sonst 8,0 s.
-import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261011220206';
+import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261011221619';
 
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 export const LOAD_TIMES = { tuer: 0.55, greifen: 1.0, einschieben: 0.8, schliessen: 0.4 }; // tuer: Schiebetür des Munitionsbunkers (modern)

@@ -5,8 +5,8 @@
 // (PC/Handy/VR-Brille), der Host ein Abzeichen. Offline wie bisher.
 // cheat = Cheat-Menü aktiv (modes/base.js, cheats.js) → kleines Symbol hinter dem Namen (Stil: ui/cheat-menu.js).
 
-import { esc, kd } from './dom.js?v=20261011220206';
-import { ICON, deviceOf } from './icons.js?v=20261011220206';
+import { esc, kd } from './dom.js?v=20261011221619';
+import { ICON, deviceOf } from './icons.js?v=20261011221619';
 
 /** Ping-Zelle: Bots „BOT“, Host „–“ (läuft dort), sonst Millisekunden mit Farbstufe. */
 function pingCell(r) {

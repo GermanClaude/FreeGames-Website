@@ -6,17 +6,18 @@
 // Mehrspieler (ui/net-menus.js, this.net): Lobby-Reiter, Raum-Bildschirm ('room', 'roomequip'), Online-Teil von
 // Pause und Endbildschirm. Einstiege für Deep-Links: openJoin(code) · openRoom().
 
-import { el, esc, clock } from './dom.js?v=20261011220206';
-import { ICON } from './icons.js?v=20261011220206';
-import { Lobby } from './lobby.js?v=20261011220206';
-import { WeaponPreview } from './preview3d.js?v=20261011220206';
-import { SettingsPanel } from './settings-panel.js?v=20261011220206';
-import { TouchEditor } from './touch-editor.js?v=20261011220206';
-import { controlsHtml, bindControls } from './controls-help.js?v=20261011220206';
-import { EndScreen } from './endscreen.js?v=20261011220206';
-import { LoadoutPanel } from './loadout-panel.js?v=20261011220206';
-import { drawMapArt, rememberMinimap } from './mapart.js?v=20261011220206';
-import { NetMenus } from './net-menus.js?v=20261011220206';
+import { el, esc, clock } from './dom.js?v=20261011221619';
+import { ICON } from './icons.js?v=20261011221619';
+import { Lobby } from './lobby.js?v=20261011221619';
+import { WeaponPreview } from './preview3d.js?v=20261011221619';
+import { SettingsPanel } from './settings-panel.js?v=20261011221619';
+import { TouchEditor } from './touch-editor.js?v=20261011221619';
+import { controlsHtml, bindControls } from './controls-help.js?v=20261011221619';
+import { EndScreen } from './endscreen.js?v=20261011221619';
+import { LoadoutPanel } from './loadout-panel.js?v=20261011221619';
+import { drawMapArt, rememberMinimap } from './mapart.js?v=20261011221619';
+import { NetMenus } from './net-menus.js?v=20261011221619';
+import { openFeedback } from '../../shared/feedback.js?v=20261011221619';
 
 // VR-Brille (Knopf „VR starten“ im Pausenmenü; Symbole in icons.js gehören zu einem anderen Bereich)
 const VR_ICON = '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M6 16h36v16a3 3 0 0 1-3 3H31l-4-6h-6l-4 6H9a3 3 0 0 1-3-3z"/><circle cx="16" cy="24" r="3"/><circle cx="32" cy="24" r="3"/></svg>';
@@ -143,6 +144,7 @@ export class Menus {
       else if (act === 'settings') this.showSettings('lobby');
       else if (act === 'profile') { this.settingsPanel.group = 'profil'; this.showSettings('lobby'); }
       else if (act === 'controls') this.showControls('lobby');
+      else if (act === 'feedback') { this.sound('confirm'); openFeedback({ page: 'Spiel' }); }
       else if (act === 'exit') { this.sound('back'); if (this.onExit) this.onExit(); }
     });
     const stage = s.querySelector('.lb-stage');

@@ -3,17 +3,18 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011220206';
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011220206';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011220206'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011220206'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011220206';
-import { esc, num, secs, meters } from './dom.js?v=20261011220206';
-import { ICON } from './icons.js?v=20261011220206';
-import { drawMapArt } from './mapart.js?v=20261011220206';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011220206';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261011220206';
-import { ProgressView } from './progress.js?v=20261011220206';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011221619';
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011221619';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011221619'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011221619'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011221619';
+import { esc, num, secs, meters } from './dom.js?v=20261011221619';
+import { ICON } from './icons.js?v=20261011221619';
+import { drawMapArt } from './mapart.js?v=20261011221619';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011221619';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011221619';
+import { ProgressView } from './progress.js?v=20261011221619';
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261011221619';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -210,6 +211,7 @@ export class Lobby {
           <div class="lb-tools">
             <button type="button" class="m-icon" data-act="settings" aria-label="Einstellungen" title="Einstellungen">${ICON.gear}</button>
             <button type="button" class="m-icon" data-act="controls" aria-label="Steuerung" title="Steuerung">${ICON.pad}</button>
+            <button type="button" class="m-icon" data-act="feedback" aria-label="Feedback an den Entwickler" title="Feedback an den Entwickler"${feedbackUnlocked() ? '' : ' hidden'}>${ICON.star}</button>
             <button type="button" class="m-icon" data-act="exit" aria-label="Zur Website" title="Zur Website">${ICON.exit}</button>
           </div>
         </header>

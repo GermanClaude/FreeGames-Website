@@ -2,7 +2,7 @@
 // Expansionsgrenze) und billigerem String-Pulling im freien Gelände; API wie world/navgraph.js NavGraph
 // (+ findPathAsync für die Großkarten-API, plan §4.5).
 import * as THREE from 'three';
-import { NavGraph } from '../navgraph.js?v=20261011220206';
+import { NavGraph } from '../navgraph.js?v=20261011221619';
 
 export class BigNavGraph extends NavGraph {
   /**

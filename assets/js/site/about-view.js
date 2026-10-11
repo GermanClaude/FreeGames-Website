@@ -1,8 +1,9 @@
 // §08 Über: Datenschutz (lokale Daten löschen) und das optionale Impressum aus config.js.
-import { $, h } from './dom.js?v=20261011220206';
-import { IMPRESSUM } from './config.js?v=20261011220206';
-import { site } from './state.js?v=20261011220206';
-import { announce } from './live.js?v=20261011220206';
+import { $, h } from './dom.js?v=20261011221619';
+import { IMPRESSUM } from './config.js?v=20261011221619';
+import { site } from './state.js?v=20261011221619';
+import { announce } from './live.js?v=20261011221619';
+import { eligible as feedbackUnlocked, revealUnlocked, revealHtml, openFeedback } from '../shared/feedback.js?v=20261011221619';
 
 /** Alle Schlüssel 'nullpunkt:*' im lokalen Speicher. */
 function ourKeys() {
@@ -34,8 +35,24 @@ function impressum() {
   box.hidden = false;
 }
 
+/** Feedback (ab 20 Minuten Spielzeit) und der danach freigeschaltete Abschnitt „Wie NULLPUNKT entstanden ist“. */
+function feedback() {
+  const box = document.getElementById('entstehung');
+  const showReveal = () => { if (box && revealUnlocked()) { box.innerHTML = revealHtml(); box.hidden = false; } };
+  showReveal();
+  const cta = document.getElementById('fb-cta');
+  const btn = document.getElementById('fb-open');
+  if (!cta || !btn || !feedbackUnlocked()) return;
+  cta.hidden = false;
+  btn.addEventListener('click', () => openFeedback({
+    page: 'Startseite',
+    onRevealed: () => { showReveal(); announce('Freigeschaltet: Wie NULLPUNKT entstanden ist'); },
+  }));
+}
+
 export async function init(sec, D, ctx = {}) {
   impressum();
+  feedback();
   const open = $('#wipe-open', sec);
   const dlg = document.getElementById('wipe-dialog');
   const go = document.getElementById('wipe-go');
