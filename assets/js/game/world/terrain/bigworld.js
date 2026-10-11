@@ -7,33 +7,33 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261011221619';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261011221619';
-import { createWorldAssets } from '../library.js?v=20261011221619';
-import { MapBuilder, SURFACES } from '../builder.js?v=20261011221619';
-import { createLighting } from '../lighting.js?v=20261011221619';
-import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261011221619';
-import { createAtmosphere } from '../atmos.js?v=20261011221619';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261011221619';
-import { createWater } from '../water.js?v=20261011221619';
-import { TriangleBVH } from '../bvh.js?v=20261011221619';
-import { makeTests } from '../navbuild.js?v=20261011221619';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261011221619';
-import { Heightfield } from './heightfield.js?v=20261011221619';
-import { makeCoarse } from './generate.js?v=20261011221619';
-import { CompositeBVH } from './composite.js?v=20261011221619';
-import { TerrainCollider } from './collide.js?v=20261011221619';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261011221619';
-import { createTerrainMaterial } from './splat.js?v=20261011221619';
-import { Vegetation } from './vegetation.js?v=20261011221619';
-import { RoadNetwork } from './roads.js?v=20261011221619';
-import { bigNavFromData } from './bignav.js?v=20261011221619';
-import { createBigMinimap } from './bigminimap.js?v=20261011221619';
-import { terrainJob, worldJob } from './bigjob.js?v=20261011221619';
+import { MAPS } from '../../../shared/maps.data.js?v=20261011222018';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261011222018';
+import { createWorldAssets } from '../library.js?v=20261011222018';
+import { MapBuilder, SURFACES } from '../builder.js?v=20261011222018';
+import { createLighting } from '../lighting.js?v=20261011222018';
+import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261011222018';
+import { createAtmosphere } from '../atmos.js?v=20261011222018';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261011222018';
+import { createWater } from '../water.js?v=20261011222018';
+import { TriangleBVH } from '../bvh.js?v=20261011222018';
+import { makeTests } from '../navbuild.js?v=20261011222018';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261011222018';
+import { Heightfield } from './heightfield.js?v=20261011222018';
+import { makeCoarse } from './generate.js?v=20261011222018';
+import { CompositeBVH } from './composite.js?v=20261011222018';
+import { TerrainCollider } from './collide.js?v=20261011222018';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261011222018';
+import { createTerrainMaterial } from './splat.js?v=20261011222018';
+import { Vegetation } from './vegetation.js?v=20261011222018';
+import { RoadNetwork } from './roads.js?v=20261011222018';
+import { bigNavFromData } from './bignav.js?v=20261011222018';
+import { createBigMinimap } from './bigminimap.js?v=20261011222018';
+import { terrainJob, worldJob } from './bigjob.js?v=20261011222018';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261011221619'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261011221619'),
+  grenzland: () => import('../maps/grenzland.js?v=20261011222018'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261011222018'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -53,7 +53,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261011221619', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261011222018', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;

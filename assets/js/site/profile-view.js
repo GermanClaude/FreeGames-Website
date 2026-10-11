@@ -1,14 +1,14 @@
 // §05 Profil: Dein Schnitt. Die eigenen Werte schneiden eine persönliche Archivo:
 // Stärke aus K/D, Breite aus Genauigkeit. Dazu Dienstgrad, Kennzahlen, Lieblingswaffen,
 // Medaillen und der Verlauf als Glyphenzeile.
-import { h, $, signalLost } from './dom.js?v=20261011221619';
-import { fit } from './fit.js?v=20261011221619';
-import { buildPlayUrl, mapPrep } from './deploy.js?v=20261011221619';
-import { cutW, cutG } from './cuts.js?v=20261011221619';
-import { ui } from './state.js?v=20261011221619';
-import { announce } from './live.js?v=20261011221619';
-import { reduced, tween, ease } from './motion.js?v=20261011221619';
-import { num, pct, dur, clock, day, dateLong, clamp, clamp01, NNBSP, count, TERMS } from './fmt.js?v=20261011221619';
+import { h, $, signalLost } from './dom.js?v=20261011222018';
+import { fit } from './fit.js?v=20261011222018';
+import { buildPlayUrl, mapPrep } from './deploy.js?v=20261011222018';
+import { cutW, cutG } from './cuts.js?v=20261011222018';
+import { ui } from './state.js?v=20261011222018';
+import { announce } from './live.js?v=20261011222018';
+import { reduced, tween, ease } from './motion.js?v=20261011222018';
+import { num, pct, dur, clock, day, dateLong, clamp, clamp01, NNBSP, count, TERMS } from './fmt.js?v=20261011222018';
 
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
 const RESULT = { win: ['S', 'Sieg', 'win'], loss: ['N', 'Niederlage', 'loss'], draw: ['U', 'Unentschieden', 'draw'] };
