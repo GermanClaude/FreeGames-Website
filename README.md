@@ -88,3 +88,11 @@ Dieses Repository enthält die veröffentlichte Fassung. Die Entwicklungsfassung
 - Three.js: MIT-Lizenz (`assets/vendor/three/LICENSE`)
 - Schriften Archivo, JetBrains Mono, Rajdhani: SIL Open Font License 1.1 (`assets/fonts/OFL-*.txt`)
 - Fototexturen, Modelle, HDRI-Himmel und Klangaufnahmen in `assets/lib/`: CC0 (Poly Haven, ambientCG u. a., siehe `CREDITS.md`)
+
+## Rechte
+
+© 2026 German Legend (Discord: `German_Legend_26201`, E-Mail: legendgerman749@gmail.com). Alle Rechte vorbehalten.
+Spielidee, Konzept, Spielmodi, Spielmechaniken, Karten, Modelle, Grafiken, Texte und Code von NULLPUNKT liegen bei German Legend.
+Wer Inhalte, Ideen, Mechaniken oder sonstige Teile übernehmen, kopieren, verändern oder weiterverwenden möchte, muss vorher um
+Erlaubnis fragen. Ausgenommen sind eingebundene Fremdbestandteile unter ihren eigenen Lizenzen: three.js (MIT), die Schriften
+(SIL Open Font License 1.1) sowie Texturen, Umgebungslicht und Modelle von Poly Haven und ambientCG (CC0), siehe `CREDITS.md`.

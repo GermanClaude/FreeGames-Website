@@ -10,8 +10,8 @@
 //   forests [{ x, z, r }], trenches [{ pts, width, depth, ramps }], craters { list: [[x, z, r, depth]], count, seed, area, r, depth, avoid },
 //   wasteland { dirt, mud } (Ödland statt Wiese)
 // Reihenfolge: Grundform → Details → Fluss → Bauflächen → Dämme → Straßen (planieren) → Felder → Splat/Maske.
-import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261011185226';
-import { Heightfield } from './heightfield.js?v=20261011185226';
+import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261011215142';
+import { Heightfield } from './heightfield.js?v=20261011215142';
 
 /** Catmull-Rom-Kurve durch pts ([[x, z], …]), Abtastung ~step m. → [[x, z], …] */
 export function sampleSpline(pts, step = 2) {
