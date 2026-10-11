@@ -3,18 +3,18 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261011122417';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261011123518';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261011122417';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261011122417';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261011122417';
+} from '../props.js?v=20261011123518';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261011123518';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261011123518';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261011122417';
+} from './werk-ausstattung.js?v=20261011123518';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
@@ -1074,8 +1074,8 @@ function halle9(b) {
 function tankBund(b, x, z, label, s) {
   const hw = 6, hd = 5.6, h = 1.1;
   const zs = [z - hd, z + hd];
-  for (const zz of zs) wall(b, { x0: x - hw, z0: zz, x1: x + hw, z1: zz, h, t: 0.35, mat: 'concrete', tint: '#9a968e', minimap: 'cover', openings: [{ at: 3.0, w: 2.0, h: 2, kind: 'gap', frame: false }, { at: 9.0, w: 2.0, h: 2, kind: 'gap', frame: false }] });
-  for (const xx of [x - hw, x + hw]) wall(b, { x0: xx, z0: z - hd, x1: xx, z1: z + hd, h, t: 0.35, mat: 'concrete', tint: '#9a968e', minimap: 'cover', openings: [{ at: hd, w: 2.2, h: 2, kind: 'gap', frame: false }] });
+  for (const zz of zs) wall(b, { x0: x - hw, z0: zz, x1: x + hw, z1: zz, h, t: 0.35, mat: 'concrete', tint: '#9a968e', minimap: 'cover', destructible: true, openings: [{ at: 3.0, w: 2.0, h: 2, kind: 'gap', frame: false }, { at: 9.0, w: 2.0, h: 2, kind: 'gap', frame: false }] });
+  for (const xx of [x - hw, x + hw]) wall(b, { x0: xx, z0: z - hd, x1: xx, z1: z + hd, h, t: 0.35, mat: 'concrete', tint: '#9a968e', minimap: 'cover', destructible: true, openings: [{ at: hd, w: 2.2, h: 2, kind: 'gap', frame: false }] });
   tank(b, x, z, { r: 3.6, h: 8.5, legs: 0.4, tint: '#c8c4bc' });
   // Beschriftung schmaler (ebene Tafel an runder Wand: bei 3,2 m standen die Ränder 0,37 m vom Tank ab)
   b.sign(x, 4.8, z + s * 3.605, 1.5, 0.62, label, { ry: s > 0 ? 0 : Math.PI, back: false, depth: 0 });

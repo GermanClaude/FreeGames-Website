@@ -7,8 +7,8 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261011122417';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261011122417';
+import { generateTexture } from '../world/texgen.js?v=20261011123518';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261011123518';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -120,6 +120,8 @@ const MATS = {
   bark_palm:         { tex: 'bark_palm', tile: 1.2, surface: 'wood' },
   cardboard:         { tex: 'cardboard', tile: 1, surface: 'wood' },
   metal_painted:     { tex: 'metal_painted', tile: 2, surface: 'metal', params: { metalness: 1 } },
+  // Autolack: wie lackiertes Metall, Oberfläche Fahrzeugblech (Kugeln gehen durch Autos, combat.js)
+  car_paint:         { tex: 'metal_painted', tile: 2, surface: 'vehicle', params: { metalness: 1 } },
   metal_rust:        { tex: 'metal_rust', tile: 2, surface: 'metal', params: { metalness: 0.35 } },
   metal_corrugated:  { tex: 'metal_corrugated', tile: 2, surface: 'metal', params: { metalness: 1 } },
   metal_galvanized:  { tex: 'metal_galvanized', tile: 1.5, surface: 'metal', params: { metalness: 0.85, envMapIntensity: 0.8 } },
@@ -162,6 +164,8 @@ const MATS = {
   lamp_green:        { tex: null, surface: 'glass', params: { color: '#082008', emissive: '#3aff6a', emissiveIntensity: 4, roughness: 0.3 } },
   window_lit:        { tex: null, surface: 'glass', params: { color: '#3a3020', emissive: '#ffc070', emissiveIntensity: 1.6, roughness: 0.2 } },
   black:             { tex: null, surface: 'concrete', params: { color: '#0b0b0c', roughness: 0.95 } },
+  // unsichtbarer Kollisionskörper von Autos/Transportern: Oberfläche Fahrzeugblech (Kugeln gehen durch, combat.js)
+  hull:              { tex: null, surface: 'vehicle', params: { color: '#0b0b0c', roughness: 0.95 } },
 };
 
 // Zusätzliche Namen für Fotoscan-Sätze der Asset-Bibliothek (world/library.js ordnet sie zu). Ohne Bibliothek
@@ -289,7 +293,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261011122417', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261011123518', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });

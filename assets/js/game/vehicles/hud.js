@@ -4,9 +4,9 @@
 // das Rohr wirklich zeigt), Treffer-/Schadensblitz, Warnungen, Aussteige-Ring (Pad/VR halten) und die Touch-Knöpfe.
 // Eigene Styles (kein game.css-Eingriff). DOM-Schreibzugriffe nur bei Änderung (zwischengespeicherte Werte).
 import * as THREE from 'three';
-import { DriveHUD } from './hud-drive.js?v=20261011122417';
-import { ViewOverlay, VIEW_CSS } from './views.js?v=20261011122417';
-import { SHORT, loaderSeat } from './crew.js?v=20261011122417';
+import { DriveHUD } from './hud-drive.js?v=20261011123518';
+import { ViewOverlay, VIEW_CSS } from './views.js?v=20261011123518';
+import { SHORT, loaderSeat } from './crew.js?v=20261011123518';
 
 const CSS = `
 .vh-root{position:absolute;inset:0;pointer-events:none;font-family:var(--font-hud,system-ui,sans-serif);color:var(--np-ink,#e9e6df);z-index:4}

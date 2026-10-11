@@ -7,8 +7,8 @@
 // Punkte (stats.score) und captures zählt der Modus.
 
 import * as THREE from 'three';
-import { isLongshot } from '../shared/modes.data.js?v=20261011122417';
-import { createArmorState, absorbDamage, canInsertPlate, insertPlate, plateCount, classDef } from '../shared/classes.data.js?v=20261011122417';
+import { isLongshot } from '../shared/modes.data.js?v=20261011123518';
+import { createArmorState, absorbDamage, canInsertPlate, insertPlate, plateCount, classDef } from '../shared/classes.data.js?v=20261011123518';
 
 const _ray = new THREE.Ray();
 const _v1 = new THREE.Vector3();
@@ -171,7 +171,8 @@ function closestOnSegment(ro, rd, t, a, b, out) {
 /* ================================================================== Combat */
 
 // Wie leicht eine Oberfläche zu durchschlagen ist (max. Dicke in m bei penetration = 1).
-const PENETRABLE = { wood: 0.45, glass: 0.6, fabric: 0.6, metal: 0.22, tile: 0.12, plaster: 0.18 };
+// vehicle: Auto/Transporter als ganzer Körper – Blech, Polster, Glas: Gewehrkugeln gehen quer durch, Pistolen bleiben stecken
+const PENETRABLE = { wood: 0.45, glass: 0.6, fabric: 0.6, metal: 0.22, tile: 0.12, plaster: 0.18, vehicle: 4.5 };
 // Massive Baustoffe (Wände, Sandsäcke, Erde) nur mit starkem Kaliber (penetration ab 0,75: MG, DMR, Scharfschütze –
 // ab dort wachsend bis zur vollen Dicke bei 1,0); Panzerbüchsen (antiMateriel) schaffen fast doppelt so viel.
 const HARD = { concrete: 0.3, dirt: 0.35, sand: 0.3 };

@@ -2,20 +2,20 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261011122417';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261011123518';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261011122417';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261011122417';
+} from '../props.js?v=20261011123518';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261011123518';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261011122417';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261011123518';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261011122417';
+} from './hafen-ausstattung.js?v=20261011123518';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -751,8 +751,8 @@ function warehouse(b) {
   }
   // Büroblock im Nordosten (2 Ebenen) + Empore entlang der Nordwand
   const ox0 = 30, ox1 = x1 - t, oz0 = z0 + t, oz1 = -11, fy = 3.6;
-  wall(b, { x0: ox0, z0: oz1, x1: ox1, z1: oz1, h: fy, t: 0.2, mat: 'plaster_white', tint: '#dcd8cf', frameMat: 'metal_painted', frameTint: '#2a2e33', openings: [{ at: 3, w: 1.1, h: 2.2, kind: 'door' }, { at: 7.5, w: 3, h: 1.2, kind: 'window', sill: 1.0, glass: false }] });
-  wall(b, { x0: ox0, z0: oz0, x1: ox0, z1: oz1, h: fy, t: 0.2, mat: 'plaster_white', tint: '#dcd8cf', openings: [{ at: 3.5, w: 2.2, h: 1.1, kind: 'window', sill: 1.0, glass: false }] });
+  wall(b, { x0: ox0, z0: oz1, x1: ox1, z1: oz1, h: fy, t: 0.2, mat: 'plaster_white', destructible: true, tint: '#dcd8cf', frameMat: 'metal_painted', frameTint: '#2a2e33', openings: [{ at: 3, w: 1.1, h: 2.2, kind: 'door' }, { at: 7.5, w: 3, h: 1.2, kind: 'window', sill: 1.0, glass: false }] });
+  wall(b, { x0: ox0, z0: oz0, x1: ox0, z1: oz1, h: fy, t: 0.2, mat: 'plaster_white', destructible: true, tint: '#dcd8cf', openings: [{ at: 3.5, w: 2.2, h: 1.1, kind: 'window', sill: 1.0, glass: false }] });
   // Obergeschoss-Wände (Glasfront zur Halle)
   wall(b, { x0: ox0, z0: oz1, x1: ox1, z1: oz1, y: fy, h: 3.0, t: 0.2, mat: 'plaster_white', tint: '#dcd8cf', frameMat: 'metal_painted', frameTint: '#2a2e33', openings: [{ at: 2.2, w: 1.0, h: 2.1, kind: 'door' }, { at: 6.8, w: 4.4, h: 1.4, kind: 'window', sill: 0.9, glass: false }] });
   slab(b, x0 + t, oz0, ox1, oz1, fy - 0.2, 0.2, 'concrete', [], {});

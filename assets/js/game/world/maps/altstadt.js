@@ -3,16 +3,16 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261011122417';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261011123518';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, acUnit, cable,
   cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js?v=20261011122417';
-import { createBell } from './altstadt-glocke.js?v=20261011122417';
+} from '../props.js?v=20261011123518';
+import { createBell } from './altstadt-glocke.js?v=20261011123518';
 import {
   setupLook, isNight, lampGlass, lampLight, parkBench, flowerBed, fountainWater, hrng,
   table, tableChairs, bed, wardrobe, dresser, nightstand, shelf, kitchen, armchair, pendant, ceilingLamp, rug, picture, barrelRack, sacks,
-} from './altstadt-ausstattung.js?v=20261011122417';
+} from './altstadt-ausstattung.js?v=20261011123518';
 
 const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe
@@ -517,7 +517,7 @@ function sail(b, x, y, z, w, d, design, o = {}) {
 // --- Kleinteile ------------------------------------------------------------------
 function lowWall(b, x0, z0, x1, z1, o = {}) {
   const h = o.h ?? 1.0, t = o.t ?? 0.35;
-  wall(b, { x0, z0, x1, z1, h, t, mat: 'stone_wall', tint: o.tint || '#dccdb2', cap: { mat: 'plaster_white', tint: '#f2ece0', h: 0.08, over: 0.05 }, minimap: 'cover', openings: o.openings || [] });
+  wall(b, { x0, z0, x1, z1, h, t, mat: 'stone_wall', destructible: o.destructible !== false, tint: o.tint || '#dccdb2', cap: { mat: 'plaster_white', tint: '#f2ece0', h: 0.08, over: 0.05 }, minimap: 'cover', openings: o.openings || [] });
 }
 
 /** Blumenbeet (Kartenrunde 2: Trog mit Deckplatten, sichtbarer Erde und gemischten Blüten – altstadt-ausstattung.js). */

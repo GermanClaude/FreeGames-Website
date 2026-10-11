@@ -12,8 +12,8 @@
 //   handle.stats                         → { download, gpu, sets, models, hdri, ms, failed, tier }
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261011122417';
-import { textureAnisotropy } from '../engine/textures.js?v=20261011122417';
+import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261011123518';
+import { textureAnisotropy } from '../engine/textures.js?v=20261011123518';
 
 // ---------------------------------------------------------------------------
 // Zuordnung Spielmaterial → Bibliothekssatz
@@ -54,6 +54,7 @@ export const LIB_MATERIALS = {
   // cardboard: bleibt prozedural – der Fotoscan ist nackte Wellpappe; Klebeband/Aufdruck des prozeduralen Kartons lesen
   // sich auf Kistenflächen besser (Kartenzuordnung assets.materials.cardboard = 'cardboard' schaltet ihn wieder zu)
   metal_painted: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },
+  car_paint: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },
   metal_rust: { id: 'metal_rust_painted', color: 0.75 },
   metal_corrugated: { id: 'metal_corrugated', color: 3.0 },
   metal_corrugated_rust: { id: 'metal_corrugated_rusty', color: 1.6 },

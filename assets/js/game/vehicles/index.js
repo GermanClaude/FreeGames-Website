@@ -6,21 +6,21 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261011122417';
-import { Vehicle, newIntent } from './vehicle.js?v=20261011122417';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261011122417';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011122417';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011122417';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011122417';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011122417';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261011122417';
-import { VehicleAudio } from './audio.js?v=20261011122417';
-import * as MATS from './materials.js?v=20261011122417';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011122417';
-import { VehicleNet } from './net.js?v=20261011122417';
-import { groundRay } from './sim.js?v=20261011122417';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011122417';
-import { falloff } from '../combat.js?v=20261011122417';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261011123518';
+import { Vehicle, newIntent } from './vehicle.js?v=20261011123518';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261011123518';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011123518';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011123518';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011123518';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011123518';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261011123518';
+import { VehicleAudio } from './audio.js?v=20261011123518';
+import * as MATS from './materials.js?v=20261011123518';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011123518';
+import { VehicleNet } from './net.js?v=20261011123518';
+import { groundRay } from './sim.js?v=20261011123518';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011123518';
+import { falloff } from '../combat.js?v=20261011123518';
 
 export { VEHICLES, VEHICLE_WEAPONS, VEHICLE_IDS, Vehicle };
 
