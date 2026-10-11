@@ -10,10 +10,10 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011135100';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011135100';
-import { applyAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261011135100';
-import { getWeaponModelInfo } from './models.js?v=20261011135100';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011145012';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011145012';
+import { applyAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261011145012';
+import { getWeaponModelInfo } from './models.js?v=20261011145012';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -74,7 +74,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261011135100').WeaponSystem} system
+   * @param {import('./index.js?v=20261011145012').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -239,7 +239,10 @@ export class WeaponController {
     }
     const mk = (def) => {
       const o = old.get(def.id);
-      return o && (o.def.attKey || '') === (def.attKey || '') ? o : { id: def.id, def, mag: def.mag || 0, reserve: def.reserve || 0 };
+      if (o && (o.def.attKey || '') === (def.attKey || '')) return o;
+      // gleiche Waffe, andere Aufsätze (Pausemenü im Match): Munition bleibt (kein geschenktes volles Magazin)
+      if (o) return { id: def.id, def, mag: Math.min(o.mag, def.mag || 0), reserve: o.reserve };
+      return { id: def.id, def, mag: def.mag || 0, reserve: def.reserve || 0 };
     };
     this.slots = secondary ? [mk(primary), mk(secondary)] : [mk(primary)];
     // Ausrüstung

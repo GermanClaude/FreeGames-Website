@@ -3,16 +3,16 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011135100';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011135100'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011135100'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011135100';
-import { esc, num, secs, meters } from './dom.js?v=20261011135100';
-import { ICON } from './icons.js?v=20261011135100';
-import { drawMapArt } from './mapart.js?v=20261011135100';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011135100';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261011135100';
-import { ProgressView } from './progress.js?v=20261011135100';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011145012';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011145012'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011145012'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011145012';
+import { esc, num, secs, meters } from './dom.js?v=20261011145012';
+import { ICON } from './icons.js?v=20261011145012';
+import { drawMapArt } from './mapart.js?v=20261011145012';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011145012';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011145012';
+import { ProgressView } from './progress.js?v=20261011145012';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -232,7 +232,14 @@ export class Lobby {
       summary: screen.querySelector('.lb-summary'), side: screen.querySelector('.lb-side'), profile: screen.querySelector('.lb-profile'),
     };
     screen.addEventListener('click', (e) => this._click(e));
-    screen.addEventListener('change', (e) => { onAttChange(e); if (e.target && e.target.dataset && e.target.dataset.attSlot) this._showView(e.target.dataset.attW); });
+    screen.addEventListener('change', (e) => {
+      if (!onAttChange(e)) return;
+      const { attW, attSlot } = e.target.dataset;
+      this._renderDetail();   // Werte-Vergleich neu
+      const n = screen.querySelector(`[data-att-slot="${attSlot}"]`);
+      if (n) n.focus({ preventScroll: true });
+      this._showView(attW);
+    });
     screen.addEventListener('pointerover', (e) => this._camoHover(e, true));
     screen.addEventListener('pointerout', (e) => this._camoHover(e, false));
     screen.addEventListener('focusin', (e) => this._camoHover(e, true));

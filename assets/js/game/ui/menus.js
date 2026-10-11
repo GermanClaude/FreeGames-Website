@@ -6,17 +6,17 @@
 // Mehrspieler (ui/net-menus.js, this.net): Lobby-Reiter, Raum-Bildschirm ('room', 'roomequip'), Online-Teil von
 // Pause und Endbildschirm. Einstiege für Deep-Links: openJoin(code) · openRoom().
 
-import { el, esc, clock } from './dom.js?v=20261011135100';
-import { ICON } from './icons.js?v=20261011135100';
-import { Lobby } from './lobby.js?v=20261011135100';
-import { WeaponPreview } from './preview3d.js?v=20261011135100';
-import { SettingsPanel } from './settings-panel.js?v=20261011135100';
-import { TouchEditor } from './touch-editor.js?v=20261011135100';
-import { controlsHtml, bindControls } from './controls-help.js?v=20261011135100';
-import { EndScreen } from './endscreen.js?v=20261011135100';
-import { LoadoutPanel } from './loadout-panel.js?v=20261011135100';
-import { drawMapArt, rememberMinimap } from './mapart.js?v=20261011135100';
-import { NetMenus } from './net-menus.js?v=20261011135100';
+import { el, esc, clock } from './dom.js?v=20261011145012';
+import { ICON } from './icons.js?v=20261011145012';
+import { Lobby } from './lobby.js?v=20261011145012';
+import { WeaponPreview } from './preview3d.js?v=20261011145012';
+import { SettingsPanel } from './settings-panel.js?v=20261011145012';
+import { TouchEditor } from './touch-editor.js?v=20261011145012';
+import { controlsHtml, bindControls } from './controls-help.js?v=20261011145012';
+import { EndScreen } from './endscreen.js?v=20261011145012';
+import { LoadoutPanel } from './loadout-panel.js?v=20261011145012';
+import { drawMapArt, rememberMinimap } from './mapart.js?v=20261011145012';
+import { NetMenus } from './net-menus.js?v=20261011145012';
 
 // VR-Brille (Knopf „VR starten“ im Pausenmenü; Symbole in icons.js gehören zu einem anderen Bereich)
 const VR_ICON = '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M6 16h36v16a3 3 0 0 1-3 3H31l-4-6h-6l-4 6H9a3 3 0 0 1-3-3z"/><circle cx="16" cy="24" r="3"/><circle cx="32" cy="24" r="3"/></svg>';
@@ -361,7 +361,7 @@ export class Menus {
     const s = this._screen('equip', 'm-sub', `
       <div class="sub sub-wide">
         <header class="sub-head"><button type="button" class="m-icon" data-act="back" aria-label="Zurück">${ICON.back}</button><div><div class="m-kicker">Pause</div><h1 class="m-title">Ausrüstung<em>.</em></h1></div></header>
-        <p class="sub-lead">Gilt sofort, wenn du gerade erst eingesetzt wurdest – sonst ab dem nächsten Einsatz.</p>
+        <p class="sub-lead">Aufsätze und Messer gelten sofort. Waffen und Klasse sofort, wenn du gerade erst eingesetzt wurdest – sonst ab dem nächsten Einsatz.</p>
         <div class="sub-body m-scroll eq-host" data-scrollable></div>
         <div class="m-actions eq-actions"><button type="button" class="m-btn m-primary" data-act="apply">${ICON.check}<span>Übernehmen</span></button><button type="button" class="m-btn" data-act="back">${ICON.back}<span>Abbrechen</span></button></div>
       </div>`);
@@ -375,6 +375,12 @@ export class Menus {
         const lo = panel.value();
         panel.save();
         const when = G.mode && typeof G.mode.setLoadout === 'function' ? G.mode.setLoadout(lo) : 'next';
+        // Aufsätze und Messer gelten sofort (Waffen/Klasse wie bisher erst beim nächsten Einsatz, außer frisch gespawnt)
+        const p = G.player;
+        if (when !== 'now' && p && p.alive && p.weapon && typeof p.weapon.setLoadout === 'function') {
+          p.loadout = { ...(p.loadout || {}), melee: lo.melee || (p.loadout || {}).melee };
+          try { p.weapon.setLoadout(p.loadout); } catch (err) { console.error('[NULLPUNKT] Aufsätze übernehmen:', err); }
+        }
         G.events.emit('loadout:change', { actor: G.player, loadout: lo, when });
         // Mehrspieler: Ausrüstung dem Host melden (gilt ab dem nächsten Einsatz)
         if (G.net && G.net.online && typeof G.net.setLoadout === 'function') { try { G.net.setLoadout({ cls: lo.cls, loadout: lo }); } catch { /* */ } }
@@ -382,7 +388,7 @@ export class Menus {
         panel.unmount();
         this.showPause();
         const n = this.root.querySelector('.ps-info');
-        if (n) n.insertAdjacentHTML('beforeend', `<p class="ps-note">${when === 'now' ? 'Ausrüstung übernommen.' : 'Ausrüstung gilt ab dem nächsten Einsatz.'}</p>`);
+        if (n) n.insertAdjacentHTML('beforeend', `<p class="ps-note">${when === 'now' ? 'Ausrüstung übernommen.' : 'Aufsätze und Messer übernommen – Waffen/Klasse ab dem nächsten Einsatz.'}</p>`);
       }
     });
     this.parent = 'pause';

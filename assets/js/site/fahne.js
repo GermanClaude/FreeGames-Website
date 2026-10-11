@@ -5,13 +5,13 @@
 // quer: an Stelle der Abschnittszeile). Sie verdeckt nichts und scrollt mit dem Hero weg. Aufgeklappt startet
 // sie nur, wenn der freie Raum über der Wortmarke reicht – sonst gefaltet auf ihre Kopfzeile (antippen öffnet).
 // Ist der Hero nicht im Bild, zeigt die Statuszeile „FAHNE.“; antippen springt zum Bericht.
-import { h } from './dom.js?v=20261011135100';
-import { fit } from './fit.js?v=20261011135100';
-import { site } from './state.js?v=20261011135100';
-import { announce } from './live.js?v=20261011135100';
-import { reduced } from './motion.js?v=20261011135100';
-import { num, date, count, TERMS } from './fmt.js?v=20261011135100';
-import { jumpTo } from './jump.js?v=20261011135100';
+import { h } from './dom.js?v=20261011145012';
+import { fit } from './fit.js?v=20261011145012';
+import { site } from './state.js?v=20261011145012';
+import { announce } from './live.js?v=20261011145012';
+import { reduced } from './motion.js?v=20261011145012';
+import { num, date, count, TERMS } from './fmt.js?v=20261011145012';
+import { jumpTo } from './jump.js?v=20261011145012';
 
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
 const WORD = {

@@ -1,6 +1,6 @@
 // Pistolen: P-9 Kompakt (Polymer, Schlagbolzen) und Adler .50 (schwere Edelstahlpistole mit Dreieckslauf)
-import { slots, engrave } from './parts.js?v=20261011135100';
-import { magRounds } from './magfill.js?v=20261011135100';
+import { slots, engrave } from './parts.js?v=20261011145012';
+import { magRounds } from './magfill.js?v=20261011145012';
 
 const RAKE = 0.3;
 
