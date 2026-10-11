@@ -3,15 +3,16 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011131140';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011131140'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011131140'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011131140';
-import { esc, num, secs, meters } from './dom.js?v=20261011131140';
-import { ICON } from './icons.js?v=20261011131140';
-import { drawMapArt } from './mapart.js?v=20261011131140';
-import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261011131140';
-import { ProgressView } from './progress.js?v=20261011131140';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011133950';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011133950'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011133950'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011133950';
+import { esc, num, secs, meters } from './dom.js?v=20261011133950';
+import { ICON } from './icons.js?v=20261011133950';
+import { drawMapArt } from './mapart.js?v=20261011133950';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011133950';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011133950';
+import { ProgressView } from './progress.js?v=20261011133950';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -182,7 +183,7 @@ export class Lobby {
       modeId: c.modeId, mapId: c.mapId, difficulty: c.difficulty, allies: c.allies, enemies: c.enemies,
       style: c.style, crosshair: c.style === 'realistisch' ? !!this.G.settings.get('realisticCrosshair') : null,
       matchLength: c.matchLength, timeOfDay: this._todFor(c) || 'standard', weather: c.weather && c.weather !== 'standard' ? c.weather : null,
-      loadout: { primary: c.primary, secondary: c.secondary, lethal: c.lethal, melee: c.melee || 'knife', cls: c.cls, camo, ...(skin ? { skin } : {}) },
+      loadout: { primary: c.primary, secondary: c.secondary, lethal: c.lethal, melee: c.melee || 'knife', cls: c.cls, camo, att: pickAtt(c), ...(skin ? { skin } : {}) },
       ...(c.limits && c.limits.modeId === c.modeId ? { timeLimit: c.limits.timeLimit, scoreLimit: c.limits.scoreLimit } : {}),
     };
   }
@@ -231,6 +232,7 @@ export class Lobby {
       summary: screen.querySelector('.lb-summary'), side: screen.querySelector('.lb-side'), profile: screen.querySelector('.lb-profile'),
     };
     screen.addEventListener('click', (e) => this._click(e));
+    screen.addEventListener('change', (e) => { onAttChange(e); if (e.target && e.target.dataset && e.target.dataset.attSlot) this._showView(e.target.dataset.attW); });
     screen.addEventListener('pointerover', (e) => this._camoHover(e, true));
     screen.addEventListener('pointerout', (e) => this._camoHover(e, false));
     screen.addEventListener('focusin', (e) => this._camoHover(e, true));
@@ -570,7 +572,7 @@ export class Lobby {
       <p class="lo-desc">${esc(def.description || '')}</p>
       ${locked ? `<div class="lo-locked">${ICON.lock}<span>Freischaltung ab <b>Stufe ${def.unlockLevel}</b>. Du bist Stufe ${this.level()}.</span></div>` : equipped ? `<div class="lo-on">${ICON.check}<span>Ausgerüstet</span></div>` : ''}
       ${body}
-      ${!isEq && !locked ? camoRowHtml(this.G, id, equippedCamo(this.G, id)) : ''}`;
+      ${!isEq && !locked ? camoRowHtml(this.G, id, equippedCamo(this.G, id)) : ''}${!isEq && !locked ? attRowHtml(this.G, id) : ''}`;
   }
 
   _choose(id) {
@@ -704,4 +706,11 @@ function fact(label, value) {
 function clampInt(v, a, b) {
   const n = Math.round(Number(v));
   return Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
+}
+
+/** Aufsätze der gewählten Waffen (für Host/Clients im Netz; offline liest der Controller sie selbst). */
+function pickAtt(c) {
+  const all = loadAttachments(), out = {};
+  for (const k of ['primary', 'secondary']) if (c[k] && all[c[k]] && Object.keys(all[c[k]]).length) out[c[k]] = all[c[k]];
+  return out;
 }

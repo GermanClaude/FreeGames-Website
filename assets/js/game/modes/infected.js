@@ -7,8 +7,8 @@
 // Client übernimmt das Team (sync-client _syncTeam), meldet 'infect' fürs HUD und setzt die Ausrüstung nur für den eigenen
 // Spieler. Die Zufallswaffe eines Menschen hängt an Raumcode + Netz-Id – Host (Anti-Cheat) und Client wählen dieselbe.
 
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261011131140';
-import { BaseMode } from './base.js?v=20261011131140';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261011133950';
+import { BaseMode } from './base.js?v=20261011133950';
 
 export class InfectedMode extends BaseMode {
   constructor(G, modeId, opts) {
