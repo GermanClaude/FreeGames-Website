@@ -6,8 +6,8 @@
 // Verbotene Abteilung hinter Eisengittern mit drei Durchgängen (Team B). Beide Hälften punktsymmetrisch (fair).
 // Magie: fliegende Bücher, schwebende Kerzen, Globus mit Ringen (ohne Kollision, über Kopfhöhe). (Owner: world)
 import * as THREE from 'three';
-import { wall, slab, stairs, railing } from '../arch.js?v=20261011160633';
-import { chair, hash01 } from '../props.js?v=20261011160633';
+import { wall, slab, stairs, railing } from '../arch.js?v=20261011170502';
+import { chair, hash01 } from '../props.js?v=20261011170502';
 
 const X = 38, Z = 27, H = 13, GY = 4.4; // Halle, Höhe, Galerie-/Brückenhöhe
 const GAL = X - 4.5, GZ = 22.5; // Innenkante und Länge (±) der Galerien

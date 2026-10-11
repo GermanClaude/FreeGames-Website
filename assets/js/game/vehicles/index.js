@@ -6,22 +6,22 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261011160633';
-import { Vehicle, newIntent } from './vehicle.js?v=20261011160633';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261011160633';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011160633';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011160633';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011160633';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011160633';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261011160633';
-import { VehicleAudio } from './audio.js?v=20261011160633';
-import * as MATS from './materials.js?v=20261011160633';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011160633';
-import { VehicleNet } from './net.js?v=20261011160633';
-import { groundRay } from './sim.js?v=20261011160633';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011160633';
-import { falloff } from '../combat.js?v=20261011160633';
-import { Thermal } from './thermal.js?v=20261011160633';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261011170502';
+import { Vehicle, newIntent } from './vehicle.js?v=20261011170502';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261011170502';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011170502';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011170502';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011170502';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011170502';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261011170502';
+import { VehicleAudio } from './audio.js?v=20261011170502';
+import * as MATS from './materials.js?v=20261011170502';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011170502';
+import { VehicleNet } from './net.js?v=20261011170502';
+import { groundRay } from './sim.js?v=20261011170502';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011170502';
+import { falloff } from '../combat.js?v=20261011170502';
+import { Thermal } from './thermal.js?v=20261011170502';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -225,6 +225,29 @@ export class VehicleSystem {
     v.dispose();
     if (v.spawn && v.spawn.vehicle === v) { v.spawn.vehicle = null; v.spawn.respawnAt = this.G.time.elapsed + Math.max(3, v.spawn.respawn - v.def.wreckTime); }
     this.G.events.emit('vehicle:removed', { vehicle: v });
+  }
+
+  /** Notreparatur (Fähigkeit der Besatzung): eigenes Fahrzeug, in dem der Akteur sitzt, sonst das nächste eigene ≤ range. */
+  emergencyCandidate(actor, range = 6) {
+    if (!actor) return null;
+    if (actor.vehicle && actor.vehicle.alive) return actor.vehicle;
+    let best = null, bd = range;
+    for (const v of this.list) {
+      if (!v.alive || (v.team != null && actor.team != null && v.team !== actor.team)) continue;
+      const d = this._boxDistance(v, actor.position, 1);
+      if (d < bd) { bd = d; best = v; }
+    }
+    return best;
+  }
+
+  /** Notreparatur ausführen (offline/Host): +amount Leben, ausgefallene Module auf 60 %, Kette sofort wieder. → Wert > 0 */
+  emergencyRepair(actor, amount, range = 6) {
+    const v = this.emergencyCandidate(actor, range);
+    if (!v) return 0;
+    let n = v.health < v.maxHealth ? v.repair(amount, actor) || 0 : 0;
+    for (const z of Object.values(v.zones || {})) if (z.max && z.hp < z.max * 0.6) { z.hp = z.max * 0.6; n++; }
+    v.trackDownUntil = 0;
+    return Math.max(1, Math.round(n));
   }
 
   /** Panzer dieser Runde: Einstellung „Panzer-Generation“ (online Raum, offline Lobby; ?panzer=… für Tests). */
@@ -529,7 +552,8 @@ export class VehicleSystem {
     this._clearSeatState(v.seats[from]);
     this._seat(actor, v, idx);
     const now = this.G.time.elapsed;
-    const sw = (v.def.crew && v.def.crew.switchTime) || 0;
+    const pk = (actor.classDef && actor.classDef.perks) || {};
+    const sw = ((v.def.crew && v.def.crew.switchTime) || 0) * (pk.crewSwitchMult || 1); // Besatzung: halbe Wechselzeit
     v.seats[idx].readyAt = now + sw;
     if (actor.isPlayer) this._playerSwitched(v, idx, now + sw);
     this.G.events.emit('vehicle:seat', { vehicle: v, actor, from, seat: idx });

@@ -1,8 +1,8 @@
 // §07 Steuerung: Belegung. Reiter Touch · Tastatur & Maus · Gamepad. Tastenprobe nur bei Fokus,
 // Gamepad-Abfrage nur, solange der Reiter sichtbar und das Dokument im Vordergrund ist.
-import { h, $, tabs } from './dom.js?v=20261011160633';
-import { loop } from './loop.js?v=20261011160633';
-import { pointerCoarse, reduced } from './motion.js?v=20261011160633';
+import { h, $, tabs } from './dom.js?v=20261011170502';
+import { loop } from './loop.js?v=20261011170502';
+import { pointerCoarse, reduced } from './motion.js?v=20261011170502';
 
 /*
  * Touch-Belegung wie im Spiel: Mitte jedes Knopfs in Prozent der Bildfläche im Querformat (915 × 412), gemessen an

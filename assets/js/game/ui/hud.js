@@ -16,16 +16,16 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261011160633';
-import { ICON, medalBadge } from './icons.js?v=20261011160633';
-import { Minimap } from './minimap.js?v=20261011160633';
-import { Killfeed } from './killfeed.js?v=20261011160633';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261011160633';
-import { StrikeTargeting } from './strike-target.js?v=20261011160633';
-import { actionKey } from './settings/keys.js?v=20261011160633';
-import { DeployScreen } from './deploy.js?v=20261011160633';
-import { CommandWheel } from './command-wheel.js?v=20261011160633';
-import { DroneHud } from './drone-hud.js?v=20261011160633';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261011170502';
+import { ICON, medalBadge } from './icons.js?v=20261011170502';
+import { Minimap } from './minimap.js?v=20261011170502';
+import { Killfeed } from './killfeed.js?v=20261011170502';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261011170502';
+import { StrikeTargeting } from './strike-target.js?v=20261011170502';
+import { actionKey } from './settings/keys.js?v=20261011170502';
+import { DeployScreen } from './deploy.js?v=20261011170502';
+import { CommandWheel } from './command-wheel.js?v=20261011170502';
+import { DroneHud } from './drone-hud.js?v=20261011170502';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -337,7 +337,7 @@ export class HUD {
     });
     s.on('point:denied', ({ actor, point, reason, left }) => {
       if (actor !== P()) return;
-      this._notice(reason === 'voll' ? 'Munition ist schon voll.' : reason === 'gesund' ? 'Du bist unverletzt.' : `${point.def.name}: noch ${Math.ceil(left)} s.`, 'dim', null, NOTICE_LIFE, 'point');
+      this._notice(reason === 'voll' ? 'Munition ist schon voll.' : reason === 'kein' ? 'Kein eigenes Fahrzeug in der Nähe.' : reason === 'gesund' ? 'Du bist unverletzt.' : `${point.def.name}: noch ${Math.ceil(left)} s.`, 'dim', null, NOTICE_LIFE, 'point');
     });
     s.on('loot:take', ({ actor, kind, amount, weaponId }) => {
       if (actor !== P()) return;
@@ -356,7 +356,7 @@ export class HUD {
     s.on('ability:denied', ({ actor, id, left, reason }) => { if (actor === P()) this._notice(reason === 'voll' ? 'Munition ist schon voll.' : `${abName(id)}: noch ${Math.ceil(left)} s.`, 'dim', null, NOTICE_LIFE, 'ability'); });
     s.on('ability:use', ({ actor, id, count }) => {
       if (actor !== P()) return;
-      const text = id === 'aufklaerungspuls' ? `Aufklärungspuls: ${count} Gegner markiert.` : id === 'nachschub' ? 'Nachschub: Munition aufgefüllt.' : `${abName(id)} aktiv!`;
+      const text = id === 'aufklaerungspuls' ? `Aufklärungspuls: ${count} Gegner markiert.` : id === 'nachschub' ? 'Nachschub: Munition aufgefüllt.' : id === 'notreparatur' ? 'Notreparatur: Fahrzeug instand gesetzt.' : `${abName(id)} aktiv!`;
       this._notice(text, 'gold', null, NOTICE_LIFE, 'ability');
     });
     s.on('streak:destroyed', (e) => this._onStreakDestroyed(e));
@@ -1051,7 +1051,7 @@ export class HUD {
     toggle(this.root, 'is-dead', !!p && !alive);
     this._setDead(!!p && !alive);
     const melee = def && def.cls === 'melee';
-    const hide = !alive || scoped || ads > 0.55 || (p && p.sprinting) || (this.targeting && this.targeting.open) || (this.wheel && this.wheel.isOpen) || this.style === 'aus';
+    const hide = !alive || scoped || ads > 0.55 || (p && p.binoOn) || (p && p.sprinting) || (this.targeting && this.targeting.open) || (this.wheel && this.wheel.isOpen) || this.style === 'aus';
     const cross = this.el.cross;
     setStyle(cross, 'opacity', hide ? '0' : w && w.isReloading ? '.45' : '1');
     if (!hide && cam) {

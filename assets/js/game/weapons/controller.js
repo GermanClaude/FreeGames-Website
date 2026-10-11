@@ -10,10 +10,11 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011160633';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011160633';
-import { applyAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261011160633';
-import { getWeaponModelInfo } from './models.js?v=20261011160633';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011170502';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011170502';
+import { applyAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261011170502';
+import { getWeaponModelInfo } from './models.js?v=20261011170502';
+import { classDef } from '../../shared/classes.data.js?v=20261011170502';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -74,7 +75,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261011160633').WeaponSystem} system
+   * @param {import('./index.js?v=20261011170502').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -245,6 +246,10 @@ export class WeaponController {
       return { id: def.id, def, mag: def.mag || 0, reserve: def.reserve || 0 };
     };
     this.slots = secondary ? [mk(primary), mk(secondary)] : [mk(primary)];
+    // Klassenwerkzeug als eigene Waffe (Pionier: Klappspaten, Mausrad/Wechseln) – nur der Spieler, Bots wie bisher
+    const toolId = loadout.tool !== undefined ? loadout.tool : this.actor && this.actor.isPlayer ? classDef(loadout.cls || this.actor.cls).tool : null;
+    const td = toolId ? this._def(toolId) : null;
+    if (td && td.cls === 'melee' && !this.slots.some((x) => x.id === td.id)) this.slots.push(mk(td));
     // Ausrüstung
     const EQ = this._equipmentDefs();
     const lethal = loadout.lethal === null ? null : loadout.lethal === undefined ? (this.equipment.lethal.id || 'frag') : loadout.lethal;

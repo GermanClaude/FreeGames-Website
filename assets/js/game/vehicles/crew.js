@@ -7,7 +7,7 @@
 // Ladefolge (Ladeschütze, Sicht 'innen', Blick nur über die Gier im Turmraum geprüft):
 //   'munition' (Sorte wählen) → Blick aufs Gestell → 'greifen' 1,0 s → Blick zum Verschluss → 'einschieben' 0,8 s
 //   → 'schliessen' 0,4 s → geladen. Automatik: 5,0 s mit besetztem Ladeschützensitz, sonst 8,0 s.
-import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261011160633';
+import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261011170502';
 
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 export const LOAD_TIMES = { greifen: 1.0, einschieben: 0.8, schliessen: 0.4 };
@@ -105,7 +105,8 @@ export function loadAction(v, seat, action, ammo = null, { net = false } = {}) {
     default:
       return { ok: false, why: 'schritt' };
   }
-  g.busy = LOAD_TIMES[action];
+  const pk = (actor && actor.classDef && actor.classDef.perks) || {};
+  g.busy = LOAD_TIMES[action] * (pk.crewLoadMult || 1); // Besatzung lädt 25 % schneller
   g.busyKind = action;
   g._busyMax = g.busy;
   v.G.events.emit('vehicle:load', { vehicle: v, actor, step: action, ammo: g.held || g.select });

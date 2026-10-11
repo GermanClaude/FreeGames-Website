@@ -3,16 +3,16 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011160633';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011160633'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011160633'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011160633';
-import { esc, num, secs, meters } from './dom.js?v=20261011160633';
-import { ICON } from './icons.js?v=20261011160633';
-import { drawMapArt } from './mapart.js?v=20261011160633';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011160633';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261011160633';
-import { ProgressView } from './progress.js?v=20261011160633';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011170502';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011170502'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011170502'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011170502';
+import { esc, num, secs, meters } from './dom.js?v=20261011170502';
+import { ICON } from './icons.js?v=20261011170502';
+import { drawMapArt } from './mapart.js?v=20261011170502';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011170502';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011170502';
+import { ProgressView } from './progress.js?v=20261011170502';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
