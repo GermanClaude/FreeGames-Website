@@ -9,12 +9,12 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS } from './data.js?v=20261011151144';
-import { VehicleBody } from './sim.js?v=20261011151144';
-import { createVehicleModel } from './models.js?v=20261011151144';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011151144';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011151144';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011151144';
+import { VEHICLES, VEHICLE_WEAPONS } from './data.js?v=20261011152506';
+import { VehicleBody } from './sim.js?v=20261011152506';
+import { createVehicleModel } from './models.js?v=20261011152506';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011152506';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011152506';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011152506';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -656,6 +656,18 @@ export class Vehicle {
     if (st.sightHidden !== sight) { st.sightHidden = sight; if (M.root) M.root.visible = !sight; }
     const g = this.gun;
     if (!g) return;
+    // Ladeschütze: Schritt zum Gestell (Blick nach hinten) bzw. zum Verschluss (nach vorn), weich
+    if (inside) {
+      const ls = this.seats.find((x) => x.def.loader && x.actor === p);
+      const ry = ls ? ls.look.relYaw || 0 : 0;
+      this._loaderYaw = ry;
+      const want = Math.abs(ry) > 1.9 ? 0.5 : Math.abs(ry) < 0.9 ? -0.55 : 0;
+      this._loaderShift = (this._loaderShift || 0) + (want - (this._loaderShift || 0)) * Math.min(1, dt * 4);
+    } else this._loaderShift = 0;
+    // Lade-Ablauf sichtbar (Arme, Granate wandert Gestell → Hände → Verschluss, Hand schließt den Keil)
+    const busyK = g.busy > 0 ? g.busyKind : null;
+    const prog = busyK && g._busyMax > 0 ? 1 - g.busy / g._busyMax : 0;
+    if (inside || st.anim) { st.anim = busyK; M.setLoadAnim?.(busyK, prog, g.held || g.select, this._loaderShift || 0, this._loaderYaw || 0); }
     const bw = g.breechOpen ? 1 : 0;
     st.breech = st.breech == null ? bw : bw > st.breech ? Math.min(1, st.breech + dt * 4) : Math.max(0, st.breech - dt * 4);
     if (st.breechSent !== st.breech) { st.breechSent = st.breech; M.setBreech?.(st.breech); }

@@ -6,22 +6,22 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261011151144';
-import { Vehicle, newIntent } from './vehicle.js?v=20261011151144';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261011151144';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011151144';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011151144';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011151144';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011151144';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261011151144';
-import { VehicleAudio } from './audio.js?v=20261011151144';
-import * as MATS from './materials.js?v=20261011151144';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011151144';
-import { VehicleNet } from './net.js?v=20261011151144';
-import { groundRay } from './sim.js?v=20261011151144';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011151144';
-import { falloff } from '../combat.js?v=20261011151144';
-import { Thermal } from './thermal.js?v=20261011151144';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor } from './data.js?v=20261011152506';
+import { Vehicle, newIntent } from './vehicle.js?v=20261011152506';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261011152506';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011152506';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011152506';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011152506';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011152506';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261011152506';
+import { VehicleAudio } from './audio.js?v=20261011152506';
+import * as MATS from './materials.js?v=20261011152506';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011152506';
+import { VehicleNet } from './net.js?v=20261011152506';
+import { groundRay } from './sim.js?v=20261011152506';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011152506';
+import { falloff } from '../combat.js?v=20261011152506';
+import { Thermal } from './thermal.js?v=20261011152506';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -100,6 +100,9 @@ export class VehicleSystem {
       ev.on('actor:spawn', (e) => { if (e && e.actor && e.actor.vehicle) this.removeFromSeat(e.actor, { teleport: false }); }),
       ev.on('vehicle:damaged', (e) => { if (e.vehicle === (G.player && G.player.vehicle) && e.kind !== 'fire') this.hud && this.hud.damaged(); }),
       ev.on('vehicle:hit', (e) => { if (e.attacker && e.attacker === G.player) this.hud && this.hud.hit(); }),
+      // Ladeklänge (Greifen, Einschieben, Keil, Sortenwechsel, geladen): im eigenen Turm laut, daneben leise
+      ev.on('vehicle:load', (e) => this._loadSound(e && e.vehicle, e && e.step)),
+      ev.on('vehicle:loaded', (e) => this._loadSound(e && e.vehicle, 'geladen')),
     ];
     try { this.hud = new VehicleHUD(G); } catch (err) { this.hud = null; console.warn('[vehicles] HUD nicht verfügbar', err); }
     this.camera.reset();
@@ -138,6 +141,15 @@ export class VehicleSystem {
       }
       this.group.add(warm);
     }
+  }
+
+  _loadSound(v, step) {
+    if (!v || !['greifen', 'einschieben', 'schliessen', 'munition', 'geladen'].includes(step)) return;
+    const p = this.G.player;
+    const own = p && p.vehicle === v;
+    const d = p && v.body ? v.body.pos.distanceTo(p.position) : 99;
+    if (!own && d > 14) return;
+    this.audio.loadSound(step, own ? 1 : 0.25);
   }
 
   detach() {
