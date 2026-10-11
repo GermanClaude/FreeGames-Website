@@ -1,7 +1,7 @@
 // NULLPUNKT — animierte Wasserfläche: zwei gegenläufig scrollende Normalmaps, spiegelt die
 // PMREM-Himmelsumgebung (Fresnel über PBR), billig (keine Spiegelpass) (Owner: world)
 import * as THREE from 'three';
-import { getWaterNormalMap } from '../engine/textures.js?v=20261010152042';
+import { getWaterNormalMap } from '../engine/textures.js?v=20261011102852';
 
 /**
  * @param {{ x0:number, z0:number, x1:number, z1:number, y:number, color?:string, scale?:number, roughness?:number }} o

@@ -5,7 +5,7 @@
 // Kollision/Kugeln über die beweglichen Festkörper von building.js (addSolid). Online entscheidet der Host:
 // Client → 'door' {i, a: 't' (umschalten) | 'k' (auframmen) | 'h' (Treffer), d}; Host → 'ev' dr {i, s, b, k} an alle.
 import * as THREE from 'three';
-import { worldPartsFrom } from './building.js?v=20261010152042';
+import { worldPartsFrom } from './building.js?v=20261011102852';
 
 const DOOR_HP = 140;
 const DOOR_T = 0.06;

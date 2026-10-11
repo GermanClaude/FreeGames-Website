@@ -1,6 +1,6 @@
 // Fadenkreuz als Mauszeiger (nur feine Zeiger), Streuung aus der Zeigergeschwindigkeit,
 // Zielerkennung und Treffermarker (Maus und Touch).
-import { loop } from './loop.js?v=20261010152042';
+import { loop } from './loop.js?v=20261011102852';
 
 const TARGETS = 'a, button, [role=tab], [data-target], label.slot, input[type=range], summary, .sw, .enum label, .chk';
 const fineMq = window.matchMedia('(pointer: fine)');
