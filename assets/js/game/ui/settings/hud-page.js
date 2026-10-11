@@ -1,9 +1,9 @@
 // NULLPUNKT — Reiter „HUD“: HUD-Stil (Voll · Reduziert · Realismus wie Bodycam) mit Schema-Vorschau,
 // Fadenkreuz (Form, Farbe, Vorschau), Bodycam-Einblendung, FPS-Anzeige.
 
-import { esc } from '../dom.js?v=20261011183929';
-import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261011183929';
-import { HINTS } from './schema-page.js?v=20261011183929';
+import { esc } from '../dom.js?v=20261011185226';
+import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261011185226';
+import { HINTS } from './schema-page.js?v=20261011185226';
 
 const STYLES = [
   { id: 'voll', label: 'Voll', desc: 'Alles im Blick: Minikarte, Kompass, Munition, Leben, Treffermarker.' },
