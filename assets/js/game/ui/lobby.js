@@ -3,17 +3,17 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011171058';
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011171058';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011171058'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011171058'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011171058';
-import { esc, num, secs, meters } from './dom.js?v=20261011171058';
-import { ICON } from './icons.js?v=20261011171058';
-import { drawMapArt } from './mapart.js?v=20261011171058';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011171058';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261011171058';
-import { ProgressView } from './progress.js?v=20261011171058';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011173613';
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011173613';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011173613'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011173613'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011173613';
+import { esc, num, secs, meters } from './dom.js?v=20261011173613';
+import { ICON } from './icons.js?v=20261011173613';
+import { drawMapArt } from './mapart.js?v=20261011173613';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011173613';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011173613';
+import { ProgressView } from './progress.js?v=20261011173613';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];

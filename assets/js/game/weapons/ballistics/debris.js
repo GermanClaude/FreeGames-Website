@@ -12,9 +12,9 @@
 // nach `rest` s aus.
 // Keine Allokationen pro Bild außer world.raycast-Treffern (selten: nur beim Aufschlag).
 import * as THREE from 'three';
-import { casingGeometry } from '../gunsmith/fx.js?v=20261011171058';
-import { createWeaponModel } from '../models.js?v=20261011171058';
-import { dropRounds } from '../gunsmith/magfill.js?v=20261011171058';
+import { casingGeometry } from '../gunsmith/fx.js?v=20261011173613';
+import { createWeaponModel } from '../models.js?v=20261011173613';
+import { dropRounds } from '../gunsmith/magfill.js?v=20261011173613';
 
 export const CASING_TYPES = ['rifle', 'pistol', 'big', 'shotgun'];
 // Je Qualitätsstufe: liegende Hülsen gesamt, Magazine, Liegezeit der Magazine (s), Strahlen je Bild,

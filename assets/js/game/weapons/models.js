@@ -13,33 +13,33 @@
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder } from './gunsmith/builder.js?v=20261011171058';
-import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261011171058';
-import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261011171058';
-import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261011171058';
-import { p9, adler } from './gunsmith/guns-pistol.js?v=20261011171058';
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261011171058';
-import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261011171058';
-import { titan, hagel, kobra, donner, rocket } from './gunsmith/guns-heavy.js?v=20261011171058';
-import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261011171058';
-import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261011171058';
-export { setMagRounds } from './gunsmith/magfill.js?v=20261011171058';
-import { disposeMaterials } from './gunsmith/materials.js?v=20261011171058';
-import { disposeTextures } from './gunsmith/textures.js?v=20261011171058';
-import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261011171058';
-import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261011171058';
-import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261011171058';
-import { attKey } from '../../shared/attachments.data.js?v=20261011171058';
+import { Builder } from './gunsmith/builder.js?v=20261011173613';
+import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261011173613';
+import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261011173613';
+import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261011173613';
+import { p9, adler } from './gunsmith/guns-pistol.js?v=20261011173613';
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261011173613';
+import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261011173613';
+import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261011173613';
+import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261011173613';
+import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261011173613';
+export { setMagRounds } from './gunsmith/magfill.js?v=20261011173613';
+import { disposeMaterials } from './gunsmith/materials.js?v=20261011173613';
+import { disposeTextures } from './gunsmith/textures.js?v=20261011173613';
+import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261011173613';
+import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261011173613';
+import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261011173613';
+import { attKey } from '../../shared/attachments.data.js?v=20261011173613';
 
 const BUILDERS = {
   kv47, m17, vp9, qx90, hm60, sk14, brecher, bulldog, p9, adler, knife, frag, semtex,
-  k36, bx20, g7, wespe, keiler, lm8, titan, hagel, kobra, donner,
+  k36, bx20, g7, wespe, keiler, lm8, titan, hagel, kobra, donner, hammer, trommel,
   karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate, rocket,
 };
 
 export const MODEL_KEYS = Object.keys(BUILDERS);
 export const GUN_KEYS = ['kv47', 'm17', 'vp9', 'qx90', 'hm60', 'sk14', 'brecher', 'bulldog', 'p9', 'adler',
-  'k36', 'bx20', 'g7', 'wespe', 'keiler', 'lm8', 'titan', 'hagel', 'kobra', 'donner'];
+  'k36', 'bx20', 'g7', 'wespe', 'keiler', 'lm8', 'titan', 'hagel', 'kobra', 'donner', 'hammer', 'trommel'];
 export const MELEE_KEYS = ['knife', 'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten'];
 export const THROWABLE_KEYS = ['frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke'];
 export { applyCamo };

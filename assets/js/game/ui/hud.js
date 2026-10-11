@@ -16,16 +16,16 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261011171058';
-import { ICON, medalBadge } from './icons.js?v=20261011171058';
-import { Minimap } from './minimap.js?v=20261011171058';
-import { Killfeed } from './killfeed.js?v=20261011171058';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261011171058';
-import { StrikeTargeting } from './strike-target.js?v=20261011171058';
-import { actionKey } from './settings/keys.js?v=20261011171058';
-import { DeployScreen } from './deploy.js?v=20261011171058';
-import { CommandWheel } from './command-wheel.js?v=20261011171058';
-import { DroneHud } from './drone-hud.js?v=20261011171058';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261011173613';
+import { ICON, medalBadge } from './icons.js?v=20261011173613';
+import { Minimap } from './minimap.js?v=20261011173613';
+import { Killfeed } from './killfeed.js?v=20261011173613';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261011173613';
+import { StrikeTargeting } from './strike-target.js?v=20261011173613';
+import { actionKey } from './settings/keys.js?v=20261011173613';
+import { DeployScreen } from './deploy.js?v=20261011173613';
+import { CommandWheel } from './command-wheel.js?v=20261011173613';
+import { DroneHud } from './drone-hud.js?v=20261011173613';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -1145,8 +1145,9 @@ export class HUD {
 
     /* ---------- Munition */
     if (w && w.current && def) {
-      const st = w.current;
-      setText(this.el.wName, def.name);
+      const ub = w.underOn && w.current.under; // Unterlauf aktiv: dessen Munition und Name
+      const st = ub || w.current;
+      setText(this.el.wName, ub ? `${def.name} · Unterlauf` : def.name);
       const FM = G.data.FIRE_MODES || {};
       setText(this.el.wMode, melee ? 'Nahkampf' : FM[def.fireMode] || '');
       const infinite = G.mode && G.mode.def && G.mode.def.infiniteAmmo;
