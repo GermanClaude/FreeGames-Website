@@ -14,59 +14,59 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261011173613';
-import { profile } from '../shared/profile.js?v=20261011173613';
-import * as weaponsData from '../shared/weapons.data.js?v=20261011173613';
-import * as modesData from '../shared/modes.data.js?v=20261011173613';
-import * as mapsData from '../shared/maps.data.js?v=20261011173613';
-import * as classesData from '../shared/classes.data.js?v=20261011173613'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { EventBus } from './engine/events.js?v=20261011173613';
-import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261011173613';
-import { Input } from './engine/input.js?v=20261011173613';
-import { watchForUpdates } from './engine/update.js?v=20261011173613'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261011173613';
-import { DynamicResolution } from './engine/dynres.js?v=20261011173613';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261011173613'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261011173613';
-import { Combat } from './combat.js?v=20261011173613';
-import { MapPoints } from './mappoints.js?v=20261011173613'; // Interaktionspunkte der Karten (Taste F)
-import { Building } from './building.js?v=20261011173613'; // Bauen (Taste K)
-import { Injuries } from './injuries.js?v=20261011173613'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
-import { Gore } from './gore.js?v=20261011173613'; // Blutlachen + Spritzer
-import { Destruction } from './destruction.js?v=20261011173613'; // zerstörbare Fassaden
-import { CarDeform } from './deform.js?v=20261011173613'; // verformbare Autos
-import { Digging } from './digging.js?v=20261011173613'; // Graben mit dem Klappspaten (Großkarten)
-import { Doors } from './doors.js?v=20261011173613'; // bewegliche Türen und Tore (Taste F)
-import { WallHoles } from './wallholes.js?v=20261011173613'; // durchlöcherte Wände
+import { settings } from '../shared/settings.js?v=20261011174108';
+import { profile } from '../shared/profile.js?v=20261011174108';
+import * as weaponsData from '../shared/weapons.data.js?v=20261011174108';
+import * as modesData from '../shared/modes.data.js?v=20261011174108';
+import * as mapsData from '../shared/maps.data.js?v=20261011174108';
+import * as classesData from '../shared/classes.data.js?v=20261011174108'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { EventBus } from './engine/events.js?v=20261011174108';
+import { createRenderer, QUALITY_LEVELS, resolveQuality } from './engine/renderer.js?v=20261011174108';
+import { Input } from './engine/input.js?v=20261011174108';
+import { watchForUpdates } from './engine/update.js?v=20261011174108'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261011174108';
+import { DynamicResolution } from './engine/dynres.js?v=20261011174108';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261011174108'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261011174108';
+import { Combat } from './combat.js?v=20261011174108';
+import { MapPoints } from './mappoints.js?v=20261011174108'; // Interaktionspunkte der Karten (Taste F)
+import { Building } from './building.js?v=20261011174108'; // Bauen (Taste K)
+import { Injuries } from './injuries.js?v=20261011174108'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
+import { Gore } from './gore.js?v=20261011174108'; // Blutlachen + Spritzer
+import { Destruction } from './destruction.js?v=20261011174108'; // zerstörbare Fassaden
+import { CarDeform } from './deform.js?v=20261011174108'; // verformbare Autos
+import { Digging } from './digging.js?v=20261011174108'; // Graben mit dem Klappspaten (Großkarten)
+import { Doors } from './doors.js?v=20261011174108'; // bewegliche Türen und Tore (Taste F)
+import { WallHoles } from './wallholes.js?v=20261011174108'; // durchlöcherte Wände
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261011173613', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261011173613', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261011173613', ['ViewModel']],
-  world: ['./world/index.js?v=20261011173613', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261011173613', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261011173613', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261011173613', ['Effects']],
-  bots: ['./bots/manager.js?v=20261011173613', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261011173613', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261011174108', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261011174108', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261011174108', ['ViewModel']],
+  world: ['./world/index.js?v=20261011174108', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261011174108', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261011174108', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261011174108', ['Effects']],
+  bots: ['./bots/manager.js?v=20261011174108', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261011174108', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261011173613', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261011173613', []],
-  modes: ['./modes/index.js?v=20261011173613', ['createMode']],
-  hud: ['./ui/hud.js?v=20261011173613', ['HUD']],
-  menus: ['./ui/menus.js?v=20261011173613', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261011174108', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261011174108', []],
+  modes: ['./modes/index.js?v=20261011174108', ['createMode']],
+  hud: ['./ui/hud.js?v=20261011174108', ['HUD']],
+  menus: ['./ui/menus.js?v=20261011174108', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261011173613', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261011173613', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261011174108', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261011174108', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261011173613', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261011173613', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261011173613', ['ClientSync']],
+  net: ['./net/index.js?v=20261011174108', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261011174108', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261011174108', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261011173613', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261011174108', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([

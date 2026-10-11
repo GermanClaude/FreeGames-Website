@@ -6,23 +6,23 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261011173613';
-import { Vehicle, newIntent } from './vehicle.js?v=20261011173613';
-import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261011173613';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261011173613';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011173613';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011173613';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011173613';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011173613';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261011173613';
-import { VehicleAudio } from './audio.js?v=20261011173613';
-import * as MATS from './materials.js?v=20261011173613';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011173613';
-import { VehicleNet } from './net.js?v=20261011173613';
-import { groundRay } from './sim.js?v=20261011173613';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011173613';
-import { falloff } from '../combat.js?v=20261011173613';
-import { Thermal } from './thermal.js?v=20261011173613';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261011174108';
+import { Vehicle, newIntent } from './vehicle.js?v=20261011174108';
+import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261011174108';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261011174108';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011174108';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011174108';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011174108';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011174108';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261011174108';
+import { VehicleAudio } from './audio.js?v=20261011174108';
+import * as MATS from './materials.js?v=20261011174108';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011174108';
+import { VehicleNet } from './net.js?v=20261011174108';
+import { groundRay } from './sim.js?v=20261011174108';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011174108';
+import { falloff } from '../combat.js?v=20261011174108';
+import { Thermal } from './thermal.js?v=20261011174108';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -98,6 +98,13 @@ export class VehicleSystem {
       ev.on('impact', (e) => this._onImpact(e)),
       ev.on('explosion', (e) => this._onExplosion(e)),
       ev.on('kill', (e) => this._onKill(e)),
+      // Trefferbericht (Schadensmodell): Schütze und eigene Besatzung bekommen eine Meldung
+      ev.on('vehicle:crit', (e) => {
+        const P = G.player;
+        if (!e || !P || !e.notes || !e.notes.length) return;
+        if (e.attacker === P) ev.emit('injury:notice', { text: `Durchschlag: ${e.notes.join(' · ')}`, tone: 'gold' });
+        else if (P.vehicle === e.vehicle) ev.emit('injury:notice', { text: `Wir sind getroffen: ${e.notes.join(' · ')}`, tone: 'enemy' });
+      }),
       ev.on('actor:spawn', (e) => { if (e && e.actor && e.actor.vehicle) this.removeFromSeat(e.actor, { teleport: false }); }),
       ev.on('vehicle:damaged', (e) => { if (e.vehicle === (G.player && G.player.vehicle) && e.kind !== 'fire') this.hud && this.hud.damaged(); }),
       ev.on('vehicle:hit', (e) => { if (e.attacker && e.attacker === G.player) this.hud && this.hud.hit(); }),

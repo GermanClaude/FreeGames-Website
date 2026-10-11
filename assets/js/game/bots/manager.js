@@ -13,19 +13,19 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261011173613';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261011173613'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261011173613';
-import { pickNames } from './names.js?v=20261011173613';
-import { Nameplate } from './nameplates.js?v=20261011173613';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261011173613';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261011173613';
-import { analyze } from './ai/tactics.js?v=20261011173613';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261011173613';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261011173613';
-import { BotAdapt } from './ai/spielstil.js?v=20261011173613';
-import { CorpseStore } from './corpses.js?v=20261011173613';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261011173613';
+import { Bot } from './bot.js?v=20261011174108';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261011174108'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261011174108';
+import { pickNames } from './names.js?v=20261011174108';
+import { Nameplate } from './nameplates.js?v=20261011174108';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261011174108';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261011174108';
+import { analyze } from './ai/tactics.js?v=20261011174108';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261011174108';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261011174108';
+import { BotAdapt } from './ai/spielstil.js?v=20261011174108';
+import { CorpseStore } from './corpses.js?v=20261011174108';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261011174108';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();

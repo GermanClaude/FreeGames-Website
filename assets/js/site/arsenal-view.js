@@ -1,16 +1,16 @@
 // §04 Arsenal: Schriftmusterbuch. Der Name feuert, das Modell erscheint nur in den Buchstaben.
 // Dazu Typenbalken, Datenblatt, „Auf Distanz“ (Rangliste nach Duellzeit) mit Duell und Ausrüstung.
-import { h, $, signalLost } from './dom.js?v=20261011173613';
-import { fit, glyphModel } from './fit.js?v=20261011173613';
-import { resplit, split, Kinetic } from './kinetic.js?v=20261011173613';
-import { createFire } from './fire.js?v=20261011173613';
-import { makeBallistics } from './ballistics.js?v=20261011173613';
-import { ui } from './state.js?v=20261011173613';
-import { announce } from './live.js?v=20261011173613';
-import { reduced, calm, flip, ease, pointerCoarse, onReducedChange } from './motion.js?v=20261011173613';
-import { loop } from './loop.js?v=20261011173613';
-import { num, NNBSP, clamp } from './fmt.js?v=20261011173613';
-import { cutW, cutG } from './cuts.js?v=20261011173613';
+import { h, $, signalLost } from './dom.js?v=20261011174108';
+import { fit, glyphModel } from './fit.js?v=20261011174108';
+import { resplit, split, Kinetic } from './kinetic.js?v=20261011174108';
+import { createFire } from './fire.js?v=20261011174108';
+import { makeBallistics } from './ballistics.js?v=20261011174108';
+import { ui } from './state.js?v=20261011174108';
+import { announce } from './live.js?v=20261011174108';
+import { reduced, calm, flip, ease, pointerCoarse, onReducedChange } from './motion.js?v=20261011174108';
+import { loop } from './loop.js?v=20261011174108';
+import { num, NNBSP, clamp } from './fmt.js?v=20261011174108';
+import { cutW, cutG } from './cuts.js?v=20261011174108';
 
 const DEG = Math.PI / 180;
 const STATS = [['damage', 'SCHADEN', 'Schaden'], ['fireRate', 'KADENZ', 'Kadenz'], ['range', 'REICHWEITE', 'Reichweite'], ['accuracy', 'PRÄZISION', 'Präzision'], ['mobility', 'MOBILITÄT', 'Mobilität'], ['control', 'KONTROLLE', 'Kontrolle']];
@@ -646,7 +646,7 @@ export async function init(sec, D, ctx) {
     load3d.hidden = true;
     loading = (async () => {
       try {
-        const { createStage } = await import('./stage3d.js?v=20261011173613');
+        const { createStage } = await import('./stage3d.js?v=20261011174108');
         await yieldTask();
         const canvas = h('canvas', { 'aria-hidden': 'true' });
         const st = createStage(canvas, {
@@ -676,7 +676,7 @@ export async function init(sec, D, ctx) {
   load3d.addEventListener('click', () => load3D());
 
   function prefetch3D() {
-    for (const href of ['../../vendor/three/three.module.min.js', './stage3d.js?v=20261011173613', '../game/weapons/models.js?v=20261011173613']) {
+    for (const href of ['../../vendor/three/three.module.min.js', './stage3d.js?v=20261011174108', '../game/weapons/models.js?v=20261011174108']) {
       const url = new URL(href, import.meta.url).href;
       if (document.querySelector(`link[rel=modulepreload][href="${url}"]`)) continue;
       document.head.append(h('link', { rel: 'modulepreload', href: url }));
