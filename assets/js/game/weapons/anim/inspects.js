@@ -15,10 +15,10 @@
 // { kind: 'mag'|'chamber'|'cylinder'|'belt'|'tube'|'drum', rounds, cap, chambered, reserve, seq } – das HUD macht Text
 // daraus. Kammer-Check: eine Patrone liegt sichtbar im Auswurffenster, wenn eine im Lager ist (anim: _chamberShow).
 import * as THREE from 'three';
-import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261011215142';
-import { roundMesh, CAL } from '../gunsmith/magfill.js?v=20261011215142';
-import { magWellOf, magOffset } from './magwell.js?v=20261011215142';
-import { req, COSMETIC } from './reloads.js?v=20261011215142';
+import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261011220206';
+import { roundMesh, CAL } from '../gunsmith/magfill.js?v=20261011220206';
+import { magWellOf, magOffset } from './magwell.js?v=20261011220206';
+import { req, COSMETIC } from './reloads.js?v=20261011220206';
 
 const Z3 = [0, 0, 0];
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4();

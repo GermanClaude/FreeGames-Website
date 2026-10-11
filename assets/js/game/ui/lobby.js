@@ -3,17 +3,17 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011215142';
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011215142';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011215142'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011215142'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011215142';
-import { esc, num, secs, meters } from './dom.js?v=20261011215142';
-import { ICON } from './icons.js?v=20261011215142';
-import { drawMapArt } from './mapart.js?v=20261011215142';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011215142';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261011215142';
-import { ProgressView } from './progress.js?v=20261011215142';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011220206';
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011220206';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011220206'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011220206'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011220206';
+import { esc, num, secs, meters } from './dom.js?v=20261011220206';
+import { ICON } from './icons.js?v=20261011220206';
+import { drawMapArt } from './mapart.js?v=20261011220206';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011220206';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011220206';
+import { ProgressView } from './progress.js?v=20261011220206';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -224,6 +224,7 @@ export class Lobby {
           </aside>
         </div>
         <footer class="lb-foot">
+          <small class="lb-copy">© 2026 German Legend · Alle Rechte vorbehalten</small>
           <div class="lb-summary"></div>
           <button type="button" class="m-btn m-primary lb-start" data-act="start">${ICON.play}<span>Einsatz starten<em>.</em></span></button>
         </footer>

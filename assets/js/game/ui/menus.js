@@ -6,17 +6,17 @@
 // Mehrspieler (ui/net-menus.js, this.net): Lobby-Reiter, Raum-Bildschirm ('room', 'roomequip'), Online-Teil von
 // Pause und Endbildschirm. Einstiege für Deep-Links: openJoin(code) · openRoom().
 
-import { el, esc, clock } from './dom.js?v=20261011215142';
-import { ICON } from './icons.js?v=20261011215142';
-import { Lobby } from './lobby.js?v=20261011215142';
-import { WeaponPreview } from './preview3d.js?v=20261011215142';
-import { SettingsPanel } from './settings-panel.js?v=20261011215142';
-import { TouchEditor } from './touch-editor.js?v=20261011215142';
-import { controlsHtml, bindControls } from './controls-help.js?v=20261011215142';
-import { EndScreen } from './endscreen.js?v=20261011215142';
-import { LoadoutPanel } from './loadout-panel.js?v=20261011215142';
-import { drawMapArt, rememberMinimap } from './mapart.js?v=20261011215142';
-import { NetMenus } from './net-menus.js?v=20261011215142';
+import { el, esc, clock } from './dom.js?v=20261011220206';
+import { ICON } from './icons.js?v=20261011220206';
+import { Lobby } from './lobby.js?v=20261011220206';
+import { WeaponPreview } from './preview3d.js?v=20261011220206';
+import { SettingsPanel } from './settings-panel.js?v=20261011220206';
+import { TouchEditor } from './touch-editor.js?v=20261011220206';
+import { controlsHtml, bindControls } from './controls-help.js?v=20261011220206';
+import { EndScreen } from './endscreen.js?v=20261011220206';
+import { LoadoutPanel } from './loadout-panel.js?v=20261011220206';
+import { drawMapArt, rememberMinimap } from './mapart.js?v=20261011220206';
+import { NetMenus } from './net-menus.js?v=20261011220206';
 
 // VR-Brille (Knopf „VR starten“ im Pausenmenü; Symbole in icons.js gehören zu einem anderen Bereich)
 const VR_ICON = '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M6 16h36v16a3 3 0 0 1-3 3H31l-4-6h-6l-4 6H9a3 3 0 0 1-3-3z"/><circle cx="16" cy="24" r="3"/><circle cx="32" cy="24" r="3"/></svg>';

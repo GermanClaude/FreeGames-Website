@@ -5,7 +5,7 @@
 // die im Grade-Pass mit dem Bloom multipliziert wird (Bodycam-Stil).
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261011215142';
+import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261011220206';
 
 const PREFILTER_FRAG = /* glsl */ `
   ${GLSL_COMMON}
