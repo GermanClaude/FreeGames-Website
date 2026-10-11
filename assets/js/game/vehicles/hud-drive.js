@@ -3,7 +3,7 @@
 // Drehmomentband und rotem Bereich über Nenndrehzahl, Getriebeart, Hinweise („Drehzahl zu niedrig – runterschalten“,
 // „Erst anhalten“) und die Touch-Knöpfe „Gang +“/„Gang −“. Liest nur vehicle.body.drive (läuft auch auf Abbildern).
 // Eigene Styles; DOM-Schreibzugriffe nur bei Änderung (wie VehicleHUD._set).
-import { gearList, gearName } from './drivetrain.js?v=20261011133950';
+import { gearList, gearName } from './drivetrain.js?v=20261011135100';
 
 const CSS = `
 .vd-root{margin:5px 0 2px}

@@ -4,14 +4,14 @@
 // Änderungen an die offene Seite weiter. Bedienbar per Touch (667 × 375), Maus, Tastatur und Gamepad (menus.js:
 // LB/RB = Reiter, Steuerkreuz = Fokus, links/rechts = Werte).
 
-import { esc } from './dom.js?v=20261011133950';
-import { ICON } from './icons.js?v=20261011133950';
-import { controlsPage } from './settings/controls-page.js?v=20261011133950';
-import { bindingsPage } from './settings/bindings-page.js?v=20261011133950';
-import { displayPage } from './settings/display-page.js?v=20261011133950';
-import { graphicsPage } from './settings/graphics-page.js?v=20261011133950';
-import { hudPage } from './settings/hud-page.js?v=20261011133950';
-import { schemaPage } from './settings/schema-page.js?v=20261011133950';
+import { esc } from './dom.js?v=20261011135100';
+import { ICON } from './icons.js?v=20261011135100';
+import { controlsPage } from './settings/controls-page.js?v=20261011135100';
+import { bindingsPage } from './settings/bindings-page.js?v=20261011135100';
+import { displayPage } from './settings/display-page.js?v=20261011135100';
+import { graphicsPage } from './settings/graphics-page.js?v=20261011135100';
+import { hudPage } from './settings/hud-page.js?v=20261011135100';
+import { schemaPage } from './settings/schema-page.js?v=20261011135100';
 
 const TABS = [
   ['steuerung', 'Steuerung', ICON.sliders, controlsPage],
