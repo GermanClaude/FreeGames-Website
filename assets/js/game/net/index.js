@@ -25,19 +25,19 @@
 // (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu). Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der
 // Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host vermerkt es und verteilt das Roster; bei jedem
 // Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261011174108';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261011174108';
-import { hex, randomBytes } from './crypto.js?v=20261011174108';
-import { BUILD } from '../../shared/build.js?v=20261011174108';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261011174108';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261011174108';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261011174108';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261011174108';
-import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261011174108';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261011180812';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261011180812';
+import { hex, randomBytes } from './crypto.js?v=20261011180812';
+import { BUILD } from '../../shared/build.js?v=20261011180812';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261011180812';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261011180812';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261011180812';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261011180812';
+import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261011180812';
 const WEAPONS_ALL = { ...WEAPONS, ...UNDER_WEAPONS }; // Trefferprüfung: Waffen + Unterlauf-Aufsätze
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261011174108';
-import { recommend, UploadMeter } from './recommend.js?v=20261011174108';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261011174108';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261011180812';
+import { recommend, UploadMeter } from './recommend.js?v=20261011180812';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261011180812';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD).
  *  2: Fahrzeuge online (Snapshot-Anhang, Fahrzeug-Absicht, 'veh'/'vhit'/'vehicles' – panzer-mp.md §C).
@@ -45,8 +45,9 @@ import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261011174108';
  *  4: Graben mit dem Klappspaten ('dig' {x, z}, 'ev' dg), Karte Niemandsland.
  *  5: Fenster (Einträge zwischen Türen und Toren – Indizes von 'door'/'ev' dr verschoben).
  *  6: Panzergenerationen (Fahrzeugblock 64 Byte: Sitze 5–6; neue Fahrzeugtypen wk2/wk1, Raum-Einstellung tankEra).
- *  7: Granatwerfer (Waffenliste länger → Waffenindizes verschoben), Unterlauf-Aufsätze (ub_gl40/ub_schrot). */
-export const NET_VERSION = 7;
+ *  7: Granatwerfer (Waffenliste länger → Waffenindizes verschoben), Unterlauf-Aufsätze (ub_gl40/ub_schrot).
+ *  8: Ladeschritt „offen“ (Munitionsbunker mit Schiebetür, Kanonenzustand im Fahrzeugblock). */
+export const NET_VERSION = 8;
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). */
 export const ONLINE_MODES = Object.freeze(['tdm', 'ult', 'ffa', 'dom', 'kc', 'messer', 'inf', 'gun']);
 /** Modi mit Fahrzeugen online (Nur Messer, Waffenspiel und Infiziert bleiben ohne – Ausrüstung kommt dort vom Modus). */
@@ -564,7 +565,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261011174108').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261011180812').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {

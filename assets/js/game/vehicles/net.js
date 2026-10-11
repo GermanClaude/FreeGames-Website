@@ -12,9 +12,9 @@
 //   (placeInSeat/clearSeat), Schnappschüsse puffern und mit der Abspieluhr der Puppen interpolieren (tickReplica), eigene
 //   Sitz-Absicht als VEH_INPUT im 30-Hz-Zustand (inputState), Anfragen über enter/exit/seat/load.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261011174108';
-import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261011174108';
-import { falloff } from '../combat.js?v=20261011174108';
+import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261011180812';
+import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261011180812';
+import { falloff } from '../combat.js?v=20261011180812';
 
 const HOST_ID = 1; // net/index.js HOST_ID (hier ohne Import: Fahrzeuge laden auch ohne Netzmodul)
 const NEAR = 160; // m (xz): eigenes Fahrzeug und nähere bekommen jeden Takt einen Block
@@ -31,7 +31,7 @@ const OWN_SOFT = 0.15; // rad: eigene Lafette weicht erst ab dieser Abweichung z
 const OWN_AHEAD = 0.1; // s: eigenes Fahrzeug so viel näher an der Host-Zeit abspielen (höchstens der Puffer)
 const VHIT_GAP = 0.05; // s: Mindestabstand zweier Fahrzeugtreffer-Meldungen eines Clients (Feuerrate grob)
 const AMMO = [null, 'mbt_ap', 'mbt_he'];
-const STEPS = ['leer', 'gegriffen', 'eingeschoben', 'geladen'];
+const STEPS = ['leer', 'gegriffen', 'eingeschoben', 'geladen', 'offen']; // offen: Munitionsbunker auf (modern)
 const BUSY_OF = { leer: 'greifen', gegriffen: 'einschieben', eingeschoben: 'schliessen' };
 const LOAD_ACTIONS = new Set(['greifen', 'einschieben', 'schliessen', 'munition', 'weiter']);
 
@@ -66,7 +66,7 @@ const mgShots = (seat) => { let n = 0; for (const w of seat.weapons) if (w.def.k
 
 export class VehicleNet {
   /**
-   * @param {import('./index.js?v=20261011174108').VehicleSystem} sys
+   * @param {import('./index.js?v=20261011180812').VehicleSystem} sys
    * @param {{replica?: boolean}} opts replica: Client-Abbild (sonst Host)
    */
   constructor(sys, { replica = false } = {}) {

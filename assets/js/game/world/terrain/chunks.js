@@ -9,7 +9,7 @@ const _v = new THREE.Vector3();
 
 export class TerrainChunks {
   /**
-   * @param {import('./heightfield.js?v=20261011174108').Heightfield} hf
+   * @param {import('./heightfield.js?v=20261011180812').Heightfield} hf
    * @param {THREE.Material} material
    * @param {{ chunk?: number, steps?: number[], dists?: number[], skirt?: number }} [o]
    *   steps: Rasterschritte je Stufe (Zellen), dists: Umschaltabstände (m) zwischen den Stufen

@@ -9,12 +9,12 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, vehicleWeapon } from './data.js?v=20261011174108';
-import { VehicleBody } from './sim.js?v=20261011174108';
-import { createVehicleModel } from './models.js?v=20261011174108';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011174108';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011174108';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011174108';
+import { VEHICLES, vehicleWeapon } from './data.js?v=20261011180812';
+import { VehicleBody } from './sim.js?v=20261011180812';
+import { createVehicleModel } from './models.js?v=20261011180812';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011180812';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011180812';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011180812';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -494,10 +494,17 @@ export class Vehicle {
       _b.set(rk[0] + sh[0], rk[1] + sh[1], rk[2] + sh[2]).applyQuaternion(_q).add(_c.fromArray(this.def.turretPivot));
       this.body.toWorld(_b, _b);
       if (_b.distanceTo(P) < 1.4 && Math.random() < (ap ? 0.5 : 0.15) * Math.min(1, 0.4 + rackN / 12)) {
-        notes.push('Munitionslager gezündet!');
-        this._ammoRack = true;
-        this.health = 0;
-        this.zones.hull.hp = 0;
+        if (I.blastDoor && g.step !== 'offen' && g.busyKind !== 'tuer' && g.busyKind !== 'greifen') {
+          // Bunker mit geschlossener Schiebetür: Sprengklappen blasen nach außen ab – Munition weg, Besatzung überlebt
+          for (const k of Object.keys(g.rack)) g.rack[k] = 0;
+          notes.push('Munitionsbunker getroffen – Sprengklappen haben gehalten');
+          this.G.effects?.explosion?.(_b.clone(), { radius: 3 });
+        } else {
+          notes.push(I.blastDoor ? 'Munitionsbunker offen getroffen – gezündet!' : 'Munitionslager gezündet!');
+          this._ammoRack = true;
+          this.health = 0;
+          this.zones.hull.hp = 0;
+        }
       }
     }
     if (notes.length) G.events.emit('vehicle:crit', { vehicle: this, attacker: info.attacker || null, notes });
@@ -730,6 +737,10 @@ export class Vehicle {
     const bw = g.breechOpen ? 1 : 0;
     st.breech = st.breech == null ? bw : bw > st.breech ? Math.min(1, st.breech + dt * 4) : Math.max(0, st.breech - dt * 4);
     if (st.breechSent !== st.breech) { st.breechSent = st.breech; M.setBreech?.(st.breech); }
+    // Schiebetür des Munitionsbunkers: offen im Schritt „offen“ und während des Greifens
+    const dw = g.step === 'offen' || g.busyKind === 'tuer' || g.busyKind === 'greifen' ? 1 : 0;
+    st.door = st.door == null ? dw : dw > st.door ? Math.min(1, st.door + dt * 3) : Math.max(0, st.door - dt * 3);
+    if (st.doorSent !== st.door) { st.doorSent = st.door; M.setRackDoor?.(st.door); }
     const rk = `${g.rack.mbt_ap}|${g.rack.mbt_he}`;
     if (st.rack !== rk) { st.rack = rk; M.setRack?.(g.rack); }
     if (st.held !== g.held) { st.held = g.held; M.setHeld?.(g.held); }

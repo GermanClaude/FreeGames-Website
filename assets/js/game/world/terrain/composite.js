@@ -4,8 +4,8 @@
 
 export class CompositeBVH {
   /**
-   * @param {import('./heightfield.js?v=20261011174108').Heightfield} hf
-   * @param {import('../bvh.js?v=20261011174108').TriangleBVH|null} bvh Bauwerke (Kollision oder Kugel-Geometrie)
+   * @param {import('./heightfield.js?v=20261011180812').Heightfield} hf
+   * @param {import('../bvh.js?v=20261011180812').TriangleBVH|null} bvh Bauwerke (Kollision oder Kugel-Geometrie)
    * @param {{ terrainObject?: number }} [o] Objektindex für Gelände-Treffer (data = Oberfläche | index << 8)
    */
   constructor(hf, bvh, o = {}) {
