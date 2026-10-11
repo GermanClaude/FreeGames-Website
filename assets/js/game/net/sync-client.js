@@ -24,11 +24,11 @@
 //     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
 //     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261011123518';
-import { netPoseOf } from '../bots/bot.js?v=20261011123518';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261011123518';
-import { HOST_ID } from './index.js?v=20261011123518';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261011123518';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261011131140';
+import { netPoseOf } from '../bots/bot.js?v=20261011131140';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261011131140';
+import { HOST_ID } from './index.js?v=20261011131140';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261011131140';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -48,7 +48,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261011123518').NetSystem} net
+   * @param {import('./index.js?v=20261011131140').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {
@@ -637,6 +637,7 @@ export class ClientSync {
       case 'bs': if (G.building) G.building.applyNet(m, (id) => (id === this.selfId ? G.player : this._actor(id))); return; // Bauwerk (building.js)
       case 'bd': if (G.building) G.building.remove(m.id); return;
       case 'dr': if (G.doors) G.doors.applyNet(m); return; // Tür/Tor (doors.js)
+      case 'dg': if (G.digging && Number.isFinite(m.x) && Number.isFinite(m.z)) G.digging.apply(m.x, m.z, true); return; // Graben (digging.js)
       case 'gr': {
         if (!W) return;
         const gs = W.grenadeSystem;
@@ -826,6 +827,12 @@ export class ClientSync {
   sendDoor(i, a, d = 0) {
     if (!this.active || this.ended || !Number.isInteger(i)) return;
     this.net.send(HOST_ID, { t: 'door', i, a: a === 'k' || a === 'h' ? a : 't', d: Math.round(d) });
+  }
+
+  /** Grabwunsch ('dig' {x, z}): der Host prüft und verteilt ('ev' dg, digging.js). */
+  sendDig(x, z) {
+    if (!this.active || this.ended) return;
+    this.net.send(HOST_ID, { t: 'dig', x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100 });
   }
 
   /** Bauwunsch ('build' {k, p, ry}): der Host prüft und verteilt das Bauwerk ('ev' bs). */

@@ -1,6 +1,6 @@
 // Welle 2 – Nahkampf & Wurfmittel: Karambit, Machete, Kampfbeil; Aufschlag-, Brand-, Blend- und Rauchgranate;
 // Schutzplatte (Westen-Einschub, Requisit der Ego-Ansicht). Ursprung = Griffmitte; Klinge/Kopf nach −Z bzw. oben.
-import { ellipsePts } from './parts.js?v=20261011123518';
+import { ellipsePts } from './parts.js?v=20261011131140';
 
 // Gummierter Griff entlang u (Länge len, Radius r, Ringe)
 function handle(b, mat, u0, len, r, rings = 5) {
@@ -84,6 +84,19 @@ export function schlagstock(b) {
   b.sphere('steelBright', 0.011, 0, 0, 0.525);
   if (b.hi) for (const u of [0.25, 0.39]) b.cyl('steel', 0.0112, 0.0112, 0.006, 0, 0, u, { seg: 14 });
   b.anchor('muzzle', 0, 0, 0.53);
+  b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
+  b.meta = { sight: 'none', kind: 'melee' };
+}
+
+export function spaten(b) {
+  // Klappspaten: Holzstiel mit Griffband, Stahlblatt (spitz zulaufend, geschärfte Kanten) nach vorn
+  b.cyl('woodWarm', 0.0145, 0.0145, 0.42, 0, 0, 0.1, { seg: b.seg(12, 6) });
+  b.cyl('rubber', 0.0158, 0.0158, 0.12, 0, 0, -0.06, { seg: b.seg(12, 6) });
+  b.box('steel', 0.034, 0.03, 0.05, 0, 0, 0.33, { c: 0.004 }); // Klappgelenk
+  b.part('blade', 0, 0, 0.34);
+  b.side('steel', [[0.355, 0.0], [0.37, 0.075], [0.5, 0.08], [0.56, 0.0], [0.5, -0.08], [0.37, -0.075]], 0.004, 0, { part: 'blade', bevel: 0.0012 });
+  if (b.hi) b.side('blade', [[0.5, 0.078], [0.56, 0.0], [0.5, -0.078], [0.498, -0.07], [0.552, 0.0], [0.498, 0.07]], 0.0042, 0, { part: 'blade', bevel: 0.0005 });
+  b.anchor('muzzle', 0, 0, 0.56);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
   b.meta = { sight: 'none', kind: 'melee' };
 }

@@ -3,15 +3,15 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011123518';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011123518'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011123518'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011123518';
-import { esc, num, secs, meters } from './dom.js?v=20261011123518';
-import { ICON } from './icons.js?v=20261011123518';
-import { drawMapArt } from './mapart.js?v=20261011123518';
-import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261011123518';
-import { ProgressView } from './progress.js?v=20261011123518';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011131140';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011131140'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011131140'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011131140';
+import { esc, num, secs, meters } from './dom.js?v=20261011131140';
+import { ICON } from './icons.js?v=20261011131140';
+import { drawMapArt } from './mapart.js?v=20261011131140';
+import { camoRowHtml, equippedCamo } from './loadout-panel.js?v=20261011131140';
+import { ProgressView } from './progress.js?v=20261011131140';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -546,7 +546,7 @@ export class Lobby {
       if (def.cls === 'melee') {
         const ms = def.melee || {};
         const hits = Math.max(1, Math.ceil(100 / Math.max(1, def.damage.max)));
-        const spec = { flink: 'Flink: 12 % schneller unterwegs', spaltschlag: 'Spaltschlag: trifft jeden Gegner im Bogen', sprung: 'Sprung: weitester Ausfallschritt', wucht: 'Wucht: Taumeln, halber Schaden im Bogen', betaeuben: 'Betäuben: Gegner 1,5 s verlangsamt', reichweite: 'Reichweite: trifft noch auf 3 m' }[def.special] || '—';
+        const spec = { flink: 'Flink: 12 % schneller unterwegs', spaltschlag: 'Spaltschlag: trifft jeden Gegner im Bogen', sprung: 'Sprung: weitester Ausfallschritt', wucht: 'Wucht: Taumeln, halber Schaden im Bogen', betaeuben: 'Betäuben: Gegner 1,5 s verlangsamt', reichweite: 'Reichweite: trifft noch auf 3 m', graben: 'Graben: Erde ausheben (Großkarten)' }[def.special] || '—';
         body = `<div class="lo-stats">${bars}</div><div class="lo-facts">
           ${fact('Schaden', num(def.damage.max))}${fact('Treffer bis Abschuss', hits === 1 ? '1' : `${hits} (von hinten 1)`)}
           ${fact('Reichweite', meters(ms.range || def.range, 1))}${fact('Ausfallschritt', meters(ms.lungeRange || 4.5, 1))}

@@ -10,8 +10,8 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011123518';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011123518';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011131140';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011131140';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -72,7 +72,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261011123518').WeaponSystem} system
+   * @param {import('./index.js?v=20261011131140').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -1069,7 +1069,13 @@ export class WeaponController {
     // Daneben: Einschlag an Wand/Ziel (Funken/Staub, Schießstand-Klappziele)
     const w = G.world;
     if (w && typeof w.raycast === 'function') {
-      const hit = w.raycast(_eye, _aim, Math.min(2.0, range));
+      const spade = !!(m.def && m.def.id === 'spaten');
+      let hit = w.raycast(_eye, _aim, spade ? 3.6 : Math.min(2.0, range)); // Spaten: Boden vor den Füßen
+      // Spaten nach unten ins eigene Loch: Erdboden ≈ 1,3 m vor den Füßen (Loch ist tiefer als der Blickstrahl reicht)
+      if (!hit && spade && _aim.y < -0.25 && w.terrain && typeof w.heightAt === 'function') {
+        const h = Math.hypot(_aim.x, _aim.z) || 1, x = a.position.x + (_aim.x / h) * 1.3, z = a.position.z + (_aim.z / h) * 1.3, y = w.heightAt(x, z);
+        if (Number.isFinite(y) && _eye.y - y < 4.5) hit = { point: new THREE.Vector3(x, y, z), normal: new THREE.Vector3(0, 1, 0), surface: 'dirt' };
+      }
       if (hit) G.events.emit('impact', { point: hit.point, normal: hit.normal, surface: hit.surface || 'concrete', shooter: a, weaponId: (m.def && m.def.id) || 'knife', melee: true });
     }
   }
