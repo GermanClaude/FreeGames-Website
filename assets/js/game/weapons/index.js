@@ -3,13 +3,13 @@
 // und räumt beim Matchende auf.
 
 import * as THREE from 'three';
-import { WeaponController } from './controller.js?v=20261011102852';
-import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261011102852';
-import { RocketSystem } from './ballistics/rockets.js?v=20261011102852';
-import { EQUIPMENT as DATA_EQUIPMENT, killAmmoFor } from '../../shared/weapons.data.js?v=20261011102852';
-import { clamp } from './ballistics/math.js?v=20261011102852';
+import { WeaponController } from './controller.js?v=20261011122417';
+import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261011122417';
+import { RocketSystem } from './ballistics/rockets.js?v=20261011122417';
+import { EQUIPMENT as DATA_EQUIPMENT, killAmmoFor } from '../../shared/weapons.data.js?v=20261011122417';
+import { clamp } from './ballistics/math.js?v=20261011122417';
 
-export { WeaponController } from './controller.js?v=20261011102852';
+export { WeaponController } from './controller.js?v=20261011122417';
 
 const _eye = new THREE.Vector3();
 

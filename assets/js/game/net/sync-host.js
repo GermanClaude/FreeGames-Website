@@ -25,13 +25,13 @@
 //     {a:'h'} Treffer eines Clients auf eine Drohne (Waffe, Feuerrate, Reichweite, Sicht). Alle Drohnen gehen mit 12 Hz als
 //     'ev' dr an alle, ihr Ende als 'ev' de.
 import * as THREE from 'three';
-import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261011102852';
-import { ABILITIES } from '../../shared/classes.data.js?v=20261011102852';
-import { MOUNT_WEAPON } from '../mappoints.js?v=20261011102852';
-import { netPoseOf } from '../bots/bot.js?v=20261011102852';
-import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261011102852';
-import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261011102852';
-import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261011102852';
+import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261011122417';
+import { ABILITIES } from '../../shared/classes.data.js?v=20261011122417';
+import { MOUNT_WEAPON } from '../mappoints.js?v=20261011122417';
+import { netPoseOf } from '../bots/bot.js?v=20261011122417';
+import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261011122417';
+import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261011122417';
+import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261011122417';
 
 const nowSec = () => performance.now() / 1000;
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -55,7 +55,7 @@ const INTEREST_MIN = 12;
 export class HostSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261011102852').NetSystem} net
+   * @param {import('./index.js?v=20261011122417').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'host', teamSize, botFill, pvp, ffa …)
    */
   constructor(G, net, cfg = {}) {

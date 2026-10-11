@@ -2,11 +2,11 @@
 // Gelände erzeugen, Kollisions-/Kugel-BVH, Startpunkte einrasten, Navigation (feine Graphen in Ortschaften über
 // navbuild.js + implizites 4-m-Gitter im freien Gelände, an den Rändern verknüpft). Ohne three – läuft im Welt-Worker
 // (bigjob.worker.js) parallel zum Hauptthread, als Rückfall direkt im Hauptthread.
-import { TriangleBVH } from '../bvh.js?v=20261011102852';
-import { buildNavData, makeTests, AGENT_R, KNEE, DIRS8 } from '../navbuild.js?v=20261011102852';
-import { Heightfield } from './heightfield.js?v=20261011102852';
-import { CompositeBVH } from './composite.js?v=20261011102852';
-import { generateTerrain } from './generate.js?v=20261011102852';
+import { TriangleBVH } from '../bvh.js?v=20261011122417';
+import { buildNavData, makeTests, AGENT_R, KNEE, DIRS8 } from '../navbuild.js?v=20261011122417';
+import { Heightfield } from './heightfield.js?v=20261011122417';
+import { CompositeBVH } from './composite.js?v=20261011122417';
+import { generateTerrain } from './generate.js?v=20261011122417';
 
 /** Gelände erzeugen → { hf (Heightfield), data (toData), roads } */
 export async function terrainJob(spec, onStage) {

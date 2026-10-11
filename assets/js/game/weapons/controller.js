@@ -10,8 +10,8 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011102852';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011102852';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261011122417';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261011122417';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -72,7 +72,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261011102852').WeaponSystem} system
+   * @param {import('./index.js?v=20261011122417').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -627,7 +627,8 @@ export class WeaponController {
     // Erster Schuss aus der Ruhe: eigener Streufaktor (Rückstoß 2.0, Daten recoil.firstShotSpread)
     // Cheat-Menü Aimbot mit erfasstem Ziel (cheats.js player.cheatPrecise): Einzelkugeln ohne Streuung
     const precise = !!actor.cheatPrecise && pellets === 1;
-    const spread = precise ? 0 : this.fireSpread * (this.shotIndex === 0 && Number.isFinite(r.firstShotSpread) ? r.firstShotSpread : 1);
+    const armHit = !!(actor.injury && actor.injury.arm); // Armtreffer (injuries.js): Waffe zittert
+    const spread = precise ? 0 : this.fireSpread * (this.shotIndex === 0 && Number.isFinite(r.firstShotSpread) ? r.firstShotSpread : 1) * (armHit ? 1.35 : 1);
     const rot = Math.random() * Math.PI * 2;
     const scale = Number.isFinite(actor.damageScale) ? actor.damageScale : 1;
     const range = def.range || 100;
@@ -659,7 +660,7 @@ export class WeaponController {
     if (it.crouching && !it.moving) k *= 0.85;
     if (it.airborne) k *= 1.2;
     if (actor.isPlayer && G.input && G.input.mode === 'touch') k *= 0.72; // Touch: wie COD Mobile deutlich ruhiger
-    k *= this._rush('rushRecoil') * (actor.mounted ? 0.35 : 1); // MG-Stellung (mappoints.js): Waffe liegt auf der Lafette
+    k *= this._rush('rushRecoil') * (actor.mounted ? 0.35 : 1) * (armHit ? 1.45 : 1); // MG-Stellung (mappoints.js): Waffe liegt auf der Lafette
     const pitch = r.vertical * e[1] * first * k * (0.94 + Math.random() * 0.12);
     const yaw = r.horizontal * (e[0] + (Math.random() * 0.7 - 0.35)) * k;
     // Freies Zielen (core, nur an der Hüfte): ein Teil des Stoßes bewegt den Lauf innerhalb der Totzone statt der
@@ -754,7 +755,7 @@ export class WeaponController {
         total: tm.start + tm.insert * need + tm.end + (empty ? 0.45 : 0),
       };
     } else {
-      const dur = empty ? (def.reloadEmptyTime || 2.6) : (def.reloadTime || 2);
+      const dur = (empty ? (def.reloadEmptyTime || 2.6) : (def.reloadTime || 2)) * (this.actor.injury && this.actor.injury.arm ? 1.3 : 1);
       this._reload = { shells: false, empty, t: 0, dur, insertAt: dur * (empty ? 0.64 : 0.76), inserted: false };
     }
     this.reloadEmpty = empty;
@@ -1045,6 +1046,8 @@ export class WeaponController {
       const wid = (m.def && m.def.id) || 'knife';
       const dealt = G.combat.damage(target, { amount: dmg, attacker: a, weaponId: wid, zone: 'body', dir, point, distance: point.distanceTo(_eye) });
       G.events.emit('weapon:meleeHit', { actor: a, target, backstab, killed: !target.alive, damage: dealt, weaponId: wid });
+      // Spezial „Betäuben“/„Wucht“ (Schlagstock, Kampfaxt): Getroffener kommt kurz kaum voran (wie das Wurfnetz)
+      if (spec.stun && target.alive) { target.netUntil = Math.max(target.netUntil || 0, G.time.elapsed + spec.stun); target.netSlow = 0.4; }
       // Spezial „Spaltschlag“ (Machete): jeder weitere Gegner im Bogen wird ebenfalls getroffen
       if (spec.cleave) {
         for (const t of G.actors) {
@@ -1057,7 +1060,7 @@ export class WeaponController {
           if (Math.acos(clamp(_to.dot(_aim) / d, -1, 1)) > (spec.arc || 0.6) + 0.25) continue;
           const pt = new THREE.Vector3().copy(t.position);
           pt.y += (t.body ? t.body.height : 1.8) * 0.62;
-          const dd = G.combat.damage(t, { amount: ((m.def && m.def.damage && m.def.damage.max) || 60) * scale, attacker: a, weaponId: wid, zone: 'body', dir: pt.clone().sub(_eye).normalize(), point: pt, distance: d });
+          const dd = G.combat.damage(t, { amount: ((m.def && m.def.damage && m.def.damage.max) || 60) * scale * (typeof spec.cleave === 'number' ? spec.cleave : 1), attacker: a, weaponId: wid, zone: 'body', dir: pt.clone().sub(_eye).normalize(), point: pt, distance: d });
           G.events.emit('weapon:meleeHit', { actor: a, target: t, backstab: false, killed: !t.alive, damage: dd, weaponId: wid, cleave: true });
         }
       }

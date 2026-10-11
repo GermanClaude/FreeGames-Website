@@ -2,10 +2,10 @@
 // der aktuellen Belegung (input.bindings, shared/bindings.data.js) – eigene Tasten erscheinen hier sofort.
 // „Belegung ändern“ führt in Einstellungen → Belegung (bzw. zum Touch-Layout-Editor).
 
-import { esc } from './dom.js?v=20261011102852';
-import { ICON } from './icons.js?v=20261011102852';
-import { ACTION_DEFS, ACTION_GROUPS, resolveBindings } from '../../shared/bindings.data.js?v=20261011102852';
-import { keyHtml } from './settings/keys.js?v=20261011102852';
+import { esc } from './dom.js?v=20261011122417';
+import { ICON } from './icons.js?v=20261011122417';
+import { ACTION_DEFS, ACTION_GROUPS, resolveBindings } from '../../shared/bindings.data.js?v=20261011122417';
+import { keyHtml } from './settings/keys.js?v=20261011122417';
 
 // Positionen wie in game.css (Querformat), in % der Bildschirmbreite/-höhe → nummerierte Marken + Legende
 const TOUCH = [
