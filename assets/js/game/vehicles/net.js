@@ -12,9 +12,9 @@
 //   (placeInSeat/clearSeat), Schnappschüsse puffern und mit der Abspieluhr der Puppen interpolieren (tickReplica), eigene
 //   Sitz-Absicht als VEH_INPUT im 30-Hz-Zustand (inputState), Anfragen über enter/exit/seat/load.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp } from './data.js?v=20261011145012';
-import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261011145012';
-import { falloff } from '../combat.js?v=20261011145012';
+import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp } from './data.js?v=20261011151144';
+import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261011151144';
+import { falloff } from '../combat.js?v=20261011151144';
 
 const HOST_ID = 1; // net/index.js HOST_ID (hier ohne Import: Fahrzeuge laden auch ohne Netzmodul)
 const NEAR = 160; // m (xz): eigenes Fahrzeug und nähere bekommen jeden Takt einen Block
@@ -66,7 +66,7 @@ const mgShots = (seat) => { let n = 0; for (const w of seat.weapons) if (w.def.k
 
 export class VehicleNet {
   /**
-   * @param {import('./index.js?v=20261011145012').VehicleSystem} sys
+   * @param {import('./index.js?v=20261011151144').VehicleSystem} sys
    * @param {{replica?: boolean}} opts replica: Client-Abbild (sonst Host)
    */
   constructor(sys, { replica = false } = {}) {

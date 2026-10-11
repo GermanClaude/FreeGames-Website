@@ -25,18 +25,18 @@
 // (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu). Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der
 // Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host vermerkt es und verteilt das Roster; bei jedem
 // Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261011145012';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261011145012';
-import { hex, randomBytes } from './crypto.js?v=20261011145012';
-import { BUILD } from '../../shared/build.js?v=20261011145012';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261011145012';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261011145012';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261011145012';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261011145012';
-import { ATTACHMENTS } from '../../shared/attachments.data.js?v=20261011145012';
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261011145012';
-import { recommend, UploadMeter } from './recommend.js?v=20261011145012';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261011145012';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261011151144';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261011151144';
+import { hex, randomBytes } from './crypto.js?v=20261011151144';
+import { BUILD } from '../../shared/build.js?v=20261011151144';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261011151144';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261011151144';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261011151144';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261011151144';
+import { ATTACHMENTS } from '../../shared/attachments.data.js?v=20261011151144';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261011151144';
+import { recommend, UploadMeter } from './recommend.js?v=20261011151144';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261011151144';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD).
  *  2: Fahrzeuge online (Snapshot-Anhang, Fahrzeug-Absicht, 'veh'/'vhit'/'vehicles' – panzer-mp.md §C).
@@ -560,7 +560,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261011145012').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261011151144').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
@@ -1455,7 +1455,7 @@ export class NetSystem {
     const st = this.room && this.room.settings ? this.room.settings : DEFAULT_ROOM;
     const actors = st.botFill !== false ? Math.min(MAX_PLAYERS, 2 * (st.teamSize || DEFAULT_ROOM.teamSize)) : 0;
     // Fahrzeuge der Karte (Grenzland: je Team 2 Panzer + 3 Geländewagen, sonst je Team 1 + 1)
-    const vehicles = st.vehicles ? (st.map === 'grenzland' ? 10 : st.map === 'niemandsland' ? 0 : 4) : 0;
+    const vehicles = st.vehicles ? (st.map === 'grenzland' ? 10 : st.map === 'niemandsland' ? 4 : 4) : 0;
     return recommend({
       actors, vehicles,
       cores: Number.isFinite(nav.hardwareConcurrency) ? nav.hardwareConcurrency : null,

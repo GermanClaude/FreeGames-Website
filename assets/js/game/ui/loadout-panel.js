@@ -3,12 +3,12 @@
 // Ausführung des Outfits. Touch-first (große Kacheln), per Pfeiltasten/Gamepad über die räumliche Navigation bedienbar.
 // API: new LoadoutPanel(G); mount(host, loadout?) ; value() → loadout ; save() (Klassenausrüstung merken) ; unmount().
 
-import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011145012';
-import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261011145012';
-import { esc } from './dom.js?v=20261011145012';
-import { ICON } from './icons.js?v=20261011145012';
-import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261011145012';
-import { getWeaponModelInfo } from '../weapons/models.js?v=20261011145012';
+import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011151144';
+import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261011151144';
+import { esc } from './dom.js?v=20261011151144';
+import { ICON } from './icons.js?v=20261011151144';
+import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261011151144';
+import { getWeaponModelInfo } from '../weapons/models.js?v=20261011151144';
 
 const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['melee', 'Messer'], ['lethal', 'Granate']];
 

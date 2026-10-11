@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261011145012';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261011151144';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -41,7 +41,7 @@ export const DEFAULTS = Object.freeze({
   // Vollbild (engine/fullscreen.js): auto = bei „Einsatz starten“, „Fortsetzen“ und (Touch) Tippen auf die Steuerung im Match | off = nur Knopf/Taste
   fullscreen: 'auto',
   // Lobby: Wetter/Tageszeit (atmosphere-weather): 'standard' | 'zufall' | Wetter-/Zeit-id
-  lastWeather: 'standard', lastTime: 'standard',
+  lastWeather: 'standard', lastTime: 'standard', lastVehicles: 'an',
   // Lernende Bots (ai-adapt): Gegner stellen sich auf den Spielstil ein (Stärke nach Schwierigkeit)
   adaptiveBots: true,
   // Munition pro Abschuss (weapons/index.js, offline; online gilt die Raum-Einstellung des Hosts)
@@ -229,6 +229,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   realisticCrosshair: { type: 'boolean', label: 'Fadenkreuz im Spielstil „Realistisch“', group: 'hud' },
   lastClass: { type: 'id', label: 'Letzte Klasse', group: 'intern' },
   lastWeather: { type: 'id', label: 'Letztes Wetter', group: 'intern' },
+  lastVehicles: { type: 'id', label: 'Panzer & Fahrzeuge (Lobby)', group: 'intern' },
   lastTime: { type: 'id', label: 'Letzte Tageszeit', group: 'intern' },
   classLoadouts: { type: 'classLoadouts', label: 'Ausrüstung je Klasse', group: 'intern' },
   aimAssistLevel: {

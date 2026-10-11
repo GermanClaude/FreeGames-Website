@@ -3,16 +3,16 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011145012';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011145012'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011145012'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011145012';
-import { esc, num, secs, meters } from './dom.js?v=20261011145012';
-import { ICON } from './icons.js?v=20261011145012';
-import { drawMapArt } from './mapart.js?v=20261011145012';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011145012';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261011145012';
-import { ProgressView } from './progress.js?v=20261011145012';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011151144';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011151144'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011151144'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011151144';
+import { esc, num, secs, meters } from './dom.js?v=20261011151144';
+import { ICON } from './icons.js?v=20261011151144';
+import { drawMapArt } from './mapart.js?v=20261011151144';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011151144';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011151144';
+import { ProgressView } from './progress.js?v=20261011151144';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -77,6 +77,7 @@ export class Lobby {
       // atmosphere-weather: Wetter/Tageszeit wie die übrigen Lobby-Optionen gemerkt ('standard' = Kartenvorgabe)
       timeOfDay: S.get('lastTime') && S.get('lastTime') !== 'standard' ? S.get('lastTime') : null,
       weather: S.get('lastWeather') || 'standard',
+      vehicles: S.get('lastVehicles') === 'aus' ? 'aus' : 'an', // Panzer/Fahrzeuge offline an/aus (Raum: net-menus „Fahrzeuge“)
     };
     if (prm) {
       if (d.MODES[prm.get('mode')]) base.modeId = prm.get('mode');
@@ -182,7 +183,7 @@ export class Lobby {
     return {
       modeId: c.modeId, mapId: c.mapId, difficulty: c.difficulty, allies: c.allies, enemies: c.enemies,
       style: c.style, crosshair: c.style === 'realistisch' ? !!this.G.settings.get('realisticCrosshair') : null,
-      matchLength: c.matchLength, timeOfDay: this._todFor(c) || 'standard', weather: c.weather && c.weather !== 'standard' ? c.weather : null,
+      matchLength: c.matchLength, timeOfDay: this._todFor(c) || 'standard', vehicles: c.vehicles !== 'aus', weather: c.weather && c.weather !== 'standard' ? c.weather : null,
       loadout: { primary: c.primary, secondary: c.secondary, lethal: c.lethal, melee: c.melee || 'knife', cls: c.cls, camo, att: pickAtt(c), ...(skin ? { skin } : {}) },
       ...(c.limits && c.limits.modeId === c.modeId ? { timeLimit: c.limits.timeLimit, scoreLimit: c.limits.scoreLimit } : {}),
     };
@@ -284,6 +285,7 @@ export class Lobby {
     if (ds.xhair != null) { try { this.G.settings.set('realisticCrosshair', !this.G.settings.get('realisticCrosshair')); } catch { /* */ } this._renderDeploy(); this.menus.sound('toggle'); return; }
     if (ds.len) { c.matchLength = ds.len; this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.tod != null) { c.timeOfDay = ds.tod || null; try { this.G.settings.set('lastTime', ds.tod || 'standard'); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
+    if (ds.veh != null) { c.vehicles = ds.veh === 'aus' ? 'aus' : 'an'; try { this.G.settings.set('lastVehicles', c.vehicles); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.wx != null) { c.weather = ds.wx || 'standard'; this._wxAutoTime(c); try { this.G.settings.set('lastWeather', c.weather); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.cls) { this._setClass(ds.cls); return; }
     if (ds.camo) { this._setCamo(ds.camo, b); return; }
@@ -371,6 +373,7 @@ export class Lobby {
     }
     const extra = `${m.matchLengths ? `<div><h2 class="m-h2">Matchlänge</h2><div class="m-seg" role="radiogroup" aria-label="Matchlänge">${LENGTHS.map(([id, l]) => `<button type="button" role="radio" data-len="${id}" aria-checked="${id === c.matchLength}">${l}</button>`).join('')}</div></div>` : ''}
       ${times.length ? `<div><h2 class="m-h2">Tageszeit</h2><div class="m-seg" role="radiogroup" aria-label="Tageszeit"><button type="button" role="radio" data-tod="" aria-checked="${!todSel}">${esc(map.timeOfDay || 'Standard')}</button>${times.map((t) => `<button type="button" role="radio" data-tod="${esc(t.id)}" aria-checked="${t.id === todSel}">${esc(t.name || t.label || t.id)}</button>`).join('')}<button type="button" role="radio" data-tod="echtzeit" aria-checked="${todSel === 'echtzeit'}" title="Passend zur echten Uhrzeit">Echtzeit</button><button type="button" role="radio" data-tod="zufall" aria-checked="${todSel === 'zufall'}">Zufall</button></div>${rtNote}</div>` : ''}
+      ${c.modeId !== 'training' ? `<div><h2 class="m-h2">Panzer &amp; Fahrzeuge</h2><div class="m-seg" role="radiogroup" aria-label="Panzer und Fahrzeuge">${[['an', 'An', 'Panzer und Geländewagen der Karte'], ['aus', 'Aus', 'Nur Infanterie']].map(([id, l, t]) => `<button type="button" role="radio" data-veh="${id}" aria-checked="${id === c.vehicles}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
       ${wxs.length ? `<div><h2 class="m-h2">Wetter</h2><div class="m-seg" role="radiogroup" aria-label="Wetter">${[['standard', 'Standard', map.weather || ''], ...wxs.map((w) => [w, WEATHERS[w].name, WEATHERS[w].short || '']), ['zufall', 'Zufall', 'Zufälliges Wetter beim Start']].map(([id, l, t]) => `<button type="button" role="radio" data-wx="${id}" aria-checked="${id === wxSel}"${t ? ` title="${esc(t)}"` : ''}>${esc(l)}</button>`).join('')}</div></div>` : ''}`;
     this.el.deploy.innerHTML = `
       <section class="lb-sec"><h2 class="m-h2">Modus</h2><div class="lb-modes" role="group" aria-label="Modus">${modes}</div>

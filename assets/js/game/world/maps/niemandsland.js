@@ -4,9 +4,9 @@
 // Dazwischen das Niemandsland: Hunderte Granattrichter (die tiefsten voll Wasser), Stacheldrahtgürtel vor beiden
 // Fronten, zersplitterte Baumstümpfe, eine Dorfruine (West) und eine Kapellenruine (Ost) mit zerstörbaren Mauern, in
 // der Mitte ein liegengebliebener Panzer. Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { wall } from '../arch.js?v=20261011145012';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261011145012';
-import { sampleSpline } from '../terrain/generate.js?v=20261011145012';
+import { wall } from '../arch.js?v=20261011151144';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261011151144';
+import { sampleSpline } from '../terrain/generate.js?v=20261011151144';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -266,6 +266,10 @@ export default {
       B: [[30, -HQZ + 6, Math.PI], [20, -HQZ + 8, Math.PI], [8, -HQZ + 6, Math.PI], [-4, -HQZ + 8, Math.PI], [-12, -HQZ + 6, Math.PI], [-26, -HQZ + 8, Math.PI], [-34, -HQZ + 6, Math.PI], [0, -HQZ - 8, Math.PI]],
     },
   },
-  vehicles: [],
+  // Panzer je Team am Hauptquartier (Nutzer 11.10.); Art/Generation über die Lobby (vehicles/data.js)
+  vehicles: [
+    { id: 'A-panzer-1', team: 'A', kind: 'tank', x: 70, z: HQZ - 4, yaw: 0 }, { id: 'A-panzer-2', team: 'A', kind: 'tank', x: -70, z: HQZ - 4, yaw: 0 },
+    { id: 'B-panzer-1', team: 'B', kind: 'tank', x: -70, z: -HQZ + 4, yaw: Math.PI }, { id: 'B-panzer-2', team: 'B', kind: 'tank', x: 70, z: -HQZ + 4, yaw: Math.PI },
+  ],
   secrets: [],
 };

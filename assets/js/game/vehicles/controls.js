@@ -12,8 +12,8 @@
 //                Touch „Laden“ (v_load) = nächster fälliger Schritt, „PG/SG“ (v_ammo). Pad/VR: reload wirkt beim
 //                Loslassen nach < 0,35 s (X ist zugleich interact).
 // Touch-Knöpfe (vehicles/hud.js, data-action): v_enter, v_exit, v_camera, v_seat, v_gas, v_brake, v_light, v_load, v_ammo.
-import { readDriveControls } from './drive-input.js?v=20261011145012';
-import { viewOf, clampRelLook } from './views.js?v=20261011145012';
+import { readDriveControls } from './drive-input.js?v=20261011151144';
+import { viewOf, clampRelLook } from './views.js?v=20261011151144';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
@@ -112,6 +112,7 @@ export function readPlayerControls(input, vehicle, seat, dt, { frozen = false, v
   out.camera = input.pressed('crouch') || input.pressed('v_camera');
   out.nextSeat = input.pressed('v_seat');
   out.lights = input.pressed('light') || input.pressed('v_light');
+  out.thermal = input.pressed('v_thermal') || (!seat.def.drive && input.pressed('grenade'));
   if (input.pressed('seat_next')) out.seatStep = 1;
   else if (input.pressed('seat_prev')) out.seatStep = -1;
   if (!pad && !vr) for (let i = 0; i < SEAT_ACTIONS.length; i++) if (input.pressed(SEAT_ACTIONS[i])) out.seatTo = i;

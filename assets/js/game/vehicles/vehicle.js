@@ -9,12 +9,12 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS } from './data.js?v=20261011145012';
-import { VehicleBody } from './sim.js?v=20261011145012';
-import { createVehicleModel } from './models.js?v=20261011145012';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011145012';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011145012';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011145012';
+import { VEHICLES, VEHICLE_WEAPONS } from './data.js?v=20261011151144';
+import { VehicleBody } from './sim.js?v=20261011151144';
+import { createVehicleModel } from './models.js?v=20261011151144';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011151144';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011151144';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011151144';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -651,6 +651,9 @@ export class Vehicle {
     const cv = this.sys && this.sys.camera ? this.sys.camera.view : null;
     const inside = !!(p && p.vehicle === this && cv && cv.interior && this.alive);
     if (st.interior !== inside) { st.interior = inside; M.setInterior?.(inside); }
+    // Optik/Periskop/Winkelspiegel: eigener Panzer ausgeblendet (kein Rohr/Turmteil verdeckt das Bild, Nutzer 11.10.)
+    const sight = !!(p && p.vehicle === this && cv && !cv.tp && ['optic', 'wide', 'peri', 'slit'].includes(cv.overlay));
+    if (st.sightHidden !== sight) { st.sightHidden = sight; if (M.root) M.root.visible = !sight; }
     const g = this.gun;
     if (!g) return;
     const bw = g.breechOpen ? 1 : 0;
