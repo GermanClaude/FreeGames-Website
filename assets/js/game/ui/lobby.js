@@ -3,17 +3,17 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011180812';
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011180812';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261011180812'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261011180812'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011180812';
-import { esc, num, secs, meters } from './dom.js?v=20261011180812';
-import { ICON } from './icons.js?v=20261011180812';
-import { drawMapArt } from './mapart.js?v=20261011180812';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011180812';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261011180812';
-import { ProgressView } from './progress.js?v=20261011180812';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261011183929';
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261011183929';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261011183929'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261011183929'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261011183929';
+import { esc, num, secs, meters } from './dom.js?v=20261011183929';
+import { ICON } from './icons.js?v=20261011183929';
+import { drawMapArt } from './mapart.js?v=20261011183929';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261011183929';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261011183929';
+import { ProgressView } from './progress.js?v=20261011183929';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -378,7 +378,7 @@ export class Lobby {
     const extra = `${m.matchLengths ? `<div><h2 class="m-h2">Matchlänge</h2><div class="m-seg" role="radiogroup" aria-label="Matchlänge">${LENGTHS.map(([id, l]) => `<button type="button" role="radio" data-len="${id}" aria-checked="${id === c.matchLength}">${l}</button>`).join('')}</div></div>` : ''}
       ${times.length ? `<div><h2 class="m-h2">Tageszeit</h2><div class="m-seg" role="radiogroup" aria-label="Tageszeit"><button type="button" role="radio" data-tod="" aria-checked="${!todSel}">${esc(map.timeOfDay || 'Standard')}</button>${times.map((t) => `<button type="button" role="radio" data-tod="${esc(t.id)}" aria-checked="${t.id === todSel}">${esc(t.name || t.label || t.id)}</button>`).join('')}<button type="button" role="radio" data-tod="echtzeit" aria-checked="${todSel === 'echtzeit'}" title="Passend zur echten Uhrzeit">Echtzeit</button><button type="button" role="radio" data-tod="zufall" aria-checked="${todSel === 'zufall'}">Zufall</button></div>${rtNote}</div>` : ''}
       ${c.modeId !== 'training' ? `<div><h2 class="m-h2">Panzer &amp; Fahrzeuge</h2><div class="m-seg" role="radiogroup" aria-label="Panzer und Fahrzeuge">${[['an', 'An', 'Panzer und Geländewagen der Karte'], ['aus', 'Aus', 'Nur Infanterie']].map(([id, l, t]) => `<button type="button" role="radio" data-veh="${id}" aria-checked="${id === c.vehicles}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
-      ${c.modeId !== 'training' && c.vehicles !== 'aus' ? `<div><h2 class="m-h2">Panzer-Generation</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Generation">${[['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild, 4 Mann'], ['wk2', '2. WK', 'MK-4 Luchs: 75-mm-Kanone, Bug-MG, 5 Mann'], ['wk1', '1. WK', 'SK-18 Koloss: Bugkanone, MG-Stand, 6 Mann inkl. Mechaniker']].map(([id, l, t]) => `<button type="button" role="radio" data-era="${id}" aria-checked="${id === (c.tankEra || 'karte')}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
+      ${c.modeId !== 'training' && c.vehicles !== 'aus' ? `<div><h2 class="m-h2">Panzer-Generation</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Generation">${[['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild und Munitionsbunker, 4 Mann'], ['wk2', '2. WK', 'Team A: MP-4 Bison (mittel, 75 mm, schnell) – Team B: SP-6 Moloch (schwer, 88 mm)'], ['wk1', '1. WK', 'Team A: LK-17 Libelle (leicht, Drehturm, 2 Mann) – Team B: SK-18 Koloss (Sturmpanzer, 6 Mann)']].map(([id, l, t]) => `<button type="button" role="radio" data-era="${id}" aria-checked="${id === (c.tankEra || 'karte')}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
       ${c.modeId !== 'training' && c.vehicles !== 'aus' ? (() => { const P = loadTankProgress(), nx = TANK_SKINS.find((k) => k.xp > P.xp); return `<div><h2 class="m-h2">Panzer-Tarnung</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Tarnung">${TANK_SKINS.map((k) => `<button type="button" role="radio" data-tskin="${k.id}" aria-checked="${k.id === P.skin}"${skinUnlocked(P, k) ? '' : ' aria-disabled="true"'} title="${skinUnlocked(P, k) ? 'Freigeschaltet' : `Ab ${k.xp} Panzer-Erfahrung`}">${skinUnlocked(P, k) ? '' : '🔒 '}${k.name}</button>`).join('')}</div><p class="lb-note">Panzer-Erfahrung ${Math.floor(P.xp)}${nx ? ` · nächste Tarnung „${nx.name}“ bei ${nx.xp}` : ' · alle Tarnungen frei'} – im Panzer sitzen, mit Fahrzeugwaffen Gegner und Fahrzeuge ausschalten.</p></div>`; })() : ''}
       ${wxs.length ? `<div><h2 class="m-h2">Wetter</h2><div class="m-seg" role="radiogroup" aria-label="Wetter">${[['standard', 'Standard', map.weather || ''], ...wxs.map((w) => [w, WEATHERS[w].name, WEATHERS[w].short || '']), ['zufall', 'Zufall', 'Zufälliges Wetter beim Start']].map(([id, l, t]) => `<button type="button" role="radio" data-wx="${id}" aria-checked="${id === wxSel}"${t ? ` title="${esc(t)}"` : ''}>${esc(l)}</button>`).join('')}</div></div>` : ''}`;
     this.el.deploy.innerHTML = `

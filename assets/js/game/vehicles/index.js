@@ -6,23 +6,23 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261011180812';
-import { Vehicle, newIntent } from './vehicle.js?v=20261011180812';
-import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261011180812';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261011180812';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011180812';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011180812';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011180812';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011180812';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261011180812';
-import { VehicleAudio } from './audio.js?v=20261011180812';
-import * as MATS from './materials.js?v=20261011180812';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011180812';
-import { VehicleNet } from './net.js?v=20261011180812';
-import { groundRay } from './sim.js?v=20261011180812';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011180812';
-import { falloff } from '../combat.js?v=20261011180812';
-import { Thermal } from './thermal.js?v=20261011180812';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261011183929';
+import { Vehicle, newIntent } from './vehicle.js?v=20261011183929';
+import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261011183929';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261011183929';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261011183929';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261011183929';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261011183929';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261011183929';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261011183929';
+import { VehicleAudio } from './audio.js?v=20261011183929';
+import * as MATS from './materials.js?v=20261011183929';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261011183929';
+import { VehicleNet } from './net.js?v=20261011183929';
+import { groundRay } from './sim.js?v=20261011183929';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261011183929';
+import { falloff } from '../combat.js?v=20261011183929';
+import { Thermal } from './thermal.js?v=20261011183929';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -129,7 +129,7 @@ export class VehicleSystem {
     this.tankProgress = new TankProgress(G);
     this._skinTeam = undefined; // update(): sobald das eigene Team feststeht
     if (!this.replica) this._setupSpawns();
-    else prepareVehicleModels([this.tankType, 'jeep'].filter((t) => VEHICLES[t]), ['A', 'B'], this.quality);
+    else prepareVehicleModels([...this.tankTypes, 'jeep'].filter((t) => VEHICLES[t]), ['A', 'B'], this.quality);
     if (this.list.length || this.spawns.length || this.replica) {
       MATS.upgradeVehicleMaterials(G.renderer && G.renderer.renderer, this.quality);
       // Shader vorwärmen (main.warmUp kompiliert sichtbare Szenenobjekte): Granate, Scheinwerfer an, Lichtkegel, Wrack
@@ -145,7 +145,7 @@ export class VehicleSystem {
       // Countdown wieder weg (update)
       if (this.replica) {
         this._warmModels = [];
-        for (const type of [this.tankType, 'jeep']) for (const team of ['A', 'B']) {
+        for (const type of [...this.tankTypes, 'jeep']) for (const team of ['A', 'B']) {
           if (!VEHICLES[type]) continue;
           try { const md = createVehicleModel(type, { team, quality: this.quality }); warm.add(md.root); this._warmModels.push(md); } catch (err) { console.warn('[vehicles] Vorwärmen', err); }
         }
@@ -264,14 +264,17 @@ export class VehicleSystem {
     return Math.max(1, Math.round(n));
   }
 
-  /** Panzer dieser Runde: Einstellung „Panzer-Generation“ (online Raum, offline Lobby; ?panzer=… für Tests). */
-  get tankType() {
+  /** Panzer dieser Runde je Team: Einstellung „Panzer-Generation“ (online Raum, offline Lobby; ?panzer=… für Tests). */
+  tankTypeFor(team = 'A') {
     const G = this.G, M = G.match || {};
     let era = null;
     try { era = G.params && typeof G.params.get === 'function' ? G.params.get('panzer') : null; } catch { era = null; }
     if (!era) era = (M.net && M.net.tankEra) || M.tankEra || 'karte';
-    return tankTypeFor(era, M.mapId || (this.world && this.world.id));
+    return tankTypeFor(era, M.mapId || (this.world && this.world.id), team);
   }
+  get tankType() { return this.tankTypeFor('A'); }
+  /** Beide Panzer der Runde (Team A, Team B; ohne Doppelte). */
+  get tankTypes() { return [...new Set([this.tankTypeFor('A'), this.tankTypeFor('B')])]; }
 
   _setupSpawns() {
     const G = this.G, w = this.world;
@@ -281,8 +284,11 @@ export class VehicleSystem {
     else if (!entries && (param === '1' || (G.match && G.match.vehicles))) entries = this.autoSpawns();
     if (!entries || !entries.length) return;
     // Panzergeneration (Raum/Lobby „Panzer“): Kampfpanzer-Plätze der Karte bekommen den Panzer der gewählten Epoche
-    const tank = this.tankType;
-    entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret).map((e) => (e.type === 'mbt' && tank !== 'mbt' ? { ...e, type: tank } : e));
+    entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret).map((e) => {
+      if (e.type !== 'mbt') return e;
+      const tank = this.tankTypeFor(e.team);
+      return tank !== 'mbt' ? { ...e, type: tank } : e;
+    });
     // Reihum je Team anmelden: bei der Stufen-Obergrenze (Handy) bekommen beide Seiten gleich viele Fahrzeuge
     const byTeam = new Map();
     for (const e of entries) { const k = e.team ?? null; if (!byTeam.has(k)) byTeam.set(k, []); byTeam.get(k).push(e); }

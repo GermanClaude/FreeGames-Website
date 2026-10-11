@@ -3,7 +3,7 @@
 // Drehmomentband und rotem Bereich über Nenndrehzahl, Getriebeart, Hinweise („Drehzahl zu niedrig – runterschalten“,
 // „Erst anhalten“) und die Touch-Knöpfe „Gang +“/„Gang −“. Liest nur vehicle.body.drive (läuft auch auf Abbildern).
 // Eigene Styles; DOM-Schreibzugriffe nur bei Änderung (wie VehicleHUD._set).
-import { gearList, gearName } from './drivetrain.js?v=20261011180812';
+import { gearList, gearName } from './drivetrain.js?v=20261011183929';
 
 const CSS = `
 .vd-root{margin:5px 0 2px}
@@ -30,7 +30,7 @@ body[data-input-mode="touch"] .vd-gears{font-size:11px}body[data-input-mode="tou
 .vc-gear{display:none;--s:50;left:calc(3% + env(safe-area-inset-left) + var(--tc-u) * 134);border-radius:12px}
 .vc-gear-up{bottom:calc(60% + var(--tc-u) * 28 + env(safe-area-inset-bottom))}
 .vc-gear-down{bottom:calc(60% - var(--tc-u) * 28 + env(safe-area-inset-bottom))}
-body[data-vehicle="mbt"][data-vehicle-drive="1"] .vc-gear,body[data-vehicle="wk2"][data-vehicle-drive="1"] .vc-gear,body[data-vehicle="wk1"][data-vehicle-drive="1"] .vc-gear{display:grid}
+body[data-vehicle="mbt"][data-vehicle-drive="1"] .vc-gear,body[data-vehicle="wk2"][data-vehicle-drive="1"] .vc-gear,body[data-vehicle="wk1"][data-vehicle-drive="1"] .vc-gear,body[data-vehicle="wk2h"][data-vehicle-drive="1"] .vc-gear,body[data-vehicle="wk1l"][data-vehicle-drive="1"] .vc-gear{display:grid}
 body[data-vehicle-gearbox="auto"] .vc-gear{display:none!important}
 `;
 

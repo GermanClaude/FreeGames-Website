@@ -9,12 +9,12 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, vehicleWeapon } from './data.js?v=20261011180812';
-import { VehicleBody } from './sim.js?v=20261011180812';
-import { createVehicleModel } from './models.js?v=20261011180812';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011180812';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011180812';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011180812';
+import { VEHICLES, vehicleWeapon } from './data.js?v=20261011183929';
+import { VehicleBody } from './sim.js?v=20261011183929';
+import { createVehicleModel } from './models.js?v=20261011183929';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261011183929';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261011183929';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261011183929';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -489,9 +489,9 @@ export class Vehicle {
     }
     const g = this.gun, rackN = g ? (g.rack.mbt_ap || 0) + (g.rack.mbt_he || 0) : 0;
     if (rackN > 0 && this.def.turretPivot && this.health > 0) {
-      const I = this.def.interior || {}, rk = I.rack || [0, 0.45, 1.55], sh = I.shift || [0, 0, 0];
+      const I = this.def.interior || {}, rk = I.rack || [0, 0.45, 1.55], sh = I.shift || [0, 0, 0], sc = I.scale || 1;
       _q.setFromAxisAngle(Y, this.mount.turretYaw);
-      _b.set(rk[0] + sh[0], rk[1] + sh[1], rk[2] + sh[2]).applyQuaternion(_q).add(_c.fromArray(this.def.turretPivot));
+      _b.set(rk[0] * sc + sh[0], rk[1] * sc + sh[1], rk[2] * sc + sh[2]).applyQuaternion(_q).add(_c.fromArray(this.def.turretPivot));
       this.body.toWorld(_b, _b);
       if (_b.distanceTo(P) < 1.4 && Math.random() < (ap ? 0.5 : 0.15) * Math.min(1, 0.4 + rackN / 12)) {
         if (I.blastDoor && g.step !== 'offen' && g.busyKind !== 'tuer' && g.busyKind !== 'greifen') {

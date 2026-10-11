@@ -11,8 +11,8 @@
 // Öffentliche Spiele: Der Host legt zusätzlich einen Eintrag in die öffentliche Spieleliste (ersetzbares Ereignis
 // mit Ablaufzeit), den jeder lesen kann – inkl. Raumcode, damit man beitreten kann.
 // Das Raum-Thema ist ein Hash des Codes: Wer den Code nicht kennt, sieht nur zufällige Zeichen.
-import { newKeys, signEvent, sharedKey, roomKey, seal, unseal, sha256, hex, randomBytes, netNow, syncClock } from './crypto.js?v=20261011180812';
-import { RelayPool } from './nostr.js?v=20261011180812';
+import { newKeys, signEvent, sharedKey, roomKey, seal, unseal, sha256, hex, randomBytes, netNow, syncClock } from './crypto.js?v=20261011183929';
+import { RelayPool } from './nostr.js?v=20261011183929';
 
 export const PROTOCOL = 1;
 export const KIND_SIGNAL = 25050;   // kurzlebig (wird von Relays nicht gespeichert)

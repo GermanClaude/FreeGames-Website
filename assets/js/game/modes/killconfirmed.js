@@ -4,7 +4,7 @@
 // Bots: objectiveFor(bot) führt zur nächsten Marke in der Nähe.
 
 import * as THREE from 'three';
-import { BaseMode } from './base.js?v=20261011180812';
+import { BaseMode } from './base.js?v=20261011183929';
 
 const POOL = 28;
 const COL_ALLY = 0x38b6ff;
