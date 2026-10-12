@@ -1,9 +1,9 @@
 // §08 Über: Datenschutz (lokale Daten löschen) und das optionale Impressum aus config.js.
-import { $, h } from './dom.js?v=20261012160940';
-import { IMPRESSUM } from './config.js?v=20261012160940';
-import { site } from './state.js?v=20261012160940';
-import { announce } from './live.js?v=20261012160940';
-import { eligible as feedbackUnlocked, revealHtml, openFeedback } from '../shared/feedback.js?v=20261012160940';
+import { $, h } from './dom.js?v=20261012162002';
+import { IMPRESSUM } from './config.js?v=20261012162002';
+import { site } from './state.js?v=20261012162002';
+import { announce } from './live.js?v=20261012162002';
+import { eligible as feedbackUnlocked, revealHtml, openFeedback } from '../shared/feedback.js?v=20261012162002';
 
 /** Alle Schlüssel 'nullpunkt:*' und 'nullpunkt.*' (Aufsätze, Panzer) im lokalen bzw. Sitzungsspeicher, dazu 'np-retry'. */
 function ourKeys(store = 'localStorage') {
@@ -35,10 +35,13 @@ function impressum() {
   box.hidden = false;
 }
 
-/** Feedback (ab 20 Minuten Spielzeit) und „Wie NULLPUNKT entstanden ist“ (seit 12.10. für alle sichtbar, über den Rechten). */
+/**
+ * Feedback und „Wie NULLPUNKT entstanden ist“ (über den Rechten): beides ab 20 Minuten Spielzeit. Die Geschichte wird nirgends
+ * angekündigt – man findet sie nur beim Herunterscrollen (Nutzer 12.10.).
+ */
 function feedback() {
   const box = document.getElementById('entstehung');
-  const showReveal = () => { if (box) { box.innerHTML = revealHtml(); box.hidden = false; } };
+  const showReveal = () => { if (box && feedbackUnlocked()) { box.innerHTML = revealHtml(); box.hidden = false; } };
   showReveal();
   const cta = document.getElementById('fb-cta');
   const btn = document.getElementById('fb-open');
@@ -46,7 +49,7 @@ function feedback() {
   cta.hidden = false;
   btn.addEventListener('click', () => openFeedback({
     page: 'Startseite',
-    onRevealed: () => { showReveal(); announce('Danke für dein Feedback'); },
+    onRevealed: () => { showReveal(); announce('Danke für dein Feedback'); }, // Antwort auf die Vermutung nachtragen
   }));
 }
 
