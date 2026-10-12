@@ -12,8 +12,8 @@
 //   handle.stats                         → { download, gpu, sets, models, hdri, ms, failed, tier }
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261012163106';
-import { textureAnisotropy } from '../engine/textures.js?v=20261012163106';
+import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261012164335';
+import { textureAnisotropy } from '../engine/textures.js?v=20261012164335';
 
 // ---------------------------------------------------------------------------
 // Zuordnung Spielmaterial → Bibliothekssatz

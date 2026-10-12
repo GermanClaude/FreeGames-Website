@@ -1,9 +1,9 @@
 // §08 Über: Datenschutz (lokale Daten löschen) und das optionale Impressum aus config.js.
-import { $, h } from './dom.js?v=20261012163106';
-import { IMPRESSUM } from './config.js?v=20261012163106';
-import { site } from './state.js?v=20261012163106';
-import { announce } from './live.js?v=20261012163106';
-import { eligible as feedbackUnlocked, revealHtml, openFeedback } from '../shared/feedback.js?v=20261012163106';
+import { $, h } from './dom.js?v=20261012164335';
+import { IMPRESSUM } from './config.js?v=20261012164335';
+import { site } from './state.js?v=20261012164335';
+import { announce } from './live.js?v=20261012164335';
+import { eligible as feedbackUnlocked, revealHtml, bindPoem, openFeedback } from '../shared/feedback.js?v=20261012164335';
 
 /** Alle Schlüssel 'nullpunkt:*' und 'nullpunkt.*' (Aufsätze, Panzer) im lokalen bzw. Sitzungsspeicher, dazu 'np-retry'. */
 function ourKeys(store = 'localStorage') {
@@ -41,7 +41,7 @@ function impressum() {
  */
 function feedback() {
   const box = document.getElementById('entstehung');
-  const showReveal = () => { if (box && feedbackUnlocked()) { box.innerHTML = revealHtml(); box.hidden = false; } };
+  const showReveal = () => { if (box && feedbackUnlocked()) { box.innerHTML = revealHtml(); box.hidden = false; bindPoem(box); } };
   showReveal();
   const cta = document.getElementById('fb-cta');
   const btn = document.getElementById('fb-open');

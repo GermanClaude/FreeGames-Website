@@ -3,8 +3,8 @@
 // (world/shadows.js), Hemisphärenlicht, Höhennebel mit Sonnen-Einstreuung (world/shading.js) (Owner: world)
 import * as THREE from 'three';
 import { Sky } from 'three/addons/objects/Sky.js';
-import { WS, setShadingMode } from './shading.js?v=20261012163106';
-import { createFarShadow, farShadowBudget, NEAR_CAP } from './shadows.js?v=20261012163106';
+import { WS, setShadingMode } from './shading.js?v=20261012164335';
+import { createFarShadow, farShadowBudget, NEAR_CAP } from './shadows.js?v=20261012164335';
 
 const deg = THREE.MathUtils.degToRad;
 

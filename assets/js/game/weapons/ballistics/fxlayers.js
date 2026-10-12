@@ -2,7 +2,7 @@
 // Geschwindigkeit gestreckt, Sprite-Sheet-Animation), Leuchtspur-Bänder, Einschusslöcher (instanziert,
 // polygonOffset, verblassend). Simulation auf der CPU in typisierten Arrays – keine Allokationen pro Frame.
 import * as THREE from 'three';
-import { ATLAS_GRID, DECAL_GRID } from './fxtex.js?v=20261012163106';
+import { ATLAS_GRID, DECAL_GRID } from './fxtex.js?v=20261012164335';
 
 /* ======================================================================= Partikel */
 
