@@ -2,10 +2,10 @@
 // einmal), Sichtfeld, Komfort gegen Reiseübelkeit (Kamerabewegung, Waffenschwanken, Fischauge, Rauschen,
 // Bewegung reduzieren) und Bild. Alles Weitere unter „Erweitert“.
 
-import { esc } from '../dom.js?v=20261012162002';
-import { ICON } from '../icons.js?v=20261012162002';
-import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261012162002';
-import { HINTS } from './schema-page.js?v=20261012162002';
+import { esc } from '../dom.js?v=20261012163106';
+import { ICON } from '../icons.js?v=20261012163106';
+import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261012163106';
+import { HINTS } from './schema-page.js?v=20261012163106';
 
 /** Bildstil-Vorlagen: jede setzt diese Werte (alles andere bleibt). */
 export const LOOKS = [

@@ -1,6 +1,6 @@
 // NULLPUNKT — Einfache Einstellungsseite: alle Schlüssel einer Schema-Gruppe als Zeilen (Audio, Profil, Spiel).
 
-import { rowHtml, bindRows, syncRows } from './rows.js?v=20261012162002';
+import { rowHtml, bindRows, syncRows } from './rows.js?v=20261012163106';
 
 /** Kurze Erklärungen unter den Beschriftungen (alle Seiten). */
 export const HINTS = {
