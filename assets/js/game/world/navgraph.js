@@ -3,7 +3,7 @@
 // Laufstege, Treppen), Verbindungen mit Kapsel-Freiraumprüfung, einseitige Absprung-Kanten,
 // Deckungspunkte. A* mit binärem Heap + String-Pulling-Glättung.
 import * as THREE from 'three';
-import { KNEE, makeTests, buildNavData } from './navbuild.js?v=20261012164335';
+import { KNEE, makeTests, buildNavData } from './navbuild.js?v=20261012164729';
 
 
 // ---------------------------------------------------------------------------
