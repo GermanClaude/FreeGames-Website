@@ -3,7 +3,7 @@
 // (syncRows). Bedienbar per Touch, Maus, Tastatur (Pfeile links/rechts am Wähler) und Gamepad (menus.js schickt
 // links/rechts als „np-step“ an fokussierte Wähler und Schieberegler).
 
-import { esc, num } from '../dom.js?v=20261012154847';
+import { esc, num } from '../dom.js?v=20261012160940';
 
 export const COLORS = ['#ffffff', '#ff5b1f', '#5fe08a', '#38b6ff', '#ffc23d', '#ff4fd8'];
 
