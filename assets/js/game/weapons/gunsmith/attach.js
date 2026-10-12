@@ -3,7 +3,7 @@
 // Zweibein/Handstopp unter dem Handschutz (Vordergriff: linke Hand greift ihn, Griffart 'post'), Laser-Modul;
 // nach dem Bau: Magazin länger bzw. Trommel. Optik- und Mündungstausch der Werksteile: parts.js (swapOptic/muzzleDevice).
 import * as THREE from 'three';
-import { muzzleDevice, mountOptic } from './parts.js?v=20261012075831';
+import { muzzleDevice, mountOptic } from './parts.js?v=20261012130441';
 
 const R_BY_KIND = { pistol: 0.0105, smg: 0.0115, rifle: 0.0115, lmg: 0.0135, sniper: 0.016, shotgun: 0.0145 };
 

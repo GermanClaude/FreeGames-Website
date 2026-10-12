@@ -4,7 +4,7 @@
 // Nach jedem abgeschickten Feedback (auch bei schlechter Bewertung): Freischaltung „Wie NULLPUNKT entstanden ist“ auf der Startseite
 // (Experiment: Merkt man einem Spiel an, dass es mit KI entstanden ist?).
 // Gemeinsam für Spiel (spielen.html) und Startseite (index.html): nur DOM + lokaler Speicher, eigene Stile.
-import { BUILD } from './build.js?v=20261012075831';
+import { BUILD } from './build.js?v=20261012130441';
 
 export const FEEDBACK_MIN_SEC = 20 * 60;
 export const REVEAL_MIN_STARS = 1; // jede Bewertung schaltet frei (Nutzer 11.10.: auch wer das Spiel eher negativ sieht)

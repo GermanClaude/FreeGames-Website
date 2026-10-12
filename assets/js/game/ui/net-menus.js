@@ -5,11 +5,11 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261012075831';
-import { ICON, deviceOf } from './icons.js?v=20261012075831';
-import { LoadoutPanel } from './loadout-panel.js?v=20261012075831';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261012075831';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261012075831';
+import { esc, el } from './dom.js?v=20261012130441';
+import { ICON, deviceOf } from './icons.js?v=20261012130441';
+import { LoadoutPanel } from './loadout-panel.js?v=20261012130441';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261012130441';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261012130441';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
@@ -298,7 +298,7 @@ export class NetMenus {
         <section class="lb-sec nm-me">
           <h2 class="m-h2">Rufzeichen</h2>
           <div class="nm-name">
-            <input type="text" class="m-input" data-net-name data-fk="name" maxlength="16" autocomplete="nickname" spellcheck="false" aria-label="Dein Name im Mehrspieler" value="${esc(this._playerName())}">
+            <input type="text" class="m-input" data-net-name data-fk="name" maxlength="16" autocomplete="nickname" spellcheck="false" aria-label="Dein Name im Mehrspieler" title="Ein Spitzname reicht – bitte nicht deinen echten Namen." value="${esc(this._playerName())}">
             <span class="nm-namehint" data-net-me></span>
           </div>
         </section>

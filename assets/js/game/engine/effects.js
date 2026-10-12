@@ -11,10 +11,10 @@
 // Punktlicht wie Explosionen → konstante Lichterzahl), Pulvergas eigener Schüsse, Rauchfäden aus heißen Läufen.
 
 import * as THREE from 'three';
-import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261012075831';
-import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261012075831';
-import { Debris } from '../weapons/ballistics/debris.js?v=20261012075831';
-import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261012075831';
+import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261012130441';
+import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261012130441';
+import { Debris } from '../weapons/ballistics/debris.js?v=20261012130441';
+import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261012130441';
 
 const ALPHA_CAP = 900;
 const ADD_CAP = 640;

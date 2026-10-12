@@ -1,7 +1,7 @@
 // Rendert ein Katalog-Rezept (Funktion oder Generator) deterministisch zu Float32-Kanälen.
 // Läuft im Synthese-Worker (synth.worker.js) und als Rückfall/Offline-Pfad im Hauptthread.
-import { CATALOG } from './catalog.js?v=20261012075831';
-import { makeRng, hashString } from './dsp.js?v=20261012075831';
+import { CATALOG } from './catalog.js?v=20261012130441';
+import { makeRng, hashString } from './dsp.js?v=20261012130441';
 
 const seedRng = (name, v) => makeRng(hashString(name) + v * 7919 + 13);
 const channels = res => (Array.isArray(res) ? res : [res]);
