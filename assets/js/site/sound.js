@@ -1,7 +1,7 @@
 // Ton (standardmäßig aus). UI-Klänge aus engine/audio/ui-sounds.js, Waffenklänge aus der Audio-Engine
 // des Spiels (erst bei Bedarf geladen), sonst eine winzige WebAudio-Synthese.
 // Spielt nie vor einem ausdrücklichen Einschalten; startet erst nach einer Nutzergeste.
-import { site } from './state.js?v=20261012130441';
+import { site } from './state.js?v=20261012154847';
 
 let settings = null;
 let enabled = false;
@@ -58,7 +58,7 @@ function ensure() {
   if (loading) return loading;
   loading = (async () => {
     try {
-      const m = await import('../game/engine/audio/ui-sounds.js?v=20261012130441');
+      const m = await import('../game/engine/audio/ui-sounds.js?v=20261012154847');
       if (typeof m.createUiSounds === 'function') {
         uiSnd = m.createUiSounds(settings, { gestures: false });
         uiSnd.unlock();
@@ -74,7 +74,7 @@ function ensureEngine() {
   if (engine || engineLoading) return engineLoading;
   engineLoading = (async () => {
     try {
-      const mod = await import('../game/engine/audio.js?v=20261012130441');
+      const mod = await import('../game/engine/audio.js?v=20261012154847');
       if (mod?.AudioEngine) {
         engine = new mod.AudioEngine({ settings, events: null }, { autoUnlock: false, autoMusic: false });
         await engine.unlock();
@@ -149,7 +149,8 @@ export const sound = {
     const profile = typeof p === 'string' ? p : p?.sound?.profile || 'ar';
     const pt = typeof p === 'object' ? p?.sound?.pitch || pitch : pitch;
     const e = getEngine();
-    if (e) { e.play(profile, { pitch: pt, player: true }); return; }
+    // Waffe bekannt → eigene Klangsignatur (Kaliber, Aufnahme, Tonlage); sonst nur das Profil
+    if (e) { e.play(profile, typeof p === 'object' && p?.id ? { player: true, weapon: p.id } : { pitch: pt, player: true }); return; }
     synth?.shot();
   },
 

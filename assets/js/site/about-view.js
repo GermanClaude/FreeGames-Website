@@ -1,9 +1,9 @@
 // §08 Über: Datenschutz (lokale Daten löschen) und das optionale Impressum aus config.js.
-import { $, h } from './dom.js?v=20261012130441';
-import { IMPRESSUM } from './config.js?v=20261012130441';
-import { site } from './state.js?v=20261012130441';
-import { announce } from './live.js?v=20261012130441';
-import { eligible as feedbackUnlocked, revealUnlocked, revealHtml, openFeedback } from '../shared/feedback.js?v=20261012130441';
+import { $, h } from './dom.js?v=20261012154847';
+import { IMPRESSUM } from './config.js?v=20261012154847';
+import { site } from './state.js?v=20261012154847';
+import { announce } from './live.js?v=20261012154847';
+import { eligible as feedbackUnlocked, revealUnlocked, revealHtml, openFeedback } from '../shared/feedback.js?v=20261012154847';
 
 /** Alle Schlüssel 'nullpunkt:*' und 'nullpunkt.*' (Aufsätze, Panzer) im lokalen bzw. Sitzungsspeicher, dazu 'np-retry'. */
 function ourKeys(store = 'localStorage') {

@@ -11,12 +11,12 @@
 // freies Zielen; getAimScreenPoint() liefert den Laufpunkt auf dem Bildschirm (Fadenkreuz).
 
 import * as THREE from 'three';
-import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261012130441';
-import { raycastHumanoid, PRONE } from './combat.js?v=20261012130441';
-import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS, abilityOfClass } from '../shared/classes.data.js?v=20261012130441';
-import { refillAmmo, markAround } from './mappoints.js?v=20261012130441';
-import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261012130441';
-import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261012130441';
+import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261012154847';
+import { raycastHumanoid, PRONE } from './combat.js?v=20261012154847';
+import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS, abilityOfClass } from '../shared/classes.data.js?v=20261012154847';
+import { refillAmmo, markAround } from './mappoints.js?v=20261012154847';
+import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261012154847';
+import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261012154847';
 
 const STAND_H = 1.8;
 const CROUCH_H = 1.15;

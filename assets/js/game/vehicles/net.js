@@ -12,9 +12,9 @@
 //   (placeInSeat/clearSeat), Schnappschüsse puffern und mit der Abspieluhr der Puppen interpolieren (tickReplica), eigene
 //   Sitz-Absicht als VEH_INPUT im 30-Hz-Zustand (inputState), Anfragen über enter/exit/seat/load.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261012130441';
-import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261012130441';
-import { falloff } from '../combat.js?v=20261012130441';
+import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261012154847';
+import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261012154847';
+import { falloff } from '../combat.js?v=20261012154847';
 
 const HOST_ID = 1; // net/index.js HOST_ID (hier ohne Import: Fahrzeuge laden auch ohne Netzmodul)
 const NEAR = 160; // m (xz): eigenes Fahrzeug und nähere bekommen jeden Takt einen Block
@@ -66,7 +66,7 @@ const mgShots = (seat) => { let n = 0; for (const w of seat.weapons) if (w.def.k
 
 export class VehicleNet {
   /**
-   * @param {import('./index.js?v=20261012130441').VehicleSystem} sys
+   * @param {import('./index.js?v=20261012154847').VehicleSystem} sys
    * @param {{replica?: boolean}} opts replica: Client-Abbild (sonst Host)
    */
   constructor(sys, { replica = false } = {}) {
@@ -912,7 +912,7 @@ export class VehicleNet {
     v.muzzle(si, _a, _b, true, wi);
     G.effects?.muzzleFlash?.(_a, _b, { cls: 'lmg', actor: seat.actor || null, scale: 1.25 });
     const own = !!(G.player && G.player.vehicle === v && v.seatOf(G.player) === si);
-    sys.audio.play(def.profile || 'lmg', { position: own ? null : _a, player: own, actor: seat.actor || null });
+    sys.audio.play(def.profile || 'lmg', { position: own ? null : _a, player: own, actor: seat.actor || null, weapon: def.id });
     if (own) G.player.shake?.(0.05);
     // Leuchtspur jede tracerEvery-te Kugel (Zählerstand des Hosts)
     const every = def.tracerEvery || 3;
