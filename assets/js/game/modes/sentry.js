@@ -3,7 +3,7 @@
 // ist zerstörbar (Kugeln über world.raycast, Explosionen) und verschwindet nach Ablauf der Dauer.
 
 import * as THREE from 'three';
-import { raySphere, rayCapsule } from '../combat.js?v=20261011224856';
+import { raySphere, rayCapsule } from '../combat.js?v=20261012075831';
 
 const _v = new THREE.Vector3();
 const _a = new THREE.Vector3();

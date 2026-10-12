@@ -18,8 +18,8 @@
 // 12 texelFetch) + leichte Nachschärfung. FSR-Formeln nach AMD FidelityFX FSR 1.0 (MIT-Lizenz, © 2021 AMD).
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261011224856';
-import { GRADE_GLSL, gradeUniforms } from './grade.js?v=20261011224856';
+import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261012075831';
+import { GRADE_GLSL, gradeUniforms } from './grade.js?v=20261012075831';
 
 const HALF_PI = Math.PI / 2;
 

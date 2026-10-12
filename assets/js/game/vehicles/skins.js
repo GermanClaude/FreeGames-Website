@@ -1,7 +1,7 @@
 // NULLPUNKT — Panzer-Tarnungen (Nutzer 11.10.): durch Panzerspielen freischalten. Panzer-Erfahrung (im Browser):
 // 0,2 je Sekunde in einem Panzer, +8 je Abschuss mit einer Fahrzeugwaffe, +40 je zerstörtem Fahrzeug. Die gewählte
 // Tarnung färbt die Fahrzeuge des eigenen Teams auf dem eigenen Bildschirm (Grundlack + zwei Tarntöne, materials.js).
-import { VEHICLE_WEAPONS } from './data.js?v=20261011224856';
+import { VEHICLE_WEAPONS } from './data.js?v=20261012075831';
 
 const KEY = 'nullpunkt.panzer';
 export const TANK_SKINS = [

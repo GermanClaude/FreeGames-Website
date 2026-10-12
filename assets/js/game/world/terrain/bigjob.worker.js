@@ -1,6 +1,6 @@
 // NULLPUNKT — Welt-Worker für Großkarten (Owner: world): Gelände erzeugen, danach BVHs + Navigation (bigjob.js).
 // Das Höhenfeld bleibt zwischen beiden Aufträgen im Worker (kein zweiter Transfer).
-import { terrainJob, worldJob, worldTransferables } from './bigjob.js?v=20261011224856';
+import { terrainJob, worldJob, worldTransferables } from './bigjob.js?v=20261012075831';
 
 let hf = null;
 self.onmessage = async (e) => {
