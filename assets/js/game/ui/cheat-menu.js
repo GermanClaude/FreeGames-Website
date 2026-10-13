@@ -11,8 +11,8 @@
 // Zeile .is-cheat kürzt den Namen).
 
 import * as THREE from 'three';
-import { esc } from './dom.js?v=20261013143858';
-import { ICON } from './icons.js?v=20261013143858';
+import { esc } from './dom.js?v=20261013144458';
+import { ICON } from './icons.js?v=20261013144458';
 
 const SEQ = ['Numpad1', 'Numpad2', 'Numpad3', 'Numpad4'];
 const SEQ_MS = 3000;
