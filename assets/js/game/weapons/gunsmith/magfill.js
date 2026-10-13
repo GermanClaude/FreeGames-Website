@@ -24,8 +24,8 @@
 //      dropRounds(fill) → { mesh(), set(mesh, n) } (Weltmagazin, Sammelmaterial der Bots, ohne Instanzen)
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { getMat } from './materials.js?v=20261013183031';
-import { WEAPONS } from '../../../shared/weapons.data.js?v=20261013183031';
+import { getMat } from './materials.js?v=20261013191242';
+import { WEAPONS } from '../../../shared/weapons.data.js?v=20261013191242';
 
 // Patronenmaße (m): r = Hülsenboden, len = Gesamtlänge, cl = Hülsenlänge, rn = Hals, rb = Geschoss
 export const CAL = {

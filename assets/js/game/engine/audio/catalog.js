@@ -9,11 +9,11 @@
 // er: Anteil an den frühen Reflexionen (reflect.js) · loud: Nennpegel (dB, 0 ≈ eigener Schuss) für das HDR-Fenster
 // (laute Klänge dämpfen leise) · quiet: wird vom HDR-Fenster gedämpft
 // REC_ONLY: nur als Aufnahme vorhandene Klänge (assets/lib/audio, samples.js) mit denselben Mischfeldern, ohne Rezept.
-import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop } from './sfx-weapons.js?v=20261013183031';
-import { SURFACES, footstep, gearRattle, jump, land, slide, impact, hitFlesh, hitHelmet, pain, death, heartbeat, breathIn, breathOut, rustle } from './sfx-foley.js?v=20261013183031';
-import { UI_RECIPES, FEEDBACK } from './sfx-ui.js?v=20261013183031';
-import { AMB_EVENTS, AMBIENCES, ambienceBed, BED_RATE, EVENT_RATE } from './ambience.js?v=20261013183031';
-import { STEMS, STEM_SR, STEM_IDS } from './music.js?v=20261013183031';
+import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop } from './sfx-weapons.js?v=20261013191242';
+import { SURFACES, footstep, gearRattle, jump, land, slide, impact, hitFlesh, hitHelmet, pain, death, heartbeat, breathIn, breathOut, rustle } from './sfx-foley.js?v=20261013191242';
+import { UI_RECIPES, FEEDBACK } from './sfx-ui.js?v=20261013191242';
+import { AMB_EVENTS, AMBIENCES, ambienceBed, BED_RATE, EVENT_RATE } from './ambience.js?v=20261013191242';
+import { STEMS, STEM_SR, STEM_IDS } from './music.js?v=20261013191242';
 
 export const RATE_FULL = 48000;
 export const RATE_LOW = 32000;

@@ -7,7 +7,7 @@
 // body[data-drone="1"] – game.css blendet damit das normale HUD und die übrigen Touch-Knöpfe aus. Anzeigen werden mit
 // höchstens UI_HZ aufgefrischt (Text/Balken/Horizont), das Rauschen mit NOISE_HZ.
 
-import { el, esc, setText, setStyle, toggle, clamp } from './dom.js?v=20261013183031';
+import { el, esc, setText, setStyle, toggle, clamp } from './dom.js?v=20261013191242';
 
 const NOISE_W = 128;
 const NOISE_H = 72;
