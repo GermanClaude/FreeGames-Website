@@ -24,13 +24,13 @@
 //     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
 //     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261013174157';
-import { importCC } from '../../shared/customcamo.js?v=20261013174157';
-import { netPoseOf } from '../bots/bot.js?v=20261013174157';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261013174157';
-import { HOST_ID } from './index.js?v=20261013174157';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261013174157';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261013174157';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261013182042';
+import { importCC } from '../../shared/customcamo.js?v=20261013182042';
+import { netPoseOf } from '../bots/bot.js?v=20261013182042';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261013182042';
+import { HOST_ID } from './index.js?v=20261013182042';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261013182042';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261013182042';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -50,7 +50,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261013174157').NetSystem} net
+   * @param {import('./index.js?v=20261013182042').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {

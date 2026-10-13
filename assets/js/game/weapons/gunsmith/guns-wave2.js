@@ -2,9 +2,9 @@
 // G-7 Wächter (Kampfgewehr, Trommeldiopter), KM-7 Wespe (Kompakt-MP, Magazin im Griff),
 // SM-45 Keiler (schwere MP, Rotpunkt), LM-8 Bär (Trommel-LMG mit Zweibein).
 // Koordinaten wie alle Waffen: x rechts, v oben, u vorn (Lauf), Ursprung = Pistolengriff der rechten Hand.
-import { redDot, acog, birdcage, brake, akBrake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts } from './parts.js?v=20261013174157';
-import { arLower, arMag, octagon } from './guns-ar.js?v=20261013174157';
-import { magRounds } from './magfill.js?v=20261013174157';
+import { redDot, acog, birdcage, brake, akBrake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts } from './parts.js?v=20261013182042';
+import { arLower, arMag, octagon } from './guns-ar.js?v=20261013182042';
+import { magRounds } from './magfill.js?v=20261013182042';
 
 // Klappbares Kimme-/Korn-Paar (Ersatzvisier) – Korn vorn auf Höhe der Visierlinie
 function postFront(b, mat, u, v, axis) {
@@ -196,7 +196,7 @@ export function wespe(b) {
   // Lauf + Mündungsgewinde, Korn und Kimme (offen)
   b.cyl('steelDark', 0.0082, 0.0082, 0.06, 0, axis, 0.17, { seg: b.seg(12, 6) });
   b.cyl('steelDark', 0.0098, 0.0098, 0.016, 0, axis, 0.204, { seg: b.seg(12, 6) });
-  b.circle('cavity', 0.0042, 0, axis, 0.2122);
+  b.bore(0.0042, 0, axis, 0.2122);
   b.anchor('muzzle', 0, axis, 0.214);
   const sv = 0.104;
   postFront(b, 'polymer', 0.122, sv, 0.086);

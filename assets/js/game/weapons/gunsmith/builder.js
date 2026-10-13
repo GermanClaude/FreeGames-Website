@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { getMat, UV_SCALE, lodInfo, LOD_SKIP } from './materials.js?v=20261013174157';
+import { getMat, UV_SCALE, lodInfo, LOD_SKIP } from './materials.js?v=20261013182042';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
 
@@ -247,6 +247,16 @@ export class Builder {
   circle(mat, r, x, v, u, o = {}) {
     const geo = new THREE.CircleGeometry(r, o.seg ?? this.seg(20, 8));
     return this._push(geo, mat, { ...o, x, v, u }, !!o.keepUV);
+  }
+
+  // Laufbohrung an der Mündung (Stirnfläche bei u): schwarzes Loch mit blank polierter, angefaster Krone – auch auf
+  // schwarzem Stahl als Loch lesbar (Nutzer 13.10.2026: „eine Mündung und darin ein schwarzes Loch“).
+  // u = Lage der Lochscheibe, ≈ 0,5 mm vor der Stirnfläche.
+  bore(r, x, v, u, o = {}) {
+    this.circle('cavity', r, x, v, u, o);
+    if (!this.hi) return;
+    const w = Math.max(0.0007, r * 0.3);
+    this.lathe('crown', [[-0.0009, r * 0.98], [-0.0002, r + w]], x, v, u, { ...o, seg: o.seg ?? 24 });
   }
 
   // Picatinny-Schiene von u0 bis u1 auf Höhe v (Unterkante), optional seitlich/unten via rz
