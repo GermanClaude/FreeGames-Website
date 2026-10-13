@@ -9,28 +9,28 @@
 //   sfx ← q (leise Klänge: Schritte, Foley …, HDR-Fenster) ;  amb → Duck → HDR
 //   sfx/amb → world → muffle(Tiefpass: Pause, Tod, Gehör, wenig Leben) ┐
 //   fb/ui/music ──────────────────────────────────────────────────────── master → EQ(Profil) → Glue → Makeup → Limiter → Softclip
-import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013191242';
-import { WEAPON_SOUND, caliberOf } from '../../shared/calibers.data.js?v=20261013191242';
-import { CATALOG, SOUND_GROUPS, GUN_PROFILES, SURFACES, AMBIENCES, STEM_IDS, REC_ONLY, EXTRA_VOICES, entryOf } from './audio/catalog.js?v=20261013191242';
-import { bank, PRIO, makeBuffer } from './audio/bank.js?v=20261013191242';
-import { makeRng, hashString, clamp, lerp } from './audio/dsp.js?v=20261013191242';
-import { MusicPlayer } from './audio/music.js?v=20261013191242';
-import { MAP_AMBIENCE } from './audio/ambience.js?v=20261013191242';
-import { spaceFor, roomIR, outdoorIR } from './audio/space.js?v=20261013191242';
-import { library, SAMPLE_TIERS } from './audio/samples.js?v=20261013191242';
-import { Acoustics } from './audio/acoustics.js?v=20261013191242';
-import { EarlyReflections } from './audio/reflect.js?v=20261013191242';
-import { Hearing, SHOT_DOSE, NO_MUFFLE } from './audio/hearing.js?v=20261013191242';
-import { MIX_PRESETS, MixChain, HdrWindow, resolveMix } from './audio/mix.js?v=20261013191242';
-export { createUiSounds } from './audio/ui-sounds.js?v=20261013191242';
+import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013200811';
+import { WEAPON_SOUND, caliberOf } from '../../shared/calibers.data.js?v=20261013200811';
+import { CATALOG, SOUND_GROUPS, GUN_PROFILES, SURFACES, AMBIENCES, STEM_IDS, REC_ONLY, EXTRA_VOICES, entryOf } from './audio/catalog.js?v=20261013200811';
+import { bank, PRIO, makeBuffer } from './audio/bank.js?v=20261013200811';
+import { makeRng, hashString, clamp, lerp } from './audio/dsp.js?v=20261013200811';
+import { MusicPlayer } from './audio/music.js?v=20261013200811';
+import { MAP_AMBIENCE } from './audio/ambience.js?v=20261013200811';
+import { spaceFor, roomIR, outdoorIR } from './audio/space.js?v=20261013200811';
+import { library, SAMPLE_TIERS } from './audio/samples.js?v=20261013200811';
+import { Acoustics } from './audio/acoustics.js?v=20261013200811';
+import { EarlyReflections } from './audio/reflect.js?v=20261013200811';
+import { Hearing, SHOT_DOSE, NO_MUFFLE } from './audio/hearing.js?v=20261013200811';
+import { MIX_PRESETS, MixChain, HdrWindow, resolveMix } from './audio/mix.js?v=20261013200811';
+export { createUiSounds } from './audio/ui-sounds.js?v=20261013200811';
 export { SOUND_GROUPS, GUN_PROFILES, SURFACES, MIX_PRESETS, SAMPLE_TIERS };
 
 // Waffendaten defensiv laden (Datei gehört einem anderen Modul und kann noch fehlen)
 let WEAPONS = null;
-const loadWeapons = () => import('../../shared/weapons.data.js?v=20261013191242').then(m => { WEAPONS = m.WEAPONS || m.default?.WEAPONS || null; }).catch(() => {});
+const loadWeapons = () => import('../../shared/weapons.data.js?v=20261013200811').then(m => { WEAPONS = m.WEAPONS || m.default?.WEAPONS || null; }).catch(() => {});
 loadWeapons();
 let MEDALS = null; // Medaillenstufe → Tonhöhe der Fanfare (bronze/silber/gold)
-import('../../shared/modes.data.js?v=20261013191242').then(m => { MEDALS = m.MEDALS || null; }).catch(() => {});
+import('../../shared/modes.data.js?v=20261013200811').then(m => { MEDALS = m.MEDALS || null; }).catch(() => {});
 const MEDAL_PITCH = { bronze: 0.94, silber: 1, silver: 1, gold: 1.1 };
 
 const CLASS_PROFILE = { ar: 'ar', br: 'ar_heavy', smg: 'smg', lmg: 'lmg', sniper: 'sniper', marksman: 'ar_heavy', shotgun: 'shotgun', pistol: 'pistol' };
@@ -1634,6 +1634,7 @@ export class AudioEngine {
     on('bullet:whiz', p => { this._combatWhiz = true; this._passFromWhiz(p); });
     on('weapon:melee', p => this.play('melee_swing', { player: this._isPlayer(p.actor), position: posOf(p.actor), actor: p.actor }));
     on('weapon:dryfire', p => this.play('dryfire', { player: this._isPlayer(p.actor), position: posOf(p.actor), actor: p.actor }));
+    on('weapon:firemode', p => this.play('dryfire', { player: this._isPlayer(p.actor), position: posOf(p.actor), actor: p.actor, variant: 1 }));   // Wahlhebel rastet
     on('weapon:reload', p => this._reload(p));
     on('weapon:switch', p => {
       this._cancelReload(p.actor);

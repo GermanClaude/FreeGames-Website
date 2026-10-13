@@ -8,9 +8,9 @@
 //   camoSwatch(camoId, size)       kleines Vorschaubild (Canvas) für Menüs
 //   disposeCamos()                 alle Texturen/Materialien freigeben
 import * as THREE from 'three';
-import { CAMOS } from '../../../shared/weapons.data.js?v=20261013191242';
-import { getMat } from './materials.js?v=20261013191242';
-import { onCustomChange } from '../../../shared/customcamo.js?v=20261013191242';
+import { CAMOS } from '../../../shared/weapons.data.js?v=20261013200811';
+import { getMat } from './materials.js?v=20261013200811';
+import { onCustomChange } from '../../../shared/customcamo.js?v=20261013200811';
 
 const SIZE = 256;
 /** Materialschlüssel (gs:<key>), die ein Tarnmuster erhalten. */

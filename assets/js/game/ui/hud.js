@@ -16,16 +16,16 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261013191242';
-import { ICON, medalBadge } from './icons.js?v=20261013191242';
-import { Minimap } from './minimap.js?v=20261013191242';
-import { Killfeed } from './killfeed.js?v=20261013191242';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261013191242';
-import { StrikeTargeting } from './strike-target.js?v=20261013191242';
-import { actionKey } from './settings/keys.js?v=20261013191242';
-import { DeployScreen } from './deploy.js?v=20261013191242';
-import { CommandWheel } from './command-wheel.js?v=20261013191242';
-import { DroneHud } from './drone-hud.js?v=20261013191242';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261013200811';
+import { ICON, medalBadge } from './icons.js?v=20261013200811';
+import { Minimap } from './minimap.js?v=20261013200811';
+import { Killfeed } from './killfeed.js?v=20261013200811';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261013200811';
+import { StrikeTargeting } from './strike-target.js?v=20261013200811';
+import { actionKey } from './settings/keys.js?v=20261013200811';
+import { DeployScreen } from './deploy.js?v=20261013200811';
+import { CommandWheel } from './command-wheel.js?v=20261013200811';
+import { DroneHud } from './drone-hud.js?v=20261013200811';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -1149,7 +1149,7 @@ export class HUD {
       const st = ub || w.current;
       setText(this.el.wName, ub ? `${def.name} · Unterlauf` : def.name);
       const FM = G.data.FIRE_MODES || {};
-      setText(this.el.wMode, melee ? 'Nahkampf' : FM[def.fireMode] || '');
+      setText(this.el.wMode, melee ? 'Nahkampf' : G.data.fireModeLabel ? G.data.fireModeLabel(def, w.fireMode, false) : FM[def.fireMode] || '');
       const infinite = G.mode && G.mode.def && G.mode.def.infiniteAmmo;
       setText(this.el.mag, melee ? '—' : String(st.mag));
       setText(this.el.reserve, melee ? '' : infinite ? '/ ∞' : `/ ${st.reserve}`);

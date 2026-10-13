@@ -3,19 +3,19 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261013191242';
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261013191242';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261013191242'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261013191242'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261013191242';
-import { esc, num, secs, meters } from './dom.js?v=20261013191242';
-import { ICON } from './icons.js?v=20261013191242';
-import { drawMapArt } from './mapart.js?v=20261013191242';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261013191242';
-import { openCamoEditor } from './camo-editor.js?v=20261013191242';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261013191242';
-import { ProgressView } from './progress.js?v=20261013191242';
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261013191242';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261013200811';
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261013200811';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261013200811'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261013200811'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261013200811';
+import { esc, num, secs, meters } from './dom.js?v=20261013200811';
+import { ICON } from './icons.js?v=20261013200811';
+import { drawMapArt } from './mapart.js?v=20261013200811';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261013200811';
+import { openCamoEditor } from './camo-editor.js?v=20261013200811';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261013200811';
+import { ProgressView } from './progress.js?v=20261013200811';
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261013200811';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -44,7 +44,7 @@ export class Lobby {
       MODES: D.MODES || {}, ORDER: (D.MODE_ORDER || Object.keys(D.MODES || {})).filter((m) => (D.MODES || {})[m]),
       MAPS: D.MAPS || {}, MAP_ORDER: D.MAP_ORDER || Object.keys(D.MAPS || {}), W: D.WEAPONS || {}, EQ: D.EQUIPMENT || {},
       DIFF: D.DIFFICULTIES || {}, LOADOUTS: D.DEFAULT_LOADOUTS || [], CLASSES: D.WEAPON_CLASSES || {}, CLASS_ORDER: D.CLASS_ORDER || [],
-      SIGHTS: D.SIGHTS || {}, FIRE: D.FIRE_MODES || {}, ttk: D.ttk, shotsToKill: D.shotsToKill, effectiveRange: D.effectiveRange, STREAKS: D.STREAKS || {},
+      SIGHTS: D.SIGHTS || {}, FIRE: D.FIRE_MODES || {}, fireModesOf: D.fireModesOf, fireModeLabel: D.fireModeLabel, ttk: D.ttk, shotsToKill: D.shotsToKill, effectiveRange: D.effectiveRange, STREAKS: D.STREAKS || {},
     };
   }
 
@@ -584,7 +584,7 @@ export class Lobby {
           ${stk15 != null && Number.isFinite(stk15) ? fact('Treffer bis Abschuss', `${stk15} auf 15 m`) : ''}
           ${ttk15 != null && Number.isFinite(ttk15) && ttk15 > 0 ? fact('Zeit bis Abschuss', `${num(Math.round(ttk15))} ms auf 15 m`) : ''}
           ${eff != null && Number.isFinite(eff) ? fact('Wirksam bis', meters(eff)) : ''}
-          ${fact('Visier', (d.SIGHTS[def.sight] && d.SIGHTS[def.sight].name) || '—')}${fact('Feuermodus', d.FIRE[def.fireMode] || def.fireMode)}
+          ${fact('Visier', (d.SIGHTS[def.sight] && d.SIGHTS[def.sight].name) || '—')}${fact('Feuermodus', d.fireModesOf ? d.fireModesOf(def).map((m) => d.fireModeLabel(def, m)).join(' / ') : d.FIRE[def.fireMode] || def.fireMode)}
         </div>`;
     }
     const equipped = c[isEq ? 'lethal' : def.slot] === id;

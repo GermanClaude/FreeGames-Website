@@ -13,25 +13,25 @@
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder } from './gunsmith/builder.js?v=20261013191242';
-import { kv47, sk14 } from './gunsmith/guns-ar.js?v=20261013191242';
-import { m17 } from './gunsmith/guns-m17.js?v=20261013191242';
-import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261013191242';
-import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261013191242';
-import { p9, adler } from './gunsmith/guns-pistol.js?v=20261013191242';
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261013191242';
-import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261013191242';
-import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261013191242';
-import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261013191242';
-import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261013191242';
-export { setMagRounds } from './gunsmith/magfill.js?v=20261013191242';
-import { disposeMaterials } from './gunsmith/materials.js?v=20261013191242';
-import { disposeTextures } from './gunsmith/textures.js?v=20261013191242';
-import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261013191242';
-import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261013191242';
-import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261013191242';
-import { attKey } from '../../shared/attachments.data.js?v=20261013191242';
-import { ursprung, funke, erstlicht } from './gunsmith/guns-og.js?v=20261013191242';
+import { Builder } from './gunsmith/builder.js?v=20261013200811';
+import { kv47, sk14 } from './gunsmith/guns-ar.js?v=20261013200811';
+import { m17 } from './gunsmith/guns-m17.js?v=20261013200811';
+import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261013200811';
+import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261013200811';
+import { p9, adler } from './gunsmith/guns-pistol.js?v=20261013200811';
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261013200811';
+import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261013200811';
+import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261013200811';
+import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261013200811';
+import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261013200811';
+export { setMagRounds } from './gunsmith/magfill.js?v=20261013200811';
+import { disposeMaterials } from './gunsmith/materials.js?v=20261013200811';
+import { disposeTextures } from './gunsmith/textures.js?v=20261013200811';
+import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261013200811';
+import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261013200811';
+import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261013200811';
+import { attKey } from '../../shared/attachments.data.js?v=20261013200811';
+import { ursprung, funke, erstlicht } from './gunsmith/guns-og.js?v=20261013200811';
 
 const BUILDERS = {
   kv47, m17, vp9, qx90, hm60, sk14, brecher, bulldog, p9, adler, knife, frag, semtex,
@@ -50,7 +50,7 @@ export { applyCamo };
 const REF_NAMES = ['muzzle', 'ejection', 'sight', 'leftHandGrip', 'rightHandGrip'];
 const ANCHOR_NAMES = ['chargeGrab', 'magGrab', 'magWell', 'trigger', 'pumpGrab', 'boltGrab', 'pinGrab', 'shellPort', 'slideGrab', 'boltCatch',
   'loaderGrab', 'cylGrab', 'ejectorGrab', 'rocketGrab'];
-const PART_NAMES = ['mag', 'bolt', 'charge', 'pump', 'slide', 'boltHandle', 'hammer', 'cover', 'belt', 'lid', 'pin', 'spoon', 'blade', 'shell', 'led',
+const PART_NAMES = ['selector', 'mag', 'bolt', 'charge', 'pump', 'slide', 'boltHandle', 'hammer', 'cover', 'belt', 'lid', 'pin', 'spoon', 'blade', 'shell', 'led',
   'crane', 'cylinder', 'ejector', 'loader', 'rocket'];
 
 const cache = new Map();
@@ -89,7 +89,7 @@ function buildTemplate(key, lod, att = null) {
     adsOffset: [-sp.x, -sp.y, -eye - sp.z],
     magFill,
     info: {
-      sight: b.meta.sight || 'none', kind: b.meta.kind || 'gear', axis: b.meta.axis ?? 0, leftGrip,
+      sight: b.meta.sight || 'none', kind: b.meta.kind || 'gear', axis: b.meta.axis ?? 0, leftGrip, selector: b.meta.selector || null,
       triangles: root.userData.stats.triangles, meshes: root.userData.stats.meshes,
       size: size.toArray(), center: box.getCenter(new THREE.Vector3()).toArray(), min: box.min.toArray(), max: box.max.toArray(),
     },
