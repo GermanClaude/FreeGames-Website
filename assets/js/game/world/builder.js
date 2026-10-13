@@ -1,10 +1,10 @@
 // NULLPUNKT — MapBuilder: sammelt statische Geometrie, verschmilzt sie pro Material/Chunk,
 // backt Ambient Occlusion in Vertexfarben, erzeugt Kollisions- und Kugel-Geometrie (Owner: world)
 import * as THREE from 'three';
-import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261013172043';
-import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261013172043';
-import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261013172043';
-import { assets } from '../../../lib/loader.js?v=20261013172043';
+import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261013174157';
+import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261013174157';
+import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261013174157';
+import { assets } from '../../../lib/loader.js?v=20261013174157';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric', 'flesh', 'vehicle']; // vehicle = Fahrzeugblech (Durchschuss)
 const SURF_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s, i]));

@@ -16,23 +16,23 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds } from './models.js?v=20261013172043';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261013172043';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261013172043';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261013172043';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261013172043';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261013172043';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261013172043';
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261013172043';
-import { COSMETIC } from './anim/reloads.js?v=20261013172043';
-import { magWellOf } from './anim/magwell.js?v=20261013172043';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261013172043';
-import { applyCamo } from './gunsmith/camos.js?v=20261013172043';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261013172043';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261013172043';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261013172043';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261013172043';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261013172043';
+import { createWeaponModel, setMagRounds } from './models.js?v=20261013174157';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261013174157';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261013174157';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261013174157';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261013174157';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261013174157';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261013174157';
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261013174157';
+import { COSMETIC } from './anim/reloads.js?v=20261013174157';
+import { magWellOf } from './anim/magwell.js?v=20261013174157';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261013174157';
+import { applyCamo } from './gunsmith/camos.js?v=20261013174157';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261013174157';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261013174157';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261013174157';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261013174157';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261013174157';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -313,6 +313,7 @@ export class ViewModel {
     this._equipDur = def?.equipTime ?? this.h.equipTime;
     this._slideLocked = false;
     this._boltLocked = false;
+    this._lid = null;
     this._boltT = 1;
     this.arms.right.shoulder.fromArray(this.h.shoulderR); this.arms.left.shoulder.fromArray(this.h.shoulderL);
     this.arms.right.pole.fromArray(this.h.poleR); this.arms.left.pole.fromArray(this.h.poleL);
@@ -492,6 +493,9 @@ export class ViewModel {
     this._climb = Math.min(0.09, this._climb + k.up * 0.22 * s * (0.4 + 0.6 * Math.max(0.5, this._motionScale())));
     this._heat = Math.min(1, this._heat + (h.heat ?? HEAT_PER_SHOT[h.action] ?? 0.02));
     this._shotCount++;
+    // loser Kastendeckel (MG): Stoß mit Zufallsstärke – mal kaum, mal deutlich (Winkelgeschwindigkeit rad/s)
+    if (this._lid) this._lid.v += (1.2 + Math.random() * Math.random() * 6) * Math.min(1.5, s);
+    else if (this._part('lid')) this._lid = { a: 0, v: 1.2 + Math.random() * 4 };
     const suppressed = info.suppressed ?? this.def?.suppressed;
     if (!this.showScopeOverlay) this.flash.fire(h.flash * (this.def?.flashScale || 1), h.flashLen, { suppressed });
     if (!suppressed) {
@@ -1372,6 +1376,19 @@ export class ViewModel {
       if (r) r.visible = (this._magNow ?? 1) > 0;
     } else if (this._part('bolt') && h.action !== 'bolt' && h.action !== 'pump') {
       this._setPartOffset('bolt', 0, 0, h.boltTravel * (this._boltLocked ? 1 : pulse));
+    }
+    // MG mit Gurtkasten (Nutzer 13.10.2026): Gurt rückt beim Schuss eine Teilung zur Waffe, der lose Kastendeckel
+    // hüpft je Schuss verschieden hoch und prellt nach (Feder mit Anschlag)
+    if (this._part('belt') && !act) this._setPartOffset('belt', 0.0068 * pulse, 0.0082 * pulse, 0); // eine Gliederteilung
+    if (this._part('lid')) {
+      const L = this._lid || (this._lid = { a: 0, v: 0 });
+      const w = 46, z = 0.18, n = Math.max(1, Math.ceil(dt / 0.004)), h2 = dt / n;
+      for (let i = 0; i < n; i++) {
+        L.v += (-w * w * L.a - 2 * z * w * L.v) * h2;
+        L.a += L.v * h2;
+        if (L.a < 0) { L.a = 0; L.v = -L.v * (0.25 + Math.random() * 0.2); }
+      }
+      if (!act) this._setPartOffset('lid', 0, 0, 0, 0, 0, Math.min(0.14, L.a));
     }
     // Aktionsteile (Magazin, Ladehebel, Pumpe, Kammerstängel, Deckel …)
     if (act && act.parts) for (const [n, o] of Object.entries(act.parts)) {

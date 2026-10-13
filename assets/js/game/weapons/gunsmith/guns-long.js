@@ -1,6 +1,6 @@
 // Langwaffen: Brecher .338 (Repetier-Scharfschützengewehr) und Bulldog 12 (Vorderschaftrepetierflinte)
-import { sniperScope, brake, ejectionPort, roundRect, engrave, qdCup } from './parts.js?v=20261013172043';
-import { magRounds } from './magfill.js?v=20261013172043';
+import { sniperScope, brake, ejectionPort, roundRect, engrave, qdCup } from './parts.js?v=20261013174157';
+import { magRounds } from './magfill.js?v=20261013174157';
 
 export function brecher(b) {
   const axis = 0.074;
