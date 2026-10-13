@@ -25,19 +25,20 @@
 // (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu). Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der
 // Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host vermerkt es und verteilt das Roster; bei jedem
 // Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261013144458';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261013144458';
-import { hex, randomBytes } from './crypto.js?v=20261013144458';
-import { BUILD } from '../../shared/build.js?v=20261013144458';
-import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261013144458';
-import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261013144458';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261013144458';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261013144458';
-import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013144458';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261013151448';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261013151448';
+import { hex, randomBytes } from './crypto.js?v=20261013151448';
+import { BUILD } from '../../shared/build.js?v=20261013151448';
+import { MAPS, MAP_ORDER } from '../../shared/maps.data.js?v=20261013151448';
+import { MODES, DIFFICULTY_ORDER } from '../../shared/modes.data.js?v=20261013151448';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261013151448';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261013151448';
+import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013151448';
+import { exportLoadoutCamos, importCC } from '../../shared/customcamo.js?v=20261013151448';
 const WEAPONS_ALL = { ...WEAPONS, ...UNDER_WEAPONS }; // Trefferprüfung: Waffen + Unterlauf-Aufsätze
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261013144458';
-import { recommend, UploadMeter } from './recommend.js?v=20261013144458';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261013144458';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261013151448';
+import { recommend, UploadMeter } from './recommend.js?v=20261013151448';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261013151448';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD).
  *  2: Fahrzeuge online (Snapshot-Anhang, Fahrzeug-Absicht, 'veh'/'vhit'/'vehicles' – panzer-mp.md §C).
@@ -48,7 +49,7 @@ import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261013144458';
  *  7: Granatwerfer (Waffenliste länger → Waffenindizes verschoben), Unterlauf-Aufsätze (ub_gl40/ub_schrot).
  *  8: Ladeschritt „offen“ (Munitionsbunker mit Schiebetür, Kanonenzustand im Fahrzeugblock).
  *  9: Panzer je Team nach eigenem Vorbild (neue Fahrzeugtypen wk2h/wk1l). */
-export const NET_VERSION = 9;
+export const NET_VERSION = 10; // 10: Waffen der ersten Stunde (Waffen-Indizes verschoben), Aufsätze/Tarnung in Ausrüstungen
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). */
 export const ONLINE_MODES = Object.freeze(['tdm', 'ult', 'ffa', 'dom', 'kc', 'messer', 'inf', 'gun']);
 /** Modi mit Fahrzeugen online (Nur Messer, Waffenspiel und Infiziert bleiben ohne – Ausrüstung kommt dort vom Modus). */
@@ -185,6 +186,9 @@ export function normalizeSettings(partial = {}, base = DEFAULT_ROOM, hostName = 
 /** Ausrüstung eines Clients prüfen: nur bekannte Waffen im richtigen Platz, unbekannte Felder fallen weg. */
 export function sanitizeLoadout(lo) {
   if (!lo || typeof lo !== 'object') return null;
+  // eigene Muster: lokale Plätze → Inhalts-Id + Entwurf (cc); fremde Entwürfe registrieren, damit die Prüfung sie kennt
+  lo = exportLoadoutCamos(lo);
+  if (lo.cc) importCC(lo.cc);
   const out = {};
   const w = (id, slot) => (typeof id === 'string' && WEAPONS[id] && WEAPONS[id].slot === slot ? id : undefined);
   const eq = (id, kind) => (typeof id === 'string' && EQUIPMENT[id] && EQUIPMENT[id].kind === kind ? id : undefined);
@@ -202,6 +206,9 @@ export function sanitizeLoadout(lo) {
     const camo = {};
     for (const [k, v] of Object.entries(lo.camo).slice(0, 8)) if (WEAPONS[k] && typeof v === 'string' && CAMOS[v]) camo[k] = v;
     if (Object.keys(camo).length) out.camo = camo;
+    const cc = {};
+    for (const v of Object.values(camo)) if (/^cx/.test(v) && CAMOS[v] && CAMOS[v].design) cc[v] = CAMOS[v].design;
+    if (Object.keys(cc).length) out.cc = cc;
   }
   // Aufsätze { [weaponId]: { slot: id } } (shared/attachments.data.js) – nur bekannte Waffen/Aufsätze
   if (lo.att && typeof lo.att === 'object') {
@@ -566,7 +573,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261013144458').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261013151448').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
@@ -824,7 +831,7 @@ export class NetSystem {
 
   /** Eigene Ausrüstung melden (Client → Host 'loadout'; Host: eigener Eintrag). Gilt ab dem nächsten Spawn. */
   setLoadout({ cls = null, loadout = null } = {}) {
-    if (this.role === 'client') return this.send(HOST_ID, { t: 'loadout', cls, loadout }) > 0;
+    if (this.role === 'client') return this.send(HOST_ID, { t: 'loadout', cls, loadout: exportLoadoutCamos(loadout) }) > 0;
     if (this.role !== 'host') return false;
     const me = this.roster.find((r) => r.id === HOST_ID);
     if (!me) return false;

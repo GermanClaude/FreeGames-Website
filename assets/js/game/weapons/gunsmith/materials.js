@@ -1,6 +1,6 @@
 // Gemeinsame PBR-Materialien der Waffen (geteilt zwischen allen Modellen, LODs und Klonen).
 import * as THREE from 'three';
-import { wearMap, brushedMap, grainNormal, stippleNormal, knurlNormal, woodMap, reticleMap, polymerMap } from './textures.js?v=20261013144458';
+import { wearMap, brushedMap, grainNormal, stippleNormal, knurlNormal, woodMap, reticleMap, polymerMap } from './textures.js?v=20261013151448';
 
 const mats = new Map();
 
@@ -40,6 +40,8 @@ const DEFS = {
   stainless: () => std({ color: 0x9da1a6, metalness: 1.0, roughness: 0.36, roughnessMap: brushedMap() }),
   brass: () => std({ color: 0xc09a45, metalness: 1.0, roughness: 0.3, roughnessMap: wearMap() }),
   copper: () => std({ color: 0xb8703f, metalness: 1.0, roughness: 0.32 }),
+  // Goldakzente der Waffen der ersten Stunde (UR-1, P-0, Erstlicht): poliert, bleibt unter jeder Tarnung golden
+  goldTrim: () => std({ color: 0xe9b949, metalness: 1.0, roughness: 0.16, envMapIntensity: 1.5 }),
   shellRed: () => std({ color: 0x8f1f17, metalness: 0.0, roughness: 0.5, roughnessMap: wearMap() }),
   knurl: () => std({ color: 0x2c2d31, metalness: 0.7, roughness: 0.5, normalMap: knurlNormal(), normalScale: new THREE.Vector2(1, 1) }),
   // Optik-Linse: dunkel, stark spiegelnd, bläulich vergütet

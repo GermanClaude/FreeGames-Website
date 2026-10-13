@@ -7,8 +7,8 @@
 // Client übernimmt das Team (sync-client _syncTeam), meldet 'infect' fürs HUD und setzt die Ausrüstung nur für den eigenen
 // Spieler. Die Zufallswaffe eines Menschen hängt an Raumcode + Netz-Id – Host (Anti-Cheat) und Client wählen dieselbe.
 
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261013144458';
-import { BaseMode } from './base.js?v=20261013144458';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261013151448';
+import { BaseMode } from './base.js?v=20261013151448';
 
 export class InfectedMode extends BaseMode {
   constructor(G, modeId, opts) {
@@ -26,7 +26,7 @@ export class InfectedMode extends BaseMode {
     this._zeroInfects = 0;
     this.netTeamShift = true; // net/sync-host.js: Bots nur nach Gesamtzahl auffüllen
     this._known = new Set(); // Host: Akteure, deren Team der Modus festgelegt hat (Spätstarter → _admit)
-    this._pool = Object.values(WEAPONS).filter((w) => w.slot === 'primary' && w.cls !== 'melee');
+    this._pool = Object.values(WEAPONS).filter((w) => w.slot === 'primary' && w.cls !== 'melee' && !w.og); // nie die Waffen der ersten Stunde
   }
 
   onAttach(s) {

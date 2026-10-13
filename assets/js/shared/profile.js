@@ -3,10 +3,10 @@
 // alles beim Laden, synchronisiert sich zwischen Tabs. Freischaltungen über
 // WEAPONS[id].unlockLevel aus weapons.data.js, XP-Regeln aus modes.data.js (beide statisch importiert).
 
-import { settings } from './settings.js?v=20261013144458';
-import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261013144458';
-import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261013144458';
-import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261013144458';
+import { settings } from './settings.js?v=20261013151448';
+import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261013151448';
+import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261013151448';
+import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261013151448';
 
 const STORAGE_KEY = 'nullpunkt:profile';
 /**
@@ -480,8 +480,9 @@ export const profile = {
   rankFor,
   rankIcon,
 
-  /** Ist eine Waffe/Ausrüstung auf dem aktuellen (oder angegebenen) Level verfügbar? */
+  /** Ist eine Waffe/Ausrüstung auf dem aktuellen (oder angegebenen) Level verfügbar? Waffen der ersten Stunde nur mit og. */
   isUnlocked(id, level = data.level) {
+    if (WEAPONS[id] && WEAPONS[id].og && !data.og) return false;
     const need = unlockTable[id];
     return need === undefined ? true : need <= level;
   },

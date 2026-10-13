@@ -10,11 +10,11 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261013144458';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261013144458';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013144458';
-import { getWeaponModelInfo } from './models.js?v=20261013144458';
-import { classDef } from '../../shared/classes.data.js?v=20261013144458';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261013151448';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261013151448';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013151448';
+import { getWeaponModelInfo } from './models.js?v=20261013151448';
+import { classDef } from '../../shared/classes.data.js?v=20261013151448';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -75,7 +75,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261013144458').WeaponSystem} system
+   * @param {import('./index.js?v=20261013151448').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */

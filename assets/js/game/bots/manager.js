@@ -13,22 +13,22 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261013144458';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261013144458'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261013144458';
-import { pickNames } from './names.js?v=20261013144458';
-import { Nameplate } from './nameplates.js?v=20261013144458';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261013144458';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261013144458';
-import { analyze } from './ai/tactics.js?v=20261013144458';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261013144458';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261013144458';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261013144458';
-import { BotAdapt } from './ai/spielstil.js?v=20261013144458';
-import { CorpseStore } from './corpses.js?v=20261013144458';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261013144458';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261013144458';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261013144458';
+import { Bot } from './bot.js?v=20261013151448';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261013151448'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261013151448';
+import { pickNames } from './names.js?v=20261013151448';
+import { Nameplate } from './nameplates.js?v=20261013151448';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261013151448';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261013151448';
+import { analyze } from './ai/tactics.js?v=20261013151448';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261013151448';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261013151448';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261013151448';
+import { BotAdapt } from './ai/spielstil.js?v=20261013151448';
+import { CorpseStore } from './corpses.js?v=20261013151448';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261013151448';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261013151448';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261013151448';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -276,8 +276,9 @@ export class BotManager {
     const W = (G.data && G.data.WEAPONS) || {};
     const EQ = (G.data && G.data.EQUIPMENT) || {};
     let r = null;
-    try { r = resolveClassLoadout(cls, { weapons: W, equipment: EQ, isUnlocked: () => true }); } catch { r = null; }
-    const of = (...classes) => Object.keys(W).filter((id) => classes.includes(W[id].cls) && W[id].slot !== 'secondary');
+    // Waffen der ersten Stunde (W[id].og) tragen Bots nie
+    try { r = resolveClassLoadout(cls, { weapons: W, equipment: EQ, isUnlocked: (id) => !(W[id] && W[id].og) }); } catch { r = null; }
+    const of = (...classes) => Object.keys(W).filter((id) => classes.includes(W[id].cls) && W[id].slot !== 'secondary' && !W[id].og);
     let primary = r && r.primary;
     if (role === 'mg') primary = pick(of('lmg')) || primary;
     else if (role === 'marksman') primary = pick(of(cls === 'aufklaerer' ? 'sniper' : 'marksman')) || pick(of('marksman', 'sniper')) || primary;

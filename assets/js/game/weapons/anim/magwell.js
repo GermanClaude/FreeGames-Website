@@ -10,7 +10,7 @@
 // kein seitliches Gleiten durch die Schachtwände), danach darf die Hand das Magazin frei führen. Gleiches beim
 // Einsetzen: die Ausrichtung ist abgeschlossen, bevor die Oberkante den Schacht erreicht.
 import * as THREE from 'three';
-import { clamp, smooth } from '../gunsmith/anim.js?v=20261013144458';
+import { clamp, smooth } from '../gunsmith/anim.js?v=20261013151448';
 
 // Sonderfälle (Modellraum): Achse, zusätzlicher Freigang
 const OVERRIDE = {

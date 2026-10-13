@@ -3,18 +3,19 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261013144458';
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261013144458';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261013144458'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261013144458'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261013144458';
-import { esc, num, secs, meters } from './dom.js?v=20261013144458';
-import { ICON } from './icons.js?v=20261013144458';
-import { drawMapArt } from './mapart.js?v=20261013144458';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261013144458';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261013144458';
-import { ProgressView } from './progress.js?v=20261013144458';
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261013144458';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261013151448';
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261013151448';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261013151448'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261013151448'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261013151448';
+import { esc, num, secs, meters } from './dom.js?v=20261013151448';
+import { ICON } from './icons.js?v=20261013151448';
+import { drawMapArt } from './mapart.js?v=20261013151448';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261013151448';
+import { openCamoEditor } from './camo-editor.js?v=20261013151448';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261013151448';
+import { ProgressView } from './progress.js?v=20261013151448';
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261013151448';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -295,6 +296,7 @@ export class Lobby {
     if (ds.veh != null) { c.vehicles = ds.veh === 'aus' ? 'aus' : 'an'; try { this.G.settings.set('lastVehicles', c.vehicles); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.wx != null) { c.weather = ds.wx || 'standard'; this._wxAutoTime(c); try { this.G.settings.set('lastWeather', c.weather); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.cls) { this._setClass(ds.cls); return; }
+    if (ds.camoedit) { openCamoEditor({ onClose: (changed) => { if (changed) this._renderDetail(); } }); this.menus.sound('click'); return; }
     if (ds.camo) { this._setCamo(ds.camo, b); return; }
     if (ds.diff) { c.difficulty = ds.diff; this._renderDeploy(); this._renderSummary(); this.menus.sound('click'); return; }
     if (ds.step) { this._step(ds.step, Number(ds.d)); return; }
@@ -532,7 +534,7 @@ export class Lobby {
     }
     const viewing = def.id === this.view;
     return `<button type="button" class="lo-item${equipped ? ' is-eq' : ''}${viewing ? ' is-view' : ''}${locked ? ' is-locked' : ''}" data-weapon="${esc(def.id)}" role="option" aria-selected="${equipped}">
-      <span class="lo-ico">${def.icon || ''}</span><span class="lo-name"><b>${esc(def.name)}</b><small>${locked ? `Ab Stufe ${def.unlockLevel}` : esc(cls || '')}</small></span>
+      <span class="lo-ico">${def.icon || ''}</span><span class="lo-name"><b>${esc(def.name)}</b><small>${locked ? (def.og ? 'Nur erste Stunde' : `Ab Stufe ${def.unlockLevel}`) : esc(cls || '')}</small></span>
       ${locked ? `<span class="lo-lock">${ICON.lock}</span>` : equipped ? `<span class="lo-eq">${ICON.check}</span>` : ''}</button>`;
   }
 
@@ -589,7 +591,7 @@ export class Lobby {
     host.innerHTML = `
       <div class="lo-dhead"><small>${esc(isEq ? 'Granate' : (d.CLASSES[def.cls] || def.cls))}</small><h3>${esc(def.name)}<em>.</em></h3></div>
       <p class="lo-desc">${esc(def.description || '')}</p>
-      ${locked ? `<div class="lo-locked">${ICON.lock}<span>Freischaltung ab <b>Stufe ${def.unlockLevel}</b>. Du bist Stufe ${this.level()}.</span></div>` : equipped ? `<div class="lo-on">${ICON.check}<span>Ausgerüstet</span></div>` : ''}
+      ${locked ? `<div class="lo-locked">${ICON.lock}<span>${def.og ? 'Nur für Spieler der ersten Stunde (bis 13.10.2026) – ein Dankeschön, nicht mehr freischaltbar.' : `Freischaltung ab <b>Stufe ${def.unlockLevel}</b>. Du bist Stufe ${this.level()}.`}</span></div>` : equipped ? `<div class="lo-on">${ICON.check}<span>Ausgerüstet</span></div>` : ''}
       ${body}
       ${!isEq && !locked ? camoRowHtml(this.G, id, equippedCamo(this.G, id)) : ''}${!isEq && !locked ? attRowHtml(this.G, id) : ''}`;
   }

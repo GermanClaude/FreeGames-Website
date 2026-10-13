@@ -1,5 +1,5 @@
 // NULLPUNKT — Worker für prozedurale Texturen (Owner: world). Antwortet mit übertragbaren Puffern.
-import { generateTexture } from './texgen.js?v=20261013144458';
+import { generateTexture } from './texgen.js?v=20261013151448';
 
 self.onmessage = e => {
   const { texName, S } = e.data || {};
