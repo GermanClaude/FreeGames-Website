@@ -1,5 +1,5 @@
 // Raumakustik: generierte Impulsantworten (innen) und Slap-Back-/Weite-Parameter (außen) je Karte.
-import { len, OnePole, filt, makeRng, clamp } from './dsp.js?v=20261013200811';
+import { len, OnePole, filt, makeRng, clamp } from './dsp.js?v=20261013224455';
 
 /**
  * rt: Nachhallzeit innen (s) · pre: Vorverzögerung · damp: Höhendämpfung 0..1

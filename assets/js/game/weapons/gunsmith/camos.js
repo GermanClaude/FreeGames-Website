@@ -8,14 +8,14 @@
 //   camoSwatch(camoId, size)       kleines Vorschaubild (Canvas) für Menüs
 //   disposeCamos()                 alle Texturen/Materialien freigeben
 import * as THREE from 'three';
-import { CAMOS } from '../../../shared/weapons.data.js?v=20261013200811';
-import { getMat } from './materials.js?v=20261013200811';
-import { onCustomChange } from '../../../shared/customcamo.js?v=20261013200811';
+import { CAMOS } from '../../../shared/weapons.data.js?v=20261013224455';
+import { getMat } from './materials.js?v=20261013224455';
+import { onCustomChange } from '../../../shared/customcamo.js?v=20261013224455';
 
 const SIZE = 256;
 /** Materialschlüssel (gs:<key>), die ein Tarnmuster erhalten. */
 export const CAMO_TARGETS = new Set(['alu', 'aluTan', 'aluOD', 'polymer', 'polymerTan', 'polymerOD', 'polymerGrey', 'steel', 'stainless',
-  'woodWarm', 'woodWalnut', 'paintOlive', 'bladeCoat', 'canvasOD', 'slideNitride', 'polymerSatin', 'p9Slide', 'p9Frame', 'm17Rec', 'm17Ras', 'm17Steel', 'm17Furn', 'm17Mag']);
+  'woodWarm', 'woodWalnut', 'paintOlive', 'bladeCoat', 'canvasOD', 'slideNitride', 'polymerSatin', 'p9Slide', 'p9Frame', 'm17Rec', 'm17Ras', 'm17Steel', 'm17Furn', 'm17Mag', 'm17RecV', 'm17RasV', 'm17SteelV', 'm17FurnV']);
 
 const texCache = new Map();
 const matCache = new Map();

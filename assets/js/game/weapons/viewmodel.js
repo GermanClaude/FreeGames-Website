@@ -16,23 +16,24 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds } from './models.js?v=20261013200811';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261013200811';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261013200811';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261013200811';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261013200811';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261013200811';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261013200811';
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261013200811';
-import { COSMETIC } from './anim/reloads.js?v=20261013200811';
-import { magWellOf } from './anim/magwell.js?v=20261013200811';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261013200811';
-import { applyCamo } from './gunsmith/camos.js?v=20261013200811';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261013200811';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261013200811';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261013200811';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261013200811';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261013200811';
+import { createWeaponModel, setMagRounds } from './models.js?v=20261013224455';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261013224455';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261013224455';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261013224455';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261013224455';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261013224455';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261013224455';
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261013224455';
+import { COSMETIC } from './anim/reloads.js?v=20261013224455';
+import { magWellOf } from './anim/magwell.js?v=20261013224455';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261013224455';
+import { applyCamo } from './gunsmith/camos.js?v=20261013224455';
+import { DETAIL } from './gunsmith/builder.js?v=20261013224455';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261013224455';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261013224455';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261013224455';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261013224455';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261013224455';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -137,6 +138,7 @@ export class ViewModel {
     this._scheme = schemeForTeam(this._team, G.world) || null;
     this.arms = new Arms({ camo: sleeveCamo(this._scheme), quality: G.renderer?.quality || 'high' });
     this.root.add(this.arms.group);
+    if (DETAIL.max) this.arms.group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 
     // Licht (folgt der Weltbeleuchtung relativ zur Blickrichtung)
     this.sun = new THREE.DirectionalLight(0xfff1dc, 2.4);
@@ -145,6 +147,17 @@ export class ViewModel {
     this.rim = new THREE.DirectionalLight(0xbfd4ff, 0.6);
     this.rim.position.set(-0.6, 0.4, -1);
     this.root.add(this.sun, this.sun.target, this.hemi, this.rim, this.rim.target);
+    // PC (volle Detailstufe): Eigenschatten von Waffe und Armen – Visier auf dem Gehäuse, Hand auf dem Schaft (Nutzer
+    // 13.10.2026: „zu spielerhaft, realistischer, auch die Beleuchtung“). Kleiner Schattenraum um die Waffe, feine Auflösung.
+    this._selfShadow = DETAIL.max;
+    if (this._selfShadow) {
+      const sh = this.sun.shadow, c = sh.camera;
+      this.sun.castShadow = true;
+      sh.mapSize.set(2048, 2048);
+      c.left = -0.5; c.right = 0.5; c.top = 0.5; c.bottom = -0.5; c.near = 3.6; c.far = 6.4;
+      sh.bias = -0.00025; sh.normalBias = 0.0012;
+      c.updateProjectionMatrix();
+    }
     this.flash = new MuzzleFlash();
     this.root.add(this.flash.light);
     this.smoke = new SmokeWisps(8);
@@ -244,7 +257,7 @@ export class ViewModel {
     let entry = this._models.get(mk);
     if (entry) return entry;
     const model = createWeaponModel(key, { lod: 'first', att: ak ? att : null });
-    model.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; o.frustumCulled = false; } });
+    model.traverse(o => { if (o.isMesh) { const t = !!(o.material && o.material.transparent); o.castShadow = this._selfShadow && !t; o.receiveShadow = this._selfShadow && !t; o.frustumCulled = false; } });
     if (this._camos.get(id)) applyCamo(model, this._camos.get(id));
     const ud = model.userData;
     model.updateMatrixWorld(true);
@@ -1390,6 +1403,17 @@ export class ViewModel {
         if (L.a < 0) { L.a = 0; L.v = -L.v * (0.25 + Math.random() * 0.2); }
       }
       if (!act) this._setPartOffset('lid', 0, 0, 0, 0, 0, Math.min(0.14, L.a));
+    }
+    // Staubschutzdeckel (AR-Bauart): zu, bis der Verschluss beim ersten Schuss zurückläuft – dann schlägt er federnd auf
+    // und bleibt offen (wie beim echten Gewehr)
+    if (this._part('dustCover')) {
+      const D = this.cur.dc || (this.cur.dc = { a: Math.PI, v: 0, open: false });
+      if (this._boltT < 0.2) D.open = true;
+      if (D.open) {
+        const n = Math.max(1, Math.ceil(dt / 0.004)), h2 = dt / n;
+        for (let i = 0; i < n; i++) { D.v += (-900 * D.a - 18 * D.v) * h2; D.a += D.v * h2; if (D.a < -0.12) { D.a = -0.12; D.v = -D.v * 0.35; } }
+      }
+      this._setPartOffset('dustCover', 0, 0, 0, 0, 0, D.a);
     }
     // Wahlhebel folgt der Feuerart (Stellungen aus dem Modell, gedreht um die Querachse, kurzer Schnapp)
     const selA = this.cur.ud.info.selector, selP = this._part('selector');
