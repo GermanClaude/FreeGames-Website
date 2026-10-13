@@ -2,9 +2,9 @@
 // überstark“): UR-1 Ursprung (Karabiner), P-0 Funke (Pistole), Erstlicht (Dolch). Schwarz mit polierten Goldakzenten
 // und dem Nullpunkt-Zeichen (Goldscheibe mit dunklem Ring). Griffpunkte/Teile wie bei den bewährten Bauarten, damit
 // Hände, Nachladen und Animationen passen.
-import { redDot, brake } from './parts.js?v=20261013152005';
-import { arLower, arMag } from './guns-ar.js?v=20261013152005';
-import { p9 } from './guns-pistol.js?v=20261013152005';
+import { redDot, brake } from './parts.js?v=20261013165335';
+import { arLower, arMag } from './guns-ar.js?v=20261013165335';
+import { p9 } from './guns-pistol.js?v=20261013165335';
 
 /** Nullpunkt-Zeichen seitlich (x = Außenfläche, beide Seiten): Goldscheibe mit dunklem Ring. */
 function emblem(b, x, v, u, r = 0.009, part) {

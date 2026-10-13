@@ -25,14 +25,14 @@
 //     {a:'h'} Treffer eines Clients auf eine Drohne (Waffe, Feuerrate, Reichweite, Sicht). Alle Drohnen gehen mit 12 Hz als
 //     'ev' dr an alle, ihr Ende als 'ev' de.
 import * as THREE from 'three';
-import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261013152005';
-import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013152005';
-import { ABILITIES } from '../../shared/classes.data.js?v=20261013152005';
-import { MOUNT_WEAPON } from '../mappoints.js?v=20261013152005';
-import { netPoseOf } from '../bots/bot.js?v=20261013152005';
-import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261013152005';
-import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261013152005';
-import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261013152005';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261013165335';
+import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013165335';
+import { ABILITIES } from '../../shared/classes.data.js?v=20261013165335';
+import { MOUNT_WEAPON, looksOf } from '../mappoints.js?v=20261013165335';
+import { netPoseOf } from '../bots/bot.js?v=20261013165335';
+import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261013165335';
+import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261013165335';
+import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261013165335';
 
 const nowSec = () => performance.now() / 1000;
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -56,7 +56,7 @@ const INTEREST_MIN = 12;
 export class HostSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261013152005').NetSystem} net
+   * @param {import('./index.js?v=20261013165335').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'host', teamSize, botFill, pvp, ffa …)
    */
   constructor(G, net, cfg = {}) {
@@ -452,6 +452,7 @@ export class HostSync {
   /** main.spawnActor: vorgemerkte Ausrüstung eines Menschen übernehmen. */
   beforeSpawn(actor) {
     if (actor && actor.isRemoteHuman && this._holds.delete(actor.netId) && this.G.mode) this.G.mode.holdRespawn(actor, false);
+    if (actor && actor._lootWeapons) actor._lootWeapons = null; // aufgehobene Waffen gelten bis zum Tod
     if (actor && actor.isRemoteHuman && actor.pendingNetLoadout) {
       actor.setNetLoadout(actor.pendingNetLoadout);
       actor.pendingNetLoadout = null;
@@ -794,7 +795,7 @@ export class HostSync {
 
   /**
    * Waffe von einer Leiche ('loot' {w, v}): Raum erlaubt es, der Gefallene (Netz-Id v) ist tot, liegt höchstens 6 m
-   * von der Puppe und trug diese Waffe → für die Puppe bis zu ihrem Tod erlaubt (_weaponsOf).
+   * von der Puppe und trug diese Waffe → für die Puppe bis zu ihrem Tod erlaubt (_weaponsOf, beforeSpawn räumt).
    */
   _onLoot(m, from) {
     const G = this.G;
@@ -807,6 +808,24 @@ export class HostSync {
     if (!vw.includes(m.w)) return;
     if (!p._lootWeapons) p._lootWeapons = new Set();
     p._lootWeapons.add(m.w);
+    // Aussehen der liegenden Waffe (Aufsätze/Tarnung) geht mit; für alle vom Boden nehmen (nicht doppelt aufhebbar)
+    const looks = (G.points && G.points.takenByNet(m.v, m.w)) || looksOf(v, m.w);
+    if (typeof p.setCarry === 'function') p.setCarry(m.w, looks);
+    this._relayLoot(p.netId, m.v, m.w, looks);
+  }
+
+  /** Host hebt selbst eine Waffe auf (mappoints.js _takeLoot): allen melden. */
+  sendLoot(w, v, looks = {}) {
+    if (!this.active || this.ended || typeof w !== 'string' || !WEAPONS[w]) return;
+    this._relayLoot(this.net.selfId, Number.isInteger(v) ? v : -1, w, looks);
+  }
+
+  _relayLoot(o, v, w, looks = {}) {
+    if (!this.net.online) return;
+    const c = typeof looks.camo === 'string' ? looks.camo : null;
+    const msg = { t: 'ev', e: 'lt', o, v, w, c, a: looks.att && typeof looks.att === 'object' ? looks.att : null };
+    if (c && /^cx/.test(c) && CAMOS[c] && CAMOS[c].design) msg.cc = { [c]: CAMOS[c].design }; // eigenes Muster mitschicken
+    this.net.send('all', msg);
   }
 
   _tickRegens() {

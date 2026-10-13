@@ -3,7 +3,8 @@
 // Zweibein/Handstopp unter dem Handschutz (Vordergriff: linke Hand greift ihn, Griffart 'post'), Laser-Modul;
 // nach dem Bau: Magazin länger bzw. Trommel. Optik- und Mündungstausch der Werksteile: parts.js (swapOptic/muzzleDevice).
 import * as THREE from 'three';
-import { muzzleDevice, mountOptic } from './parts.js?v=20261013152005';
+import { muzzleDevice, mountOptic } from './parts.js?v=20261013165335';
+import { getMat } from './materials.js?v=20261013165335';
 
 const R_BY_KIND = { pistol: 0.0105, smg: 0.0115, rifle: 0.0115, lmg: 0.0135, sniper: 0.016, shotgun: 0.0145 };
 
@@ -77,27 +78,107 @@ export function attachToBuilder(b, att, mount) {
 }
 
 /** Nach dem Bau: Magazin länger (Erweitert) oder mit Trommel. */
-export function attachToRoot(root, att) {
+export function attachToRoot(root, att, lod = 'first') {
   if (!att || !att.magazin) return;
   const mag = root.getObjectByName('mag');
   if (!mag || mag === root) return;
-  if (att.magazin === 'erweitert') { mag.scale.y = 1.3; return; }
+  if (att.magazin === 'erweitert') {
+    // Quer liegendes Magazin (QX-90 oben auf dem Gehäuse): nicht in die Höhe ziehen – das verzerrt nur Patronen/Form
+    const s = magBox(mag).getSize(_v);
+    if (!(s.z > s.y * 1.6)) mag.scale.y = 1.3;
+    return;
+  }
   if (att.magazin !== 'trommel') return;
-  root.updateMatrixWorld(true);
+  drumMag(root, mag, lod === 'third');
+}
+
+const _v = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+function magBox(mag) {
   const box = new THREE.Box3();
-  mag.traverse((o) => { if (o.isMesh && o.name !== 'rounds') box.expandByObject(o); });
-  if (box.isEmpty()) return;
-  const src = mag.children.find((o) => o.isMesh && !o.material.transparent) || mag.children.find((o) => o.isMesh);
-  if (!src) return;
-  mag.scale.y = 0.72;
-  const w = new THREE.Vector3();
-  mag.getWorldPosition(w);
-  const R = 0.052;
-  const drum = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.062, 28).rotateZ(Math.PI / 2), src.material);
-  drum.name = 'mag:trommel';
-  // Trommel unter dem gekürzten Magazin (Magazinraum, Skalierung ausgeglichen)
-  drum.position.set((box.min.x + box.max.x) / 2 - w.x, box.min.y - w.y - (R * 0.55) / 0.72, (box.min.z + box.max.z) / 2 - w.z);
-  drum.scale.y = 1 / 0.72;
-  drum.castShadow = true;
-  mag.add(drum);
+  mag.updateWorldMatrix(true, true);
+  mag.traverse((o) => { if (o.isMesh && o.name !== 'rounds' && o.name !== 'follower') box.expandByObject(o); });
+  return box;
+}
+
+/**
+ * Trommelmagazin (Nutzer 13.10.2026: kein gestauchtes Kastenmagazin mit angehängter Scheibe, sondern ein eigenes Teil):
+ * das Werksmagazin wird ausgeblendet, an seiner Stelle sitzt ein eigenes Trommelmagazin – ein geformter Hals, der mit
+ * Hohlkehlen in die liegende Trommel übergeht, Trommel mit Randwulsten, Deckel mit eigener Textur (Ringrippen, Speichen,
+ * Sichtfenster mit Patronen, Prägung), Nabe und Aufziehknopf. Eigener Kunststoff ('drumBody'), keine Tarnung. Alles hängt
+ * am Teil 'mag' (Nachladen nimmt die Trommel mit) und steht unabhängig von der Neigung des Magazins gerade zur Waffe.
+ */
+function drumMag(root, mag, low = false) {
+  const box0 = magBox(mag);
+  if (box0.isEmpty()) return;
+  const size0 = box0.getSize(new THREE.Vector3());
+  const piv = mag.getWorldPosition(new THREE.Vector3());
+  // Magazinschacht: Querschnitt des Werksmagazins knapp unter dem Schacht (oberste 2 cm)
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  const p = new THREE.Vector3();
+  mag.traverse((o) => {
+    if (!o.isMesh) return;
+    o.visible = false;
+    const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
+    if (!a) return;
+    for (let i = 0; i < a.count; i++) {
+      p.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld);
+      if (p.y < piv.y - 0.02 || p.y > piv.y + 0.012) continue;
+      x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z);
+    }
+  });
+  if (!Number.isFinite(x0)) { x0 = box0.min.x; x1 = box0.max.x; z0 = box0.min.z; z1 = box0.max.z; }
+  const nw = THREE.MathUtils.clamp(x1 - x0, 0.018, 0.032);       // Halsbreite (quer)
+  const nd = THREE.MathUtils.clamp(z1 - z0, 0.032, 0.062);       // Halstiefe (längs)
+  const R = THREE.MathUtils.clamp(size0.y * 0.29, 0.04, 0.056);  // Trommelradius
+  const W = THREE.MathUtils.clamp(nw * 2.2, 0.05, 0.066);        // Trommelbreite
+  const vis = 0.016;                                             // sichtbarer Hals unter dem Schacht
+  const cy = -(vis + R), top = 0.03;
+  // g1: am Schacht im Magazinraum; g2: Achsen wie die Waffe
+  const g1 = new THREE.Group();
+  g1.name = 'mag:trommel';
+  g1.position.copy(mag.worldToLocal(new THREE.Vector3((x0 + x1) / 2, piv.y, (z0 + z1) / 2)));
+  mag.add(g1);
+  const g2 = new THREE.Group();
+  g2.quaternion.copy(mag.getWorldQuaternion(_q)).invert();
+  g1.add(g2);
+  const add = (geo, matKey, x = 0, y = 0, z = 0) => {
+    const m = new THREE.Mesh(geo, getMat(matKey));
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    g2.add(m);
+    return m;
+  };
+  // Hals mit Hohlkehlen in die Trommel (Profil in z/y, quer extrudiert)
+  const hw = nd / 2, a = Math.asin(Math.min(0.95, (hw + 0.012) / R));
+  const P = [R * Math.sin(a), cy + R * Math.cos(a)];
+  const yF = -vis + 0.004;
+  const sh = new THREE.Shape();
+  sh.moveTo(-hw, top);
+  sh.lineTo(hw, top);
+  sh.lineTo(hw, yF);
+  sh.quadraticCurveTo(hw, P[1], P[0], P[1]);
+  sh.absarc(0, cy, R, Math.PI / 2 - a, Math.PI / 2 + a, true);
+  sh.quadraticCurveTo(-hw, P[1], -hw, yF);
+  sh.lineTo(-hw, top);
+  const neck = new THREE.ExtrudeGeometry(sh, { depth: nw, bevelEnabled: true, bevelThickness: 0.0016, bevelSize: 0.0016, bevelSegments: low ? 1 : 2, curveSegments: low ? 5 : 18 });
+  neck.translate(0, 0, -nw / 2).rotateY(-Math.PI / 2);
+  add(neck, 'drumBody');
+  const seg = low ? 12 : 40;
+  // Trommel: Mantel, Randwulste, Deckel mit eigener Textur
+  add(new THREE.CylinderGeometry(R, R, W, seg, 1, true).rotateZ(Math.PI / 2), 'drumBody', 0, cy, 0);
+  for (const s of [-1, 1]) {
+    add(new THREE.CircleGeometry(R, seg).rotateY(s * Math.PI / 2), 'drumFace', s * W / 2, cy, 0); // liest sich von beiden Seiten richtig
+    if (!low) add(new THREE.TorusGeometry(R - 0.0006, 0.0034, 8, seg).rotateY(Math.PI / 2), 'drumBody', s * (W / 2 - 0.0012), cy, 0);
+  }
+  if (low) { mag.userData.drum = true; return; }
+  // Umlaufende Griffrippe, Nabe + Aufziehknopf rechts, Gegennabe links, Rippen am Hals, Halteplatte (Magazinhalter)
+  add(new THREE.TorusGeometry(R + 0.0006, 0.0022, 6, seg).rotateY(Math.PI / 2), 'drumBody', 0, cy, 0);
+  add(new THREE.CylinderGeometry(R * 0.24, R * 0.27, 0.007, 24).rotateZ(Math.PI / 2), 'steelDark', W / 2 + 0.0035, cy, 0);
+  add(new THREE.BoxGeometry(0.0055, R * 0.46, 0.0075), 'steel', W / 2 + 0.0075, cy, 0);
+  add(new THREE.CylinderGeometry(0.0032, 0.0032, 0.004, 12).rotateZ(Math.PI / 2), 'steelBright', W / 2 + 0.0095, cy, 0);
+  add(new THREE.CylinderGeometry(R * 0.17, R * 0.17, 0.004, 20).rotateZ(Math.PI / 2), 'steelDark', -W / 2 - 0.002, cy, 0);
+  for (const s of [-1, 1]) for (let i = 0; i < 2; i++) add(new THREE.BoxGeometry(0.0016, 0.0022, nd * 0.8), 'drumBody', s * (nw / 2 + 0.0018), -0.004 - i * 0.0055, 0);
+  add(new THREE.BoxGeometry(nw * 0.7, 0.008, 0.0018), 'steel', 0, -0.006, hw + 0.0012);
+  mag.userData.drum = true;
 }

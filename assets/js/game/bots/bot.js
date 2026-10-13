@@ -17,19 +17,21 @@
 // Schüsse (Zählerwechsel) → Schussgeste + manager.puppetFired (nur Darstellung, kein Schaden). Leben/Tod nicht aus der
 // Pose, sondern über respawn()/onDeath() (Ereignisse vom Host).
 import * as THREE from 'three';
-import { CapsuleBody } from '../engine/physics.js?v=20261013152005';
-import { raycastHumanoid } from '../combat.js?v=20261013152005';
-import { Soldier } from './character.js?v=20261013152005';
-import { Memory } from './ai/memory.js?v=20261013152005';
-import { sense } from './ai/perception.js?v=20261013152005';
-import { Navigator } from './ai/navigator.js?v=20261013152005';
-import { Gunner } from './ai/combat.js?v=20261013152005';
-import { think, newGoal, useStreaks } from './ai/brain.js?v=20261013152005';
-import { targetPoints } from './ai/perception.js?v=20261013152005';
-import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261013152005';
-import { BONE } from './soldier/rig.js?v=20261013152005';
-import { importCC } from '../../shared/customcamo.js?v=20261013152005';
-import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261013152005';
+import { CapsuleBody } from '../engine/physics.js?v=20261013165335';
+import { raycastHumanoid } from '../combat.js?v=20261013165335';
+import { Soldier } from './character.js?v=20261013165335';
+import { Memory } from './ai/memory.js?v=20261013165335';
+import { sense } from './ai/perception.js?v=20261013165335';
+import { Navigator } from './ai/navigator.js?v=20261013165335';
+import { Gunner } from './ai/combat.js?v=20261013165335';
+import { think, newGoal, useStreaks } from './ai/brain.js?v=20261013165335';
+import { targetPoints } from './ai/perception.js?v=20261013165335';
+import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261013165335';
+import { BONE } from './soldier/rig.js?v=20261013165335';
+import { importCC } from '../../shared/customcamo.js?v=20261013165335';
+import { applyAttachments } from '../../shared/attachments.data.js?v=20261013165335';
+import { getWeaponModelInfo } from '../weapons/models.js?v=20261013165335';
+import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261013165335';
 
 const STAND_H = 1.8, CROUCH_H = 1.15, PRONE_H = 0.75;
 const SPEED = { walk: 3.1, run: 5.4, sprint: 8.2, crouch: 2.6, crawl: 1.05 };
@@ -156,7 +158,7 @@ let serial = 0;
 
 export class Bot {
   /**
-   * @param {import('./manager.js?v=20261013152005').BotManager} manager
+   * @param {import('./manager.js?v=20261013165335').BotManager} manager
    * opts: { team, name, diff (Profil), loadout, variant, scheme, modeId, lane, puppet (Mehrspieler-Puppe) }
    */
   constructor(manager, { team, name, diff, loadout, variant = 0, scheme = null, modeId = 'tdm', lane = 1, puppet = false }) {
@@ -328,7 +330,9 @@ export class Bot {
     if (!force && s.def && s.def.id === def.id && s.gun) return;
     // Aufsätze (def.att) und Tarnung je Waffe wie beim Spieler – Zwischenspeicher je Kombination
     if (this.loadout && this.loadout.cc) importCC(this.loadout.cc); // eigene Muster anderer Spieler (online)
-    const camo = (this.loadout && this.loadout.camo && this.loadout.camo[def.baseId || def.id]) || null;
+    const wid = def.baseId || def.id;
+    const carry = this._carry && this._carry[wid]; // online von einer Leiche aufgehoben (setCarry)
+    const camo = carry ? carry.camo || null : (this.loadout && this.loadout.camo && this.loadout.camo[wid]) || null;
     const key = `${def.id}|${def.attKey || ''}|${camo || ''}`;
     let gun = s.guns.get(key);
     if (!gun) {
@@ -474,6 +478,7 @@ export class Bot {
   }
 
   respawn(spawn) {
+    this._carry = null; // aufgehobene Waffe gilt nur bis zum Tod
     const pos = spawn && spawn.position ? spawn.position : new THREE.Vector3();
     // Leiche noch sichtbar → andere Instanz verwenden
     const cur = this.soldier;
@@ -1004,6 +1009,29 @@ export class Bot {
     this._syncGun(true);
     if (!silent && from) this.G.events.emit('weapon:switch', { actor: this, weaponId: def.id, from, slot: i, cosmetic: true });
     return true;
+  }
+
+  /**
+   * Puppe: Waffe von einer Leiche aufgehoben (online, 'ev' lt) – deren Aufsätze/Tarnung bis zum Tod. Liegt sie danach
+   * wieder, nimmt mappoints.js das Aussehen von hier.
+   */
+  setCarry(weaponId, looks = {}) {
+    const def = this._netDef(weaponId);
+    const w = this.weapon;
+    if (!def || !w) return;
+    if (!this._carry) this._carry = {};
+    const att = looks.att && typeof looks.att === 'object' ? looks.att : null;
+    this._carry[def.id] = { camo: typeof looks.camo === 'string' ? looks.camo : null, att };
+    let d = def;
+    if (att) { try { d = applyAttachments(def, att, getWeaponModelInfo(def.model || def.id)); } catch { d = def; } }
+    const i = w.slots.findIndex((s) => s && s.id === def.id);
+    if (i >= 0) { w.slots[i].def = d; if (i === w.index && typeof w._refreshStatic === 'function') w._refreshStatic(); }
+    else {
+      const second = def.slot === 'secondary' || def.cls === 'pistol';
+      w.slots[second ? Math.min(1, w.slots.length) : 0] = { id: def.id, def: d, mag: def.mag || 0, reserve: def.reserve || 0 };
+      if (this.loadout) this.loadout[second ? 'secondary' : 'primary'] = def.id;
+    }
+    if (w.currentDef && w.currentDef.id === def.id) this._syncGun(true);
   }
 
   /** Puppe: neue Ausrüstung (Klasse/Waffen, z. B. Spawn mit geänderter Ausrüstung); die Waffe in der Hand folgt der Pose. */

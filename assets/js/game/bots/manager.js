@@ -13,22 +13,22 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261013152005';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261013152005'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261013152005';
-import { pickNames } from './names.js?v=20261013152005';
-import { Nameplate } from './nameplates.js?v=20261013152005';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261013152005';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261013152005';
-import { analyze } from './ai/tactics.js?v=20261013152005';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261013152005';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261013152005';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261013152005';
-import { BotAdapt } from './ai/spielstil.js?v=20261013152005';
-import { CorpseStore } from './corpses.js?v=20261013152005';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261013152005';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261013152005';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261013152005';
+import { Bot } from './bot.js?v=20261013165335';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261013165335'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261013165335';
+import { pickNames } from './names.js?v=20261013165335';
+import { Nameplate } from './nameplates.js?v=20261013165335';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261013165335';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261013165335';
+import { analyze } from './ai/tactics.js?v=20261013165335';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261013165335';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261013165335';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261013165335';
+import { BotAdapt } from './ai/spielstil.js?v=20261013165335';
+import { CorpseStore } from './corpses.js?v=20261013165335';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261013165335';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261013165335';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261013165335';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -387,6 +387,10 @@ export class BotManager {
     const c = CLASSES[cls] ? cls : CLASSES[lo0.cls] ? lo0.cls : DEFAULT_CLASS;
     const lo = { primary: lo0.primary, secondary: lo0.secondary, lethal: lo0.lethal, tactical: lo0.tactical, cls: c };
     if (lo0.melee) lo.melee = lo0.melee;
+    // Aufsätze/Tarnung wie beim Gegenüber (sonst sehen Puppen und ihre liegende Waffe anders aus als beim Besitzer)
+    if (lo0.att && typeof lo0.att === 'object') lo.att = lo0.att;
+    if (lo0.camo && typeof lo0.camo === 'object') lo.camo = lo0.camo;
+    if (lo0.cc && typeof lo0.cc === 'object') lo.cc = lo0.cc;
     if (!W[lo.primary]) lo.primary = this._classLoadout(c, null).primary;
     if (lo.secondary !== null && lo.secondary !== undefined && !W[lo.secondary]) lo.secondary = undefined;
     const t = team === 'A' || team === 'B' ? team : null;
