@@ -4,8 +4,8 @@
 // pointsPerTick alle tickInterval Sekunden. Bots: G.mode.objectives / objectiveFor(bot).
 
 import * as THREE from 'three';
-import { MEDAL_RULES } from '../../shared/modes.data.js?v=20261013134131';
-import { BaseMode } from './base.js?v=20261013134131';
+import { MEDAL_RULES } from '../../shared/modes.data.js?v=20261013135426';
+import { BaseMode } from './base.js?v=20261013135426';
 
 const VERT = 2.6; // m Höhentoleranz im Flaggenkreis
 const DRIFT = 0.22; // Rückfall pro Sekunde ohne Anwesende

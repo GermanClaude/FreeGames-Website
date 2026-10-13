@@ -4,9 +4,9 @@
 // Dazwischen das Niemandsland: Hunderte Granattrichter (die tiefsten voll Wasser), Stacheldrahtgürtel vor beiden
 // Fronten, zersplitterte Baumstümpfe, eine Dorfruine (West) und eine Kapellenruine (Ost) mit zerstörbaren Mauern, in
 // der Mitte ein liegengebliebener Panzer. Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { wall } from '../arch.js?v=20261013134131';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261013134131';
-import { sampleSpline } from '../terrain/generate.js?v=20261013134131';
+import { wall } from '../arch.js?v=20261013135426';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261013135426';
+import { sampleSpline } from '../terrain/generate.js?v=20261013135426';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x

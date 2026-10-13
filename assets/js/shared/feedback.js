@@ -5,8 +5,8 @@
 // ohne Hinweis darauf – man findet es nur beim Herunterscrollen (Nutzer 12.10.). Wer im Feedback getippt hat, wie das Spiel
 // entstanden ist, bekommt dort eine Antwort.
 // Gemeinsam für Spiel (spielen.html) und Startseite (index.html): nur DOM + lokaler Speicher, eigene Stile.
-import { BUILD } from './build.js?v=20261013134131';
-import { siteSeconds } from './sitetime.js?v=20261013134131';
+import { BUILD } from './build.js?v=20261013135426';
+import { siteSeconds } from './sitetime.js?v=20261013135426';
 
 export const FEEDBACK_MIN_SEC = 20 * 60;
 export const REVEAL_MIN_STARS = 1; // jede Bewertung schaltet frei (Nutzer 11.10.: auch wer das Spiel eher negativ sieht)
@@ -591,9 +591,10 @@ export function revealHtml() {
       <li><strong>Jan</strong> für seine vielen Testspiele und Fehlerberichte,</li>
       <li><strong>Waldmeister</strong>,</li>
       <li><strong>James AOK</strong>,</li>
+      <li><strong>Lichter</strong>, <strong>Kaisen</strong>, <strong>Demolouse</strong>, <strong>FlorianPluukilp</strong>, <strong>Bambustal</strong>, <strong>GorillaLDS</strong>, <strong>Spirit.LDS</strong>, <strong>Militärhund</strong>, <strong>Zeno :3</strong>, <strong>Tyson</strong>, <strong>Holzkohle</strong>, <strong>flebubushekjr</strong>, <strong>german_guy</strong>, <strong>S1dneyy</strong>, <strong>Gian</strong> und <strong>Tintenpatrone</strong>,</li>
       <li>alle, die mit mir den ersten Mehrspieler-Abend gespielt haben,</li>
-      <li>und die vielen anderen, die mir ihre Meinung gesagt haben, ob positiv, kritisch oder auch negativ, und die das Spiel
-      getestet haben, damit es besser wird.</li>
+      <li>und die vielen anderen, die mitgetestet und mir ihre Meinung gesagt haben, ob positiv, kritisch oder auch negativ,
+      damit das Spiel besser wird.</li>
     </ul>
     <p>An euch alle ein riesiges Dankeschön! Als kleines Geschenk bekommt jeder, der bis zum 13. Oktober 2026 gespielt hat,
     die Tarnung <strong>„Gold der ersten Stunde“</strong> für jede Waffe (Ausrüstung → Tarnung). Freischalten kann man sie
