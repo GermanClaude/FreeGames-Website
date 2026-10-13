@@ -19,8 +19,8 @@
 // Klang: DroneAudio (Summen der Rotoren, WebAudio-Synthese im sfx-Bus, Lautstärke nach Entfernung, höchstens drei Stimmen).
 
 import * as THREE from 'three';
-import { raySphere } from '../combat.js?v=20261013133728';
-import { collisionRay, keepClear } from '../engine/physics.js?v=20261013133728';
+import { raySphere } from '../combat.js?v=20261013134131';
+import { collisionRay, keepClear } from '../engine/physics.js?v=20261013134131';
 
 const _v = new THREE.Vector3();
 const _a = new THREE.Vector3();

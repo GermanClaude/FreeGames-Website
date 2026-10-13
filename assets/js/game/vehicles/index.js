@@ -6,23 +6,23 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261013133728';
-import { Vehicle, newIntent } from './vehicle.js?v=20261013133728';
-import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261013133728';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261013133728';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261013133728';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261013133728';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261013133728';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261013133728';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261013133728';
-import { VehicleAudio } from './audio.js?v=20261013133728';
-import * as MATS from './materials.js?v=20261013133728';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261013133728';
-import { VehicleNet } from './net.js?v=20261013133728';
-import { groundRay } from './sim.js?v=20261013133728';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261013133728';
-import { falloff } from '../combat.js?v=20261013133728';
-import { Thermal } from './thermal.js?v=20261013133728';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261013134131';
+import { Vehicle, newIntent } from './vehicle.js?v=20261013134131';
+import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261013134131';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261013134131';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261013134131';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261013134131';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261013134131';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261013134131';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261013134131';
+import { VehicleAudio } from './audio.js?v=20261013134131';
+import * as MATS from './materials.js?v=20261013134131';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261013134131';
+import { VehicleNet } from './net.js?v=20261013134131';
+import { groundRay } from './sim.js?v=20261013134131';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261013134131';
+import { falloff } from '../combat.js?v=20261013134131';
+import { Thermal } from './thermal.js?v=20261013134131';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
