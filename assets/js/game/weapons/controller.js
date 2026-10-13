@@ -10,11 +10,11 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261013140112';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261013140112';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013140112';
-import { getWeaponModelInfo } from './models.js?v=20261013140112';
-import { classDef } from '../../shared/classes.data.js?v=20261013140112';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling } from '../../shared/weapons.data.js?v=20261013143858';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261013143858';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261013143858';
+import { getWeaponModelInfo } from './models.js?v=20261013143858';
+import { classDef } from '../../shared/classes.data.js?v=20261013143858';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -75,7 +75,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261013140112').WeaponSystem} system
+   * @param {import('./index.js?v=20261013143858').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -222,8 +222,13 @@ export class WeaponController {
     const prevId = this.currentDef ? this.currentDef.id : null;
     const prevAtt = (this.currentDef && this.currentDef.attKey) || '';
     const old = new Map(this.slots.map((s) => [s.id, s]));
+    // Aufgehobene Waffe (mappoints, Leiche): eigene Aufsätze/Tarnung bis zum nächsten Ausrüstungswechsel ohne keepPickups
+    this._pickups = loadout.keepPickups ? (this._pickups || {}) : {};
+    if (loadout.pickup && typeof loadout.pickup.id === 'string') this._pickups[loadout.pickup.id] = loadout.pickup;
+    const pickAtt = {};
+    for (const [k, p] of Object.entries(this._pickups)) pickAtt[k] = p.att || {};
     // Aufsätze (shared/attachments.data.js): loadout.att { [weaponId]: { slot: id } }, Spieler sonst aus dem Browser
-    const attAll = this.actor && this.actor.isPlayer ? loadAttachments() : loadout.att && typeof loadout.att === 'object' ? loadout.att : null;
+    const attAll = this.actor && this.actor.isPlayer ? { ...loadAttachments(), ...pickAtt } : loadout.att && typeof loadout.att === 'object' ? loadout.att : null;
     const withAtt = (d) => {
       const a = d && attAll && attAll[d.id];
       if (!a) return d;
@@ -303,7 +308,8 @@ export class WeaponController {
     // loadout.camo: { [weaponId]: camoId } (Lobby/modes-ui) oder eine Id für alle; loadout.camos wie die Objektform
     const map = loadout.camos || (loadout.camo && typeof loadout.camo === 'object' ? loadout.camo : null);
     const all = typeof loadout.camo === 'string' ? loadout.camo : null;
-    const camoFor = (id) => (map && map[id]) || all || (stored && typeof stored === 'object' ? stored[id] : null) || null;
+    const pk = this._pickups || {};
+    const camoFor = (id) => (pk[id] ? pk[id].camo || null : (map && map[id]) || all || (stored && typeof stored === 'object' ? stored[id] : null) || null);
     for (const s of this.slots) this._vm('setCamo', s.id, camoFor(s.id));
     this._vm('setCamo', this.meleeId, camoFor(this.meleeId));
     this._vm('setMelee', this.meleeId);

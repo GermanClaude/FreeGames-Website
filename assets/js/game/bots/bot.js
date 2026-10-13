@@ -17,18 +17,18 @@
 // Schüsse (Zählerwechsel) → Schussgeste + manager.puppetFired (nur Darstellung, kein Schaden). Leben/Tod nicht aus der
 // Pose, sondern über respawn()/onDeath() (Ereignisse vom Host).
 import * as THREE from 'three';
-import { CapsuleBody } from '../engine/physics.js?v=20261013140112';
-import { raycastHumanoid } from '../combat.js?v=20261013140112';
-import { Soldier } from './character.js?v=20261013140112';
-import { Memory } from './ai/memory.js?v=20261013140112';
-import { sense } from './ai/perception.js?v=20261013140112';
-import { Navigator } from './ai/navigator.js?v=20261013140112';
-import { Gunner } from './ai/combat.js?v=20261013140112';
-import { think, newGoal, useStreaks } from './ai/brain.js?v=20261013140112';
-import { targetPoints } from './ai/perception.js?v=20261013140112';
-import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261013140112';
-import { BONE } from './soldier/rig.js?v=20261013140112';
-import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261013140112';
+import { CapsuleBody } from '../engine/physics.js?v=20261013143858';
+import { raycastHumanoid } from '../combat.js?v=20261013143858';
+import { Soldier } from './character.js?v=20261013143858';
+import { Memory } from './ai/memory.js?v=20261013143858';
+import { sense } from './ai/perception.js?v=20261013143858';
+import { Navigator } from './ai/navigator.js?v=20261013143858';
+import { Gunner } from './ai/combat.js?v=20261013143858';
+import { think, newGoal, useStreaks } from './ai/brain.js?v=20261013143858';
+import { targetPoints } from './ai/perception.js?v=20261013143858';
+import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261013143858';
+import { BONE } from './soldier/rig.js?v=20261013143858';
+import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261013143858';
 
 const STAND_H = 1.8, CROUCH_H = 1.15, PRONE_H = 0.75;
 const SPEED = { walk: 3.1, run: 5.4, sprint: 8.2, crouch: 2.6, crawl: 1.05 };
@@ -155,7 +155,7 @@ let serial = 0;
 
 export class Bot {
   /**
-   * @param {import('./manager.js?v=20261013140112').BotManager} manager
+   * @param {import('./manager.js?v=20261013143858').BotManager} manager
    * opts: { team, name, diff (Profil), loadout, variant, scheme, modeId, lane, puppet (Mehrspieler-Puppe) }
    */
   constructor(manager, { team, name, diff, loadout, variant = 0, scheme = null, modeId = 'tdm', lane = 1, puppet = false }) {
@@ -305,6 +305,8 @@ export class Bot {
     if (!this.soldiers[i]) {
       const s = new Soldier({ team: this.team, variant: this.variant, camo: this.scheme, quality: this.manager.tier || this.manager.quality, models: this.manager.models, name: this.name });
       s.guns = new Map();
+      // Waffe bleibt als Beute liegen (mappoints): aus dem Zwischenspeicher nehmen, beim Respawn kommt eine neue
+      s.onGunLost = (g) => { for (const [k, v] of s.guns) if (v === g) s.guns.delete(k); };
       this.manager.scene.add(s.root);
       this.soldiers[i] = s;
     }
@@ -323,11 +325,14 @@ export class Bot {
     const s = this.soldier;
     if (!def || !s) return;
     if (!force && s.def && s.def.id === def.id && s.gun) return;
-    let gun = s.guns.get(def.id);
+    // Aufsätze (def.att) und Tarnung je Waffe wie beim Spieler – Zwischenspeicher je Kombination
+    const camo = (this.loadout && this.loadout.camo && this.loadout.camo[def.baseId || def.id]) || null;
+    const key = `${def.id}|${def.attKey || ''}|${camo || ''}`;
+    let gun = s.guns.get(key);
     if (!gun) {
-      gun = this.manager.makeGun(def);
+      gun = this.manager.makeGun(def, camo);
       if (!gun) return;
-      s.guns.set(def.id, gun);
+      s.guns.set(key, gun);
     }
     s.setWeaponModel(gun, def);
     this._gunId = def.id;

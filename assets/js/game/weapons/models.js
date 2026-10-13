@@ -13,23 +13,23 @@
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder } from './gunsmith/builder.js?v=20261013140112';
-import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261013140112';
-import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261013140112';
-import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261013140112';
-import { p9, adler } from './gunsmith/guns-pistol.js?v=20261013140112';
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261013140112';
-import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261013140112';
-import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261013140112';
-import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261013140112';
-import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261013140112';
-export { setMagRounds } from './gunsmith/magfill.js?v=20261013140112';
-import { disposeMaterials } from './gunsmith/materials.js?v=20261013140112';
-import { disposeTextures } from './gunsmith/textures.js?v=20261013140112';
-import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261013140112';
-import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261013140112';
-import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261013140112';
-import { attKey } from '../../shared/attachments.data.js?v=20261013140112';
+import { Builder } from './gunsmith/builder.js?v=20261013143858';
+import { m17, kv47, sk14 } from './gunsmith/guns-ar.js?v=20261013143858';
+import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261013143858';
+import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261013143858';
+import { p9, adler } from './gunsmith/guns-pistol.js?v=20261013143858';
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261013143858';
+import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261013143858';
+import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261013143858';
+import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261013143858';
+import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261013143858';
+export { setMagRounds } from './gunsmith/magfill.js?v=20261013143858';
+import { disposeMaterials } from './gunsmith/materials.js?v=20261013143858';
+import { disposeTextures } from './gunsmith/textures.js?v=20261013143858';
+import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261013143858';
+import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261013143858';
+import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261013143858';
+import { attKey } from '../../shared/attachments.data.js?v=20261013143858';
 
 const BUILDERS = {
   kv47, m17, vp9, qx90, hm60, sk14, brecher, bulldog, p9, adler, knife, frag, semtex,
@@ -182,6 +182,18 @@ export function getWeaponModelInfo(key, lod = 'first', att = null) {
 /** Baut alle Modelle vorab (z. B. während des Ladebildschirms), damit später keine Ruckler entstehen. */
 export function preloadWeaponModels(keys = MODEL_KEYS, lods = ['first', 'third']) {
   for (const k of keys) for (const l of lods) getTemplate(k, l);
+}
+
+/**
+ * Drittpersonen-Modelle mit Aufsätzen freigeben (Matchende): Bots tragen jede Runde andere Kombinationen – ohne Aufräumen
+ * wüchse der Zwischenspeicher von Runde zu Runde. Die Grundmodelle und Ego-Modelle bleiben.
+ */
+export function disposeAttachmentTemplates() {
+  for (const [k, t] of cache) {
+    if (!k.includes(':third|')) continue;
+    t.traverse((o) => { if (o.isMesh) o.geometry.dispose(); });
+    cache.delete(k);
+  }
 }
 
 /** Gibt alle gecachten Geometrien, Materialien und Texturen frei. */
