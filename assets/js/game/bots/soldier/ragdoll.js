@@ -4,8 +4,8 @@
 // Scharniere: Knie nur nach vorn, Ellbogen nur nach hinten; Kopf nickt. Gliedmaßen stoßen an Wände.
 // Kommt am Boden zur Ruhe (schläft) und wird zurück auf das Skelett abgebildet.
 import * as THREE from 'three';
-import { BONE, DIM } from './rig.js?v=20261013182042';
-import { quatFromYZ, quatFromXY, clamp } from './ik.js?v=20261013182042';
+import { BONE, DIM } from './rig.js?v=20261013183031';
+import { quatFromYZ, quatFromXY, clamp } from './ik.js?v=20261013183031';
 
 const P = { hipL: 0, hipR: 1, shL: 2, shR: 3, head: 4, kneeL: 5, ankleL: 6, kneeR: 7, ankleR: 8, elbowL: 9, wristL: 10, elbowR: 11, wristR: 12 };
 const RADIUS = [0.11, 0.11, 0.1, 0.1, 0.12, 0.065, 0.06, 0.065, 0.06, 0.055, 0.05, 0.055, 0.05];
