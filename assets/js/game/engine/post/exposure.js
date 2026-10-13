@@ -10,7 +10,7 @@
 // aus dem dunklen Flur ins Freie brennt das Bild kurz aus (Bodycam-Moment, plan §5.4).
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON, smallFloatTarget } from './common.js?v=20261012164729';
+import { FULLSCREEN_VERT, GLSL_COMMON, smallFloatTarget } from './common.js?v=20261013133728';
 
 const LUM_FRAG = /* glsl */ `
   ${GLSL_COMMON}

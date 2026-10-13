@@ -7,8 +7,8 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261012164729';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261012164729';
+import { generateTexture } from '../world/texgen.js?v=20261013133728';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261013133728';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -293,7 +293,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261012164729', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261013133728', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });

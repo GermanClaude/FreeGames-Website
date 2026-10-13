@@ -2,11 +2,11 @@
 // Meilensteine (Bronze → Nullpunkt), Tarnungen je Waffe (weapons.data.js CAMOS, Freischaltung aus dem Profil),
 // Outfit-Ausführungen je Klasse und die Sammlung der Geheimnisse (Easter Eggs).
 
-import { challengeView, milestoneState, MILESTONE_TIERS, SECRETS, OPERATOR_TIERS, dayKey } from '../../shared/modes.data.js?v=20261012164729';
-import { CLASSES, SOLDIER_CLASS_ORDER } from '../../shared/classes.data.js?v=20261012164729';
-import { esc, num } from './dom.js?v=20261012164729';
-import { ICON } from './icons.js?v=20261012164729';
-import { camoCtx, swatch } from './loadout-panel.js?v=20261012164729';
+import { challengeView, milestoneState, MILESTONE_TIERS, SECRETS, OPERATOR_TIERS, dayKey } from '../../shared/modes.data.js?v=20261013133728';
+import { CLASSES, SOLDIER_CLASS_ORDER } from '../../shared/classes.data.js?v=20261013133728';
+import { esc, num } from './dom.js?v=20261013133728';
+import { ICON } from './icons.js?v=20261013133728';
+import { camoCtx, swatch } from './loadout-panel.js?v=20261013133728';
 
 const SECTIONS = [['challenges', 'Herausforderungen'], ['camos', 'Tarnungen'], ['outfits', 'Outfits'], ['secrets', 'Geheimnisse']];
 
@@ -75,9 +75,9 @@ export class ProgressView {
     if (!D.CAMOS) return '<p class="lb-note">Tarnungen sind in dieser Version nicht verfügbar.</p>';
     const W = D.WEAPONS || {};
     const eq = (prof.cosmetics && prof.cosmetics.equipped && prof.cosmetics.equipped.weapon) || {};
-    const all = Object.values(D.CAMOS);
     const rows = Object.values(W).filter((w) => w.slot === 'primary' || w.slot === 'secondary').map((w) => {
       const ctx = camoCtx(this.G, w.id);
+      const all = Object.values(D.CAMOS).filter((cm) => typeof D.camoVisible !== 'function' || D.camoVisible(cm.id, ctx));
       const free = all.filter((cm) => typeof D.isCamoUnlocked !== 'function' || D.isCamoUnlocked(cm.id, ctx));
       const cur = D.CAMOS[eq[w.id]] || all[0];
       const next = all.find((cm) => !free.includes(cm));

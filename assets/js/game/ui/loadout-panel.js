@@ -3,12 +3,12 @@
 // Ausführung des Outfits. Touch-first (große Kacheln), per Pfeiltasten/Gamepad über die räumliche Navigation bedienbar.
 // API: new LoadoutPanel(G); mount(host, loadout?) ; value() → loadout ; save() (Klassenausrüstung merken) ; unmount().
 
-import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261012164729';
-import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261012164729';
-import { esc } from './dom.js?v=20261012164729';
-import { ICON } from './icons.js?v=20261012164729';
-import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261012164729';
-import { getWeaponModelInfo } from '../weapons/models.js?v=20261012164729';
+import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261013133728';
+import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261013133728';
+import { esc } from './dom.js?v=20261013133728';
+import { ICON } from './icons.js?v=20261013133728';
+import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261013133728';
+import { getWeaponModelInfo } from '../weapons/models.js?v=20261013133728';
 
 const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['melee', 'Messer'], ['lethal', 'Granate']];
 
@@ -198,7 +198,7 @@ export function camoCtx(G, wid) {
   let prof = null;
   try { prof = G.profile.get(); } catch { /* */ }
   const ws = (prof && prof.weaponStats && prof.weaponStats[wid]) || {};
-  const ctx = { level: (prof && prof.level) || 1, kills: ws.kills | 0, headshots: ws.headshots | 0, unlocked: [] };
+  const ctx = { level: (prof && prof.level) || 1, kills: ws.kills | 0, headshots: ws.headshots | 0, og: !!(prof && prof.og), unlocked: [] };
   if (D.CAMOS && typeof D.isCamoUnlocked === 'function') ctx.unlocked = Object.keys(D.CAMOS).filter((id) => D.CAMOS[id].unlock && D.CAMOS[id].unlock.type !== 'mastery' && D.isCamoUnlocked(id, ctx));
   return ctx;
 }
@@ -208,7 +208,7 @@ export function camoRowHtml(G, wid, cur) {
   const D = G.data || {};
   if (!D.CAMOS || !wid) return '';
   const ctx = camoCtx(G, wid);
-  const all = Object.values(D.CAMOS);
+  const all = Object.values(D.CAMOS).filter((cm) => typeof D.camoVisible !== 'function' || D.camoVisible(cm.id, ctx));
   const def = (all.find((x) => !x.unlock || x.unlock.type === 'default') || all[0] || {}).id;
   const sel = (cur && D.CAMOS[cur] && cur) || def;
   const list = all.map((cm) => {

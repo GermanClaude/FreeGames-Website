@@ -5,7 +5,7 @@
 // ohne Hinweis darauf – man findet es nur beim Herunterscrollen (Nutzer 12.10.). Wer im Feedback getippt hat, wie das Spiel
 // entstanden ist, bekommt dort eine Antwort.
 // Gemeinsam für Spiel (spielen.html) und Startseite (index.html): nur DOM + lokaler Speicher, eigene Stile.
-import { BUILD } from './build.js?v=20261012164729';
+import { BUILD } from './build.js?v=20261013133728';
 
 export const FEEDBACK_MIN_SEC = 20 * 60;
 export const REVEAL_MIN_STARS = 1; // jede Bewertung schaltet frei (Nutzer 11.10.: auch wer das Spiel eher negativ sieht)
@@ -568,7 +568,20 @@ export function revealHtml() {
     <ol class="reveal-time">
       ${HISTORY.map(([when, title, text]) => `<li><span class="reveal-when">${when}</span><strong>${title}</strong> ${text}</li>`).join('')}
     </ol>
-    <p>Danke an meine Freunde fürs Testen und an dich fürs Spielen. Über dein Feedback freue ich mich.</p>
+    <h4 class="reveal-h">Danksagung</h4>
+    <p>Ohne die Leute, die NULLPUNKT schon ganz am Anfang gespielt haben, wäre das Spiel nicht da, wo es heute ist. Danke an:</p>
+    <ul class="reveal-list">
+      <li><strong>Jan</strong> für seine vielen Testspiele und Fehlerberichte,</li>
+      <li><strong>Waldmeister</strong>,</li>
+      <li><strong>James AOK</strong>,</li>
+      <li>alle, die mit mir den ersten Mehrspieler-Abend gespielt haben,</li>
+      <li>und die vielen anderen, die mir ihre Meinung gesagt haben, ob positiv, kritisch oder auch negativ, und die das Spiel
+      getestet haben, damit es besser wird.</li>
+    </ul>
+    <p>An euch alle ein riesiges Dankeschön! Als kleines Geschenk bekommt jeder, der bis zum 13. Oktober 2026 gespielt hat,
+    die Tarnung <strong>„Gold der ersten Stunde“</strong> für jede Waffe (Ausrüstung → Tarnung). Freischalten kann man sie
+    danach nicht mehr, sie gehört nur euch.</p>
+    <p>Und danke an dich fürs Spielen. Über dein Feedback freue ich mich.</p>
     <p class="reveal-sign">— German Legend</p>`;
 }
 
