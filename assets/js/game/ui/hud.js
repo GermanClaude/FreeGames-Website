@@ -16,16 +16,16 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261013135426';
-import { ICON, medalBadge } from './icons.js?v=20261013135426';
-import { Minimap } from './minimap.js?v=20261013135426';
-import { Killfeed } from './killfeed.js?v=20261013135426';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261013135426';
-import { StrikeTargeting } from './strike-target.js?v=20261013135426';
-import { actionKey } from './settings/keys.js?v=20261013135426';
-import { DeployScreen } from './deploy.js?v=20261013135426';
-import { CommandWheel } from './command-wheel.js?v=20261013135426';
-import { DroneHud } from './drone-hud.js?v=20261013135426';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261013135535';
+import { ICON, medalBadge } from './icons.js?v=20261013135535';
+import { Minimap } from './minimap.js?v=20261013135535';
+import { Killfeed } from './killfeed.js?v=20261013135535';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261013135535';
+import { StrikeTargeting } from './strike-target.js?v=20261013135535';
+import { actionKey } from './settings/keys.js?v=20261013135535';
+import { DeployScreen } from './deploy.js?v=20261013135535';
+import { CommandWheel } from './command-wheel.js?v=20261013135535';
+import { DroneHud } from './drone-hud.js?v=20261013135535';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
