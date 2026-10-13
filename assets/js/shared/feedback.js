@@ -5,8 +5,8 @@
 // ohne Hinweis darauf – man findet es nur beim Herunterscrollen (Nutzer 12.10.). Wer im Feedback getippt hat, wie das Spiel
 // entstanden ist, bekommt dort eine Antwort.
 // Gemeinsam für Spiel (spielen.html) und Startseite (index.html): nur DOM + lokaler Speicher, eigene Stile.
-import { BUILD } from './build.js?v=20261013151448';
-import { siteSeconds } from './sitetime.js?v=20261013151448';
+import { BUILD } from './build.js?v=20261013152005';
+import { siteSeconds } from './sitetime.js?v=20261013152005';
 
 export const FEEDBACK_MIN_SEC = 20 * 60;
 export const REVEAL_MIN_STARS = 1; // jede Bewertung schaltet frei (Nutzer 11.10.: auch wer das Spiel eher negativ sieht)
@@ -605,7 +605,15 @@ export function revealHtml() {
       <li><strong>Eigene Tarnungen</strong>: bis zu drei selbst entworfene Muster (Ausrüstung → Tarnung → „+“).</li>
     </ul>
     <p>Die drei Waffen sind nicht stärker als die anderen, nur einzigartig. Freischalten kann man das alles danach nicht mehr.
-    Es gehört nur euch und bleibt auch, wenn ihr euren Fortschritt löscht.</p>
+    Es gehört nur euch.</p>
+    <p><strong>Wichtig:</strong> Gespeichert wird das nur in eurem Browser auf diesem Gerät, nicht auf einem Server.</p>
+    <ul class="reveal-list">
+      <li>„Profil zurücksetzen“: Belohnungen und eigene Muster bleiben.</li>
+      <li>„Lokale Daten löschen“ (hier auf der Seite): Die Belohnungen bleiben, eure eigenen Muster werden aber gelöscht.</li>
+      <li>Browserdaten löschen (Cookies und Websitedaten, oft zusammen mit dem Cache), ein privates Fenster, ein anderer
+      Browser oder ein anderes Gerät: Dann können die eigenen Muster <em>und</em> der Zugang zu Gold und den drei Waffen
+      weg sein, und nach dem 13. Oktober 2026 lässt sich der Zugang nicht mehr zurückholen.</li>
+    </ul>
     <p>Und danke an dich fürs Spielen. Über dein Feedback freue ich mich.</p>
     <p class="reveal-sign">— German Legend</p>`;
 }

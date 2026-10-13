@@ -2,7 +2,7 @@
 import {
   TAU, len, buf, white, brown, filt, sweep, expGlide, env, ad, ahr, bell, mix, mixAt, drive, normalize,
   sine, modal, click, burst, grains, reverb, reverbSteps, fadeOut, dcBlock, trim, mtof, Saw, Square, clamp, panMix,
-} from './dsp.js?v=20261013151448';
+} from './dsp.js?v=20261013152005';
 
 // ---------------------------------------------------------------- Instrumente
 
