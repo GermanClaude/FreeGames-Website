@@ -5,9 +5,9 @@
 // rubber, canvas, metal_rust_painted) – die Material-Objekte bleiben dieselben, nur die Texturen werden getauscht
 // (kein Neuzuweisen an Meshes, keine Shader-Varianten-Explosion: map/normalMap/ORM gibt es in beiden Fällen).
 import * as THREE from 'three';
-import { getMaterial } from '../engine/textures.js?v=20261013165335';
-import { assets, tierFor } from '../../../lib/loader.js?v=20261013165335';
-import { addShaderPatch, removeShaderPatch } from '../world/shading.js?v=20261013165335';
+import { getMaterial } from '../engine/textures.js?v=20261013172043';
+import { assets, tierFor } from '../../../lib/loader.js?v=20261013172043';
+import { addShaderPatch, removeShaderPatch } from '../world/shading.js?v=20261013172043';
 
 let SET = null;
 let upgrading = null;

@@ -1,6 +1,6 @@
 // Sturmgewehre & Präzisionsgewehr: M-17 Falke (M4-artig, Holo), KV-47 (AK-artig, Holz), SK-14 (DMR, ACOG)
-import { holoSight, acog, birdcage, akBrake, brake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts, engrave, qdCup } from './parts.js?v=20261013165335';
-import { magRounds } from './magfill.js?v=20261013165335';
+import { holoSight, acog, birdcage, akBrake, brake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts, engrave, qdCup } from './parts.js?v=20261013172043';
+import { magRounds } from './magfill.js?v=20261013172043';
 
 // Achteckiger Querschnitt um (0, axis)
 export function octagon(r, axis) {
@@ -221,8 +221,10 @@ export function kv47(b) {
   b.side('steel', [
     [-0.1, 0.048], [0.205, 0.048], [0.205, 0.088], [-0.1, 0.088],
   ], 0.034, 0, { bevel: 0.002 });
+  // Unterteil flach über dem ganzen Magazinschacht und vorn über das Magazin hinaus (vorderer Trunnion) – sonst lugte
+  // an der Schachtkante ein Stück der obersten Patrone hervor (Nutzer 13.10.2026)
   b.side('steel', [
-    [-0.08, 0.048], [0.16, 0.048], [0.158, 0.03], [0.13, 0.024], [0.03, 0.024], [0.0, 0.03], [-0.04, 0.032], [-0.08, 0.04],
+    [-0.08, 0.048], [0.18, 0.048], [0.18, 0.03], [0.173, 0.021], [0.03, 0.021], [0.0, 0.03], [-0.04, 0.032], [-0.08, 0.04],
   ], 0.034, 0, { bevel: 0.002 });
   // Verschlussdeckel (gewölbt) mit Rippen hinten
   b.front('steel', [...ellipsePts(0, 0.088, 0.0175, 0.016, b.hi ? 14 : 6, 0, Math.PI), [-0.0175, 0.086], [0.0175, 0.086]].slice(0, -1), 0.26, -0.09, { bevel: 0.0015 });

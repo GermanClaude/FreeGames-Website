@@ -1,6 +1,6 @@
 // Gemeinsame PBR-Materialien der Waffen (geteilt zwischen allen Modellen, LODs und Klonen).
 import * as THREE from 'three';
-import { wearMap, brushedMap, grainNormal, stippleNormal, knurlNormal, woodMap, reticleMap, polymerMap, drumFaceMap, drumFaceNormal } from './textures.js?v=20261013165335';
+import { wearMap, brushedMap, grainNormal, stippleNormal, knurlNormal, woodMap, reticleMap, polymerMap, drumFaceMap, drumFaceNormal } from './textures.js?v=20261013172043';
 
 const mats = new Map();
 
