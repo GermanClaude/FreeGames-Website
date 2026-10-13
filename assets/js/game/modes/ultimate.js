@@ -3,7 +3,7 @@
 // mit mehr Lebenden, bei Gleichstand niemand). Höchstens fünf Runden, wer zuerst drei gewinnt, gewinnt das Match
 // (scoreLimit 3 = Rundensiege). Zu Rundenbeginn setzt der Modus alle Akteure an den Startbereichen neu ein.
 // Online rechnet der Host (Rundenstand über netExtra an die Clients, Wiedereinstiege über die normalen 'spawn').
-import { TdmMode } from './tdm.js?v=20261013135535';
+import { TdmMode } from './tdm.js?v=20261013140112';
 
 const ROUND_TIME = 120;
 const PAUSE = 5;

@@ -1,8 +1,8 @@
 // NULLPUNKT — Medaillen nach MEDAL_RULES (modes.data.js). Wird vom Modus gefüttert (onKill/onHit/onImpact)
 // und sendet 'medal' { actor, id, label, tier }. Zählt Medaillen pro Akteur (Endbildschirm, playerSummary).
 
-import { MEDALS, MEDAL_RULES, multiKillMedal, isLongshot } from '../../shared/modes.data.js?v=20261013135535';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261013135535';
+import { MEDALS, MEDAL_RULES, multiKillMedal, isLongshot } from '../../shared/modes.data.js?v=20261013140112';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261013140112';
 
 export class MedalTracker {
   constructor(mode) {
