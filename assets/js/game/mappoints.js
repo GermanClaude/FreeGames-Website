@@ -7,10 +7,10 @@
 // (netUse, prüft Abstand und Abklingzeit). Die Punkte sind reine Optik (keine Kollision) und liegen in G.scene
 // (teardownMatch räumt sie mit weg; Geometrie und Materialien werden über Matches hinweg wiederverwendet).
 import * as THREE from 'three';
-import { MAPS } from '../shared/maps.data.js?v=20261014090943';
-import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261014090943';
-import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261014090943';
-import { stepDrop } from './bots/character.js?v=20261014090943';
+import { MAPS } from '../shared/maps.data.js?v=20261014092800';
+import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261014092800';
+import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261014092800';
+import { stepDrop } from './bots/character.js?v=20261014092800';
 
 export const POINT_KINDS = Object.freeze({
   munition: { name: 'Munitionskiste', act: 'Munition auffüllen', effect: 'ammo', cooldown: 30, color: 0xc8a64a },

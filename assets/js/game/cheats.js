@@ -36,8 +36,8 @@
 // dieses Bildes), mode.update(dt) danach (Markierungen). Matchende/Lobby/Revanche: Schalter aus, Meldung zurück, Listener ab.
 
 import * as THREE from 'three';
-import { CheatMenu } from './ui/cheat-menu.js?v=20261014090943';
-import { HUMANOID } from './combat.js?v=20261014090943';
+import { CheatMenu } from './ui/cheat-menu.js?v=20261014092800';
+import { HUMANOID } from './combat.js?v=20261014092800';
 
 /** Schalter in Menü-Reihenfolge (Standard aus). */
 export const CHEATS = Object.freeze([

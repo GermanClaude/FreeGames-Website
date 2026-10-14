@@ -9,12 +9,12 @@
 // Ein Soldat = 1 SkinnedMesh je Detailstufe (alles in einer Geometrie + einem Material zusammengeführt)
 // + Waffe (2–4 Draw Calls). Detailstufen: 0 nah, 1 mittel, 2 fern (Schwellen je Qualität).
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261014090943';
-import { Animator } from './soldier/animator.js?v=20261014090943';
-import { Ragdoll } from './soldier/ragdoll.js?v=20261014090943';
-import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261014090943';
-import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261014090943';
-import { raySphere, rayCapsule } from '../combat.js?v=20261014090943';
+import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261014092800';
+import { Animator } from './soldier/animator.js?v=20261014092800';
+import { Ragdoll } from './soldier/ragdoll.js?v=20261014092800';
+import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261014092800';
+import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261014092800';
+import { raySphere, rayCapsule } from '../combat.js?v=20261014092800';
 
 export { VARIANTS, VARIANT_IDS, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes };
 

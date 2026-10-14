@@ -2,8 +2,8 @@
 import {
   len, buf, white, brown, filt, sweep, expGlide, env, ad, ahr, bell, mix, mixAt, drive, normalize,
   sine, modal, metalModes, click, burst, grains, glottal, formant, fadeOut, dcBlock, trim, lerp,
-} from './dsp.js?v=20261014090943';
-import { thud, cloth, metalClick } from './sfx-weapons.js?v=20261014090943';
+} from './dsp.js?v=20261014092800';
+import { thud, cloth, metalClick } from './sfx-weapons.js?v=20261014092800';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric'];
 

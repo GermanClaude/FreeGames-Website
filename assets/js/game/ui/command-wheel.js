@@ -12,8 +12,8 @@
 // VR: noch ohne Rad (die Seite ist in der Brille nicht sichtbar) – das Rad bleibt dort geschlossen.
 
 import * as THREE from 'three';
-import { el, esc, setStyle, setText, toggle, meters, clamp } from './dom.js?v=20261014090943';
-import { ORDER_DEFS, FORMATIONS, FORMATION_LABELS, ORDER_RADIUS } from '../bots/ai/orders.js?v=20261014090943';
+import { el, esc, setStyle, setText, toggle, meters, clamp } from './dom.js?v=20261014092800';
+import { ORDER_DEFS, FORMATIONS, FORMATION_LABELS, ORDER_RADIUS } from '../bots/ai/orders.js?v=20261014092800';
 
 const _eye = new THREE.Vector3();
 const _dir = new THREE.Vector3();
