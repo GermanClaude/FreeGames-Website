@@ -1,2 +1,2 @@
 // NULLPUNKT — Fassungskennung (von tools/publish.sh geschrieben).
-export const BUILD = '20261014082937';
+export const BUILD = '20261014090943';
