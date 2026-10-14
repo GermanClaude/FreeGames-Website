@@ -3,9 +3,9 @@
 // Gravuren (Wahlhebelstellungen, Typ, Nummer, Schienenzahlen) sind kleine Schriftfelder (Abziehbilder) direkt auf der
 // Fläche – so stehen sie auf jeder Seite lesbar.
 import * as THREE from 'three';
-import { canvas, toTexture, cached, heightToNormal, fbm, bilinear } from './textures.js?v=20261013224455';
-import { defineMat } from './materials.js?v=20261013224455';
-import * as R from './m17-ref.js?v=20261013224455';
+import { canvas, toTexture, cached, heightToNormal, fbm, bilinear } from './textures.js?v=20261014082937';
+import { defineMat } from './materials.js?v=20261014082937';
+import * as R from './m17-ref.js?v=20261014082937';
 
 // ---------------------------------------------------------------- Atlas Schaft + Griff
 const F = { W: 2048, H: 1024, x0: 200, x1: 1360, y0: 960, y1: 1760 };
