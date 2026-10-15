@@ -3,7 +3,7 @@
 import {
   len, buf, white, brown, filt, sweep, expGlide, env, ad, ahr, bell, mix, mixAt, drive, normalize,
   sine, modal, metalModes, click, burst, grains, echoes, decorrelate, fadeOut, dcBlock, trim, clamp,
-} from './dsp.js?v=20261015182037';
+} from './dsp.js?v=20261015194444';
 
 /**
  * Charakter je Schussprofil.

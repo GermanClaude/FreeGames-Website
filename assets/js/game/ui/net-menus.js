@@ -5,11 +5,11 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261015182037';
-import { ICON, deviceOf } from './icons.js?v=20261015182037';
-import { LoadoutPanel } from './loadout-panel.js?v=20261015182037';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261015182037';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261015182037';
+import { esc, el } from './dom.js?v=20261015194444';
+import { ICON, deviceOf } from './icons.js?v=20261015194444';
+import { LoadoutPanel } from './loadout-panel.js?v=20261015194444';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261015194444';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261015194444';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
@@ -852,7 +852,7 @@ export class NetMenus {
     const map = d.MAPS[s.map] || {};
     const times = Array.isArray(map.times) ? map.times : [];
     const t = s.time === 'zufall' ? 'Zufall' : s.time === 'echtzeit' ? 'Echtzeit (Uhr des Hosts)' : s.time && s.time !== 'standard' ? (times.find((x) => x.id === s.time) || {}).name || s.time : `${map.timeOfDay || 'Standard'}`;
-    const wd = WEATHERS[map.weatherDefault];
+    const wd = WEATHERS[map.weatherStandard || map.weatherDefault];
     const w = s.weather === 'zufall' ? 'Zufall' : s.weather && s.weather !== 'standard' ? (WEATHERS[s.weather] || {}).name || s.weather : `Standard${wd ? ` (${wd.name})` : ''}`;
     return { mode, map, time: t, weather: w, diff: (d.DIFF[s.difficulty] || {}).name || s.difficulty, style: (GAME_STYLES[s.style] || GAME_STYLES.arcade || {}).label || s.style };
   }

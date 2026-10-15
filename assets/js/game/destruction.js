@@ -5,7 +5,7 @@
 // Durchgang. Steht ein Paneel danach ohne Halt da (darunter und beidseitig nichts mehr), stürzt es nach.
 // Jedes Gerät rechnet aus denselben Ereignissen ('explosion', Treffer) – reine Weltänderung, keine Netzbotschaft.
 import * as THREE from 'three';
-import { worldPartsFrom } from './building.js?v=20261015182037';
+import { worldPartsFrom } from './building.js?v=20261015194444';
 
 const HP = { concrete: 380, plaster: 260, tile: 300, wood: 160, metal: 300 };
 const _n = new THREE.Vector3();

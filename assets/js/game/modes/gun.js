@@ -5,8 +5,8 @@
 // Waffe des eigenen Spielers und meldet gun:promote/gun:demote fürs HUD. Anti-Cheat des Hosts: netWeaponsOf erlaubt die
 // Nachbarstufen, bis der Client die neue Stufe hat.
 
-import { WEAPONS, GUN_GAME_STEPS } from '../../shared/weapons.data.js?v=20261015182037';
-import { BaseMode } from './base.js?v=20261015182037';
+import { WEAPONS, GUN_GAME_STEPS } from '../../shared/weapons.data.js?v=20261015194444';
+import { BaseMode } from './base.js?v=20261015194444';
 
 export class GunMode extends BaseMode {
   constructor(G, modeId, opts) {
