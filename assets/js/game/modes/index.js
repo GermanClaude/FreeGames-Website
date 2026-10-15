@@ -3,18 +3,18 @@
 // cq Eroberung (Tickets, Trupps, Einsatzkarte) · kc Abschuss bestätigt · inf Infiziert · messer Nur Messer.
 // Gemeinsame API siehe base.js; Bot-Schnittstelle (objectives, objectiveFor, streaks) im Changelog.
 
-import { MODES } from '../../shared/modes.data.js?v=20261015201925';
-import { BaseMode } from './base.js?v=20261015201925';
-import { TdmMode } from './tdm.js?v=20261015201925';
-import { FfaMode } from './ffa.js?v=20261015201925';
-import { DomMode } from './dom.js?v=20261015201925';
-import { GunMode } from './gun.js?v=20261015201925';
-import { TrainingMode } from './training.js?v=20261015201925';
-import { ConquestMode } from './conquest.js?v=20261015201925';
-import { KillConfirmedMode } from './killconfirmed.js?v=20261015201925';
-import { InfectedMode } from './infected.js?v=20261015201925';
-import { UltimateMode } from './ultimate.js?v=20261015201925';
-import { KnifeMode } from './knife.js?v=20261015201925';
+import { MODES } from '../../shared/modes.data.js?v=20261015203236';
+import { BaseMode } from './base.js?v=20261015203236';
+import { TdmMode } from './tdm.js?v=20261015203236';
+import { FfaMode } from './ffa.js?v=20261015203236';
+import { DomMode } from './dom.js?v=20261015203236';
+import { GunMode } from './gun.js?v=20261015203236';
+import { TrainingMode } from './training.js?v=20261015203236';
+import { ConquestMode } from './conquest.js?v=20261015203236';
+import { KillConfirmedMode } from './killconfirmed.js?v=20261015203236';
+import { InfectedMode } from './infected.js?v=20261015203236';
+import { UltimateMode } from './ultimate.js?v=20261015203236';
+import { KnifeMode } from './knife.js?v=20261015203236';
 
 export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode, messer: KnifeMode, ult: UltimateMode };
 
@@ -27,6 +27,6 @@ export function createMode(G, modeId, opts = {}) {
 }
 
 export { BaseMode, TdmMode, FfaMode, DomMode, GunMode, TrainingMode, ConquestMode, KillConfirmedMode, InfectedMode, KnifeMode };
-export { SquadSystem } from './squads.js?v=20261015201925';
-export { chooseSpawn } from './spawns.js?v=20261015201925';
-export { StreakManager } from './streaks.js?v=20261015201925';
+export { SquadSystem } from './squads.js?v=20261015203236';
+export { chooseSpawn } from './spawns.js?v=20261015203236';
+export { StreakManager } from './streaks.js?v=20261015203236';

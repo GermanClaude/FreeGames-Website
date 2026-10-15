@@ -2,21 +2,21 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261015201925';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261015203236';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261015201925';
-import { clawd } from '../clawd.js?v=20261015201925';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015201925';
+} from '../props.js?v=20261015203236';
+import { clawd } from '../clawd.js?v=20261015203236';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015203236';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261015201925';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261015203236';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261015201925';
+} from './hafen-ausstattung.js?v=20261015203236';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -725,7 +725,9 @@ function warehouse(b, ctx) {
   const wmat = { mat: 'metal_corrugated', tint: '#c6cac1', h: H8, t, frameMat: 'metal_painted', frameTint: '#2a2e33', minimap: 'wall', plinth: { h: 1.2, mat: 'concrete_dark', tint: '#707270', over: 0.04 } }; // Sockel dunkel wie im Video
   // West (Rampenseite) mit drei Toren
   wall(b, { ...wmat, x0: x0 + t / 2, z0: z1, x1: x0 + t / 2, z1: z0, openings: [
-    { at: 10, w: 4.2, h: 4.6, kind: 'gap', frameMat: 'hazard' }, { at: 20, w: 4.2, h: 4.6, kind: 'gap' }, { at: 30, w: 4.2, h: 4.6, kind: 'gap' }] });
+    { at: 10, w: 4.2, h: 4.6, kind: 'gap', frameMat: 'hazard' }, { at: 20, w: 4.2, h: 4.6, kind: 'gap' }, { at: 30, w: 4.2, h: 4.6, kind: 'gap' },
+    // 15.10.: Oberlichtband zwischen den Toren wie im Video (Hallenwand rechts hinten)
+    ...[5, 15, 25].map((at) => ({ at, w: 3.0, h: 1.1, kind: 'window', sill: 5.6, glass: true }))] });
   // Süd: großes Tor + Tür
   wall(b, { ...wmat, x0: x1, z0: z1 - t / 2, x1: x0, z1: z1 - t / 2, openings: [
     { at: 7.6, w: 5, h: 5, kind: 'gap' }, { at: 20, w: 1.2, h: 2.2, kind: 'door' }] });

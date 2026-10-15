@@ -17,21 +17,21 @@
 // Schüsse (Zählerwechsel) → Schussgeste + manager.puppetFired (nur Darstellung, kein Schaden). Leben/Tod nicht aus der
 // Pose, sondern über respawn()/onDeath() (Ereignisse vom Host).
 import * as THREE from 'three';
-import { CapsuleBody } from '../engine/physics.js?v=20261015201925';
-import { raycastHumanoid } from '../combat.js?v=20261015201925';
-import { Soldier } from './character.js?v=20261015201925';
-import { Memory } from './ai/memory.js?v=20261015201925';
-import { sense } from './ai/perception.js?v=20261015201925';
-import { Navigator } from './ai/navigator.js?v=20261015201925';
-import { Gunner } from './ai/combat.js?v=20261015201925';
-import { think, newGoal, useStreaks } from './ai/brain.js?v=20261015201925';
-import { targetPoints } from './ai/perception.js?v=20261015201925';
-import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261015201925';
-import { BONE } from './soldier/rig.js?v=20261015201925';
-import { importCC } from '../../shared/customcamo.js?v=20261015201925';
-import { applyAttachments } from '../../shared/attachments.data.js?v=20261015201925';
-import { getWeaponModelInfo } from '../weapons/models.js?v=20261015201925';
-import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261015201925';
+import { CapsuleBody } from '../engine/physics.js?v=20261015203236';
+import { raycastHumanoid } from '../combat.js?v=20261015203236';
+import { Soldier } from './character.js?v=20261015203236';
+import { Memory } from './ai/memory.js?v=20261015203236';
+import { sense } from './ai/perception.js?v=20261015203236';
+import { Navigator } from './ai/navigator.js?v=20261015203236';
+import { Gunner } from './ai/combat.js?v=20261015203236';
+import { think, newGoal, useStreaks } from './ai/brain.js?v=20261015203236';
+import { targetPoints } from './ai/perception.js?v=20261015203236';
+import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261015203236';
+import { BONE } from './soldier/rig.js?v=20261015203236';
+import { importCC } from '../../shared/customcamo.js?v=20261015203236';
+import { applyAttachments } from '../../shared/attachments.data.js?v=20261015203236';
+import { getWeaponModelInfo } from '../weapons/models.js?v=20261015203236';
+import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261015203236';
 
 const STAND_H = 1.8, CROUCH_H = 1.15, PRONE_H = 0.75;
 const SPEED = { walk: 3.1, run: 5.4, sprint: 8.2, crouch: 2.6, crawl: 1.05 };
@@ -158,7 +158,7 @@ let serial = 0;
 
 export class Bot {
   /**
-   * @param {import('./manager.js?v=20261015201925').BotManager} manager
+   * @param {import('./manager.js?v=20261015203236').BotManager} manager
    * opts: { team, name, diff (Profil), loadout, variant, scheme, modeId, lane, puppet (Mehrspieler-Puppe) }
    */
   constructor(manager, { team, name, diff, loadout, variant = 0, scheme = null, modeId = 'tdm', lane = 1, puppet = false }) {

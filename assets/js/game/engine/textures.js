@@ -7,8 +7,8 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261015201925';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261015201925';
+import { generateTexture } from '../world/texgen.js?v=20261015203236';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261015203236';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -191,6 +191,7 @@ Object.assign(MATS, {
   plaster_patched:   { tex: 'plaster_warm', tile: 4, surface: 'concrete', params: { color: '#d8d0c0' } },
   metal_corrugated_rust: { tex: 'metal_corrugated', tile: 2, surface: 'metal', params: { metalness: 0.4, color: '#a4704e' } },
   metal_cladding:    { tex: 'metal_corrugated', tile: 2, surface: 'metal', params: { metalness: 0.6, color: '#8fa278' } },
+  metal_navy:        { tex: 'metal_painted', tile: 2, surface: 'metal', params: { metalness: 0.3, color: '#2a3442' } }, // Grafik-Vorlage 15.10.: dunkelblaue Blechfassade (Video, Werkgasse)
   metal_shutter:     { tex: 'metal_corrugated', tile: 2, surface: 'metal', params: { metalness: 0.8 } },
   chainlink:         { tex: 'metal_grate', tile: 1, surface: 'metal', params: { metalness: 1, alphaTest: 0.5, side: 'double' } },
   rubble:            { tex: 'gravel', tile: 2, surface: 'dirt', params: { color: '#e6dfd6' } },
@@ -305,7 +306,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261015201925', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261015203236', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });
