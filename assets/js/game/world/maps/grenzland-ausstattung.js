@@ -4,8 +4,8 @@
 // (b.rand) bleibt unberührt – übrige Platzierung unverändert. Kollision unabhängig von der Grafikstufe; auf low
 // entfallen nur kleine Auslagen ohne Kollision.
 import * as THREE from 'three';
-import { frame, hash01, awning, lowSphereGeom, sphereGeom } from '../props.js?v=20261015200740';
-import { railing } from '../arch.js?v=20261015200740';
+import { frame, hash01, awning, lowSphereGeom, sphereGeom } from '../props.js?v=20261015201925';
+import { railing } from '../arch.js?v=20261015201925';
 
 // ---------------------------------------------------------------------------
 // Bauernmarkt (Gemüsestände)

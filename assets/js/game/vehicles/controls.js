@@ -12,8 +12,8 @@
 //                Touch „Laden“ (v_load) = nächster fälliger Schritt, „PG/SG“ (v_ammo). Pad/VR: reload wirkt beim
 //                Loslassen nach < 0,35 s (X ist zugleich interact).
 // Touch-Knöpfe (vehicles/hud.js, data-action): v_enter, v_exit, v_camera, v_seat, v_gas, v_brake, v_light, v_load, v_ammo.
-import { readDriveControls } from './drive-input.js?v=20261015200740';
-import { viewOf, clampRelLook } from './views.js?v=20261015200740';
+import { readDriveControls } from './drive-input.js?v=20261015201925';
+import { viewOf, clampRelLook } from './views.js?v=20261015201925';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };

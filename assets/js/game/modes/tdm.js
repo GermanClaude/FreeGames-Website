@@ -1,7 +1,7 @@
 // NULLPUNKT — Team-Deathmatch: jeder Abschuss = 1 Teampunkt, Punktelimit / Zeitlimit, bei Gleichstand
 // Verlängerung (nächster Abschuss entscheidet, 60 s), danach Unentschieden. Selbsttötung kostet nichts.
 
-import { BaseMode } from './base.js?v=20261015200740';
+import { BaseMode } from './base.js?v=20261015201925';
 
 export class TdmMode extends BaseMode {
   constructor(G, modeId, opts) {
