@@ -2,10 +2,10 @@
 // einmal), Sichtfeld, Komfort gegen Reiseübelkeit (Kamerabewegung, Waffenschwanken, Fischauge, Rauschen,
 // Bewegung reduzieren) und Bild. Alles Weitere unter „Erweitert“.
 
-import { esc } from '../dom.js?v=20261015164134';
-import { ICON } from '../icons.js?v=20261015164134';
-import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261015164134';
-import { HINTS } from './schema-page.js?v=20261015164134';
+import { esc } from '../dom.js?v=20261015165946';
+import { ICON } from '../icons.js?v=20261015165946';
+import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261015165946';
+import { HINTS } from './schema-page.js?v=20261015165946';
 
 /** Bildstil-Vorlagen: jede setzt diese Werte (alles andere bleibt). */
 export const LOOKS = [
@@ -68,7 +68,7 @@ export function displayPage(P) {
     qualitaet: ['quality'],
     sicht: ['fov'],
     komfort: ['cameraMotion', 'weaponSway', 'lensStrength', 'grain', 'reducedMotion'],
-    bild: ['lensStyle', 'lensArtifacts', 'lensBorder', 'autoExposure', 'weaponPose', 'weaponObstruction'],
+    bild: ['colorLook', 'lensStyle', 'lensArtifacts', 'lensBorder', 'autoExposure', 'weaponPose', 'weaponObstruction'],
   };
 
   function syncLooks() {

@@ -7,7 +7,7 @@
 // Strahlen, Staub, Bildraum-Strahlen) über das Verhältnis der Tabellenwerte, absolute Größen (Wolken, Dunstband,
 // Bodennebel) nur, wenn das Wetter vom Kartenwetter abweicht. Tageszeiten setzen Sonnenstand/-farbe absolut und
 // skalieren die Sonnenstärke mit der Luftmasse (f(Höhe)); das HDRI (Umgebungslicht/Himmelsfoto) folgt der Zeit.
-import { MOODS, MOOD_FOR_MAP } from '../engine/post/grade.js?v=20261015164134';
+import { MOODS, MOOD_FOR_MAP } from '../engine/post/grade.js?v=20261015165946';
 
 /**
  * Wetter-Tabelle. sun/fill/fog/beams/dust/shafts: Faktoren relativ zu „klar“; ref: Faktor auf die Belichtungs-
@@ -209,9 +209,10 @@ export function applyConditions(def, cond, mapId) {
   if (tTemp != null || Object.keys(wl).length) {
     g.lut = { ...(def.grade?.lut || {}) };
     if (tTemp != null || wl.temperature) g.lut.temperature = (tTemp ?? baseLut.temperature ?? 0) + (wl.temperature || 0);
-    if (wl.contrast) g.lut.contrast = Math.max(1, (baseLut.contrast ?? 1.08) + wl.contrast);
-    if (wl.saturation) g.lut.saturation = (baseLut.saturation ?? 1) * wl.saturation;
-    if (wl.blackLevel) g.lut.blackLevel = (baseLut.blackLevel ?? 0.012) + wl.blackLevel;
+    // relativ (grade.js resolveMood rechnet sie auf die gewählte Farbstimmung um)
+    if (wl.contrast) g.lut.contrastAdd = wl.contrast;
+    if (wl.saturation) g.lut.satMul = wl.saturation;
+    if (wl.blackLevel) g.lut.blackAdd = wl.blackLevel;
   }
   const ex = { ...(def.grade?.exposure || {}) };
   const refK = r('ref') * (T ? Math.max(0.6, Math.min(2, airmass(T.elevation) / airmass(L0.sun.elevation))) : 1);

@@ -18,12 +18,12 @@ import * as THREE from 'three';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261015164134';
-import { LensModel, LensPass } from './lens.js?v=20261015164134';
-import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261015164134';
-import { AutoExposure } from './exposure.js?v=20261015164134';
-import { Bloom, lensDirtTexture } from './bloom.js?v=20261015164134';
-import { LightShafts } from './shafts.js?v=20261015164134';
+import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261015165946';
+import { LensModel, LensPass } from './lens.js?v=20261015165946';
+import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261015165946';
+import { AutoExposure } from './exposure.js?v=20261015165946';
+import { Bloom, lensDirtTexture } from './bloom.js?v=20261015165946';
+import { LightShafts } from './shafts.js?v=20261015165946';
 
 export const LENS_STYLES = Object.freeze(['bodycam', 'klassisch', 'aus']);
 
@@ -83,6 +83,7 @@ export class PostPipeline {
     /** Sonne für Lichtstrahlen: Richtung zur Sonne (Welt) – setSun(). */
     this.sunDir = null;
     this.moodSpec = 'neutral';
+    this.look = 'natuerlich'; // Farbstimmung (Einstellung colorLook), setLook()
     this.mood = resolveMood('neutral');
     this.lut = null;
     this.out = { w: 1, h: 1 };
@@ -180,9 +181,18 @@ export class PostPipeline {
   /** Stimmung (Karten-ID oder Objekt) setzen: LUT, Belichtungsgrenzen, Bloom. */
   setMood(spec) {
     this.moodSpec = spec == null ? 'neutral' : spec;
-    this.mood = resolveMood(this.moodSpec);
+    this.mood = resolveMood(this.moodSpec, this.look);
     this.lut = this.mood.lutTexture || buildLut(this.mood.lut);
     if (this.exposure) { this.exposure.setParams(this.mood.exposure); this.exposure.reset(); }
+  }
+
+  /** Farbstimmung (Einstellung colorLook: 'natuerlich' | 'video'): Stimmung neu auflösen, Belichtung bleibt. */
+  setLook(look) {
+    const l = look === 'video' ? 'video' : 'natuerlich';
+    if (l === this.look) return;
+    this.look = l;
+    this.mood = resolveMood(this.moodSpec, l);
+    this.lut = this.mood.lutTexture || buildLut(this.mood.lut);
   }
 
   /** Sonne für Lichtstrahlen: { sunDirection } (world.lighting) oder Vector3 (Richtung zur Sonne); null = keine. */

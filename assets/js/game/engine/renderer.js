@@ -14,11 +14,11 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261015164134';
-import { estimateMemory } from './post/memory.js?v=20261015164134';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261015164134';
-import { resetFormatCache } from './post/common.js?v=20261015164134';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261015164134'; // Erweitert-Grafik (S9, ui-controls)
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261015165946';
+import { estimateMemory } from './post/memory.js?v=20261015165946';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261015165946';
+import { resetFormatCache } from './post/common.js?v=20261015165946';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261015165946'; // Erweitert-Grafik (S9, ui-controls)
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 
@@ -160,6 +160,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
   const effPost = { ...postState };
   const impulse = { supp: 0, flash: 0 };
   const pipeline = new PostPipeline(renderer);
+  if (settings && typeof settings.get === 'function') pipeline.setLook(settings.get('colorLook')); // Farbstimmung
 
   // CSS-Größe der Leinwand per ResizeObserver zwischenspeichern: resize() läuft jedes Bild und würde mit
   // clientWidth/clientHeight sonst nach den DOM-Schreibzugriffen des HUD eine synchrone Layoutberechnung erzwingen.
@@ -483,7 +484,8 @@ export function createRenderer(canvas, { quality = 'auto', settings = null } = {
   // Einstellungen folgen (nur Objektiv-Schlüssel)
   const offSettings = settings && typeof settings.onChange === 'function'
     ? settings.onChange((key) => {
-      if (key in SETTING_KEYS) R.setLens(lensConfigFrom(settings, reduceMQ && reduceMQ.matches));
+      if (key === 'colorLook') pipeline.setLook(settings.get('colorLook'));
+      else if (key in SETTING_KEYS) R.setLens(lensConfigFrom(settings, reduceMQ && reduceMQ.matches));
       else if (GFX_KEYS.includes(key)) R.setQuality(R.requested); // Erweitert-Grafik: gleiche Stufe, neue Vorgabe
     })
     : null;

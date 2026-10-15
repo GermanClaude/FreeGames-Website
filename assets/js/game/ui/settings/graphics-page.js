@@ -5,12 +5,12 @@
 // In der Lobby ist noch keine Karte geladen: Karteninhalt dann aus der letzten Messung dieser Stufe bzw. dem Modell
 // des Plans (§4.2), Bildpuffer immer gemessen.
 
-import { esc, num } from '../dom.js?v=20261015164134';
-import { ICON } from '../icons.js?v=20261015164134';
-import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261015164134';
-import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261015164134';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261015164134';
-import { HINTS } from './schema-page.js?v=20261015164134';
+import { esc, num } from '../dom.js?v=20261015165946';
+import { ICON } from '../icons.js?v=20261015165946';
+import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261015165946';
+import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261015165946';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261015165946';
+import { HINTS } from './schema-page.js?v=20261015165946';
 
 const MB = 1024 * 1024;
 const MEM_KEY = 'nullpunkt:gfxmem';
@@ -20,7 +20,7 @@ const SECTIONS = [
   ['Auflösung', ['renderScale', 'gfxPixelRatio', 'upscaler', 'sharpness']],
   ['Bildrate', ['fpsLimit', 'showFps']],
   ['Licht und Schatten', ['gfxShadows', 'gfxAO', 'autoExposure']],
-  ['Nachbearbeitung', ['gfxPost', 'gfxAA', 'gfxBloom', 'lensStyle', 'lensStrength', 'grain', 'lensArtifacts', 'lensBorder']],
+  ['Nachbearbeitung', ['gfxPost', 'gfxAA', 'gfxBloom', 'colorLook', 'lensStyle', 'lensStrength', 'grain', 'lensArtifacts', 'lensBorder']],
   ['Effekte', ['gfxEffects']],
 ];
 const LOCAL_HINTS = {
@@ -33,6 +33,7 @@ const LOCAL_HINTS = {
   gfxPost: 'Einfach: alles in einem Durchgang (Handys). Voll: Leuchten, Kantenglättung, Lichtstrahlen.',
   gfxAA: 'FXAA ist billig, SMAA schärfer und ruhiger.',
   gfxBloom: 'Leuchten heller Lichter, mit Linsenschmutz im Bodycam-Stil.',
+  colorLook: 'Natürlich: kräftigere Farben. Video-Look: grau-grün und entsättigt wie die Video-Vorlage. Ab Stufe „Mittel“.',
   gfxEffects: 'Partikelmenge, Rauch, Funken, Hülsen und Zahl der Einschusslöcher.',
 };
 const SEGS = [

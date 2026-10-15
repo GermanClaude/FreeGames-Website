@@ -1,9 +1,9 @@
 // Statuszeile, Index (Scroll-Spy aus Schrift), Index-Dialog, untere Leiste, Spielen-Umschaltung,
 // Visierlinie und Überschriften (Eintritt + Stauchung bei schnellem Scrollen).
-import { loop } from './loop.js?v=20261015164134';
-import { reduced, calm } from './motion.js?v=20261015164134';
-import { split, Kinetic } from './kinetic.js?v=20261015164134';
-import { jumpTo } from './jump.js?v=20261015164134';
+import { loop } from './loop.js?v=20261015165946';
+import { reduced, calm } from './motion.js?v=20261015165946';
+import { split, Kinetic } from './kinetic.js?v=20261015165946';
+import { jumpTo } from './jump.js?v=20261015165946';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
