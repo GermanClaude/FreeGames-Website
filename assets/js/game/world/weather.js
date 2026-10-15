@@ -7,7 +7,7 @@
 // Strahlen, Staub, Bildraum-Strahlen) über das Verhältnis der Tabellenwerte, absolute Größen (Wolken, Dunstband,
 // Bodennebel) nur, wenn das Wetter vom Kartenwetter abweicht. Tageszeiten setzen Sonnenstand/-farbe absolut und
 // skalieren die Sonnenstärke mit der Luftmasse (f(Höhe)); das HDRI (Umgebungslicht/Himmelsfoto) folgt der Zeit.
-import { MOODS, MOOD_FOR_MAP } from '../engine/post/grade.js?v=20261015194444';
+import { MOODS, MOOD_FOR_MAP } from '../engine/post/grade.js?v=20261015200740';
 
 /**
  * Wetter-Tabelle. sun/fill/fog/beams/dust/shafts: Faktoren relativ zu „klar“; ref: Faktor auf die Belichtungs-
@@ -42,7 +42,7 @@ export const WEATHER_FX = Object.freeze({
     hemiTint: { toward: '#c5cbd2', amount: 0.6 },
     hdri: 'abandoned_slipway', hdriSky: false, envTint: '#c9cdd3',
     shadowRadius: 7,
-    lut: { contrast: -0.03, saturation: 0.9, temperature: -0.06 }, // 15.10.: Video (Hafen bewölkt) kräftiger, tiefere Schwarztöne
+    lut: { contrast: -0.03, saturation: 0.9, temperature: -0.02 }, // 15.10.: Video (Hafen bewölkt) kräftiger, tiefere Schwarztöne
   },
 });
 

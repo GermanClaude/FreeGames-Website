@@ -2,9 +2,9 @@
 // eigene Orbit-Steuerung mit Trägheit, Mündungsblitz, Anschlag (FOV), Auflösen (Klarfarbe Papier → Dunkelgrau).
 // Ausschnitt: in Ruhe auf die Glyphenfläche der Maske gesetzt, beim Ziehen ganz im Bild (jede Drehung).
 import * as THREE from 'three';
-import { createWeaponModel } from '../game/weapons/models.js?v=20261015194444';
-import { loop } from './loop.js?v=20261015194444';
-import { reduced } from './motion.js?v=20261015194444';
+import { createWeaponModel } from '../game/weapons/models.js?v=20261015200740';
+import { loop } from './loop.js?v=20261015200740';
+import { reduced } from './motion.js?v=20261015200740';
 
 const INK = new THREE.Color('#E9E6DF');
 // Aufgelöst (Ziehen): dunkles Grau statt Seitenschwarz, damit schwarzes Polymer sich abhebt (--np-black-3)

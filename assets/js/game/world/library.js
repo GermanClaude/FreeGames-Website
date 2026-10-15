@@ -12,8 +12,8 @@
 //   handle.stats                         → { download, gpu, sets, models, hdri, ms, failed, tier }
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261015194444';
-import { textureAnisotropy } from '../engine/textures.js?v=20261015194444';
+import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261015200740';
+import { textureAnisotropy } from '../engine/textures.js?v=20261015200740';
 
 // ---------------------------------------------------------------------------
 // Zuordnung Spielmaterial → Bibliothekssatz
@@ -57,7 +57,7 @@ export const LIB_MATERIALS = {
   metal_painted: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },
   car_paint: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },
   metal_rust: { id: 'metal_rust_painted', color: 0.75 },
-  metal_corrugated: { id: 'vh_wand', color: 1.55 }, // Grafik-Vorlage 15.10.: Hallen-Wellblech 1:1 aus dem Video (vorher v_cladding)
+  metal_corrugated: { id: 'vh_wand', color: 1.55, normalScale: 0.55 }, // 15.10.: Rippenkontrast wie im Video (gemessen: Std. 6,5 statt 19) // Grafik-Vorlage 15.10.: Hallen-Wellblech 1:1 aus dem Video (vorher v_cladding)
   metal_corrugated_rust: { id: 'metal_corrugated_rusty', color: 1.6 },
   metal_cladding: { id: 'metal_cladding_green', color: 1.0 },
   metal_shutter: { id: 'metal_shutter', color: 1.0 },
