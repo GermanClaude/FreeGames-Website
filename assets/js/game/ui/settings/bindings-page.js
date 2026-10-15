@@ -4,15 +4,15 @@
 // Einstieg in den Layout-Editor. VR-Controller (engine/xr): Auswahlliste statt Tastenerfassung (die Controller
 // liefern Tasten nur in der VR-Sitzung); der Reiter erscheint mit VR-fähigem Browser oder eingeschaltetem VR-Modus.
 
-import { esc } from '../dom.js?v=20261014092800';
-import { ICON } from '../icons.js?v=20261014092800';
+import { esc } from '../dom.js?v=20261015164134';
+import { ICON } from '../icons.js?v=20261015164134';
 import {
   ACTION_DEFS, ACTION_GROUPS, DEFAULT_BINDINGS, MAX_SLOTS, TOUCH_PRESETS, TOUCH_BUTTONS,
   resolveBindings, setBinding, resetBindings, conflictsOf, codeWarning, resolveTouchLayout, sanitizeTouchLayout,
   isFixed, XR_CODES,
-} from '../../../shared/bindings.data.js?v=20261014092800';
-import { keyHtml, keyText, padStyle, touchAspect, editTouch, seedAspect } from './keys.js?v=20261014092800';
-import { rowHtml, bindRows, syncRows } from './rows.js?v=20261014092800';
+} from '../../../shared/bindings.data.js?v=20261015164134';
+import { keyHtml, keyText, padStyle, touchAspect, editTouch, seedAspect } from './keys.js?v=20261015164134';
+import { rowHtml, bindRows, syncRows } from './rows.js?v=20261015164134';
 
 const DEVICES = [['kb', 'Tastatur & Maus', ICON.keyboard], ['pad', 'Controller', ICON.pad], ['xr', 'VR-Controller', ICON.pad], ['touch', 'Touch', ICON.touch]];
 const DEV_NAME = { kb: 'Tastatur', pad: 'Controller', xr: 'VR-Controller' };

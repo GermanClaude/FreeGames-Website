@@ -5,7 +5,7 @@
 // Lokal: drei Plätze 'eigen1' … 'eigen3' (localStorage 'nullpunkt:eigene-tarnungen'), registriert in CAMOS.
 // Online: aus 'eigenN' wird eine Inhalts-Id 'cx…' (Prüfsumme des Entwurfs), dazu loadout.cc { [id]: Entwurf }; Empfänger
 // registrieren sie als fremde Muster (remote: in keiner Auswahlliste, nur zum Anzeigen/Aufheben).
-import { CAMOS } from './weapons.data.js?v=20261014092800';
+import { CAMOS } from './weapons.data.js?v=20261015164134';
 
 export const CUSTOM_KEY = 'nullpunkt:eigene-tarnungen';
 export const CUSTOM_SLOTS = ['eigen1', 'eigen2', 'eigen3'];

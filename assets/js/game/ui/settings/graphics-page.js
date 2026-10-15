@@ -5,12 +5,12 @@
 // In der Lobby ist noch keine Karte geladen: Karteninhalt dann aus der letzten Messung dieser Stufe bzw. dem Modell
 // des Plans (§4.2), Bildpuffer immer gemessen.
 
-import { esc, num } from '../dom.js?v=20261014092800';
-import { ICON } from '../icons.js?v=20261014092800';
-import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261014092800';
-import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261014092800';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261014092800';
-import { HINTS } from './schema-page.js?v=20261014092800';
+import { esc, num } from '../dom.js?v=20261015164134';
+import { ICON } from '../icons.js?v=20261015164134';
+import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261015164134';
+import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261015164134';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261015164134';
+import { HINTS } from './schema-page.js?v=20261015164134';
 
 const MB = 1024 * 1024;
 const MEM_KEY = 'nullpunkt:gfxmem';
@@ -29,7 +29,7 @@ const LOCAL_HINTS = {
   gfxPixelRatio: 'Obergrenze für hochauflösende Bildschirme (Retina). Mehr = schärfer, kostet viel Leistung.',
   fpsLimit: 'Spart Akku und hält Telefone kühler. 30 ist auf Handys ruhiger als schwankende 40–60.',
   gfxShadows: 'Auflösung und Reichweite der Sonnenschatten, Schatten der Figuren.',
-  gfxAO: 'Verdeckung in Ecken und Fugen. Rendert die Szene ein zweites Mal – teuer.',
+  gfxAO: 'Verdeckung in Ecken und Fugen. Rendert die Szene ein zweites Mal (auf „Hoch“ in halber Auflösung) – kostet Leistung.',
   gfxPost: 'Einfach: alles in einem Durchgang (Handys). Voll: Leuchten, Kantenglättung, Lichtstrahlen.',
   gfxAA: 'FXAA ist billig, SMAA schärfer und ruhiger.',
   gfxBloom: 'Leuchten heller Lichter, mit Linsenschmutz im Bodycam-Stil.',
