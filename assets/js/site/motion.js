@@ -1,5 +1,5 @@
 // Bewegungsregeln: reduzierte Bewegung (System ODER Einstellung ODER Wächter), Federn, FLIP, Sichtbarkeit.
-import { loop } from './loop.js?v=20261015165946';
+import { loop } from './loop.js?v=20261015171651';
 
 const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
 let settingRM = false;

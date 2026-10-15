@@ -1,4 +1,4 @@
-import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261015165946';
+import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261015171651';
 // NULLPUNKT — kleine DOM-/Format-Helfer für HUD und Menüs (deutsche Zahlen, Zeiten, Escaping).
 
 export function esc(s) {

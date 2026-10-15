@@ -2,21 +2,21 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261015165946';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261015171651';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261015165946';
-import { clawd } from '../clawd.js?v=20261015165946';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015165946';
+} from '../props.js?v=20261015171651';
+import { clawd } from '../clawd.js?v=20261015171651';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015171651';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261015165946';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car } from './hafen-fahrzeuge.js?v=20261015171651';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261015165946';
+} from './hafen-ausstattung.js?v=20261015171651';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -42,8 +42,10 @@ export default {
     // Foto war zu tiefblau); Füllicht kräftiger als zur Abendzeit, damit Schatten grau statt schwarz bleiben (Video)
     sky: { turbidity: 5, rayleigh: 1.4, mieCoefficient: 0.006, mieDirectionalG: 0.8, exposure: 0.5, clouds: { coverage: 0.55, density: 0.45, scale: 0.0002, elevation: 0.55 }, hazeHigh: 0.2, hazeAmount: 1, hdri: false },
     // Umgebung ohne Mie-Hotspot (lighting.js begrenzt die Env-Map) → Füllicht etwas angehoben
-    hemi: { sky: '#c9d3de', ground: '#6b6863', intensity: 0.95, hdriIntensity: 0.5 },
-    env: { intensity: 1.2, ground: '#6e6b66', groundIntensity: 0.55, tint: '#eef2f7', hdriIntensity: 0.7 },
+    // Füllicht nach Messung am Video (15.10.): Schatten dort ≈ 1/5 der Sonnenseite und fast neutral grau (bei uns
+    // vorher 1/16 und blaustichig) → Himmels-/Umgebungslicht ≈ ×2,5, weniger blau
+    hemi: { sky: '#cfd4d8', ground: '#7a756d', intensity: 1.6, hdriIntensity: 1.3 },
+    env: { intensity: 1.8, ground: '#77736c', groundIntensity: 0.6, tint: '#f2f1ee', hdriIntensity: 1.5, hdriTint: '#ece4d8' }, // Himmelsblau aus dem Foto dämpfen
     // Höhennebel: kühler grauer Hafendunst über dem Wasser, dichter am Boden (Skalenhöhe ≈ 30 m)
     fog: { color: '#c4cad1', near: 70, far: 420, density: 0.0042, falloff: 0.033, start: 25, sun: 0.35, sunExp: 6 },
     shadow: { size: 42, radius: 2.8 }, // Etappe 0: etwas weichere Schattenkanten (Video)

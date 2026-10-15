@@ -3,18 +3,18 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261015165946';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261015171651';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261015165946';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261015165946';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015165946';
+} from '../props.js?v=20261015171651';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261015171651';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015171651';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261015165946';
+} from './werk-ausstattung.js?v=20261015171651';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
@@ -40,8 +40,9 @@ export default {
     sun: { elevation: 38, azimuth: 252, color: '#fff1e0', intensity: 3.5 },
     // Himmel prozedural (das Foto zeigt am Horizont nahe Mauern/Bäume, die über dem Werk riesig wirkten)
     sky: { turbidity: 4, rayleigh: 1.6, mieCoefficient: 0.006, mieDirectionalG: 0.8, exposure: 0.5, clouds: { coverage: 0.5, density: 0.45, scale: 0.00018, elevation: 0.5, speed: 0.00002 }, hazeHigh: 0.14, hazeAmount: 0.85, hdri: false },
-    hemi: { sky: '#ced1d5', ground: '#6f6b65', intensity: 0.95, hdriIntensity: 0.55 },
-    env: { intensity: 1.2, ground: '#67635d', groundIntensity: 0.55, tint: '#f2f2f2', hdriIntensity: 0.75 },
+    // Füllicht nach Messung am Video (Ziegelgasse im Schatten dort 3,4× heller) → ≈ ×2,5, neutral
+    hemi: { sky: '#d0d3d6', ground: '#77726a', intensity: 1.6, hdriIntensity: 1.35 },
+    env: { intensity: 1.8, ground: '#6f6b64', groundIntensity: 0.6, tint: '#f2f1ee', hdriIntensity: 1.6, hdriTint: '#ece4d8' },
     fog: { color: '#adb4bc', near: 60, far: 340, density: 0.0048, falloff: 0.045, start: 18, sun: 0.35, sunExp: 6 },
     shadow: { size: 40, bias: -0.0005, radius: 2.8 },
     // Halle: Sonne durch die Westfenster, viel Staub, kräftiger Rückprall (Video: Ziegelwände deutlich sichtbar);

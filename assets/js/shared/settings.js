@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261015165946';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261015171651';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 

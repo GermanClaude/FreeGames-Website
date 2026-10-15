@@ -3,16 +3,16 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261015165946';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261015171651';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, acUnit, cable,
   cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js?v=20261015165946';
-import { createBell } from './altstadt-glocke.js?v=20261015165946';
+} from '../props.js?v=20261015171651';
+import { createBell } from './altstadt-glocke.js?v=20261015171651';
 import {
   setupLook, isNight, lampGlass, lampLight, parkBench, flowerBed, fountainWater, hrng,
   table, tableChairs, bed, wardrobe, dresser, nightstand, shelf, kitchen, armchair, pendant, ceilingLamp, rug, picture, barrelRack, sacks,
-} from './altstadt-ausstattung.js?v=20261015165946';
+} from './altstadt-ausstattung.js?v=20261015171651';
 
 const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe
@@ -44,8 +44,8 @@ export default {
     // HDRI old_outdoor_theater: Umgebungslicht + Foto-Wolken ab ≈ 25° Höhe (darunter Bäume/Mauer des Fotos, die über
     // der Stadt riesig wirkten) – unten bleibt der Preetham-Himmel mit Dunst
     sky: { turbidity: 2.6, rayleigh: 1.05, mieCoefficient: 0.0035, mieDirectionalG: 0.8, exposure: 0.6, clouds: { coverage: 0.1, density: 0.28, scale: 0.00024, elevation: 0.62 }, hazeHigh: 0.11, hazeAmount: 0.75, hdriBlend: [0.42, 0.75] },
-    hemi: { sky: '#d3dde8', ground: '#b8ab98', intensity: 0.6, hdriIntensity: 0.45 },
-    env: { intensity: 0.58, ground: '#bdb09c', groundIntensity: 0.9, tint: '#f6f4f0' },
+    hemi: { sky: '#d5dbe2', ground: '#b8ab98', intensity: 1.0, hdriIntensity: 0.85 }, // Füllicht wie Video (×1,8)
+    env: { intensity: 1.0, ground: '#bdb09c', groundIntensity: 0.9, tint: '#f6f4f0' },
     fog: { color: '#d9e4ec', near: 90, far: 520, density: 0.0026, falloff: 0.03, start: 35, sun: 0.25, sunExp: 6 },
     shadow: { size: 40, radius: 2.8 },
     exposure: 0.94,
