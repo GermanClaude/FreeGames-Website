@@ -4,9 +4,9 @@
 // Tastatur (Pfeile, Eingabe, L) und Gamepad (Steuerkreuz, A, Y, LB/RB, B zurück, Start = Einsatz).
 // Wird von der HUD erzeugt und je Bild aktualisiert: new DeployScreen(G); attach(G); update(dt); detach().
 
-import { el, esc, secs } from './dom.js?v=20261015173014';
-import { ICON } from './icons.js?v=20261015173014';
-import { LoadoutPanel } from './loadout-panel.js?v=20261015173014';
+import { el, esc, secs } from './dom.js?v=20261015182037';
+import { ICON } from './icons.js?v=20261015182037';
+import { LoadoutPanel } from './loadout-panel.js?v=20261015182037';
 
 const OPEN_DELAY = 1.1; // s Todeskamera, bevor die Einsatzkarte erscheint (Eroberung)
 const AUTO_GRACE = 2.5; // s nach Ablauf ohne Eingabe → automatisch einsetzen

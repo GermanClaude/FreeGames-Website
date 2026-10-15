@@ -76,8 +76,8 @@ export function loadData() {
   if (promise) return promise;
   promise = (async () => {
     const [W, M, P, S, PR] = await Promise.all([
-      imp('../shared/weapons.data.js?v=20261015173014'), imp('../shared/modes.data.js?v=20261015173014'), imp('../shared/maps.data.js?v=20261015173014'),
-      imp('../shared/settings.js?v=20261015173014'), imp('../shared/profile.js?v=20261015173014'),
+      imp('../shared/weapons.data.js?v=20261015182037'), imp('../shared/modes.data.js?v=20261015182037'), imp('../shared/maps.data.js?v=20261015182037'),
+      imp('../shared/settings.js?v=20261015182037'), imp('../shared/profile.js?v=20261015182037'),
     ]);
     const ok = { weapons: false, modes: false, maps: false, settings: false, profile: false };
 

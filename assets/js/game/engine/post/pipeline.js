@@ -18,12 +18,12 @@ import * as THREE from 'three';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261015173014';
-import { LensModel, LensPass } from './lens.js?v=20261015173014';
-import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261015173014';
-import { AutoExposure } from './exposure.js?v=20261015173014';
-import { Bloom, lensDirtTexture } from './bloom.js?v=20261015173014';
-import { LightShafts } from './shafts.js?v=20261015173014';
+import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261015182037';
+import { LensModel, LensPass } from './lens.js?v=20261015182037';
+import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261015182037';
+import { AutoExposure } from './exposure.js?v=20261015182037';
+import { Bloom, lensDirtTexture } from './bloom.js?v=20261015182037';
+import { LightShafts } from './shafts.js?v=20261015182037';
 
 export const LENS_STYLES = Object.freeze(['bodycam', 'klassisch', 'aus']);
 
@@ -149,14 +149,16 @@ export class PostPipeline {
         this.gtao.blendIntensity = 0.85;
         this.gtao.updateGtaoMaterial({ radius: 0.5, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: this.aoScale < 1 ? 8 : 12 });
         // Normal-/Tiefen-Vorpass nur für deckende Geometrie: durchsichtige Effekte ohne Tiefenschreiben
-        // (Sonnenstrahlen-Quader, Rauch, Decals, Mündungsfeuer, Sprites) sonst als riesige Verdecker → dunkle Keile
+        // (Sonnenstrahlen-Quader, Rauch, Decals, Mündungsfeuer, Sprites) sonst als riesige Verdecker → dunkle Keile.
+        // Alpha-getestete Karten (Laub, Gras, Schilder) ebenso: der Normalen-Durchlauf (MeshNormalMaterial) kennt keinen
+        // Alpha-Test → ganze Blattkarten als Rechtecke, graue AO-Höfe am Himmel um die Baumkronen (15.10.)
         const gtao = this.gtao;
         gtao._overrideVisibility = function overrideVisibility() {
           const cache = this._visibilityCache;
           this.scene.traverse((o) => {
             if (!o.visible) return;
             const m = o.material;
-            const see = !Array.isArray(m) && m && m.transparent && !m.depthWrite;
+            const see = !Array.isArray(m) && m && ((m.transparent && !m.depthWrite) || (m.alphaTest > 0 && (m.map || m.alphaMap)));
             if (o.isPoints || o.isLine || o.isLine2 || o.isSprite || see || (o.userData && o.userData.noAO)) { o.visible = false; cache.push(o); }
           });
         };
