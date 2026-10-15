@@ -5,9 +5,9 @@
 // Spawn-API für ui/deploy.js: deployPoints(actor), setDeploy(choice), squadOrder(objectiveId).
 
 import * as THREE from 'three';
-import { ticketsFor } from '../../shared/modes.data.js?v=20261015171651';
-import { DomMode } from './dom.js?v=20261015171651';
-import { SquadSystem } from './squads.js?v=20261015171651';
+import { ticketsFor } from '../../shared/modes.data.js?v=20261015173014';
+import { DomMode } from './dom.js?v=20261015173014';
+import { SquadSystem } from './squads.js?v=20261015173014';
 
 const SQUAD_SAFE_R = 25; // m: kein bekannter Gegner so nah am Truppkameraden
 const SQUAD_SAFE_T = 5; // s ohne Schaden

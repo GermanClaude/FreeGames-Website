@@ -3,22 +3,24 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261015171651';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261015173014';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261015171651';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261015171651';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015171651';
+} from '../props.js?v=20261015173014';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261015173014';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015173014';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261015171651';
+} from './werk-ausstattung.js?v=20261015173014';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
-const BRICK = '#a8705c', BRICK_D = '#8a5a4a', STEEL = '#4b5560', YEL = '#d9a72a', RAIL = '#d9a72a';
+// Grafik-Vorlage (15.10.): Ziegelfarbe kommt aus der Textur (v_brick, am Video gemessen) → Tönung fast neutral; Geländer
+// gelb wie im Video (vorher goldorange #d9a72a)
+const BRICK = '#c8b4a6', BRICK_D = '#a8968a', STEEL = '#4b5560', YEL = '#d9a72a', RAIL = '#cdb43c';
 
 export default {
   id: 'werk',
@@ -671,7 +673,7 @@ function boilerHouse(b) {
   const x0 = 30, x1 = 44, z0 = -12, z1 = 12, fh = 5.0;
   const hole = { floor: 1, x0: 32.4, z0: -9.6, x1: 41.6, z1: 9.6 };
   const B = building(b, {
-    x: (x0 + x1) / 2, z: 0, w: x1 - x0, d: z1 - z0, floors: 2, fh, mat: 'brick', tint: '#9a6250', t: 0.4,
+    x: (x0 + x1) / 2, z: 0, w: x1 - x0, d: z1 - z0, floors: 2, fh, mat: 'brick', tint: '#d2c2b4', t: 0.4,
     floorMat: 'concrete', slabMat: 'concrete', upperFloorMat: 'metal_tread', floorTint: '#8a8680', frameMat: 'metal_painted', frameTint: '#2f3438',
     plinth: { h: 0.8, mat: 'concrete', tint: '#8a8680' }, band: { mat: 'concrete', tint: '#8a8680' }, interiorFactor: 0.5,
     holes: [hole],

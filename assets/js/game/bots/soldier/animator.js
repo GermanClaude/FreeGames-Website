@@ -16,9 +16,9 @@
 //  • Ergebnis: lokale Knochen-Quaternionen + Modellraum-Gelenke (für Trefferzonen/Ragdoll) +
 //    Waffentransformation.
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, DIM } from './rig.js?v=20261015171651';
-import { quatFromYZ, quatFromXY, twoBone, clamp, lerp, smooth, damp, wrap, ramp, spring, qrot } from './ik.js?v=20261015171651';
-import { Handling } from './actions.js?v=20261015171651';
+import { BONES, BONE, BONE_COUNT, DIM } from './rig.js?v=20261015173014';
+import { quatFromYZ, quatFromXY, twoBone, clamp, lerp, smooth, damp, wrap, ramp, spring, qrot } from './ik.js?v=20261015173014';
+import { Handling } from './actions.js?v=20261015173014';
 
 const V = () => new THREE.Vector3();
 const Qn = () => new THREE.Quaternion();

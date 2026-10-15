@@ -7,7 +7,7 @@
 // wählen bzw. überschreiben; main setzt standardmäßig die Karten-ID.
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261015171651';
+import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261015173014';
 
 /* ------------------------------------------------------------ Stimmungen */
 
