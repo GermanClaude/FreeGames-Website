@@ -3,9 +3,9 @@
 // die Maus einen virtuellen Cursor (Linksklick setzt/bestätigt, Rechtsklick bricht ab), Gamepad: linker Stick,
 // A bestätigt, B bricht ab. Tastatur: Enter bestätigt, Rücktaste/Q bricht ab.
 
-import { el } from './dom.js?v=20261015204937';
-import { ICON } from './icons.js?v=20261015204937';
-import { drawGlyph } from './glyphs.js?v=20261015204937';
+import { el } from './dom.js?v=20261015221754';
+import { ICON } from './icons.js?v=20261015221754';
+import { drawGlyph } from './glyphs.js?v=20261015221754';
 
 const COL = { ally: '#38b6ff', enemy: '#ff3b3b', me: '#ffffff', signal: '#ff5b1f', neutral: '#e9e6df' };
 

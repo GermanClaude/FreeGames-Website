@@ -3,13 +3,13 @@
 // verfolgt und kalibriert, Bauteile als Distanzfelder (Profil × eigene Breite, weich vereinigt, Fenster/Nuten/Schächte
 // abgezogen), Schaft und Griff mit eigenem Atlas, Gravuren als Schriftfelder. Der gemeinsame AR-Unterbau (arLower in
 // guns-ar.js) bleibt für SK-14 und Ursprung unverändert.
-import * as R from './m17-ref.js?v=20261015204937';
-import { furnUV3, markMat, markAspect, SLOTS } from './m17-tex.js?v=20261015204937';
-import { atlasUV } from './p9-tex.js?v=20261015204937';
-import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, grid2D, simplifyPoly, contours2D, cavityColors } from './sdf.js?v=20261015204937';
-import { roundRect, shapeFrom, ellipsePts } from './builder.js?v=20261015204937';
-import { holoSight, birdcage } from './parts.js?v=20261015204937';
-import { magRounds } from './magfill.js?v=20261015204937';
+import * as R from './m17-ref.js?v=20261015221754';
+import { furnUV3, markMat, markAspect, SLOTS } from './m17-tex.js?v=20261015221754';
+import { atlasUV } from './p9-tex.js?v=20261015221754';
+import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, grid2D, simplifyPoly, contours2D, cavityColors } from './sdf.js?v=20261015221754';
+import { roundRect, shapeFrom, ellipsePts } from './builder.js?v=20261015221754';
+import { holoSight, birdcage } from './parts.js?v=20261015221754';
+import { magRounds } from './magfill.js?v=20261015221754';
 import * as THREE from 'three';
 
 const { U, V } = R;
@@ -60,7 +60,8 @@ const ALU = { r: 0.0009, edge: 0.85, cavity: 0.6 };      // Eloxal reibt sich an
 const STEEL = { r: 0.0008, edge: 0.7, cavity: 0.6 };
 const POLY = { r: 0.0013, edge: 0.45, cavity: 0.5 };      // Kunststoff: Kanten speckig, Kehlen staubig
 function sdfMesh(b, f, lo, hi, step, mat, o = {}) {
-  const g = surfaceNets(f, lo, hi, b.max ? step * (o.fine ?? 0.6) : step);
+  // Touch (lite): gröberes Netz (~½ der Dreiecke der Standardfassung)
+  const g = surfaceNets(f, lo, hi, b.max ? step * (o.fine ?? 0.6) : b.lite ? step * 1.4 : step);
   if (b.max) cavityColors(g, f, o.cav);
   return b._push(o.uv ? atlasUV(g, o.uv) : g, mat, {}, !!o.uv);
 }
