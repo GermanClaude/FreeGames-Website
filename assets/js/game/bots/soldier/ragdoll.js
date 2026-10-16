@@ -4,11 +4,11 @@
 // Scharniere: Knie nur nach vorn, Ellbogen nur nach hinten; Kopf nickt. Gliedmaßen stoßen an Wände.
 // Kommt am Boden zur Ruhe (schläft) und wird zurück auf das Skelett abgebildet.
 import * as THREE from 'three';
-import { BONE, DIM } from './rig.js?v=20261015221754';
-import { quatFromYZ, quatFromXY, clamp } from './ik.js?v=20261015221754';
+import { BONE, DIM } from './rig.js?v=20261016072407';
+import { quatFromYZ, quatFromXY, clamp } from './ik.js?v=20261016072407';
 
 const P = { hipL: 0, hipR: 1, shL: 2, shR: 3, head: 4, kneeL: 5, ankleL: 6, kneeR: 7, ankleR: 8, elbowL: 9, wristL: 10, elbowR: 11, wristR: 12 };
-const RADIUS = [0.11, 0.11, 0.1, 0.1, 0.12, 0.065, 0.06, 0.065, 0.06, 0.055, 0.05, 0.055, 0.05];
+const RADIUS = [0.125, 0.125, 0.115, 0.115, 0.12, 0.075, 0.068, 0.075, 0.068, 0.064, 0.056, 0.064, 0.056]; // breitere Statur (16.10.)
 const HEAVY = [true, true, true, true, true, false, false, false, false, false, false, false, false];
 // [a, b, minFactor, maxFactor] — Faktor bezogen auf den Startabstand
 const LINKS = [

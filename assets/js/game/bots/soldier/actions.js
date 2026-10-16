@@ -19,8 +19,8 @@
 //
 // Alle Rechnungen im Modellraum des Soldaten (Füße im Ursprung, Blick −Z); Teile werden im Waffenraum gesetzt.
 import * as THREE from 'three';
-import { BONE } from './rig.js?v=20261015221754';
-import { clamp, smooth, ramp, qrot, quatFromXY } from './ik.js?v=20261015221754';
+import { BONE } from './rig.js?v=20261016072407';
+import { clamp, smooth, ramp, qrot, quatFromXY } from './ik.js?v=20261016072407';
 
 const V = () => new THREE.Vector3();
 const Q = () => new THREE.Quaternion();

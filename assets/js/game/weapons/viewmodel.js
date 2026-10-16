@@ -16,25 +16,25 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds } from './models.js?v=20261015221754';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261015221754';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261015221754';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261015221754';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261015221754';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261015221754';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261015221754';
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261015221754';
-import { COSMETIC } from './anim/reloads.js?v=20261015221754';
-import { magWellOf } from './anim/magwell.js?v=20261015221754';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261015221754';
-import { applyCamo } from './gunsmith/camos.js?v=20261015221754';
-import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261015221754';
-import { setReticleSize } from './gunsmith/materials.js?v=20261015221754';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261015221754';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261015221754';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261015221754';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261015221754';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261015221754';
+import { createWeaponModel, setMagRounds } from './models.js?v=20261016072407';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261016072407';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261016072407';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261016072407';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261016072407';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261016072407';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261016072407';
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261016072407';
+import { COSMETIC } from './anim/reloads.js?v=20261016072407';
+import { magWellOf } from './anim/magwell.js?v=20261016072407';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261016072407';
+import { applyCamo } from './gunsmith/camos.js?v=20261016072407';
+import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261016072407';
+import { setReticleSize } from './gunsmith/materials.js?v=20261016072407';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261016072407';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261016072407';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261016072407';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261016072407';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261016072407';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -674,6 +674,14 @@ export class ViewModel {
    * world.lighting gelesen, damit Anpassungen der Kartenbeleuchtung sofort ankommen.
    */
   _applyIntensities() {
+    this._applyIntensitiesRaw();
+    // 16.10.: Waffe/Arme bekamen Himmels- UND Umgebungslicht voll (bei Bewölkung 2,2 + 2,5) – ≈ 2,5× heller als gleich
+    // helle Flächen der Welt (schwarze Waffe grau, dunkle Handschuhe weiß). Fülllicht auf Weltniveau absenken.
+    this.hemi.intensity *= VM_FILL;
+    this.scene.environmentIntensity *= VM_FILL;
+  }
+
+  _applyIntensitiesRaw() {
     const L = this._lighting, pr = this._probe;
     const sunBase = L ? (L.sunIntensity ?? 2.5) * 0.85 : 2.3;
     const hemiBase = L ? (L.hemiIntensity ?? 0.9) * 1.1 : 1.0;
@@ -1790,6 +1798,8 @@ export class ViewModel {
 
 /** Empfohlenes vertikales Sichtfeld der Viewmodel-Kamera (Positionen sind darauf abgestimmt). */
 ViewModel.FOV = 54;
+// Anteil des Himmels-/Umgebungslichts der Ego-Ansicht relativ zur Welt (siehe _applyIntensities)
+const VM_FILL = 0.42;
 
 // Welle 2 (Arsenal): zusätzliche Choreografien (Nachladen je Mechanik, Inspizieren je Klasse, Platte, Klingenhiebe);
 // Animationen 09.10.: Nachladen mit Varianten, Magazin entlang der Schachtachse (anim/reloads.js, anim/magwell.js),

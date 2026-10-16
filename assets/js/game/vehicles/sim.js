@@ -8,9 +8,9 @@
 // • Wannen-Stichproben (Ecken + Kantenmitten) gegen die Welt: Eindringen auflösen, Aufprallgeschwindigkeit melden.
 // • Schlafzustand für stehende, unbesetzte Fahrzeuge (kostet dann nichts).
 import * as THREE from 'three';
-import { collisionRay } from '../engine/physics.js?v=20261015221754';
-import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261015221754';
-import { Drivetrain } from './drivetrain.js?v=20261015221754';
+import { collisionRay } from '../engine/physics.js?v=20261016072407';
+import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261016072407';
+import { Drivetrain } from './drivetrain.js?v=20261016072407';
 
 export const STEP = 1 / 60;
 export const GRAVITY = VEHICLE_GRAVITY;

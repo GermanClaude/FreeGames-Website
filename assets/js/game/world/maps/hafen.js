@@ -2,21 +2,21 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261015221754';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261016072407';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261015221754';
-import { clawd } from '../clawd.js?v=20261015221754';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261015221754';
+} from '../props.js?v=20261016072407';
+import { clawd } from '../clawd.js?v=20261016072407';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261016072407';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261015221754';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261016072407';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261015221754';
+} from './hafen-ausstattung.js?v=20261016072407';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -885,7 +885,7 @@ function backdrop(b) {
       const color = colors[(r * 5 + c * 3 + k) % colors.length];
       // Kollision wie container() auf den höheren Stufen (Mehrspieler: Kollision unabhängig von der Grafikstufe)
       if (b.lookQuality === 'low') { b.box(x, k * H, z, 12.19, H - 0.02, 2.44, 'container', { tint: color, uv: 'local', collide: false, minimap: false, grad: false }); b.solid(x, k * H, z, 12.19, H, 2.44, { minimap: false }); }
-      else container(b, x, k * H, z, { len: 12.19, ry: 0, color, minimap: false });
+      else container(b, x, k * H, z, { len: 12.19, ry: 0, color, minimap: false, detail: 'far' });
     }
     b.box(x, 0, z, 12.2, n * H, 2.44, 'black', { visual: false, collide: false, minimap: false });
   }
@@ -1007,7 +1007,7 @@ function ship(b) {
   // Ladung
   for (let r = 0; r < 9; r++) for (let c = 0; c < 4; c++) {
     const n = 2 + ((r + c * 2) % 3);
-    for (let k = 0; k < n; k++) container(b, x0 + 2.2 + c * 2.5, 6.9 + k * H, z0 + 18 + r * 12.4, { len: 12.19, ry: Math.PI / 2, color: ['#c8402f', '#2d5f94', '#3e7a4c', '#d9762a', '#e3e1da', '#8d9399'][(r + c + k) % 6], minimap: false });
+    for (let k = 0; k < n; k++) container(b, x0 + 2.2 + c * 2.5, 6.9 + k * H, z0 + 18 + r * 12.4, { len: 12.19, ry: Math.PI / 2, color: ['#c8402f', '#2d5f94', '#3e7a4c', '#d9762a', '#e3e1da', '#8d9399'][(r + c + k) % 6], minimap: false, detail: 'far' });
   }
   // Brückenhaus mit Fensterbändern
   b.boxMM(x0 + 1, 6.9, z0 + 2, x1 - 1, 20, z0 + 14, 'plaster_white', { tint: '#e8e4dc', collide: false, minimap: false, grad: false });

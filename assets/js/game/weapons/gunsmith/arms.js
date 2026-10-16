@@ -8,14 +8,14 @@
 // bis sie anliegen; der Zeigefinger sucht den Abzug; die Daumenausrichtung wird gesucht, bis die Kuppe ihr
 // Ziel auf der Gegenseite erreicht. Ergebnisse werden je Griffart + Maßen gecacht.
 import * as THREE from 'three';
-import { chamferBoxGeometry } from './builder.js?v=20261015221754';
-import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js?v=20261015221754';
-import { takeMaterials, parkMaterials } from './materials.js?v=20261015221754';
-import { contactHit, MultiCollider } from './contact.js?v=20261015221754';
+import { chamferBoxGeometry } from './builder.js?v=20261016072407';
+import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js?v=20261016072407';
+import { takeMaterials, parkMaterials } from './materials.js?v=20261016072407';
+import { contactHit, MultiCollider } from './contact.js?v=20261016072407';
 
 // Fingermaße + Bindehaltung des Handschuhnetzes (hands-v3): gemeinsam mit tools/assets/hands/build-hand.mjs
-import { FINGERS, THUMB, THUMB_REST, BIND_SPLAY, BIND_CURL, BIND_THUMB_FLEX, handDimsKey } from './handdims.js?v=20261015221754';
-import { GLOVE_MESH } from './glove-mesh.js?v=20261015221754';
+import { FINGERS, THUMB, THUMB_REST, BIND_SPLAY, BIND_CURL, BIND_THUMB_FLEX, handDimsKey } from './handdims.js?v=20261016072407';
+import { GLOVE_MESH } from './glove-mesh.js?v=20261016072407';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const _v1 = V3(), _v2 = V3(), _v3 = V3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler();
@@ -1146,12 +1146,12 @@ const texSize = q => (q === 'low' ? 256 : q === 'medium' ? 512 : 1024);
  * ihren Farbton (Grau, Coyote, Braun, Oliv, Dunkeloliv, Elite schwarz), Sättigung ≤ 0,32, Helligkeit 0,2–0,42
  * (Untergrenze: schwarzer Handschuh säuft im Schatten nicht ab; Glanzsaum im Shader hält die Kontur).
  */
-const GLOVE_DEFAULT = '#383a3d';
+const GLOVE_DEFAULT = '#2a2c2f';   // 16.10.: schwarze Handschuhe wie im Video
 const _hsl = {};
 export function gloveTone(hex, out = new THREE.Color()) {
   if (!hex || /^#?f{6}$/i.test(hex)) return out.set(GLOVE_DEFAULT);
   out.set(hex).getHSL(_hsl, THREE.SRGBColorSpace);
-  return out.setHSL(_hsl.h, Math.min(_hsl.s, 0.32), THREE.MathUtils.clamp(_hsl.l * 0.82, 0.2, 0.42), THREE.SRGBColorSpace);
+  return out.setHSL(_hsl.h, Math.min(_hsl.s, 0.32), THREE.MathUtils.clamp(_hsl.l * 0.82, 0.14, 0.42), THREE.SRGBColorSpace);
 }
 
 // Handschuh-Shader (hands-v3): MeshStandardMaterial + Einschübe. Masken je Ecke (gloveMask: Leder, Polster, Bündchen,
