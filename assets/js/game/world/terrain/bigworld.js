@@ -7,33 +7,33 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261016141956';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261016141956';
-import { createWorldAssets } from '../library.js?v=20261016141956';
-import { MapBuilder, SURFACES } from '../builder.js?v=20261016141956';
-import { createLighting } from '../lighting.js?v=20261016141956';
-import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261016141956';
-import { createAtmosphere } from '../atmos.js?v=20261016141956';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261016141956';
-import { createWater } from '../water.js?v=20261016141956';
-import { TriangleBVH } from '../bvh.js?v=20261016141956';
-import { makeTests } from '../navbuild.js?v=20261016141956';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261016141956';
-import { Heightfield } from './heightfield.js?v=20261016141956';
-import { makeCoarse } from './generate.js?v=20261016141956';
-import { CompositeBVH } from './composite.js?v=20261016141956';
-import { TerrainCollider } from './collide.js?v=20261016141956';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261016141956';
-import { createTerrainMaterial } from './splat.js?v=20261016141956';
-import { Vegetation } from './vegetation.js?v=20261016141956';
-import { RoadNetwork } from './roads.js?v=20261016141956';
-import { bigNavFromData } from './bignav.js?v=20261016141956';
-import { createBigMinimap } from './bigminimap.js?v=20261016141956';
-import { terrainJob, worldJob } from './bigjob.js?v=20261016141956';
+import { MAPS } from '../../../shared/maps.data.js?v=20261016175414';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261016175414';
+import { createWorldAssets } from '../library.js?v=20261016175414';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261016175414';
+import { createLighting } from '../lighting.js?v=20261016175414';
+import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261016175414';
+import { createAtmosphere } from '../atmos.js?v=20261016175414';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261016175414';
+import { createWater } from '../water.js?v=20261016175414';
+import { TriangleBVH } from '../bvh.js?v=20261016175414';
+import { makeTests } from '../navbuild.js?v=20261016175414';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261016175414';
+import { Heightfield } from './heightfield.js?v=20261016175414';
+import { makeCoarse } from './generate.js?v=20261016175414';
+import { CompositeBVH } from './composite.js?v=20261016175414';
+import { TerrainCollider } from './collide.js?v=20261016175414';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261016175414';
+import { createTerrainMaterial } from './splat.js?v=20261016175414';
+import { Vegetation } from './vegetation.js?v=20261016175414';
+import { RoadNetwork } from './roads.js?v=20261016175414';
+import { bigNavFromData } from './bignav.js?v=20261016175414';
+import { createBigMinimap } from './bigminimap.js?v=20261016175414';
+import { terrainJob, worldJob } from './bigjob.js?v=20261016175414';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261016141956'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261016141956'),
+  grenzland: () => import('../maps/grenzland.js?v=20261016175414'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261016175414'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -53,7 +53,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261016141956', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261016175414', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -425,6 +425,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     targets: [],
     terrain: { heightfield: hf, chunks, size: hf.size, waterY: hf.waterY, material: tmat.material, source: tmat.source },
     roads, vehicleSpawns, vehicleSpots, secrets, secretsAuto: true,
+    civilVehicles: civilList(sites.flatMap((st) => st.b.civilSpots || [])), // fahrbare Zivilautos der Ortschaften
     emplacements: sites.flatMap((st) => st.b.emplacements || []), // benutzbare MG-Stellungen (game/mappoints.js)
     doors: sites.flatMap((st) => st.b.doors || []), gates: sites.flatMap((st) => st.b.gates || []), windows: sites.flatMap((st) => st.b.windows || []), // game/doors.js
     destructibles: sites.flatMap((st) => (st.b.destructibles || []).filter((d) => d.mesh)), // game/destruction.js

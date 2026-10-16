@@ -12,9 +12,9 @@
 //   (placeInSeat/clearSeat), Schnappschüsse puffern und mit der Abspieluhr der Puppen interpolieren (tickReplica), eigene
 //   Sitz-Absicht als VEH_INPUT im 30-Hz-Zustand (inputState), Anfragen über enter/exit/seat/load.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261016141956';
-import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261016141956';
-import { falloff } from '../combat.js?v=20261016141956';
+import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261016175414';
+import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261016175414';
+import { falloff } from '../combat.js?v=20261016175414';
 
 const HOST_ID = 1; // net/index.js HOST_ID (hier ohne Import: Fahrzeuge laden auch ohne Netzmodul)
 const NEAR = 160; // m (xz): eigenes Fahrzeug und nähere bekommen jeden Takt einen Block
@@ -66,7 +66,7 @@ const mgShots = (seat) => { let n = 0; for (const w of seat.weapons) if (w.def.k
 
 export class VehicleNet {
   /**
-   * @param {import('./index.js?v=20261016141956').VehicleSystem} sys
+   * @param {import('./index.js?v=20261016175414').VehicleSystem} sys
    * @param {{replica?: boolean}} opts replica: Client-Abbild (sonst Host)
    */
   constructor(sys, { replica = false } = {}) {
@@ -152,12 +152,12 @@ export class VehicleNet {
     }
   }
 
-  /** Fahrzeugliste: [[vid, typ, team, [netId|0 je Sitz]], …] */
+  /** Fahrzeugliste: [[vid, typ, team, [netId|0 je Sitz], Variante], …] (Variante: Lack/Last der Zivilfahrzeuge) */
   _listNow() {
     const out = [];
     for (const v of this.sys.list) {
       if (!Number.isInteger(v.netId)) continue;
-      out.push([v.netId, Math.max(0, VEHICLE_IDS.indexOf(v.type)), teamCode(v.spawnTeam), v.seats.map((s) => (s.actor && Number.isInteger(s.actor.netId) ? s.actor.netId : 0))]);
+      out.push([v.netId, Math.max(0, VEHICLE_IDS.indexOf(v.type)), teamCode(v.spawnTeam), v.seats.map((s) => (s.actor && Number.isInteger(s.actor.netId) ? s.actor.netId : 0)), v.variant | 0]);
     }
     return out;
   }
@@ -461,13 +461,13 @@ export class VehicleNet {
     this._list = [];
     for (const e of list) {
       if (!Array.isArray(e) || !Number.isInteger(e[0]) || e[0] < 1 || e[0] > 255) continue;
-      const [vid, ti, tc, seats] = e;
+      const [vid, ti, tc, seats, variant] = e;
       const type = VEHICLE_IDS[ti];
       if (!type || !VEHICLES[type]) continue;
       seen.add(vid);
       let v = this._byVid.get(vid);
-      if (v && v.type !== type) { this._removeReplica(v); v = null; }
-      if (!v) v = this._spawnReplica(vid, type, teamOf(tc));
+      if (v && (v.type !== type || (v.variant | 0) !== (variant | 0))) { this._removeReplica(v); v = null; }
+      if (!v) v = this._spawnReplica(vid, type, teamOf(tc), variant | 0);
       if (v) this._list.push({ v, seats: Array.isArray(seats) ? seats : [] });
     }
     for (const [vid, v] of [...this._byVid]) if (!seen.has(vid)) this._removeReplica(v);
@@ -476,7 +476,7 @@ export class VehicleNet {
     this._applySeats();
   }
 
-  _spawnReplica(vid, type, team) {
+  _spawnReplica(vid, type, team, variant = 0) {
     const sys = this.sys;
     const L = this._samples.get(vid);
     const s = L && L.length ? L[L.length - 1].s : null;
@@ -489,7 +489,7 @@ export class VehicleNet {
       pos.set(s.x, s.y, s.z);
       pos.sub(_a.fromArray(VEHICLES[type].com).applyQuaternion(_q));
     }
-    const v = sys.spawnVehicle(type, pos, yaw, team);
+    const v = sys.spawnVehicle(type, pos, yaw, team, { variant });
     if (!v) return null;
     v.netId = vid;
     v._net = { gotSample: false, extra: null, fxT: 0, shots: [0, 0, 0, 0, 0, 0], shotsInit: false, hp: v.health };
@@ -785,7 +785,7 @@ export class VehicleNet {
       const steer = Math.abs(vF) > 0.5 ? clamp(Math.atan2(b.angVel.y * wb, Math.abs(vF)), -(W.maxSteer || 0.6), W.maxSteer || 0.6) : 0;
       for (const w of b.wheels) {
         w.spin = (w.spin + (vF * dt) / (W.radius || 0.4)) % (Math.PI * 2);
-        w.steerAngle = w.steer ? -steer * Math.sign(vF || 1) : 0;
+        w.steerAngle = w.steer ? -steer * Math.sign(vF || 1) * (w.rear ? -1 : 1) : 0;
       }
     }
     const m = v.mount, def = v.def;

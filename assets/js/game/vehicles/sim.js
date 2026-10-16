@@ -8,9 +8,9 @@
 // • Wannen-Stichproben (Ecken + Kantenmitten) gegen die Welt: Eindringen auflösen, Aufprallgeschwindigkeit melden.
 // • Schlafzustand für stehende, unbesetzte Fahrzeuge (kostet dann nichts).
 import * as THREE from 'three';
-import { collisionRay } from '../engine/physics.js?v=20261016141956';
-import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261016141956';
-import { Drivetrain } from './drivetrain.js?v=20261016141956';
+import { collisionRay } from '../engine/physics.js?v=20261016175414';
+import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261016175414';
+import { Drivetrain } from './drivetrain.js?v=20261016175414';
 
 export const STEP = 1 / 60;
 export const GRAVITY = VEHICLE_GRAVITY;
@@ -269,7 +269,7 @@ export class VehicleBody {
     let slip = 0, tSlip = 0;
 
     for (const w of this.wheels) {
-      w.steerAngle = w.steer ? steerA : 0;
+      w.steerAngle = w.steer ? (w.rear ? -steerA : steerA) : 0; // Hinterradlenkung (Stapler): Gegenvorzeichen
       if (!w.contact) continue;
       const N = w.load;
       _tmp.copy(w.normal).multiplyScalar(w.Fs);

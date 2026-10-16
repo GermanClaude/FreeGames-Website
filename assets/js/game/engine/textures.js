@@ -7,8 +7,8 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261016141956';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261016141956';
+import { generateTexture } from '../world/texgen.js?v=20261016175414';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261016175414';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -141,6 +141,7 @@ const MATS = {
   ctr_rot:           { tex: 'container', tile: 2, surface: 'metal', params: { metalness: 1, color: '#6a3a32' } },
   ctr_gruen:         { tex: 'container', tile: 2, surface: 'metal', params: { metalness: 1, color: '#6e6a4a' } },
   ctr_grau:          { tex: 'container', tile: 2, surface: 'metal', params: { metalness: 1, color: '#b6af9b' } },
+  ctr_lack:          { tex: 'ctr_lack', tile: 2.44, surface: 'metal', params: { metalness: 1 } },
   ctr_blau_tuer:     { tex: 'container', tile: 2, surface: 'metal', params: { metalness: 1, color: '#516466' } },
   ctr_rost_tuer:     { tex: 'container', tile: 2, surface: 'metal', params: { metalness: 1, color: '#8e6a51' } },
   ctr_rot_tuer:      { tex: 'container', tile: 2, surface: 'metal', params: { metalness: 1, color: '#6a3a32' } },
@@ -311,7 +312,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261016141956', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261016175414', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });

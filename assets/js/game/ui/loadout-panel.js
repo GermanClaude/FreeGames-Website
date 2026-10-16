@@ -3,13 +3,13 @@
 // Ausführung des Outfits. Touch-first (große Kacheln), per Pfeiltasten/Gamepad über die räumliche Navigation bedienbar.
 // API: new LoadoutPanel(G); mount(host, loadout?) ; value() → loadout ; save() (Klassenausrüstung merken) ; unmount().
 
-import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261016141956';
-import { openCamoEditor } from './camo-editor.js?v=20261016141956';
-import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261016141956';
-import { esc } from './dom.js?v=20261016141956';
-import { ICON } from './icons.js?v=20261016141956';
-import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261016141956';
-import { getWeaponModelInfo } from '../weapons/models.js?v=20261016141956';
+import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261016175414';
+import { openCamoEditor } from './camo-editor.js?v=20261016175414';
+import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261016175414';
+import { esc } from './dom.js?v=20261016175414';
+import { ICON } from './icons.js?v=20261016175414';
+import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261016175414';
+import { getWeaponModelInfo } from '../weapons/models.js?v=20261016175414';
 
 const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['melee', 'Messer'], ['lethal', 'Granate']];
 

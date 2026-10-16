@@ -83,15 +83,91 @@ export function ctrFamily(hex) {
   return 'rot';
 }
 
+/**
+ * Wellblech-Paneel (Container, Nutzer 16.10.: „keine 3D-Form, nur Bilder“): Trapezprofil als echte Geometrie.
+ * Ebene XY, Außenseite +Z (äußere Sicken bei z = 0, Tal bei z = −depth), x ∈ [−w/2, w/2], y ∈ [0, h] (center: y ∈ [−h/2, h/2]).
+ * dir 'v': Sicken senkrecht (Profil entlang x), 'h': Sicken waagrecht (Profil entlang y). flatTop/flatBottom: glatte
+ * Bänder (Tür: Kopf-/Fußfeld). Teilung so, dass ganze Sicken passen (ISO: 278 mm, Außenfläche 72, Flanke 68, Tal 70).
+ * UV in Metern (u entlang x, v entlang y). Gecacht je Maß.
+ */
+export const CTR_PROFILE = { a: 0.26, f: 0.245, i: 0.25 };
+function corrPanel(w, h, { pitch = 0.278, depth = 0.036, dir = 'v', flatTop = 0, flatBottom = 0, center = false } = {}) {
+  return cached(`corr:${w.toFixed(3)}:${h.toFixed(3)}:${pitch}:${depth}:${dir}:${flatTop}:${flatBottom}:${center}`, () => {
+    const P = [], N = [], U = [];
+    const along = dir === 'v' ? w : h - flatTop - flatBottom;
+    const n = Math.max(1, Math.round(along / pitch)), p = along / n, A = CTR_PROFILE;
+    const prof = [];
+    for (let k = 0; k < n; k++) { const s0 = k * p; prof.push([s0, 0], [s0 + A.a * p, 0], [s0 + (A.a + A.f) * p, -depth], [s0 + (A.a + A.f + A.i) * p, -depth]); }
+    prof.push([along, 0]);
+    const y0 = center ? -h / 2 : 0;
+    const quad = (a, b, c, d, nx, ny, nz) => { for (const v of [a, b, c, a, c, d]) { P.push(v[0], v[1], v[2]); N.push(nx, ny, nz); U.push(v[0], v[1] - y0); } };
+    for (let j = 0; j + 1 < prof.length; j++) {
+      const [s0, z0] = prof[j], [s1, z1] = prof[j + 1];
+      const ds = s1 - s0, dz = z1 - z0, l = Math.hypot(ds, dz);
+      if (dir === 'v') {
+        const xa = -w / 2 + s0, xb = -w / 2 + s1;
+        quad([xa, y0, z0], [xb, y0, z1], [xb, y0 + h, z1], [xa, y0 + h, z0], -dz / l, 0, ds / l);
+      } else {
+        const ya = y0 + flatBottom + s0, yb = y0 + flatBottom + s1;
+        quad([w / 2, ya, z0], [w / 2, yb, z1], [-w / 2, yb, z1], [-w / 2, ya, z0], 0, -dz / l, ds / l);
+      }
+    }
+    // glatte Kopf-/Fußfelder (Tür)
+    if (flatBottom > 0) quad([-w / 2, y0, 0], [w / 2, y0, 0], [w / 2, y0 + flatBottom, 0], [-w / 2, y0 + flatBottom, 0], 0, 0, 1);
+    if (flatTop > 0) quad([-w / 2, y0 + h - flatTop, 0], [w / 2, y0 + h - flatTop, 0], [w / 2, y0 + h, 0], [-w / 2, y0 + h, 0], 0, 0, 1);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
+    return g;
+  });
+}
+
+/**
+ * Container als echte 3D-Form (mittlere Stufe aufwärts): Seiten- und Stirnwände aus Trapez-Wellblech, Türflügel mit
+ * waagrechten Sicken und glattem Kopf-/Fußfeld, Dach mit flachen Quersicken, Eckbeschläge. Farbe = Tönung des
+ * neutralen Containerlacks (ctr_lack, eigene Textur ohne aufgemalte Sicken). Kollision unverändert (f.solid).
+ */
+function container3d(f, b, x, y, z, o, len, H, W, color, ground) {
+  const L = { collide: false, minimap: false, cast: false, uv: 'keep', tint: color, uvOffset: [hash01(x, z + y, 41) * 2.44, hash01(x, z + y, 42) * 2.44] };
+  const G = ground ? { aoFloor: y, grad: true } : { grad: false };
+  const zw = W / 2 - 0.04, wallW = len - 0.24, wallH = H - 0.16;
+  // Schatten wirft ein glatter Innenkörper hinter den Tälern: Sicken, die sich selbst beschatten, flimmern in der
+  // Schattenkarte als Treppenmuster (16.10.)
+  f.box(0, 0.06, 0, len - 0.2, H - 0.1, W - 0.17, 'black', { collide: false, minimap: false, ao: false, grad: false });
+  // Längsseiten
+  for (const side of [1, -1]) f.geom(corrPanel(wallW, wallH), 0, 0.08, side * zw, 'ctr_lack', { ...L, ...G, ry: side < 0 ? Math.PI : 0 });
+  // Dach: flache Quersicken (Teilung ≈ 0,55 m), leicht unter der Oberkante der Gurte
+  f.geom(corrPanel(len - 0.3, W - 0.14, { pitch: 0.55, depth: 0.022, center: true }), 0, H - 0.012, 0, 'ctr_lack', { ...L, tint: shade(color, 0.92), rx: -Math.PI / 2 });
+  // Stirnseiten: Türen (waagrechte Sicken) bzw. geschlossene Stirnwand (senkrechte Sicken)
+  // Flügel zwischen den Eckpfosten (sonst ragen die Sicken über die Pfosten → Zahnmuster an der Kante)
+  const leafW = W / 2 - 0.18 - 0.006, leafH = H - 0.12;
+  const doorEnd = (sx) => {
+    for (const sz of [-1, 1]) f.geom(corrPanel(leafW, leafH, { dir: 'h', pitch: 0.36, depth: 0.028, flatTop: 0.34, flatBottom: 0.16 }), sx * (len / 2 + 0.003), 0.06, sz * (leafW / 2 + 0.006), 'ctr_lack', { ...L, ...G, ry: sx > 0 ? Math.PI / 2 : -Math.PI / 2 });
+    // Türfuge (dunkel) zwischen den Flügeln
+    f.box(sx * (len / 2 - 0.01), 0.06, 0, 0.02, leafH, 0.014, 'black', { collide: false, minimap: false, cast: false, ao: false });
+  };
+  if (!o.blankEnd) doorEnd(-1);
+  else f.geom(corrPanel(W - 0.3, wallH), -(len / 2 - 0.04), 0.08, 0, 'ctr_lack', { ...L, ...G, ry: -Math.PI / 2 });
+  if (!o.openDoors) doorEnd(1);
+  // Eckbeschläge (ISO-Ecken, Gusseisen mit Langlöchern): 8 Stück, dunkel
+  const cast = shade(color, 0.5);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const yy of [0, H - 0.118]) {
+    f.box(sx * (len / 2 - 0.089), yy, sz * (W / 2 - 0.081), 0.182, 0.118, 0.166, 'metal_painted', { collide: false, minimap: false, tint: cast, grad: false, uv: 'local' });
+  }
+}
+
 export function container(b, x, y, z, o = {}) {
   const len = o.len ?? 6.06, H = 2.59, W = 2.44, raw = o.color || b.pick(CONTAINER_COLORS), color = videoTone(raw);
   const fam = ctrFamily(raw), wallMat = 'ctr_' + fam;
   const f = frame(b, x, y, z, o.ry || 0);
   const dark = shade(color, 0.72);
   const ground = Math.abs(y) < 0.05;
-  // Wellwand aus dem Video (Kachel 1,05 m, senkrecht genau eine Wandhöhe ab Unterkante)
-  f.box(0, 0, 0, len - 0.1, H - 0.06, W - 0.08, wallMat, { uv: 'local', uvOffset: [0, 0], collide: false, aoFloor: ground ? y : undefined, grad: ground });
   f.solid(0, 0, 0, len, H, W, { minimap: o.minimap ?? 'container' });
+  const d3 = b.quality !== 'low' && o.flat !== true;
+  // Telefone (low): Wellwand aus dem Video als Textur (Kachel 1,05 m); sonst echtes Wellblech (container3d)
+  if (!d3) f.box(0, 0, 0, len - 0.1, H - 0.06, W - 0.08, wallMat, { uv: 'local', uvOffset: [0, 0], collide: false, aoFloor: ground ? y : undefined, grad: ground });
+  else container3d(f, b, x, y, z, o, len, H, W, color, ground);
   // Eckpfosten
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) f.box(sx * (len / 2 - 0.09), 0, sz * (W / 2 - 0.09), 0.18, H, 0.18, 'metal_painted', { tint: dark, collide: false, minimap: false, grad: ground, uv: 'local' });
   // Ober-/Untergurte
@@ -104,16 +180,23 @@ export function container(b, x, y, z, o = {}) {
   const ex = len / 2 + 0.005;
   const det = o.detail ?? (b.quality === 'low' ? 'low' : 'high');
   if (!o.blankEnd) {
-    f.box(-(ex - 0.012), 0.06, 0, 0.02, H - 0.12, W - 0.14, wallMat + '_tuer', { uv: 'fit', collide: false, minimap: false, grad: false, ao: false, cast: false });
+    if (!d3) f.box(-(ex - 0.012), 0.06, 0, 0.02, H - 0.12, W - 0.14, wallMat + '_tuer', { uv: 'fit', collide: false, minimap: false, grad: false, ao: false, cast: false });
     ctrDoorHardware(f, -1, len, H, W, color, det);
   }
   if (!o.openDoors) {
-    f.box(ex - 0.012, 0.06, 0, 0.02, H - 0.12, W - 0.14, wallMat + '_tuer', { uv: 'fit', collide: false, minimap: false, grad: false, ao: false });
+    if (!d3) f.box(ex - 0.012, 0.06, 0, 0.02, H - 0.12, W - 0.14, wallMat + '_tuer', { uv: 'fit', collide: false, minimap: false, grad: false, ao: false });
     ctrDoorHardware(f, 1, len, H, W, color, det);
   } else {
     // offene Türen (90° aufgeklappt) + dunkles Inneres
     f.box(ex - 0.02, 0.05, 0, 0.02, H - 0.2, W - 0.3, 'black', { collide: false, minimap: false, ao: false });
-    for (const sz of [-1, 1]) f.box(ex + W / 4, 0.05, sz * (W / 2 + 0.02), W / 2 - 0.05, H - 0.18, 0.05, wallMat, { collide: true, minimap: false, uv: 'local', uvOffset: [0, 0], grad: ground });
+    for (const sz of [-1, 1]) {
+      if (!d3) f.box(ex + W / 4, 0.05, sz * (W / 2 + 0.02), W / 2 - 0.05, H - 0.18, 0.05, wallMat, { collide: true, minimap: false, uv: 'local', uvOffset: [0, 0], grad: ground });
+      else {
+        // aufgeklappter Flügel: Wellblech außen, Innenseite glatt, Kollision wie vorher
+        f.box(ex + W / 4, 0.05, sz * (W / 2 + 0.02), W / 2 - 0.05, H - 0.18, 0.05, 'metal_painted', { collide: true, minimap: false, uv: 'local', tint: shade(color, 0.85), grad: ground, visual: true });
+        f.geom(corrPanel(W / 2 - 0.05, H - 0.18, { dir: 'h', pitch: 0.36, depth: 0.028, flatTop: 0.3, flatBottom: 0.14 }), ex + W / 4, 0.05, sz * (W / 2 + 0.046), 'ctr_lack', { collide: false, minimap: false, uv: 'keep', tint: color, ry: sz > 0 ? 0 : Math.PI });
+      }
+    }
   }
   if (o.logo) {
     for (const side of [1, -1]) {
@@ -126,9 +209,12 @@ export function container(b, x, y, z, o = {}) {
     const k = Math.floor(hash01(x, z + y, 31) * 6), tone = fam === 'grau' ? 'd' : 'w', named = hash01(x, z + y, 32) < 0.7;
     for (const side of [1, -1]) {
       const ry = (o.ry || 0) + (side < 0 ? Math.PI : 0);
-      if (named) { const [lx, lz] = f.P(-len * 0.08, side * (W / 2 - 0.04)); b.sign(lx, y + H * 0.42, lz, Math.min(len * 0.5, 4.6), H * 0.22, `ctr_line_${k}_${tone}`, { ry, back: false, depth: 0 }); }
-      const [cx, cz] = f.P(len * 0.33 * side, side * (W / 2 - 0.04));
-      b.sign(cx, y + H * 0.78, cz, Math.min(len * 0.22, 1.5), 0.2, `ctr_code_${k}_${tone}`, { ry, back: false, depth: 0 });
+      // Profil der Wand beginnt am Paneelrand: Seite +1 bei x = −wallW/2, Seite −1 (Paneel um 180° gedreht) bei x = +wallW/2
+      const wallW = len - 0.24, pitch = wallW / Math.max(1, Math.round(wallW / 0.278));
+      const corr = (lxc) => (b.quality !== 'low' && o.flat !== true ? { p: pitch, o: side > 0 ? lxc + wallW / 2 : wallW / 2 - lxc, dir: 1, d: 0.036, ...CTR_PROFILE } : null);
+      if (named) { const lxc = -len * 0.08, [lx, lz] = f.P(lxc, side * (W / 2 - 0.04)); b.sign(lx, y + H * 0.42, lz, Math.min(len * 0.5, 4.6), H * 0.22, `ctr_line_${k}_${tone}`, { ry, back: false, depth: 0, corr: corr(lxc) }); }
+      const lxc = len * 0.33 * side, [cx, cz] = f.P(lxc, side * (W / 2 - 0.04));
+      b.sign(cx, y + H * 0.78, cz, Math.min(len * 0.22, 1.5), 0.2, `ctr_code_${k}_${tone}`, { ry, back: false, depth: 0, corr: corr(lxc) });
     }
   }
   return { top: y + H };
@@ -484,16 +570,45 @@ function wheel(f, lx, ly, lz, r, w) {
   f.cyl(lx + side * 0.012, ly, lz, r * 0.55, w + 0.012, 'metal_galvanized', { axis: 'x', collide: false, minimap: false, seg: 10, ao: false });
 }
 
-/** PKW (lokal z = Länge). style: 'sedan'|'hatch'|'wreck' */
+/**
+ * Fahrbare Zivilfahrzeuge (Nutzer 16.10.: „richtige Autos“ statt abgedeckter, Fahrzeuge der Karten fahrbar in Ego- und
+ * Außenansicht): Pkw, Transporter, Gabelstapler und Sattelzugmaschinen sind echte Fahrzeuge (vehicles/models-civil.js);
+ * die Karte setzt nur den Stellplatz (b.civil). Farbe → Lackvariante, Reihenfolge wie CIVIL_PAINT in models-civil.js.
+ * Ohne Fahrzeugsystem (Prüfseiten mit eigenem Baukasten ohne civil) bleibt das alte Requisit.
+ */
+const CIVIL_COLORS = {
+  pkw: ['#8c2b24', '#2f4f6e', '#c7c7c2', '#3b3d40', '#6b7a52', '#b98b3a', '#1d1f22', '#e8e6e0'],
+  transporter: ['#e8e6e0', '#cfd4d8', '#2d5f94', '#c8402f'],
+  stapler: ['#e0a02a', '#d0502a', '#3a7a3c'],
+  zugmaschine: ['#c8402f', '#2d5f94', '#e8e6e0', '#3e7a4c'],
+};
+function civilVariant(type, color) {
+  const L = CIVIL_COLORS[type];
+  if (!L || !color) return 0;
+  const i = L.indexOf(String(color).toLowerCase());
+  if (i >= 0) return i;
+  const c = new THREE.Color(color);
+  let best = 0, bd = Infinity;
+  L.forEach((h, k) => { const d = new THREE.Color(h), dd = (d.r - c.r) ** 2 + (d.g - c.g) ** 2 + (d.b - c.b) ** 2; if (dd < bd) { bd = dd; best = k; } });
+  return best;
+}
+/** Stellplatz eines fahrbaren Zivilfahrzeugs; extra = Zusatz zur Variante (Stapler: 8 · Last). → false ohne b.civil */
+export function civilSpot(b, type, x, y, z, ry, color, extra = 0) {
+  if (typeof b.civil !== 'function') return false;
+  b.civil(type, x, y, z, ry, civilVariant(type, color) + extra);
+  return true;
+}
+/** Staplerlast (Palette auf der Gabel) → Variantenzusatz: 0 leer, 8 Kartons, 16 Säcke. */
+export const staplerLast = (load) => (load === 'sacks' ? 16 : load ? 8 : 0);
+
+/** PKW (lokal z = Länge). style: 'sedan'|'hatch'|'wreck' – fahrbar, nur Wracks bleiben Kulisse */
 export function car(b, x, z, o = {}) {
-  const f = frame(b, x, o.y ?? 0, z, o.ry || 0), col = o.color || b.pick(['#8c2b24', '#2f4f6e', '#c7c7c2', '#3b3d40', '#6b7a52', '#b98b3a']);
-  if (b.hasModel('covered_car') && o.model !== false) {
-    // abgedecktes Auto (Fotoscan, Plane über der Karosserie) – Maße wie das prozedurale (1,8 × 1,42 × 4,3 m)
-    b.model('covered_car', x, o.y ?? 0, z, { ry: o.ry || 0, collide: false, fallback: (bb) => car(bb, x, z, { ...o, color: col, model: false }) });
-    f.solid(0, 0, 0, 1.8, 1.42, 4.3, { minimap: 'vehicle', mat: 'hull' });
+  const col = o.color || b.pick(['#8c2b24', '#2f4f6e', '#c7c7c2', '#3b3d40', '#6b7a52', '#b98b3a']);
+  if (o.style !== 'wreck' && o.drivable !== false && civilSpot(b, 'pkw', x, o.y ?? 0, z, o.ry || 0, col)) {
     b.decal(x, (o.y ?? 0) + 0.01, z, 2.6, 4.6, 'oil', { ry: o.ry || 0, opacity: 0.5 });
     return;
   }
+  const f = frame(b, x, o.y ?? 0, z, o.ry || 0);
   const L = 4.3, W = 1.8, hatch = o.style === 'hatch';
   const wreck = o.style === 'wreck';
   const pm = 'car_paint';
@@ -521,6 +636,7 @@ export function car(b, x, z, o = {}) {
 
 /** Lieferwagen / Transporter (lokal z = Länge) */
 export function van(b, x, z, o = {}) {
+  if (o.drivable !== false && civilSpot(b, 'transporter', x, o.y ?? 0, z, o.ry || 0, o.color || '#e8e6e0')) return;
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0), col = o.color || '#e8e6e0';
   const L = 5.2, W = 2.0;
   f.box(0, 0.38, -0.35, W, 2.0, L - 0.8, 'car_paint', { tint: col, collide: false, minimap: false, grad: false });
@@ -538,27 +654,38 @@ export function van(b, x, z, o = {}) {
 export function truck(b, x, z, o = {}) {
   const y = o.y ?? 0, f = frame(b, x, y, z, o.ry || 0), col = o.color || '#c8402f';
   const cabZ = o.trailer === null ? 2.2 : 5.6;
-  // Kabine
-  f.box(0, 0.9, cabZ, 2.45, 2.1, 2.2, 'metal_painted', { tint: col, collide: false, minimap: false, grad: false });
-  f.box(0, 1.85, cabZ + 1.11, 2.2, 0.85, 0.02, 'glass', { collide: false, minimap: false, ao: false });
-  for (const sx of [-1, 1]) f.box(sx * 1.235, 1.9, cabZ + 0.55, 0.02, 0.75, 0.9, 'glass', { collide: false, minimap: false, ao: false });
-  f.box(0, 0.55, cabZ + 1.15, 2.45, 0.35, 0.15, 'polymer', { collide: false, minimap: false, grad: false });
-  f.box(0, 1.0, cabZ + 1.13, 1.4, 0.55, 0.04, 'metal_galvanized', { collide: false, minimap: false, ao: false });
-  f.box(0, 3.0, cabZ - 0.2, 2.3, 0.4, 1.6, 'metal_painted', { tint: shade(col, 0.9), collide: false, minimap: false, grad: false });
-  for (const sx of [-1, 1]) f.box(sx * 0.95, 0.75, cabZ + 1.16, 0.32, 0.14, 0.04, 'lamp_warm', { collide: false, minimap: false, ao: false });
-  // Fahrgestell
-  f.box(0, 0.55, cabZ - 2.6, 1.0, 0.35, 5.2, 'metal_painted', { tint: '#26282b', collide: false, minimap: false, grad: false });
-  for (const sx of [-1, 1]) f.cyl(sx * 1.0, 0.65, cabZ - 1.5, 0.28, 1.2, 'metal_galvanized', { axis: 'z', collide: false, minimap: false });
-  for (const sx of [-1, 1]) { wheel(f, sx * 1.05, 0.52, cabZ + 0.2, 0.52, 0.35); wheel(f, sx * 1.05, 0.52, cabZ - 2.6, 0.52, 0.4); }
-  f.solid(0, 0, cabZ, 2.5, 3.4, 2.4, { minimap: 'vehicle' });
-  if (o.trailer === null) return;
+  // fahrbare Sattelzugmaschine: ohne Auflieger an der Kabinenstelle, sonst 0,6 m vor dem abgestellten Auflieger
+  // (Kabinenmitte 2,05 m vor dem Ursprung der Zugmaschine, Heck 3,05 m dahinter)
+  const parked = o.drivable !== false && typeof b.civil === 'function';
+  if (parked) {
+    const [tx, tz] = f.P(0, o.trailer === null ? cabZ - 2.05 : cabZ - 1.6 + 0.6 + 3.05);
+    civilSpot(b, 'zugmaschine', tx, y, tz, o.ry || 0, col);
+    if (o.trailer === null) return;
+  } else {
+    // Kabine
+    f.box(0, 0.9, cabZ, 2.45, 2.1, 2.2, 'metal_painted', { tint: col, collide: false, minimap: false, grad: false });
+    f.box(0, 1.85, cabZ + 1.11, 2.2, 0.85, 0.02, 'glass', { collide: false, minimap: false, ao: false });
+    for (const sx of [-1, 1]) f.box(sx * 1.235, 1.9, cabZ + 0.55, 0.02, 0.75, 0.9, 'glass', { collide: false, minimap: false, ao: false });
+    f.box(0, 0.55, cabZ + 1.15, 2.45, 0.35, 0.15, 'polymer', { collide: false, minimap: false, grad: false });
+    f.box(0, 1.0, cabZ + 1.13, 1.4, 0.55, 0.04, 'metal_galvanized', { collide: false, minimap: false, ao: false });
+    f.box(0, 3.0, cabZ - 0.2, 2.3, 0.4, 1.6, 'metal_painted', { tint: shade(col, 0.9), collide: false, minimap: false, grad: false });
+    for (const sx of [-1, 1]) f.box(sx * 0.95, 0.75, cabZ + 1.16, 0.32, 0.14, 0.04, 'lamp_warm', { collide: false, minimap: false, ao: false });
+    // Fahrgestell
+    f.box(0, 0.55, cabZ - 2.6, 1.0, 0.35, 5.2, 'metal_painted', { tint: '#26282b', collide: false, minimap: false, grad: false });
+    for (const sx of [-1, 1]) f.cyl(sx * 1.0, 0.65, cabZ - 1.5, 0.28, 1.2, 'metal_galvanized', { axis: 'z', collide: false, minimap: false });
+    for (const sx of [-1, 1]) { wheel(f, sx * 1.05, 0.52, cabZ + 0.2, 0.52, 0.35); wheel(f, sx * 1.05, 0.52, cabZ - 2.6, 0.52, 0.4); }
+    f.solid(0, 0, cabZ, 2.5, 3.4, 2.4, { minimap: 'vehicle' });
+    if (o.trailer === null) return;
+  }
   // Auflieger: Vorderkante 0,5 m hinter der Kabine (Kabine bis cabZ − 1,1; vorher ragte er 0,6 m hinein – wie lkw()
   // in maps/hafen-fahrzeuge.js)
   const tl = 12.2, tz = cabZ - 1.6 - tl / 2;
   const tt = o.trailer || 'box';
   f.box(0, 1.05, tz, 2.5, 0.25, tl, 'metal_painted', { tint: '#3a3d40', collide: false, minimap: false, grad: false });
   for (const sx of [-1, 1]) for (const k of [0, 1, 2]) wheel(f, sx * 1.05, 0.52, tz - tl / 2 + 1.2 + k * 1.3, 0.52, 0.4);
-  f.box(0, 0.2, tz + tl / 2 - 2.5, 0.12, 0.85, 0.12, 'metal_painted', { tint: '#26282b', collide: false, minimap: false });
+  // Stützbeine: abgestellt bis zum Boden (Fuß + Platte), angekuppelt eingefahren
+  if (parked) for (const sx of [-0.9, 0.9]) { f.box(sx, 0.06, tz + tl / 2 - 2.5, 0.12, 0.99, 0.12, 'metal_painted', { tint: '#26282b', collide: false, minimap: false }); f.box(sx, 0, tz + tl / 2 - 2.5, 0.26, 0.06, 0.32, 'metal_painted', { tint: '#26282b', collide: false, minimap: false }); }
+  else f.box(0, 0.2, tz + tl / 2 - 2.5, 0.12, 0.85, 0.12, 'metal_painted', { tint: '#26282b', collide: false, minimap: false });
   if (tt === 'container') { const [cx, cz] = f.P(0, tz); container(b, cx, y + 1.3, cz, { len: 12.19, ry: (o.ry || 0) + Math.PI / 2, color: o.containerColor, logo: o.logo, minimap: 'vehicle' }); }
   else if (tt === 'box') {
     f.box(0, 1.3, tz, 2.5, 2.7, tl, 'metal_corrugated', { tint: o.boxColor || '#d8d8d2', minimap: 'vehicle', grad: false, uv: 'local' });
@@ -575,6 +702,7 @@ export function truck(b, x, z, o = {}) {
 
 /** Gabelstapler (lokal z = Fahrtrichtung, Gabel bei +z) */
 export function forklift(b, x, z, o = {}) {
+  if (o.drivable !== false && civilSpot(b, 'stapler', x, o.y ?? 0, z, o.ry || 0, o.color || '#e0a02a', staplerLast(o.load))) return;
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0), col = o.color || '#e0a02a';
   f.box(0, 0.3, -0.2, 1.15, 0.8, 1.7, 'metal_painted', { tint: col, collide: false, minimap: false, grad: false });
   f.cyl(0, 0.3, -1.05, 0.58, 0.85, 'metal_painted', { tint: '#2b2d30', collide: false, minimap: false, arc: Math.PI, ry: Math.PI / 2, caps: true });
