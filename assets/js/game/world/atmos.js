@@ -7,7 +7,7 @@
 //   • Staub: Punktwolke um die Kamera (weltfest, umlaufend), leuchtet im Sonnenlicht (Schattenkarten der Nah- und
 //     Fernkaskade bzw. Sonnensicht der Sonden) und matt im Himmels-/Lampenlicht; ein Zeichenaufruf.
 import * as THREE from 'three';
-import { WS } from './shading.js?v=20261016110650';
+import { WS } from './shading.js?v=20261016141956';
 
 /** Stufen: max. Strahlen, Staubteilchen. */
 const TIERS = { low: { beams: 10, dust: 140 }, medium: { beams: 20, dust: 260 }, high: { beams: 32, dust: 420 }, ultra: { beams: 48, dust: 620 } };
@@ -329,7 +329,7 @@ export function createAtmosphere(G, { quality, def, sunDir, openings = [], bvh, 
       beamMat = new THREE.ShaderMaterial({
         name: 'np:sonnenstrahlen',
         uniforms: {
-          uColor: { value: sunCol.clone().multiplyScalar(def.sun.intensity) },
+          uColor: { value: sunCol.clone().multiplyScalar(def.sun.intensity).multiply(new THREE.Color(A.beamTint ?? '#ffffff')) }, // beamTint: Staub färbt das Licht (Werkhalle warm)
           uSunDir: { value: L.clone() }, uTime: { value: 0 }, uG: { value: A.beamG ?? 0.4 },
         },
         vertexShader: BEAM_VERT, fragmentShader: BEAM_FRAG,

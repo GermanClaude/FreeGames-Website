@@ -1,7 +1,7 @@
 // NULLPUNKT — Tasten- und Controller-Beschriftungen für Menüs und HUD (aus shared/bindings.data.js), Touch-Layout-Helfer.
 
-import { codeLabel, loadKeyboardLayout, aspectBucket, setTouchEntry, sanitizeTouchLayout, TOUCH_ASPECTS } from '../../../shared/bindings.data.js?v=20261016110650';
-import { esc } from '../dom.js?v=20261016110650';
+import { codeLabel, loadKeyboardLayout, aspectBucket, setTouchEntry, sanitizeTouchLayout, TOUCH_ASPECTS } from '../../../shared/bindings.data.js?v=20261016141956';
+import { esc } from '../dom.js?v=20261016141956';
 
 let kbLayout = null;
 let kbAsked = false;

@@ -4,9 +4,9 @@
 // Dazwischen das Niemandsland: Hunderte Granattrichter (die tiefsten voll Wasser), Stacheldrahtgürtel vor beiden
 // Fronten, zersplitterte Baumstümpfe, eine Dorfruine (West) und eine Kapellenruine (Ost) mit zerstörbaren Mauern, in
 // der Mitte ein liegengebliebener Panzer. Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { wall } from '../arch.js?v=20261016110650';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261016110650';
-import { sampleSpline } from '../terrain/generate.js?v=20261016110650';
+import { wall } from '../arch.js?v=20261016141956';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261016141956';
+import { sampleSpline } from '../terrain/generate.js?v=20261016141956';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -182,12 +182,13 @@ export default {
   ambience: 'range',
   defaultSurface: 'dirt',
   wallMargin: 40,
+  assets: { hdri: 'np_sky_vormittag_bewoelkt' }, // 16.10.: eigener Himmel (Kartenstandard Vormittag, bewölkt)
   lighting: {
     // bedeckt: Sonne hoch und schwach, kein Hof um die Sonne (blendete tief im Gegenlicht – Nutzer 11.10.)
     sun: { elevation: 42, azimuth: 200, color: '#ddd6ca', intensity: 1.25 },
-    sky: { turbidity: 6, rayleigh: 1.2, mieCoefficient: 0.004, mieDirectionalG: 0.55, exposure: 0.36, tint: '#bdbab2', clouds: { coverage: 0.92, density: 0.72, scale: 0.00018, elevation: 0.5 }, hazeHigh: 0.25, hazeAmount: 1.1, hdri: false },
-    hemi: { sky: '#a6a59c', ground: '#4a4034', intensity: 0.85 },
-    env: { intensity: 0.9, ground: '#4a4034', groundIntensity: 0.5, tint: '#e2ddd2' },
+    sky: { turbidity: 6, rayleigh: 1.2, mieCoefficient: 0.004, mieDirectionalG: 0.55, exposure: 0.36, tint: '#bdbab2', clouds: { coverage: 0.92, density: 0.72, scale: 0.00018, elevation: 0.5 }, hazeHigh: 0.25, hazeAmount: 1.1, hdriIntensity: 0.9, hdriTint: '#d8d4ca' }, // 16.10.: eigener bedeckter Himmel
+    hemi: { sky: '#a6a59c', ground: '#4a4034', intensity: 0.85, hdriIntensity: 0.8 },
+    env: { intensity: 0.9, ground: '#4a4034', groundIntensity: 0.5, tint: '#e2ddd2', hdriIntensity: 0.85, hdriTint: '#e2ddd2' },
     fog: { color: '#8f8a80', nearFactor: 0.12, density: 0.006, falloff: 0.03, start: 18, max: 0.92, sun: 0.06, sunExp: 10 },
     shadow: { size: 60, bias: -0.0004, normalBias: 0.04, near: 40, farMaxY: 40 },
     exposure: 1.0,

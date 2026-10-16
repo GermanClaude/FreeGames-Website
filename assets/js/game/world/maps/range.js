@@ -1,9 +1,9 @@
 // NULLPUNKT — Karte „Schießstand“: Trainingsanlage mit 8 Bahnen, Klappzielen 10–100 m,
 // Schießstand-Überdachung, Waffenkammer und Einschieß-Parcours. Klarer Morgen. (Owner: world)
 import * as THREE from 'three';
-import { getMaterial } from '../../engine/textures.js?v=20261016110650';
-import { building, wall, stairs, railing } from '../arch.js?v=20261016110650';
-import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261016110650';
+import { getMaterial } from '../../engine/textures.js?v=20261016141956';
+import { building, wall, stairs, railing } from '../arch.js?v=20261016141956';
+import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261016141956';
 
 const LANES = 8, LANE_W = 5.5, FIRE_Z = 34;
 const laneX = i => -((LANES - 1) / 2) * LANE_W + i * LANE_W;
@@ -18,7 +18,7 @@ export default {
   chunkSize: 34,
   ambience: 'range',
   // Fotoscan-Bibliothek (assets/lib): HDRI für Umgebungslicht + Himmel, Materialzuordnung siehe world/library.js
-  assets: { hdri: 'zwartkops_straight_morning' },
+  assets: { hdri: 'np_sky_morgen_klar' }, // 16.10.: eigener Himmel statt Poly-Haven-Foto
   defaultSurface: 'dirt',
   navSpacing: 1.6,
   lighting: {
