@@ -18,12 +18,12 @@ import * as THREE from 'three';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261021124446';
-import { LensModel, LensPass } from './lens.js?v=20261021124446';
-import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261021124446';
-import { AutoExposure } from './exposure.js?v=20261021124446';
-import { Bloom, lensDirtTexture } from './bloom.js?v=20261021124446';
-import { LightShafts } from './shafts.js?v=20261021124446';
+import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261021134543';
+import { LensModel, LensPass } from './lens.js?v=20261021134543';
+import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261021134543';
+import { AutoExposure } from './exposure.js?v=20261021134543';
+import { Bloom, lensDirtTexture } from './bloom.js?v=20261021134543';
+import { LightShafts } from './shafts.js?v=20261021134543';
 
 export const LENS_STYLES = Object.freeze(['bodycam', 'klassisch', 'aus']);
 
@@ -337,6 +337,8 @@ export class PostPipeline {
         this.shafts.render(r, this.fs, this.hdr.texture, this.hdr.depthTexture, this.inner.w / this.inner.h, gs, camera);
         shaftsOn = true;
       }
+      // Himmelsmaske für den Bloom (Himmel trägt weniger zum Schein bei → keine Blendung), vor dem Waffen-Durchgang
+      if (this.bloom && this.hdr.depthTexture) { r.autoClear = false; this.bloom.captureSky(r, this.fs, this.hdr.depthTexture); }
       if (hasVm) {
         r.setRenderTarget(this.hdr);
         r.autoClear = false;

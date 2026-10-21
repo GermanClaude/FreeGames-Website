@@ -7,8 +7,8 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261021124446';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261021124446';
+import { generateTexture } from '../world/texgen.js?v=20261021134543';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261021134543';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -167,6 +167,7 @@ const MATS = {
   sandbag:           { tex: 'sandbag', tile: 0.6, surface: 'sand' },
   // Sackleinen ohne aufgemalte Säcke – für einzeln modellierte Säcke (sandbag-field.js); bewusst ohne Bibliothekssatz
   sackleinen:        { tex: 'sackleinen', tile: 0.45, surface: 'sand' },
+  draht:             { tex: 'draht', tile: 0.25, surface: 'metal', params: { metalness: 0.45 } },
   tarp:              { tex: 'tarp', tile: 2, surface: 'fabric' },
   awning:            { tex: 'awning', tile: 1, surface: 'fabric', params: { side: 'double' } },
   rubber:            { tex: 'rubber', tile: 1, surface: 'fabric' },
@@ -323,7 +324,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261021124446', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261021134543', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });

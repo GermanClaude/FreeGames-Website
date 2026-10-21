@@ -2,11 +2,11 @@
 // Controller (Kurve mit Live-Vorschau, Totzonen, Stick-Anzeige), Touch und Gyro (Erlaubnis, Kalibrierung des
 // Nullpunkts, Live-Anzeige). Sprungmarken oben; Reihenfolge nach dem gerade benutzten Gerät.
 
-import { esc, num } from '../dom.js?v=20261021124446';
-import { ICON } from '../icons.js?v=20261021124446';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled } from './rows.js?v=20261021124446';
-import { HINTS } from './schema-page.js?v=20261021124446';
-import { VR_KEYS, vrSectionHtml, vrSectionSync } from './vr-section.js?v=20261021124446';
+import { esc, num } from '../dom.js?v=20261021134543';
+import { ICON } from '../icons.js?v=20261021134543';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled } from './rows.js?v=20261021134543';
+import { HINTS } from './schema-page.js?v=20261021134543';
+import { VR_KEYS, vrSectionHtml, vrSectionSync } from './vr-section.js?v=20261021134543';
 
 const SECTIONS = {
   touch: { label: 'Touch', keys: ['touchSensitivity', 'touchOpacity', 'touchButtonScale'] },

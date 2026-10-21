@@ -1,10 +1,10 @@
 // NULLPUNKT — MapBuilder: sammelt statische Geometrie, verschmilzt sie pro Material/Chunk,
 // backt Ambient Occlusion in Vertexfarben, erzeugt Kollisions- und Kugel-Geometrie (Owner: world)
 import * as THREE from 'three';
-import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261021124446';
-import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261021124446';
-import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261021124446';
-import { assets } from '../../../lib/loader.js?v=20261021124446';
+import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261021134543';
+import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261021134543';
+import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261021134543';
+import { assets } from '../../../lib/loader.js?v=20261021134543';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric', 'flesh', 'vehicle']; // vehicle = Fahrzeugblech (Durchschuss)
 const SURF_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s, i]));
@@ -817,6 +817,8 @@ export class MapBuilder {
    * @returns {Promise<object>} Ergebnis mit group, meshes, objects, bulletTris/bulletData (Kugel-Dreiecke), colTris (Kollision) …
    */
   async build({ onProgress, quality = 'high', anisotropy = 4 } = {}) {
+    // Sammler, die erst nach allen Aufrufen ihre Meshes bauen (z. B. Stacheldraht), vor dem eigentlichen Aufbau abschließen
+    for (const f of this.beforeBuild || []) f();
     this._quality = quality;
     this._anisotropy = anisotropy;
     const step = async (p, label) => { onProgress?.(p, label); await new Promise(r => setTimeout(r, 0)); };

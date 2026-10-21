@@ -1,9 +1,9 @@
 // Pistolen: P-9 Kompakt (Polymer, Schlagbolzen) und Adler .50 (schwere Edelstahlpistole mit Dreieckslauf)
-import { slots, engrave } from './parts.js?v=20261021124446';
-import { magRounds } from './magfill.js?v=20261021124446';
-import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, sdEllipsoid, simplifyPoly, grid2D, cavityColors } from './sdf.js?v=20261021124446';
-import * as R from './p9-ref.js?v=20261021124446';
-import { slideUV, frameUV, atlasUV } from './p9-tex.js?v=20261021124446';
+import { slots, engrave } from './parts.js?v=20261021134543';
+import { magRounds } from './magfill.js?v=20261021134543';
+import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, sdEllipsoid, simplifyPoly, grid2D, cavityColors } from './sdf.js?v=20261021134543';
+import * as R from './p9-ref.js?v=20261021134543';
+import { slideUV, frameUV, atlasUV } from './p9-tex.js?v=20261021134543';
 
 const RAKE = 0.3;
 

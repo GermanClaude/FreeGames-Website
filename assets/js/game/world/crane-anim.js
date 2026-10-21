@@ -12,8 +12,8 @@
 //   partBuilder(b) + partGroup(b, pb)   Teile mit denselben Primitiven/Materialien wie die Karte, als eigene Meshes
 //   inView(camera, x, y, z, r)          Kugel im Sichtkegel? (außerhalb: Stellung nicht nachführen)
 import * as THREE from 'three';
-import { MapBuilder } from './builder.js?v=20261021124446';
-import { getMaterial } from '../engine/textures.js?v=20261021124446';
+import { MapBuilder } from './builder.js?v=20261021134543';
+import { getMaterial } from '../engine/textures.js?v=20261021134543';
 
 const GRAV = 9.81;
 
