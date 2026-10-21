@@ -9,11 +9,11 @@
 // er: Anteil an den frühen Reflexionen (reflect.js) · loud: Nennpegel (dB, 0 ≈ eigener Schuss) für das HDR-Fenster
 // (laute Klänge dämpfen leise) · quiet: wird vom HDR-Fenster gedämpft
 // REC_ONLY: nur als Aufnahme vorhandene Klänge (assets/lib/audio, samples.js) mit denselben Mischfeldern, ohne Rezept.
-import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop } from './sfx-weapons.js?v=20261021110545';
-import { SURFACES, footstep, gearRattle, jump, land, slide, impact, hitFlesh, hitHelmet, pain, death, heartbeat, breathIn, breathOut, rustle } from './sfx-foley.js?v=20261021110545';
-import { UI_RECIPES, FEEDBACK } from './sfx-ui.js?v=20261021110545';
-import { AMB_EVENTS, AMBIENCES, ambienceBed, BED_RATE, EVENT_RATE } from './ambience.js?v=20261021110545';
-import { STEMS, STEM_SR, STEM_IDS } from './music.js?v=20261021110545';
+import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop } from './sfx-weapons.js?v=20261021120344';
+import { SURFACES, footstep, gearRattle, jump, land, slide, impact, hitFlesh, hitHelmet, pain, death, heartbeat, breathIn, breathOut, rustle } from './sfx-foley.js?v=20261021120344';
+import { UI_RECIPES, FEEDBACK } from './sfx-ui.js?v=20261021120344';
+import { AMB_EVENTS, AMBIENCES, ambienceBed, BED_RATE, EVENT_RATE } from './ambience.js?v=20261021120344';
+import { STEMS, STEM_SR, STEM_IDS } from './music.js?v=20261021120344';
 
 export const RATE_FULL = 48000;
 export const RATE_LOW = 32000;
@@ -123,7 +123,7 @@ const UI_RATE = { confirm: 32000, toggle: 22050, back: 22050, error: 22050 };
 for (const [name, fn] of Object.entries(UI_RECIPES)) def(name, fn, { variants: name === 'hover' ? 3 : name === 'click' ? 2 : 1, gain: UI_GAIN[name], bus: 'ui', group: 'ui', cap: 4, prio: 3, env: 0, pitchJit: 0.01, gainJit: 0.03, tier: 0, cheap: true, rate: UI_RATE[name] || RATE_FULL });
 
 // Atmo-Ereignisse (nur die der aktuellen Karte werden gerendert)
-const AMB_VARIANTS = { amb_gull: 4, amb_bird: 5, amb_dog: 3, amb_drip: 4, amb_creak: 2, amb_clank: 2, amb_chime: 2, amb_flap: 2, amb_steam: 2, amb_groan: 2, amb_arc: 2, amb_crow: 2 };
+const AMB_VARIANTS = { amb_gull: 4, amb_bird: 5, amb_dog: 3, amb_drip: 4, amb_creak: 2, amb_clank: 2, amb_chime: 2, amb_flap: 2, amb_steam: 2, amb_groan: 2, amb_arc: 2, amb_crow: 2, amb_crackle: 3, amb_snap: 2, amb_shell: 2 };
 const AMB_VARIANTS_LOW = { amb_gull: 3, amb_bird: 3, amb_drip: 3 };
 for (const [name, fn] of Object.entries(AMB_EVENTS)) {
   def(name, fn, { variants: AMB_VARIANTS[name] || 1, variantsLow: AMB_VARIANTS_LOW[name] || 0, bus: 'amb', rate: EVENT_RATE[name] || 32000, ref: 20, roll: 1, maxDist: 5000, group: 'amb', cap: 8, prio: 0, env: 0, pitchJit: 0.05, tier: 3 });

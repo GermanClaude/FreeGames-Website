@@ -11,10 +11,10 @@
 // Punktlicht wie Explosionen → konstante Lichterzahl), Pulvergas eigener Schüsse, Rauchfäden aus heißen Läufen.
 
 import * as THREE from 'three';
-import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261021110545';
-import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261021110545';
-import { Debris } from '../weapons/ballistics/debris.js?v=20261021110545';
-import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261021110545';
+import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261021120344';
+import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261021120344';
+import { Debris } from '../weapons/ballistics/debris.js?v=20261021120344';
+import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261021120344';
 
 const ALPHA_CAP = 900;
 const ADD_CAP = 640;
@@ -936,6 +936,17 @@ export class Effects {
       this._puff(position.x + rnd(-0.3, 0.3), position.y + rnd(0, 0.3), position.z + rnd(-0.3, 0.3), rnd(-0.4, 0.4), opts.rise ?? 0.8, rnd(-0.4, 0.4),
         (opts.life || 2.5) * rnd(0.8, 1.2), (opts.size || 1) * 0.3, (opts.size || 1) * rnd(1.2, 1.8), col, opts.alpha ?? 0.5, 1.2, 0.3);
     }
+  }
+
+  /**
+   * Dünner Rauchfaden (Glutnest, schwelender Stumpf): ein Ballen, der langsam steigt, sich weitet und mit dem Wind
+   * treibt – viele davon hintereinander ergeben eine Fahne. opts: { size, life, alpha, color ([r,g,b] linear), wind ([x, z] m/s) }
+   */
+  wisp(position, opts = {}) {
+    if (!this._built || Math.random() > Math.max(0.5, this.scale)) return;
+    const s = opts.size || 1, w = opts.wind || [0.22, 0.08];
+    this._puff(position.x + rnd(-0.08, 0.08), position.y, position.z + rnd(-0.08, 0.08), w[0] + rnd(-0.06, 0.06), rnd(0.32, 0.5), w[1] + rnd(-0.06, 0.06),
+      (opts.life || 6) * rnd(0.85, 1.15), 0.16 * s, s * rnd(1.5, 2.1), opts.color || C.smokeLight, opts.alpha ?? 0.3, 0.12, 0.1);
   }
 
   /* ================================================================ Wurfmittel & Raketen (Welle 2) */

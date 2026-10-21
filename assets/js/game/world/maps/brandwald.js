@@ -5,8 +5,8 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261021110545';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261021110545';
+import { sampleSpline } from '../terrain/generate.js?v=20261021120344';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261021120344';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -63,7 +63,7 @@ export default {
   scale: 'gross',
   seed: 2110,
   bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180, minY: -10, maxY: 60 },
-  ambience: 'range',
+  ambience: 'burnt', // Wind ohne Laub, Knistern, Knarzen, ferner Geschützdonner
   defaultSurface: 'dirt',
   wallMargin: 35,
   assets: { hdri: 'np_sky_vormittag_bewoelkt' },
@@ -119,6 +119,7 @@ export default {
     clearings: [[8, 6, 12], [-100, 14, 26], [106, -22, 22]],
   },
   // Bodenstreu (je m², Ring um die Kamera): verkohlte Zweige, graue Stöcke, Äste, Rindenstücke, Holzkohle, Steine
+  embers: { count: 26, seed: 2115 },   // schwelende Stümpfe/Stämme mit dünnem Rauch
   litter: { seed: 2114, twigs: 0.55, sticks: 0.12, branches: 0.035, bark: 0.18, coals: 0.22, stones: 0.14 },
   clearings: [[8, 6, 12]],
   // Wegketten für Bots entlang der Grabensohlen (das 4-m-Navigationsgitter trifft die 1,9 m breiten Gräben kaum)
