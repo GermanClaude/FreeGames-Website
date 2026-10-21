@@ -1,8 +1,8 @@
 // NULLPUNKT — Editor für eigene Tarnmuster (nur Spieler der ersten Stunde, Nutzer 13.10.2026). Drei Plätze; je Muster:
 // Name, Musterart, 2–4 Farben, Größe, Oberfläche, Vorschau. Gespeichert im Browser (shared/customcamo.js), erscheint
 // danach in der Tarnungsauswahl jeder Waffe und wird online mitgeschickt.
-import { CUSTOM_SLOTS, CUSTOM_PATTERNS, CUSTOM_FINISHES, loadDesigns, saveDesign, cleanDesign } from '../../shared/customcamo.js?v=20261021134543';
-import { designCanvas } from '../weapons/gunsmith/camos.js?v=20261021134543';
+import { CUSTOM_SLOTS, CUSTOM_PATTERNS, CUSTOM_FINISHES, loadDesigns, saveDesign, cleanDesign } from '../../shared/customcamo.js?v=20261021154657';
+import { designCanvas } from '../weapons/gunsmith/camos.js?v=20261021154657';
 
 const START = { name: 'Eigenes Muster', pattern: 'splinter', colors: ['#3d4a2c', '#1d2118', '#7a6a45', '#c9a34a'], scale: 1, finish: 'matt' };
 const CSS = `

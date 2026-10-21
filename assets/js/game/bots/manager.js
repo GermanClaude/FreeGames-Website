@@ -13,22 +13,22 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261021134543';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261021134543'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261021134543';
-import { pickNames } from './names.js?v=20261021134543';
-import { Nameplate } from './nameplates.js?v=20261021134543';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261021134543';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261021134543';
-import { analyze } from './ai/tactics.js?v=20261021134543';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261021134543';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261021134543';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261021134543';
-import { BotAdapt } from './ai/spielstil.js?v=20261021134543';
-import { CorpseStore } from './corpses.js?v=20261021134543';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261021134543';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021134543';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261021134543';
+import { Bot } from './bot.js?v=20261021154657';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261021154657'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261021154657';
+import { pickNames } from './names.js?v=20261021154657';
+import { Nameplate } from './nameplates.js?v=20261021154657';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261021154657';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261021154657';
+import { analyze } from './ai/tactics.js?v=20261021154657';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261021154657';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261021154657';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261021154657';
+import { BotAdapt } from './ai/spielstil.js?v=20261021154657';
+import { CorpseStore } from './corpses.js?v=20261021154657';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261021154657';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021154657';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261021154657';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -607,11 +607,14 @@ export class BotManager {
         G.events.emit('tracer', { from, to: _pt.multiplyScalar(dist).add(_pe).clone(), actor: bot, weaponId: def.id, hit, cosmetic: true });
       }
     }
+    // Einschusslöcher auch für Schüsse entfernter Spieler (jedes Gerät rechnet seine Löcher selbst, inkl. Durchschuss)
+    let hole = null;
+    if (wh && G.holes) { try { hole = G.holes.hit(wh, def, _pd, dist, 1); } catch { hole = null; } }
     if (wh && impact && this.puppetFx.impacts) {
       const nrm = wh.normal ? wh.normal.clone() : _pd.clone().negate();
       if (nrm.dot(_pd) > 0) nrm.negate(); // zum Schützen (doppelseitige Flächen)
       const point = wh.point.clone();
-      G.events.emit('impact', { point, normal: nrm, surface: wh.surface || 'concrete', weaponId: def.id, actor: bot, cosmetic: true });
+      G.events.emit('impact', { point, normal: nrm, surface: wh.surface || 'concrete', weaponId: def.id, actor: bot, cosmetic: true, hole: !!hole, ricochet: !!(hole && hole.ricochet), dir: _pd.clone() });
       this._onImpact({ point, shooter: bot }); // Gehör der Bots (Einschläge in der Nähe)
     }
     if (this.puppetFx.whiz) this._puppetWhiz(bot, dist);

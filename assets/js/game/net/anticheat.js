@@ -20,8 +20,9 @@
 // Meldet der Client „tot“, während seine Puppe beim Host lebt (Spawn unterwegs), bleibt der Anker unverändert.
 // Verstöße sind gewichtet und klingen mit der Zeit ab; ab `threshold` wird einmalig onKick(peer, grund, text) gerufen
 // (und das Ergebnis trägt `kick`). Protokoll: ac.log = [{t, peer, reason, text, weight, score}] (für das Host-Menü).
-import { damageAt, zoneMult, fireModesOf, burstCountOf } from '../../shared/weapons.data.js?v=20261021134543';
-import { FLAGS } from './protocol.js?v=20261021134543';
+import { damageAt, zoneMult, fireModesOf, burstCountOf } from '../../shared/weapons.data.js?v=20261021154657';
+import { FLAGS } from './protocol.js?v=20261021154657';
+import { caliberOf } from '../../shared/calibers.js?v=20261021154657';
 
 /** Gewicht je Verstoß (Summe ≥ threshold → Kick). */
 export const AC_WEIGHTS = Object.freeze({
@@ -519,6 +520,8 @@ export class AntiCheat {
       const p = this._peer(id);
       let seen = true;
       try { seen = !!ctx.los(origin, point); } catch { seen = true; }
+      // gemeldeter Durchschuss (bullet-holes.js): Kaliber, das Mauerwerk überhaupt durchdringt, zählt nicht als „ohne Sicht“
+      if (!seen && claim.pen === 1 && def && caliberOf(def).pen.concrete >= 1) seen = true;
       p.los.push(seen ? 0 : 1);
       if (p.los.length > o.losWindow) p.los.shift();
       const miss = p.los.reduce((a, b) => a + b, 0);

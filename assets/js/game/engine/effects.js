@@ -11,10 +11,11 @@
 // Punktlicht wie Explosionen → konstante Lichterzahl), Pulvergas eigener Schüsse, Rauchfäden aus heißen Läufen.
 
 import * as THREE from 'three';
-import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261021134543';
-import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261021134543';
-import { Debris } from '../weapons/ballistics/debris.js?v=20261021134543';
-import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261021134543';
+import { caliberOf } from '../../shared/calibers.js?v=20261021154657'; // Austritts-Splitter nach Geschossenergie
+import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261021154657';
+import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261021154657';
+import { Debris } from '../weapons/ballistics/debris.js?v=20261021154657';
+import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261021154657';
 
 const ALPHA_CAP = 900;
 const ADD_CAP = 640;
@@ -282,7 +283,8 @@ export class Effects {
     // Normale zum Schützen drehen (doppelseitige Flächen liefern sie teils abgewandt)
     const sh = e.shooter;
     let n = e.normal;
-    if (sh && typeof sh.getEyePosition === 'function') {
+    // Austritt (Durchschuss): Normale zeigt bewusst vom Schützen weg – Splitter fliegen auf der Rückseite heraus
+    if (sh && !e.exit && typeof sh.getEyePosition === 'function') {
       sh.getEyePosition(_t2).sub(e.point);
       if (_t2.dot(n) < 0) n = _n.copy(n).negate();
     }
@@ -322,7 +324,8 @@ export class Effects {
     const nl = Math.hypot(nx, ny, nz) || 1;
     nx /= nl; ny /= nl; nz /= nl;
     // Einschussloch (verzögert: Schießstand-Klappziele melden sich im selben Ereignis)
-    if (S.decal && !opts.melee && surface !== 'flesh') this._queueDecal(px, py, pz, nx, ny, nz, S, opts);
+    // Kugeltreffer mit Loch-System (bullet-holes.js) zeichnen ihr Loch selbst (Kaliber, Tiefe, Werkstoffrand)
+    if (S.decal && !opts.melee && !opts.hole && surface !== 'flesh') this._queueDecal(px, py, pz, nx, ny, nz, S, opts);
     const lod = this._lod(px, py, pz);
     if (lod <= 0) return;
     const k = opts.melee ? 0.5 : 1;
@@ -339,6 +342,40 @@ export class Effects {
       case 'glass': this._impactGlass(ox, oy, oz, nx, ny, nz, S, lod * k, g); break;
       case 'fabric': this._impactFabric(ox, oy, oz, nx, ny, nz, S, lod * k, g); break;
       default: this._impactHard(ox, oy, oz, nx, ny, nz, S, lod * k, g);
+    }
+    // Durchschuss: auf der Rückseite platzt Material heraus – Brocken/Splitter fliegen in Schussrichtung und fallen
+    // herunter, dazu ein Staubkegel (Größe nach Kaliberenergie)
+    if (opts.exit && (S.kind === 'hard' || S.kind === 'wood' || S.kind === undefined)) this._exitSpall(ox, oy, oz, nx, ny, nz, S, lod, g, opts.weaponId);
+    // Querschläger: Funkengarbe entlang der abgelenkten Bahn
+    if (opts.ricochet && opts.dir && (S.kind === 'metal' || S.kind === 'hard' || S.kind === undefined)) {
+      const dd = opts.dir, dn = dd.x * nx + dd.y * ny + dd.z * nz;
+      const rx = dd.x - 2 * dn * nx, ry = dd.y - 2 * dn * ny, rz = dd.z - 2 * dn * nz;
+      const cnt = Math.max(2, Math.round(5 * lod));
+      for (let i = 0; i < cnt; i++) {
+        const sp = rnd(9, 18);
+        this._spark(ox, oy, oz, (rx + rnd(-0.12, 0.12)) * sp, (ry + rnd(-0.08, 0.12)) * sp, (rz + rnd(-0.12, 0.12)) * sp, rnd(0.08, 0.2), rnd(0.014, 0.024), i % 2 ? C.spark : C.sparkHot, 4, 9, 0.035);
+      }
+    }
+  }
+
+  _exitSpall(x, y, z, nx, ny, nz, S, lod, g, weaponId) {
+    const def = weaponId && this.G.data?.WEAPONS?.[weaponId];
+    const E = def ? caliberOf(def).E : 2000;
+    const k = Math.min(2.2, 0.6 + Math.sqrt(E / 3000)); // .50 ≈ 2,2, Gewehr ≈ 1,3, Pistole ≈ 0,9
+    const wood = S.kind === 'wood';
+    const n = Math.max(2, Math.round(this._count(wood ? 7 : 9, lod) * k));
+    const floor = this._floorY(x, y, z, ny);
+    for (let i = 0; i < n; i++) {
+      this._scatter(nx, ny, nz, 0.55, _v);
+      const sp = rnd(1.8, 5.5) * Math.sqrt(k);
+      this._chip(x, y, z, _v.x * sp, _v.y * sp + rnd(0, 1.2), _v.z * sp, rnd(1.2, 2.2), rnd(0.012, 0.03) * k * (wood ? 1.3 : 1), i % 3 ? S.chip : (S.dustDark || S.chip), 14, floor);
+    }
+    // Staubkegel nach hinten + rieselnder Feinstaub
+    const puffs = Math.max(1, Math.round(this._count(3, lod) * Math.min(1.6, k)));
+    for (let i = 0; i < puffs; i++) {
+      this._scatter(nx, ny, nz, 0.35, _v);
+      const sp = rnd(1.2, 3.2);
+      this._puff(x, y, z, _v.x * sp, _v.y * sp, _v.z * sp, rnd(1.0, 1.8), 0.1 * g * k, rnd(0.5, 0.9) * g * k, S.dust, 0.55, 2.6, -0.05);
     }
   }
 
@@ -942,7 +979,7 @@ export class Effects {
    * Dünner Rauchfaden (Glutnest, schwelender Stumpf): ein Ballen, der langsam steigt, sich weitet und mit dem Wind
    * treibt – viele davon hintereinander ergeben eine Fahne. opts: { size, life, alpha, color ([r,g,b] linear), wind ([x, z] m/s) }
    */
-  wisp(position, opts = {}) {
+  smolder(position, opts = {}) {
     if (!this._built || Math.random() > Math.max(0.5, this.scale)) return;
     const s = opts.size || 1, w = opts.wind || [0.22, 0.08];
     this._puff(position.x + rnd(-0.08, 0.08), position.y, position.z + rnd(-0.08, 0.08), w[0] + rnd(-0.06, 0.06), rnd(0.32, 0.5), w[1] + rnd(-0.06, 0.06),

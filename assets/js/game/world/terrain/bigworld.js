@@ -7,36 +7,36 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261021134543';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261021134543';
-import { createWorldAssets } from '../library.js?v=20261021134543';
-import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261021134543';
-import { createLighting } from '../lighting.js?v=20261021134543';
-import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261021134543';
-import { createAtmosphere } from '../atmos.js?v=20261021134543';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261021134543';
-import { createWater } from '../water.js?v=20261021134543';
-import { TriangleBVH } from '../bvh.js?v=20261021134543';
-import { makeTests } from '../navbuild.js?v=20261021134543';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261021134543';
-import { Heightfield } from './heightfield.js?v=20261021134543';
-import { makeCoarse } from './generate.js?v=20261021134543';
-import { CompositeBVH } from './composite.js?v=20261021134543';
-import { TerrainCollider } from './collide.js?v=20261021134543';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261021134543';
-import { createTerrainMaterial } from './splat.js?v=20261021134543';
-import { Vegetation } from './vegetation.js?v=20261021134543';
-import { Deadwood } from './deadwood.js?v=20261021134543';
-import { Litter } from './litter.js?v=20261021134543';
-import { RoadNetwork } from './roads.js?v=20261021134543';
-import { bigNavFromData } from './bignav.js?v=20261021134543';
-import { createBigMinimap } from './bigminimap.js?v=20261021134543';
-import { terrainJob, worldJob } from './bigjob.js?v=20261021134543';
+import { MAPS } from '../../../shared/maps.data.js?v=20261021154657';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261021154657';
+import { createWorldAssets } from '../library.js?v=20261021154657';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261021154657';
+import { createLighting } from '../lighting.js?v=20261021154657';
+import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261021154657';
+import { createAtmosphere } from '../atmos.js?v=20261021154657';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261021154657';
+import { createWater } from '../water.js?v=20261021154657';
+import { TriangleBVH } from '../bvh.js?v=20261021154657';
+import { makeTests } from '../navbuild.js?v=20261021154657';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261021154657';
+import { Heightfield } from './heightfield.js?v=20261021154657';
+import { makeCoarse } from './generate.js?v=20261021154657';
+import { CompositeBVH } from './composite.js?v=20261021154657';
+import { TerrainCollider } from './collide.js?v=20261021154657';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261021154657';
+import { createTerrainMaterial } from './splat.js?v=20261021154657';
+import { Vegetation } from './vegetation.js?v=20261021154657';
+import { Deadwood } from './deadwood.js?v=20261021154657';
+import { Litter } from './litter.js?v=20261021154657';
+import { RoadNetwork } from './roads.js?v=20261021154657';
+import { bigNavFromData } from './bignav.js?v=20261021154657';
+import { createBigMinimap } from './bigminimap.js?v=20261021154657';
+import { terrainJob, worldJob } from './bigjob.js?v=20261021154657';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261021134543'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261021134543'),
-  brandwald: () => import('../maps/brandwald.js?v=20261021134543'),
+  grenzland: () => import('../maps/grenzland.js?v=20261021154657'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261021154657'),
+  brandwald: () => import('../maps/brandwald.js?v=20261021154657'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -56,7 +56,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261021134543', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261021154657', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -296,12 +296,15 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
 
   // 5) Kollision/Kugeln/Navigation im Worker
   const objects = [chunks.group];
-  const colList = [], bulList = [], datList = [];
+  const colList = [], bulList = [], datList = [], albList = [];
+  // Albedo je Kugel-Dreieck (Einschusskrater in Wandfarbe, world.albedoAt); Bewuchs/Totholz pauschal
+  const albFill = (n, r, g, b) => { const a = new Uint8Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = r; a[i * 3 + 1] = g; a[i * 3 + 2] = b; } return a; };
   for (const s of sites) {
     const off = objects.length;
     for (const o of s.built.objects) objects.push(o);
     colList.push(s.built.colTris);
     bulList.push(s.built.bulletTris);
+    albList.push(s.built.bulletAlbedo || albFill(s.built.bulletTris.length / 9, 90, 90, 90));
     const d = new Uint32Array(s.built.bulletData.length);
     for (let i = 0; i < d.length; i++) { const v = s.built.bulletData[i]; d[i] = (v & 255) | (((v >>> 8) + off) << 8); }
     datList.push(d);
@@ -311,16 +314,20 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   bulList.push(vegCol.bullet);
   const vd = new Uint32Array(vegCol.bullet.length / 9).fill(2 | (vegObj << 8)); // Holz/Fels: 'wood'
   datList.push(vd);
+  albList.push(albFill(vd.length, 46, 36, 26));
   if (dead) {
     const deadObj = objects.push(dead.group) - 1;
     colList.push(deadCol.col); bulList.push(deadCol.bullet);
     datList.push(new Uint32Array(deadCol.bullet.length / 9).fill(2 | (deadObj << 8)));
+    albList.push(albFill(deadCol.bullet.length / 9, 16, 15, 14)); // verkohlt
   }
   const wallRect = { minX: pb.minX - (def.wallMargin ?? 45), maxX: pb.maxX + (def.wallMargin ?? 45), minZ: pb.minZ - (def.wallMargin ?? 45), maxZ: pb.maxZ + (def.wallMargin ?? 45) };
   colList.push(boundaryWalls(wallRect, -20, 140));
   const colTris = concatF32(colList), bulletTris = concatF32(bulList);
   const bulletData = new Uint32Array(bulletTris.length / 9);
   { let o = 0; for (const d of datList) { bulletData.set(d, o); o += d.length; } }
+  const bulletAlbedo = new Uint8Array(bulletData.length * 3);
+  { let o = 0; for (const a of albList) { bulletAlbedo.set(a.subarray(0, Math.min(a.length, bulletAlbedo.length - o)), o); o += a.length; } }
 
   // Punkte (Startpunkte, Flaggen, Fahrzeuge, Geheimnisse) auf den Boden setzen
   const pts = [];
@@ -437,7 +444,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const minimap = createBigMinimap({ hf, bounds: pb, size: tier.mapPx, roads: roads.roads, footprints });
   ms.minimap = Math.round(performance.now() - tMM);
   const bounds = new THREE.Box3(new THREE.Vector3(pb.minX, pb.minY ?? -8, pb.minZ), new THREE.Vector3(pb.maxX, pb.maxY ?? 90, pb.maxZ));
-  const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0 };
+  const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
   const sitesVis = sites.map(s => {
     const r = s.def.bounds;
     return { group: s.built.group, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, rad: Math.hypot(r.maxX - r.minX, r.maxZ - r.minZ) / 2 + 20, props: s.built.props, objects: s.b.objects, res: s.res };
@@ -491,6 +498,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
           normal: new THREE.Vector3(hit.nx, hit.ny, hit.nz),
           surface: SURFACES[hit.data & 255] || 'grass',
           object: objects[hit.data >>> 8] || null,
+          tri: hit.tri, back: !!hit.back,
         };
       }
       // Wasseroberfläche (Fluss): Kugeln enden mit Spritzer
@@ -504,6 +512,13 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
         }
       }
       return best;
+    },
+    /** Albedo (linear 0..1) des Kugel-Dreiecks eines raycast-Treffers (hit.tri; Gelände −1 → null). */
+    albedoAt(tri, out = [0, 0, 0]) {
+      if (tri == null || tri < 0 || tri >= bulBVH.count) return null;
+      const a = bulBVH.orig[tri] * 3;
+      out[0] = bulletAlbedo[a] / 255; out[1] = bulletAlbedo[a + 1] / 255; out[2] = bulletAlbedo[a + 2] / 255;
+      return out;
     },
     lineOfSight(a, b2) {
       const dx = b2.x - a.x, dy = b2.y - a.y, dz = b2.z - a.z, l = Math.hypot(dx, dy, dz);
@@ -558,7 +573,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
           if ((e.t -= dt) > 0) continue;
           e.t = 0.28 + Math.random() * 0.3;
           if (e.v.distanceToSquared(camera.position) > 8100) continue;
-          G.effects.wisp(e.v, EMBER_SMOKE);
+          G.effects.smolder(e.v, EMBER_SMOKE);
         }
       }
       for (const s of sitesVis) {

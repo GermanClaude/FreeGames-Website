@@ -1,29 +1,29 @@
 // NULLPUNKT — Welt laden (Owner: world)
 // loadWorld(G, mapId, { onProgress }) → World (siehe docs/ARCHITECTURE.md §6)
 import * as THREE from 'three';
-import { buildColliderOctreeAsync } from './collider.js?v=20261021134543';
-import { TriangleBVH } from './bvh.js?v=20261021134543';
-import { MAPS } from '../../shared/maps.data.js?v=20261021134543';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../engine/textures.js?v=20261021134543';
-import { createWorldAssets } from './library.js?v=20261021134543';
-import { MapBuilder, civilList, SURFACES } from './builder.js?v=20261021134543';
-import { createLighting, sunVector } from './lighting.js?v=20261021134543';
-import { applyWorldShading, initShading, resetShading, setShadingMode, shadingMode, bindShadingScene, watchScene, WS } from './shading.js?v=20261021134543';
-import { createProbeQuery, PROBE_TIERS, PROBE_BOUNCE_SCALE } from './probes.js?v=20261021134543';
-import { createAtmosphere } from './atmos.js?v=20261021134543';
-import { resolveConditions, applyConditions } from './weather.js?v=20261021134543';
-export { resolveConditions, conditionsLabel } from './weather.js?v=20261021134543'; // atmosphere-weather: main.js löst Wetter/Zeit vor dem Laden auf
-import { createWater } from './water.js?v=20261021134543';
-import { navFromData, validateNavGraph } from './navgraph.js?v=20261021134543';
-import { createMinimap } from './minimap.js?v=20261021134543';
-import { foliageUniforms } from './atlas.js?v=20261021134543';
+import { buildColliderOctreeAsync } from './collider.js?v=20261021154657';
+import { TriangleBVH } from './bvh.js?v=20261021154657';
+import { MAPS } from '../../shared/maps.data.js?v=20261021154657';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../engine/textures.js?v=20261021154657';
+import { createWorldAssets } from './library.js?v=20261021154657';
+import { MapBuilder, civilList, SURFACES } from './builder.js?v=20261021154657';
+import { createLighting, sunVector } from './lighting.js?v=20261021154657';
+import { applyWorldShading, initShading, resetShading, setShadingMode, shadingMode, bindShadingScene, watchScene, WS } from './shading.js?v=20261021154657';
+import { createProbeQuery, PROBE_TIERS, PROBE_BOUNCE_SCALE } from './probes.js?v=20261021154657';
+import { createAtmosphere } from './atmos.js?v=20261021154657';
+import { resolveConditions, applyConditions } from './weather.js?v=20261021154657';
+export { resolveConditions, conditionsLabel } from './weather.js?v=20261021154657'; // atmosphere-weather: main.js löst Wetter/Zeit vor dem Laden auf
+import { createWater } from './water.js?v=20261021154657';
+import { navFromData, validateNavGraph } from './navgraph.js?v=20261021154657';
+import { createMinimap } from './minimap.js?v=20261021154657';
+import { foliageUniforms } from './atlas.js?v=20261021154657';
 
 const MAP_MODULES = {
-  hafen: () => import('./maps/hafen.js?v=20261021134543'),
-  altstadt: () => import('./maps/altstadt.js?v=20261021134543'),
-  werk: () => import('./maps/werk.js?v=20261021134543'),
-  bibliothek: () => import('./maps/bibliothek.js?v=20261021134543'),
-  range: () => import('./maps/range.js?v=20261021134543'),
+  hafen: () => import('./maps/hafen.js?v=20261021154657'),
+  altstadt: () => import('./maps/altstadt.js?v=20261021154657'),
+  werk: () => import('./maps/werk.js?v=20261021154657'),
+  bibliothek: () => import('./maps/bibliothek.js?v=20261021154657'),
+  range: () => import('./maps/range.js?v=20261021154657'),
 };
 
 /** Großkarten (MAPS[id].scale === 'gross'): eigener Lader, nur per import() (GROSSKAMPF_PLAN §12.5). */
@@ -69,13 +69,13 @@ function runWorldJob(job, onStage) {
     const fallback = () => {
       if (settled) return;
       worker?.terminate(); worker = null;
-      import('./worldgen.js?v=20261021134543').then(({ buildWorldData }) => new Promise(r => setTimeout(r, 0)).then(() => {
+      import('./worldgen.js?v=20261021154657').then(({ buildWorldData }) => new Promise(r => setTimeout(r, 0)).then(() => {
         try { done(resolve, buildWorldData(job, onStage)); } catch (err) { done(reject, err); }
       }), err => done(reject, err));
     };
     try {
       if (typeof Worker === 'undefined') throw new Error('keine Worker');
-      worker = new Worker(new URL('./worldgen.worker.js?v=20261021134543', import.meta.url), { type: 'module' });
+      worker = new Worker(new URL('./worldgen.worker.js?v=20261021154657', import.meta.url), { type: 'module' });
     } catch { worker = null; fallback(); return; }
     const id = ++jobSeq;
     worker.onmessage = (e) => {
@@ -171,7 +171,7 @@ export async function loadWorld(G, mapId, opts = {}) {
   const { onProgress } = opts;
   // atmosphere-weather: Wetter/Tageszeit (opts.weather/opts.time; sonst URL weather=/tod= – Prüfseiten)
   const condReq = { weather: 'weather' in opts ? opts.weather : G.params?.get?.('weather'), time: 'time' in opts ? opts.time : G.params?.get?.('tod') };
-  if (BIG_MAPS.has(mapId) && MAPS[mapId]?.scale === 'gross') return (await import('./terrain/bigworld.js?v=20261021134543')).loadBigWorld(G, mapId, { onProgress, ...condReq });
+  if (BIG_MAPS.has(mapId) && MAPS[mapId]?.scale === 'gross') return (await import('./terrain/bigworld.js?v=20261021154657')).loadBigWorld(G, mapId, { onProgress, ...condReq });
   const t0 = performance.now();
   const id = MAP_MODULES[mapId] ? mapId : 'hafen';
   const meta = MAPS[id];
@@ -329,7 +329,7 @@ export async function loadWorld(G, mapId, opts = {}) {
   const job = await jobPromise;
   const tJob = performance.now() - tJob0;
   const bvh = TriangleBVH.fromData(job.bullet), cbvh = TriangleBVH.fromData(job.col);
-  const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0 };
+  const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
   const spawns = { A: [], B: [], ffa: [] };
   spawnSrc.forEach(({ team, s }, i) => {
     const position = new THREE.Vector3(points[i].x, job.snapped[i], points[i].z);
@@ -347,6 +347,8 @@ export async function loadWorld(G, mapId, opts = {}) {
   // Bau-Zwischendaten lösen: Die Methoden von `world` (unten) sind Closures dieser Funktion und halten deren
   // Variablen (b, built, job …) so lange wie die Welt. Dreieckslisten für Worker/Octree und die rohen Nav-Daten
   // werden nicht mehr gebraucht (die BVHs haben eigene, umsortierte Kopien); MapBuilder.build() räumt selbst auf.
+  // Albedo je Kugel-Dreieck bleibt (3 B/Dreieck): Farbe frischer Einschusskrater (bullet-holes.js über world.albedoAt)
+  const bulletAlbedo = built.bulletAlbedo;
   built.bulletTris = built.bulletData = built.colTris = built.bulletAlbedo = null;
   job.nav = null;
 
@@ -479,6 +481,7 @@ export async function loadWorld(G, mapId, opts = {}) {
           normal: new THREE.Vector3(hit.nx, hit.ny, hit.nz),
           surface: SURFACES[hit.data & 255] || 'concrete',
           object: objects[hit.data >>> 8] || null,
+          tri: hit.tri, back: !!hit.back,
         };
       }
       for (const t of targets) {
@@ -501,6 +504,14 @@ export async function loadWorld(G, mapId, opts = {}) {
         }
       }
       return best;
+    },
+
+    /** Albedo (linear 0..1) des Kugel-Dreiecks eines raycast-Treffers (hit.tri) → out [r, g, b] oder null. */
+    albedoAt(tri, out = [0, 0, 0]) {
+      if (!bulletAlbedo || tri == null || tri < 0 || tri >= bvh.count) return null;
+      const a = bvh.orig[tri] * 3;
+      out[0] = bulletAlbedo[a] / 255; out[1] = bulletAlbedo[a + 1] / 255; out[2] = bulletAlbedo[a + 2] / 255;
+      return out;
     },
 
     /** Freie Sicht zwischen zwei Punkten (Kugel-Geometrie). */
@@ -602,7 +613,7 @@ export async function loadWorld(G, mapId, opts = {}) {
   // env-look (medium+): Verwitterungs-Decals an Wänden (Rost-/Wasserläufe, Schmutzsockel, Risse, Plakate), per
   // Strahltest gesetzt; low unverändert (Modul wird dort gar nicht geladen)
   if (quality !== 'low' && def.lookDecals !== false) {
-    try { world.stats.lookDecals = (await import('./decals.js?v=20261021134543')).placeLookDecals(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def }); } catch (err) { console.warn('[world] Decals', err); }
+    try { world.stats.lookDecals = (await import('./decals.js?v=20261021154657')).placeLookDecals(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def }); } catch (err) { console.warn('[world] Decals', err); }
   }
   // Welt-Shading: alle Weltmaterialien bekommen den gemeinsamen Haken; Sonden + Fernkaskade aktivieren
   world.stats.lighting = activateLighting(G, def, world, group, light, probes, quality, debug);
