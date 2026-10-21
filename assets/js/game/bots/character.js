@@ -9,12 +9,12 @@
 // Ein Soldat = 1 SkinnedMesh je Detailstufe (alles in einer Geometrie + einem Material zusammengeführt)
 // + Waffe (2–4 Draw Calls). Detailstufen: 0 nah, 1 mittel, 2 fern (Schwellen je Qualität).
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261021190712';
-import { Animator } from './soldier/animator.js?v=20261021190712';
-import { Ragdoll } from './soldier/ragdoll.js?v=20261021190712';
-import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261021190712';
-import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261021190712';
-import { raySphere, rayCapsule } from '../combat.js?v=20261021190712';
+import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261021211339';
+import { Animator } from './soldier/animator.js?v=20261021211339';
+import { Ragdoll } from './soldier/ragdoll.js?v=20261021211339';
+import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261021211339';
+import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261021211339';
+import { raySphere, rayCapsule } from '../combat.js?v=20261021211339';
 
 export { VARIANTS, VARIANT_IDS, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes };
 
@@ -31,20 +31,20 @@ const BONE_INVERSES = BIND.map((p) => new THREE.Matrix4().makeTranslation(-p[0],
 
 // Trefferzonen: [Name, Zone, Gelenk A, Gelenk B (oder -1 = Kugel), Radius]
 // Gelenke: Knochenindex, oder 'head' (Kopfmitte)
-// 16.10.: Radien an die breitere Statur (gear.js BULK) angepasst – sichtbare Treffer am Rand zählen auch
+// 16.10./21.10.: Radien an die breitere Statur (gear.js BULK) angepasst – sichtbare Treffer am Rand zählen auch
 export const HITBOXES = [
   ['kopf', 'head', 'head', -1, 0.135],
-  ['hals', 'body', BONE.neck, BONE.head, 0.074],
-  ['rumpf', 'body', BONE.spine, BONE.neck, 0.2],
-  ['becken', 'body', 'hipL', 'hipR', 0.15],
-  ['oberarmL', 'limb', BONE.upperArmL, BONE.foreArmL, 0.076],
-  ['unterarmL', 'limb', BONE.foreArmL, BONE.handL, 0.064],
-  ['oberarmR', 'limb', BONE.upperArmR, BONE.foreArmR, 0.076],
-  ['unterarmR', 'limb', BONE.foreArmR, BONE.handR, 0.064],
-  ['oberschenkelL', 'limb', BONE.thighL, BONE.shinL, 0.106],
-  ['unterschenkelL', 'limb', BONE.shinL, BONE.footL, 0.076],
-  ['oberschenkelR', 'limb', BONE.thighR, BONE.shinR, 0.106],
-  ['unterschenkelR', 'limb', BONE.shinR, BONE.footR, 0.076],
+  ['hals', 'body', BONE.neck, BONE.head, 0.078],
+  ['rumpf', 'body', BONE.spine, BONE.neck, 0.22],
+  ['becken', 'body', 'hipL', 'hipR', 0.165],
+  ['oberarmL', 'limb', BONE.upperArmL, BONE.foreArmL, 0.084],
+  ['unterarmL', 'limb', BONE.foreArmL, BONE.handL, 0.07],
+  ['oberarmR', 'limb', BONE.upperArmR, BONE.foreArmR, 0.084],
+  ['unterarmR', 'limb', BONE.foreArmR, BONE.handR, 0.07],
+  ['oberschenkelL', 'limb', BONE.thighL, BONE.shinL, 0.118],
+  ['unterschenkelL', 'limb', BONE.shinL, BONE.footL, 0.084],
+  ['oberschenkelR', 'limb', BONE.thighR, BONE.shinR, 0.118],
+  ['unterschenkelR', 'limb', BONE.shinR, BONE.footR, 0.084],
 ];
 
 // Detailstufen-Schwellen (m, × FOV/60) je Qualitätsstufe: Telefone früh vereinfachen, Ultra lange voll

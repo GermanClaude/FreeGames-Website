@@ -7,7 +7,7 @@
 //   • Staub: Punktwolke um die Kamera (weltfest, umlaufend), leuchtet im Sonnenlicht (Schattenkarten der Nah- und
 //     Fernkaskade bzw. Sonnensicht der Sonden) und matt im Himmels-/Lampenlicht; ein Zeichenaufruf.
 import * as THREE from 'three';
-import { WS } from './shading.js?v=20261021190712';
+import { WS } from './shading.js?v=20261021211339';
 
 /** Stufen: max. Strahlen, Staubteilchen. */
 const TIERS = { low: { beams: 10, dust: 140, ash: 140 }, medium: { beams: 20, dust: 260, ash: 260 }, high: { beams: 32, dust: 420, ash: 420 }, ultra: { beams: 48, dust: 620, ash: 600 } };

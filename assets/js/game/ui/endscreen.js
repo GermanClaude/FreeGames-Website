@@ -3,9 +3,9 @@
 // animierter EP-Balken mit Stufen-/Dienstgrad-Aufstieg (rankIcon), neue Freischaltungen.
 // Knöpfe: Revanche · Lobby · Zur Website.
 
-import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261021190712';
-import { ICON, medalBadge } from './icons.js?v=20261021190712';
-import { scoreboardHtml, netRows } from './scoreboard.js?v=20261021190712';
+import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261021211339';
+import { ICON, medalBadge } from './icons.js?v=20261021211339';
+import { scoreboardHtml, netRows } from './scoreboard.js?v=20261021211339';
 
 const REASON = {
   score: 'Punktelimit erreicht', time: 'Zeit abgelaufen', overtime: 'In der Verlängerung entschieden', forced: 'Match beendet',

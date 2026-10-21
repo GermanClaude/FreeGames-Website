@@ -4,7 +4,7 @@
 // beim Gehen bleibt alles an seinem Platz. Nur Optik (keine Kollision, kein Netz). Dichten je m² aus der Karte
 // (def.litter), Reichweite und Schatten je Qualitätsstufe.
 import * as THREE from 'three';
-import { rng, createSimplex } from './noise.js?v=20261021190712';
+import { rng, createSimplex } from './noise.js?v=20261021211339';
 
 const TAU = Math.PI * 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3();

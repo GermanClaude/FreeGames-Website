@@ -16,9 +16,9 @@
 //  • Ergebnis: lokale Knochen-Quaternionen + Modellraum-Gelenke (für Trefferzonen/Ragdoll) +
 //    Waffentransformation.
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, DIM } from './rig.js?v=20261021190712';
-import { quatFromYZ, quatFromXY, twoBone, clamp, lerp, smooth, damp, wrap, ramp, spring, qrot } from './ik.js?v=20261021190712';
-import { Handling } from './actions.js?v=20261021190712';
+import { BONES, BONE, BONE_COUNT, DIM } from './rig.js?v=20261021211339';
+import { quatFromYZ, quatFromXY, twoBone, clamp, lerp, smooth, damp, wrap, ramp, spring, qrot } from './ik.js?v=20261021211339';
+import { Handling } from './actions.js?v=20261021211339';
 
 const V = () => new THREE.Vector3();
 const Qn = () => new THREE.Quaternion();
@@ -1195,7 +1195,8 @@ export class Animator {
       along *= amp;
       up *= amp;
       // Hüftraum: seitlicher Versatz, Laufweg entlang (hdx, hdz)
-      const lat = side * (0.1 + crouch * 0.05 + 0.01 * run);
+      // Stand: Füße etwa schulterbreit (vorher eng beieinander → wirkte schmächtig/X-beinig); im Gehen enger
+      const lat = side * (0.1 + 0.035 * clamp(1 - s / 1.6, 0, 1) * (1 - crouch) + crouch * 0.05 + 0.01 * run);
       let lx = lat + hdx * along, lz = hdz * along - crouch * 0.02 * side;
       if (crouch > 0.01) lz += crouch * (side < 0 ? -0.1 : 0.12); // Ausfallschritt-Stand in der Hocke
       // zurück in Modellraum (Drehung um hy)
