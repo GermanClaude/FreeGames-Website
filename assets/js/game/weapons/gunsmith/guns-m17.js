@@ -3,13 +3,13 @@
 // verfolgt und kalibriert, Bauteile als Distanzfelder (Profil × eigene Breite, weich vereinigt, Fenster/Nuten/Schächte
 // abgezogen), Schaft und Griff mit eigenem Atlas, Gravuren als Schriftfelder. Der gemeinsame AR-Unterbau (arLower in
 // guns-ar.js) bleibt für SK-14 und Ursprung unverändert.
-import * as R from './m17-ref.js?v=20261021101654';
-import { furnUV3, markMat, markAspect, SLOTS } from './m17-tex.js?v=20261021101654';
-import { atlasUV } from './p9-tex.js?v=20261021101654';
-import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, grid2D, simplifyPoly, contours2D, cavityColors } from './sdf.js?v=20261021101654';
-import { roundRect, shapeFrom, ellipsePts } from './builder.js?v=20261021101654';
-import { holoSight, birdcage } from './parts.js?v=20261021101654';
-import { magRounds } from './magfill.js?v=20261021101654';
+import * as R from './m17-ref.js?v=20261021110545';
+import { furnUV3, markMat, markAspect, SLOTS } from './m17-tex.js?v=20261021110545';
+import { atlasUV } from './p9-tex.js?v=20261021110545';
+import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, grid2D, simplifyPoly, contours2D, cavityColors } from './sdf.js?v=20261021110545';
+import { roundRect, shapeFrom, ellipsePts } from './builder.js?v=20261021110545';
+import { holoSight, birdcage } from './parts.js?v=20261021110545';
+import { magRounds } from './magfill.js?v=20261021110545';
 import * as THREE from 'three';
 
 const { U, V } = R;

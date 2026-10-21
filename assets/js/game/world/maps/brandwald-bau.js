@@ -4,11 +4,12 @@
 // durchhängenden Leitungen, einzelne Masten umgestürzt), Gewächshausruine (Bogenrippen aus Rohr, Pfetten,
 // Windverbände, teils eingeknickt), abgebrannter Holzplatz (Polterholz, Schuppenruine, Sägebock) und Feldposten.
 import * as THREE from 'three';
-import { sampleSpline } from '../terrain/generate.js?v=20261021101654';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261021101654';
-import { SandbagField } from '../sandbag-field.js?v=20261021101654';
-import { getMaterial } from '../../engine/textures.js?v=20261021101654';
-import { createSimplex } from '../terrain/noise.js?v=20261021101654';
+import { sampleSpline } from '../terrain/generate.js?v=20261021110545';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261021110545';
+import { SandbagField } from '../sandbag-field.js?v=20261021110545';
+import { getMaterial } from '../../engine/textures.js?v=20261021110545';
+import { createSimplex } from '../terrain/noise.js?v=20261021110545';
+import { mgNest } from './grenzland-stellungen.js?v=20261021110545';
 
 const Y = new THREE.Vector3(0, 1, 0);
 const _d = new THREE.Vector3(), _qq = new THREE.Quaternion(), _ee = new THREE.Euler();
@@ -91,6 +92,39 @@ function dirTo(ax, ay, az, cx, cy, cz) {
   return { rx: _ee.x, ry: _ee.y, rz: _ee.z };
 }
 
+/** Stahlhelm (Halbkugel mit Krempe), liegend oder auf einem Pfosten. */
+function helmet(b, x, y, z, ry, tilt = 0) {
+  b.geom(new THREE.SphereGeometry(0.15, 10, 5, 0, TAU, 0, Math.PI / 2), x, y, z, 'metal_painted', { ry, rz: tilt, tint: '#3e4236', collide: false, minimap: false, ao: false });
+  b.cyl(x, y, z, 0.17, 0.012, 'metal_painted', { ry, rz: tilt, tint: '#373a30', collide: false, minimap: false, seg: 12, ao: false });
+}
+/** Kanister (Blech, Griffe oben). */
+function jerrycan(b, x, y, z, ry, tint = '#3d4433') {
+  b.box(x, y, z, 0.17, 0.46, 0.34, 'metal_painted', { ry, tint, collide: false, minimap: false });
+  b.box(x, y + 0.46, z - 0.05, 0.05, 0.05, 0.16, 'metal_painted', { ry, tint, collide: false, minimap: false });
+}
+/** Schaufel an die Wand gelehnt (Stiel + Blatt). */
+function shovel(b, x, y, z, ax, az, lean = 0.3) {
+  const tx = x + ax * Math.sin(lean) * 1.1, tz = z + az * Math.sin(lean) * 1.1, ty = y + Math.cos(lean) * 1.1;
+  beam(b, x, y + 0.25, z, tx, ty, tz, 0.017, 'wood_dark', { tint: '#5a4835', seg: 5 });
+  const ry = Math.atan2(ax, az);
+  b.box(x, y, z, 0.2, 0.28, 0.02, 'metal_rust', { ry, rx: -lean, tint: '#4a3d33', collide: false, minimap: false });
+}
+/**
+ * Unterstand-Eingang in der Grabenwand: Türrahmen aus Kanthölzern mit Sturz, dunkle Öffnung (Tiefe angedeutet durch
+ * zurückgesetzte schwarze Fläche und Seitenbretter), Sandsäcke auf dem Sturz. Kollision: Wand bleibt geschlossen.
+ */
+function dugoutDoor(b, x, y, z, ry) {
+  const c = Math.cos(ry), s = Math.sin(ry);
+  const P = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c];  // lokal +z = aus der Wand in den Graben
+  const W = 1.0, H = 1.75;
+  for (const sx of [-1, 1]) { const [px, pz] = P(sx * (W / 2 + 0.08), 0.06); b.box(px, y - 0.1, pz, 0.16, H + 0.1, 0.16, 'wood_dark', { ry, tint: '#3e342a', collide: false, minimap: false }); }
+  { const [px, pz] = P(0, 0.06); b.box(px, y + H, pz, W + 0.4, 0.18, 0.2, 'wood_dark', { ry, tint: '#3a3027', collide: false, minimap: false }); }
+  { const [px, pz] = P(0, -0.32); b.box(px, y - 0.05, pz, W, H, 0.04, 'black', { ry, collide: false, minimap: false, ao: false }); }
+  for (const sx of [-1, 1]) { const [px, pz] = P(sx * W / 2, -0.12); b.box(px, y, pz, 0.03, H, 0.4, 'wood_planks', { ry, tint: '#2c251f', collide: false, minimap: false, uv: 'local' }); }
+  { const [px, pz] = P(0, -0.12); b.box(px, y + H - 0.03, pz, W, 0.03, 0.4, 'wood_planks', { ry, tint: '#2c251f', collide: false, minimap: false, uv: 'local' }); }
+  { const [px, pz] = P(0, 0.02); b.box(px, y - 0.02, pz, W + 0.1, 0.06, 0.3, 'wood_planks', { ry, tint: '#3a3027', collide: false, minimap: false, uv: 'local' }); }
+}
+
 /**
  * Gräben ausbauen (lateSite; braucht ctx.hf). Das Gelände ist um tr.revet breiter ausgehoben; hier entstehen die
  * eigentlichen, fast senkrechten Grabenwände: je Seite ein Wandband entlang der Geländekurve (Erdwand aus Grabenlehm,
@@ -167,7 +201,7 @@ export function trenchWorks(b, ctx, trenches, o = {}) {
     for (let k = 0; k + 2 < N; k += 2) {
       const [ax, az] = line[k], [bx, bz] = line[k + 2];
       const L = Math.hypot(bx - ax, bz - az);
-      const cr = [rc(), rc(), rc(), rc(), rc(), rc(), rc()]; // Kisten/Brustwehr: immer sieben Ziehungen je Abschnitt
+      const cr = [rc(), rc(), rc(), rc(), rc(), rc(), rc(), rc(), rc()]; // Kisten/Brustwehr/Unterstand: neun Ziehungen je Abschnitt
       if (L < 0.5) continue;
       const ux = (bx - ax) / L, uz = (bz - az) / L, nx = -uz, nz = ux, ry0 = Math.atan2(-uz, ux);
       const mx = (ax + bx) / 2, mz = (az + bz) / 2;
@@ -219,8 +253,26 @@ export function trenchWorks(b, ctx, trenches, o = {}) {
           b.solid(px + nx * es * 0.15, top - 0.05, pz + nz * es * 0.15, L, ph + 0.02, 0.62, { ry: ry0, minimap: false });
         }
       }
-      // Pfützen auf der Sohle (Schlammwasser), Sturmleitern an der Feindseite der Frontgräben, Munitionskisten
       const junction = inOther(Lr, mx, mz, 0.4);
+      // Unterstand-Eingang in der rückwärtigen Wand (Front- und Unterstützungsgräben, ≈ alle 40 m) – bei Bretter-/
+      // Sandsackwand nicht, sonst Rahmen vor der Erdwand; Kollision als flacher Quader (Wand bleibt zu)
+      const rear = -(enemySide * Math.sign(nz || 1) || 1);
+      if ((tr.sandbags ?? 0) >= 0.2 && cr[7] < 0.075 && !junction && !nearRamp(mx, mz, 4.5) && !inOther(Lr, mx, mz, 1.5)) {
+        const dx = mx + nx * rear * (hw - 0.02), dz = mz + nz * rear * (hw - 0.02);
+        dugoutDoor(b, dx, floor, dz, rear > 0 ? ry0 + Math.PI : ry0);
+        b.solid(dx + nx * rear * 0.1, floor, dz + nz * rear * 0.1, 1.5, 2.0, 0.25, { ry: ry0, minimap: false });
+      }
+      // Kleinkram (nur Optik, stufenabhängig mit rx): Feldtelefonkabel an der Rückwand, Helme, Kanister, Schaufeln
+      if (!low && !junction) {
+        const kx = mx + nx * rear * (hw - 0.05), kz = mz + nz * rear * (hw - 0.05), ky = floor + 1.35 + rx() * 0.15;
+        if (rx() < 0.7) { beam(b, kx - ux * L / 2, ky, kz - uz * L / 2, kx, ky - 0.12, kz, 0.006, 'polymer', { tint: '#1d1d1b', seg: 3, cast: false, ao: false, caps: false }); beam(b, kx, ky - 0.12, kz, kx + ux * L / 2, ky, kz + uz * L / 2, 0.006, 'polymer', { tint: '#1d1d1b', seg: 3, cast: false, ao: false, caps: false }); }
+        const roll = rx();
+        const sx2 = rx() < 0.5 ? 1 : -1, px2 = mx + nx * sx2 * (hw - 0.25) + ux * (rx() - 0.5) * L * 0.6, pz2 = mz + nz * sx2 * (hw - 0.25) + uz * (rx() - 0.5) * L * 0.6;
+        if (roll < 0.06) helmet(b, px2, floor + 0.02, pz2, rx() * TAU, (rx() - 0.5) * 0.6);
+        else if (roll < 0.1) jerrycan(b, px2, floor, pz2, ry0 + (rx() - 0.5) * 0.5);
+        else if (roll < 0.15) shovel(b, mx + nx * sx2 * (hw - 0.35), floor, mz + nz * sx2 * (hw - 0.35), nx * sx2, nz * sx2, 0.28);
+      }
+      // Pfützen auf der Sohle (Schlammwasser), Sturmleitern an der Feindseite der Frontgräben, Munitionskisten
       if (!junction && r() < 0.3) b.decal(mx + ux * (r() - 0.5) * L * 0.6, floor + 0.035, mz + uz * (r() - 0.5) * L * 0.6, 0.9 + r() * 1.4, 0.6 + r() * 0.5, 'puddle', { opacity: 0.9, ry: ry0 + (r() - 0.5) * 0.3 });
       if (!junction && (tr.sandbags ?? 0) >= 0.4 && k % 14 === 6) {
         const es = enemySide * Math.sign(nz || 1) || 1;   // Seite (±1), deren Normale zum Feind zeigt
@@ -383,6 +435,11 @@ export function groundDetails(b, ctx, o = {}) {
     b.decal(mx, my + lvl, mz, rr * (1.6 + rnd() * 0.5), rr * (1.3 + rnd() * 0.4), 'puddle', { opacity: 0.92, ry: rnd() * TAU });
     if (++n > 160) break;
   }
+  // Fahrzeugwracks
+  (o.wrecks || []).forEach(([x, z, ry, kind], i) => burntWreck(b, x, H(x, z) - 0.05, z, ry, kind, i + 1));
+  // MG-Stellungen hinter den Frontgräben (benutzbar, Blick aufs Niemandsland)
+  const keep = [];
+  for (const [x, z, ry] of o.nests || []) { mgNest(b, x, z, { y: H(x, z) - 0.05, ry }); keep.push({ pts: [[x, z], [x + 0.1, z]], r: 4.2 }); }
   // Stacheldraht
   for (const wv of o.wire || []) {
     for (let x = wv.x0; x < wv.x1; x += 3) {
@@ -391,12 +448,15 @@ export function groundDetails(b, ctx, o = {}) {
       if (nearTrench(x, zz)) continue;
       const lean = (rnd() - 0.5) * 0.25;
       b.cyl(x, y0 - 0.15, zz, 0.035, 1.35, 'wood_dark', { tint: '#2f2a25', collide: false, minimap: false, seg: 5, rz: lean, bullet: false });
-      for (const hy of [0.32, 0.72, 1.12]) beam(b, x, y0 + hy, zz, x2, y1 + hy - (rnd() < 0.15 ? 0.4 : 0), zz2, 0.005, 'metal_rust', { tint: '#3a332d', seg: 3, cast: false, ao: false, bullet: false });
-      beam(b, x, y0 + 1.1, zz, x2, y1 + 0.3, zz2, 0.005, 'metal_rust', { tint: '#3a332d', seg: 3, cast: false, ao: false, bullet: false });
-      beam(b, x, y0 + 0.3, zz, x2, y1 + 1.1, zz2, 0.005, 'metal_rust', { tint: '#3a332d', seg: 3, cast: false, ao: false, bullet: false });
+      const sag = rnd() < 0.15 ? 0.4 : 0, lowQ = ctx.quality === 'low';
+      for (const hy of lowQ ? [0.4, 1.0] : [0.32, 0.72, 1.12]) beam(b, x, y0 + hy, zz, x2, y1 + hy - sag, zz2, 0.005, 'metal_rust', { tint: '#3a332d', seg: 3, cast: false, ao: false, bullet: false, caps: false });
+      if (!lowQ) {
+        beam(b, x, y0 + 1.1, zz, x2, y1 + 0.3, zz2, 0.005, 'metal_rust', { tint: '#3a332d', seg: 3, cast: false, ao: false, bullet: false, caps: false });
+        beam(b, x, y0 + 0.3, zz, x2, y1 + 1.1, zz2, 0.005, 'metal_rust', { tint: '#3a332d', seg: 3, cast: false, ao: false, bullet: false, caps: false });
+      }
     }
   }
-  return { clearLines: [] };
+  return { clearLines: keep };
 }
 
 // ---------------------------------------------------------------------------
@@ -560,10 +620,45 @@ export function greenhouseRuin(b, cx, cz, y0) {
       const gx = ox + (r() - 0.5) * span * 1.1, gz = oz0 + r() * len;
       b.box(gx, y0 + 0.31, gz, 0.15 + r() * 0.35, 0.008, 0.1 + r() * 0.3, 'glass', { ry: r() * TAU, rx: (r() - 0.5) * 0.2, collide: false, minimap: false, cast: false, ao: false });
     }
+    // Restverglasung: einzelne Scheiben zwischen intakten Rippen, manche nur noch als Splitter (Dreieck) im Rahmen
+    for (let i = 0; i < ribs.length - 1; i++) for (let k = 0; k < 12; k++) {
+      if (r() > (hall === 0 ? 0.16 : 0.07)) continue;
+      const A = ribs[i][k], B2 = ribs[i][k + 1], C = ribs[i + 1][k + 1], D = ribs[i + 1][k];
+      if (Math.abs(A[2] - D[2]) > 3.2 || Math.abs(B2[1] - C[1]) > 0.6) continue; // verzogenes Feld: keine Scheibe
+      pane(b, A, B2, C, D, r() < 0.45 ? r() : -1);
+    }
+    // abgestürzte Rippenstücke und Pfetten am Boden, Pflanztöpfe
+    for (let i = 0; i < 4; i++) {
+      const x0 = ox + (r() - 0.5) * span * 0.8, z0 = oz0 + r() * len, a = r() * TAU, l = 1.5 + r() * 3;
+      beam(b, x0, y0 + 0.36, z0, x0 + Math.cos(a) * l, y0 + 0.36 + r() * 0.3, z0 + Math.sin(a) * l, 0.03, mat, { tint, seg: 5 });
+    }
+    for (let i = 0; i < 18; i++) {
+      const px = ox - 2.4 + (r() - 0.5) * 1.6, pz = oz0 + 2 + r() * (len - 4), rr = 0.07 + r() * 0.05;
+      const lying = r() < 0.4;
+      b.cyl(px, y0 + 0.31 + (lying ? rr : 0), pz, rr, rr * 1.3, 'brick_dark', { r1: rr * 1.25, tint: r() < 0.5 ? '#6e4232' : '#3c2c25', collide: false, minimap: false, seg: 8, ...(lying ? { rx: Math.PI / 2, ry: r() * TAU } : {}) });
+    }
   }
   // Heizkessel-Ruine (Ziegelsockel + Rohr) an der Stirnseite
   b.box(cx + 18, y0, cz - 6, 3, 2.2, 3.4, 'brick_dark', { tint: '#5c4a40', minimap: 'cover' });
   beam(b, cx + 18, y0 + 2.2, cz - 6, cx + 18.2, y0 + 7.5, cz - 6, 0.22, 'metal_rust', { tint: '#4c4038', seg: 10, collide: true });
+}
+
+/** Glasscheibe im Feld A-B-C-D (eingerückt); broken ≥ 0: nur ein Splitter-Dreieck (Lage nach broken). */
+function pane(b, A, B, C, D, broken = -1) {
+  const cx = (A[0] + B[0] + C[0] + D[0]) / 4, cy = (A[1] + B[1] + C[1] + D[1]) / 4, cz = (A[2] + B[2] + C[2] + D[2]) / 4;
+  const ins = (p) => [cx + (p[0] - cx) * 0.94 - cx, cy + (p[1] - cy) * 0.94 - cy, cz + (p[2] - cz) * 0.94 - cz];
+  let pts = [ins(A), ins(B), ins(C), ins(D)], idx = [0, 1, 2, 0, 2, 3];
+  if (broken >= 0) {
+    // Splitter: Ecke + zwei Punkte auf den anliegenden Kanten
+    const k = Math.floor(broken * 4) % 4, p0 = pts[k], p1 = pts[(k + 1) % 4], p3 = pts[(k + 3) % 4], t1 = 0.4 + broken * 0.5, t2 = 0.8 - broken * 0.5;
+    pts = [p0, p0.map((v, j) => v + (p1[j] - v) * t1), p0.map((v, j) => v + (p3[j] - v) * t2)]; idx = [0, 1, 2];
+  }
+  const P = pts.flat(), g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(pts.flatMap((p) => [p[0] + p[2], p[1]]), 2));
+  g.setIndex([...idx, ...idx.slice().reverse()]);
+  g.computeVertexNormals();
+  b.geom(g, cx, cy, cz, 'glass', { collide: false, minimap: false, cast: false, ao: false, uv: 'keep' });
 }
 
 // ---------------------------------------------------------------------------
@@ -605,6 +700,69 @@ export function timberYard(b, cx, cz, y0) {
   b.cyl(cx - 2, y0 + 1.15, cz + 2, 0.45, 0.04, 'metal_rust', { axis: 'z', tint: '#6b5a4c', collide: false, minimap: false, seg: 18 });
   for (let i = 0; i < 12; i++) b.box(cx + (r() - 0.5) * 18, y0 + 0.05 + r() * 0.1, cz + (r() - 0.5) * 14, 2.5 + r() * 1.5, 0.05, 0.22, 'wood_planks', { ry: r() * TAU, rz: (r() - 0.5) * 0.15, tint: r() < 0.5 ? '#3d342c' : '#5a4c3e', minimap: false, collide: false });
   barrelGroup(b, cx + 12, cz + 8, { n: 3 });
+}
+
+// ---------------------------------------------------------------------------
+// Ausgebrannte Fahrzeugwracks (eigene Modelle)
+// ---------------------------------------------------------------------------
+/** Brandfarben: verkohlt (schwarz), Rost (orange-braun), Asche/ausgeglüht (grauweiß) – je Teil gestreut. */
+const BURN = ['#1c1a18', '#26221f', '#2b2724', '#1f1d1b', '#4a3a2e', '#5c4a3c', '#6b655e', '#33302c'];
+
+/**
+ * Ausgebrannter Pritschenwagen: Leiterrahmen, Fahrerhaus als Blechschale ohne Scheiben (eine Tür fehlt, Dach
+ * eingedrückt), Motorblock unter fehlender Haube, Pritsche ohne Bretter (nur Rahmen, verkohlte Reste), Felgen ohne
+ * Reifen (eine Seite tiefer – Wrack schief). kind 'lkw' | 'pkw' (ausgebrannter Kombi). Kollision grob (Quader).
+ */
+export function burntWreck(b, x, y, z, ry, kind = 'lkw', seed = 1) {
+  const r = rngOf(seed * 7717 + 3);
+  const tilt = 0.04 + r() * 0.05;
+  const f = (lx, ly, lz) => { const c = Math.cos(ry), s = Math.sin(ry); return [x + lx * c + lz * s, y + ly + lx * tilt, z - lx * s + lz * c]; };
+  const col = () => BURN[Math.floor(r() * BURN.length)];
+  const panel = (lx, ly, lz, w, h, d, o = {}) => { const [px, py, pz] = f(lx, ly, lz); b.box(px, py, pz, w, h, d, o.mat || (r() < 0.25 ? 'metal_rust' : 'metal_painted'), { ry, rz: tilt + (o.rz || 0), rx: o.rx || 0, tint: o.tint || col(), collide: false, minimap: false, grad: false, uv: 'local' }); };
+  const rim = (lx, lz, rr) => { const [px, py, pz] = f(lx, rr * 0.8, lz); b.cyl(px, py, pz, rr, 0.2, 'metal_rust', { axis: 'x', ry, tint: '#4a3a2e', collide: false, minimap: false, seg: 12 }); b.cyl(px, py, pz, rr * 0.45, 0.24, 'metal_rust', { axis: 'x', ry, tint: '#2a2420', collide: false, minimap: false, seg: 8 }); };
+  if (kind === 'pkw') {
+    const L = 4.5, W = 1.75;
+    panel(0, 0.28, 0, W, 0.45, L);                                        // Wanne/Schweller
+    panel(0, 0.72, 1.55, W - 0.05, 0.12, 1.3, { rx: -0.08 });            // Motorhaube (verzogen)
+    panel(0, 0.72, -1.7, W - 0.05, 0.1, 1.0);                             // Heckdeckel
+    for (const sx of [-1, 1]) for (const zz of [0.85, -0.2, -1.2]) panel(sx * (W / 2 - 0.05), 0.75, zz, 0.06, 0.62, 0.08); // Säulen
+    panel(0, 1.33, -0.2, W - 0.15, 0.05, 2.1, { rz: 0.03, rx: 0.04 });   // Dach (eingesackt)
+    for (const sx of [-1, 1]) panel(sx * (W / 2 - 0.02), 0.32, -0.2, 0.04, 0.42, 2.0);  // Türbleche unten
+    panel(0, 0.45, 1.9, 0.7, 0.4, 0.5, { mat: 'metal_galvanized', tint: '#3d3530' });  // Motor
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) rim(sx * (W / 2 - 0.12), sz * 1.4, 0.24);
+    const [cx, cy, cz] = f(0, 0, 0);
+    b.solid(cx, cy, cz, W, 1.35, L, { ry, minimap: 'vehicle' });
+    return;
+  }
+  // Pritschenwagen
+  const W = 2.1, cabZ = 2.0;
+  for (const sx of [-0.45, 0.45]) panel(sx, 0.55, -0.4, 0.14, 0.2, 6.2, { tint: '#2a221d' });          // Leiterrahmen
+  for (let k = 0; k < 5; k++) panel(0, 0.57, -3 + k * 1.4, 1.05, 0.12, 0.1, { tint: '#2a221d' });       // Quertraversen
+  // Fahrerhaus: Boden, Rückwand, Dach (eingedrückt), Seitenwände (Tür links fehlt), Front mit Kühlergrill
+  panel(0, 0.85, cabZ, W, 0.08, 1.7);
+  panel(0, 0.9, cabZ - 0.82, W, 1.5, 0.06);
+  panel(0, 2.25, cabZ, W - 0.1, 0.06, 1.6, { rx: 0.06, rz: -0.05 });
+  panel(W / 2 - 0.03, 0.9, cabZ, 0.05, 0.75, 1.6);
+  panel(W / 2 - 0.03, 1.65, cabZ - 0.55, 0.05, 0.6, 0.12);
+  panel(W / 2 - 0.03, 1.65, cabZ + 0.75, 0.05, 0.6, 0.1);
+  panel(-W / 2 + 0.03, 0.9, cabZ - 0.6, 0.05, 1.35, 0.15);
+  panel(-W / 2 + 0.03, 1.65, cabZ + 0.75, 0.05, 0.6, 0.1);
+  panel(0, 0.9, cabZ + 0.84, W, 0.75, 0.06);
+  for (let k = 0; k < 5; k++) panel(-0.6 + k * 0.3, 0.98, cabZ + 0.89, 0.06, 0.45, 0.04, { tint: '#3a332d' }); // Grill
+  panel(0, 0.62, cabZ + 0.95, W + 0.05, 0.16, 0.1, { tint: '#2a2420' });                                       // Stoßstange
+  panel(0, 1.0, cabZ + 0.2, 0.75, 0.55, 0.9, { mat: 'metal_galvanized', tint: '#3a332e' });                     // Motor
+  panel(0.35, 1.0, cabZ - 0.25, 0.5, 0.06, 0.45, { tint: '#1e1c1a', rx: 0.3 });                                 // Sitzgerippe
+  // Pritsche: Rahmen und Bordwände halb, verkohlte Bretterreste
+  panel(0, 0.75, -1.6, W, 0.1, 3.9, { tint: '#2c2620' });
+  for (const sx of [-1, 1]) panel(sx * (W / 2 - 0.02), 0.85, -1.6, 0.05, 0.5, 3.9, { rz: sx * 0.08 });
+  panel(0, 0.85, -3.55, W, 0.45, 0.05, { rx: 0.35 });
+  for (let k = 0; k < 6; k++) if (r() < 0.6) panel(-0.8 + k * 0.32, 0.86, -1.6 + (r() - 0.5) * 1.5, 0.22, 0.04, 0.8 + r() * 1.6, { mat: 'borke_verkohlt', tint: '#2a2622', rx: (r() - 0.5) * 0.1 });
+  for (const sx of [-1, 1]) { rim(sx * 0.95, cabZ + 0.1, 0.42); rim(sx * 0.95, -2.3, 0.42); }
+  // Kollision: Fahrerhaus + Pritsche
+  { const [cx, cy, cz] = f(0, 0, cabZ); b.solid(cx, cy, cz, W, 2.3, 1.9, { ry, minimap: 'vehicle' }); }
+  { const [cx, cy, cz] = f(0, 0, -1.6); b.solid(cx, cy, cz, W, 1.3, 4.0, { ry, minimap: 'vehicle' }); }
+  // Brandfleck am Boden
+  b.decal(x, y + 0.02, z, 4.5, 8, 'stain', { ry, opacity: 0.8, tint: '#141210' });
 }
 
 // ---------------------------------------------------------------------------
