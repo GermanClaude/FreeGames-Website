@@ -14,9 +14,9 @@
 // weiches Ausblenden im Shader, spärliche Wiesenblumen (medium+). Alles aus Positions-Hashes – berührt weder die
 // Zufallsströme noch die Kollision (Felsen werden nur gelesen, um Gras aus ihnen herauszuhalten).
 import * as THREE from 'three';
-import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM } from '../atlas.js?v=20261016175414';
-import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261016175414';
-import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261016175414';
+import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM } from '../atlas.js?v=20261021093201';
+import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261021093201';
+import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261021093201';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 const _c = new THREE.Color();
@@ -646,7 +646,8 @@ export class Vegetation {
       }
     }
     // Grasring (eigene Halme statt Laub-Atlas: liest sich auf Wiesen besser und braucht keinen Alpha-Test)
-    if (t.grass > 0) {
+    // spec.grass === false: kein Grasring (Brandwald: die Grundschicht ist Brandboden, kein Gras)
+    if (t.grass > 0 && this.spec.grass !== false) {
       const R = t.grass, look = GRASS_LOOK[q] || GRASS_LOOK.high;
       // gl-ground: Farbe ab 40 % des Radius zum Boden, Höhe ab 62 % weich auf 0 (Rand je Horst ±10 % versetzt)
       const gm = grassMaterial([R * 0.4, R * 0.82, R * 0.62, R * 0.95]);
