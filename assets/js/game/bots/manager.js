@@ -13,22 +13,22 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261021170820';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261021170820'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261021170820';
-import { pickNames } from './names.js?v=20261021170820';
-import { Nameplate } from './nameplates.js?v=20261021170820';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261021170820';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261021170820';
-import { analyze } from './ai/tactics.js?v=20261021170820';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261021170820';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261021170820';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261021170820';
-import { BotAdapt } from './ai/spielstil.js?v=20261021170820';
-import { CorpseStore } from './corpses.js?v=20261021170820';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261021170820';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021170820';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261021170820';
+import { Bot } from './bot.js?v=20261021180021';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261021180021'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261021180021';
+import { pickNames } from './names.js?v=20261021180021';
+import { Nameplate } from './nameplates.js?v=20261021180021';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261021180021';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261021180021';
+import { analyze } from './ai/tactics.js?v=20261021180021';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261021180021';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261021180021';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261021180021';
+import { BotAdapt } from './ai/spielstil.js?v=20261021180021';
+import { CorpseStore } from './corpses.js?v=20261021180021';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261021180021';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021180021';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261021180021';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -595,6 +595,12 @@ export class BotManager {
     if (W && typeof W.raycast === 'function') {
       wh = W.raycast(_pe, _pd, range);
       if (wh && wh.distance <= range) dist = wh.distance; else wh = null;
+      // Durchbrüche (bullet-holes.js): durch die ausgeschnittene Öffnung weiter bis zum nächsten Hindernis
+      for (let k = 0; k < 3 && wh && G.holes && G.holes._cutAt(wh.point, 0.9); k++) {
+        const from = wh.point.clone().addScaledVector(_pd, 0.05), base = dist + 0.05;
+        const w2 = W.raycast(from, _pd, range - base);
+        if (w2 && base + w2.distance <= range) { wh = w2; dist = base + w2.distance; } else { wh = null; dist = range; }
+      }
     }
     const ad = this._puppetActorHit(bot, _pe, _pd, dist);
     if (ad > 0) { dist = ad; wh = null; }
