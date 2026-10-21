@@ -11,11 +11,11 @@
 // Punktlicht wie Explosionen → konstante Lichterzahl), Pulvergas eigener Schüsse, Rauchfäden aus heißen Läufen.
 
 import * as THREE from 'three';
-import { caliberOf } from '../../shared/calibers.js?v=20261021154657'; // Austritts-Splitter nach Geschossenergie
-import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261021154657';
-import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261021154657';
-import { Debris } from '../weapons/ballistics/debris.js?v=20261021154657';
-import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261021154657';
+import { caliberOf } from '../../shared/calibers.js?v=20261021163452'; // Austritts-Splitter nach Geschossenergie
+import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261021163452';
+import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261021163452';
+import { Debris } from '../weapons/ballistics/debris.js?v=20261021163452';
+import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261021163452';
 
 const ALPHA_CAP = 900;
 const ADD_CAP = 640;

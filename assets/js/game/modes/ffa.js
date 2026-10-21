@@ -1,7 +1,7 @@
 // NULLPUNKT — Jeder gegen jeden: Wertung = Abschüsse, Platz 1–3 zählt als Sieg (MODES.ffa.winPlaces),
 // Gleichstand an der Spitze bei Zeitende → Verlängerung (nächster Abschuss), sonst Unentschieden.
 
-import { BaseMode } from './base.js?v=20261021154657';
+import { BaseMode } from './base.js?v=20261021163452';
 
 export class FfaMode extends BaseMode {
   constructor(G, modeId, opts) {

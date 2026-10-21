@@ -7,36 +7,36 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261021154657';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261021154657';
-import { createWorldAssets } from '../library.js?v=20261021154657';
-import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261021154657';
-import { createLighting } from '../lighting.js?v=20261021154657';
-import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261021154657';
-import { createAtmosphere } from '../atmos.js?v=20261021154657';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261021154657';
-import { createWater } from '../water.js?v=20261021154657';
-import { TriangleBVH } from '../bvh.js?v=20261021154657';
-import { makeTests } from '../navbuild.js?v=20261021154657';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261021154657';
-import { Heightfield } from './heightfield.js?v=20261021154657';
-import { makeCoarse } from './generate.js?v=20261021154657';
-import { CompositeBVH } from './composite.js?v=20261021154657';
-import { TerrainCollider } from './collide.js?v=20261021154657';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261021154657';
-import { createTerrainMaterial } from './splat.js?v=20261021154657';
-import { Vegetation } from './vegetation.js?v=20261021154657';
-import { Deadwood } from './deadwood.js?v=20261021154657';
-import { Litter } from './litter.js?v=20261021154657';
-import { RoadNetwork } from './roads.js?v=20261021154657';
-import { bigNavFromData } from './bignav.js?v=20261021154657';
-import { createBigMinimap } from './bigminimap.js?v=20261021154657';
-import { terrainJob, worldJob } from './bigjob.js?v=20261021154657';
+import { MAPS } from '../../../shared/maps.data.js?v=20261021163452';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261021163452';
+import { createWorldAssets } from '../library.js?v=20261021163452';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261021163452';
+import { createLighting } from '../lighting.js?v=20261021163452';
+import { applyWorldShading, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261021163452';
+import { createAtmosphere } from '../atmos.js?v=20261021163452';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261021163452';
+import { createWater } from '../water.js?v=20261021163452';
+import { TriangleBVH } from '../bvh.js?v=20261021163452';
+import { makeTests } from '../navbuild.js?v=20261021163452';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261021163452';
+import { Heightfield } from './heightfield.js?v=20261021163452';
+import { makeCoarse } from './generate.js?v=20261021163452';
+import { CompositeBVH } from './composite.js?v=20261021163452';
+import { TerrainCollider } from './collide.js?v=20261021163452';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261021163452';
+import { createTerrainMaterial } from './splat.js?v=20261021163452';
+import { Vegetation } from './vegetation.js?v=20261021163452';
+import { Deadwood } from './deadwood.js?v=20261021163452';
+import { Litter } from './litter.js?v=20261021163452';
+import { RoadNetwork } from './roads.js?v=20261021163452';
+import { bigNavFromData } from './bignav.js?v=20261021163452';
+import { createBigMinimap } from './bigminimap.js?v=20261021163452';
+import { terrainJob, worldJob } from './bigjob.js?v=20261021163452';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261021154657'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261021154657'),
-  brandwald: () => import('../maps/brandwald.js?v=20261021154657'),
+  grenzland: () => import('../maps/grenzland.js?v=20261021163452'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261021163452'),
+  brandwald: () => import('../maps/brandwald.js?v=20261021163452'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -56,7 +56,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261021154657', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261021163452', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -317,6 +317,9 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   albList.push(albFill(vd.length, 46, 36, 26));
   if (dead) {
     const deadObj = objects.push(dead.group) - 1;
+    // Ursprungsindex des ersten Totholz-Dreiecks je BVH (Bäume fällen: treefall.js schaltet Stämme ab)
+    dead.colStart = colList.reduce((n, a) => n + a.length / 9, 0);
+    dead.bulStart = bulList.reduce((n, a) => n + a.length / 9, 0);
     colList.push(deadCol.col); bulList.push(deadCol.bullet);
     datList.push(new Uint32Array(deadCol.bullet.length / 9).fill(2 | (deadObj << 8)));
     albList.push(albFill(deadCol.bullet.length / 9, 16, 15, 14)); // verkohlt
@@ -513,6 +516,16 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       }
       return best;
     },
+    /** Totholz (Brandwald) für treefall.js: { dw (Deadwood), disable(item) } oder null. */
+    deadwood: dead ? {
+      dw: dead,
+      disable(it) {
+        if (it.tri == null) return;
+        colBVH.disableOrig(dead.colStart + it.tri, it.triN);
+        bulBVH.disableOrig(dead.bulStart + it.tri, it.triN);
+      },
+    } : null,
+
     /** Albedo (linear 0..1) des Kugel-Dreiecks eines raycast-Treffers (hit.tri; Gelände −1 → null). */
     albedoAt(tri, out = [0, 0, 0]) {
       if (tri == null || tri < 0 || tri >= bulBVH.count) return null;

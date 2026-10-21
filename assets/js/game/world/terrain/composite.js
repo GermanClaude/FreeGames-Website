@@ -4,8 +4,8 @@
 
 export class CompositeBVH {
   /**
-   * @param {import('./heightfield.js?v=20261021154657').Heightfield} hf
-   * @param {import('../bvh.js?v=20261021154657').TriangleBVH|null} bvh Bauwerke (Kollision oder Kugel-Geometrie)
+   * @param {import('./heightfield.js?v=20261021163452').Heightfield} hf
+   * @param {import('../bvh.js?v=20261021163452').TriangleBVH|null} bvh Bauwerke (Kollision oder Kugel-Geometrie)
    * @param {{ terrainObject?: number }} [o] Objektindex für Gelände-Treffer (data = Oberfläche | index << 8)
    */
   constructor(hf, bvh, o = {}) {
@@ -64,6 +64,7 @@ const _n = { x: 0, y: 1, z: 0 };
 export function bvhBoxQuery(bvh, minX, minY, minZ, maxX, maxY, maxZ, cb, stack = new Int32Array(128)) {
   if (!bvh || !bvh.count) return;
   const { nMin, nMax, nLeft, nStart, nCount, tri } = bvh;
+  const off = bvh.off || null; // abgeschaltete Dreiecke (gefällte Bäume)
   let sp = 0;
   stack[sp++] = 0;
   while (sp > 0) {
@@ -73,6 +74,7 @@ export function bvhBoxQuery(bvh, minX, minY, minZ, maxX, maxY, maxZ, cb, stack =
     if (left >= 0) { if (sp < stack.length - 2) { stack[sp++] = left; stack[sp++] = left + 1; } continue; }
     const s = nStart[id], e = s + nCount[id];
     for (let i = s; i < e; i++) {
+      if (off !== null && off[i] === 1) continue;
       const o = i * 9;
       const ax = tri[o], ay = tri[o + 1], az = tri[o + 2];
       const bx = ax + tri[o + 3], by = ay + tri[o + 4], bz = az + tri[o + 5];
