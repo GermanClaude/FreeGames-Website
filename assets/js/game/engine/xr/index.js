@@ -24,10 +24,10 @@
 //   Bildschirm + 100 %, Foveated Rendering 1, MSAA über den Kontext (renderer.js, Einstellung vrEnabled).
 
 import * as THREE from 'three';
-import { collisionRay, keepClear } from '../physics.js?v=20261021163452';
-import { VrOverlay } from './overlay.js?v=20261021163452';
-import { WristHud } from './wrist.js?v=20261021163452';
-import { VrMenu } from './menu.js?v=20261021163452';
+import { collisionRay, keepClear } from '../physics.js?v=20261021170820';
+import { VrOverlay } from './overlay.js?v=20261021170820';
+import { WristHud } from './wrist.js?v=20261021170820';
+import { VrMenu } from './menu.js?v=20261021170820';
 
 // Augenhöhen wie player.js (STAND_EYE, CROUCH_EYE, PRONE_EYE) und Lehnweiten (LEAN_SIDE, …_CROUCH, PRONE_LEAN_SIDE)
 const EYE = { stand: 1.65, crouch: 1.0, prone: 0.38 };

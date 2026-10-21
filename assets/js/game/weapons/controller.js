@@ -10,11 +10,11 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261021163452';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261021163452';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261021163452';
-import { getWeaponModelInfo } from './models.js?v=20261021163452';
-import { classDef } from '../../shared/classes.data.js?v=20261021163452';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261021170820';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261021170820';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261021170820';
+import { getWeaponModelInfo } from './models.js?v=20261021170820';
+import { classDef } from '../../shared/classes.data.js?v=20261021170820';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -75,7 +75,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261021163452').WeaponSystem} system
+   * @param {import('./index.js?v=20261021170820').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -1164,6 +1164,9 @@ export class WeaponController {
         if (Number.isFinite(y) && _eye.y - y < 4.5) hit = { point: new THREE.Vector3(x, y, z), normal: new THREE.Vector3(0, 1, 0), surface: 'dirt' };
       }
       if (hit) G.events.emit('impact', { point: hit.point, normal: hit.normal, surface: hit.surface || 'concrete', shooter: a, weaponId: (m.def && m.def.id) || 'knife', melee: true });
+      // Kerbe in der Fläche (Messer in Holz: Macke); Türen nehmen etwas Schaden (Scharniere lassen sich aufhebeln)
+      if (hit && !spade && G.holes) G.holes.nick(hit, _aim, m.def);
+      if (hit && hit.solid && hit.solid.attach && typeof hit.solid.onHit === 'function') hit.solid.onHit(14, a, m.def, hit);
     }
   }
 

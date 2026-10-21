@@ -24,13 +24,13 @@
 //     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
 //     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021163452';
-import { importCC } from '../../shared/customcamo.js?v=20261021163452';
-import { netPoseOf } from '../bots/bot.js?v=20261021163452';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261021163452';
-import { HOST_ID } from './index.js?v=20261021163452';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261021163452';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261021163452';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021170820';
+import { importCC } from '../../shared/customcamo.js?v=20261021170820';
+import { netPoseOf } from '../bots/bot.js?v=20261021170820';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261021170820';
+import { HOST_ID } from './index.js?v=20261021170820';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261021170820';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261021170820';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -50,7 +50,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261021163452').NetSystem} net
+   * @param {import('./index.js?v=20261021170820').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {
@@ -839,9 +839,10 @@ export class ClientSync {
   }
 
   /** Tür/Tor ('door' {i, a: t|k|h, d}): der Host schaltet bzw. verrechnet den Treffer und verteilt 'ev' dr. */
-  sendDoor(i, a, d = 0) {
+  sendDoor(i, a, d = 0, x = 0) {
     if (!this.active || this.ended || !Number.isInteger(i)) return;
-    this.net.send(HOST_ID, { t: 'door', i, a: a === 'k' || a === 'h' ? a : 't', d: Math.round(d) });
+    // a: t umschalten, k auframmen, h Treffer, g Scharnier x getroffen, p lose Tür anstoßen (x = Seite)
+    this.net.send(HOST_ID, { t: 'door', i, a: ['k', 'h', 'g', 'p'].includes(a) ? a : 't', d: Math.round(d), x: x | 0 });
   }
 
   /** Grabwunsch ('dig' {x, z}): der Host prüft und verteilt ('ev' dg, digging.js). */

@@ -3,10 +3,10 @@
 // alles beim Laden, synchronisiert sich zwischen Tabs. Freischaltungen über
 // WEAPONS[id].unlockLevel aus weapons.data.js, XP-Regeln aus modes.data.js (beide statisch importiert).
 
-import { settings } from './settings.js?v=20261021163452';
-import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261021163452';
-import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261021163452';
-import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261021163452';
+import { settings } from './settings.js?v=20261021170820';
+import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261021170820';
+import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261021170820';
+import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261021170820';
 
 const STORAGE_KEY = 'nullpunkt:profile';
 /**
