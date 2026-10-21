@@ -7,8 +7,8 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261021093201';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261021093201';
+import { generateTexture } from '../world/texgen.js?v=20261021101654';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261021101654';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -118,7 +118,7 @@ const MATS = {
   wood_stock:        { tex: 'wood_stock', tile: 0.4, surface: 'wood', params: { roughness: 1 } },
   bark:              { tex: 'bark', tile: 1.2, surface: 'wood' },
   // Brandwald (21.10.): verkohlte Borke, Totholz, Brandboden/Asche/Grabenlehm/Schlamm (immer prozedural)
-  borke_verkohlt:    { tex: 'borke_verkohlt', tile: 1.4, surface: 'wood' },
+  borke_verkohlt:    { tex: 'borke_verkohlt', tile: 1.0, surface: 'wood' },
   totholz:           { tex: 'totholz', tile: 1.6, surface: 'wood' },
   brandboden:        { tex: 'brandboden', tile: 3.2, surface: 'dirt' },
   brandboden_hell:   { tex: 'brandboden_hell', tile: 3.2, surface: 'dirt' },
@@ -165,6 +165,8 @@ const MATS = {
   tiles_pattern:     { tex: 'tiles_pattern', tile: 2, surface: 'tile' },
   glass:             { tex: 'glass', tile: 2, surface: 'glass', params: { metalness: 0.1, envMapIntensity: 1.6 } },
   sandbag:           { tex: 'sandbag', tile: 0.6, surface: 'sand' },
+  // Sackleinen ohne aufgemalte Säcke – für einzeln modellierte Säcke (sandbag-field.js); bewusst ohne Bibliothekssatz
+  sackleinen:        { tex: 'sackleinen', tile: 0.45, surface: 'sand' },
   tarp:              { tex: 'tarp', tile: 2, surface: 'fabric' },
   awning:            { tex: 'awning', tile: 1, surface: 'fabric', params: { side: 'double' } },
   rubber:            { tex: 'rubber', tile: 1, surface: 'fabric' },
@@ -321,7 +323,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261021093201', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261021101654', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });

@@ -3,19 +3,19 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261021093201';
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261021093201';
-import { WEATHERS } from '../../shared/maps.data.js?v=20261021093201'; // atmosphere-weather
-import { realTimePreset } from '../world/weather.js?v=20261021093201'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261021093201';
-import { esc, num, secs, meters } from './dom.js?v=20261021093201';
-import { ICON } from './icons.js?v=20261021093201';
-import { drawMapArt } from './mapart.js?v=20261021093201';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261021093201';
-import { openCamoEditor } from './camo-editor.js?v=20261021093201';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261021093201';
-import { ProgressView } from './progress.js?v=20261021093201';
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261021093201';
+import { rulesFor, limitsFor, teamWarning } from '../../shared/modes.data.js?v=20261021101654';
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261021101654';
+import { WEATHERS } from '../../shared/maps.data.js?v=20261021101654'; // atmosphere-weather
+import { realTimePreset } from '../world/weather.js?v=20261021101654'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261021101654';
+import { esc, num, secs, meters } from './dom.js?v=20261021101654';
+import { ICON } from './icons.js?v=20261021101654';
+import { drawMapArt } from './mapart.js?v=20261021101654';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261021101654';
+import { openCamoEditor } from './camo-editor.js?v=20261021101654';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261021101654';
+import { ProgressView } from './progress.js?v=20261021101654';
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261021101654';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
