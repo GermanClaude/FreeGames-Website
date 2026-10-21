@@ -10,7 +10,7 @@ const CLASS = {
 export class RoadNetwork {
   /**
    * @param {Array<{ id, kind, width, samples: Float32Array, bridge, name }>} roads aus generateTerrain
-   * @param {import('./heightfield.js?v=20261021184022').Heightfield} hf
+   * @param {import('./heightfield.js?v=20261021190712').Heightfield} hf
    * @param {{ blockers?: Array<{minX,maxX,minZ,maxZ}> }} [o] Gebäudeflächen (nicht befahrbar)
    */
   constructor(roads, hf, o = {}) {
