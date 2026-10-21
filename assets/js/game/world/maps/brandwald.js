@@ -5,8 +5,8 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261021120344';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261021120344';
+import { sampleSpline } from '../terrain/generate.js?v=20261021124446';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261021124446';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -76,7 +76,7 @@ export default {
     fog: { color: '#c7c9c8', nearFactor: 0.08, density: 0.011, falloff: 0.025, start: 12, max: 0.95, sun: 0.04, sunExp: 10 },
     shadow: { size: 60, bias: -0.0004, normalBias: 0.04, near: 40, farMaxY: 40 },
     exposure: 1.05,
-    atmos: { beams: 0, beamG: 0.4, dust: 1.6, dustSize: 0.02 },
+    atmos: { beams: 0, beamG: 0.4, dust: 0.25, dustSize: 0.014, ash: 1, ashSize: 0.036, ashBox: 12 }, // Leuchtstaub kaum (wirkte wie Hagel), dafür fallende Ascheflocken
   },
   water: { color: '#2a2a26' },
   // Boden: eigene Brandwald-Sätze statt Wiese/Fotoscans (splat.js), keine Wiesenfarbe

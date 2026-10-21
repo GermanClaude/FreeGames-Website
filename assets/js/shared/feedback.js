@@ -5,8 +5,8 @@
 // ohne Hinweis darauf – man findet es nur beim Herunterscrollen (Nutzer 12.10.). Wer im Feedback getippt hat, wie das Spiel
 // entstanden ist, bekommt dort eine Antwort.
 // Gemeinsam für Spiel (spielen.html) und Startseite (index.html): nur DOM + lokaler Speicher, eigene Stile.
-import { BUILD } from './build.js?v=20261021120344';
-import { siteSeconds } from './sitetime.js?v=20261021120344';
+import { BUILD } from './build.js?v=20261021124446';
+import { siteSeconds } from './sitetime.js?v=20261021124446';
 
 export const FEEDBACK_MIN_SEC = 20 * 60;
 export const REVEAL_MIN_STARS = 1; // jede Bewertung schaltet frei (Nutzer 11.10.: auch wer das Spiel eher negativ sieht)

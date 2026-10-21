@@ -1,7 +1,7 @@
 // NULLPUNKT – Mehrspieler: gemeinsame Helfer der Synchronisation (sync-host.js / sync-client.js).
 // Reine Hilfsfunktionen ohne Zustand: Vektoren ↔ Arrays, Rundung, Identität eines Akteurs für die Akteursliste ('actors').
 import * as THREE from 'three';
-import { exportLoadoutCamos } from '../../shared/customcamo.js?v=20261021120344';
+import { exportLoadoutCamos } from '../../shared/customcamo.js?v=20261021124446';
 
 /** Schnappschüsse des Hosts je Sekunde (Vertrag §5). */
 export const SNAPSHOT_HZ = 20;

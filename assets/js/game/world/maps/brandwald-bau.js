@@ -4,12 +4,12 @@
 // durchhängenden Leitungen, einzelne Masten umgestürzt), Gewächshausruine (Bogenrippen aus Rohr, Pfetten,
 // Windverbände, teils eingeknickt), abgebrannter Holzplatz (Polterholz, Schuppenruine, Sägebock) und Feldposten.
 import * as THREE from 'three';
-import { sampleSpline } from '../terrain/generate.js?v=20261021120344';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261021120344';
-import { SandbagField } from '../sandbag-field.js?v=20261021120344';
-import { getMaterial } from '../../engine/textures.js?v=20261021120344';
-import { createSimplex } from '../terrain/noise.js?v=20261021120344';
-import { mgNest } from './grenzland-stellungen.js?v=20261021120344';
+import { sampleSpline } from '../terrain/generate.js?v=20261021124446';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261021124446';
+import { SandbagField } from '../sandbag-field.js?v=20261021124446';
+import { getMaterial } from '../../engine/textures.js?v=20261021124446';
+import { createSimplex } from '../terrain/noise.js?v=20261021124446';
+import { mgNest } from './grenzland-stellungen.js?v=20261021124446';
 
 const Y = new THREE.Vector3(0, 1, 0);
 const _d = new THREE.Vector3(), _qq = new THREE.Quaternion(), _ee = new THREE.Euler();

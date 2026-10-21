@@ -4,7 +4,7 @@
 // beim Gehen bleibt alles an seinem Platz. Nur Optik (keine Kollision, kein Netz). Dichten je m² aus der Karte
 // (def.litter), Reichweite und Schatten je Qualitätsstufe.
 import * as THREE from 'three';
-import { rng, createSimplex } from './noise.js?v=20261021120344';
+import { rng, createSimplex } from './noise.js?v=20261021124446';
 
 const TAU = Math.PI * 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
@@ -141,7 +141,7 @@ const KINDS = [
   { key: 'branches', geo: (s, d) => branchGeometry(s, d), size: [0.9, 2.4], mat: 'borke_verkohlt', col: ['#36322e', '#45403a'], flat: true, shadow: true },
   { key: 'bark', geo: (s) => barkGeometry(s), size: [0.12, 0.32], mat: 'borke_verkohlt', col: ['#2e2b28', '#3d3934'], flat: true },
   { key: 'coals', geo: (s, d) => lumpGeometry(s, 0.7, d), size: [0.05, 0.14], mat: 'borke_verkohlt', col: ['#1d1b1a', '#262321'], flat: false },
-  { key: 'stones', geo: (s, d) => lumpGeometry(s + 9, 0.55, d), size: [0.05, 0.24], mat: 'concrete_dark', col: ['#7d776e', '#6a655d', '#8a8378'], flat: false, shadow: true },
+  { key: 'stones', geo: (s, d) => lumpGeometry(s + 9, 0.55, d), size: [0.05, 0.24], mat: 'concrete_dark', col: ['#5f5a53', '#514d47', '#68625a'], flat: false, shadow: true },
 ];
 
 export class Litter {
