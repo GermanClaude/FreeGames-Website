@@ -25,14 +25,14 @@
 //     {a:'h'} Treffer eines Clients auf eine Drohne (Waffe, Feuerrate, Reichweite, Sicht). Alle Drohnen gehen mit 12 Hz als
 //     'ev' dr an alle, ihr Ende als 'ev' de.
 import * as THREE from 'three';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261021180021';
-import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261021180021';
-import { ABILITIES } from '../../shared/classes.data.js?v=20261021180021';
-import { MOUNT_WEAPON, looksOf } from '../mappoints.js?v=20261021180021';
-import { netPoseOf } from '../bots/bot.js?v=20261021180021';
-import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261021180021';
-import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261021180021';
-import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261021180021';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261021184022';
+import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261021184022';
+import { ABILITIES } from '../../shared/classes.data.js?v=20261021184022';
+import { MOUNT_WEAPON, looksOf } from '../mappoints.js?v=20261021184022';
+import { netPoseOf } from '../bots/bot.js?v=20261021184022';
+import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261021184022';
+import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261021184022';
+import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261021184022';
 
 const nowSec = () => performance.now() / 1000;
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -56,7 +56,7 @@ const INTEREST_MIN = 12;
 export class HostSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261021180021').NetSystem} net
+   * @param {import('./index.js?v=20261021184022').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'host', teamSize, botFill, pvp, ffa …)
    */
   constructor(G, net, cfg = {}) {
@@ -383,7 +383,12 @@ export class HostSync {
   relayBuild(msg) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'bs', ...msg }); }
 
   /** Gegraben ('ev' dg, digging.js). */
-  relayDig(x, z) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'dg', x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100 }); }
+  relayDig(x, z, r = 0, d = 0) {
+    if (!this.active || !this.net.online) return;
+    const m = { t: 'ev', e: 'dg', x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100 };
+    if (r > 0 && d > 0) { m.r = Math.round(r * 100) / 100; m.d = Math.round(d * 100) / 100; } // Explosionskrater
+    this.net.send('all', m);
+  }
 
   /** Tür/Tor geändert ('ev' dr, doors.js). */
   relayDoor(msg) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'dr', ...msg }); }

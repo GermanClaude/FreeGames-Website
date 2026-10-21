@@ -24,13 +24,13 @@
 //     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
 //     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021180021';
-import { importCC } from '../../shared/customcamo.js?v=20261021180021';
-import { netPoseOf } from '../bots/bot.js?v=20261021180021';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261021180021';
-import { HOST_ID } from './index.js?v=20261021180021';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261021180021';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261021180021';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021184022';
+import { importCC } from '../../shared/customcamo.js?v=20261021184022';
+import { netPoseOf } from '../bots/bot.js?v=20261021184022';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261021184022';
+import { HOST_ID } from './index.js?v=20261021184022';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261021184022';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261021184022';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -50,7 +50,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261021180021').NetSystem} net
+   * @param {import('./index.js?v=20261021184022').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {
@@ -651,7 +651,7 @@ export class ClientSync {
         owner.setCarry(m.w, { camo, att: m.a && typeof m.a === 'object' ? m.a : null });
         return;
       }
-      case 'dg': if (G.digging && Number.isFinite(m.x) && Number.isFinite(m.z)) G.digging.apply(m.x, m.z, true); return; // Graben (digging.js)
+      case 'dg': if (G.digging && Number.isFinite(m.x) && Number.isFinite(m.z)) G.digging.apply(m.x, m.z, true, Number(m.r) || 0, Number(m.d) || 0); return; // Graben / Explosionskrater (digging.js)
       case 'tf': if (G.trees && Number.isInteger(m.i) && Number.isFinite(m.y) && Number.isFinite(m.dx) && Number.isFinite(m.dz)) G.trees.fell(m.i, m.y, m.dx, m.dz, true, !!m.now); return; // Baum gefallen (treefall.js)
       case 'gr': {
         if (!W) return;
