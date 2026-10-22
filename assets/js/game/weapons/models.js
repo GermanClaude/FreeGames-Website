@@ -13,25 +13,25 @@
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder, DETAIL } from './gunsmith/builder.js?v=20261021211339';
-import { kv47, sk14 } from './gunsmith/guns-ar.js?v=20261021211339';
-import { m17 } from './gunsmith/guns-m17.js?v=20261021211339';
-import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261021211339';
-import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261021211339';
-import { p9, adler } from './gunsmith/guns-pistol.js?v=20261021211339';
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261021211339';
-import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261021211339';
-import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261021211339';
-import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261021211339';
-import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261021211339';
-export { setMagRounds } from './gunsmith/magfill.js?v=20261021211339';
-import { disposeMaterials } from './gunsmith/materials.js?v=20261021211339';
-import { disposeTextures } from './gunsmith/textures.js?v=20261021211339';
-import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261021211339';
-import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261021211339';
-import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261021211339';
-import { attKey } from '../../shared/attachments.data.js?v=20261021211339';
-import { ursprung, funke, erstlicht } from './gunsmith/guns-og.js?v=20261021211339';
+import { Builder, DETAIL } from './gunsmith/builder.js?v=20261022190303';
+import { kv47, sk14 } from './gunsmith/guns-ar.js?v=20261022190303';
+import { m17 } from './gunsmith/guns-m17.js?v=20261022190303';
+import { vp9, qx90, hm60 } from './gunsmith/guns-auto.js?v=20261022190303';
+import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261022190303';
+import { p9, adler } from './gunsmith/guns-pistol.js?v=20261022190303';
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261022190303';
+import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261022190303';
+import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261022190303';
+import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261022190303';
+import { applyCamo, disposeCamos } from './gunsmith/camos.js?v=20261022190303';
+export { setMagRounds } from './gunsmith/magfill.js?v=20261022190303';
+import { disposeMaterials } from './gunsmith/materials.js?v=20261022190303';
+import { disposeTextures } from './gunsmith/textures.js?v=20261022190303';
+import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261022190303';
+import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261022190303';
+import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261022190303';
+import { attKey } from '../../shared/attachments.data.js?v=20261022190303';
+import { ursprung, funke, erstlicht } from './gunsmith/guns-og.js?v=20261022190303';
 
 const BUILDERS = {
   kv47, m17, vp9, qx90, hm60, sk14, brecher, bulldog, p9, adler, knife, frag, semtex,

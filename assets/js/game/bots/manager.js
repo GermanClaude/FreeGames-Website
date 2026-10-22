@@ -13,22 +13,23 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261021211339';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261021211339'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261021211339';
-import { pickNames } from './names.js?v=20261021211339';
-import { Nameplate } from './nameplates.js?v=20261021211339';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261021211339';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261021211339';
-import { analyze } from './ai/tactics.js?v=20261021211339';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261021211339';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261021211339';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261021211339';
-import { BotAdapt } from './ai/spielstil.js?v=20261021211339';
-import { CorpseStore } from './corpses.js?v=20261021211339';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261021211339';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021211339';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261021211339';
+import { Bot } from './bot.js?v=20261022190303';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261022190303'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261022190303';
+import { pickNames } from './names.js?v=20261022190303';
+import { Nameplate } from './nameplates.js?v=20261022190303';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261022190303';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261022190303';
+import { analyze } from './ai/tactics.js?v=20261022190303';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261022190303';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261022190303';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261022190303';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261022190303';
+import { BotAdapt } from './ai/spielstil.js?v=20261022190303';
+import { CorpseStore } from './corpses.js?v=20261022190303';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261022190303';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261022190303';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261022190303';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -46,6 +47,7 @@ const _pray = new THREE.Ray();
 const NO_SMOOTH = { smooth: false };
 
 const LOS_BASE = 48, LOS_BASE_LOW = 26; // Sichtstrahlen pro Bild (Grundbudget)
+const RELIEF_ANIM = [1, 0.75, 0.55, 0.4]; // Abstandsfaktor der Animationsraten je Entlastungsstufe (21.10.)
 const LOS_PER_SENSE = 10; // geschätzte Strahlen je Wahrnehmungsschritt eines Bots (≈ 6 Gegner im Blick, teils Kopfstrahl)
 
 const SNIPER_LOADOUT = { id: 'praezision', primary: 'sr_brecher', secondary: 'pi_p9', lethal: 'frag' };
@@ -297,11 +299,13 @@ export class BotManager {
     return { cls, primary, secondary, lethal, tactical };
   }
 
-  /** Gibt es in diesem Match Fahrzeuge? (Kartenstellplätze bzw. ?vehicles=1 / Matchoption; ?vehicles=0 schaltet ab) */
+  /** Gibt es in diesem Match Militärfahrzeuge? (Kartenstellplätze bzw. ?vehicles=1 / Matchoption; ?vehicles=0 schaltet ab;
+   *  kleine/mittlere Karten nie – dort nur zivile Fahrzeuge, kein Panzerabwehrwerfer nötig) */
   _vehiclesExpected() {
     const G = this.G, w = G.world;
     const param = G.params && typeof G.params.get === 'function' ? G.params.get('vehicles') : null;
     if (param === '0') return false;
+    if (!militaryVehiclesAllowed((G.match && G.match.mapId) || (w && w.id) || null)) return false;
     if (G.match && G.match.net && G.match.vehicles === false) return false; // online: Raum-Einstellung „Fahrzeuge“ aus
     return !!((w && Array.isArray(w.vehicleSpawns) && w.vehicleSpawns.length) || param === '1' || (G.match && G.match.vehicles));
   }
@@ -725,6 +729,8 @@ export class BotManager {
     const aimT = G.input && G.input.aimTarget;
     this.lodCount[0] = this.lodCount[1] = this.lodCount[2] = this.lodCount[3] = 0;
     const cam = G.camera;
+    // Entlastung mitten im Match (engine/dynres.js, 21.10.): Animationsraten-Schwellen näher an die Kamera
+    const rf = RELIEF_ANIM[Math.min(3, (G.perf && G.perf.relief) | 0)];
     if (cam) {
       _m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
       this._frustum.setFromProjectionMatrix(_m);
@@ -741,7 +747,7 @@ export class BotManager {
       b.inView = inView;
       // Animationsrate: nah jedes Bild … fern seltener; außerhalb des Bildes 1/6, fern und unsichtbar eingefroren (nur Lage).
       // Puppen nie ganz eingefroren: Haltung/Trefferzonen folgen dem Netz auch außer Sicht (Treffer der Bots auf Menschen)
-      b.animEvery = !inView ? (d > 50 && !b.puppet ? 0 : 6) : d < (low ? 16 : 26) ? 1 : d < (low ? 40 : 60) ? 2 : d < 110 ? 3 : 5;
+      b.animEvery = !inView ? (d > 50 && !b.puppet ? 0 : 6) : d < (low ? 16 : 26) * rf ? 1 : d < (low ? 40 : 60) * rf ? 2 : d < 110 * rf ? 3 : 5;
       // Simulations-Detailstufe nach Abstand/Sicht; Gefecht mit einem Menschen (Spieler oder entfernter Mensch) = volle Rate
       const r = b.gunner.rec;
       const duel = (!!r && !!r.actor && (r.actor.isPlayer || r.actor.isRemoteHuman) && now - (r.seenAt || -1e9) < 3) || aimT === b;
@@ -817,7 +823,10 @@ export class BotManager {
 
   _assignShadows() {
     const preset = this.G.renderer && this.G.renderer.preset;
-    const max = preset && preset.shadows ? (preset.maxBotsVisibleShadows ?? 6) : 0;
+    let max = preset && preset.shadows ? (preset.maxBotsVisibleShadows ?? 6) : 0;
+    // Entlastung: Stufe 1 halbiert die Schattenwerfer, ab Stufe 2 keine (kein neues Programm – nur weniger Draw Calls)
+    const relief = (this.G.perf && this.G.perf.relief) | 0;
+    if (relief >= 2) max = 0; else if (relief === 1) max >>= 1;
     const vis = this.bots.filter((b) => b.alive && b.inView).sort((a, b) => a.camDist - b.camDist);
     const on = new Set(vis.slice(0, max));
     for (const b of this.bots) for (const s of b.soldiers) if (s) s.setShadows(on.has(b) && s === b.soldier && b.camDist < 45);

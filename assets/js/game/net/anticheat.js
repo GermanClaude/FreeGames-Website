@@ -20,9 +20,9 @@
 // Meldet der Client „tot“, während seine Puppe beim Host lebt (Spawn unterwegs), bleibt der Anker unverändert.
 // Verstöße sind gewichtet und klingen mit der Zeit ab; ab `threshold` wird einmalig onKick(peer, grund, text) gerufen
 // (und das Ergebnis trägt `kick`). Protokoll: ac.log = [{t, peer, reason, text, weight, score}] (für das Host-Menü).
-import { damageAt, zoneMult, fireModesOf, burstCountOf } from '../../shared/weapons.data.js?v=20261021211339';
-import { FLAGS } from './protocol.js?v=20261021211339';
-import { caliberOf } from '../../shared/calibers.js?v=20261021211339';
+import { damageAt, zoneMult, fireModesOf, burstCountOf } from '../../shared/weapons.data.js?v=20261022190303';
+import { FLAGS } from './protocol.js?v=20261022190303';
+import { caliberOf } from '../../shared/calibers.js?v=20261022190303';
 
 /** Gewicht je Verstoß (Summe ≥ threshold → Kick). */
 export const AC_WEIGHTS = Object.freeze({

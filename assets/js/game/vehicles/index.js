@@ -6,23 +6,26 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261021211339';
-import { Vehicle, newIntent } from './vehicle.js?v=20261021211339';
-import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261021211339';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261021211339';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261021211339';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261021211339';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261021211339';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261021211339';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261021211339';
-import { VehicleAudio } from './audio.js?v=20261021211339';
-import * as MATS from './materials.js?v=20261021211339';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261021211339';
-import { VehicleNet } from './net.js?v=20261021211339';
-import { groundRay } from './sim.js?v=20261021211339';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261021211339';
-import { falloff, raycastHumanoid } from '../combat.js?v=20261021211339';
-import { Thermal } from './thermal.js?v=20261021211339';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261022190303';
+import { Vehicle, newIntent } from './vehicle.js?v=20261022190303';
+import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261022190303';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261022190303';
+import { Breaching } from './breach.js?v=20261022190303';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261022190303';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261022190303';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261022190303';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261022190303';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261022190303';
+import { VehicleAudio } from './audio.js?v=20261022190303';
+import * as MATS from './materials.js?v=20261022190303';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261022190303';
+import { VehicleNet } from './net.js?v=20261022190303';
+import { groundRay } from './sim.js?v=20261022190303';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261022190303';
+import { falloff, raycastHumanoid } from '../combat.js?v=20261022190303';
+import { Thermal } from './thermal.js?v=20261022190303';
+import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261022190303';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261022190303';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -61,6 +64,8 @@ export class VehicleSystem {
     if (this.remote === undefined) this.remote = null;   // Netz (C): Vermittler auf Clients
     if (this.replica === undefined) this.replica = false;
     this.shells = new ShellPool(this);
+    this.breaching = new Breaching(this); // Breschen durch Granaten und Rammen (breach.js)
+    this._noVeh = false; // world.raycast-Hülle: Fahrzeuge auslassen (feste Messungen, bullet-holes.js)
     this.hud = null;
     this.audio = new VehicleAudio(G);
     this._own = 0;
@@ -89,7 +94,10 @@ export class VehicleSystem {
     if (!this.world) return;
     this.attached = true;
     this.replica = !!replica;
-    this.civilOnly = !!civilOnly; // Panzer & Fahrzeuge aus (Lobby/Raum): nur die zivilen Stellplätze der Karte
+    // Nutzer 21.10.: Militärfahrzeuge (Panzer aller Generationen, Geländewagen) nur auf großen Karten – auf Hafen,
+    // Altstadt, Werk & Co. bleiben nur die zivilen Stellplätze (gilt auch für ?vehicles=1, Lobby, Raum, Konsole)
+    this.military = militaryVehiclesAllowed((G.match && G.match.mapId) || (this.world && this.world.id) || null);
+    this.civilOnly = !!civilOnly || !this.military; // Panzer & Fahrzeuge aus (Lobby/Raum) bzw. kleine Karte
     this.quality = (G.renderer && G.renderer.quality) || 'high';
     this.group = new THREE.Group();
     this.group.name = 'vehicles';
@@ -114,6 +122,8 @@ export class VehicleSystem {
       // Ladeklänge (Greifen, Einschieben, Keil, Sortenwechsel, geladen): im eigenen Turm laut, daneben leise
       ev.on('vehicle:load', (e) => this._loadSound(e && e.vehicle, e && e.step)),
       ev.on('vehicle:loaded', (e) => this._loadSound(e && e.vehicle, 'geladen')),
+      // Aufmunitionieren (resupply.js; Clients leiten es aus dem Netzblock ab): Kistenklang je Schritt, Meldung am Ende
+      ev.on('vehicle:resupply', (e) => this._onResupply(e)),
     ];
     try { this.hud = new VehicleHUD(G); } catch (err) { this.hud = null; console.warn('[vehicles] HUD nicht verfügbar', err); }
     this.camera.reset();
@@ -160,6 +170,33 @@ export class VehicleSystem {
     }
   }
 
+  _onResupply(e) {
+    const v = e && e.vehicle, p = this.G.player;
+    if (!v || !v.body) return;
+    const own = !!(p && p.vehicle === v);
+    if (e.state === 'schritt' || e.state === 'start') {
+      const d = p ? v.body.pos.distanceTo(p.position) : 99;
+      if (own || d < 18) this.audio.loadSound(e.state === 'start' ? 'munition' : 'greifen', own ? 0.7 : 0.25);
+      return;
+    }
+    if (!own) return;
+    const now = this.G.time.elapsed;
+    // Meldung gehört zum Fahrzeug (nach dem Umsteigen nicht im nächsten Wagen)
+    this._supplyMsg = { vehicle: v, text: supplyDoneText(e, v), until: now + 2.6, warn: e.state !== 'voll' };
+    if (e.state === 'voll') this.audio.loadSound('geladen', 0.8);
+  }
+
+  /**
+   * Versorgungspunkte für die Minikarte (ui/minimap.js): sitzt der Spieler in einem Fahrzeug mit begrenzter Munition,
+   * die Punkte seines Teams und die neutralen (mappoints.js vehiclePoints), sonst null.
+   */
+  supplyMarkers(p) {
+    const v = p && p.vehicle, pts = this.G.points;
+    if (!this.attached || !v || !suppliable(v) || !pts || typeof pts.vehiclePoints !== 'function') return null;
+    const list = pts.vehiclePoints(v.team ?? null);
+    return list.length ? list : null;
+  }
+
   _loadSound(v, step) {
     if (step === 'tuer' || step === 'offen') step = step === 'tuer' ? 'einschieben' : 'schliessen'; // Schiebetür: Gleiten, Anschlag
     if (!v || !['greifen', 'einschieben', 'schliessen', 'munition', 'geladen'].includes(step)) return;
@@ -184,6 +221,7 @@ export class VehicleSystem {
     this.list.length = 0;
     this.spawns.length = 0;
     this.shells.clear();
+    this.breaching.clear();
     if (this.spot) { this.spot.removeFromParent(); this.spot.target.removeFromParent(); this.spot.dispose?.(); this.spot = null; }
     if (this.group) { this.group.removeFromParent(); this.group = null; }
     this._uninstallRaycast();
@@ -192,6 +230,7 @@ export class VehicleSystem {
     if (this.hud) { this.hud.dispose(); this.hud = null; }
     this.audio.stopAll();
     this._near = null;
+    this._supplyMsg = null;
     this.attached = false;
     this.replica = false;
     this.world = null;
@@ -202,7 +241,7 @@ export class VehicleSystem {
 
   /** Spawn-Punkt anmelden (erscheint sofort und nach Zerstörung erneut). → Spawn-Eintrag */
   registerSpawn({ type, position, yaw = 0, team = null, respawn = null, variant = 0 }) {
-    if (!VEHICLES[type]) return null;
+    if (!VEHICLES[type] || (this.civilOnly && !VEHICLES[type].civil)) return null;
     const sp = { type, position: position.clone ? position.clone() : new THREE.Vector3(position.x, position.y, position.z), yaw, team, variant: variant | 0, respawn: respawn ?? respawnFor(type), vehicle: null, respawnAt: null };
     this.spawns.push(sp);
     this._spawnAt(sp);
@@ -228,9 +267,16 @@ export class VehicleSystem {
 
   /** Fahrzeug erzeugen (Modi/Tests/Bots). position = Bodenpunkt unter der Wannenmitte. */
   spawnVehicle(type, position, yaw = 0, team = null, { spawn = null, variant = 0 } = {}) {
-    if (!this.attached) return null;
+    if (!this.attached || !VEHICLES[type]) return null;
+    if (this.civilOnly && !VEHICLES[type].civil) return null; // kleine Karte / Fahrzeuge aus: keine Militärfahrzeuge
     const pos = position.clone ? position.clone() : new THREE.Vector3(position.x, position.y, position.z);
     const v = new Vehicle(this, type, { position: pos, yaw, team, quality: this.quality, spawn, variant });
+    // Rammen: Wand gibt unter dem Stoß nach (Host/Einzelspiel; Abbilder simulieren nicht)
+    if (!this.replica) {
+      v.body.onWall = (p, n, vn) => this.breaching.ram(v, p, n, vn);
+      v.body.hullRay = (o, d, len, out) => this.breaching.hullRay(v, o, d, len, out);
+      v.body.groundFilter = (o, d, dist, hit) => this.breaching.groundYields(v, o, d, dist, hit);
+    }
     this.list.push(v);
     this.group.add(v.model.root);
     v.sync(0);
@@ -878,9 +924,11 @@ export class VehicleSystem {
       this._spawnAt(sp);
     }
     for (const v of this.list) v.update(dt, world);
+    updateResupply(this, dt); // Aufmunitionieren an Versorgungspunkten (Host/offline)
     this._collideVehicles();
     this._collideActors(dt);
     this.shells.update(dt);
+    this.breaching.update();
     for (let i = this.list.length - 1; i >= 0; i--) {
       const v = this.list[i];
       if (v.wreck && v.wreckLeft <= 0) this.removeVehicle(v);
@@ -968,6 +1016,17 @@ export class VehicleSystem {
       const d = this.camera.dir;
       p.yaw = Math.atan2(-d.x, -d.z);
       p.pitch = Math.asin(clamp(d.y, -1, 1));
+      // Kamerawackeln im Sitz (21.10.: Rammen, Breschen, Kanonenschuss – player.shake erhöht trauma): player.update läuft
+      // im Sitz nicht, deshalb klingt es hier ab; nur die Darstellung wackelt (Zielrichtung bleibt), × Komfort-Einstellung
+      if (p.trauma > 0.001) {
+        const M = Number.isFinite(p.cameraMotion) ? p.cameraMotion : 0.6;
+        const s = p.trauma * p.trauma * (0.35 + 0.65 * clamp(M / 0.6, 0, 1)) * (r.sight ? 0.45 : 1);
+        G.camera.position.x += (Math.sin(now * 37.1) * 0.6 + Math.sin(now * 23.7 + 1.3) * 0.4) * 0.07 * s;
+        G.camera.position.y += (Math.sin(now * 41.3 + 2.1) * 0.6 + Math.sin(now * 19.1 + 0.7) * 0.4) * 0.07 * s;
+        G.camera.rotateX((Math.sin(now * 29.9 + 4.2) * 0.6 + Math.sin(now * 31.3 + 2.9) * 0.4) * 0.018 * s);
+        G.camera.rotateZ((Math.sin(now * 33.7 + 0.4) * 0.6 + Math.sin(now * 17.3 + 1.9) * 0.4) * 0.03 * s);
+        p.trauma = Math.max(0, p.trauma - 1.5 * dt);
+      }
       // Rohr-Marker: wohin die Waffe tatsächlich zeigt
       let gun = null;
       if (seat.def.mount && seat.weapons.length) {
@@ -1011,7 +1070,8 @@ export class VehicleSystem {
         range: this._range ? this._range.text : '', camPos: G.camera.position, lookYaw: null, lookPitch: 0,
         lob: Vehicle.lobAngle, project: (pt) => projectToScreen(G, pt, this._markScr || (this._markScr = { x: 0, y: 0, on: false })),
         loader: seat.def.loader && g ? loaderHint(v, seat, (a) => this._key(a), touch) : null,
-        gunMsg: g && g._msg && now < g._msg.until ? g._msg : null, ready: now >= (seat.readyAt || 0),
+        gunMsg: g && g._msg && now < g._msg.until ? g._msg : this._supplyMsg && this._supplyMsg.vehicle === v && now < this._supplyMsg.until ? this._supplyMsg : null,
+        ready: now >= (seat.readyAt || 0), supply: supplyHint(this, v, { seat, touch, keyFor: (a) => this._key(a) }),
       });
       if (r.view && r.view.look === 'mount') { state.lookYaw = seat.look.yaw; state.lookPitch = seat.look.pitch; }
       else { const ld = viewLookDir(v, seat, r.view, _n); state.lookYaw = Math.atan2(-ld.x, -ld.z); state.lookPitch = Math.asin(clamp(ld.y, -1, 1)); }
@@ -1217,8 +1277,15 @@ export class VehicleSystem {
     const w = this.world;
     if (!w) return null;
     let best = null;
-    const wh = this._rc ? this._rc.orig.call(w, p, d, len) : w.raycast(p, d, len);
-    if (wh && wh.distance <= len) best = { point: wh.point, normal: wh.normal, distance: wh.distance, surface: wh.surface };
+    // Welt ohne Fahrzeuge (die folgen einzeln), aber mit allen Hüllen: Tür-/Fensterflügel und Fassadenpaneele
+    // (building.js-Festkörper) halten die Granate auf, durch Breschen/Durchbrüche (bullet-holes.js) fliegt sie weiter.
+    // Früher lief der Strahl gegen die nackte Welt (vor building.js): Granaten flogen durch geschlossene Türen und
+    // Fenster und rissen die Bresche erst innen in die gegenüberliegende Wand (21.10.)
+    const was = this._noVeh;
+    this._noVeh = true;
+    let wh;
+    try { wh = w.raycast(p, d, len); } finally { this._noVeh = was; }
+    if (wh && wh.distance <= len) best = { point: wh.point, normal: wh.normal, distance: wh.distance, surface: wh.surface, solid: wh.solid || null };
     for (const v of this.list) {
       if (v === s.vehicle && s.age < 0.25) continue;
       const h = v.raycast(p, d, best ? best.distance : len);
@@ -1255,7 +1322,7 @@ export class VehicleSystem {
     const self = this;
     const fn = function raycastWithVehicles(origin, dir, maxDist = 1000) {
       let best = orig.call(w, origin, dir, maxDist);
-      if (!self.attached || !self.list.length || !self._rc || self._rc.fn !== raycastWithVehicles) return best;
+      if (!self.attached || self._noVeh || !self.list.length || !self._rc || self._rc.fn !== raycastWithVehicles) return best;
       const vh = self.raycastVehicles(origin, dir, best ? best.distance : maxDist, self._ignore);
       if (vh) {
         best = vh;

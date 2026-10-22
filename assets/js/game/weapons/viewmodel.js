@@ -16,25 +16,26 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds } from './models.js?v=20261021211339';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261021211339';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261021211339';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261021211339';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261021211339';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261021211339';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261021211339';
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261021211339';
-import { COSMETIC } from './anim/reloads.js?v=20261021211339';
-import { magWellOf } from './anim/magwell.js?v=20261021211339';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261021211339';
-import { applyCamo } from './gunsmith/camos.js?v=20261021211339';
-import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261021211339';
-import { setReticleSize } from './gunsmith/materials.js?v=20261021211339';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261021211339';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261021211339';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261021211339';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261021211339';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261021211339';
+import { createWeaponModel, setMagRounds } from './models.js?v=20261022190303';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261022190303';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261022190303';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261022190303';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261022190303';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261022190303';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261022190303';
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261022190303';
+import { COSMETIC } from './anim/reloads.js?v=20261022190303';
+import { magWellOf } from './anim/magwell.js?v=20261022190303';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261022190303';
+import { uploadTextures } from '../engine/warm.js?v=20261022190303';
+import { applyCamo } from './gunsmith/camos.js?v=20261022190303';
+import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261022190303';
+import { setReticleSize } from './gunsmith/materials.js?v=20261022190303';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261022190303';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261022190303';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261022190303';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261022190303';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261022190303';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -1362,8 +1363,13 @@ export class ViewModel {
       memo.set(key, { d: _v.subVectors(T.pos, _v3).applyQuaternion(_q.copy(T.quat).invert()).toArray(), bones, q, uses: m ? m.uses : 0 });
       return;
     }
-    // Während Aktionen je Bild lösen; auf low nur jedes 3., auf medium jedes 2. Bild (dazwischen letzte Korrektur im Handraum)
-    const every = this.quality === 'low' ? 3 : this.quality === 'medium' ? 2 : 1;
+    // Während Aktionen je Bild lösen; auf low nur jedes 3., auf medium jedes 2. Bild (dazwischen letzte Korrektur im Handraum).
+    // 21.10.: zusätzlich nach gemessener Lösezeit (Budget ≈ 2,5 ms je Bild, high/ultra 4 ms – schwache CPUs lösen so
+    // seltener statt jedes Bild 20–40 ms) und Entlastungsstufe (engine/dynres.js); die Schnellprüfung bleibt die Sicherung
+    const lowTier = this.quality === 'low' || this.quality === 'medium';
+    const relief = (this.G && this.G.perf && this.G.perf.relief) | 0;
+    const every = Math.min(6, Math.max((this.quality === 'low' ? 3 : this.quality === 'medium' ? 2 : 1) + relief,
+      Math.ceil((this._contactMs || 0) / (lowTier ? 2.5 : 4))));
     const lc = arm._lastContact || (arm._lastContact = { d: new THREE.Vector3(), q: new Float32Array(60), bones: [...arm.fingers.flat(), ...arm.thumb], n: 0, frame: -9 });
     if (every > 1 && this._contactFrame - lc.frame < every && !own && !other) {
       T.pos.add(_v.copy(lc.d).applyQuaternion(T.quat));
@@ -1375,7 +1381,10 @@ export class ViewModel {
       arm.applyPose(T.pose);
     }
     _v3.copy(T.pos);
+    const t0 = performance.now();
     arm.contact(col, T, opts);
+    const ms = performance.now() - t0;
+    this._contactMs = this._contactMs ? this._contactMs * 0.8 + ms * 0.2 : ms;
     lc.frame = this._contactFrame;
     lc.d.subVectors(T.pos, _v3).applyQuaternion(_q.copy(T.quat).invert());
     lc.bones.forEach((b, i) => b.quaternion.toArray(lc.q, i * 4));
@@ -1750,6 +1759,9 @@ export class ViewModel {
     this.root.add(holder);
     for (const p of Object.values(this.props)) p.visible = true;
     try { renderer?.compile?.(this.scene, this.camera); } catch { /* optional */ }
+    // Texturen der übrigen Waffen und Requisiten gleich mit hochladen (21.10.: erster Waffenwechsel lud sie mitten im
+    // Match hoch – P-9: 7 Texturen)
+    try { uploadTextures(renderer, this.scene); } catch { /* beim Zeichnen nachholen */ }
     for (const p of Object.values(this.props)) p.visible = false;
     this.haze.mesh.visible = hazeVis;
     for (const c of [...holder.children]) holder.remove(c);

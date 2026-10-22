@@ -5,12 +5,12 @@
 // In der Lobby ist noch keine Karte geladen: Karteninhalt dann aus der letzten Messung dieser Stufe bzw. dem Modell
 // des Plans (§4.2), Bildpuffer immer gemessen.
 
-import { esc, num } from '../dom.js?v=20261021211339';
-import { ICON } from '../icons.js?v=20261021211339';
-import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261021211339';
-import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261021211339';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261021211339';
-import { HINTS } from './schema-page.js?v=20261021211339';
+import { esc, num } from '../dom.js?v=20261022190303';
+import { ICON } from '../icons.js?v=20261022190303';
+import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261022190303';
+import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261022190303';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261022190303';
+import { HINTS } from './schema-page.js?v=20261022190303';
 
 const MB = 1024 * 1024;
 const MEM_KEY = 'nullpunkt:gfxmem';
@@ -64,6 +64,11 @@ export function graphicsPage(P) {
   /** „Automatisch (Hoch)“ – Wert, den die Stufe ohne Abweichung hätte. */
   const labels = (key) => {
     if (!GFX_KEYS.includes(key)) {
+      // 21.10.: welche Stufe „Automatisch“ für dieses Gerät gewählt hat (engine/device.js, gelernt aus den Matches)
+      if (key === 'quality') {
+        const r = R();
+        return r && S.get('quality') === 'auto' && TIER_LABEL[r.quality] ? { auto: `Automatisch (${TIER_LABEL[r.quality]})` } : null;
+      }
       if (key === 'renderScale') {
         const r = R();
         return r && r.resolutionScale < 0.999 ? { auto: `Dynamisch (${Math.round(r.resolutionScale * 100)} %)` } : null;

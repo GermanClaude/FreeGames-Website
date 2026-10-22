@@ -1,9 +1,9 @@
 // Kinetische Glyphen: Zerlegung in <span class="g">, Federn je Glyphe (Breite/Stärke),
 // Wellen, Zeitleisten, Breitenausgleich (Zeile bleibt gleich breit) und ein globales Limit
 // von 80 gleichzeitig bewegten Glyphen.
-import { loop } from './loop.js?v=20261021211339';
-import { glyphModel } from './fit.js?v=20261021211339';
-import { stepSpring, impulseFor, SPRINGS, calm } from './motion.js?v=20261021211339';
+import { loop } from './loop.js?v=20261022190303';
+import { glyphModel } from './fit.js?v=20261022190303';
+import { stepSpring, impulseFor, SPRINGS, calm } from './motion.js?v=20261022190303';
 
 const MAX_LIVE = 80;
 const instances = new Set();

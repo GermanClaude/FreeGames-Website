@@ -1,6 +1,6 @@
 // Sturmgewehre & Präzisionsgewehr: M-17 Falke (M4-artig, Holo), KV-47 (AK-artig, Holz), SK-14 (DMR, ACOG)
-import { holoSight, acog, birdcage, akBrake, brake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts, engrave, qdCup } from './parts.js?v=20261021211339';
-import { magRounds } from './magfill.js?v=20261021211339';
+import { holoSight, acog, birdcage, akBrake, brake, ejectionPort, triggerGuard, arGrip, slots, roundRect, ellipsePts, engrave, qdCup } from './parts.js?v=20261022190303';
+import { magRounds } from './magfill.js?v=20261022190303';
 
 // Achteckiger Querschnitt um (0, axis)
 export function octagon(r, axis) {

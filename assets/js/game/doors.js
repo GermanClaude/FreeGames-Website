@@ -8,7 +8,7 @@
 // zerbricht die Scheibe (Splitter, Klirren) – danach offen zum Durchsteigen/-schießen. Gezeichnet gebündelt (zwei
 // InstancedMesh für alle Scheiben und Rahmen), Reihenfolge der Einträge: Türen, Fenster, Tore (gleich auf allen Geräten).
 import * as THREE from 'three';
-import { worldPartsFrom, worldPartsMatrix } from './building.js?v=20261021211339';
+import { worldPartsFrom, worldPartsMatrix } from './building.js?v=20261022190303';
 
 const DOOR_HP = 420;   // Kugeln: die Tür wird erst durchlöchert, zerfällt spät (Explosionen reißen sie sofort heraus)
 const HINGE_HP = 70;   // je Scharnier (Treffer im Umkreis); beide hin → Tür lose, kippt bei Berührung

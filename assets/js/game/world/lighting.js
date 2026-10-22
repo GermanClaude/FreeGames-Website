@@ -3,8 +3,8 @@
 // (world/shadows.js), Hemisphärenlicht, Höhennebel mit Sonnen-Einstreuung (world/shading.js) (Owner: world)
 import * as THREE from 'three';
 import { Sky } from 'three/addons/objects/Sky.js';
-import { WS, setShadingMode } from './shading.js?v=20261021211339';
-import { createFarShadow, farShadowBudget, NEAR_CAP } from './shadows.js?v=20261021211339';
+import { WS, setShadingMode } from './shading.js?v=20261022190303';
+import { createFarShadow, farShadowBudget, NEAR_CAP } from './shadows.js?v=20261022190303';
 
 const deg = THREE.MathUtils.degToRad;
 
@@ -335,7 +335,8 @@ export function createLighting(G, def, group, { hdri = null, far = null, heightF
       tmp.applyMatrix4(lightRot);
       // Gedrosselte Schatten (low): Kaskade nur versetzen, wenn das Zentrum > 8 % der Kantenlänge wandert
       // (Vorhalt nach vorn deckt die Bewegung ab) – dann sofort neu zeichnen lassen; sonst bleibt die Karte gültig.
-      const throttled = (G.renderer?.preset?.shadowInterval || 1) > 1;
+      // (21.10.: auch mit Entlastung mitten im Match – renderer.shadowEvery = Stufe × Entlastung)
+      const throttled = (G.renderer?.shadowEvery || G.renderer?.preset?.shadowInterval || 1) > 1;
       if (throttled && centered && tmp.distanceToSquared(center) < (shadowSize * 0.08) ** 2) return;
       center.copy(tmp); centered = true;
       sun.target.position.copy(tmp);

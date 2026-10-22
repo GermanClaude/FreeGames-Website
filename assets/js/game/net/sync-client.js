@@ -24,13 +24,13 @@
 //     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
 //     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261021211339';
-import { importCC } from '../../shared/customcamo.js?v=20261021211339';
-import { netPoseOf } from '../bots/bot.js?v=20261021211339';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261021211339';
-import { HOST_ID } from './index.js?v=20261021211339';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261021211339';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261021211339';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261022190303';
+import { importCC } from '../../shared/customcamo.js?v=20261022190303';
+import { netPoseOf } from '../bots/bot.js?v=20261022190303';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261022190303';
+import { HOST_ID } from './index.js?v=20261022190303';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261022190303';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261022190303';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -50,7 +50,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261021211339').NetSystem} net
+   * @param {import('./index.js?v=20261022190303').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {
@@ -652,6 +652,7 @@ export class ClientSync {
         return;
       }
       case 'dg': if (G.digging && Number.isFinite(m.x) && Number.isFinite(m.z)) G.digging.apply(m.x, m.z, true, Number(m.r) || 0, Number(m.d) || 0); return; // Graben / Explosionskrater (digging.js)
+      case 'br': if (G.holes && typeof G.holes.applyBreach === 'function') G.holes.applyBreach(m, { quiet: !!m.now }); return; // Panzerbresche (bullet-holes.js)
       case 'tf': if (G.trees && Number.isInteger(m.i) && Number.isFinite(m.y) && Number.isFinite(m.dx) && Number.isFinite(m.dz)) G.trees.fell(m.i, m.y, m.dx, m.dz, true, !!m.now); return; // Baum gefallen (treefall.js)
       case 'gr': {
         if (!W) return;
