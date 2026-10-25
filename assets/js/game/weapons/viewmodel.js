@@ -16,26 +16,27 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds } from './models.js?v=20261022190303';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261022190303';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261022190303';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261022190303';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261022190303';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261022190303';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261022190303';
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261022190303';
-import { COSMETIC } from './anim/reloads.js?v=20261022190303';
-import { magWellOf } from './anim/magwell.js?v=20261022190303';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261022190303';
-import { uploadTextures } from '../engine/warm.js?v=20261022190303';
-import { applyCamo } from './gunsmith/camos.js?v=20261022190303';
-import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261022190303';
-import { setReticleSize } from './gunsmith/materials.js?v=20261022190303';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261022190303';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261022190303';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261022190303';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261022190303';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261022190303';
+import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel, lightTier, hasWeaponModel } from './models.js?v=20261025201926';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261025201926';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261025201926';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261025201926';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261025201926';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261025201926';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261025201926';
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261025201926';
+import { COSMETIC } from './anim/reloads.js?v=20261025201926';
+import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261025201926';
+import { magWellOf } from './anim/magwell.js?v=20261025201926';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261025201926';
+import { uploadTextures } from '../engine/warm.js?v=20261025201926';
+import { applyCamo } from './gunsmith/camos.js?v=20261025201926';
+import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261025201926';
+import { setReticleSize } from './gunsmith/materials.js?v=20261025201926';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261025201926';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261025201926';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261025201926';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261025201926';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261025201926';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -142,6 +143,7 @@ export class ViewModel {
     this._scheme = schemeForTeam(this._team, G.world) || null;
     // Detailstufe der Waffenmodelle + Eigenschatten nach Grafikstufe (vor dem ersten Modellbau)
     setWeaponDetail(G.renderer?.quality || 'high');
+    this._tier = this._propsTier = weaponDetailTier(); // 24.10. (V1): Stufe der gebauten Waffen/Requisiten (hintergrundbau.js)
     this.arms = new Arms({ camo: sleeveCamo(this._scheme), quality: G.renderer?.quality || 'high' });
     this.root.add(this.arms.group);
     if (DETAIL.max) this.arms.group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -156,14 +158,7 @@ export class ViewModel {
     // PC (volle Detailstufe): Eigenschatten von Waffe und Armen – Visier auf dem Gehäuse, Hand auf dem Schaft (Nutzer
     // 13.10.2026: „zu spielerhaft, realistischer, auch die Beleuchtung“). Kleiner Schattenraum um die Waffe, feine Auflösung.
     this._selfShadow = DETAIL.max;
-    if (this._selfShadow) {
-      const sh = this.sun.shadow, c = sh.camera;
-      this.sun.castShadow = true;
-      sh.mapSize.set(2048, 2048);
-      c.left = -0.5; c.right = 0.5; c.top = 0.5; c.bottom = -0.5; c.near = 3.6; c.far = 6.4;
-      sh.bias = -0.00025; sh.normalBias = 0.0012;
-      c.updateProjectionMatrix();
-    }
+    if (this._selfShadow) this._shadowSetup();
     this.flash = new MuzzleFlash();
     this.root.add(this.flash.light);
     this.smoke = new SmokeWisps(8);
@@ -262,7 +257,17 @@ export class ViewModel {
     const mk = ak ? id + '#' + ak : id;   // Aufsätze: eigenes Modell je Kombination
     let entry = this._models.get(mk);
     if (entry) return entry;
-    const model = createWeaponModel(key, { lod: 'first', att: ak ? att : null });
+    entry = this._entryFrom(createWeaponModel(key, { lod: 'first', att: ak ? att : null }), id, key, ak, ak ? att : null);
+    // Kontaktgitter (hands): Hände legen sich an die echte Oberfläche statt in die Waffe (Arm.contact)
+    this._entryCollider(entry);
+    this._models.set(mk, entry);
+    this._prepareGrips(entry);
+    magWellOf(entry);   // Schachtachse + Freigang vorab (anim/magwell.js, wenige ms je Modell)
+    return entry;
+  }
+
+  /** Eintrag aus einem Modell (Schatten, Tarnung, Abzug, Ruhelagen, Arbeitsstelle) – ohne Kontaktgitter/Griffe (24.10.: aus _getModel). */
+  _entryFrom(model, id, key, ak, att) {
     model.traverse(o => { if (o.isMesh) { const t = !!(o.material && o.material.transparent); o.castShadow = this._selfShadow && !t; o.receiveShadow = this._selfShadow && !t; o.frustumCulled = false; } });
     if (this._camos.get(id)) applyCamo(model, this._camos.get(id));
     const ud = model.userData;
@@ -271,19 +276,36 @@ export class ViewModel {
     if (rg && trg && !rg.userData.trigger) rg.userData.trigger = rg.worldToLocal(trg.getWorldPosition(new THREE.Vector3())).add(new THREE.Vector3(0, 0, -0.0045)).toArray().map(v => Math.round(v * 1e4) / 1e4);   // Vorderseite des Abzugs
     const rest = new Map();
     for (const [n, p] of Object.entries(ud.parts)) rest.set(n, { pos: p.position.clone(), quat: p.quaternion.clone(), vis: p.visible });
-    entry = { id, key, model, ud, rest, att: ak };
+    const tier = weaponDetailTier();
+    // Freigabe je Waffe (models.js, 24.10. V4): Ego-Fassung gehalten, bis der Eintrag verworfen wird (_dropEntry) bzw. bis dispose()
+    const release = ud.lod === 'third' ? null : holdWeaponModel(key, tier);
+    const entry = { id, key, model, ud, rest, att: ak, attObj: att || null, mk: ak ? id + '#' + ak : id, tier, release };
     // Arbeitsstelle der Stützhand beim Nachladen (Modellraum, Ruhelage) für _frameWork
     const h0 = handlingFor(key), an = ud.anchors;
     const work = h0.reload === 'revolver' ? an.cylGrab : h0.reload === 'rocket' ? (an.rocketGrab || ud.muzzle) : h0.reload === 'shell' ? an.shellPort : (an.magGrab || ud.magazine);
     if (work) entry.workRest = model.worldToLocal(work.getWorldPosition(new THREE.Vector3()));
-    // Kontaktgitter (hands): Hände legen sich an die echte Oberfläche statt in die Waffe (Arm.contact)
-    try { entry.collider = new GunCollider(model); } catch (err) { console.warn('[gunsmith] Kontaktgitter', err); entry.collider = null; }
-    entry.contactMemo = new Map();
-    this._models.set(mk, entry);
-    this._prepareGrips(entry);
-    magWellOf(entry);   // Schachtachse + Freigang vorab (anim/magwell.js, wenige ms je Modell)
     return entry;
   }
+
+  /** Eintrag verworfen (Stufenwechsel, Tausch gegen die fertige Fassung, Platzhalter weg): Ego-Fassung nicht mehr halten. */
+  _dropEntry(entry) {
+    if (entry && entry.release) { entry.release(); entry.release = null; }
+  }
+
+  _entryCollider(entry) {
+    // 24.10. (V5): Klone derselben Vorlage (Munition/Schaft/Schnellmagazin teilen sie, Tarnungen auch) teilen das Kontaktgitter
+    const tpl = entry.ud.tpl, src = tpl && this._colliderSrc ? this._colliderSrc.get(tpl) : null;
+    entry.collider = null;
+    if (src) { try { entry.collider = GunCollider.share(src, entry.model); } catch { entry.collider = null; } }
+    if (!entry.collider) {
+      try { entry.collider = new GunCollider(entry.model); } catch (err) { console.warn('[gunsmith] Kontaktgitter', err); entry.collider = null; }
+      if (entry.collider && tpl) (this._colliderSrc || (this._colliderSrc = new Map())).set(tpl, entry.collider);
+    }
+    entry.contactMemo = new Map();
+  }
+
+  /** 24.10. (V5): Kontaktgitter dieses Eintrags kostet nur das Teilen (gleiche Vorlage schon mit Gitter im Viewmodel). */
+  _colliderShared(entry) { return !!(entry.ud.tpl && this._colliderSrc && this._colliderSrc.has(entry.ud.tpl)); }
 
   // Alle Griffe einer Waffe vorab lösen (je ~2 ms, gecacht) – kein Ruckeln mitten im Nachladen
   _prepareGrips(entry) {
@@ -316,7 +338,9 @@ export class ViewModel {
     this._pending = null;
     this._lowering = false; this._lowerT = 0;
     const key = def?.model || ID_TO_MODEL[id] || id;
-    const entry = this._getModel(id, key, def?.att || null);
+    // 24.10. (V5): fehlt die Ego-Fassung einer teuren Waffe (Aufheben), erst die Bot-Fassung – siehe hintergrundbau.js
+    const entry = this._entryForSwap(id, key, def?.att || null);
+    entry.used = true;
     if (this.cur) this.gun.remove(this.cur.model);
     this.cur = entry;
     this.def = def;
@@ -512,6 +536,7 @@ export class ViewModel {
     this._climb = Math.min(0.09, this._climb + k.up * 0.22 * s * (0.4 + 0.6 * Math.max(0.5, this._motionScale())));
     this._heat = Math.min(1, this._heat + (h.heat ?? HEAT_PER_SHOT[h.action] ?? 0.02));
     this._shotCount++;
+    this._restT = this._time; // Ruhe für den Hintergrund-Bau (hintergrundbau.js)
     // loser Kastendeckel (MG): Stoß mit Zufallsstärke – mal kaum, mal deutlich (Winkelgeschwindigkeit rad/s)
     if (this._lid) this._lid.v += (1.2 + Math.random() * Math.random() * 6) * Math.min(1.5, s);
     else if (this._part('lid')) this._lid = { a: 0, v: 1.2 + Math.random() * 4 };
@@ -766,6 +791,35 @@ export class ViewModel {
     // Hitzeflimmern nur auf ultra (Bildkopie mitten im Bild + ein Billboard; 15.10.: auf „hoch“ kostete die Kopie beim
     // Dauerfeuer auf schwächeren Grafikkarten spürbar – genau dann, wenn der Lauf heiß wird)
     if (this.haze) this.haze.enabled = q === 'ultra';
+    // 24.10. (V1): Detailstufe der Waffen folgt der Grafikstufe auch im Match (Einstellungen, VR-Vorgabe „Niedrig“ auf Brillen) –
+    // Neubau im Hintergrund, die alte Fassung bleibt bis zum Tausch (hintergrundbau.js _retier)
+    setWeaponDetail(q);
+    if (this._models && this._tier !== weaponDetailTier()) this._retier();
+  }
+
+  /** Eigenschatten der Waffe/Arme (nur volle Detailstufe, PC hoch/ultra): kleiner Schattenraum um die Waffe, feine Auflösung. */
+  _shadowSetup() {
+    const sh = this.sun.shadow, c = sh.camera;
+    this.sun.castShadow = true;
+    sh.mapSize.set(2048, 2048);
+    c.left = -0.5; c.right = 0.5; c.top = 0.5; c.bottom = -0.5; c.near = 3.6; c.far = 6.4;
+    sh.bias = -0.00025; sh.normalBias = 0.0012;
+    c.updateProjectionMatrix();
+  }
+
+  /** 24.10. (V1): Eigenschatten bei Stufenwechsel im Match an/aus (Arme, Sonne, vorhandene Waffen). */
+  _setSelfShadow(on) {
+    if (this._selfShadow === on) return;
+    this._selfShadow = on;
+    if (on) this._shadowSetup();
+    else {
+      this.sun.castShadow = false;
+      if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; }
+    }
+    this.arms.group.traverse((o) => { if (o.isMesh) { o.castShadow = on; o.receiveShadow = on; } });
+    for (const e of this._models.values()) {
+      e.model.traverse((o) => { if (o.isMesh) { const t = !!(o.material && o.material.transparent); o.castShadow = on && !t; o.receiveShadow = on && !t; } });
+    }
   }
 
   _ensureOwnEnv() {
@@ -1482,7 +1536,9 @@ export class ViewModel {
       const tgt = selA[this._fireMode] ?? selA.auto ?? 0;
       if (this._selKey !== this.cur) { this._selKey = this.cur; this._selAng = tgt; }
       this._selAng += (tgt - this._selAng) * Math.min(1, dt * 22);
-      this._setPartOffset('selector', 0, 0, 0, this._selAng, 0, 0);
+      // QX-90 (25.10.): Drehscheibe unter dem Abzug dreht um die Hochachse (meta.selector.axis = 'v')
+      if (selA.axis === 'v') this._setPartOffset('selector', 0, 0, 0, 0, this._selAng, 0);
+      else this._setPartOffset('selector', 0, 0, 0, this._selAng, 0, 0);
     }
     // Aktionsteile (Magazin, Ladehebel, Pumpe, Kammerstängel, Deckel …)
     if (act && act.parts) for (const [n, o] of Object.entries(act.parts)) {
@@ -1743,16 +1799,29 @@ export class ViewModel {
 
   /** Alle Waffenmodelle vorbauen und Shader kompilieren (z. B. im Ladebildschirm) – auch die der Effekte
    *  (Mündungsfeuer, Rauch, Hülsen je Art), damit der erste Schuss kein Programm mehr linkt. */
-  warmup(renderer, ids = Object.keys(ID_TO_MODEL)) {
+  warmup(renderer, ids = Object.keys(ID_TO_MODEL), more = []) {
     const prev = this.cur;
     const holder = new THREE.Group();
     const shells = new Set();
-    for (const id of ids) {
-      const e = this._getModel(id, (this._defFor(id)?.model) || ID_TO_MODEL[id] || id);
+    for (const x of ids) {
+      // 24.10.: auch Waffen-Definitionen (mit Aufsätzen) – sonst baute der erste Wechsel auf eine Zweitwaffe mit Aufsätzen mitten im Match
+      const d = typeof x === 'string' ? this._defFor(x) : x;
+      const id = typeof x === 'string' ? x : x.id;
+      const e = this._getModel(id, (d?.model) || ID_TO_MODEL[id] || id, (typeof x !== 'string' && x.att) || null);
       shells.add(handlingFor(e.key).shell);
       if (e !== prev) holder.add(e.model);
     }
+    // 24.10. (V4): übrige Waffen (Schießstand) nur in der leichten Fassung – gleiche Materialien, also
+    // gleiche Shader und Texturen; die volle Fassung entsteht erst beim Ausrüsten
+    for (const id of more) {
+      const key = (this._defFor(id)?.model) || ID_TO_MODEL[id] || id;
+      shells.add(handlingFor(key).shell);
+      holder.add(createWeaponModel(key, { lod: 'first', tier: hasWeaponModel(key) ? null : lightTier() }));   // schon voll gebaut: die nehmen
+    }
     this.shells.prepare(shells);
+    // 24.10. (V5): Bot-Fassung als Platzhalter beim Aufheben (hintergrundbau.js) – ihre Materialien im Viewmodel-Licht mit übersetzen
+    const probeKey = prev ? prev.key : null;
+    if (probeKey) { try { holder.add(this._entryFrom(createWeaponModel(probeKey, { lod: 'third' }), '', probeKey, '', null).model); } catch { /* optional */ } }
     if (!this.flash.group.parent) holder.add(this.flash.group);   // noch keine Waffe gezogen
     const hazeVis = this.haze.mesh.visible;
     this.haze.mesh.visible = this.haze.enabled;                    // Shader des Hitzeflimmerns mit übersetzen
@@ -1803,7 +1872,11 @@ export class ViewModel {
     this.arms.dispose();
     this.sun.dispose(); this.hemi.dispose(); this.rim.dispose();
     if (this._ownEnv) { if (this.scene.environment === this._ownEnv) this.scene.environment = null; this._ownEnv.dispose(); }
+    try { this.prefetchRelease(); } catch { /* Freigabe ist Beiwerk */ }
+    for (const e of this._models.values()) this._dropEntry(e);
+    for (const j of this._bgJobs || []) this._dropEntry(j.entry);
     this._models.clear();
+    this._bgJobs = this._colliderSrc = null;
     if (this.G?.viewmodel?.rig === this) this.G.viewmodel.rig = null;
   }
 }
@@ -1818,6 +1891,8 @@ const VM_FILL = 0.42;
 // vier Inspektionen je Mechanik mit Munitionsschätzung (anim/inspects.js), Ziehen je Klasse, Bereitmachen,
 // Leerlauf-Gesten, Bewegungsposen, Nahkampf-/Wurfvarianten (anim/moves.js)
 Object.assign(ViewModel.prototype, EXTRA_ACTIONS, RELOAD_ACTIONS, INSPECT_ACTIONS, MOVE_ACTIONS);
+// 24.10. (V1/V5): Ego-Waffen ohne Hänger – Vorrat, Bot-Fassung als Platzhalter, Neubau bei Stufenwechsel (hintergrundbau.js)
+Object.assign(ViewModel.prototype, BUILD_ACTIONS);
 
 // Zubehör der Klassen-Arme (Binde, Stulpen, Wickel, Band) – Materialien modulweit, überdauern Matches
 let _accMats = null;

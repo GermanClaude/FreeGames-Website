@@ -13,23 +13,23 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261022190303';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261022190303'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261022190303';
-import { pickNames } from './names.js?v=20261022190303';
-import { Nameplate } from './nameplates.js?v=20261022190303';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261022190303';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261022190303';
-import { analyze } from './ai/tactics.js?v=20261022190303';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261022190303';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261022190303';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261022190303';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261022190303';
-import { BotAdapt } from './ai/spielstil.js?v=20261022190303';
-import { CorpseStore } from './corpses.js?v=20261022190303';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261022190303';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261022190303';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261022190303';
+import { Bot } from './bot.js?v=20261025201926';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261025201926'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261025201926';
+import { pickNames } from './names.js?v=20261025201926';
+import { Nameplate } from './nameplates.js?v=20261025201926';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261025201926';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261025201926';
+import { analyze } from './ai/tactics.js?v=20261025201926';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261025201926';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261025201926';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261025201926';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261025201926';
+import { BotAdapt } from './ai/spielstil.js?v=20261025201926';
+import { CorpseStore } from './corpses.js?v=20261025201926';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261025201926';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261025201926';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261025201926';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -215,7 +215,8 @@ export class BotManager {
       const def = id && WEAPONS[id];
       if (!def || Math.random() > pAny) continue;
       let info = null;
-      try { info = M && M.getWeaponModelInfo ? M.getWeaponModelInfo(def.model || def.id) : null; } catch { info = null; }
+      // 24.10. (V2): stufenunabhängige Metadaten – baut höchstens die Bot-Fassung (vorher: volle Ego-Fassung je Bot-Waffe)
+      try { info = M && M.getWeaponModelMeta ? M.getWeaponModelMeta(def.model || def.id) : null; } catch { info = null; }
       const opts = attachmentsFor(def, info), pick = {};
       for (const [slot, list] of Object.entries(opts)) {
         if (Object.keys(pick).length >= max) break;

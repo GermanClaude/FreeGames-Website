@@ -14,12 +14,12 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261022190303';
-import { estimateMemory } from './post/memory.js?v=20261022190303';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261022190303';
-import { resetFormatCache } from './post/common.js?v=20261022190303';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261022190303'; // Erweitert-Grafik (S9, ui-controls)
-import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261022190303';
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261025201926';
+import { estimateMemory } from './post/memory.js?v=20261025201926';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261025201926';
+import { resetFormatCache } from './post/common.js?v=20261025201926';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261025201926'; // Erweitert-Grafik (S9, ui-controls)
+import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261025201926';
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 

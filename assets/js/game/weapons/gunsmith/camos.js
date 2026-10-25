@@ -8,14 +8,18 @@
 //   camoSwatch(camoId, size)       kleines Vorschaubild (Canvas) für Menüs
 //   disposeCamos()                 alle Texturen/Materialien freigeben
 import * as THREE from 'three';
-import { CAMOS } from '../../../shared/weapons.data.js?v=20261022190303';
-import { getMat } from './materials.js?v=20261022190303';
-import { onCustomChange } from '../../../shared/customcamo.js?v=20261022190303';
+import { CAMOS } from '../../../shared/weapons.data.js?v=20261025201926';
+import { getMat } from './materials.js?v=20261025201926';
+import { onCustomChange } from '../../../shared/customcamo.js?v=20261025201926';
 
 const SIZE = 256;
 /** Materialschlüssel (gs:<key>), die ein Tarnmuster erhalten. */
 export const CAMO_TARGETS = new Set(['alu', 'aluTan', 'aluOD', 'polymer', 'polymerTan', 'polymerOD', 'polymerGrey', 'steel', 'stainless',
-  'woodWarm', 'woodWalnut', 'paintOlive', 'bladeCoat', 'canvasOD', 'slideNitride', 'polymerSatin', 'p9Slide', 'p9Frame', 'm17Rec', 'm17Ras', 'm17Steel', 'm17Furn', 'm17Mag', 'm17RecV', 'm17RasV', 'm17SteelV', 'm17FurnV']);
+  'woodWarm', 'woodWalnut', 'paintOlive', 'bladeCoat', 'canvasOD', 'slideNitride', 'polymerSatin', 'p9Slide', 'p9Frame', 'm17Rec', 'm17Ras', 'm17Steel', 'm17Furn', 'm17Mag', 'm17RecV', 'm17RasV', 'm17SteelV', 'm17FurnV',
+  'kv47Rec', 'kv47Wood', 'kv47Steel', 'kv47Mag',   // KV-47 (25.10.): Gehäuse- und Holzatlas, Stahlteile, Magazin – Träger bleibt blank
+  'vp9Rec', 'vp9Furn', 'vp9FurnS', 'vp9Mag',   // VP-9 nach Foto (24.10.): Gehäuse, Kunststoffteile, Magazin
+  'qx90Frame', 'qx90Upper', 'qx90Optic',          // QX-90 (25.10.): Rahmen, Guss, Visier – Magazin (durchscheinend) und Stahl bleiben
+  'adlerSteel', 'adlerSteelS', 'adlerGrip', 'adlerGripS']);   // Adler nach Foto (25.10.): Edelstahl-Atlas, Wickelgriff
 
 const texCache = new Map();
 const matCache = new Map();
@@ -325,7 +329,7 @@ export function applyCamo(root, id) {
     const base = o.userData.baseMat || o.material;
     const key = keyOf(base);
     if (!key) return;
-    const target = CAMO_TARGETS.has(key) || key === 'lodMatte' || (metallic && key === 'lodMetal');
+    const target = CAMO_TARGETS.has(key.replace(/@lite$/, '')) || key === 'lodMatte' || (metallic && key === 'lodMetal');   // @lite: Handy-Atlas (V4)
     if (!target) return;
     if (!o.userData.baseMat) o.userData.baseMat = base;
     o.material = def ? camoMaterial(key, id) : base;
@@ -335,6 +339,12 @@ export function applyCamo(root, id) {
   });
   root.userData.camo = def ? id : null;
   return root;
+}
+
+/** Tarnklone freigegebener Atlas-Materialien entsorgen (Freigabe je Waffe, models.js freeIdleWeaponModels). */
+export function disposeCamosFor(baseKeys) {
+  const set = new Set(baseKeys);
+  for (const [k, m] of [...matCache]) if (set.has(k.slice(0, k.lastIndexOf('|')))) { m.dispose(); matCache.delete(k); }
 }
 
 export function disposeCamos() {

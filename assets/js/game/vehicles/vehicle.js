@@ -9,12 +9,12 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, vehicleWeapon } from './data.js?v=20261022190303';
-import { VehicleBody } from './sim.js?v=20261022190303';
-import { createVehicleModel } from './models.js?v=20261022190303';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261022190303';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261022190303';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261022190303';
+import { VEHICLES, vehicleWeapon } from './data.js?v=20261025201926';
+import { VehicleBody } from './sim.js?v=20261025201926';
+import { createVehicleModel } from './models.js?v=20261025201926';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261025201926';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261025201926';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261025201926';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();

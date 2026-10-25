@@ -16,62 +16,63 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261022190303';
-import { profile } from '../shared/profile.js?v=20261022190303';
-import * as weaponsData from '../shared/weapons.data.js?v=20261022190303';
-import * as modesData from '../shared/modes.data.js?v=20261022190303';
-import * as mapsData from '../shared/maps.data.js?v=20261022190303';
-import * as classesData from '../shared/classes.data.js?v=20261022190303'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { EventBus } from './engine/events.js?v=20261022190303';
-import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261022190303';
-import { learnTier, deviceInfo } from './engine/device.js?v=20261022190303';
-import { Input } from './engine/input.js?v=20261022190303';
-import { watchForUpdates } from './engine/update.js?v=20261022190303'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261022190303';
-import { DynamicResolution } from './engine/dynres.js?v=20261022190303';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261022190303'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261022190303';
-import { Combat } from './combat.js?v=20261022190303';
-import { MapPoints } from './mappoints.js?v=20261022190303'; // Interaktionspunkte der Karten (Taste F)
-import { Building } from './building.js?v=20261022190303'; // Bauen (Taste K)
-import { Injuries } from './injuries.js?v=20261022190303'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
-import { Gore } from './gore.js?v=20261022190303'; // Blutlachen + Spritzer
-import { Destruction } from './destruction.js?v=20261022190303'; // zerstörbare Fassaden
-import { CarDeform } from './deform.js?v=20261022190303'; // verformbare Autos
-import { Digging } from './digging.js?v=20261022190303'; // Graben mit dem Klappspaten (Großkarten)
-import { Doors } from './doors.js?v=20261022190303'; // bewegliche Türen und Tore (Taste F)
-import { BulletHoles } from './bullet-holes.js?v=20261022190303'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
-import { TreeFall } from './treefall.js?v=20261022190303'; // Bäume brechen unter Beschuss und fallen
-import * as Feedback from '../shared/feedback.js?v=20261022190303'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
+import { settings } from '../shared/settings.js?v=20261025201926';
+import { profile } from '../shared/profile.js?v=20261025201926';
+import * as weaponsData from '../shared/weapons.data.js?v=20261025201926';
+import * as modesData from '../shared/modes.data.js?v=20261025201926';
+import * as mapsData from '../shared/maps.data.js?v=20261025201926';
+import * as classesData from '../shared/classes.data.js?v=20261025201926'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261025201926'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
+import { EventBus } from './engine/events.js?v=20261025201926';
+import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261025201926';
+import { learnTier, deviceInfo } from './engine/device.js?v=20261025201926';
+import { Input } from './engine/input.js?v=20261025201926';
+import { watchForUpdates } from './engine/update.js?v=20261025201926'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261025201926';
+import { DynamicResolution } from './engine/dynres.js?v=20261025201926';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261025201926'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261025201926';
+import { Combat } from './combat.js?v=20261025201926';
+import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261025201926'; // Interaktionspunkte der Karten (Taste F)
+import { Building } from './building.js?v=20261025201926'; // Bauen (Taste K)
+import { Injuries } from './injuries.js?v=20261025201926'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
+import { Gore } from './gore.js?v=20261025201926'; // Blutlachen + Spritzer
+import { Destruction } from './destruction.js?v=20261025201926'; // zerstörbare Fassaden
+import { CarDeform } from './deform.js?v=20261025201926'; // verformbare Autos
+import { Digging } from './digging.js?v=20261025201926'; // Graben mit dem Klappspaten (Großkarten)
+import { Doors } from './doors.js?v=20261025201926'; // bewegliche Türen und Tore (Taste F)
+import { BulletHoles } from './bullet-holes.js?v=20261025201926'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
+import { TreeFall } from './treefall.js?v=20261025201926'; // Bäume brechen unter Beschuss und fallen
+import * as Feedback from '../shared/feedback.js?v=20261025201926'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261022190303', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261022190303', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261022190303', ['ViewModel']],
-  world: ['./world/index.js?v=20261022190303', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261022190303', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261022190303', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261022190303', ['Effects']],
-  bots: ['./bots/manager.js?v=20261022190303', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261022190303', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261025201926', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261025201926', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261025201926', ['ViewModel']],
+  world: ['./world/index.js?v=20261025201926', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261025201926', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261025201926', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261025201926', ['Effects']],
+  bots: ['./bots/manager.js?v=20261025201926', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261025201926', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261022190303', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261022190303', []],
-  modes: ['./modes/index.js?v=20261022190303', ['createMode']],
-  hud: ['./ui/hud.js?v=20261022190303', ['HUD']],
-  menus: ['./ui/menus.js?v=20261022190303', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261025201926', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261025201926', []],
+  modes: ['./modes/index.js?v=20261025201926', ['createMode']],
+  hud: ['./ui/hud.js?v=20261025201926', ['HUD']],
+  menus: ['./ui/menus.js?v=20261025201926', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261022190303', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261022190303', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261025201926', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261025201926', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261022190303', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261022190303', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261022190303', ['ClientSync']],
+  net: ['./net/index.js?v=20261025201926', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261025201926', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261025201926', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261022190303', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261025201926', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
@@ -729,8 +730,42 @@ function nextFrame() {
   });
 }
 
-const warmed = new Set(); // erledigte Vorarbeiten ('m:<Modell>:<LOD>', 's:<Schema>:<Variante>:<Qualität>')
+const warmed = new Set(); // erledigte Vorarbeiten ('m:<Modell>:<LOD>[:<Stufe>][|<Aufsätze>]', 's:<Schema>:<Variante>:<Qualität>')
 const mapSchemes = new Map(); // mapId → { B, ffa }: Tarnschemata der Bots auf dieser Karte (nach dem ersten Laden bekannt)
+
+/**
+ * 24.10. (Vorarbeit V1): Detailstufe der Ego-Waffenmodelle nach der aktuellen Grafikstufe – vor jedem Vorbau (Start, Lobby-Leerlauf,
+ * Lobby-Vorschau, Ladebildschirm) und bei jedem Qualitätswechsel. Vorher galt bis zum ersten Viewmodel die Startannahme „PC = volle
+ * Fassung“: ein PC auf niedrig/mittel baute M-17/P-9 zusätzlich in max (Container ≈ 7 s, ≈ 87 MB). → true, wenn die Stufe wechselte
+ */
+function syncWeaponDetail() {
+  const M = G.modules.models;
+  return !!(M && typeof M.setWeaponDetail === 'function' && G.renderer && M.setWeaponDetail(G.renderer.quality));
+}
+
+// Ego-Fassungen der ganzen Leiter bzw. aller Waffen vorgebaut (WeaponController.warmup) – kein Vorrat (V5), Schießstand baut beim Ausrüsten
+const allWeaponsMode = (modeId) => modeId === 'gun' || modeId === 'training';
+
+/** Ego-Waffen eines Matches: Waffenspiel die Leiter, Schießstand alle, sonst die Ausrüstung (Waffen-Ids). */
+function ownWeapons(cfg) {
+  const W = G.data.WEAPONS || {};
+  if (cfg.modeId === 'gun') return [...new Set((G.data.GUN_GAME_STEPS || []).filter((id) => W[id]))];
+  if (cfg.modeId === 'training') return Object.keys(W);
+  return [cfg.loadout.primary, cfg.loadout.secondary];
+}
+
+/**
+ * Freigabe je Waffe (24.10., V4): Ego-Vorlagen und Foto-Atlanten von Waffen, die niemand hält und cfg nicht braucht (z. B. in der
+ * Lobby durchprobierte Waffen, andere Grafikstufe) – vor dem Vorbau eines Matches und nach einem Stufenwechsel in der Lobby.
+ */
+function freeIdleWeapons(cfg) {
+  const M = G.modules.models, W = G.data.WEAPONS || {};
+  if (!M || typeof M.freeIdleWeaponModels !== 'function') return;
+  // + Nahkampfwaffe und Requisiten, die jedes Viewmodel baut (Messer, Granaten, Platte); die leichte Stufe nur im Schießstand
+  // (Vorbau aller übrigen Waffen) – sonst bliebe nach „niedrig“ → „hoch“ die Standardfassung der Ausrüstung liegen
+  M.freeIdleWeaponModels([...[...ownWeapons(cfg), cfg.loadout.melee].map((id) => W[id] && W[id].model), 'knife', 'frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke', 'plate'],
+    { keepLight: cfg.modeId === 'training' });
+}
 
 /**
  * Vorarbeiten für ein Match als kleine Einzelschritte (je ein Waffen-Template bzw. ein Soldat aus
@@ -753,13 +788,52 @@ function matchAssetJobs(cfg, world) {
     seen.add(k);
     jobs.push(() => { fn(); warmed.add(k); });
   };
-  const addModel = (key, lod) => {
-    if (key && models && typeof models.preloadWeaponModels === 'function') add(`m:${key}:${lod}`, () => models.preloadWeaponModels([key], [lod]));
+  // 24.10. (V1): Ego-Vorlagen in der Stufe der aktuellen Grafikstufe (vorher bis zum ersten Viewmodel „PC = max“); die Stufe gehört
+  // zum Schlüssel (Wechsel → neu bauen). Vorlagen anderer Stufen und ungebrauchter Waffen gibt freeIdleWeapons frei (runStart vor dem
+  // Vorbau, Lobby nach einem Stufenwechsel). Erledigte Ego-Schritte, deren Vorlage inzwischen fehlt (Freigabe je Waffe, Stufenwechsel
+  // im Match, ungenutzter Vorrat am Matchende), neu einplanen – sonst baute erst das Ausrüsten
+  syncWeaponDetail();
+  const tier = models && typeof models.weaponDetailTier === 'function' ? models.weaponDetailTier() : '';
+  const unwarm = (k, key, o) => {
+    if (warmed.has(k) && typeof models.hasWeaponModel === 'function' && !models.hasWeaponModel(key, o)) warmed.delete(k);
   };
-  const allWeapons = cfg.modeId === 'gun' || cfg.modeId === 'training';
-  // Ego: Ausrüstung (gun/training: alle Waffen, siehe WeaponController.warmup) + Requisiten des Viewmodels
-  const own = allWeapons ? Object.keys(W) : [cfg.loadout.primary, cfg.loadout.secondary];
-  for (const id of [...own, 'knife', 'frag', 'semtex']) addModel(modelOf(id), 'first');
+  const addModel = (key, lod) => {
+    if (!key || !models || typeof models.preloadWeaponModels !== 'function') return;
+    const k = `m:${key}:${lod}${lod === 'first' ? ':' + tier : ''}`;
+    if (lod === 'first') unwarm(k, key, {});
+    add(k, () => models.preloadWeaponModels([key], [lod]));
+  };
+  // Ego: Ausrüstung (Waffenspiel: die ganze Leiter, 24.10.) + Requisiten des Viewmodels; Schießstand (24.10., V4): Ausrüstung
+  // voll, alle übrigen Waffen nur leicht (Standard am PC, lite am Handy) – die volle Fassung entsteht beim Ausrüsten
+  const own = cfg.modeId === 'training' ? [cfg.loadout.primary, cfg.loadout.secondary] : ownWeapons(cfg);
+  // 24.10.: eigene Waffen mit gespeicherten Aufsätzen gleich in dieser Fassung (die Grundfassung zeigte das Viewmodel nie –
+  // setLoadout legt die Aufsätze in jedem Modus an, auch auf der Waffenspiel-Leiter)
+  const ownAtt = safe('loadAttachments', loadAttachments) || {};
+  const addOwn = (id) => {
+    const key = modelOf(id);
+    let att = null;
+    if (key && W[id] && ownAtt[id] && models && typeof models.getWeaponModelMeta === 'function') {
+      att = safe('ownAttachments', () => applyAttachments(W[id], ownAtt[id], models.getWeaponModelMeta(key)).att) || null;
+    }
+    if (!att || typeof models.getWeaponModelInfo !== 'function') { addModel(key, 'first'); return; }
+    const k = `m:${key}:first:${tier}|${Object.values(att).join('+')}`;
+    unwarm(k, key, { att });
+    add(k, () => models.getWeaponModelInfo(key, 'first', att));
+  };
+  for (const id of own) addOwn(id);
+  for (const id of ['knife', 'frag', 'semtex']) addModel(modelOf(id), 'first');
+  if (cfg.modeId === 'training' && models && typeof models.lightTier === 'function') {
+    // (schon voll gebaut – Ausrüstung, Requisiten, vorige Runde: nicht zusätzlich leicht bauen; leicht = aktuelle Stufe am PC
+    // niedrig/mittel und am Handy → gleicher Schlüssel wie die volle Fassung)
+    const light = models.lightTier();
+    for (const id of Object.keys(W)) {
+      const key = modelOf(id);
+      if (!key) continue;
+      const k = `m:${key}:first:${light}`;
+      unwarm(k, key, { tier: light });
+      add(k, () => { if (!models.hasWeaponModel(key)) models.preloadWeaponModels([key], ['first'], light); });
+    }
+  }
   // Ego: einmalige Viewmodel-Texturen (Ärmel-Tarnmuster des Teams, Stoff, Mündungsfeuer …), weapons/viewmodel.js
   const vm = G.modules.viewmodel;
   if (vm && typeof vm.viewModelWarmupSteps === 'function') {
@@ -770,7 +844,7 @@ function matchAssetJobs(cfg, world) {
   const bots = (cfg.allies | 0) + (cfg.enemies | 0);
   if (bots > 0) {
     const ids = new Set(['knife', 'frag']);
-    if (allWeapons) for (const id of Object.keys(W)) ids.add(id);
+    if (allWeaponsMode(cfg.modeId)) for (const id of Object.keys(W)) ids.add(id);
     else {
       for (const l of G.data.DEFAULT_LOADOUTS || []) { ids.add(l.primary); ids.add(l.secondary); ids.add(l.lethal); }
       for (const id of Object.keys(W)) if (W[id].cls === 'sniper') ids.add(id); // ein Scharfschütze je Seite
@@ -805,6 +879,54 @@ function matchAssetJobs(cfg, world) {
     });
   }
   return jobs;
+}
+
+/**
+ * 24.10. (V5): Waffen, die der Spieler in diesem Match aufheben oder ausrüsten kann – vorgemerkte eigene Ausrüstung (Pausenmenü,
+ * Todesbildschirm), Beute am Boden, Waffen der übrigen Akteure (Bots, Mitspieler) samt Aufsätzen; häufigste zuerst. → Definitionen
+ */
+function carriedWeapons() {
+  const W = G.data.WEAPONS || {};
+  const M = G.modules.models;
+  const meta = (id) => safe('modelMeta', () => (M && typeof M.getWeaponModelMeta === 'function' ? M.getWeaponModelMeta(W[id].model || id) : null)) || null;
+  const withAtt = (id, att) => (att && typeof att === 'object' ? safe('applyAttachments', () => applyAttachments(W[id], att, meta(id))) || W[id] : W[id]);
+  const count = new Map();
+  const add = (def, w) => {
+    if (!def || !def.id || !W[def.id] || W[def.id].cls === 'melee') return;
+    const k = def.id + '#' + (def.attKey || '');
+    const c = count.get(k);
+    if (c) c.n += w; else count.set(k, { def, n: w });
+  };
+  const lo = G.match.pendingLoadout;
+  if (lo) {
+    const own = safe('loadAttachments', loadAttachments) || {};
+    for (const id of [lo.primary, lo.secondary]) if (W[id]) add(withAtt(id, own[id]), 100);
+  }
+  for (const l of (G.points && G.points.loot) || []) if (l && l.weapon && W[l.weapon]) add(withAtt(l.weapon, l.att), 3);
+  // MG-Stellungen der Karte bzw. Pionier-MG-Nester (building.js): ihre Waffe kommt beim Bedienen in die Hand (mappoints.js mount)
+  const nests = (G.world && G.world.emplacements && G.world.emplacements.length) || G.actors.some((a) => (a.cls || (a.loadout && a.loadout.cls)) === 'pionier');
+  if (nests && W[MOUNT_WEAPON]) add(W[MOUNT_WEAPON], 2);
+  for (const a of G.actors) {
+    if (a === G.player || !a.weapon || !Array.isArray(a.weapon.slots)) continue;
+    for (const s of a.weapon.slots) if (s && s.def) add(s.def, 1);
+  }
+  return [...count.values()].sort((a, b) => b.n - a.n).map((c) => c.def);
+}
+
+let bgIdle = false; // Leerlauf im letzten Bild (Übergang → Vorrat neu planen)
+/** Je Bild ein Schritt des Hintergrund-Baus im Viewmodel (weapons/hintergrundbau.js). */
+function weaponBackground() {
+  const P = G.player;
+  const vm = P && P.weapon && P.weapon.viewModel;
+  if (!vm || typeof vm.backgroundStep !== 'function') return;
+  const st = G.match.state;
+  const idle = st === 'paused' || st === 'countdown' || !P.alive;
+  // Vorrat, sobald der Leerlauf beginnt: Bots wechseln beim Wiedereinstieg ihre Ausrüstung, Beute kommt hinzu (nicht in VR: dort
+  // stünde das Bild der Brille während eines Baus still – Vorrat nur im Ladebildschirm)
+  const vr = !!(G.xr && G.xr.presenting);
+  if (idle && !bgIdle && !vr && !allWeaponsMode(G.match.modeId)) safe('prefetch', () => vm.prefetch(carriedWeapons()));
+  bgIdle = idle;
+  vm.backgroundStep({ idle, quiet: P.alive && G.time.elapsed - (P.lastDamageTime ?? -1e9) > 2 });
 }
 
 /**
@@ -845,7 +967,14 @@ function scheduleLobbyPrewarm() {
       setTimeout(() => onIdle(tick), 300);
       return;
     }
-    if (!run.jobs) run.jobs = safe('lobbyPrewarm', () => matchAssetJobs(normalizeConfig(configFromParams()), null)) || [];
+    if (!run.jobs) {
+      const cfg = normalizeConfig(configFromParams());
+      // 24.10. (V1/V4): zurück in der Lobby (Matchende, Stufenwechsel auf dem Endbildschirm) – Vorlagen anderer Stufen und
+      // Waffen, die niemand hält und die Lobby-Ausrüstung nicht braucht (Vorrat der Bots), schon hier frei statt erst beim
+      // nächsten Matchstart
+      safe('waffenFreigabe', () => freeIdleWeapons(cfg));
+      run.jobs = safe('lobbyPrewarm', () => matchAssetJobs(cfg, null)) || [];
+    }
     const job = run.jobs.shift();
     if (!job) { lobbyWarm = null; return; }
     safe('prepareMatchAssets', job);
@@ -948,6 +1077,10 @@ async function runStart(config, gen) {
     safe('hud.hide', () => G.hud.hide());
 
     vmBase = new Set(G.viewmodel.scene.children);
+    // Waffen-Detailstufe zur (ggf. eben automatisch geänderten) Grafikstufe, dann Freigabe je Waffe (24.10., V4) – beides vor
+    // dem Vorbau; freigegebene Vorlagen plant matchAssetJobs neu ein
+    syncWeaponDetail();
+    safe('waffenFreigabe', () => freeIdleWeapons(cfg));
     const onProgress = (p) => { if (live()) safe('menus', () => G.menus.showLoading(Math.min(0.85, p * 0.85))); };
     const nextStep = async (p) => {
       await nextFrame();
@@ -1016,6 +1149,12 @@ async function runStart(config, gen) {
       for (const a of G.actors) spawnActor(a);
     }
     if (!(await nextStep(0.9))) { await teardownMatch({ keepWorld: true }); return; }
+    // 24.10. (V5): Ego-Fassungen der Waffen, die Bots tragen (aufhebbar), in der aktuellen Stufe schon im Ladebildschirm
+    const vmP = G.player.weapon && G.player.weapon.viewModel;
+    if (vmP && typeof vmP.prefetchJobs === 'function' && !allWeaponsMode(cfg.modeId)) {
+      await runJobs(safe('prefetch', () => vmP.prefetchJobs(carriedWeapons())) || [], live);
+      if (!live()) { await teardownMatch({ keepWorld: true }); return; }
+    }
 
     // vehicles: Spawns aus world.vehicleSpawns bzw. ?vehicles=1; online nur mit Raum-Einstellung „Fahrzeuge“ – der Host
     // simuliert, Clients führen ein Abbild (vehicles/net.js, panzer-mp.md §C)
@@ -1042,6 +1181,10 @@ async function runStart(config, gen) {
     await warmUp(live);
     if (!live()) { await teardownMatch({ keepWorld: true }); return; }
     G.menus.showLoading(1);
+    // ab jetzt fehlende teure Ego-Fassungen (Aufheben, neue Aufsätze) nicht mehr synchron bauen (hintergrundbau.js) – außer im
+    // Schießstand: dort sind die übrigen Waffen nur leicht vorgebaut (V4) und die volle Fassung entsteht beim Ausrüsten am Tisch;
+    // ein Platzhalter bliebe dort bis zur nächsten Pause in der Hand (Bau nur im Leerlauf)
+    if (vmP && cfg.modeId !== 'training') vmP.deferBuilds = true;
     G.matchCount += 1;
     G.menus.hideAll();
     G.hud.show();
@@ -1657,6 +1800,18 @@ function applyQuality(q) {
  */
 function onQualityChanged() {
   applyQualityClasses();
+  // 24.10. (V1): Waffen-Detailstufe folgt (auch beim automatischen Stufenwechsel zwischen Matches; das Viewmodel im Match stellt
+  // seine Waffen selbst um, hintergrundbau.js _retier). Die Lobby-Vorschau lässt ihre Fassung der alten Stufe los; in der Lobby
+  // gleich Vorlagen der alten Stufe frei (z. B. M-17 max ≈ 61 MB nach „hoch“ → „niedrig“) und Vorbau neu planen – sonst gibt sie
+  // der nächste Matchstart frei (runStart → freeIdleWeapons)
+  if (syncWeaponDetail()) {
+    safe('vorschau', () => G.menus && G.menus.preview && G.menus.preview.refresh && G.menus.preview.refresh());
+    if (G.match.state === 'lobby') {
+      safe('waffenFreigabe', () => freeIdleWeapons(normalizeConfig(configFromParams())));
+      lobbyWarm = null;
+      scheduleLobbyPrewarm();
+    }
+  }
   setTimeout(prewarmShaders, 0); // nach den übrigen Abonnenten (Schattenzustand der Welt)
 }
 
@@ -1808,6 +1963,8 @@ function frame(now, bg = false, xrFrame = null) {
   if (G._endScreenAt && G.time.real >= G._endScreenAt) showEndScreen();
   if (xr) step('xr:end', () => G.xr.endFrame(dt, sim)); // Kamera/Hände auch in der Pause, Overlay, Handgelenk, Menü
 
+  // 24.10. (V1/V5): Ego-Waffen im Hintergrund – je Bild höchstens ein Schritt (Leerlauf: tot, Pause, Countdown; sonst nur in Ruhe)
+  if (bg !== true && (sim || st === 'paused')) step('weapons:bg', weaponBackground);
   // Pausiert/Ende: Bild steht still → nur ~4×/s neu zeichnen (Akku auf Mobilgeräten); VR zeichnet jedes Bild
   if (bg !== true && G.world && G.camera && st !== 'loading' && (sim || xr || now - idleRenderAt > 250)) {
     idleRenderAt = now;
@@ -2138,6 +2295,7 @@ async function bootstrap() {
     phase = 'module';
     await loadModules((p) => setBoot(0.06 + p * 0.66, 'Lade Module …'));
     phase = 'error';
+    syncWeaponDetail(); // 24.10. (V1): vor Lobby-Vorschau und Lobby-Vorbau
 
     setBoot(0.75, 'Starte Systeme …');
     G.player = new Player(G);

@@ -7,7 +7,7 @@
 //     (2 s), Sanitäter-Bots in der Nähe des gefallenen Spielers von selbst. Wiederbelebte stehen mit halbem Leben auf.
 // Entscheidet offline bzw. der Host (Schaden läuft nur dort); Clients sehen das Ergebnis über Leben/Spawn.
 import * as THREE from 'three';
-import { issueCommand } from './bots/ai/orders.js?v=20261022190303';
+import { issueCommand } from './bots/ai/orders.js?v=20261025201926';
 
 const BLEED_RATE = { arcade: 1.6, realistisch: 2.6 };   // Leben je Sekunde
 const BLEED_CHANCE = { arcade: 0.35, realistisch: 0.7 };

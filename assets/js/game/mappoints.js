@@ -15,13 +15,13 @@
 // Nur wenn im Match Militärfahrzeuge unterwegs sind (nicht bei „Panzer & Fahrzeuge: Aus“, ?vehicles=0, Raum „Fahrzeuge
 // aus“ – Host und Clients haben dieselbe Einstellung); Halteplätze und Depots halten Abstand zu allen Spawnpunkten.
 import * as THREE from 'three';
-import { MAPS, militaryVehiclesAllowed } from '../shared/maps.data.js?v=20261022190303';
-import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261022190303';
-import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261022190303';
-import { stepDrop } from './bots/character.js?v=20261022190303';
-import { collisionRay } from './engine/physics.js?v=20261022190303';
-import { createStation, hasStationModel, STATION_SOLIDS } from './mappoints-models.js?v=20261022190303';
-import { worldPartsFrom } from './building.js?v=20261022190303';
+import { MAPS, militaryVehiclesAllowed } from '../shared/maps.data.js?v=20261025201926';
+import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261025201926';
+import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261025201926';
+import { stepDrop } from './bots/character.js?v=20261025201926';
+import { collisionRay } from './engine/physics.js?v=20261025201926';
+import { createStation, hasStationModel, STATION_SOLIDS } from './mappoints-models.js?v=20261025201926';
+import { worldPartsFrom } from './building.js?v=20261025201926';
 
 // vehicle: Punktart kann Fahrzeuge versorgen (wenn sie auf offenem Feld liegt, s. vehicleStand); reach: Griffweite (m)
 export const POINT_KINDS = Object.freeze({

@@ -8,10 +8,10 @@
 // Gesichter sind verdeckt (Realismus-Plan C1: Sturmhaube, Halstuch, Shemagh, Gasmaske + Schutzbrillen) – wie Bodycam,
 // das Gesichter verpixelt; so entsteht kein „Uncanny Valley“ aus der Nähe.
 import * as THREE from 'three';
-import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf } from './builder.js?v=20261022190303';
-import { SKIN_TONES } from './materials.js?v=20261022190303';
-import { BONE, DIM } from './rig.js?v=20261022190303';
-import { BODY_MESH } from './body-mesh.js?v=20261022190303';
+import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf } from './builder.js?v=20261025201926';
+import { SKIN_TONES } from './materials.js?v=20261025201926';
+import { BONE, DIM } from './rig.js?v=20261025201926';
+import { BODY_MESH } from './body-mesh.js?v=20261025201926';
 
 export const VARIANTS = [
   // Nutzer 16.10.: Grundausführungen wie die Soldaten im Video – Helm mit Tarnbezug (ohne Nachtsicht), dunkle

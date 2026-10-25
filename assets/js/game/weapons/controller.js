@@ -10,11 +10,11 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261022190303';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261022190303';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261022190303';
-import { getWeaponModelInfo } from './models.js?v=20261022190303';
-import { classDef } from '../../shared/classes.data.js?v=20261022190303';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261025201926';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261025201926';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261025201926';
+import { getWeaponModelMeta } from './models.js?v=20261025201926';
+import { classDef } from '../../shared/classes.data.js?v=20261025201926';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -75,7 +75,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261022190303').WeaponSystem} system
+   * @param {import('./index.js?v=20261025201926').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -213,8 +213,30 @@ export class WeaponController {
     const r = this.G.renderer && this.G.renderer.renderer;
     if (!vm || typeof vm.warmup !== 'function' || !r) return;
     const mode = this.G.match && this.G.match.modeId;
-    const ids = mode === 'gun' || mode === 'training' ? Object.keys(this._weapons()) : this.slots.map((s) => s.id);
-    try { vm.warmup(r, ids.filter((id) => this._def(id))); } catch (err) { this._vmError('warmup', err); }
+    // 24.10.: eigene Waffen samt Aufsätzen (Definitionen) – vorher nur die Grundfassung, die Zweitwaffe mit Aufsätzen baute erst
+    // der erste Wechsel mitten im Match
+    const defs = this.slots.map((s) => s.def).filter((d) => d && d.id && this._def(d.id));
+    const own = new Set(defs.map((d) => d.id));
+    // Waffenspiel (24.10.): die Leiter steht fest – alle ihre Waffen voll vorbereiten, sonst baute jeder Aufstieg nach einem
+    // Abschuss mitten im Match (M-17 am PC hoch ≈ 5 s, online stünde der Host für alle); mit den gespeicherten Aufsätzen, die
+    // setLoadout beim Aufstieg anlegt (sonst zeigte der Hintergrund-Bau bis zum nächsten Tod die Grundfassung). Übrige Waffen
+    // braucht der Modus nicht.
+    if (mode === 'gun') {
+      let saved = {};
+      try { saved = loadAttachments() || {}; } catch { saved = {}; }
+      for (const id of GUN_GAME_STEPS) {
+        const d = this._def(id);
+        if (!d || own.has(id)) continue;
+        own.add(id);
+        let info = null;
+        if (saved[id]) { try { info = getWeaponModelMeta(d.model || d.id); } catch { /* ohne Modell: Unterlauf nach Klasse */ } }
+        defs.push(saved[id] ? applyAttachments(d, saved[id], info) : d);
+      }
+    }
+    // Schießstand (24.10., V4): volle Fassung nur für die Ausrüstung, alle übrigen Waffen leicht (Shader, Texturen) – vorher
+    // baute der Ladebildschirm jede Waffe in der vollen Fassung
+    const more = mode === 'training' ? Object.keys(this._weapons()).filter((id) => !own.has(id) && this._def(id)) : [];
+    try { vm.warmup(r, defs, more); } catch (err) { this._vmError('warmup', err); }
   }
 
   /* ================================================================ Ausrüstung */
@@ -236,7 +258,8 @@ export class WeaponController {
       const a = d && attAll && attAll[d.id];
       if (!a) return d;
       let info = null;
-      try { info = getWeaponModelInfo(d.model || d.id); } catch { /* ohne Modell (Bots/Tests): Unterlauf nach Klasse */ }
+      // 24.10. (V2): nur stufenunabhängige Metadaten (Stützhand-Griff) – keine Ego-Fassung je Bot-Waffe mit Aufsätzen
+      try { info = getWeaponModelMeta(d.model || d.id); } catch { /* ohne Modell (Bots/Tests): Unterlauf nach Klasse */ }
       return applyAttachments(d, a, info);
     };
     const primary = withAtt(this._def(loadout.primary) || this._def('ar_m17') || FALLBACK);

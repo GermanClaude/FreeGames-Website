@@ -73,9 +73,43 @@ export function cached(key, make) {
   return cache.get(key);
 }
 
+// ---------------------------------------------------------------- Atlanten im Hintergrund zeichnen
+// Zeitgeteilte Atlas-Aufträge (25.10., KV-47 – Bauzeit-Budget der Bauanleitung 3.4): Ein Foto-Atlas wird sofort als
+// Platzhalter (volle Größe, Grundfarbe) geliefert und danach in Scheiben zu ≤ ATLAS_SLICE_MS gezeichnet – der Modellbau
+// blockiert nicht mehr ≈ 0,5 s, die Arbeit verteilt sich auf viele kurze Zeitscheiben (Lobby/Ladebild/Leerlauf).
+// job = Generator, der nach jedem Teilschritt yield-et; fertig = Generator beendet (er setzt selbst needsUpdate).
+const ATLAS_JOBS = [], ATLAS_WAIT = [], ATLAS_SLICE_MS = 6;
+let atlasTimer = 0;
+function runAtlasSlices() {
+  atlasTimer = 0;
+  const t0 = performance.now();
+  while (ATLAS_JOBS.length && performance.now() - t0 < ATLAS_SLICE_MS) {
+    const job = ATLAS_JOBS[0];
+    if (job.cancelled || job.gen.next().done) ATLAS_JOBS.shift();
+  }
+  if (ATLAS_JOBS.length) atlasTimer = setTimeout(runAtlasSlices, 0);
+  else for (const f of ATLAS_WAIT.splice(0)) f();
+}
+/** Auftrag einreihen; liefert { cancel() } (z. B. wenn der Atlas vor dem Ende freigegeben wird). */
+export function scheduleAtlas(gen) {
+  const job = { gen, cancelled: false };
+  ATLAS_JOBS.push(job);
+  if (!atlasTimer) atlasTimer = setTimeout(runAtlasSlices, 0);
+  return { cancel() { job.cancelled = true; } };
+}
+/** Promise: alle eingereihten Atlanten fertig gezeichnet (Fotostudio, Prüfwerkzeuge). */
+export function atlasesReady() { return ATLAS_JOBS.length ? new Promise((r) => ATLAS_WAIT.push(r)) : Promise.resolve(); }
+/** Alle offenen Atlas-Aufträge sofort zu Ende zeichnen (synchron, für Werkzeuge ohne Ereignisschleife). */
+export function finishAtlases() {
+  while (ATLAS_JOBS.length) { const job = ATLAS_JOBS.shift(); if (!job.cancelled) while (!job.gen.next().done); }
+  for (const f of ATLAS_WAIT.splice(0)) f();
+}
+
 // Höhenfeld → Normal-Map (Sobel, kachelnd)
 export function heightToNormal(height, w, h, strength = 2) {
-  const c = canvas(w, h), ctx = c.getContext('2d');
+  // willReadFrequently: Leinwand im Hauptspeicher – gleiche Pixel, aber halfMaps (Handy-Atlas) liest sie ohne Abgleich
+  // mit der Grafikkarte zurück (24.10.)
+  const c = canvas(w, h), ctx = c.getContext('2d', { willReadFrequently: true });
   const img = ctx.createImageData(w, h), d = img.data;
   const H = (x, y) => height[((y + h) % h) * w + ((x + w) % w)];
   for (let y = 0; y < h; y++) {
@@ -410,8 +444,57 @@ export function tapeMap() {
   });
 }
 
+// sRGB ↔ linear (8 Bit) für das Verkleinern von Farbkarten
+const SRGB_TO_LIN = new Float32Array(256).map((_, i) => { const c = i / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+const linToSrgb = (l) => { const c = l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055; return Math.round(Math.min(1, Math.max(0, c)) * 255); };
+
+/**
+ * Leinwand auf halbe Kantenlänge: 2 × 2-Mittel wie die erste Mipmap-Stufe der GPU (Farbkarten in sRGB linear gemittelt,
+ * wie WebGL2 bei SRGB8_ALPHA8). Handy-Atlanten (24.10., V4) sind damit genau die Stufe, die die GPU aus dem PC-Atlas
+ * ohnehin abtastet, sobald ein Texel kleiner als ein Bildpunkt ist – ¼ Speicher, gleiches Bild.
+ */
+export function halfCanvas(src, srgb = false) {
+  const sw = src.width, W = sw >> 1, H = src.height >> 1;
+  const s = src.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, sw, src.height).data;
+  const c = canvas(W, H), g = c.getContext('2d'), img = g.createImageData(W, H), d = img.data;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i0 = ((2 * y) * sw + 2 * x) * 4, i1 = i0 + 4, i2 = i0 + sw * 4, i3 = i2 + 4, o = (y * W + x) * 4;
+    for (let ch = 0; ch < 4; ch++) {
+      if (srgb && ch < 3) d[o + ch] = linToSrgb((SRGB_TO_LIN[s[i0 + ch]] + SRGB_TO_LIN[s[i1 + ch]] + SRGB_TO_LIN[s[i2 + ch]] + SRGB_TO_LIN[s[i3 + ch]]) / 4);
+      else d[o + ch] = Math.round((s[i0 + ch] + s[i1 + ch] + s[i2 + ch] + s[i3 + ch]) / 4);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+
+/** Kartensatz { map, normalMap, roughnessMap } auf halbe Kantenlänge (Handy-Fassung eines Foto-Atlas, siehe halfCanvas). */
+export function halfMaps(maps) {
+  const out = {};
+  for (const [k, t] of Object.entries(maps)) {
+    if (!t || !t.isTexture) { out[k] = t; continue; }
+    const srgb = t.colorSpace === THREE.SRGBColorSpace;
+    out[k] = toTexture(halfCanvas(t.image, srgb), { srgb, repeat: t.wrapS === THREE.RepeatWrapping, aniso: t.anisotropy });
+  }
+  return out;
+}
+
+// Eintrag freigeben: Textur, Kartensatz { map, normalMap, … } oder Zustand mit eigenem dispose()
+function disposeEntry(t) {
+  if (!t) return;
+  if (typeof t.dispose === 'function') { t.dispose(); return; }
+  if (typeof t === 'object') for (const v of Object.values(t)) if (v && v.isTexture) v.dispose();
+}
+
+/** Einen Cache-Eintrag freigeben und vergessen (Atlas einer Waffe, die nicht mehr gebraucht wird – 24.10.). */
+export function dropCached(key) {
+  if (!cache.has(key)) return;
+  disposeEntry(cache.get(key));
+  cache.delete(key);
+}
+
 export function disposeTextures() {
-  for (const t of cache.values()) t.dispose?.();
+  for (const t of cache.values()) disposeEntry(t);   // auch Kartensätze (bisher blieben deren Texturen stehen)
   cache.clear();
 }
 

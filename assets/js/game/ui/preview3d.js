@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { cleanAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261022190303';
+import { cleanAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261025201926';
 
 export class WeaponPreview {
   constructor(G) {
@@ -105,7 +105,7 @@ export class WeaponPreview {
     let att = null;
     if (def && def.cls && models) {
       let info = null;
-      try { info = typeof models.getWeaponModelInfo === 'function' ? models.getWeaponModelInfo(def.model) : null; } catch { /* */ }
+      try { info = typeof models.getWeaponModelMeta === 'function' ? models.getWeaponModelMeta(def.model) : null; } catch { /* */ } // 24.10. (V2)
       att = cleanAttachments(def, loadAttachments()[id], info);
       if (!Object.keys(att).length) att = null;
     }
@@ -118,6 +118,7 @@ export class WeaponPreview {
     let m = null;
     try { m = models.createWeaponModel(def.model, att ? { lod: 'first', att } : { lod: 'showcase' }); } catch { m = null; }
     if (!m) return;
+    this._release = typeof models.holdWeaponModel === 'function' ? models.holdWeaponModel(def.model) : null;   // Freigabe je Waffe (24.10.)
     // auf längste Kante 1 normieren (Stub-Modelle sind nicht normiert)
     const box = new THREE.Box3().setFromObject(m);
     const size = box.getSize(new THREE.Vector3());
@@ -146,11 +147,25 @@ export class WeaponPreview {
     this.render();
   }
 
+  /**
+   * Waffen-Detailstufe gewechselt (24.10.): Modell loslassen, damit die Freigabe je Waffe die alte Stufe abgeben kann (sonst hielt
+   * die Vorschau z. B. die max-Fassung der M-17 nach „hoch“ → „niedrig“ die ganze Sitzung). Läuft die Vorschau, gleich in der neuen
+   * Stufe neu aufbauen, sonst beim nächsten setWeapon (Lobby).
+   */
+  refresh() {
+    if (!this.model) return;
+    const id = this.modelId;
+    this._clearModel();
+    this.modelId = null;
+    if (this.running && id) this.setWeapon(id);
+  }
+
   _clearModel() {
     if (!this.model) return;
     this.model.removeFromParent();
     // echte Modelle teilen Geometrie/Material mit dem Cache von models.js → nicht entsorgen
     if (this._ownedGeometry) this.model.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    this._release?.(); this._release = null;
     this.model = null;
   }
 

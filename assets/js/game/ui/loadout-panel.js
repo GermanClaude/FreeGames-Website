@@ -3,13 +3,13 @@
 // Ausführung des Outfits. Touch-first (große Kacheln), per Pfeiltasten/Gamepad über die räumliche Navigation bedienbar.
 // API: new LoadoutPanel(G); mount(host, loadout?) ; value() → loadout ; save() (Klassenausrüstung merken) ; unmount().
 
-import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261022190303';
-import { openCamoEditor } from './camo-editor.js?v=20261022190303';
-import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261022190303';
-import { esc } from './dom.js?v=20261022190303';
-import { ICON } from './icons.js?v=20261022190303';
-import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261022190303';
-import { getWeaponModelInfo } from '../weapons/models.js?v=20261022190303';
+import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261025201926';
+import { openCamoEditor } from './camo-editor.js?v=20261025201926';
+import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261025201926';
+import { esc } from './dom.js?v=20261025201926';
+import { ICON } from './icons.js?v=20261025201926';
+import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261025201926';
+import { getWeaponModelMeta } from '../weapons/models.js?v=20261025201926';
 
 const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['melee', 'Messer'], ['lethal', 'Granate']];
 
@@ -248,7 +248,7 @@ export function attRowHtml(G, wid) {
   const def = G.data && G.data.WEAPONS && G.data.WEAPONS[wid];
   if (!def) return '';
   let info = null;
-  try { info = getWeaponModelInfo(def.model || wid); } catch { /* */ }
+  try { info = getWeaponModelMeta(def.model || wid); } catch { /* */ } // 24.10. (V2): ohne Ego-Fassung jeder angesehenen Waffe
   const fit = attachmentsFor(def, info);
   const cur = loadAttachments()[wid] || {};
   const rows = ATT_SLOTS.filter((s) => fit[s.id]).map((s) => {

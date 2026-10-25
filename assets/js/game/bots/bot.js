@@ -17,21 +17,21 @@
 // Schüsse (Zählerwechsel) → Schussgeste + manager.puppetFired (nur Darstellung, kein Schaden). Leben/Tod nicht aus der
 // Pose, sondern über respawn()/onDeath() (Ereignisse vom Host).
 import * as THREE from 'three';
-import { CapsuleBody } from '../engine/physics.js?v=20261022190303';
-import { raycastHumanoid } from '../combat.js?v=20261022190303';
-import { Soldier } from './character.js?v=20261022190303';
-import { Memory } from './ai/memory.js?v=20261022190303';
-import { sense } from './ai/perception.js?v=20261022190303';
-import { Navigator } from './ai/navigator.js?v=20261022190303';
-import { Gunner } from './ai/combat.js?v=20261022190303';
-import { think, newGoal, useStreaks } from './ai/brain.js?v=20261022190303';
-import { targetPoints } from './ai/perception.js?v=20261022190303';
-import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261022190303';
-import { BONE } from './soldier/rig.js?v=20261022190303';
-import { importCC } from '../../shared/customcamo.js?v=20261022190303';
-import { applyAttachments } from '../../shared/attachments.data.js?v=20261022190303';
-import { getWeaponModelInfo } from '../weapons/models.js?v=20261022190303';
-import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261022190303';
+import { CapsuleBody } from '../engine/physics.js?v=20261025201926';
+import { raycastHumanoid } from '../combat.js?v=20261025201926';
+import { Soldier } from './character.js?v=20261025201926';
+import { Memory } from './ai/memory.js?v=20261025201926';
+import { sense } from './ai/perception.js?v=20261025201926';
+import { Navigator } from './ai/navigator.js?v=20261025201926';
+import { Gunner } from './ai/combat.js?v=20261025201926';
+import { think, newGoal, useStreaks } from './ai/brain.js?v=20261025201926';
+import { targetPoints } from './ai/perception.js?v=20261025201926';
+import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261025201926';
+import { BONE } from './soldier/rig.js?v=20261025201926';
+import { importCC } from '../../shared/customcamo.js?v=20261025201926';
+import { applyAttachments } from '../../shared/attachments.data.js?v=20261025201926';
+import { getWeaponModelMeta } from '../weapons/models.js?v=20261025201926';
+import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261025201926';
 
 const STAND_H = 1.8, CROUCH_H = 1.15, PRONE_H = 0.75;
 const SPEED = { walk: 3.1, run: 5.4, sprint: 8.2, crouch: 2.6, crawl: 1.05 };
@@ -158,7 +158,7 @@ let serial = 0;
 
 export class Bot {
   /**
-   * @param {import('./manager.js?v=20261022190303').BotManager} manager
+   * @param {import('./manager.js?v=20261025201926').BotManager} manager
    * opts: { team, name, diff (Profil), loadout, variant, scheme, modeId, lane, puppet (Mehrspieler-Puppe) }
    */
   constructor(manager, { team, name, diff, loadout, variant = 0, scheme = null, modeId = 'tdm', lane = 1, puppet = false }) {
@@ -1023,7 +1023,7 @@ export class Bot {
     const att = looks.att && typeof looks.att === 'object' ? looks.att : null;
     this._carry[def.id] = { camo: typeof looks.camo === 'string' ? looks.camo : null, att };
     let d = def;
-    if (att) { try { d = applyAttachments(def, att, getWeaponModelInfo(def.model || def.id)); } catch { d = def; } }
+    if (att) { try { d = applyAttachments(def, att, getWeaponModelMeta(def.model || def.id)); } catch { d = def; } }
     const i = w.slots.findIndex((s) => s && s.id === def.id);
     if (i >= 0) { w.slots[i].def = d; if (i === w.index && typeof w._refreshStatic === 'function') w._refreshStatic(); }
     else {

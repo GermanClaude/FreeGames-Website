@@ -5,8 +5,8 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261022190303';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261022190303';
+import { sampleSpline } from '../terrain/generate.js?v=20261025201926';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261025201926';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
