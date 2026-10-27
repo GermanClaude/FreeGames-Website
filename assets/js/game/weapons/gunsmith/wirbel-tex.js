@@ -5,10 +5,10 @@
 //   Laufmantel (wirbelMantel): Durchlässigkeitskarte in Abwicklung (u längs, Winkel um die Achse quer) – Kühlschlitze, Seitenfenster
 //     der Bremse, Auswurf oben, Spannhebelschlitz rechts und der offene Deckelboden über dem Schaft werden ausgeschnitten (alphaTest).
 //     So bleibt der Mantel ein Rohr mit ≈ 250 Dreiecken statt eines Distanzfeld-Netzes mit 60–150 k.
-import { canvas, toTexture, cached, scheduleAtlas } from './textures.js?v=20261027112926';
-import { paintWood } from './holz-tex.js?v=20261027112926';
-import { sdPolygon } from './sdf.js?v=20261027112926';
-import * as R from './wirbel-ref.js?v=20261027112926';
+import { canvas, toTexture, cached, scheduleAtlas } from './textures.js?v=20261027201319';
+import { paintWood } from './holz-tex.js?v=20261027201319';
+import { sdPolygon } from './sdf.js?v=20261027201319';
+import * as R from './wirbel-ref.js?v=20261027201319';
 
 const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
 const photoX = (u) => R.XG - u * R.PPM;

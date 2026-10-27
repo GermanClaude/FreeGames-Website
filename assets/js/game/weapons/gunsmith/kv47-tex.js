@@ -7,10 +7,10 @@
 // Größen (25.10., zusammen so viel Speicher wie eine 2048 × 1024-Familie): Holz 2048 × 512 (≈ 3 Texel/mm in beide
 // Richtungen), Gehäuse 1024 × 1024 (3,3 Texel/mm längs, 5 quer). Handy (lite): halbe Kantenlänge direkt gezeichnet
 // (¼ Speicher, ¼ Zeichenzeit), gleiche UVs.
-import { canvas, toTexture, cached, fbm, rng, scheduleAtlas } from './textures.js?v=20261027112926';
-import { paintWood, paintBakelite, checkering, WOOD } from './holz-tex.js?v=20261027112926';
-import { sdPolygon } from './sdf.js?v=20261027112926';
-import * as R from './kv47-ref.js?v=20261027112926';
+import { canvas, toTexture, cached, fbm, rng, scheduleAtlas } from './textures.js?v=20261027201319';
+import { paintWood, paintBakelite, checkering, WOOD } from './holz-tex.js?v=20261027201319';
+import { sdPolygon } from './sdf.js?v=20261027201319';
+import * as R from './kv47-ref.js?v=20261027201319';
 
 const photoX = (u) => R.XG + u * R.PPM;
 const photoY = (v) => R.YB - (v - R.AXIS) * R.PPM;

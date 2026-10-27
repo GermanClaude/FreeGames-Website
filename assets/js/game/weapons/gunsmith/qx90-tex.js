@@ -10,9 +10,9 @@
 // ≈ 2,9 MB mit Mipmaps (Bauanleitung 8.3: ≤ 4 MB; vorher 4,9 MB).
 // Gezeichnet wird im Hintergrund in Zeitscheiben (textures.js scheduleAtlas) – sofort Platzhalter, dann das fertige Bild;
 // jede Ebene in Teilschritten (Grundton, rechte Seite, linke Seite), kein Schritt über ≈ 30 ms am PC.
-import { canvas, toTexture, cached, rng, scheduleAtlas } from './textures.js?v=20261027112926';
-import { mottle, moldedText, edgeWear, scuffs, ring, GREY } from './poly-tex.js?v=20261027112926';
-import * as R from './qx90-ref.js?v=20261027112926';
+import { canvas, toTexture, cached, rng, scheduleAtlas } from './textures.js?v=20261027201319';
+import { mottle, moldedText, edgeWear, scuffs, ring, GREY } from './poly-tex.js?v=20261027201319';
+import * as R from './qx90-ref.js?v=20261027201319';
 
 const photoX = (u) => R.XG + u * R.PPM;
 const photoY = (v) => R.YB - (v - R.AXIS) * R.PPM;

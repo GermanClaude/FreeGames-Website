@@ -5,7 +5,7 @@
 // (am Rand festgeklemmt; G.vehicles.supplyMarkers, Prüfung 22.10.). Beschriftungen (N, Flaggen) als Schrift-Sprites
 // (glyphs.js): fillText erzwänge je Bild eine Stilberechnung des Dokuments.
 
-import { drawGlyph } from './glyphs.js?v=20261027112926';
+import { drawGlyph } from './glyphs.js?v=20261027201319';
 
 const COL = {
   ally: '#38b6ff', enemy: '#ff3b3b', me: '#ffffff', gold: '#ffc23d', signal: '#ff5b1f', neutral: '#e9e6df',

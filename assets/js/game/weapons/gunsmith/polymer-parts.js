@@ -9,7 +9,7 @@
 //   smokeBox(b, mat, o)                 – durchscheinender Magazinkörper als gerundeter Kasten (Wand außen, Kanten gerundet)
 //   gridBand(f, a0, a1, b0, b1, step)   – 2D-Feld vorrechnen wie grid2D, exakt aber nur im Band um die Nulllinie
 //                                          (große Silhouetten mit vielen Punkten: ≈ ⅓ der Auswertungen)
-import { extrudeRound, smin } from './sdf.js?v=20261027112926';
+import { extrudeRound, smin } from './sdf.js?v=20261027201319';
 
 const dome = (r, h) => [[0, 0], [0, r], [h * 0.35, r * 0.96], [h * 0.75, r * 0.7], [h, 0]];
 

@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261027112926';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261027201319';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -58,7 +58,7 @@ export const DEFAULTS = Object.freeze({
   vehGearbox: 'halten', vehReload: 'manuell',
   // VR-Modus (Beta, engine/xr/): nur mit Einstellung + laufender WebXR-Sitzung wirksam; Bedeutung in docs/planung/vr.md
   vrEnabled: false, vrHand: 'rechts', vrTurn: 'schritt', vrTurnStep: '30', vrTurnSpeed: 120, vrMoveDir: 'kopf',
-  vrVignette: true, vrVignetteStrength: 0.6, vrSeated: false, vrPhysical: true, vrHeight: 0,
+  vrVignette: true, vrVignetteStrength: 0.6, vrSeated: false, vrPhysical: true, vrRoomScale: true, vrSmoothing: true, vrHeight: 0,
   vrQuality: 'auto', vrScale: 'auto', vrLaser: true,
 });
 
@@ -286,6 +286,8 @@ export const SETTINGS_SCHEMA = Object.freeze({
   vrVignetteStrength: { type: 'number', min: 0.1, max: 1, step: 0.05, label: 'Stärke der Vignette', group: 'vr' },
   vrSeated: { type: 'boolean', label: 'Sitzend spielen', group: 'vr' },
   vrPhysical: { type: 'boolean', label: 'Echtes Ducken, Hinlegen und Lehnen (Kopfbewegung)', group: 'vr' },
+  vrRoomScale: { type: 'boolean', label: 'Echtes Gehen 1:1 (Körper folgt dem Kopf)', group: 'vr' },
+  vrSmoothing: { type: 'boolean', label: 'Waffe ruhiger halten (Zittern glätten)', group: 'vr' },
   vrHeight: { type: 'number', min: 0, max: 2.5, step: 0.001, unit: 'm', label: 'Kalibrierte Kopfhöhe (0 = beim VR-Start messen)', group: 'intern' },
   vrQuality: {
     type: 'enum', label: 'VR-Grafik', group: 'vr',

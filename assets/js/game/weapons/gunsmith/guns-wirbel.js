@@ -7,11 +7,11 @@
 // Verschluss in Ruhelage HINTEN (Spannhebel rechts hinten, Lager im Auswurffenster oben frei), Animation viewmodel.js (openBolt).
 // Detailstufen: PC hoch/ultra (max), PC niedrig/mittel, Handy (lite), Bots (≤ 600 Dreiecke) – Anker in allen Stufen gleich.
 import * as THREE from 'three';
-import * as R from './wirbel-ref.js?v=20261027112926';
-import { woodUV, mantelUV, mantelCuts, MANTEL_U0 } from './wirbel-tex.js?v=20261027112926';
-import { extrudeRound, simplifyRing } from './sdf.js?v=20261027112926';
-import { STEEL, POLY, field2, sdRoundRect, sdfMesh } from './sdfkit.js?v=20261027112926';
-import { magRounds } from './magfill.js?v=20261027112926';
+import * as R from './wirbel-ref.js?v=20261027201319';
+import { woodUV, mantelUV, mantelCuts, MANTEL_U0 } from './wirbel-tex.js?v=20261027201319';
+import { extrudeRound, simplifyRing } from './sdf.js?v=20261027201319';
+import { STEEL, POLY, field2, sdRoundRect, sdfMesh } from './sdfkit.js?v=20261027201319';
+import { magRounds } from './magfill.js?v=20261027201319';
 
 const { U, V, M } = R;
 const AX = R.AXIS, RO = R.MANTEL_R, RI = R.MANTEL_R - 0.0009;

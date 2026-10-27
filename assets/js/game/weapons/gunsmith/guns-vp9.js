@@ -8,13 +8,13 @@
 // Bewegliche Teile: Verschluss (im Fenster sichtbar), Spannhebel („HK-Schlag“, dreht um die Rohrachse), Wahlhebel
 // beidseitig (Sicher/Einzel/Feuerstoß/Dauer), Magazin mit Patronen. Detailstufen: PC hoch/ultra (max), PC niedrig/mittel,
 // Handy (lite), Bots (≤ 600 Dreiecke) – Anker in allen Stufen gleich.
-import * as R from './vp9-ref.js?v=20261027112926';
-import { vp9UV, SEL_PTR } from './vp9-tex.js?v=20261027112926';
-import { schrift } from './schrift.js?v=20261027112926';
-import { extrudeRound, smin, simplifyRing } from './sdf.js?v=20261027112926';
-import { STEEL, POLY, field2, box2, sdRoundRect, roundMax, cutWindow, sdfMesh, inBox } from './sdfkit.js?v=20261027112926';
-import { hkSection, hkDrum, hkHood, hkCockingHandle, hkPin, hkSelector, hkTriLug } from './hk-parts.js?v=20261027112926';
-import { magRounds } from './magfill.js?v=20261027112926';
+import * as R from './vp9-ref.js?v=20261027201319';
+import { vp9UV, SEL_PTR } from './vp9-tex.js?v=20261027201319';
+import { schrift } from './schrift.js?v=20261027201319';
+import { extrudeRound, smin, simplifyRing } from './sdf.js?v=20261027201319';
+import { STEEL, POLY, field2, box2, sdRoundRect, roundMax, cutWindow, sdfMesh, inBox } from './sdfkit.js?v=20261027201319';
+import { hkSection, hkDrum, hkHood, hkCockingHandle, hkPin, hkSelector, hkTriLug } from './hk-parts.js?v=20261027201319';
+import { magRounds } from './magfill.js?v=20261027201319';
 
 const { U, V, M } = R;
 const AX = R.AXIS;

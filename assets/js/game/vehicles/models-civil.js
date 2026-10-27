@@ -14,8 +14,8 @@
 //   extra (nur Stufe 0): [Lenkrad-Gruppe 'lenkrad' mit Kind 'lenkrad:dreh', Insassen 'occ:i' (unsichtbar)]
 // Lage wie alle Fahrzeuge: vorwärts −z, y = 0 Boden bei statischer Last, Radmitte y = Radius (data.js).
 import * as THREE from 'three';
-import { VEHICLES } from './data.js?v=20261027112926';
-import { civilPaint } from './materials.js?v=20261027112926';
+import { VEHICLES } from './data.js?v=20261027201319';
+import { civilPaint } from './materials.js?v=20261027201319';
 
 const PI = Math.PI, HP = PI / 2;
 const _q = new THREE.Quaternion(), _e = new THREE.Euler(), _d = new THREE.Vector3(), AZ = new THREE.Vector3(0, 0, 1);

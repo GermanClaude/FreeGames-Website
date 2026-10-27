@@ -13,9 +13,9 @@
 // bekamen UVs aus zwei weit entfernten Atlasbereichen (schwarzer Strich links über Schlitten und Rahmen, Streifen am Bügel);
 // Blank-/Mattfeld waren quer 4–6× gestaucht (gestreckte „Wellenmaserung“ am Schlittenheck im Anschlag, an Mündung und Boden).
 // Größe je Stufe (Bauanleitung §8.3): PC hoch 2048 × 1024, PC niedrig/mittel 1536 × 768, Handy 1024 × 512 ohne Rauheitskarte.
-import { canvas, toTexture, cached, rng } from './textures.js?v=20261027112926';
-import { CPU, grey, path, slantGrooves, engrave, pebblePattern, streak, scratches, noiseCanvas, brushCanvas, grainCanvas, readHeight, blur, normalTex } from './pistol-tex.js?v=20261027112926';
-import * as R from './adler-ref.js?v=20261027112926';
+import { canvas, toTexture, cached, rng } from './textures.js?v=20261027201319';
+import { CPU, grey, path, slantGrooves, engrave, pebblePattern, streak, scratches, noiseCanvas, brushCanvas, grainCanvas, readHeight, blur, normalTex } from './pistol-tex.js?v=20261027201319';
+import * as R from './adler-ref.js?v=20261027201319';
 
 // ---------------------------------------------------------------- Atlas-Abbildung (Fotopixel → Atlas)
 const F = { W: 2048, H: 1024, x0: 90, x1: 2650, y0: 100, y1: 1350 };

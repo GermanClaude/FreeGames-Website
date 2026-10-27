@@ -15,12 +15,12 @@
 // und 7 Patronen .50 AE. Gravuren als Fantasie-Beschriftung im Atlas (keine Herstellerzeichen).
 // Bewegliche Teile: Schlitten (Hub 42 mm, beim Schuss und leer offen), Hahn (gespannt gebaut, fällt beim Schuss), Magazin.
 // Detailstufen: PC hoch/ultra (max), PC niedrig/mittel, Handy (lite), Bots (≤ 400 Dreiecke) – Anker in allen Stufen gleich.
-import * as R from './adler-ref.js?v=20261027112926';
-import { adlerSteelUV, adlerBodyUV, adlerGripUV } from './adler-tex.js?v=20261027112926';
-import { extrudeRound, smin, simplifyRing } from './sdf.js?v=20261027112926';
-import { STEEL, POLY, field2, box2, sdfMesh, inBox, roundMax } from './sdfkit.js?v=20261027112926';
-import { pinHead, slotScrew, hexPivot, pushButton, notchSight, bladeSight, raisedRibs, sideUV, outlineField, atlasUVTri } from './pistol-parts.js?v=20261027112926';
-import { magRounds } from './magfill.js?v=20261027112926';
+import * as R from './adler-ref.js?v=20261027201319';
+import { adlerSteelUV, adlerBodyUV, adlerGripUV } from './adler-tex.js?v=20261027201319';
+import { extrudeRound, smin, simplifyRing } from './sdf.js?v=20261027201319';
+import { STEEL, POLY, field2, box2, sdfMesh, inBox, roundMax } from './sdfkit.js?v=20261027201319';
+import { pinHead, slotScrew, hexPivot, pushButton, notchSight, bladeSight, raisedRibs, sideUV, outlineField, atlasUVTri } from './pistol-parts.js?v=20261027201319';
+import { magRounds } from './magfill.js?v=20261027201319';
 
 const { U, V, M } = R;
 const AX = R.AXIS;
