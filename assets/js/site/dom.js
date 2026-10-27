@@ -1,5 +1,5 @@
 // Kleine DOM-Helfer.
-import { esc } from './fmt.js?v=20261027102441';
+import { esc } from './fmt.js?v=20261027112926';
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];

@@ -4,15 +4,15 @@
 // kein three-Octree über die ganze Karte (Aufbauzeit, Speicher).
 import * as THREE from 'three';
 import { Octree } from 'three/addons/math/Octree.js';
-import { bvhBoxQuery } from './composite.js?v=20261027102441';
+import { bvhBoxQuery } from './composite.js?v=20261027112926';
 
 const _c = new THREE.Vector3(), _c2 = new THREE.Vector3();
 
 export class TerrainCollider {
   /**
-   * @param {import('./heightfield.js?v=20261027102441').Heightfield} hf
-   * @param {import('../bvh.js?v=20261027102441').TriangleBVH} bvh Kollisions-BVH der Bauwerke/Bäume
-   * @param {import('./composite.js?v=20261027102441').CompositeBVH} composite für rayIntersect
+   * @param {import('./heightfield.js?v=20261027112926').Heightfield} hf
+   * @param {import('../bvh.js?v=20261027112926').TriangleBVH} bvh Kollisions-BVH der Bauwerke/Bäume
+   * @param {import('./composite.js?v=20261027112926').CompositeBVH} composite für rayIntersect
    */
   constructor(hf, bvh, composite) {
     this.hf = hf; this.bvh = bvh; this.composite = composite;

@@ -14,7 +14,7 @@
 // • Der Host bzw. das Einzelspiel entscheidet; die fertige Bresche geht vollständig an alle (bullet-holes.js breach →
 //   'ev' br) – Durchgang, Kugeln, Sicht sind auf jedem Gerät gleich. MG: Kaliber-Lochsystem wie Infanterie (data.js).
 import * as THREE from 'three';
-import { collisionRay } from '../engine/physics.js?v=20261027102441';
+import { collisionRay } from '../engine/physics.js?v=20261027112926';
 
 const TAU = Math.PI * 2;
 // Stile (bullet-holes.js): 0 Holz, 1 Beton, 2 Putz, 3 Metall, 4 Glas, 5 Erde, 6 Stoff, 7 Ziegel

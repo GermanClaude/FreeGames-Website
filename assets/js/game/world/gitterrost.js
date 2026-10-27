@@ -12,7 +12,7 @@
 // Laufsteg wurde 2–3 m vor dem Spieler zur geschlossenen Platte); fern Schachbrett statt geschlossener Fläche.
 // Bildschirmbezogen ist das mit Absicht: Moiré entsteht, sobald eine Masche kleiner als zwei Bildpunkte wird – bei
 // geringerer Auflösung (Telefon) also früher, und genau dort muss auch das Überblenden früher greifen.
-import { addShaderPatch } from './shading.js?v=20261027102441';
+import { addShaderPatch } from './shading.js?v=20261027112926';
 
 /** Stegfarbe in der Fernansicht (das Schachbrett zeigt die Löcher schon als Durchsicht). */
 const FAR_SHADE = 0.85;

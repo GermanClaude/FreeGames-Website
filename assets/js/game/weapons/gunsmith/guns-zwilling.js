@@ -14,11 +14,11 @@
 //   – Schaft (Walnuss, Distanzfeld mit eigener Breite je Längsstelle, Fischhaut am Pistolengriff), Griffkappe, Schaftkappe.
 // Detailstufen: PC hoch/ultra (max), PC niedrig/mittel, Handy (lite), Bots (≈ 300 Dreiecke, „barrels“ bleibt eigenes Teil) –
 // Anker in allen Stufen gleich (Hände, Visier, zwei Mündungen).
-import * as R from './zwilling-ref.js?v=20261027102441';
-import { woodUV } from './zwilling-tex.js?v=20261027102441';
-import { extrudeRound, simplifyRing } from './sdf.js?v=20261027102441';
-import { STEEL, field2, sdfMesh } from './sdfkit.js?v=20261027102441';
-import { schrift } from './schrift.js?v=20261027102441';
+import * as R from './zwilling-ref.js?v=20261027112926';
+import { woodUV } from './zwilling-tex.js?v=20261027112926';
+import { extrudeRound, simplifyRing } from './sdf.js?v=20261027112926';
+import { STEEL, field2, sdfMesh } from './sdfkit.js?v=20261027112926';
+import { schrift } from './schrift.js?v=20261027112926';
 
 const { U, V, M } = R;
 const AX = R.AXIS, UB = U(R.BREECH_X), LEN = R.LEN;

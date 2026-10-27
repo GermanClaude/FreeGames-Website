@@ -2,8 +2,8 @@
 // Seiten gleich): Würfelmuster der Griffschale, Gummikappe mit Rippen, Riemenschlitze, eingeformte Schrift.
 // Gravuren (Wahlhebelstellungen, Typ, Nummer, Schienenzahlen) sind Schriftfelder in einer gemeinsamen Schrift-Textur
 // der Waffe (schrift.js, 24.10.) – so stehen sie auf jeder Seite lesbar.
-import { canvas, toTexture, cached, heightToNormal, fbm, bilinear, halfMaps } from './textures.js?v=20261027102441';
-import * as R from './m17-ref.js?v=20261027102441';
+import { canvas, toTexture, cached, heightToNormal, fbm, bilinear, halfMaps } from './textures.js?v=20261027112926';
+import * as R from './m17-ref.js?v=20261027112926';
 
 // ---------------------------------------------------------------- Atlas Schaft + Griff
 const F = { W: 2048, H: 1024, x0: 200, x1: 1360, y0: 960, y1: 1760 };

@@ -7,8 +7,8 @@
 // Punkte (stats.score) und captures zählt der Modus.
 
 import * as THREE from 'three';
-import { isLongshot } from '../shared/modes.data.js?v=20261027102441';
-import { createArmorState, absorbDamage, canInsertPlate, insertPlate, plateCount, classDef } from '../shared/classes.data.js?v=20261027102441';
+import { isLongshot } from '../shared/modes.data.js?v=20261027112926';
+import { createArmorState, absorbDamage, canInsertPlate, insertPlate, plateCount, classDef } from '../shared/classes.data.js?v=20261027112926';
 
 const _ray = new THREE.Ray();
 const _v1 = new THREE.Vector3();
