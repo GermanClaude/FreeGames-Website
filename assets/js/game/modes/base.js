@@ -3,12 +3,12 @@
 // Unterklassen überschreiben die Haken onKillScored / onSuicide / tick / decide / extraRow.
 
 import * as THREE from 'three';
-import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261025201926';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261025201926';
-import { chooseSpawn } from './spawns.js?v=20261025201926';
-import { MedalTracker } from './medals.js?v=20261025201926';
-import { StreakManager } from './streaks.js?v=20261025201926';
-import { CheatSystem } from '../cheats.js?v=20261025201926';
+import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261027095631';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261027095631';
+import { chooseSpawn } from './spawns.js?v=20261027095631';
+import { MedalTracker } from './medals.js?v=20261027095631';
+import { StreakManager } from './streaks.js?v=20261027095631';
+import { CheatSystem } from '../cheats.js?v=20261027095631';
 
 /** Karten mit Einsatzkarte nach dem Tod (Draufsicht, Einstieg bei Kameraden). */
 const DEPLOY_MAPS = new Set(['grenzland', 'bibliothek', 'niemandsland', 'brandwald']);
@@ -780,10 +780,14 @@ export class BaseMode {
     const dep = this._deploySpawn(actor);
     if (dep) return dep;
     const threats = this.streaks ? this.streaks.entities : [];
-    const zones = this.streaks ? this.streaks.dangerZones() : [];
+    let zones = this.streaks ? this.streaks.dangerZones() : [];
+    const avoid = this.spawnAvoid(actor); // 26.10.: Modus-Sperrzonen (z. B. Stellung: ≥ 25 m Abstand)
+    if (avoid && avoid.length) zones = zones.concat(avoid);
     return chooseSpawn(this.G, actor, { teams: this.teams, recent: this._recentSpawns, threats, zones, attract: this.spawnAttract(actor) });
   }
 
   spawnAttract() { return null; }
+  /** Bereiche ohne Wiedereinstieg [{ position, radius }] – wie Luftschlag-Zonen (spawns.js: Abzug im Umkreis radius + 6 m). */
+  spawnAvoid() { return null; }
 }
 

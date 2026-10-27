@@ -8,9 +8,9 @@
 //   camoSwatch(camoId, size)       kleines Vorschaubild (Canvas) für Menüs
 //   disposeCamos()                 alle Texturen/Materialien freigeben
 import * as THREE from 'three';
-import { CAMOS } from '../../../shared/weapons.data.js?v=20261025201926';
-import { getMat } from './materials.js?v=20261025201926';
-import { onCustomChange } from '../../../shared/customcamo.js?v=20261025201926';
+import { CAMOS } from '../../../shared/weapons.data.js?v=20261027095631';
+import { getMat } from './materials.js?v=20261027095631';
+import { onCustomChange } from '../../../shared/customcamo.js?v=20261027095631';
 
 const SIZE = 256;
 /** Materialschlüssel (gs:<key>), die ein Tarnmuster erhalten. */
@@ -19,7 +19,11 @@ export const CAMO_TARGETS = new Set(['alu', 'aluTan', 'aluOD', 'polymer', 'polym
   'kv47Rec', 'kv47Wood', 'kv47Steel', 'kv47Mag',   // KV-47 (25.10.): Gehäuse- und Holzatlas, Stahlteile, Magazin – Träger bleibt blank
   'vp9Rec', 'vp9Furn', 'vp9FurnS', 'vp9Mag',   // VP-9 nach Foto (24.10.): Gehäuse, Kunststoffteile, Magazin
   'qx90Frame', 'qx90Upper', 'qx90Optic',          // QX-90 (25.10.): Rahmen, Guss, Visier – Magazin (durchscheinend) und Stahl bleiben
-  'adlerSteel', 'adlerSteelS', 'adlerGrip', 'adlerGripS']);   // Adler nach Foto (25.10.): Edelstahl-Atlas, Wickelgriff
+  'adlerSteel', 'adlerSteelS', 'adlerGrip', 'adlerGripS',   // Adler nach Foto (25.10.): Edelstahl-Atlas, Wickelgriff
+  'p9aSlide', 'p9aSlideS', 'p9aFrame', 'p9aFrameS',   // P-9A (26.10.): gemeinsamer Atlas Schlitten/Rahmen
+  'wirbelWood', 'wirbelSteel', 'wirbelMantel', 'wirbelDrum']);   // PS-41 Wirbel (26.10.): Schaft, Stahl, Mantel, Trommel – Verschluss bleibt blank
+
+for (const k of ['zwWood', 'zwBlued', 'zwBarrel']) CAMO_TARGETS.add(k);   // ZW-12 Zwilling (26.10.): Holz, Basküle, Läufe – Schloss blank
 
 const texCache = new Map();
 const matCache = new Map();

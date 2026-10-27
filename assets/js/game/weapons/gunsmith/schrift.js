@@ -8,8 +8,8 @@
 // auf eine feste virtuelle Höhe, die Textur gleicht das über ihre Wiederholung (repeat.y) aus. Am Handy (b.lite) ein
 // eigenes Material mit halb so großer Schrift-Textur (gleiche Aufteilung, gleiche UVs; V4).
 import * as THREE from 'three';
-import { canvas, toTexture, cached, halfCanvas } from './textures.js?v=20261025201926';
-import { defineMat } from './materials.js?v=20261025201926';
+import { canvas, toTexture, cached, halfCanvas } from './textures.js?v=20261027095631';
+import { defineMat } from './materials.js?v=20261027095631';
 
 const W = 1024, VH = 8192, PAD = 8, ALIGN = 8;
 const FONT = 'Arial, Helvetica, sans-serif';

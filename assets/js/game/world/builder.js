@@ -1,10 +1,11 @@
 // NULLPUNKT — MapBuilder: sammelt statische Geometrie, verschmilzt sie pro Material/Chunk,
 // backt Ambient Occlusion in Vertexfarben, erzeugt Kollisions- und Kugel-Geometrie (Owner: world)
 import * as THREE from 'three';
-import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261025201926';
-import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261025201926';
-import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261025201926';
-import { assets } from '../../../lib/loader.js?v=20261025201926';
+import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261027095631';
+import { applyGrateFade } from './gitterrost.js?v=20261027095631';
+import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261027095631';
+import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261027095631';
+import { assets } from '../../../lib/loader.js?v=20261027095631';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric', 'flesh', 'vehicle']; // vehicle = Fahrzeugblech (Durchschuss)
 const SURF_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s, i]));
@@ -894,6 +895,7 @@ export class MapBuilder {
       // Container-Wellblech (3 cm tiefe Sicken) nicht in den AO-Vorpass: halbe AO-Auflösung erzeugt darauf Treppenmuster;
       // der glatte Innenkörper dahinter verdeckt stattdessen (props.js container3d)
       if (mat === 'ctr_lack') mesh.userData.noAO = true;
+      if (mat === 'metal_grate') applyGrateFade(material); // 26.10. (K0): kein Moiré-Rauschen in der Ferne (gitterrost.js)
       group.add(mesh);
       meshes.push(mesh);
       return mesh;

@@ -14,49 +14,57 @@
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder, DETAIL, clearPartCache, setWeaponDetail as setDetail } from './gunsmith/builder.js?v=20261025201926';
-import { sk14 } from './gunsmith/guns-ar.js?v=20261025201926';
-import { kv47 } from './gunsmith/guns-kv47.js?v=20261025201926';
-import { m17 } from './gunsmith/guns-m17.js?v=20261025201926';
-import { hm60 } from './gunsmith/guns-auto.js?v=20261025201926';
-import { vp9 } from './gunsmith/guns-vp9.js?v=20261025201926';   // VP-9 nach Foto (24.10.)
-import { qx90 } from './gunsmith/guns-qx90.js?v=20261025201926';   // QX-90 nach Foto (25.10.)
-import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261025201926';
-import { p9 } from './gunsmith/guns-pistol.js?v=20261025201926';
-import { adler } from './gunsmith/guns-adler.js?v=20261025201926';   // Adler nach Foto (25.10.)
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261025201926';
-import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261025201926';
-import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261025201926';
-import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261025201926';
-import { applyCamo, disposeCamos, disposeCamosFor } from './gunsmith/camos.js?v=20261025201926';
-export { setMagRounds } from './gunsmith/magfill.js?v=20261025201926';
-import { disposeMaterials, freeAtlasMaterials } from './gunsmith/materials.js?v=20261025201926';
-import { disposeTextures } from './gunsmith/textures.js?v=20261025201926';
-import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261025201926';
-import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261025201926';
-import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261025201926';
-import { attKey } from '../../shared/attachments.data.js?v=20261025201926';
-import { ursprung, funke, erstlicht } from './gunsmith/guns-og.js?v=20261025201926';
+import { Builder, DETAIL, clearPartCache, setWeaponDetail as setDetail } from './gunsmith/builder.js?v=20261027095631';
+import { sk14 } from './gunsmith/guns-ar.js?v=20261027095631';
+import { kv47 } from './gunsmith/guns-kv47.js?v=20261027095631';
+import { m17 } from './gunsmith/guns-m17.js?v=20261027095631';
+import { hm60 } from './gunsmith/guns-auto.js?v=20261027095631';
+import { vp9 } from './gunsmith/guns-vp9.js?v=20261027095631';   // VP-9 nach Foto (24.10.)
+import { qx90 } from './gunsmith/guns-qx90.js?v=20261027095631';   // QX-90 nach Foto (25.10.)
+import { brecher, bulldog } from './gunsmith/guns-long.js?v=20261027095631';
+import { zwilling } from './gunsmith/guns-zwilling.js?v=20261027095631';   // ZW-12 Zwilling (Doppelflinte mit Kipplauf, 26.10.)
+import { p9 } from './gunsmith/guns-pistol.js?v=20261027095631';
+import { adler } from './gunsmith/guns-adler.js?v=20261027095631';   // Adler nach Foto (25.10.)
+import { p9a } from './gunsmith/guns-p9a.js?v=20261027095631';   // P-9A (Glock 18C) als Ableitung der P-9 (26.10.)
+import { wirbel } from './gunsmith/guns-wirbel.js?v=20261027095631';   // PS-41 Wirbel (PPSch-41) nach Foto (26.10.)
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261027095631';
+import { k36, bx20, g7, wespe, keiler, lm8 } from './gunsmith/guns-wave2.js?v=20261027095631';
+import { titan, hagel, kobra, donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261027095631';
+import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate } from './gunsmith/gear2.js?v=20261027095631';
+import { applyCamo, disposeCamos, disposeCamosFor } from './gunsmith/camos.js?v=20261027095631';
+export { setMagRounds } from './gunsmith/magfill.js?v=20261027095631';
+import { disposeMaterials, freeAtlasMaterials } from './gunsmith/materials.js?v=20261027095631';
+import { disposeTextures } from './gunsmith/textures.js?v=20261027095631';
+import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261027095631';
+import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261027095631';
+import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261027095631';
+import { attKey } from '../../shared/attachments.data.js?v=20261027095631';
+import { ursprung, funke, erstlicht } from './gunsmith/guns-og.js?v=20261027095631';
 
 const BUILDERS = {
+  zwilling, // neue Waffe (26.10.): ZW-12 Zwilling
   kv47, m17, vp9, qx90, hm60, sk14, brecher, bulldog, p9, adler, knife, frag, semtex,
   k36, bx20, g7, wespe, keiler, lm8, titan, hagel, kobra, donner, hammer, trommel,
   karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate, rocket,
   ursprung, funke, erstlicht, // Waffen der ersten Stunde (guns-og.js)
+  p9a, wirbel, // neue Waffen (26.10.)
 };
 
 export const MODEL_KEYS = Object.keys(BUILDERS);
 export const GUN_KEYS = ['kv47', 'm17', 'vp9', 'qx90', 'hm60', 'sk14', 'brecher', 'bulldog', 'p9', 'adler',
-  'k36', 'bx20', 'g7', 'wespe', 'keiler', 'lm8', 'titan', 'hagel', 'kobra', 'donner', 'hammer', 'trommel', 'ursprung', 'funke'];
+  'k36', 'bx20', 'g7', 'wespe', 'keiler', 'lm8', 'titan', 'hagel', 'kobra', 'donner', 'hammer', 'trommel', 'ursprung', 'funke',
+  'zwilling', 'p9a', 'wirbel'];   // neue Waffen (26.10.)
 export const MELEE_KEYS = ['knife', 'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten', 'erstlicht'];
 export const THROWABLE_KEYS = ['frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke'];
 export { applyCamo };
 
 const REF_NAMES = ['muzzle', 'ejection', 'sight', 'leftHandGrip', 'rightHandGrip'];
 const ANCHOR_NAMES = ['chargeGrab', 'magGrab', 'magWell', 'trigger', 'pumpGrab', 'boltGrab', 'pinGrab', 'shellPort', 'slideGrab', 'boltCatch',
-  'loaderGrab', 'cylGrab', 'ejectorGrab', 'rocketGrab', 'boltFace'];
+  'loaderGrab', 'cylGrab', 'ejectorGrab', 'rocketGrab', 'boltFace',
+  'muzzle2', 'barrelGrab', 'chamberR', 'chamberL'];   // Kipplauf (26.10.): zweite Mündung, Vorderschaft, Patronenlager
 const PART_NAMES = ['selector', 'dustCover', 'mag', 'bolt', 'charge', 'pump', 'slide', 'boltHandle', 'hammer', 'cover', 'belt', 'lid', 'pin', 'spoon', 'blade', 'shell', 'led',
-  'crane', 'cylinder', 'ejector', 'loader', 'rocket'];
+  'crane', 'cylinder', 'ejector', 'loader', 'rocket',
+  'barrels', 'toplever', 'extractor', 'shellR', 'shellL'];   // Kipplauf (26.10.): Läufe, Oberhebel, Auszieher, zwei Patronen
 
 const cache = new Map();
 
@@ -92,7 +100,7 @@ function buildTemplate(key, lod, att = null, tier = null) {
     if (att.optik && b._opticDone) b.meta.sight = OPTIC_TYPE[att.optik] || b.meta.sight;
   }
   const root = b.build(key);
-  if (att) attachToRoot(root, att, lod);
+  if (att) attachToRoot(root, att, lod, b.meta);   // meta.magExt (26.10.): Bauplan zeigt das lange Magazin selbst
   // Magazininhalt (magfill.js): Patronen + Zubringer nur in Ego/Vitrine; die Plätze reisen in den Metadaten mit
   // (Weltmagazine der Bot-Detailstufe zeigen damit die obersten Patronen bzw. den leeren Zubringer)
   const magFill = magFillFor(b, key);
@@ -263,7 +271,8 @@ export function getWeaponModelMeta(key) {
 // 24.10. (V5): Foto-Waffen (Distanzfeld-Netze, Atlas – Ego-Bau 0,3–7 s im Container) gelten als teuer, auch bevor eine Messung
 // vorliegt: Aufheben zeigt dann einen Platzhalter statt im Bild zu bauen. Alle übrigen Waffen (alte Bauweise, 2–90 ms) baut das
 // Aufheben ohne Messung sofort. NEUE FOTO-WAFFEN HIER EINTRAGEN (Integrationsschritt je Etappe, Bauanleitung §8.2).
-const PHOTO_MODELS = new Set(['m17', 'p9', 'kv47', 'vp9', 'qx90', 'adler']);   // Etappe 1 (25.10.): KV-47, VP-9, QX-90, Adler
+const PHOTO_MODELS = new Set(['m17', 'p9', 'kv47', 'vp9', 'qx90', 'adler',   // Etappe 1 (25.10.): KV-47, VP-9, QX-90, Adler
+  'zwilling', 'p9a', 'wirbel']);   // neue Waffen 26.10.: ZW-12 Zwilling, P-9A, PS-41 Wirbel
 export function isPhotoWeapon(key) { return PHOTO_MODELS.has(key); }
 
 /**

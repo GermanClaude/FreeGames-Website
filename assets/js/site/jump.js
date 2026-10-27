@@ -1,7 +1,7 @@
 // Sprünge im Dokument: Erst alle Abschnitte bis zum Ziel aufbauen, dann scrollen und
 // während der Bewegung nachführen, falls sich darüber noch etwas setzt. Eine Nutzereingabe
 // (Rad, Berührung, Taste) beendet das Nachführen sofort.
-import { reduced } from './motion.js?v=20261025201926';
+import { reduced } from './motion.js?v=20261027095631';
 
 let setReady;
 const ready = new Promise((r) => { setReady = r; });

@@ -3,14 +3,14 @@
 // verfolgt und kalibriert, Bauteile als Distanzfelder (Profil × eigene Breite, weich vereinigt, Fenster/Nuten/Schächte
 // abgezogen), Schaft und Griff mit eigenem Atlas, Gravuren als Schriftfelder. Der gemeinsame AR-Unterbau (arLower in
 // guns-ar.js) bleibt für SK-14 und Ursprung unverändert.
-import * as R from './m17-ref.js?v=20261025201926';
-import { furnUV3, SLOTS } from './m17-tex.js?v=20261025201926';
-import { schrift } from './schrift.js?v=20261025201926';
-import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, simplifyPoly, cavityColors } from './sdf.js?v=20261025201926';
-import { ALU, STEEL, POLY, box2, field2, sdRoundRect, roundMax, segDist, cutWindow, fase, sdfMesh, sideFurn } from './sdfkit.js?v=20261025201926';
-import { roundRect, ellipsePts } from './builder.js?v=20261025201926';
-import { holoSight, birdcage } from './parts.js?v=20261025201926';
-import { magRounds } from './magfill.js?v=20261025201926';
+import * as R from './m17-ref.js?v=20261027095631';
+import { furnUV3, SLOTS } from './m17-tex.js?v=20261027095631';
+import { schrift } from './schrift.js?v=20261027095631';
+import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, simplifyPoly, cavityColors } from './sdf.js?v=20261027095631';
+import { ALU, STEEL, POLY, box2, field2, sdRoundRect, roundMax, segDist, cutWindow, fase, sdfMesh, sideFurn } from './sdfkit.js?v=20261027095631';
+import { roundRect, ellipsePts } from './builder.js?v=20261027095631';
+import { holoSight, birdcage } from './parts.js?v=20261027095631';
+import { magRounds } from './magfill.js?v=20261027095631';
 
 const { U, V } = R;
 const AX = R.AXIS;

@@ -9,11 +9,11 @@
 // er: Anteil an den frühen Reflexionen (reflect.js) · loud: Nennpegel (dB, 0 ≈ eigener Schuss) für das HDR-Fenster
 // (laute Klänge dämpfen leise) · quiet: wird vom HDR-Fenster gedämpft
 // REC_ONLY: nur als Aufnahme vorhandene Klänge (assets/lib/audio, samples.js) mit denselben Mischfeldern, ohne Rezept.
-import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop } from './sfx-weapons.js?v=20261025201926';
-import { SURFACES, footstep, gearRattle, jump, land, slide, impact, hitFlesh, hitHelmet, pain, death, heartbeat, breathIn, breathOut, rustle } from './sfx-foley.js?v=20261025201926';
-import { UI_RECIPES, FEEDBACK } from './sfx-ui.js?v=20261025201926';
-import { AMB_EVENTS, AMBIENCES, ambienceBed, BED_RATE, EVENT_RATE } from './ambience.js?v=20261025201926';
-import { STEMS, STEM_SR, STEM_IDS } from './music.js?v=20261025201926';
+import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop } from './sfx-weapons.js?v=20261027095631';
+import { SURFACES, footstep, gearRattle, jump, land, slide, impact, hitFlesh, hitHelmet, pain, death, heartbeat, breathIn, breathOut, rustle } from './sfx-foley.js?v=20261027095631';
+import { UI_RECIPES, FEEDBACK } from './sfx-ui.js?v=20261027095631';
+import { AMB_EVENTS, AMBIENCES, ambienceBed, BED_RATE, EVENT_RATE } from './ambience.js?v=20261027095631';
+import { STEMS, STEM_SR, STEM_IDS } from './music.js?v=20261027095631';
 
 export const RATE_FULL = 48000;
 export const RATE_LOW = 32000;
@@ -42,6 +42,11 @@ H('reload_mag_out', { variants: 2, gain: 0.7 });
 H('reload_mag_in', { variants: 2, gain: 0.75 });
 H('reload_bolt', { variants: 2, gain: 0.75, alt: ['bolt'] });
 H('reload_shell', { variants: 3, gain: 0.65 });
+// Kipplauf (26.10., Zwilling): nur Match-Bank Stufe 2, Ersatz falls noch nicht gerendert
+H('break_open', { variants: 2, gain: 0.8, tier: 2, alt: ['reload_bolt'] });
+H('break_close', { variants: 2, gain: 0.9, tier: 2, alt: ['reload_bolt'] });
+H('shell_extract', { variants: 2, gain: 0.6, tier: 2, alt: ['reload_shell'] });
+H('shell_insert', { variants: 2, gain: 0.6, tier: 2, alt: ['reload_shell'] });
 H('bolt', { variants: 2, gain: 0.8, alt: ['reload_bolt'] });
 H('pump', { variants: 2, gain: 0.85, alt: ['reload_bolt'] });
 H('equip', { variants: 2, gain: 0.55 });

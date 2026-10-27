@@ -10,11 +10,12 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261025201926';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261025201926';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261025201926';
-import { getWeaponModelMeta } from './models.js?v=20261025201926';
-import { classDef } from '../../shared/classes.data.js?v=20261025201926';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261027095631';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261027095631';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261027095631';
+import { getWeaponModelMeta } from './models.js?v=20261027095631';
+import { ladderPrebuild } from './hintergrundbau.js?v=20261027095631';
+import { classDef } from '../../shared/classes.data.js?v=20261027095631';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -75,7 +76,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261025201926').WeaponSystem} system
+   * @param {import('./index.js?v=20261027095631').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -212,31 +213,45 @@ export class WeaponController {
     const vm = this.viewModel;
     const r = this.G.renderer && this.G.renderer.renderer;
     if (!vm || typeof vm.warmup !== 'function' || !r) return;
-    const mode = this.G.match && this.G.match.modeId;
+    const M = this.G.match || {};
     // 24.10.: eigene Waffen samt Aufsätzen (Definitionen) – vorher nur die Grundfassung, die Zweitwaffe mit Aufsätzen baute erst
     // der erste Wechsel mitten im Match
     const defs = this.slots.map((s) => s.def).filter((d) => d && d.id && this._def(d.id));
     const own = new Set(defs.map((d) => d.id));
-    // Waffenspiel (24.10.): die Leiter steht fest – alle ihre Waffen voll vorbereiten, sonst baute jeder Aufstieg nach einem
-    // Abschuss mitten im Match (M-17 am PC hoch ≈ 5 s, online stünde der Host für alle); mit den gespeicherten Aufsätzen, die
-    // setLoadout beim Aufstieg anlegt (sonst zeigte der Hintergrund-Bau bis zum nächsten Tod die Grundfassung). Übrige Waffen
-    // braucht der Modus nicht.
-    if (mode === 'gun') {
-      let saved = {};
-      try { saved = loadAttachments() || {}; } catch { saved = {}; }
-      for (const id of GUN_GAME_STEPS) {
-        const d = this._def(id);
-        if (!d || own.has(id)) continue;
-        own.add(id);
-        let info = null;
-        if (saved[id]) { try { info = getWeaponModelMeta(d.model || d.id); } catch { /* ohne Modell: Unterlauf nach Klasse */ } }
-        defs.push(saved[id] ? applyAttachments(d, saved[id], info) : d);
-      }
+    // Waffenspiel (24.10.): die Leiter steht fest – ihre Waffen mit den gespeicherten Aufsätzen vorbereiten, die setLoadout beim
+    // Aufstieg anlegt (sonst zeigte der Hintergrund-Bau bis zum nächsten Tod die Grundfassung). 26.10. (Vorab Etappe 2): nur die
+    // aktuelle und die nächsten LADDER_AHEAD Stufen – den Rest baut der Hintergrund im Leerlauf (planWeapons, main.js); vorher die
+    // ganze Leiter in der vollen Fassung (PC hoch nach Etappe 1: Laden +16 s, +102 MB). Ganze Leiter weiter beim Online-Host
+    // (prebuildAll: seine Simulation läuft auch in seinem Leerlauf für alle weiter). Übrige Waffen braucht der Modus nicht.
+    // Schießstand (26.10.): nur die Ausrüstung; die übrigen Waffen baut ebenfalls der Hintergrund (vorher alle leicht, V4).
+    let shellIds = [];
+    if (M.modeId === 'gun') {
+      const steps = GUN_GAME_STEPS.filter((id) => this._def(id));
+      const lvl = this.G.mode && typeof this.G.mode.levelOf === 'function' ? this.G.mode.levelOf(this.actor) || 0 : 0;
+      // (Prüfung 26.10.: dazu alle Waffen alter Bauweise der Leiter – wenige ms je Waffe, sonst baute sie der Aufstieg im Bild)
+      const pre = M.prebuildAll ? steps : ladderPrebuild(steps, lvl, (id) => { const d = this._def(id); return (d && d.model) || id; });
+      for (const d of this.playerDefs(pre)) if (!own.has(d.id)) { own.add(d.id); defs.push(d); }
+      shellIds = steps;
+    } else if (M.modeId === 'training') shellIds = Object.keys(this._weapons());
+    try { vm.warmup(r, defs, shellIds); } catch (err) { this._vmError('warmup', err); }
+  }
+
+  /**
+   * 26.10.: Definitionen der Waffen ids mit den gespeicherten Aufsätzen des Spielers – dieselbe Fassung, die setLoadout beim
+   * Ausrüsten anlegt (Waffenspiel-Aufstieg, Schießstand-Waffenkammer); Vorbau und Hintergrund-Bau treffen so denselben Eintrag.
+   */
+  playerDefs(ids) {
+    let saved = {};
+    try { saved = loadAttachments() || {}; } catch { saved = {}; }
+    const out = [];
+    for (const id of ids || []) {
+      const d = this._def(id);
+      if (!d) continue;
+      let info = null;
+      if (saved[id]) { try { info = getWeaponModelMeta(d.model || d.id); } catch { /* ohne Modell: Unterlauf nach Klasse */ } }
+      out.push(saved[id] ? applyAttachments(d, saved[id], info) : d);
     }
-    // Schießstand (24.10., V4): volle Fassung nur für die Ausrüstung, alle übrigen Waffen leicht (Shader, Texturen) – vorher
-    // baute der Ladebildschirm jede Waffe in der vollen Fassung
-    const more = mode === 'training' ? Object.keys(this._weapons()).filter((id) => !own.has(id) && this._def(id)) : [];
-    try { vm.warmup(r, defs, more); } catch (err) { this._vmError('warmup', err); }
+    return out;
   }
 
   /* ================================================================ Ausrüstung */
@@ -670,7 +685,7 @@ export class WeaponController {
         this._burstLeft -= 1;
         if (this._burstLeft <= 0) {
           this._fireBuffer = 0;
-          this._cooldown += Math.max(0, (def.burstDelay || 0.25) - 60 / Math.max(1, def.rpm || 600));
+          this._cooldown += Math.max(0, (def.burstDelay || 0.25) - 60 / Math.max(1, def.burstRpm || def.rpm || 600));
           break;
         }
       } else {
@@ -710,7 +725,8 @@ export class WeaponController {
     const now = G.time.elapsed;
     const infinite = this.infiniteAmmo;
     st.mag -= 1;
-    const interval = 60 / Math.max(1, def.rpm || 600);
+    // burstRpm (26.10., Zwilling-Doppelschuss): eigene Kadenz innerhalb eines Feuerstoßes
+    const interval = 60 / Math.max(1, (mode === 'burst' && def.burstRpm) || def.rpm || 600);
     if (now - this.lastShotTime > interval * 1.6) this._cooldown = Math.max(this._cooldown, 0);
     this._cooldown += interval;
     this.shotIndex = now - this.lastShotTime > Math.max(0.28, interval * 2.2) ? 0 : this.shotIndex + 1;
@@ -798,7 +814,7 @@ export class WeaponController {
       const base = DATA_WEAPONS[def.baseId || def.id];
       const ratio = base && base.recoil && base.recoil.vertical > 0 ? clamp(r.vertical / base.recoil.vertical, 0.5, 1.6) : 1;
       const visual = (Number.isFinite(r.visual) ? r.visual : 1) * ratio;
-      if (this.viewModel) this._vm('onShot', SHOT_STRENGTH[def.cls] || (def.id === 'pi_adler' ? 1.6 : 1), { empty: st.mag === 0, suppressed: !!def.suppressed, visual, yaw, pitch });
+      if (this.viewModel) this._vm('onShot', SHOT_STRENGTH[def.cls] || (def.id === 'pi_adler' ? 1.6 : 1), { empty: st.mag === 0, mag: st.mag, suppressed: !!def.suppressed, visual, yaw, pitch });
       const sh = (SHOT_SHAKE[def.cls] || (def.sound && def.sound.profile === 'pistol_heavy' ? 0.1 : 0)) * visual * (1 - 0.3 * a);
       if (sh > 0 && typeof actor.shake === 'function') actor.shake(sh);
     }

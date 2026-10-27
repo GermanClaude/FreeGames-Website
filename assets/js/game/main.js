@@ -16,63 +16,63 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261025201926';
-import { profile } from '../shared/profile.js?v=20261025201926';
-import * as weaponsData from '../shared/weapons.data.js?v=20261025201926';
-import * as modesData from '../shared/modes.data.js?v=20261025201926';
-import * as mapsData from '../shared/maps.data.js?v=20261025201926';
-import * as classesData from '../shared/classes.data.js?v=20261025201926'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261025201926'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
-import { EventBus } from './engine/events.js?v=20261025201926';
-import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261025201926';
-import { learnTier, deviceInfo } from './engine/device.js?v=20261025201926';
-import { Input } from './engine/input.js?v=20261025201926';
-import { watchForUpdates } from './engine/update.js?v=20261025201926'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261025201926';
-import { DynamicResolution } from './engine/dynres.js?v=20261025201926';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261025201926'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261025201926';
-import { Combat } from './combat.js?v=20261025201926';
-import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261025201926'; // Interaktionspunkte der Karten (Taste F)
-import { Building } from './building.js?v=20261025201926'; // Bauen (Taste K)
-import { Injuries } from './injuries.js?v=20261025201926'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
-import { Gore } from './gore.js?v=20261025201926'; // Blutlachen + Spritzer
-import { Destruction } from './destruction.js?v=20261025201926'; // zerstörbare Fassaden
-import { CarDeform } from './deform.js?v=20261025201926'; // verformbare Autos
-import { Digging } from './digging.js?v=20261025201926'; // Graben mit dem Klappspaten (Großkarten)
-import { Doors } from './doors.js?v=20261025201926'; // bewegliche Türen und Tore (Taste F)
-import { BulletHoles } from './bullet-holes.js?v=20261025201926'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
-import { TreeFall } from './treefall.js?v=20261025201926'; // Bäume brechen unter Beschuss und fallen
-import * as Feedback from '../shared/feedback.js?v=20261025201926'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
+import { settings } from '../shared/settings.js?v=20261027095631';
+import { profile } from '../shared/profile.js?v=20261027095631';
+import * as weaponsData from '../shared/weapons.data.js?v=20261027095631';
+import * as modesData from '../shared/modes.data.js?v=20261027095631';
+import * as mapsData from '../shared/maps.data.js?v=20261027095631';
+import * as classesData from '../shared/classes.data.js?v=20261027095631'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261027095631'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
+import { EventBus } from './engine/events.js?v=20261027095631';
+import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261027095631';
+import { learnTier, deviceInfo } from './engine/device.js?v=20261027095631';
+import { Input } from './engine/input.js?v=20261027095631';
+import { watchForUpdates } from './engine/update.js?v=20261027095631'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261027095631';
+import { DynamicResolution } from './engine/dynres.js?v=20261027095631';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261027095631'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261027095631';
+import { Combat } from './combat.js?v=20261027095631';
+import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261027095631'; // Interaktionspunkte der Karten (Taste F)
+import { Building } from './building.js?v=20261027095631'; // Bauen (Taste K)
+import { Injuries } from './injuries.js?v=20261027095631'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
+import { Gore } from './gore.js?v=20261027095631'; // Blutlachen + Spritzer
+import { Destruction } from './destruction.js?v=20261027095631'; // zerstörbare Fassaden
+import { CarDeform } from './deform.js?v=20261027095631'; // verformbare Autos
+import { Digging } from './digging.js?v=20261027095631'; // Graben mit dem Klappspaten (Großkarten)
+import { Doors } from './doors.js?v=20261027095631'; // bewegliche Türen und Tore (Taste F)
+import { BulletHoles } from './bullet-holes.js?v=20261027095631'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
+import { TreeFall } from './treefall.js?v=20261027095631'; // Bäume brechen unter Beschuss und fallen
+import * as Feedback from '../shared/feedback.js?v=20261027095631'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261025201926', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261025201926', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261025201926', ['ViewModel']],
-  world: ['./world/index.js?v=20261025201926', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261025201926', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261025201926', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261025201926', ['Effects']],
-  bots: ['./bots/manager.js?v=20261025201926', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261025201926', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261027095631', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261027095631', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261027095631', ['ViewModel']],
+  world: ['./world/index.js?v=20261027095631', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261027095631', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261027095631', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261027095631', ['Effects']],
+  bots: ['./bots/manager.js?v=20261027095631', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261027095631', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261025201926', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261025201926', []],
-  modes: ['./modes/index.js?v=20261025201926', ['createMode']],
-  hud: ['./ui/hud.js?v=20261025201926', ['HUD']],
-  menus: ['./ui/menus.js?v=20261025201926', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261027095631', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261027095631', []],
+  modes: ['./modes/index.js?v=20261027095631', ['createMode']],
+  hud: ['./ui/hud.js?v=20261027095631', ['HUD']],
+  menus: ['./ui/menus.js?v=20261027095631', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261025201926', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261025201926', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261027095631', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261027095631', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261025201926', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261025201926', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261025201926', ['ClientSync']],
+  net: ['./net/index.js?v=20261027095631', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261027095631', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261027095631', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261025201926', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261027095631', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
@@ -743,8 +743,17 @@ function syncWeaponDetail() {
   return !!(M && typeof M.setWeaponDetail === 'function' && G.renderer && M.setWeaponDetail(G.renderer.quality));
 }
 
-// Ego-Fassungen der ganzen Leiter bzw. aller Waffen vorgebaut (WeaponController.warmup) – kein Vorrat (V5), Schießstand baut beim Ausrüsten
+// Waffenspiel/Schießstand: Ego-Fassungen der Leiter bzw. aller Waffen über Vorbau + Plan-Aufträge des Hintergrunds (26.10.) – kein
+// Vorrat (V5); der Schießstand baut beim Ausrüsten (deferBuilds aus)
 const allWeaponsMode = (modeId) => modeId === 'gun' || modeId === 'training';
+
+/**
+ * 26.10. (Vorab Etappe 2): alles im Ladebildschirm vorbauen statt im Leerlauf – beim Online-Host, dessen Simulation auch in seinem
+ * eigenen Leerlauf (tot, Pausenmenü) für alle Mitspieler weiterläuft; ein Bau dort ließe alle stehen. Ebenso im Waffenspiel mit
+ * eingeschaltetem VR-Modus (Prüfung 26.10.): in der Brille baut der Hintergrund keine schweren Plan-Schritte (das Bild stünde still),
+ * ab Stufe 4 käme sonst bis zum nächsten Tod nur die Bot-Fassung in die Hand.
+ */
+const prebuildAll = (cfg) => !!(cfg && ((cfg.net && cfg.net.role === 'host') || (cfg.modeId === 'gun' && settings.get('vrEnabled'))));
 
 /** Ego-Waffen eines Matches: Waffenspiel die Leiter, Schießstand alle, sonst die Ausrüstung (Waffen-Ids). */
 function ownWeapons(cfg) {
@@ -803,9 +812,15 @@ function matchAssetJobs(cfg, world) {
     if (lod === 'first') unwarm(k, key, {});
     add(k, () => models.preloadWeaponModels([key], [lod]));
   };
-  // Ego: Ausrüstung (Waffenspiel: die ganze Leiter, 24.10.) + Requisiten des Viewmodels; Schießstand (24.10., V4): Ausrüstung
-  // voll, alle übrigen Waffen nur leicht (Standard am PC, lite am Handy) – die volle Fassung entsteht beim Ausrüsten
-  const own = cfg.modeId === 'training' ? [cfg.loadout.primary, cfg.loadout.secondary] : ownWeapons(cfg);
+  // Ego: Ausrüstung + Requisiten des Viewmodels. 26.10. (Vorab Etappe 2): Waffenspiel nur die aktuelle (beim Start die erste) und
+  // die nächsten LADDER_AHEAD Stufen statt der ganzen Leiter, dazu die billigen Waffen alter Bauweise (ladderPrebuild, Prüfung 26.10.;
+  // Online-Host und VR-Modus: weiter alle, prebuildAll), Schießstand nur die Ausrüstung
+  // statt aller übrigen Waffen in der leichten Stufe (V4) – den Rest bauen Plan-Aufträge im Leerlauf (planModeWeapons)
+  const vmMod = G.modules.viewmodel;
+  const gunSteps = () => (G.data.GUN_GAME_STEPS || []).filter((id) => W[id]);
+  const own = cfg.modeId === 'training' ? [cfg.loadout.primary, cfg.loadout.secondary]
+    : cfg.modeId === 'gun' && !prebuildAll(cfg) && vmMod && typeof vmMod.ladderPrebuild === 'function' ? vmMod.ladderPrebuild(gunSteps(), 0, modelOf)
+      : ownWeapons(cfg);
   // 24.10.: eigene Waffen mit gespeicherten Aufsätzen gleich in dieser Fassung (die Grundfassung zeigte das Viewmodel nie –
   // setLoadout legt die Aufsätze in jedem Modus an, auch auf der Waffenspiel-Leiter)
   const ownAtt = safe('loadAttachments', loadAttachments) || {};
@@ -822,18 +837,6 @@ function matchAssetJobs(cfg, world) {
   };
   for (const id of own) addOwn(id);
   for (const id of ['knife', 'frag', 'semtex']) addModel(modelOf(id), 'first');
-  if (cfg.modeId === 'training' && models && typeof models.lightTier === 'function') {
-    // (schon voll gebaut – Ausrüstung, Requisiten, vorige Runde: nicht zusätzlich leicht bauen; leicht = aktuelle Stufe am PC
-    // niedrig/mittel und am Handy → gleicher Schlüssel wie die volle Fassung)
-    const light = models.lightTier();
-    for (const id of Object.keys(W)) {
-      const key = modelOf(id);
-      if (!key) continue;
-      const k = `m:${key}:first:${light}`;
-      unwarm(k, key, { tier: light });
-      add(k, () => { if (!models.hasWeaponModel(key)) models.preloadWeaponModels([key], ['first'], light); });
-    }
-  }
   // Ego: einmalige Viewmodel-Texturen (Ärmel-Tarnmuster des Teams, Stoff, Mündungsfeuer …), weapons/viewmodel.js
   const vm = G.modules.viewmodel;
   if (vm && typeof vm.viewModelWarmupSteps === 'function') {
@@ -913,7 +916,50 @@ function carriedWeapons() {
   return [...count.values()].sort((a, b) => b.n - a.n).map((c) => c.def);
 }
 
+/**
+ * 26.10. (Vorab Etappe 2): Plan-Aufträge des Hintergrund-Baus für Waffenspiel und Schießstand – was der Ladebildschirm nicht mehr
+ * vorbaut. Waffenspiel: die Leiter ab der Stufe des Spielers, Foto-Waffen der nächsten LADDER_AHEAD Stufen dringlich (beim Aufstieg
+ * soll die echte Fassung stehen), dann die übrigen Foto-Waffen, dann Waffen alter Bauweise, die Stufen hinter ihm zuletzt
+ * (Prüfung 26.10.); Schießstand: alle übrigen Waffen in der Reihenfolge der
+ * Waffenkammer in der leichten Stufe. Neu geplant bei Stufenaufstieg/-abstieg und Wechsel der Detailstufe.
+ */
+let planKey = '';
+function planModeWeapons(vm, P) {
+  const modeId = G.match.modeId;
+  if (!allWeaponsMode(modeId) || G.match.prebuildAll || typeof vm.planWeapons !== 'function' || !P.weapon || typeof P.weapon.playerDefs !== 'function') return;
+  const W = G.data.WEAPONS || {}, M = G.modules.models, VM = G.modules.viewmodel;
+  const tier = M && typeof M.weaponDetailTier === 'function' ? M.weaponDetailTier() : '';
+  const level = modeId === 'gun' && G.mode && typeof G.mode.levelOf === 'function' ? G.mode.levelOf(P) || 0 : 0;
+  const key = `${G.matchCount}:${modeId}:${level}:${tier}`;
+  if (key === planKey) return;
+  planKey = key;
+  if (modeId === 'gun') {
+    if (!VM || typeof VM.ladderOrder !== 'function') return;
+    const steps = (G.data.GUN_GAME_STEPS || []).filter((id) => W[id]);
+    // Prüfung 26.10.: der Leerlauf geht zuerst an die Foto-Waffen – Waffen alter Bauweise baut der Aufstieg ohnehin in Millisekunden
+    // (wie beim Aufheben), eine fehlende Foto-Waffe käme dagegen als Bot-Fassung in die Hand. Vorher baute der eine Todesbildschirm
+    // einer Serie die SK-14 der nächsten Stufen, Adler und P-9 kamen danach als Platzhalter (Probe aufstieg.mjs). Reihenfolge:
+    // aktuelle Stufe, Foto-Waffen der nächsten LADDER_AHEAD Stufen (dringlich), übrige kommende Foto-Waffen, kommende Waffen alter
+    // Bauweise, zuletzt die Stufen hinter dem Spieler; das Messer der letzten Stufe ist Requisite (immer gebaut)
+    const cur = steps[Math.min(level, steps.length - 1)];
+    const win = new Set(VM.ladderWindow(steps, level)), ahead = new Set(steps.slice(level));
+    const photo = (id) => !!(M && typeof M.isPhotoWeapon === 'function' && M.isPhotoWeapon(W[id].model || id));
+    const rank = (id) => (id === cur ? 0 : !ahead.has(id) ? 4 : !photo(id) ? 3 : win.has(id) ? 1 : 2);
+    const ids = VM.ladderOrder(steps, level).filter((id) => W[id].cls !== 'melee')
+      .map((id, i) => [rank(id), i, id]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
+    const near = ids.filter((id) => rank(id) <= 1).length;
+    safe('planLeiter', () => vm.planWeapons(P.weapon.playerDefs(ids), { near }));
+  } else {
+    const lo = G.player.loadout || {};
+    const ids = Object.keys(W).filter((id) => (W[id].slot === 'primary' || W[id].slot === 'secondary') && id !== lo.primary && id !== lo.secondary);
+    // Prüfung 26.10.: nur Vorlage + Shader/Texturen (warmOnly) – Speicher wie der frühere Vorbau, nicht darüber
+    safe('planStand', () => vm.planWeapons(P.weapon.playerDefs(ids), { tier: M && typeof M.lightTier === 'function' ? M.lightTier() : null, warmOnly: true }));
+  }
+}
+
 let bgIdle = false; // Leerlauf im letzten Bild (Übergang → Vorrat neu planen)
+let bgRestUntil = 0; // Pausenmenü: nach einem schweren Schritt kurz Ruhe (Menü bleibt bedienbar)
+let bgStepAt = 0; // Zeitpunkt des letzten Hintergrund-Schritts (Eingabe seitdem = Menü wird bedient)
 /** Je Bild ein Schritt des Hintergrund-Baus im Viewmodel (weapons/hintergrundbau.js). */
 function weaponBackground() {
   const P = G.player;
@@ -926,7 +972,33 @@ function weaponBackground() {
   const vr = !!(G.xr && G.xr.presenting);
   if (idle && !bgIdle && !vr && !allWeaponsMode(G.match.modeId)) safe('prefetch', () => vm.prefetch(carriedWeapons()));
   bgIdle = idle;
-  vm.backgroundStep({ idle, quiet: P.alive && G.time.elapsed - (P.lastDamageTime ?? -1e9) > 2 });
+  planModeWeapons(vm, P);
+  const now = performance.now();
+  if (now < bgRestUntil) return;
+  // 26.10.: Rest des Leerlaufs – schwere Schritte nicht dringender Aufträge (Vorrat, Plan) nur, solange er reicht; in VR keine (das
+  // Bild der Brille stünde still), im Pausenmenü und beim Ausrüsten im Todesbildschirm unbegrenzt, aber getaktet
+  let left = Infinity, paced = false, busy = false;
+  if (vr) left = 0;
+  else if (st === 'countdown') left = G.match.countdown;
+  else if (st === 'paused' || (!P.alive && (P.respawnAt == null || G.match.respawnHold))) {
+    paced = true;
+    // Prüfung 26.10.: solange im Menü bedient wird (Waffenkammer, Ausrüstung; Eingabe vor < 1,5 s), keine schweren Schritte nicht
+    // dringender Aufträge – ein Bau hielte den Klick bis zu Sekunden auf; Nachprüfung 26.10.: auch nicht für die gewählte Waffe
+    // (busy) – wer in der Waffenkammer mehrere Waffen anklickt, stockte sonst je Klick; gebaut wird die zuletzt gewählte, sobald die
+    // Bedienung ruht
+    // (auch jede Eingabe seit dem letzten Schritt: bei Bildern über 1,5 s – schwaches Gerät, Container – griff die Frist sonst nie)
+    busy = now - lastInputAt < 1500 || lastInputAt > bgStepAt;
+    if (busy) left = 0;
+  } else if (!P.alive) left = P.respawnAt - G.time.elapsed;
+  bgStepAt = now;
+  vm.backgroundStep({ idle, quiet: P.alive && G.time.elapsed - (P.lastDamageTime ?? -1e9) > 2, idleLeft: left, busy });
+  const d = (performance.now() - now) / 1000;
+  if (!idle || d < 0.05) return;
+  // Bauzeit anrechnen: die Simulation läuft je Bild höchstens 1/20 s weiter (Countdown 0,25 s) – ohne Anrechnung verlängerte ein Bau
+  // von 1 s Countdown bzw. Todesbildschirm um fast 1 s. So wird der Leerlauf genutzt, nicht länger
+  if (paced) bgRestUntil = performance.now() + Math.max(250, d * 1000);
+  else if (st === 'countdown') G.match.countdown -= Math.max(0, d - 0.25);
+  else if (!P.alive && P.respawnAt != null) P.respawnAt -= Math.max(0, d - 1 / 20);
 }
 
 /**
@@ -1066,6 +1138,7 @@ async function runStart(config, gen) {
       weather: cfg.weather, conditions: cond, // atmosphere-weather (Anfrage; aufgelöst: conditions = G.world.weather)
       net: netCfg, netRole: netCfg ? netCfg.role : null, netLive: false, // Mehrspieler
       vehicles: netCfg ? !!netCfg.vehicles : undefined, // online: Raum-Einstellung „Fahrzeuge“ (vor spawnBots – Werfer der Bots)
+      prebuildAll: prebuildAll(cfg), // 26.10.: Waffenspiel-Leiter ganz vorbauen (Online-Host) statt im Leerlauf (WeaponController.warmup)
       tankEra: (netCfg ? netCfg.tankEra : cfg.tankEra) || 'karte', // Panzer-Generation (vehicles/index.js tankType)
     });
     // Online: Modus/Karte/Schwierigkeit gehören dem Raum – die Lobby-Vorauswahl für Einzelspieler bleibt
@@ -1130,7 +1203,11 @@ async function runStart(config, gen) {
 
     // Spieler + Viewmodel (Arme, Waffen, Viewmodel-Shader); online: Team laut Raum (absolute Teams A/B)
     const team = cfg.ffa ? null : netCfg && netCfg.team === 'B' ? 'B' : 'A';
-    G.player.resetForMatch({ team, loadout: cfg.loadout, name: settings.get('playerName') });
+    // 26.10.: Waffenspiel gleich mit der Waffe der ersten Stufe (GunMode.onStart setzt sie ohnehin) – mit der Lobby-Ausrüstung baute
+    // der Ladebildschirm deren Waffen (z. B. P-9 in max, ≈ 2 s), die der Modus nie zeigt
+    const steps0 = cfg.modeId === 'gun' ? (G.data.GUN_GAME_STEPS || []).filter((id) => G.data.WEAPONS && G.data.WEAPONS[id]) : [];
+    const lo0 = steps0.length ? { ...cfg.loadout, primary: steps0[0], secondary: null, lethal: null } : cfg.loadout;
+    G.player.resetForMatch({ team, loadout: lo0, name: settings.get('playerName') });
     G.player.netId = netCfg ? netCfg.selfId : null;
     G.player.godMode = DEV_GOD;
     if (DEV_TIMESCALE) G.timeScale = DEV_TIMESCALE;

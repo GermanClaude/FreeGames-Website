@@ -3,8 +3,8 @@
 // Zweibein/Handstopp unter dem Handschutz (Vordergriff: linke Hand greift ihn, Griffart 'post'), Laser-Modul;
 // nach dem Bau: Magazin länger bzw. Trommel. Optik- und Mündungstausch der Werksteile: parts.js (swapOptic/muzzleDevice).
 import * as THREE from 'three';
-import { muzzleDevice, mountOptic } from './parts.js?v=20261025201926';
-import { getMat } from './materials.js?v=20261025201926';
+import { muzzleDevice, mountOptic } from './parts.js?v=20261027095631';
+import { getMat } from './materials.js?v=20261027095631';
 
 const R_BY_KIND = { pistol: 0.0105, smg: 0.0115, rifle: 0.0115, lmg: 0.0135, sniper: 0.016, shotgun: 0.0145 };
 
@@ -64,25 +64,29 @@ export function attachToBuilder(b, att, mount) {
     lh.data = { style: 'under', w: r + 0.004, h: r };
   }
   if (att.taktisch === 'laser') {
+    // Kipplauf (26.10., Zwilling): sitzt der Anker in einem beweglichen Teil (Läufe + Vorderschaft = 'barrels'), hängt der Laser
+    // an diesem Teil und klappt beim Nachladen/Inspizieren mit auf – an der Basküle schwebte er sonst frei in der Luft
+    const onPart = (a) => (a && a.part && a.part !== 'static' ? { part: a.part } : {});
     if (style === 'pistol' || !under) {
-      const v = (mz ? mz.pos.y : 0.03) - 0.03, u = muzzleU - (style === 'pistol' ? 0.045 : 0.14);
-      b.box('polymer', 0.022, 0.018, 0.04, 0, v, u, { c: 0.003 });
-      b.circle('glowRed', 0.0028, 0, v + 0.002, u + 0.0205);
+      const v = (mz ? mz.pos.y : 0.03) - 0.03, u = muzzleU - (style === 'pistol' ? 0.045 : 0.14), P = onPart(mz);
+      b.box('polymer', 0.022, 0.018, 0.04, 0, v, u, { ...P, c: 0.003 });
+      b.circle('glowRed', 0.0028, 0, v + 0.002, u + 0.0205, P);
     } else {
-      const x = x0 + hw + 0.011, v = vb + (lh.data.h ?? lh.data.r ?? 0.024), u = Math.min(uL + 0.1, muzzleU - 0.06);
-      b.box('polymer', 0.017, 0.02, 0.044, x, v, u, { c: 0.003 });
-      b.box('alu', 0.006, 0.012, 0.03, x - 0.0105, v, u, { c: 0.001 });
-      b.circle('glowRed', 0.003, x, v + 0.003, u + 0.0225);
+      const x = x0 + hw + 0.011, v = vb + (lh.data.h ?? lh.data.r ?? 0.024), u = Math.min(uL + 0.1, muzzleU - 0.06), P = onPart(lh);
+      b.box('polymer', 0.017, 0.02, 0.044, x, v, u, { ...P, c: 0.003 });
+      b.box('alu', 0.006, 0.012, 0.03, x - 0.0105, v, u, { ...P, c: 0.001 });
+      b.circle('glowRed', 0.003, x, v + 0.003, u + 0.0225, P);
     }
   }
 }
 
-/** Nach dem Bau: Magazin länger (Erweitert) oder mit Trommel. */
-export function attachToRoot(root, att, lod = 'first') {
+/** Nach dem Bau: Magazin länger (Erweitert) oder mit Trommel. meta.magExt (26.10., P-9A): Bauplan baut das lange Magazin selbst. */
+export function attachToRoot(root, att, lod = 'first', meta = null) {
   if (!att || !att.magazin) return;
   const mag = root.getObjectByName('mag');
   if (!mag || mag === root) return;
   if (att.magazin === 'erweitert') {
+    if (meta && meta.magExt) return;
     // Quer liegendes Magazin (QX-90 oben auf dem Gehäuse): nicht in die Höhe ziehen – das verzerrt nur Patronen/Form
     const s = magBox(mag).getSize(_v);
     if (!(s.z > s.y * 1.6)) mag.scale.y = 1.3;

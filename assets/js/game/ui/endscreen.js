@@ -3,9 +3,9 @@
 // animierter EP-Balken mit Stufen-/Dienstgrad-Aufstieg (rankIcon), neue Freischaltungen.
 // Knöpfe: Revanche · Lobby · Zur Website.
 
-import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261025201926';
-import { ICON, medalBadge } from './icons.js?v=20261025201926';
-import { scoreboardHtml, netRows } from './scoreboard.js?v=20261025201926';
+import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261027095631';
+import { ICON, medalBadge } from './icons.js?v=20261027095631';
+import { scoreboardHtml, netRows } from './scoreboard.js?v=20261027095631';
 
 const REASON = {
   score: 'Punktelimit erreicht', time: 'Zeit abgelaufen', overtime: 'In der Verlängerung entschieden', forced: 'Match beendet',
@@ -67,6 +67,7 @@ export class EndScreen {
       if (r.modeId === 'cq' && ct.vehicles) cells[7] = ['Fahrzeuge zerstört', String(ct.vehicles)];
       if (r.modeId === 'kc') cells[8] = ['Marken', String(ct.confirms ?? 0), ct.denies ? `${ct.denies} verweigert` : ''];
       if (r.modeId === 'inf') cells[8] = ['Infiziert', String(ct.infects ?? 0), ct.survivals ? 'Überlebt' : ''];
+      if (r.modeId === 'hp') cells[8] = ['Halte\u00adzeit', clock(Math.floor(ct.hpTime || 0)), ct.hpCaptures ? `${ct.hpCaptures}× eingenommen` : '']; // Stellung (26.10.)
     }
     const stats = `<div class="e-stats">${cells.map(([l, v, s]) => `<div class="e-cell"><small>${esc(l)}</small><b>${v}</b>${s ? `<span>${esc(s)}</span>` : ''}</div>`).join('')}</div>`;
 

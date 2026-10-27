@@ -4,8 +4,8 @@
 // beidseitiger Wahlhebel (Navy/Feuerstoß), Laufmündung mit Dreifachwarze; Piktogramme des Griffstücks in hk-tex.js.
 // Koordinaten wie im Bauplan: x quer (rechts +), v hoch, u nach vorn; Maße in Metern. Die Funktionen legen nur Geometrie an
 // (keine Anker/Meta) – Teile (b.part) und Anker setzt der Bauplan der Waffe.
-import { smin } from './sdf.js?v=20261025201926';
-import { sdfMesh, sdRoundRect, roundMax, STEEL } from './sdfkit.js?v=20261025201926';
+import { smin } from './sdf.js?v=20261027095631';
+import { sdfMesh, sdRoundRect, roundMax, STEEL } from './sdfkit.js?v=20261027095631';
 
 // ---------------------------------------------------------------- Gehäuse
 /**

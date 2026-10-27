@@ -2,7 +2,7 @@
 // Engstellen (Brückenköpfe, Ortseingang, Gehöft-Zufahrt, Kieswerk-Einfahrt, Funkhügel-Aufgang) mit Blick auf die
 // Zugangswege. Statisch, Kollision unabhängig von der Grafikstufe; Platzierung ohne b.rand (nur die Sandsack-
 // Unregelmäßigkeit aus props.sandbags nutzt den Ortschafts-Zufall wie jede andere Sandsackreihe).
-import { frame, sandbags } from '../props.js?v=20261025201926';
+import { frame, sandbags } from '../props.js?v=20261027095631';
 
 /** Zylinder von Bodenpunkt G zu Punkt M (Welt), z. B. Dreibein-Bein. */
 function strut(b, gx, gy, gz, mx, my, mz, r, mat, o = {}) {
@@ -11,7 +11,8 @@ function strut(b, gx, gy, gz, mx, my, mz, r, mat, o = {}) {
 }
 
 /**
- * MG-Nest. (x, z) Mitte; o: { y (Boden), ry (Feuerrichtung = lokal +z), r (Innenradius 1,45), rows (Lagen, 5 ≈ 0,75 m) }
+ * MG-Nest. (x, z) Mitte; o: { y (Boden), ry (Feuerrichtung = lokal +z), r (Innenradius 1,45), rows (Lagen, 5 ≈ 0,75 m),
+ * tints (Sandsack-Tönungen, props.sandbags) }
  * Sandsäcke doppelt, Hufeisen über ±135° (hinten ≈ 1,8 m offen als Zugang). Waffe: Gehäuse, Lauf mit Kühlmantel,
  * Mündung, Kolben, Griff, Gurtkasten links, Gurt; Dreibein (ein Bein vorn an der Brüstung, zwei hinten).
  * Kollision: Sandsack-Segmente (props.sandbags), Waffe + Dreibein als schmaler Quader ohne Kugelkollision.
@@ -26,7 +27,7 @@ export function mgNest(b, x, z, o = {}) {
   for (let k = 0; k < n; k++) {
     const [ax, az] = pts[k], [bx, bz] = pts[k + 1], L = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / L, uz = (bz - az) / L;
     const [wx0, wz0] = f.P(ax - ux * 0.2, az - uz * 0.2), [wx1, wz1] = f.P(bx + ux * 0.2, bz + uz * 0.2);
-    sandbags(b, wx0, wz0, wx1, wz1, { rows: k === 0 || k === n - 1 ? rows - 1 : rows, y, double: true });
+    sandbags(b, wx0, wz0, wx1, wz1, { rows: k === 0 || k === n - 1 ? rows - 1 : rows, y, double: true, tints: o.tints });
   }
   // Waffe (zeigt lokal +z über die Brüstung)
   const gm = { collide: false, minimap: false }, gy = 0.94, zr = r - 0.62; // Gehäuse-Mitte

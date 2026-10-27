@@ -18,7 +18,7 @@
 // - Wird von main.js dynamisch geladen (MODULES, optional): fehlt das Modul, bleibt G.fullscreen null und main.js
 //   nutzt einen kleinen Ersatz (Knopf, Taste, Alt+Enter, Matchstart/Fortsetzen).
 
-import { resolveBindings } from '../../shared/bindings.data.js?v=20261025201926';
+import { resolveBindings } from '../../shared/bindings.data.js?v=20261027095631';
 
 const D = typeof document !== 'undefined' ? document : null;
 const WAKE_STATES = new Set(['countdown', 'playing', 'paused']);

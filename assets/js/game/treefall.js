@@ -7,7 +7,7 @@
 // Kollision: die Prismen des Stamms werden in den BVHs abgeschaltet, Stumpf und liegender Stamm sind Festkörper
 // (building.addSolid). Online entscheidet der Host ('ev' tf), Nachzügler bekommen gefallene Bäume beim Beitritt.
 import * as THREE from 'three';
-import { worldPartsFrom } from './building.js?v=20261025201926';
+import { worldPartsFrom } from './building.js?v=20261027095631';
 
 const BAND = 0.3;      // Höhenband (m)
 const BREAK = 0.52;    // Anteil des fehlenden Querschnitts, ab dem der Stamm bricht

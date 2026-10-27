@@ -7,7 +7,7 @@
 //   edgeWear(g, kind, line, o)         – Abrieb entlang einer Kante (unterbrochene, hellere, glattere Striche)
 //   scuffs(g, kind, rect, o)           – Kratzer und Schlieren in einem Rechteck (Fotopixel)
 //   ring(g, kind, x, y, r, o)          – flache Ringnut (Senkung um eine Schraube)
-import { canvas, fbm, rng } from './textures.js?v=20261025201926';
+import { canvas, fbm, rng } from './textures.js?v=20261027095631';
 
 const grey = (h) => { const k = Math.max(0, Math.min(255, Math.round(h * 255))); return `rgb(${k},${k},${k})`; };
 export const GREY = grey;

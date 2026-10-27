@@ -7,36 +7,36 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261025201926';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261025201926';
-import { createWorldAssets } from '../library.js?v=20261025201926';
-import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261025201926';
-import { createLighting } from '../lighting.js?v=20261025201926';
-import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261025201926';
-import { createAtmosphere } from '../atmos.js?v=20261025201926';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261025201926';
-import { createWater } from '../water.js?v=20261025201926';
-import { TriangleBVH } from '../bvh.js?v=20261025201926';
-import { makeTests } from '../navbuild.js?v=20261025201926';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261025201926';
-import { Heightfield } from './heightfield.js?v=20261025201926';
-import { makeCoarse } from './generate.js?v=20261025201926';
-import { CompositeBVH } from './composite.js?v=20261025201926';
-import { TerrainCollider } from './collide.js?v=20261025201926';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261025201926';
-import { createTerrainMaterial } from './splat.js?v=20261025201926';
-import { Vegetation } from './vegetation.js?v=20261025201926';
-import { Deadwood } from './deadwood.js?v=20261025201926';
-import { Litter } from './litter.js?v=20261025201926';
-import { RoadNetwork } from './roads.js?v=20261025201926';
-import { bigNavFromData } from './bignav.js?v=20261025201926';
-import { createBigMinimap } from './bigminimap.js?v=20261025201926';
-import { terrainJob, worldJob } from './bigjob.js?v=20261025201926';
+import { MAPS } from '../../../shared/maps.data.js?v=20261027095631';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261027095631';
+import { createWorldAssets } from '../library.js?v=20261027095631';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261027095631';
+import { createLighting } from '../lighting.js?v=20261027095631';
+import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261027095631';
+import { createAtmosphere } from '../atmos.js?v=20261027095631';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261027095631';
+import { createWater } from '../water.js?v=20261027095631';
+import { TriangleBVH } from '../bvh.js?v=20261027095631';
+import { makeTests } from '../navbuild.js?v=20261027095631';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261027095631';
+import { Heightfield } from './heightfield.js?v=20261027095631';
+import { makeCoarse } from './generate.js?v=20261027095631';
+import { CompositeBVH } from './composite.js?v=20261027095631';
+import { TerrainCollider } from './collide.js?v=20261027095631';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261027095631';
+import { createTerrainMaterial } from './splat.js?v=20261027095631';
+import { Vegetation } from './vegetation.js?v=20261027095631';
+import { Deadwood } from './deadwood.js?v=20261027095631';
+import { Litter } from './litter.js?v=20261027095631';
+import { RoadNetwork } from './roads.js?v=20261027095631';
+import { bigNavFromData } from './bignav.js?v=20261027095631';
+import { createBigMinimap } from './bigminimap.js?v=20261027095631';
+import { terrainJob, worldJob } from './bigjob.js?v=20261027095631';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261025201926'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261025201926'),
-  brandwald: () => import('../maps/brandwald.js?v=20261025201926'),
+  grenzland: () => import('../maps/grenzland.js?v=20261027095631'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261027095631'),
+  brandwald: () => import('../maps/brandwald.js?v=20261027095631'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -56,7 +56,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261025201926', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261027095631', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -224,7 +224,13 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   group.add(chunks.group);
   const farRing = createFarRing(hf, makeCoarse(def.terrain), tmat.material, { radius: tier.far, step: quality === 'low' ? 32 : 20 });
   group.add(farRing);
-  const water = createWater({ x0: hf.minX, z0: hf.minZ, x1: hf.maxX, z1: hf.maxZ, y: hf.waterY, color: def.water?.color || '#2c4a3e', scale: 12, roughness: 0.09 });
+  // 26.10. (K0): Wasser nur in 4-m-Zellen, in denen das Gelände unter den Wasserspiegel reicht (water.js)
+  const wetCell = (x0, z0, x1, z1) => {
+    if (hf.rangeY(x0 - 1, z0 - 1, x1 + 1, z1 + 1)[0] > hf.waterY + 0.05) return false;
+    for (let z = z0 - 1; z <= z1 + 1; z += hf.res) for (let x = x0 - 1; x <= x1 + 1; x += hf.res) if (hf.heightAt(x, z) < hf.waterY + 0.05) return true;
+    return false;
+  };
+  const water = createWater({ x0: hf.minX, z0: hf.minZ, x1: hf.maxX, z1: hf.maxZ, y: hf.waterY, color: def.water?.color || '#2c4a3e', scale: 12, roughness: 0.09, keep: wetCell });
   water.mesh.name = 'fluss';
   group.add(water.mesh);
   ms.terrainMesh = Math.round(performance.now() - tM);

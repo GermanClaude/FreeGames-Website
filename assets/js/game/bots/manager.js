@@ -13,23 +13,23 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261025201926';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261025201926'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261025201926';
-import { pickNames } from './names.js?v=20261025201926';
-import { Nameplate } from './nameplates.js?v=20261025201926';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261025201926';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261025201926';
-import { analyze } from './ai/tactics.js?v=20261025201926';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261025201926';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261025201926';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261025201926';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261025201926';
-import { BotAdapt } from './ai/spielstil.js?v=20261025201926';
-import { CorpseStore } from './corpses.js?v=20261025201926';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261025201926';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261025201926';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261025201926';
+import { Bot } from './bot.js?v=20261027095631';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261027095631'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261027095631';
+import { pickNames } from './names.js?v=20261027095631';
+import { Nameplate } from './nameplates.js?v=20261027095631';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261027095631';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261027095631';
+import { analyze } from './ai/tactics.js?v=20261027095631';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261027095631';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261027095631';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261027095631';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261027095631';
+import { BotAdapt } from './ai/spielstil.js?v=20261027095631';
+import { CorpseStore } from './corpses.js?v=20261027095631';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261027095631';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261027095631';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261027095631';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -281,7 +281,8 @@ export class BotManager {
     let r = null;
     // Waffen der ersten Stunde (W[id].og) tragen Bots nie
     try { r = resolveClassLoadout(cls, { weapons: W, equipment: EQ, isUnlocked: (id) => !(W[id] && W[id].og) }); } catch { r = null; }
-    const of = (...classes) => Object.keys(W).filter((id) => classes.includes(W[id].cls) && W[id].slot !== 'secondary' && !W[id].og);
+    // botWeight (26.10.): seltene Waffen (z. B. Doppelflinte) nur mit dieser Wahrscheinlichkeit in der Auswahl
+    const of = (...classes) => Object.keys(W).filter((id) => classes.includes(W[id].cls) && W[id].slot !== 'secondary' && !W[id].og && Math.random() < (W[id].botWeight ?? 1));
     let primary = r && r.primary;
     if (role === 'mg') primary = pick(of('lmg')) || primary;
     else if (role === 'marksman') primary = pick(of(cls === 'aufklaerer' ? 'sniper' : 'marksman')) || pick(of('marksman', 'sniper')) || primary;
@@ -295,6 +296,12 @@ export class BotManager {
     const launcher = !veh ? null : r && r.launcher && W[r.launcher] ? r.launcher : cls === 'pionier' && W.at_donner ? 'at_donner' : null;
     let secondary = launcher || (r && r.secondary) || 'pi_p9';
     if (!veh && W[secondary] && W[secondary].cls === 'launcher') secondary = W.pi_p9 ? 'pi_p9' : Object.keys(W).find((id) => W[id].slot === 'secondary' && W[id].cls !== 'launcher') || secondary;
+    // 26.10.: Zweitwaffe abwechslungsreicher – zu 30 % eine andere Pistole (nicht og), sonst trugen Bots immer die erste der
+    // Wunschliste (P-9); so tauchen auch Adler, Kobra und die neue P-9A bei Bots auf
+    if (secondary && W[secondary] && W[secondary].cls === 'pistol' && Math.random() < 0.3) {
+      const ps = Object.keys(W).filter((id) => W[id].cls === 'pistol' && W[id].slot === 'secondary' && !W[id].og);
+      if (ps.length) secondary = pick(ps);
+    }
     const lethal = (r && r.lethal) || 'frag';
     const tactical = (role === 'rifleman' || role === 'grenadier') && EQ.flash ? 'flash' : EQ.smoke ? 'smoke' : undefined;
     return { cls, primary, secondary, lethal, tactical };

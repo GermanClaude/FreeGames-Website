@@ -15,8 +15,8 @@
 // Ausgaben wie die Basisaktionen: out.p/out.r (Waffe, Kameraraum), out.left/out.right (Handanfragen),
 // out.parts (Teilversätze [dx, dy, dz, rx, ry, rz] im Elternraum, _vis), out.frame (Arbeitsstelle ins Bild).
 import * as THREE from 'three';
-import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261025201926';
-import { magWellOf, magOffset } from './magwell.js?v=20261025201926';
+import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261027095631';
+import { magWellOf, magOffset } from './magwell.js?v=20261027095631';
 
 const Z3 = [0, 0, 0];
 const _f = [0, 0, 0, 0, 0, 0];
@@ -158,6 +158,7 @@ export const RELOAD_ACTIONS = {
     if (style === 'revolver') return this._actReloadRevolver(A, out, u);
     if (style === 'rocket') return this._actReloadRocket(A, out, u);
     if (style === 'belt') return this._actReloadBelt(A, out, u);
+    if (style === 'break') return this._actReloadBreak(A, out, u);   // Kipplauf (anim/break.js, 26.10.)
     return u >= 1;
   },
 

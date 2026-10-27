@@ -16,27 +16,29 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel, lightTier, hasWeaponModel } from './models.js?v=20261025201926';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261025201926';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261025201926';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261025201926';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261025201926';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261025201926';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261025201926';
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261025201926';
-import { COSMETIC } from './anim/reloads.js?v=20261025201926';
-import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261025201926';
-import { magWellOf } from './anim/magwell.js?v=20261025201926';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261025201926';
-import { uploadTextures } from '../engine/warm.js?v=20261025201926';
-import { applyCamo } from './gunsmith/camos.js?v=20261025201926';
-import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261025201926';
-import { setReticleSize } from './gunsmith/materials.js?v=20261025201926';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261025201926';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261025201926';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261025201926';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261025201926';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261025201926';
+import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel } from './models.js?v=20261027095631';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261027095631';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261027095631';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261027095631';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261027095631';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261027095631';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261027095631';
+import { BREAK_ACTIONS } from './anim/break.js?v=20261027095631';   // Kipplauf (26.10., ZW-12 Zwilling)
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261027095631';
+import { COSMETIC } from './anim/reloads.js?v=20261027095631';
+import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261027095631';
+export { LADDER_AHEAD, ladderWindow, ladderOrder, ladderPrebuild } from './hintergrundbau.js?v=20261027095631'; // Waffenspiel-Vorbau (main.js, 26.10.)
+import { magWellOf } from './anim/magwell.js?v=20261027095631';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261027095631';
+import { uploadTextures } from '../engine/warm.js?v=20261027095631';
+import { applyCamo } from './gunsmith/camos.js?v=20261027095631';
+import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261027095631';
+import { setReticleSize } from './gunsmith/materials.js?v=20261027095631';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261027095631';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261027095631';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261027095631';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261027095631';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261027095631';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -282,7 +284,7 @@ export class ViewModel {
     const entry = { id, key, model, ud, rest, att: ak, attObj: att || null, mk: ak ? id + '#' + ak : id, tier, release };
     // Arbeitsstelle der Stützhand beim Nachladen (Modellraum, Ruhelage) für _frameWork
     const h0 = handlingFor(key), an = ud.anchors;
-    const work = h0.reload === 'revolver' ? an.cylGrab : h0.reload === 'rocket' ? (an.rocketGrab || ud.muzzle) : h0.reload === 'shell' ? an.shellPort : (an.magGrab || ud.magazine);
+    const work = h0.reload === 'break' ? an.shellPort : h0.reload === 'revolver' ? an.cylGrab : h0.reload === 'rocket' ? (an.rocketGrab || ud.muzzle) : h0.reload === 'shell' ? an.shellPort : (an.magGrab || ud.magazine);
     if (work) entry.workRest = model.worldToLocal(work.getWorldPosition(new THREE.Vector3()));
     return entry;
   }
@@ -516,6 +518,10 @@ export class ViewModel {
     if (!this.cur) return;
     const h = this.h, k = h.kick, ads = this._ads;
     if (h.action === 'knife') { this.playMelee(); return; }
+    // Zwei Mündungen (26.10., Zwilling): erst der rechte Lauf (vorderer Abzug), dann der linke – Feuer/Rauch am jeweiligen Lauf
+    const m2 = this.cur.ud.anchors.muzzle2;
+    let mzObj = this.cur.ud.muzzle;
+    if (m2) { if (Number.isFinite(info.mag) && info.mag < 1) mzObj = m2; if (this.flash.group.parent !== mzObj) mzObj.add(this.flash.group); }
     const vis = Number.isFinite(info.visual) ? clamp(info.visual, 0, 3) : 1;
     // Stärke je Klasse (Controller: Scharfschütze 2,2, Schrot 2,0 …) gedämpft, sonst überschlagen schwere Waffen
     const adsMul = 1 - 0.45 * ads, s = Math.pow(Math.max(0, strength), 0.6) * vis;
@@ -541,9 +547,9 @@ export class ViewModel {
     if (this._lid) this._lid.v += (1.2 + Math.random() * Math.random() * 6) * Math.min(1.5, s);
     else if (this._part('lid')) this._lid = { a: 0, v: 1.2 + Math.random() * 4 };
     const suppressed = info.suppressed ?? this.def?.suppressed;
-    if (!this.showScopeOverlay) this.flash.fire(h.flash * (this.def?.flashScale || 1), h.flashLen, { suppressed });
+    if (!this.showScopeOverlay) this.flash.fire(h.flash * (this.def?.flashScale || 1), h.flashLen, { suppressed, comp: h.comp });
     if (!suppressed) {
-      this.cur.ud.muzzle.getWorldPosition(_v);
+      mzObj.getWorldPosition(_v);
       this.root.worldToLocal(_v);
       _v2.set(0, 0.2, -1).applyQuaternion(this.gun.quaternion);
       this.smoke.puff(_v, _v2, h.flash > 1.2 ? 1.2 : 0.8);
@@ -554,6 +560,7 @@ export class ViewModel {
     if (h.action === 'revolver') this._cylTarget = (this._cylTarget || 0) + Math.PI / 3;
     if (info.empty && (h.action === 'auto' || h.action === 'semi')) this._boltLocked = true;
     if (h.action === 'bolt') this._start('boltCycle', Math.max(0.6, Math.min(1.0, (this.def ? 60 / this.def.rpm : 1.3) - 0.35)), { delay: 0.12, ejected: false, variant: this._pickVariant('bolt', 2) });
+    else if (h.action === 'break') { /* Kipplauf: Hülsen bleiben im Lager, der Auszieher hebt sie beim Öffnen */ }
     else if (h.action === 'pump') this._start('pumpCycle', Math.max(0.42, Math.min(0.6, (this.def ? 60 / this.def.rpm : 0.8) - 0.25)), { delay: 0.1, ejected: false });
     else this._eject();
   }
@@ -1481,7 +1488,7 @@ export class ViewModel {
     const h = this.h;
     this._resetParts();
     // Verschluss / Schlitten: schneller Hub beim Schuss
-    this._boltT = Math.min(1, this._boltT + dt / 0.075);
+    this._boltT = Math.min(1, this._boltT + dt / (h.cycle || 0.075));   // h.cycle (26.10., P-9A): eigener Hub bei hoher Kadenz
     const pulse = this._boltT < 0.3 ? smooth(this._boltT / 0.3) : smooth(1 - (this._boltT - 0.3) / 0.7);
     if (h.action === 'pistol') {
       const travel = this.cur.ud.anchors.slideGrab?.userData.travel?.[2] ?? 0.03;
@@ -1497,6 +1504,12 @@ export class ViewModel {
     } else if (h.action === 'launcher') {
       const r = this._part('rocket');
       if (r) r.visible = (this._magNow ?? 1) > 0;
+    } else if (this._part('bolt') && h.openBolt) {
+      // Offener Verschluss (26.10., PS-41 Wirbel): Modell zeigt den Verschluss in Ruhelage HINTEN. Beim Schuss stand er vorn
+      // (Zündung) und läuft zurück, bis der Fanghebel ihn hinten hält; leer bleibt er vorn auf dem leeren Lager (_boltLocked)
+      const back = this._boltLocked ? 0 : smooth(Math.min(1, this._boltT / 0.45));
+      this._setPartOffset('bolt', 0, 0, -h.boltTravel * (1 - back));
+      if (this._ejPend && (back > 0.55 || this._boltLocked)) { this._ejPend = false; this._ejectFromBolt(); }
     } else if (this._part('bolt') && h.action !== 'bolt' && h.action !== 'pump') {
       this._setPartOffset('bolt', 0, 0, h.boltTravel * (this._boltLocked ? 1 : pulse));
       // Hülse verlässt das Patronenlager, wenn der Träger gut zwei Drittel seines Wegs zurückgelaufen ist
@@ -1798,8 +1811,10 @@ export class ViewModel {
   }
 
   /** Alle Waffenmodelle vorbauen und Shader kompilieren (z. B. im Ladebildschirm) – auch die der Effekte
-   *  (Mündungsfeuer, Rauch, Hülsen je Art), damit der erste Schuss kein Programm mehr linkt. */
-  warmup(renderer, ids = Object.keys(ID_TO_MODEL), more = []) {
+   *  (Mündungsfeuer, Rauch, Hülsen je Art), damit der erste Schuss kein Programm mehr linkt. Übrige Waffen von Waffenspiel und
+   *  Schießstand baut seit 26.10. der Hintergrund (planWeapons, hintergrundbau.js) statt des Ladebildschirms – shellIds: deren
+   *  Hülsenarten trotzdem schon jetzt (nur Daten, kein Modellbau; sonst übersetzte der erste Schrotschuss sein Programm im Match). */
+  warmup(renderer, ids = Object.keys(ID_TO_MODEL), shellIds = []) {
     const prev = this.cur;
     const holder = new THREE.Group();
     const shells = new Set();
@@ -1811,13 +1826,7 @@ export class ViewModel {
       shells.add(handlingFor(e.key).shell);
       if (e !== prev) holder.add(e.model);
     }
-    // 24.10. (V4): übrige Waffen (Schießstand) nur in der leichten Fassung – gleiche Materialien, also
-    // gleiche Shader und Texturen; die volle Fassung entsteht erst beim Ausrüsten
-    for (const id of more) {
-      const key = (this._defFor(id)?.model) || ID_TO_MODEL[id] || id;
-      shells.add(handlingFor(key).shell);
-      holder.add(createWeaponModel(key, { lod: 'first', tier: hasWeaponModel(key) ? null : lightTier() }));   // schon voll gebaut: die nehmen
-    }
+    for (const id of shellIds) shells.add(handlingFor((this._defFor(id)?.model) || ID_TO_MODEL[id] || id).shell);
     this.shells.prepare(shells);
     // 24.10. (V5): Bot-Fassung als Platzhalter beim Aufheben (hintergrundbau.js) – ihre Materialien im Viewmodel-Licht mit übersetzen
     const probeKey = prev ? prev.key : null;
@@ -1890,7 +1899,7 @@ const VM_FILL = 0.42;
 // Animationen 09.10.: Nachladen mit Varianten, Magazin entlang der Schachtachse (anim/reloads.js, anim/magwell.js),
 // vier Inspektionen je Mechanik mit Munitionsschätzung (anim/inspects.js), Ziehen je Klasse, Bereitmachen,
 // Leerlauf-Gesten, Bewegungsposen, Nahkampf-/Wurfvarianten (anim/moves.js)
-Object.assign(ViewModel.prototype, EXTRA_ACTIONS, RELOAD_ACTIONS, INSPECT_ACTIONS, MOVE_ACTIONS);
+Object.assign(ViewModel.prototype, EXTRA_ACTIONS, RELOAD_ACTIONS, INSPECT_ACTIONS, MOVE_ACTIONS, BREAK_ACTIONS);
 // 24.10. (V1/V5): Ego-Waffen ohne Hänger – Vorrat, Bot-Fassung als Platzhalter, Neubau bei Stufenwechsel (hintergrundbau.js)
 Object.assign(ViewModel.prototype, BUILD_ACTIONS);
 

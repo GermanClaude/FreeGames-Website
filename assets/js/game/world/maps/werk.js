@@ -3,18 +3,19 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261025201926';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261027095631';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261025201926';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261025201926';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261025201926';
+} from '../props.js?v=20261027095631';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261027095631';
+import { createFire } from '../feuer.js?v=20261027095631';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261027095631';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261025201926';
+} from './werk-ausstattung.js?v=20261027095631';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
@@ -215,30 +216,15 @@ function slabStack(b, x, z, ry = 0, n = 4, o = {}) {
   f.solid(0, 0, 0, w, y, d, { minimap: 'cover' });
 }
 
-/** Ölfass mit Feuer (Glut + kleine Flamme), optional echtes Licht. */
+/** Ölfass mit Feuer (Glut, Scheite, Flammen-Daumenkino mit Funken und Rauch), optional echtes Licht. */
 function fireBarrel(b, x, z, o = {}) {
   barrel(b, x, 0, z, { color: '#5a3a2a' });
   b.cyl(x, 0.86, z, 0.26, 0.04, 'lamp_sodium', { seg: 10, collide: false, minimap: false, ao: false, cast: false });
   for (let i = 0; i < 4; i++) b.box(x + (b.rand() - 0.5) * 0.25, 0.86, z + (b.rand() - 0.5) * 0.25, 0.06, 0.16, 0.5, 'wood_dark', { tint: '#2a1a12', collide: false, minimap: false, ao: false, rx: 0.4, ry: b.rand() * 3 });
-  const g = new THREE.Group();
-  const mat = new THREE.MeshBasicMaterial({ color: '#ffb050', transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending, fog: true });
-  mat.userData.disposable = true;
-  const flames = [];
-  for (let i = 0; i < 3; i++) {
-    const m = new THREE.Mesh(new THREE.ConeGeometry(0.16 - i * 0.03, 0.55 + i * 0.12, 6, 1, true), mat);
-    m.position.set(x + (i - 1) * 0.07, 1.12 + i * 0.04, z + ((i % 2) - 0.5) * 0.08);
-    m.renderOrder = 3;
-    g.add(m); flames.push(m);
-  }
-  // Animation hängt am Objekt (world.update ruft sie) – kein Modulzustand, der eine alte Welt festhält
-  let t = b.rand() * 10;
-  b.object(g, {
-    update: dt => {
-      t += dt;
-      flames.forEach((m, i) => { const k = 0.8 + Math.sin(t * (9 + i * 3.1) + i) * 0.15 + Math.sin(t * 17 + i * 2) * 0.08; m.scale.set(1, k, 1); m.position.y = 0.88 + (0.55 + i * 0.12) * k / 2; });
-      mat.opacity = 0.7 + Math.sin(t * 11) * 0.12;
-    },
-  });
+  // 26.10. (K0): Flammen als Daumenkino (world/feuer.js) statt drei additiver Kegel („Papierspitzen“); die Ziehung für
+  // den Animationsstart bleibt, damit der Kartenzufall danach unverändert weiterläuft
+  const t0 = b.rand() * 10;
+  createFire(b, x, 0.84, z, { t0, seed: Math.round(t0 * 1000) });
   if (o.light !== false) b.light('point', x, 1.6, z, { color: '#ff9a40', intensity: o.intensity ?? 9, distance: o.distance ?? 9, priority: 2, group: 2 });
   b.glow(x, 1.25, z, { color: '#ff8a30', size: 2.6, intensity: 0.9 });
 }
