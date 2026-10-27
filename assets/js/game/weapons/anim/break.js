@@ -16,8 +16,8 @@
 //   · 0,70–0,78 Läufe hochklappen, satter Schnapp bei 0,76, Oberhebel springt zurück · 0,78–0,95 zurück in die Ruhelage.
 // Abbruch durch Sprint: die Teilversätze werden mit A.fade auf 0 gezogen – die Läufe schließen von selbst.
 import * as THREE from 'three';
-import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261027095631';
-import { req } from './reloads.js?v=20261027095631';
+import { curve, windowW, clamp, smooth } from '../gunsmith/anim.js?v=20261027102441';
+import { req } from './reloads.js?v=20261027102441';
 
 const Z3 = [0, 0, 0];
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();

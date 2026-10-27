@@ -4,10 +4,10 @@
 // Dazwischen das Niemandsland: Hunderte Granattrichter (die tiefsten voll Wasser), Stacheldrahtgürtel vor beiden
 // Fronten, zersplitterte Baumstümpfe, eine Dorfruine (West) und eine Kapellenruine (Ost) mit zerstörbaren Mauern, in
 // der Mitte ein liegengebliebener Panzer. Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { wall } from '../arch.js?v=20261027095631';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261027095631';
-import { sampleSpline } from '../terrain/generate.js?v=20261027095631';
-import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261027095631';
+import { wall } from '../arch.js?v=20261027102441';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261027102441';
+import { sampleSpline } from '../terrain/generate.js?v=20261027102441';
+import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261027102441';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -190,6 +190,7 @@ export default {
   seed: 1916,
   bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300, minY: -10, maxY: 80 },
   ambience: 'range',
+  climbMax: 2.8, // Gräben ≈ 2–2,7 m bis zur Brustwehr: Ausstieg per Klettern (27.10.)
   defaultSurface: 'dirt',
   wallMargin: 40,
   assets: { hdri: 'np_sky_vormittag_bewoelkt' }, // 16.10.: eigener Himmel (Kartenstandard Vormittag, bewölkt)

@@ -4,8 +4,8 @@
 // Querrillen an Vorder- und Rückenteil, Fuge des Rückenteils, Stift, Zierfeld (symmetrisch, damit es rechts nicht
 // spiegelverkehrt steht). Gezeichnet wird direkt in Fotopixeln; slideUV/frameUV bilden Modellpunkte auf den Atlas ab.
 import * as THREE from 'three';
-import { canvas, toTexture, cached, heightToNormal, fbm, rng, bilinear, halfMaps } from './textures.js?v=20261027095631';
-import * as R from './p9-ref.js?v=20261027095631';
+import { canvas, toTexture, cached, heightToNormal, fbm, rng, bilinear, halfMaps } from './textures.js?v=20261027102441';
+import * as R from './p9-ref.js?v=20261027102441';
 
 // ---------------------------------------------------------------- Atlas-Abbildung
 const S = { W: 2048, H: 512, x0: 160, x1: 1600, y0: 287, y1: 461, band: 224, top: 448 };

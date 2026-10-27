@@ -3,9 +3,9 @@
 // keine Schrift im Atlas, Gravuren als Schriftfelder über schrift.js): Spritzgusskorn, Griff mit Feinstruktur, Feuerstoß-
 // Piktogramme (rot, Sicher weiß) mit Zuleitungen zur Wahlhebelachse, Fischhaut-Felder des Handschutzes, Gummikappe mit
 // Rippen (eigenes Feld für die Rückseite), Kantenabrieb und Griffspuren. Albedo trägt die echte Farbe (Material weiß).
-import { canvas, toTexture, cached, fbm, rng } from './textures.js?v=20261027095631';
-import * as R from './vp9-ref.js?v=20261027095631';
-import { hkPictograms } from './hk-tex.js?v=20261027095631';
+import { canvas, toTexture, cached, fbm, rng } from './textures.js?v=20261027102441';
+import * as R from './vp9-ref.js?v=20261027102441';
+import { hkPictograms } from './hk-tex.js?v=20261027102441';
 
 // ---------------------------------------------------------------- Atlas-Abbildung (Fotopixel → Atlas)
 // 25.10.: 2048 × 640 statt 2048 × 1024 – der Fotoausschnitt ist 1050 × 330 px, so ist ein Texel in beiden Richtungen gleich

@@ -1,6 +1,6 @@
 // LMG: HM-60 Hammer (gurtgespeist). Nach Foto neu gebaut: VP-9 Viper → guns-vp9.js (24.10.), QX-90 → guns-qx90.js (25.10.)
-import { ejectionPort, triggerGuard } from './parts.js?v=20261027095631';
-import { magRounds } from './magfill.js?v=20261027095631';
+import { ejectionPort, triggerGuard } from './parts.js?v=20261027102441';
+import { magRounds } from './magfill.js?v=20261027102441';
 
 export function hm60(b) {
   const axis = 0.082;

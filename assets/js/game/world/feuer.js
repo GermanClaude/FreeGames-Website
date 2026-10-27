@@ -11,7 +11,7 @@
 // createFire(b, x, y, z, o) → hängt das Feuer als animiertes Objekt an den MapBuilder (b.object).
 //   o: { scale (1), seed, smoke (true ab „mittel“) }; y = Unterkante der Flammen (Glutbett)
 import * as THREE from 'three';
-import { atlasTexture, atlasScale } from './atlas.js?v=20261027095631';
+import { atlasTexture, atlasScale } from './atlas.js?v=20261027102441';
 
 const COLS = 8, ROWS = 2, FRAMES = 14, SPARK = 14, SMOKE = 15; // Zellen im Atlas (8 × 2, je 128 × 256 px)
 const FPS = 16;

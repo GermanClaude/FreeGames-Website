@@ -13,13 +13,13 @@
 //     eigene Patronenbahn, meta.magExt: attach.js streckt es nicht zusätzlich).
 // Eigener Atlas (p9a-tex.js) für Schlitten und Rahmen. Detailstufen nach Budget §3.4 (Pistole): PC hoch ≤ 150 k, PC niedrig/mittel
 // ≤ 60 k, Handy ≤ 30 k, Bots ≤ 400 Dreiecke – gröberes Raster als die P-9 (die P-9 selbst bleibt unverändert).
-import { p9, P9, gripMag } from './guns-pistol.js?v=20261027095631';
-import * as R9 from './p9-ref.js?v=20261027095631';
-import * as R from './p9a-ref.js?v=20261027095631';
-import { p9aSlideUV, p9aFrameUV } from './p9a-tex.js?v=20261027095631';
-import { atlasUVTri } from './pistol-parts.js?v=20261027095631';
-import { surfaceNets, cavityColors, simplifyPoly } from './sdf.js?v=20261027095631';
-import { magRounds } from './magfill.js?v=20261027095631';
+import { p9, P9, gripMag } from './guns-pistol.js?v=20261027102441';
+import * as R9 from './p9-ref.js?v=20261027102441';
+import * as R from './p9a-ref.js?v=20261027102441';
+import { p9aSlideUV, p9aFrameUV } from './p9a-tex.js?v=20261027102441';
+import { atlasUVTri } from './pistol-parts.js?v=20261027102441';
+import { surfaceNets, cavityColors, simplifyPoly } from './sdf.js?v=20261027102441';
+import { magRounds } from './magfill.js?v=20261027102441';
 
 const { U, V, M } = R;
 const { axis: AX, front: UF, hw: HW } = P9;

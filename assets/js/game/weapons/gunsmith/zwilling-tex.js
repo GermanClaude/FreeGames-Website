@@ -5,9 +5,9 @@
 // der Breite (x) als Höhe im Atlas – die Faser läuft dort ebenfalls längs, ohne zweites Atlasfenster. Größen nach
 // Bauanleitung 8.3: PC 2048 × 512 (≈ 3 Texel/mm längs), Handy 1024 × 256 ohne Rauheitskarte; gezeichnet zeitgeteilt im
 // Hintergrund (Platzhalter sofort, scheduleAtlas), nie in der Bot-Stufe.
-import { canvas, toTexture, cached, scheduleAtlas } from './textures.js?v=20261027095631';
-import { paintWood, checkering } from './holz-tex.js?v=20261027095631';
-import * as R from './zwilling-ref.js?v=20261027095631';
+import { canvas, toTexture, cached, scheduleAtlas } from './textures.js?v=20261027102441';
+import { paintWood, checkering } from './holz-tex.js?v=20261027102441';
+import * as R from './zwilling-ref.js?v=20261027102441';
 
 const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
 // Atlasfenster in Fotopixeln: Vorderschaft (x 1659…2362) und Schaft (x 2598…3833) liegen nebeneinander

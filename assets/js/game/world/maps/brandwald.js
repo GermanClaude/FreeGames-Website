@@ -5,8 +5,8 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261027095631';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261027095631';
+import { sampleSpline } from '../terrain/generate.js?v=20261027102441';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261027102441';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -66,6 +66,7 @@ export default {
   seed: 2110,
   bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180, minY: -10, maxY: 60 },
   ambience: 'burnt', // Wind ohne Laub, Knistern, Knarzen, ferner Geschützdonner
+  climbMax: 2.8, // Gräben ≈ 2–2,7 m bis zur Brustwehr: Ausstieg per Klettern (27.10.)
   defaultSurface: 'dirt',
   wallMargin: 35,
   assets: { hdri: 'np_sky_vormittag_bewoelkt' },

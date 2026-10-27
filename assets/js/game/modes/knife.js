@@ -3,7 +3,7 @@
 // wird bei jedem Wiedereinstieg erneut gesetzt; online setzt jedes Gerät sie für seine eigenen Akteure (Abbild).
 // Das Cheat-Menü (../cheats.js) hängt seit 10.10. an jedem Modus (base.js).
 
-import { TdmMode } from './tdm.js?v=20261027095631';
+import { TdmMode } from './tdm.js?v=20261027102441';
 
 const KNIFE_LOADOUT = { primary: 'knife', secondary: null, lethal: null, tactical: null };
 

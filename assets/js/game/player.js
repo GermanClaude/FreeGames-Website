@@ -11,12 +11,12 @@
 // freies Zielen; getAimScreenPoint() liefert den Laufpunkt auf dem Bildschirm (Fadenkreuz).
 
 import * as THREE from 'three';
-import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261027095631';
-import { raycastHumanoid, PRONE } from './combat.js?v=20261027095631';
-import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS, abilityOfClass } from '../shared/classes.data.js?v=20261027095631';
-import { refillAmmo, markAround } from './mappoints.js?v=20261027095631';
-import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261027095631';
-import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261027095631';
+import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261027102441';
+import { raycastHumanoid, PRONE } from './combat.js?v=20261027102441';
+import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS, abilityOfClass } from '../shared/classes.data.js?v=20261027102441';
+import { refillAmmo, markAround } from './mappoints.js?v=20261027102441';
+import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261027102441';
+import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261027102441';
 
 const STAND_H = 1.8;
 const CROUCH_H = 1.15;
@@ -1528,7 +1528,7 @@ export class Player {
     } else { dx /= l; dz /= l; }
     // nur Richtungen grob nach vorn (Seitwärts-Klettern sieht falsch aus)
     if (dx * _fwd.x + dz * _fwd.z < 0.35) return false;
-    const ledge = probeLedge(world, body, dx, dz, { crouchH: CROUCH_H });
+    const ledge = probeLedge(world, body, dx, dz, { crouchH: CROUCH_H, maxH: this.G.world?.climbMax || 1.3 });
     if (!ledge) return false;
     if (!body.onGround && ledge.topY < body.position.y + 0.25) return false; // in der Luft schon fast oben: Physik fängt
     if (!this._mantlePathFree(world, ledge, dx, dz)) return false; // walls: Bahn streift Überhang/Seitenwand
@@ -1541,7 +1541,8 @@ export class Player {
     const G = this.G;
     const h = ledge.height;
     const start = body.position.clone();
-    const dur = ledge.vault ? 0.42 + 0.08 * h : 0.32 + 0.16 * h;
+    // hohe Kanten (Grabenausstieg, 27.10.): Hochziehen dauert spürbar länger
+    const dur = ledge.vault ? 0.42 + 0.08 * h : 0.32 + 0.16 * h + Math.max(0, h - 1.4) * 0.4;
     this._mantle = { t: 0, dur, start, end: ledge.end.clone(), topY: ledge.topY, height: h, vault: ledge.vault, dx, dz, wall: ledge.wallDist };
     this.mantling = true;
     this.mantleProgress = 0;

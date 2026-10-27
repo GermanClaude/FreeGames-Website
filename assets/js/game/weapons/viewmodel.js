@@ -16,29 +16,29 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel } from './models.js?v=20261027095631';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261027095631';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261027095631';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261027095631';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261027095631';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261027095631';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261027095631';
-import { BREAK_ACTIONS } from './anim/break.js?v=20261027095631';   // Kipplauf (26.10., ZW-12 Zwilling)
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261027095631';
-import { COSMETIC } from './anim/reloads.js?v=20261027095631';
-import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261027095631';
-export { LADDER_AHEAD, ladderWindow, ladderOrder, ladderPrebuild } from './hintergrundbau.js?v=20261027095631'; // Waffenspiel-Vorbau (main.js, 26.10.)
-import { magWellOf } from './anim/magwell.js?v=20261027095631';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261027095631';
-import { uploadTextures } from '../engine/warm.js?v=20261027095631';
-import { applyCamo } from './gunsmith/camos.js?v=20261027095631';
-import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261027095631';
-import { setReticleSize } from './gunsmith/materials.js?v=20261027095631';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261027095631';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261027095631';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261027095631';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261027095631';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261027095631';
+import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel } from './models.js?v=20261027102441';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261027102441';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261027102441';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261027102441';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261027102441';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261027102441';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261027102441';
+import { BREAK_ACTIONS } from './anim/break.js?v=20261027102441';   // Kipplauf (26.10., ZW-12 Zwilling)
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261027102441';
+import { COSMETIC } from './anim/reloads.js?v=20261027102441';
+import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261027102441';
+export { LADDER_AHEAD, ladderWindow, ladderOrder, ladderPrebuild } from './hintergrundbau.js?v=20261027102441'; // Waffenspiel-Vorbau (main.js, 26.10.)
+import { magWellOf } from './anim/magwell.js?v=20261027102441';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261027102441';
+import { uploadTextures } from '../engine/warm.js?v=20261027102441';
+import { applyCamo } from './gunsmith/camos.js?v=20261027102441';
+import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261027102441';
+import { setReticleSize } from './gunsmith/materials.js?v=20261027102441';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261027102441';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261027102441';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261027102441';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261027102441';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261027102441';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();

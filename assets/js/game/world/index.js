@@ -1,30 +1,30 @@
 // NULLPUNKT — Welt laden (Owner: world)
 // loadWorld(G, mapId, { onProgress }) → World (siehe docs/ARCHITECTURE.md §6)
 import * as THREE from 'three';
-import { buildColliderOctreeAsync } from './collider.js?v=20261027095631';
-import { TriangleBVH } from './bvh.js?v=20261027095631';
-import { MAPS } from '../../shared/maps.data.js?v=20261027095631';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../engine/textures.js?v=20261027095631';
-import { createWorldAssets } from './library.js?v=20261027095631';
-import { MapBuilder, civilList, SURFACES } from './builder.js?v=20261027095631';
-import { createLighting, sunVector } from './lighting.js?v=20261027095631';
-import { applyWorldShading, applyCuts, initShading, resetShading, setShadingMode, shadingMode, bindShadingScene, watchScene, WS } from './shading.js?v=20261027095631';
-import { createProbeQuery, PROBE_TIERS, PROBE_BOUNCE_SCALE } from './probes.js?v=20261027095631';
-import { createAtmosphere } from './atmos.js?v=20261027095631';
-import { resolveConditions, applyConditions } from './weather.js?v=20261027095631';
-export { resolveConditions, conditionsLabel } from './weather.js?v=20261027095631'; // atmosphere-weather: main.js löst Wetter/Zeit vor dem Laden auf
-import { createWater } from './water.js?v=20261027095631';
-import { navFromData, validateNavGraph } from './navgraph.js?v=20261027095631';
-import { createMinimap } from './minimap.js?v=20261027095631';
-import { foliageUniforms } from './atlas.js?v=20261027095631';
-import { modusZielQuellen, modusZieleBauen } from './maps/modus-ziele.js?v=20261027095631'; // Ziele neuer Modi (Stellung …), eigene Datei (Plan M1/B7)
+import { buildColliderOctreeAsync } from './collider.js?v=20261027102441';
+import { TriangleBVH } from './bvh.js?v=20261027102441';
+import { MAPS } from '../../shared/maps.data.js?v=20261027102441';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../engine/textures.js?v=20261027102441';
+import { createWorldAssets } from './library.js?v=20261027102441';
+import { MapBuilder, civilList, SURFACES } from './builder.js?v=20261027102441';
+import { createLighting, sunVector } from './lighting.js?v=20261027102441';
+import { applyWorldShading, applyCuts, initShading, resetShading, setShadingMode, shadingMode, bindShadingScene, watchScene, WS } from './shading.js?v=20261027102441';
+import { createProbeQuery, PROBE_TIERS, PROBE_BOUNCE_SCALE } from './probes.js?v=20261027102441';
+import { createAtmosphere } from './atmos.js?v=20261027102441';
+import { resolveConditions, applyConditions } from './weather.js?v=20261027102441';
+export { resolveConditions, conditionsLabel } from './weather.js?v=20261027102441'; // atmosphere-weather: main.js löst Wetter/Zeit vor dem Laden auf
+import { createWater } from './water.js?v=20261027102441';
+import { navFromData, validateNavGraph } from './navgraph.js?v=20261027102441';
+import { createMinimap } from './minimap.js?v=20261027102441';
+import { foliageUniforms } from './atlas.js?v=20261027102441';
+import { modusZielQuellen, modusZieleBauen } from './maps/modus-ziele.js?v=20261027102441'; // Ziele neuer Modi (Stellung …), eigene Datei (Plan M1/B7)
 
 const MAP_MODULES = {
-  hafen: () => import('./maps/hafen.js?v=20261027095631'),
-  altstadt: () => import('./maps/altstadt.js?v=20261027095631'),
-  werk: () => import('./maps/werk.js?v=20261027095631'),
-  bibliothek: () => import('./maps/bibliothek.js?v=20261027095631'),
-  range: () => import('./maps/range.js?v=20261027095631'),
+  hafen: () => import('./maps/hafen.js?v=20261027102441'),
+  altstadt: () => import('./maps/altstadt.js?v=20261027102441'),
+  werk: () => import('./maps/werk.js?v=20261027102441'),
+  bibliothek: () => import('./maps/bibliothek.js?v=20261027102441'),
+  range: () => import('./maps/range.js?v=20261027102441'),
 };
 
 /** Großkarten (MAPS[id].scale === 'gross'): eigener Lader, nur per import() (GROSSKAMPF_PLAN §12.5). */
@@ -70,13 +70,13 @@ function runWorldJob(job, onStage) {
     const fallback = () => {
       if (settled) return;
       worker?.terminate(); worker = null;
-      import('./worldgen.js?v=20261027095631').then(({ buildWorldData }) => new Promise(r => setTimeout(r, 0)).then(() => {
+      import('./worldgen.js?v=20261027102441').then(({ buildWorldData }) => new Promise(r => setTimeout(r, 0)).then(() => {
         try { done(resolve, buildWorldData(job, onStage)); } catch (err) { done(reject, err); }
       }), err => done(reject, err));
     };
     try {
       if (typeof Worker === 'undefined') throw new Error('keine Worker');
-      worker = new Worker(new URL('./worldgen.worker.js?v=20261027095631', import.meta.url), { type: 'module' });
+      worker = new Worker(new URL('./worldgen.worker.js?v=20261027102441', import.meta.url), { type: 'module' });
     } catch { worker = null; fallback(); return; }
     const id = ++jobSeq;
     worker.onmessage = (e) => {
@@ -173,7 +173,7 @@ export async function loadWorld(G, mapId, opts = {}) {
   const { onProgress } = opts;
   // atmosphere-weather: Wetter/Tageszeit (opts.weather/opts.time; sonst URL weather=/tod= – Prüfseiten)
   const condReq = { weather: 'weather' in opts ? opts.weather : G.params?.get?.('weather'), time: 'time' in opts ? opts.time : G.params?.get?.('tod') };
-  if (BIG_MAPS.has(mapId) && MAPS[mapId]?.scale === 'gross') return (await import('./terrain/bigworld.js?v=20261027095631')).loadBigWorld(G, mapId, { onProgress, ...condReq });
+  if (BIG_MAPS.has(mapId) && MAPS[mapId]?.scale === 'gross') return (await import('./terrain/bigworld.js?v=20261027102441')).loadBigWorld(G, mapId, { onProgress, ...condReq });
   const t0 = performance.now();
   const id = MAP_MODULES[mapId] ? mapId : 'hafen';
   const meta = MAPS[id];
@@ -434,6 +434,8 @@ export async function loadWorld(G, mapId, opts = {}) {
     weather: conditions,
     minimap,
     ambience: def.ambience || meta.ambience,
+    /** Größte Kletterhöhe (m) fürs Überklettern; Grabenkarten höher, damit man aus den Gräben kommt (27.10.). */
+    climbMax: def.climbMax || 1.3,
     targets,
     stats: { ...built.stats, buildMs: Math.round(tBuild), colliderMs: Math.round(tCol), lightMs: Math.round(tLight), jobMs: Math.round(tJob), worker: job.ms, totalMs: 0, nav: nav.stats, assets: lib.stats, lighting: null },
     /** Sonden-Gitter (R5): { dims, spacing, min, light(x, y, z) → { sky, sun, bounce[3] }, sample(…) } oder null. */
@@ -618,7 +620,7 @@ export async function loadWorld(G, mapId, opts = {}) {
   // env-look (medium+): Verwitterungs-Decals an Wänden (Rost-/Wasserläufe, Schmutzsockel, Risse, Plakate), per
   // Strahltest gesetzt; low unverändert (Modul wird dort gar nicht geladen)
   if (quality !== 'low' && def.lookDecals !== false) {
-    try { world.stats.lookDecals = (await import('./decals.js?v=20261027095631')).placeLookDecals(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def }); } catch (err) { console.warn('[world] Decals', err); }
+    try { world.stats.lookDecals = (await import('./decals.js?v=20261027102441')).placeLookDecals(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def }); } catch (err) { console.warn('[world] Decals', err); }
   }
   // Welt-Shading: alle Weltmaterialien bekommen den gemeinsamen Haken; Sonden + Fernkaskade aktivieren
   world.stats.lighting = activateLighting(G, def, world, group, light, probes, quality, debug);
