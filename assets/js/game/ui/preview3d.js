@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { cleanAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261027201319';
+import { cleanAttachments, loadAttachments } from '../../shared/attachments.data.js?v=20261028051912';
 
 export class WeaponPreview {
   constructor(G) {

@@ -7,7 +7,7 @@
 // Teile), 2 = Erde (Wurzelteller). Instanziert mit Nah-/Fernstufe wie vegetation.js; Kollision je Stamm (Prisma) bzw.
 // liegendem Stamm (gedrehtes Prisma) auf JEDER Stufe gleich (Mehrspieler) – nur die Optik hängt an der Stufe.
 import * as THREE from 'three';
-import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261027201319';
+import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261028051912';
 
 const TAU = Math.PI * 2;
 /** Abstände je Stufe [nah, mittel, fern] in m (fern ≈ wo der Dunst die Stämme schluckt) und Obergrenze der Nahstufe. */

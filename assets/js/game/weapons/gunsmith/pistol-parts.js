@@ -4,9 +4,9 @@
 // v hoch, u vorn; Maße in Metern. Kleinteile unter 3 mm entfallen am Handy (b.lite), in der Bot-Stufe fallen Teile < 9 mm
 // ohnehin weg (Builder).
 import * as THREE from 'three';
-import { shapeFrom } from './builder.js?v=20261027201319';
-import { box2 } from './sdfkit.js?v=20261027201319';
-import { sdPolygon } from './sdf.js?v=20261027201319';
+import { shapeFrom } from './builder.js?v=20261028051912';
+import { box2 } from './sdfkit.js?v=20261028051912';
+import { sdPolygon } from './sdf.js?v=20261028051912';
 
 // ---------------------------------------------------------------- Atlas-UVs je Dreieck
 /**

@@ -8,9 +8,9 @@
 // Aufteilung (Anteile der Atlasgröße, alle Stufen gleich): Zeilen 0–0,195 Schlitten links, 0,195–0,39 rechts, 0,39–0,5 Oberseite,
 // 0,5–1 Rahmen. Größe je Stufe (Bauanleitung §8.3): PC hoch 2048 × 1024, PC niedrig/mittel 1536 × 768, Handy 1024 × 512 ohne
 // Rauheitskarte, Normalen dort halb so groß (≈ 3,5 MB).
-import { canvas, toTexture, cached, rng } from './textures.js?v=20261027201319';
-import { CPU, grey, path, subPath, engrave, pebblePattern, streak, scratches, noiseCanvas, grainCanvas, readHeight, blur, normalTex } from './pistol-tex.js?v=20261027201319';
-import * as R from './p9a-ref.js?v=20261027201319';
+import { canvas, toTexture, cached, rng } from './textures.js?v=20261028051912';
+import { CPU, grey, path, subPath, engrave, pebblePattern, streak, scratches, noiseCanvas, grainCanvas, readHeight, blur, normalTex } from './pistol-tex.js?v=20261028051912';
+import * as R from './p9a-ref.js?v=20261028051912';
 
 // ---------------------------------------------------------------- Atlas-Abbildung
 const SX0 = 80, SX1 = 2140, SY0 = 76, SY1 = 330;          // Fotofenster der Schlittenbänder

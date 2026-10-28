@@ -3,7 +3,7 @@
 // Kantenabrieb und Kratzer, Höhe → Normalen, Rauschen. Gezeichnet wird in Fotopixeln auf Leinwänden, deren Transformation den
 // Fotoausschnitt auf den Atlas abbildet (siehe adler-tex.js). Nur textures.js als Import (materials.js lädt die Atlanten –
 // kein Modulkreis über Builder/sdfkit).
-import { canvas, toTexture, fbm, rng } from './textures.js?v=20261027201319';
+import { canvas, toTexture, fbm, rng } from './textures.js?v=20261028051912';
 
 export const CPU = { willReadFrequently: true };   // Hilfsleinwände im Hauptspeicher (GPU↔CPU-Kopien kosten im Software-GL viel)
 export const grey = (h) => { const k = Math.max(0, Math.min(255, Math.round(h * 255))); return `rgb(${k},${k},${k})`; };

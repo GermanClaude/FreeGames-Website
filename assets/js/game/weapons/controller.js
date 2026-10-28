@@ -10,12 +10,12 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261027201319';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261027201319';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261027201319';
-import { getWeaponModelMeta } from './models.js?v=20261027201319';
-import { ladderPrebuild } from './hintergrundbau.js?v=20261027201319';
-import { classDef } from '../../shared/classes.data.js?v=20261027201319';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261028051912';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261028051912';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261028051912';
+import { getWeaponModelMeta } from './models.js?v=20261028051912';
+import { ladderPrebuild } from './hintergrundbau.js?v=20261028051912';
+import { classDef } from '../../shared/classes.data.js?v=20261028051912';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -76,7 +76,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261027201319').WeaponSystem} system
+   * @param {import('./index.js?v=20261028051912').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -607,7 +607,9 @@ export class WeaponController {
     if (it.sliding) mult *= 1 + 0.25 * (1 - a);
     else if (it.crouching && sp < 0.35) mult *= 0.8 + 0.12 * a;
     if (it.sprinting) mult *= 1.35;
-    const target = base * mult + this._bloomHip * (1 - a) + this._bloomAds * a;
+    // VR (engine/xr): Langwaffe nur in einer Hand → Streuung ×4, Pistole beidhändig etwas ruhiger
+    const xrMul = Number.isFinite(this.actor && this.actor.xrSpreadMul) ? this.actor.xrSpreadMul : 1;
+    const target = (base * mult + this._bloomHip * (1 - a) + this._bloomAds * a) * xrMul;
     this.fireSpread = target;
     // HUD: schnell auf, sanft zurück
     this.spread += (target - this.spread) * damp(target > this.spread ? 40 : 12, dt);

@@ -3,20 +3,20 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261027201319';
-import { modeOptionsHtml } from './mode-options.js?v=20261027201319'; // Modus-Einstellungen (B6, 26.10.)
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261027201319';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261027201319'; // atmosphere-weather; Fahrzeuge je Kartengröße
-import { realTimePreset } from '../world/weather.js?v=20261027201319'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261027201319';
-import { esc, num, secs, meters } from './dom.js?v=20261027201319';
-import { ICON } from './icons.js?v=20261027201319';
-import { drawMapArt } from './mapart.js?v=20261027201319';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261027201319';
-import { openCamoEditor } from './camo-editor.js?v=20261027201319';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261027201319';
-import { ProgressView } from './progress.js?v=20261027201319';
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261027201319';
+import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261028051912';
+import { modeOptionsHtml } from './mode-options.js?v=20261028051912'; // Modus-Einstellungen (B6, 26.10.)
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261028051912';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261028051912'; // atmosphere-weather; Fahrzeuge je Kartengröße
+import { realTimePreset } from '../world/weather.js?v=20261028051912'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261028051912';
+import { esc, num, secs, meters } from './dom.js?v=20261028051912';
+import { ICON } from './icons.js?v=20261028051912';
+import { drawMapArt } from './mapart.js?v=20261028051912';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261028051912';
+import { openCamoEditor } from './camo-editor.js?v=20261028051912';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261028051912';
+import { ProgressView } from './progress.js?v=20261028051912';
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261028051912';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];

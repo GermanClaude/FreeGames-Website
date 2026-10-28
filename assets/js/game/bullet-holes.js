@@ -7,9 +7,9 @@
 // (frischer, hellerer Bruch), Putz mit weißem Staubring, Blech glatt mit blankem Ring, Glas mit Sprüngen, Erde weich.
 // Jedes Gerät rechnet seine Löcher selbst aus den eigenen und gemeldeten Schüssen (Optik + Durchschuss).
 import * as THREE from 'three';
-import { caliberOf, penetrationDepth } from '../shared/calibers.js?v=20261027201319';
-import { hdrTarget } from './engine/post/common.js?v=20261027201319';
-import { CUTS, CUT_MAX, CUT_STRIDE, CUT_K, cutGLSL, setCutCount } from './world/shading.js?v=20261027201319';
+import { caliberOf, penetrationDepth } from '../shared/calibers.js?v=20261028051912';
+import { hdrTarget } from './engine/post/common.js?v=20261028051912';
+import { CUTS, CUT_MAX, CUT_STRIDE, CUT_K, cutGLSL, setCutCount } from './world/shading.js?v=20261028051912';
 
 const MAX = 700;
 // Durchblick: kleine Ansichten aus Durchschüssen (Atlas 4 × 4 Felder), was hinter der Wand liegt – mit Gegnern

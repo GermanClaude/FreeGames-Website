@@ -3,12 +3,12 @@
 // Unterklassen überschreiben die Haken onKillScored / onSuicide / tick / decide / extraRow.
 
 import * as THREE from 'three';
-import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261027201319';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261027201319';
-import { chooseSpawn } from './spawns.js?v=20261027201319';
-import { MedalTracker } from './medals.js?v=20261027201319';
-import { StreakManager } from './streaks.js?v=20261027201319';
-import { CheatSystem } from '../cheats.js?v=20261027201319';
+import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261028051912';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261028051912';
+import { chooseSpawn } from './spawns.js?v=20261028051912';
+import { MedalTracker } from './medals.js?v=20261028051912';
+import { StreakManager } from './streaks.js?v=20261028051912';
+import { CheatSystem } from '../cheats.js?v=20261028051912';
 
 /** Karten mit Einsatzkarte nach dem Tod (Draufsicht, Einstieg bei Kameraden). */
 const DEPLOY_MAPS = new Set(['grenzland', 'bibliothek', 'niemandsland', 'brandwald']);

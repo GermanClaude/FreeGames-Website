@@ -5,13 +5,13 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261027201319';
-import { ICON, deviceOf } from './icons.js?v=20261027201319';
-import { LoadoutPanel } from './loadout-panel.js?v=20261027201319';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261027201319';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261027201319';
-import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261027201319';
-import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261027201319';
+import { esc, el } from './dom.js?v=20261028051912';
+import { ICON, deviceOf } from './icons.js?v=20261028051912';
+import { LoadoutPanel } from './loadout-panel.js?v=20261028051912';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261028051912';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261028051912';
+import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261028051912';
+import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261028051912';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };

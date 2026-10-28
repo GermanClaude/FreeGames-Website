@@ -6,8 +6,8 @@
 // Zäune (Pfosten + durchhängende Stränge) und Drahtrollen (Spiralen) setzen sich aus Strängen zusammen.
 // Nur Optik: keine Kollision, Kugeln gehen durch.
 import * as THREE from 'three';
-import { getMaterial } from '../engine/textures.js?v=20261027201319';
-import { addShaderPatch } from './shading.js?v=20261027201319';
+import { getMaterial } from '../engine/textures.js?v=20261028051912';
+import { addShaderPatch } from './shading.js?v=20261028051912';
 
 export const MOD = 0.45;            // Modullänge (m)
 const PITCH = MOD / 5;              // Schlaglänge der Verdrillung

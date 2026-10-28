@@ -5,9 +5,9 @@
 // AK-Baukasten (ak-parts.js), damit KV-74U, LM-8, Uhu und Hagel sie mit ihren eigenen Maßen nutzen.
 // Detailstufen: PC hoch/ultra (b.max) feinste Netze + Kanten-/Muldenfarbe + Kleinteile, PC niedrig/mittel Standard,
 // Handy (b.lite) gröbere Netze und kleiner Atlas, Bots ≤ 600 Dreiecke – Anker in allen Stufen gleich.
-import * as R from './kv47-ref.js?v=20261027201319';
-import { woodUV, recUV, hgUpUV } from './kv47-tex.js?v=20261027201319';
-import { akKit, akReceiver, akDustCover, akSafety, akCarrier, akRearSight, akFrontSight, akBarrel, akGasTube, akLowerHandguard, akStock, akGrip, akTriggerGroup, akMagazine, akBot } from './ak-parts.js?v=20261027201319';
+import * as R from './kv47-ref.js?v=20261028051912';
+import { woodUV, recUV, hgUpUV } from './kv47-tex.js?v=20261028051912';
+import { akKit, akReceiver, akDustCover, akSafety, akCarrier, akRearSight, akFrontSight, akBarrel, akGasTube, akLowerHandguard, akStock, akGrip, akTriggerGroup, akMagazine, akBot } from './ak-parts.js?v=20261028051912';
 
 const { U, V } = R;
 const MAT = { rec: 'kv47Rec', steel: 'kv47Steel', wood: 'kv47Wood', mag: 'kv47Mag', bcg: 'kv47Bcg' };

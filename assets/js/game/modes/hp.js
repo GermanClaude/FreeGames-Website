@@ -11,8 +11,8 @@
 // Online rechnet der Host; Clients bekommen den Zustand über netExtra (hp, hh) – keine eigene Nachricht, kein NET_VERSION.
 
 import * as THREE from 'three';
-import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261027201319';
-import { DomMode } from './dom.js?v=20261027201319';
+import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261028051912';
+import { DomMode } from './dom.js?v=20261028051912';
 
 const NOTICE_GAP = 4; // s zwischen zwei „umkämpft“-Hinweisen
 const EMPTY_GRACE = 3; // s: so lange behält eine leere Zone ihren Besitzer (Nachlauf, keine Hinweis-Flut am Rand)

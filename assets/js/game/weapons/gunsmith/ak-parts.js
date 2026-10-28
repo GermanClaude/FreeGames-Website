@@ -8,11 +8,11 @@
 // { rec, wood } (Fotopixel → Atlas der jeweiligen Waffe). Teure Netze liegen in geteilten Blöcken (Bauteil-Cache).
 // Koordinaten wie im Bauplan: x quer (rechts +), v hoch, u nach vorn (Meter).
 import * as THREE from 'three';
-import { extrudeRound, smin, simplifyPoly, simplifyRing } from './sdf.js?v=20261027201319';
-import { STEEL, POLY, field2, sdfMesh, sideFurn, roundMax, segDist, atlasUV } from './sdfkit.js?v=20261027201319';
-import { shapeFrom } from './builder.js?v=20261027201319';
-import { magRounds } from './magfill.js?v=20261027201319';
-import { muzzleDevice } from './parts.js?v=20261027201319';
+import { extrudeRound, smin, simplifyPoly, simplifyRing } from './sdf.js?v=20261028051912';
+import { STEEL, POLY, field2, sdfMesh, sideFurn, roundMax, segDist, atlasUV } from './sdfkit.js?v=20261028051912';
+import { shapeFrom } from './builder.js?v=20261028051912';
+import { magRounds } from './magfill.js?v=20261028051912';
+import { muzzleDevice } from './parts.js?v=20261028051912';
 
 const WOOD = { r: 0.0016, edge: 0.4, cavity: 0.55 };      // Lackholz: Kanten abgegriffen, Kehlen dunkel
 // Netzweiten der Distanzfeld-Teile: [Standard-Raster (m), Faktor PC hoch/ultra, Faktor Handy] – abgestimmt auf die

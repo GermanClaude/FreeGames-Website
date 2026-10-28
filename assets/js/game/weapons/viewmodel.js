@@ -16,29 +16,29 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel } from './models.js?v=20261027201319';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261027201319';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261027201319';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261027201319';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261027201319';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261027201319';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261027201319';
-import { BREAK_ACTIONS } from './anim/break.js?v=20261027201319';   // Kipplauf (26.10., ZW-12 Zwilling)
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261027201319';
-import { COSMETIC } from './anim/reloads.js?v=20261027201319';
-import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261027201319';
-export { LADDER_AHEAD, ladderWindow, ladderOrder, ladderPrebuild } from './hintergrundbau.js?v=20261027201319'; // Waffenspiel-Vorbau (main.js, 26.10.)
-import { magWellOf } from './anim/magwell.js?v=20261027201319';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261027201319';
-import { uploadTextures } from '../engine/warm.js?v=20261027201319';
-import { applyCamo } from './gunsmith/camos.js?v=20261027201319';
-import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261027201319';
-import { setReticleSize } from './gunsmith/materials.js?v=20261027201319';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261027201319';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261027201319';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261027201319';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261027201319';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261027201319';
+import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel } from './models.js?v=20261028051912';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261028051912';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261028051912';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261028051912';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261028051912';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261028051912';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261028051912';
+import { BREAK_ACTIONS } from './anim/break.js?v=20261028051912';   // Kipplauf (26.10., ZW-12 Zwilling)
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261028051912';
+import { COSMETIC } from './anim/reloads.js?v=20261028051912';
+import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261028051912';
+export { LADDER_AHEAD, ladderWindow, ladderOrder, ladderPrebuild } from './hintergrundbau.js?v=20261028051912'; // Waffenspiel-Vorbau (main.js, 26.10.)
+import { magWellOf } from './anim/magwell.js?v=20261028051912';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261028051912';
+import { uploadTextures } from '../engine/warm.js?v=20261028051912';
+import { applyCamo } from './gunsmith/camos.js?v=20261028051912';
+import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261028051912';
+import { setReticleSize } from './gunsmith/materials.js?v=20261028051912';
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261028051912';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261028051912';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261028051912';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261028051912';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261028051912';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -935,11 +935,9 @@ export class ViewModel {
    * VR: freie Nebenhand am Controller (nicht am Vorderschaft) – Handgelenk hinter dem Griffpunkt, Finger entlang des
    * Controllers, Handrücken nach außen; Faust nach Griff-Taste/Abzug. → false ohne verfolgte Nebenhand.
    */
-  _xrOffTarget(xr, T) {
-    const O = xr.hands.off;
+  _xrOffTarget(xr, T, O = xr.hands.off, sx = xr.offSide === 'right' ? 1 : -1) {
     if (!O.gripW.ok) return false;
     const q = O.rayW.ok ? O.rayW.quat : O.gripW.quat;
-    const sx = xr.offSide === 'right' ? 1 : -1;
     const F = _v.set(0, -0.3, -1).normalize().applyQuaternion(q);
     const B = _v2.set(0.85 * sx, 0.5, 0.1).normalize().applyQuaternion(q);
     T.pos.copy(O.gripW.pos).addScaledVector(F, -0.075).addScaledVector(B, -0.012);
@@ -1059,6 +1057,13 @@ export class ViewModel {
     if (vr !== !!this._armsVr) {
       this._armsVr = vr;
       for (const A of [this.arms.right, this.arms.left]) { A.upper.visible = !vr; A.elbow.visible = !vr; A.align = vr ? 1 : 0.7; A.group.visible = true; }
+    }
+    // VR, Waffe im Holster (engine/xr armed = false, 28.10.): Waffe aus, Hand leer; beim Greifen kurz von unten ziehen
+    const unarmed = vr && this.G.xr && this.G.xr.armed === false;
+    if (unarmed !== !!this._xrUnarmed) {
+      this._xrUnarmed = unarmed;
+      this.gun.visible = !unarmed;
+      if (!unarmed && vr) this._equipT = Math.min(this._equipT, 0.5);
     }
     if (this._pending && (!this.cur || !this._lowering)) this._swapNow();
     if (!this.cur) return;
@@ -1405,6 +1410,17 @@ export class ViewModel {
     this._contactFrame = (this._contactFrame || 0) + 1;
     const xr = this._vrOn ? this.G.xr : null;
     if (xr && typeof xr.shoulderWorld === 'function') this._xrShoulders(xr);
+    // VR, Hand leer (Waffe im Holster): beide Hände frei an den Controllern
+    if (xr && xr.armed === false) {
+      const okR = this._xrOffTarget(xr, R, xr.hands.main, xr.offSide === 'right' ? -1 : 1);
+      const okL = this._xrOffTarget(xr, L);
+      this.arms.right.group.visible = okR;
+      this.arms.left.group.visible = okL;
+      if (okR) { this.arms.right.applyPose(R.pose); this.arms.right.solve(R.pos, R.quat); }
+      if (okL) { this.arms.left.applyPose(L.pose); this.arms.left.solve(L.pos, L.quat); }
+      return;
+    }
+    if (xr) this.arms.right.group.visible = true;
     // Rechte Hand: Pistolengriff (Messer: Faustgriff)
     const rStyle = h.action === 'knife' ? 'knife' : 'pistolGrip';
     this._anchorTarget(ud.rightHandGrip, rStyle, ud.rightHandGrip.userData, R, 1);
