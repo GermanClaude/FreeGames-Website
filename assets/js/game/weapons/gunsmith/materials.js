@@ -221,6 +221,12 @@ const DEFS = {
   lensClear: () => std({ color: 0x8fb8d8, metalness: 0.6, roughness: 0.04, transparent: true, opacity: 0.16, depthWrite: false, envMapIntensity: 1.8 }),
   // Holo-Fenster: leicht getöntes Glas
   glass: () => std({ color: 0x9fd8d0, metalness: 0.4, roughness: 0.05, transparent: true, opacity: 0.18, depthWrite: false, envMapIntensity: 1.4 }),
+  // Molotow (13.11.): braungrünes Flaschenglas, Benzingemisch darin, Stofflappen im Hals
+  bottleGlass: () => std({ color: 0x5f7a4a, metalness: 0.1, roughness: 0.06, transparent: true, opacity: 0.42, depthWrite: false, envMapIntensity: 1.6 }),
+  fuel: () => std({ color: 0xb98a2e, metalness: 0.0, roughness: 0.15, transparent: true, opacity: 0.7, envMapIntensity: 1.0 }),
+  rag: () => std({ color: 0xb8ad94, metalness: 0.0, roughness: 0.98, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.9, 0.9) }),
+  ragSoot: () => std({ color: 0x3a3430, metalness: 0.0, roughness: 1.0, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.9, 0.9) }),
+  leather: () => std({ color: 0x5a3a22, metalness: 0.0, roughness: 0.62, normalMap: grainNormal(), normalScale: new THREE.Vector2(0.35, 0.35) }),
   // Transluzentes Rauchglas/-Magazin (OG-Gewehr, Molotow-Flasche; die QX-90 hat seit 25.10. ihr eigenes qx90Mag)
   smoke: () => std({ color: 0x3c4a50, metalness: 0.1, roughness: 0.18, transparent: true, opacity: 0.62, envMapIntensity: 1.2 }),
   // Durchscheinende Polymermagazine (Rauch, Wüstenbraun, Grau wie Lancer/UMP/AUG): Patronen + Zubringer innen
@@ -434,3 +440,56 @@ export function disposeMaterials() {
   for (const list of spare.values()) list.forEach(disposeSet);
   spare.clear();
 }
+
+// ---------------------------------------------------------------- Waffen nach Vorbild, Gruppe B (13.11.): KM-7 Wespe (Vector),
+// SM-45 Keiler (UMP45), LM-8 Bär (RPK), HM-60 Hammer (M60), RG-6 Orkan (M134). Gemeinsame Oberflächen mit Gebrauchsspuren
+// (wearPatch: Kantenabrieb, Schmutz in Kehlen, Griffspuren, Mikrowellen), Mikrokorn/Kratzer aus finishMaps.
+const GB_STEEL = (n = 2.5) => ({ roughnessMap: fine(finishMaps('steel').rough, n), normalMap: fine(finishMaps('steel').normal, n * 1.6), normalScale: new THREE.Vector2(0.09, 0.09) });
+const GB_POLY = (n = 2) => ({ roughnessMap: fine(finishMaps('alu').rough, n), normalMap: grainNormal(), normalScale: new THREE.Vector2(0.16, 0.16) });
+Object.assign(DEFS, {
+  // Glasfaserverstärktes Polymer (Vector, UMP, M60-Schaft): seidenmatt, leicht körnig
+  gbPoly: () => wearPatch(std({ color: 0x212225, metalness: 0.0, roughness: 0.66, ...GB_POLY(2) }), POLY_WEAR),
+  gbPolyGrey: () => wearPatch(std({ color: 0x2b2d2f, metalness: 0.0, roughness: 0.72, ...GB_POLY(2.5) }), POLY_WEAR),
+  // Griffflächen mit Struktur (Stippling/Riffelung)
+  gbGrip: () => wearPatch(std({ color: 0x1b1c1e, metalness: 0.0, roughness: 0.86, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.5, 0.5) }), { ...POLY_WEAR, k: 0.5 }),
+  // Phosphatierter Stahl (Gehäuse M60/RPK, Schienen), brünierter Lauf, blanker Verschluss
+  gbSteel: () => wearPatch(std({ color: 0x2c2d30, metalness: 0.55, roughness: 0.5, ...GB_STEEL(2.5) }), STEEL_WEAR),
+  gbBlued: () => wearPatch(std({ color: 0x1b1c1f, metalness: 0.7, roughness: 0.38, ...GB_STEEL(3) }), { ...STEEL_WEAR, bump: 0.00004 }),
+  gbBolt: () => wearPatch(phys({ color: 0x6d7075, metalness: 0.9, roughness: 0.3, clearcoat: 0.35, clearcoatRoughness: 0.25, ...GB_STEEL(3) }), { ...STEEL_WEAR, bump: 0.00002 }),
+  // Lauf nach Dauerfeuer: dunkel angelaufen (Minigun-Läufe, M60-Lauf)
+  gbBarrel: () => wearPatch(std({ color: 0x232325, metalness: 0.72, roughness: 0.42, ...GB_STEEL(4) }), { ...STEEL_WEAR, col: 0x6a6c70, bump: 0.00003 }),
+  // Schwarz eloxiertes Aluminium (Vector-Oberteil, Minigun-Gehäuse)
+  gbAlu: () => wearPatch(phys({ color: 0x232427, metalness: 0.35, roughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.4, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 3), normalScale: new THREE.Vector2(0.08, 0.08) }), ALU_WEAR),
+  // Schichtholz (RPK, Pflaume-Lack) – Kacheln, Lack glänzt, Kanten hell abgegriffen
+  gbWood: () => wearPatch(phys({ color: 0xc89a82, map: woodMap('warm'), metalness: 0.0, roughness: 0.46, clearcoat: 0.3, clearcoatRoughness: 0.35, roughnessMap: wearMap(), normalMap: grainNormal(), normalScale: new THREE.Vector2(0.12, 0.12) }), { col: 0x8a5a3c, metal: 0, rough: 0.7, k: 0.6, bump: 0.00004, tone: 0.1, smear: 0.2 }),
+  // Oliv lackierter Stahl (Munitionskasten), Bakelit-Braun (RPK-Griff, Magazin AK-Stil)
+  gbOlive: () => wearPatch(std({ color: 0x4b5232, metalness: 0.3, roughness: 0.62, ...GB_STEEL(2) }), { col: 0x7d7f78, metal: 1, rough: 0.35, k: 0.8, bump: 0.00006, tone: 0.1, smear: 0.25 }),
+  gbBakelite: () => wearPatch(phys({ color: 0x5a2a17, metalness: 0.0, roughness: 0.42, clearcoat: 0.25, clearcoatRoughness: 0.3, ...GB_POLY(2) }), { col: 0x8a4a2a, metal: 0, rough: 0.5, k: 0.6, bump: 0.00004, tone: 0.12, smear: 0.2 }),
+});
+Object.assign(LOD_META, {
+  gbPoly: [0x212225, 0], gbPolyGrey: [0x2b2d2f, 0], gbGrip: [0x1b1c1e, 0], gbSteel: [0x2c2d30, 1], gbBlued: [0x1b1c1f, 1], gbBolt: [0x6d7075, 1],
+  gbBarrel: [0x232325, 1], gbAlu: [0x232427, 0], gbWood: [0x6a3422, 0], gbOlive: [0x4b5232, 0], gbBakelite: [0x5a2a17, 0],
+});
+
+// ---------------------------------------------------------------- Waffen nach Vorbild, Gruppe A (13.11.): K-36 Kurzer (G36C),
+// BX-20 Stier (AUG A3), G-7 Wächter (G3A3), SK-14 (Mk 14 EBR), UR-1 Ursprung. Oberflächen wie Gruppe B (wearPatch +
+// finishMaps): glasfaserverstärktes Polymer in Schwarzgrau, Sand und Oliv, phosphatierter/brünierter Stahl, eloxiertes und
+// beschichtetes Aluminium.
+Object.assign(DEFS, {
+  gaPoly: () => wearPatch(std({ color: 0x28292c, metalness: 0.0, roughness: 0.68, ...GB_POLY(2) }), POLY_WEAR),
+  gaPolyDark: () => wearPatch(std({ color: 0x1c1d1f, metalness: 0.0, roughness: 0.62, ...GB_POLY(2.5) }), POLY_WEAR),
+  gaPolyTan: () => wearPatch(std({ color: 0x8a7c5e, metalness: 0.0, roughness: 0.74, ...GB_POLY(2) }), { ...POLY_WEAR, col: 0xa89a7c, tone: 0.08 }),
+  gaPolyOD: () => wearPatch(std({ color: 0x4d5240, metalness: 0.0, roughness: 0.72, ...GB_POLY(2) }), { ...POLY_WEAR, col: 0x6a6f5c }),
+  gaGrip: () => wearPatch(std({ color: 0x202124, metalness: 0.0, roughness: 0.86, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.5, 0.5) }), { ...POLY_WEAR, k: 0.5 }),
+  gaGripTan: () => wearPatch(std({ color: 0x7d7055, metalness: 0.0, roughness: 0.88, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.5, 0.5) }), { ...POLY_WEAR, col: 0x9a8d70, k: 0.5 }),
+  gaSteel: () => wearPatch(std({ color: 0x2d2e31, metalness: 0.55, roughness: 0.5, ...GB_STEEL(2.5) }), STEEL_WEAR),
+  gaBlued: () => wearPatch(std({ color: 0x1c1d20, metalness: 0.7, roughness: 0.38, ...GB_STEEL(3) }), { ...STEEL_WEAR, bump: 0.00004 }),
+  gaBolt: () => wearPatch(phys({ color: 0x6e7176, metalness: 0.9, roughness: 0.3, clearcoat: 0.35, clearcoatRoughness: 0.25, ...GB_STEEL(3) }), { ...STEEL_WEAR, bump: 0.00002 }),
+  gaAlu: () => wearPatch(phys({ color: 0x242528, metalness: 0.35, roughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.4, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 3), normalScale: new THREE.Vector2(0.08, 0.08) }), ALU_WEAR),
+  gaTan: () => wearPatch(std({ color: 0x8c7854, metalness: 0.25, roughness: 0.62, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: grainNormal(), normalScale: new THREE.Vector2(0.28, 0.28) }), { col: 0x9fa2a6, metal: 1, rough: 0.3, k: 0.9 }),
+  gaMag: () => wearPatch(std({ color: 0x35373a, metalness: 0.5, roughness: 0.46, ...GB_STEEL(2.5) }), { col: 0x8a8d91, metal: 1, rough: 0.3, k: 0.9 }),
+});
+Object.assign(LOD_META, {
+  gaPoly: [0x28292c, 0], gaPolyDark: [0x1c1d1f, 0], gaPolyTan: [0x8a7c5e, 0], gaPolyOD: [0x4d5240, 0], gaGrip: [0x202124, 0], gaGripTan: [0x7d7055, 0],
+  gaSteel: [0x2d2e31, 1], gaBlued: [0x1c1d20, 1], gaBolt: [0x6e7176, 1], gaAlu: [0x242528, 0], gaTan: [0x8c7854, 0], gaMag: [0x35373a, 1],
+});

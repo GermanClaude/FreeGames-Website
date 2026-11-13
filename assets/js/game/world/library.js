@@ -163,6 +163,13 @@ const hdr = () => (hdrLoader ||= new HDRLoader().setDataType(THREE.HalfFloatType
 
 /** Bytes einer Datei aus dem Manifest (Download-Statistik). */
 const fileBytes = (f, k) => f?.sizes?.[k] || 0;
+// Texturqualität (Einstellung gfxTextures, 13.11.): eigene Stufe für die Fotoscan-Sätze, sonst aus der Qualitätsstufe
+const TEX_SETTING_TIER = { niedrig: 512, mittel: 1024, ultra: 2048 };
+function textureTier(G, q) {
+  let v = 'auto';
+  try { v = G.settings && typeof G.settings.get === 'function' ? G.settings.get('gfxTextures') : 'auto'; } catch { v = 'auto'; }
+  return TEX_SETTING_TIER[v] || tierFor(q, 'texture');
+}
 
 /**
  * Asset-Verwaltung einer Karte (eine Instanz je loadWorld).
@@ -176,7 +183,7 @@ export function createWorldAssets(G, def, quality) {
   const q = ['low', 'medium', 'high', 'ultra'].includes(quality) ? quality : 'high';
   const t0 = performance.now();
   const stats = {
-    tier: { texture: tierFor(q, 'texture'), model: tierFor(q, 'model'), hdri: tierFor(q, 'hdri') },
+    tier: { texture: textureTier(G, q), model: tierFor(q, 'model'), hdri: tierFor(q, 'hdri') },
     download: 0, gpu: { desktop: 0, mobile: 0 }, sets: 0, models: 0, modelsSkipped: [], hdri: null, ms: 0, failed: [], formats: [],
     available: false, reason: '',
   };

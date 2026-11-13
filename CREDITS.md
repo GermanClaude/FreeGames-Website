@@ -11,6 +11,9 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
 ## Texturen (69)
 
+54 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
+verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
+
 | Asset | ID | Urheber:in | Quelle | Lizenz |
 |---|---|---|---|---|
 | Concrete Floor Worn 001 | `concrete_floor_worn` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/concrete_floor_worn_001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -27,7 +30,7 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Worn Plaster Wall | `plaster_worn_patched` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/worn_plaster_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Blue Plaster Weathered | `plaster_blue_weathered` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/blue_plaster_weathered) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Painted Plaster Wall | `plaster_painted` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/painted_plaster_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Wallpaper 002 C | `wallpaper_stained` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Wallpaper002C) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Decrepit Wallpaper | `wallpaper_stained` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/decrepit_wallpaper) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Sandstone Blocks 05 | `sandstone_blocks` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/sandstone_blocks_05) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Factory Brick | `brick_factory` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/factory_brick) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Brick Wall 10 | `brick_dark` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/brick_wall_10) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -40,15 +43,15 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Long White Tiles | `tiles_white_wall` | Jenelle van Heerden, Sergej Majboroda | [Poly Haven](https://polyhaven.com/a/long_white_tiles) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Linoleum Brown | `linoleum` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/linoleum_brown) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirty Carpet | `carpet_dirty` | Rohit Seervi | [Poly Haven](https://polyhaven.com/a/dirty_carpet) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Office Ceiling 001 | `ceiling_office` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=OfficeCeiling001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Rubber 001 | `rubber_floor` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Rubber001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Ceiling Interior | `ceiling_office` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/ceiling_interior) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rubber Tiles | `rubber_floor` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rubber_tiles) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Asphalt 02 | `asphalt_cracked` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/asphalt_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Gravel Floor 02 | `gravel` | Jenelle van Heerden, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/gravel_floor_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dense Sand | `sand` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/dense_sand) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirt | `dirt` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/dirt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Brown Mud 02 | `mud` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dry Ground 01 | `ground_dry_cracked` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/dry_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Grass 004 | `grass` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Grass004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Leafy Grass | `grass` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/leafy_grass) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Wood Planks | `wood_planks` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/wood_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Weathered Planks | `wood_planks_weathered` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/weathered_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dark Wooden Planks | `wood_planks_dark` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/dark_wooden_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -64,7 +67,7 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Rusty Corrugated Iron | `metal_corrugated_rusty` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/rusty_corrugated_iron) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Factory Wall | `metal_cladding_green` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/factory_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Painted Metal Shutter | `metal_shutter` | Dario Barresi, Rico Cilliers, Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/painted_metal_shutter) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Metal 009 | `metal_galvanized` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Metal009) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Metal Plate 02 | `metal_galvanized` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/metal_plate_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Metal Plate | `metal_tread` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/metal_plate) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Metal Walkway 010 | `metal_grate` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=MetalWalkway010) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Fence 007 A | `chainlink` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Fence007A) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |

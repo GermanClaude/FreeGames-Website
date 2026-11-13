@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.min.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
+<style>body{margin:0;background:#2a2d33}canvas{display:block}</style></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createWeaponModel, setWeaponDetail } from './assets/js/game/weapons/models.js';
+const q = new URLSearchParams(location.search);
+const keys = q.get('k').split(','), cols = +(q.get('c') || keys.length), W = +(q.get('w') || 600), H = +(q.get('h') || 400);
+const yaw = +(q.get('yaw') ?? 0.5), pitch = +(q.get('pitch') ?? 0.25);
+try { setWeaponDetail('ultra'); } catch (e) {}
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setSize(W * cols, H * Math.ceil(keys.length / cols)); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(r.domElement);
+const env = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
+r.setScissorTest(true); r.setClearColor(0x2a2d33);
+window.errs = [];
+keys.forEach((k, i) => {
+  const sc = new THREE.Scene(); sc.environment = env;
+  const dl = new THREE.DirectionalLight(0xffffff, 2.2); dl.position.set(2, 3, 2); sc.add(dl);
+  let g; try { g = createWeaponModel(k, { lod: q.get('lod') || 'first', tier: 'max' }); } catch (e) { window.errs.push(k + ': ' + e.message); return; }
+  sc.add(g);
+  const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3()).length();
+  const cam = new THREE.PerspectiveCamera(30, W / H, 0.001, 50);
+  const d = sz * 1.45 / (2 * Math.tan(15 * Math.PI / 180)) * 0.4;
+  cam.position.set(c.x - Math.sin(yaw) * Math.cos(pitch) * d * -1, c.y + Math.sin(pitch) * d, c.z + Math.cos(yaw) * Math.cos(pitch) * d);
+  cam.position.set(c.x + Math.sin(yaw) * Math.cos(pitch) * d, c.y + Math.sin(pitch) * d, c.z + Math.cos(yaw) * Math.cos(pitch) * d);
+  cam.lookAt(c);
+  const x = (i % cols) * W, y = (Math.ceil(keys.length / cols) - 1 - Math.floor(i / cols)) * H;
+  r.setViewport(x, y, W, H); r.setScissor(x, y, W, H); r.render(sc, cam);
+});
+window.done = true;
+</script></body></html>

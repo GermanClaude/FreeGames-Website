@@ -23,7 +23,11 @@ export const CAMO_TARGETS = new Set(['alu', 'aluTan', 'aluOD', 'polymer', 'polym
   'p9aSlide', 'p9aSlideS', 'p9aFrame', 'p9aFrameS',   // P-9A (26.10.): gemeinsamer Atlas Schlitten/Rahmen
   'wirbelWood', 'wirbelSteel', 'wirbelMantel', 'wirbelDrum']);   // PS-41 Wirbel (26.10.): Schaft, Stahl, Mantel, Trommel – Verschluss bleibt blank
 
-for (const k of ['zwWood', 'zwBlued', 'zwBarrel']) CAMO_TARGETS.add(k);   // ZW-12 Zwilling (26.10.): Holz, Basküle, Läufe – Schloss blank
+for (const k of ['zwWood', 'zwBlued', 'zwBarrel']) CAMO_TARGETS.add(k);
+// Waffen nach Vorbild, Gruppe B (13.11.): Gehäuse, Kunststoff, Holz, Stahlteile – Lauf, Verschluss, Griffflächen bleiben
+for (const k of ['gbPoly', 'gbPolyGrey', 'gbSteel', 'gbAlu', 'gbWood', 'gbOlive', 'gbBakelite']) CAMO_TARGETS.add(k);
+// Waffen nach Vorbild, Gruppe A (13.11.): Gehäuse/Schaft/Handschutz (Polymer, Alu, Stahl), Magazin – Lauf, Verschluss, Griffe bleiben
+for (const k of ['gaPoly', 'gaPolyTan', 'gaPolyOD', 'gaSteel', 'gaAlu', 'gaTan', 'gaMag']) CAMO_TARGETS.add(k);   // ZW-12 Zwilling (26.10.): Holz, Basküle, Läufe – Schloss blank
 
 const texCache = new Map();
 const matCache = new Map();

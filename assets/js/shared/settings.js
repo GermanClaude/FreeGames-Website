@@ -32,7 +32,7 @@ export const DEFAULTS = Object.freeze({
   audioMix: 'auto', hearingProtection: false, audioRecordings: true,
   // HUD-Stil, erweiterte Grafik, Gyro-Kalibrierung, Controller-Symbole (Realismus-Plan S6–S9, §5.3; ui-controls)
   hudStyle: 'voll', bodycamStamp: false,
-  gfxPost: 'auto', gfxShadows: 'auto', gfxAA: 'auto', gfxAO: 'auto', gfxBloom: 'auto', gfxEffects: 'auto', gfxPixelRatio: 'auto',
+  gfxPost: 'auto', gfxShadows: 'auto', gfxAA: 'auto', gfxAO: 'auto', gfxBloom: 'auto', gfxEffects: 'auto', gfxPixelRatio: 'auto', gfxTextures: 'auto',
   renderScale: 'auto', fpsLimit: '0',
   gyroBiasX: 0, gyroBiasY: 0, gyroBiasZ: 0, padIcons: 'auto',
   // Kernmechanik (core-mechanics): Spielstil, Klassen, stufenlose Zielhilfe und Auto-Feuer
@@ -209,6 +209,11 @@ export const SETTINGS_SCHEMA = Object.freeze({
     type: 'enum', label: 'Effekte (Partikel, Einschusslöcher)', group: 'erweitert',
     options: ['auto', 'niedrig', 'mittel', 'hoch', 'ultra'],
     labels: { auto: 'Automatisch', niedrig: 'Niedrig', mittel: 'Mittel', hoch: 'Hoch', ultra: 'Ultra' },
+  },
+  // Texturqualität (13.11.): Fotoscan-Auflösung der Welt unabhängig von der Qualitätsstufe (Ultra = 2048er-Scans)
+  gfxTextures: {
+    type: 'enum', label: 'Texturqualität', group: 'erweitert',
+    options: ['auto', 'niedrig', 'mittel', 'ultra'], labels: { auto: 'Automatisch', niedrig: 'Niedrig (512)', mittel: 'Hoch (1024)', ultra: 'Ultra (2048)' },
   },
   gfxPixelRatio: {
     type: 'enum', label: 'Pixeldichte (höchstens)', group: 'erweitert',
