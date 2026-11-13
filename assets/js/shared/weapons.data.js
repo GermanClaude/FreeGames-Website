@@ -105,6 +105,7 @@ export const FIRE_SELECT = {
   smg_qx90: { modes: ['auto', 'semi'] },                    // P90: Drehschalter unter dem Abzug (0 – 1 – A)
   smg_wirbel: { modes: ['auto', 'semi'] },                  // PPSch-41 (26.10.): Schieber vor dem Abzug (hinten Dauer, vorn Einzel)
   lmg_hm60: { modes: ['auto'] },                            // M60: nur Dauerfeuer (offener Verschluss)
+  hmg_orkan: { modes: ['auto'] },                           // RG-6 Orkan (13.11.): Gatling, nur Dauerfeuer
   mr_sk14: { modes: ['semi', 'auto'] },                     // M14 / Mk 14: Einzelfeuer, Wahlhebel für Dauerfeuer
   // Doppelflinte (26.10.): ein Abzug je Lauf (erst rechts, dann links) oder beide Abzüge zugleich – Anzeigename je Modus (names)
   sg_zwilling: { modes: ['semi', 'burst'], burst: 2, names: { semi: 'Einzelabzug', burst: 'Doppelschuss' } },
@@ -265,6 +266,10 @@ const ICONS = {
   netz: smallIcon(
     '<path d="M3 20Q12 2 21 20 M6 14H18 M4.5 17H19.5 M8.5 9.5H15.5 M12 4V20 M8 7L5 20 M16 7L19 20"/>' +
     '<circle cx="3" cy="20" r="1.2"/><circle cx="21" cy="20" r="1.2"/><circle cx="12" cy="21" r="1.2"/>'),
+  // Trophäensystem (13.11.): Sensorkopf auf Dreibein, Erfassungsbögen
+  trophy: smallIcon(
+    '<path d="M8.5 9.5Q8.5 6 12 6Q15.5 6 15.5 9.5Z M8 9.5H16V13H8Z M12 13L6 21 M12 13L18 21 M12 13V21 M4.5 21H7.5 M16.5 21H19.5 M10.5 21H13.5"/>' +
+    '<path d="M4 5Q2.5 8 4 11 M20 5Q21.5 8 20 11 M6.5 6.5Q5.8 8 6.5 9.5 M17.5 6.5Q18.2 8 17.5 9.5" opacity=".7"/><circle cx="12" cy="11.2" r=".8"/>'),
 };
 
 /* ------------------------------------------------------------ Hilfsfunktionen */
@@ -466,6 +471,8 @@ const PATTERN = {
   // P-9A (26.10.): leichte Waffe, 20 Schuss/s – steigt stetig und schlägt abwechselnd nach links und rechts aus
   p9a: [[0, 1], [0.3, 1.1], [-0.25, 1.2], [0.4, 1.25], [-0.35, 1.3], [0.45, 1.3], [-0.4, 1.3], [0.35, 1.25], [-0.3, 1.25], [0.4, 1.2]],
   // PS-41 Wirbel (26.10.): schwerer Masseverschluss, 1000/min – steigt wenig, zittert aber unruhig seitlich hin und her
+  // RG-6 Orkan (13.11.): Masse und Motor schlucken den Hochschlag – kaum Steigen, dafür ständiges Zittern
+  orkan: [[0, 0.6], [0.5, 0.5], [-0.5, 0.5], [0.6, 0.45], [-0.6, 0.45], [0.4, 0.4], [-0.45, 0.4], [0.55, 0.4]],
   wirbel: [[0, 1], [0.35, 0.95], [-0.3, 1], [0.45, 0.95], [-0.45, 0.95], [0.5, 0.9], [-0.4, 0.9], [0.35, 0.9], [-0.5, 0.85], [0.45, 0.85], [-0.3, 0.85], [0.4, 0.85]],
 };
 
@@ -477,6 +484,7 @@ const FEEL = {
   smg_vp9: { handling: { mass: 2.9, inertia: 0.82, swayScale: 0.9, aimDrift: 0.0004, reach: 0.81 }, recoil: { visual: 0.9, firstShotSpread: 0.8 } },
   smg_wirbel: { handling: { mass: 5.4, inertia: 1.15, swayScale: 1.05, aimDrift: 0.00045, reach: 1.0 }, recoil: { visual: 1.0, firstShotSpread: 0.85 } },   // 26.10.: PPSch mit voller Trommel ≈ 5,4 kg, Mündung 580 mm vor dem Griff
   smg_qx90: { handling: { mass: 2.8, inertia: 0.75, swayScale: 0.9, aimDrift: 0.0004, reach: 0.67 }, recoil: { visual: 0.85, firstShotSpread: 0.85 } },   // reach 25.10.: Modell nach Foto – Mündung 227 mm vor dem Griff statt 305 mm
+  hmg_orkan: { handling: { mass: 14.0, inertia: 2.1, swayScale: 1.35, aimDrift: 0.0011, reach: 1.25 }, recoil: { visual: 0.6, firstShotSpread: 1 } },   // 13.11.: Gatling mit Gurtkasten ≈ 14 kg
   lmg_hm60: { handling: { mass: 8.6, inertia: 1.6, swayScale: 1.25, aimDrift: 0.0009, reach: 1.39 }, recoil: { visual: 1.1, firstShotSpread: 0.85 } },
   mr_sk14: { handling: { mass: 4.6, inertia: 1.2, swayScale: 1.1, aimDrift: 0, reach: 1.08 }, recoil: { visual: 1.0, firstShotSpread: 0.6 } },
   sr_brecher: { handling: { mass: 6.4, inertia: 1.4, swayScale: 1.15, aimDrift: 0, reach: 1.34 }, recoil: { visual: 1.0, firstShotSpread: 1 } },
@@ -567,6 +575,23 @@ const RAW = {
     recoil: { vertical: 0.0046, horizontal: 0.0048, recovery: 11, firstShotMult: 1.0, pattern: PATTERN.wirbel },
     range: 85, penetration: 0.45, suppressed: false, sound: { profile: 'smg', pitch: 0.95 }, model: 'wirbel',
     attSlots: ['magazin', 'munition'], attNo: ['erweitert'],   // Bremse eingebaut, keine Schiene; Trommel nicht verlängerbar
+  },
+  // Neue Waffe (13.11., Nutzerwunsch „Minigun“): RG-6 Orkan – tragbare Gatling mit sechs Läufen und Elektromotor. Muss erst
+  // hochdrehen (spinUp s; Zielen dreht vor, controller.js), dann 1800 Schuss/min aus einem 300er-Gurt. Sehr schwer (Bewegung 0,7,
+  // kein Sprint-Feuer-Bonus), Hüftfeuer mit großer Streuung, die beim Dauerfeuer etwas enger wird (spinTighten); Zielen
+  // vergrößert kaum. Nachladen 7,5/8,5 s. Keine Aufsätze außer Munition.
+  hmg_orkan: {
+    id: 'hmg_orkan', name: 'RG-6 Orkan', cls: 'lmg', slot: 'primary', unlockLevel: 40,
+    description: 'Sechs Läufe, ein Motor, ein Gurt mit dreihundert Schuss. Der Orkan braucht einen halben Atemzug zum Hochdrehen – danach reißt er Deckung, Wände und Nerven gleichermaßen ein. Wer ihn trägt, läuft wie im Schlamm.',
+    damage: { max: 22, min: 17, rangeStart: 20, rangeEnd: 50 }, headMult: 1.25, limbMult: 0.9, pellets: 1,
+    rpm: 1800, fireMode: 'auto', burstCount: 1, mag: 300, reserve: 300, killAmmo: 40,
+    reloadTime: 7.5, reloadEmptyTime: 8.5, perShellReload: false,
+    equipTime: 1.3, adsTime: 0.5, adsZoom: 1.08, sight: 'iron', scope: null, sprintToFire: 0.6,
+    moveSpeedMult: 0.7, adsMoveMult: 0.4, hipSpread: 0.07, adsSpread: 0.05, moveSpreadMult: 1.6, jumpSpreadMult: 3.0,
+    recoil: { vertical: 0.0016, horizontal: 0.0026, recovery: 14, firstShotMult: 1.0, pattern: PATTERN.orkan },
+    range: 90, penetration: 0.6, suppressed: false, sound: { profile: 'lmg', pitch: 1.12 }, model: 'orkan',
+    spinUp: 0.55, spinDown: 1.6, spinTighten: 0.4, botWeight: 0.12,   // Bots: selten (MG-Schützen)
+    attSlots: ['munition'],
   },
   lmg_hm60: {
     id: 'lmg_hm60', name: 'HM-60 Hammer', cls: 'lmg', slot: 'primary', unlockLevel: 12,
@@ -951,6 +976,10 @@ ICONS.wirbel = gunIcon(
   'M49.3 15V27.5Q49.3 29.2 51 29.2H52.6Q54.3 29.2 54.3 27.5V15 M41.6 18.1V20.9H34.4L33.7 18.8 ' +
   'M79.2 11.2V9.8 M46 11.2V9.8H39 M78 13H82 M71.5 13H75.8 M65.5 13H69.7 M59.6 13H63.8');
 ICONS.erstlicht = ICONS.knife;
+// RG-6 Orkan (13.11.): Laufbündel (drei Linien), Schellen, Rundgehäuse mit Tragegriff, Gurtkasten, Griff, kurze Stütze
+ICONS.orkan = gunIcon(
+  'M38 10H92 M38 13H92 M38 16H92 M44 8.5V17.5 M66 8.5V17.5 M88 8.5V17.5 M14 8Q14 6.5 16 6.5H38V19.5H16Q14 19.5 14 18Z ' +
+  'M20 6.5V3.5H32V6.5 M22 19.5L19 30H26L28 19.5 M30 19.5H42V28H30Z M14 9L4 10V18L14 17 M38 19.5V24H42');
 
 /** Reihenfolge = Roster-Tabelle des Vertrags. */
 export const WEAPON_IDS = [
@@ -963,6 +992,7 @@ export const WEAPON_IDS = [
   'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten',
   'ar_ursprung', 'pi_funke', 'erstlicht', // Waffen der ersten Stunde (nur Profil.og)
   'pi_p9a', 'smg_wirbel', // neue Waffen (26.10.): P-9A Automatik (Glock 18C), PS-41 Wirbel (PPSch-41)
+  'hmg_orkan', // RG-6 Orkan (13.11.): Gatling
 ];
 /** Nahkampfwaffen (Slot „melee“, Ausrüstung `loadout.melee`; 'knife' ist der Standard). */
 export const MELEE_IDS = ['knife', 'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten', 'erstlicht'];
@@ -1049,9 +1079,19 @@ export const EQUIPMENT = {
     throwSpeed: 17, throwPitch: 0.2, bounciness: 0, friction: 1, sticky: false,
     model: 'smoke', sound: 'smoke_hiss', icon: ICONS.netz,
   },
+  trophy: {
+    id: 'trophy', name: 'Trophäensystem', short: 'Trophäe', kind: 'tactical', unlockLevel: 1,
+    description: 'Aktives Schutzsystem zum Aufstellen: Ein drehender Sensorkopf erfasst feindliche Granaten, Granatwerfer-Geschosse und Raketen im Umkreis von neun Metern und schießt sie ab, bevor sie zünden. Zwei Ladungen – und ein paar Treffer, dann ist es Schrott.',
+    // trophy: Abfangradius (m), Ladungen, Haltbarkeit (Schaden bis zur Zerstörung), Nachladezeit zwischen zwei Abfängen (s);
+    // Wurf flach und kurz, bleibt liegen und klappt das Dreibein aus (weapons/trophy.js). Eigene/verbündete Würfe bleiben unberührt.
+    count: 1, fuse: 3.5, cookable: false, radius: 0.6, innerRadius: 0, maxDamage: 0, minDamage: 0, nonLethal: true,
+    trophy: { radius: 9, charges: 2, health: 60, rearm: 0.45 },
+    throwSpeed: 10, throwPitch: 0.1, bounciness: 0.12, friction: 0.95, sticky: false,
+    model: 'trophy', sound: 'grenade_stick', icon: ICONS.trophy,
+  },
 };
 
-export const EQUIPMENT_IDS = ['frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke', 'netz'];
+export const EQUIPMENT_IDS = ['frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke', 'netz', 'trophy'];
 /** Tödliche Wurfmittel (Taste Granate) und taktische (Taste Taktisch, `loadout.tactical`). */
 export const LETHAL_IDS = EQUIPMENT_IDS.filter((id) => EQUIPMENT[id].kind === 'lethal');
 export const TACTICAL_IDS = EQUIPMENT_IDS.filter((id) => EQUIPMENT[id].kind === 'tactical');

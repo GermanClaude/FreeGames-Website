@@ -1154,6 +1154,34 @@ export class AudioEngine {
   _feet(a) { const p = a?.position || a?.body?.position; return p ? xyz(p) : null; }
   _voicePitch(a) { return a ? 0.88 + ((hashString(String(a.id ?? a.name ?? 'x')) % 1000) / 1000) * 0.26 : 1; }
 
+  /**
+   * Motorsurren der Gatling (RG-6 Orkan, 13.11.): zwei verstimmte Sägezähne durch einen Bandpass, Tonhöhe und Pegel folgen der
+   * Drehzahl (Rampen über die Hochlauf-/Auslaufzeit aus controller.js). Nur für den eigenen Spieler (kein räumlicher Klang).
+   */
+  _spinWhine(p) {
+    const ctx = this.ctx;
+    if (!ctx || !this.bus) return;
+    let W = this._whine;
+    if (!W) {
+      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+      o1.type = 'sawtooth'; o2.type = 'sawtooth'; o2.detune.value = 18;
+      bp.type = 'bandpass'; bp.Q.value = 1.4; bp.frequency.value = 600;
+      g.gain.value = 0;
+      o1.connect(bp); o2.connect(bp); bp.connect(g).connect(this.bus.sfx);
+      o1.frequency.value = 40; o2.frequency.value = 40;
+      o1.start(); o2.start();
+      W = this._whine = { o1, o2, bp, g };
+    }
+    const t = ctx.currentTime, s = Math.max(0, Math.min(1, p.spin || 0));
+    const dur = p.stop ? 0.08 : p.up ? Math.max(0.05, (1 - s) * (p.upTime || 0.5)) : Math.max(0.05, s * (p.downTime || 1.5));
+    const tgt = p.up && !p.stop ? 1 : 0;
+    const f = 60 + 260 * tgt, v = tgt ? 0.06 : 0.0001;
+    for (const o of [W.o1, W.o2]) { o.frequency.cancelScheduledValues(t); o.frequency.setValueAtTime(o.frequency.value, t); o.frequency.linearRampToValueAtTime(f, t + dur); }
+    W.bp.frequency.cancelScheduledValues(t); W.bp.frequency.setValueAtTime(W.bp.frequency.value, t); W.bp.frequency.linearRampToValueAtTime(400 + 1400 * tgt, t + dur);
+    W.g.gain.cancelScheduledValues(t); W.g.gain.setValueAtTime(Math.max(0.0001, W.g.gain.value), t);
+    W.g.gain.linearRampToValueAtTime(v, t + dur);
+  }
+
   weaponDef(id) { return (WEAPONS && id && WEAPONS[id]) || (id && UNDER_WEAPONS[id]) || null; } // + Unterlauf-Waffen der Aufsätze
   profileFor(id, def = this.weaponDef(id)) {
     const p = def?.sound?.profile;
@@ -1646,6 +1674,12 @@ export class AudioEngine {
       this.play('equip', { player: pl, position: posOf(p.actor), actor: p.actor, volume: pl ? 0.9 : 0.5, pitch: def?.slot === 'secondary' ? 1.15 : 1 });
     });
     on('weapon:ads', p => { if (this._isPlayer(p.actor)) this.play(p.on ? 'ads_in' : 'ads_out', { player: true }); });
+    on('weapon:spin', p => { if (this._isPlayer(p.actor)) this._spinWhine(p); });   // Gatling-Motor (RG-6 Orkan, 13.11.)
+    // Surren aus, wenn der Spieler fällt, neu einsetzt oder das Match endet (Controller meldet dann nichts mehr)
+    const whineOff = () => { if (this._whine) this._spinWhine({ spin: 0, up: false, stop: true }); };
+    on('kill', p => { if (this._isPlayer(p.victim)) whineOff(); });
+    on('actor:spawn', p => { if (this._isPlayer(p.actor)) whineOff(); });
+    on('match:end', whineOff);
     on('impact', p => {
       if (!p.point) return;
       const pl = this._isPlayer(p.shooter), s = p.surface === 'flesh' ? 'flesh' : this._surface(p.surface);
@@ -2018,6 +2052,7 @@ export class AudioEngine {
 
   dispose() {
     this.detach(); this.stopAmbience(0); this.stopMusic(0); this.stopAll(0.01);
+    if (this._whine) { try { this._whine.o1.stop(); this._whine.o2.stop(); } catch { /* schon gestoppt */ } this._whine = null; }
     this._lifeUnsub?.(); this._lifeUnsub = null; this._lifeBus = null;
     this._libUnsub?.(); this._libUnsub = null;
     this.hearing.dispose(); this.er?.dispose();

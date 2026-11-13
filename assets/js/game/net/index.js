@@ -52,7 +52,7 @@ import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261028051912';
  *  10: Waffen der ersten Stunde (Waffen-Indizes verschoben), Aufsätze/Tarnung in Ausrüstungen.
  *  11: Versorgung/MG-Gurte im Fahrzeugblock (Byte 63), Militärfahrzeuge nur auf großen Karten.
  *  12: neue Waffen ZW-12 Zwilling, P-9A, PS-41 Wirbel (Waffenindizes verschoben, 26.10.). */
-export const NET_VERSION = 15; // 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
+export const NET_VERSION = 16; // 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). 26.10.: aus den Modus-Daten
  *  (MODES[id].online, shared/modes.data.js ONLINE_MODE_IDS) – eine Quelle auch für ui/net-menus.js. */
 export const ONLINE_MODES = ONLINE_MODE_IDS;

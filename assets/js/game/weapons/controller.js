@@ -107,6 +107,7 @@ export class WeaponController {
     this.canSprint = true;
     this.lastShotTime = -1e9;
     this.shotIndex = 0;
+    this.spin = 0;   // Hochdrehen der Gatling (RG-6 Orkan, def.spinUp): 0 = Stillstand, 1 = Feuerdrehzahl
     this.isFiring = false;
     this.isMeleeing = false;
     this.isThrowing = false;
@@ -327,6 +328,7 @@ export class WeaponController {
     this._burstLeft = 0;
     this.shotIndex = 0;
     this._bloomHip = this._bloomAds = 0;
+    this.spin = 0;
     this._refreshStatic();
     const def = this.currentDef;
     if (def.id !== prevId || (def.attKey || '') !== prevAtt) {
@@ -379,6 +381,7 @@ export class WeaponController {
     this._burstLeft = 0;
     this.shotIndex = 0;
     this._bloomHip = this._bloomAds = 0;
+    this.spin = 0;
     this.breath = 1;
     this._exhausted = 0;
     this._steady = 1;
@@ -529,6 +532,22 @@ export class WeaponController {
     // ---- Streuung
     this._updateSpread(dt, it, def, a);
 
+    // ---- Hochdrehen (Gatling, def.spinUp s bis Feuerdrehzahl): Abzug oder Zielen dreht hoch, sonst läuft das Bündel aus
+    if (def.spinUp > 0) {
+      const busy = it.frozen || !!this._switch || !!this._reload || !!this._melee || !!this._throw || !!this._plate || it.sprinting;
+      const want = !busy && (it.fire || it.ads || this._fireBuffer > 0);
+      const was = this.spin;
+      this.spin = clamp(this.spin + (want ? dt / def.spinUp : -dt / (def.spinDown || 1.5)), 0, 1);
+      // Ereignis bei Richtungswechsel (hoch/aus) und an den Enden – Audio (engine/audio.js) fährt damit das Motorsurren
+      if (want !== this._spinWant || (was <= 0) !== (this.spin <= 0) || (was < 1) !== (this.spin < 1)) {
+        this._spinWant = want;
+        G.events.emit('weapon:spin', { actor, weaponId: def.id, spin: this.spin, up: want, upTime: def.spinUp, downTime: def.spinDown || 1.5 });
+      }
+    } else {
+      if (this.spin > 0 || this._spinWant) G.events.emit('weapon:spin', { actor, weaponId: def.id, spin: 0, up: false, stop: true });
+      this.spin = 0; this._spinWant = false;
+    }
+
     // ---- Feuern
     if (!it.frozen && !this._plate) this._updateFire(it, def, cur);
 
@@ -568,6 +587,7 @@ export class WeaponController {
       s.firing = this.isFiring;
       s.timeSinceShot = now - this.lastShotTime;
       s.mag = def.cls === 'melee' ? 1 : cur.mag;
+      s.spin = this.spin;   // Gatling: Drehzahl des Laufbündels (viewmodel _animParts)
       s.fireMode = this._modeOf(cur);
       // Waffengefühl: Geschwindigkeit im Blickraum (x rechts, y oben, z vorwärts), Wandkollision, Atemnot,
       // Lehnen und freies Zielen (core, sobald vorhanden)
@@ -609,7 +629,9 @@ export class WeaponController {
     if (it.sprinting) mult *= 1.35;
     // VR (engine/xr): Langwaffe nur in einer Hand → Streuung ×4, Pistole beidhändig etwas ruhiger
     const xrMul = Number.isFinite(this.actor && this.actor.xrSpreadMul) ? this.actor.xrSpreadMul : 1;
-    const target = (base * mult + this._bloomHip * (1 - a) + this._bloomAds * a) * xrMul;
+    // Gatling (spinTighten): im Dauerfeuer liegt die Waffe satter – Streuung sinkt über ≈ 1 s Feuer um bis zu spinTighten
+    const tight = def.spinTighten > 0 && this.G.time.elapsed - this.lastShotTime < 0.15 ? 1 - def.spinTighten * Math.min(1, this.shotIndex / 30) : 1;
+    const target = (base * mult + this._bloomHip * (1 - a) + this._bloomAds * a) * xrMul * tight;
     this.fireSpread = target;
     // HUD: schnell auf, sanft zurück
     this.spread += (target - this.spread) * damp(target > this.spread ? 40 : 12, dt);
@@ -672,6 +694,8 @@ export class WeaponController {
       if (st.reserve > 0 || this.infiniteAmmo) this.reload();
       return;
     }
+    // Gatling: erst ab voller Drehzahl (Abzug gehalten → dreht in update() hoch)
+    if (def.spinUp > 0 && this.spin < 1) return;
     if (mode === 'burst' && this._burstLeft <= 0) {
       if (this._cooldown > 0) return;
       this._burstLeft = Math.max(1, burstCountOf(def));

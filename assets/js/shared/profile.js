@@ -7,6 +7,7 @@ import { settings } from './settings.js?v=20261028051912';
 import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261028051912';
 import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261028051912';
 import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261028051912';
+import { pendingTrophies } from './trophies.data.js?v=20261028051912';
 
 const STORAGE_KEY = 'nullpunkt:profile';
 /**
@@ -210,7 +211,12 @@ function blank() {
     // modes-ui (additiv): Kosmetik, Herausforderungen, Geheimnisse, Zähler (Fahrzeuge, Marken, Infektionen …)
     cosmetics: { equipped: { weapon: {}, operator: {} } }, challenges: blankChallenges(), secrets: {}, counters: {},
     og: false, ogChecked: true,
+    trophies: blankTrophies(), // Trophäen (13.11., trophies.data.js)
   };
+}
+
+function blankTrophies() {
+  return { done: {}, maps: {}, best: { matchKills: 0, win1000: false } };
 }
 
 /** modes-ui: Kosmetik/Herausforderungen/Geheimnisse bereinigen (Ids, Größen begrenzt). */
@@ -236,6 +242,13 @@ function cleanExtras(p, data) {
     }
   }
   p.counters = cleanCounts(data.counters);
+  const tr = data.trophies && typeof data.trophies === 'object' ? data.trophies : null;
+  if (tr) {
+    const best = tr.best && typeof tr.best === 'object' ? tr.best : {};
+    const done = {};
+    if (tr.done && typeof tr.done === 'object') for (const [id, at] of Object.entries(tr.done).slice(0, 200)) if (ID_RE.test(id)) done[id] = int(at, 1, 1e15);
+    p.trophies = { done, maps: cleanCounts(tr.maps), best: { matchKills: int(best.matchKills, 0, 5000), win1000: best.win1000 === true } };
+  }
 }
 
 function cleanWeaponStats(src) {
@@ -343,6 +356,7 @@ function sanitizeSummary(s) {
     duration: num(s.duration, 0, 24 * 3600),
     difficulty: typeof s.difficulty === 'string' && ID_RE.test(s.difficulty) ? s.difficulty : null,
     counters: cleanCounts(s.counters), style: s.style === 'realistisch' ? 'realistisch' : 'arcade',
+    scoreLimit: int(s.scoreLimit, 0, 1e6),
   };
 }
 
@@ -434,6 +448,18 @@ export const profile = {
       bestStreak: s.bestStreak,
     });
     data.history.length = Math.min(data.history.length, HISTORY_MAX);
+    // Trophäen (13.11.): Karten, Match-Bestwerte, dann neu erreichte Trophäen mit Zeitstempel vermerken
+    const tr = data.trophies || (data.trophies = blankTrophies());
+    if (!training) {
+      tr.maps[s.mapId] = (tr.maps[s.mapId] || 0) + 1;
+      tr.best.matchKills = Math.max(tr.best.matchKills | 0, s.kills);
+      if (s.result === 'win' && s.scoreLimit >= 1000) tr.best.win1000 = true;
+    }
+    const trophies = [];
+    const now = Date.now();
+    for (const t of pendingTrophies(data)) { tr.done[t.id] = now; trophies.push({ id: t.id, name: t.name, text: t.text, tier: t.tier, icon: t.icon || 'trophy' }); }
+    // Platin kann erst nach den übrigen fällig werden
+    for (const t of pendingTrophies(data)) { tr.done[t.id] = now; trophies.push({ id: t.id, name: t.name, text: t.text, tier: t.tier, icon: t.icon || 'trophy' }); }
     save();
     notify();
 
@@ -445,7 +471,7 @@ export const profile = {
       breakdown, rankBefore, rankAfter,
       levelUp: data.level > levelBefore, rankUp: rankAfter.index > rankBefore.index,
       progressBefore: levelProgress(xpBefore), progressAfter: levelProgress(data.xp),
-      challenges,
+      challenges, trophies,
     };
   },
 

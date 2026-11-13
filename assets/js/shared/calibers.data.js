@@ -40,6 +40,7 @@ export const WEAPON_SOUND = {
   // Maschinengewehre
   lmg_hm60:   { cal: '7.62x51', voice: 'lmg',          pitch: 1,    tone: [450, 2], pcal: 0.9 },           // Mosin 7,62×54R
   lmg_lm8:    { cal: '5.56',    voice: 'blk',          pitch: 0.94, tone: [[480, 3], [2800, -3]], pcal: 1.3 }, // schwerer Lauf, .300 BLK tiefer
+  hmg_orkan:  { cal: '7.62x51', voice: 'lmg',          pitch: 1.12, tone: [[600, 2], [3200, 2.5]], pcal: -1.5 },  // RG-6 Orkan (13.11.): Gatling, Einzelschüsse kürzer und heller (verschmelzen zum Brummen)
   // Maschinenpistolen
   smg_vp9:    { cal: '9x19',    voice: 'smg',          pitch: 1,    tone: [[1100, 3], [3500, -2]], pcal: 0.2 },          // Carl Gustav M45
   // 26.10.: Die PPSch-Aufnahme gehört jetzt exklusiv der PS-41 Wirbel (echtes Vorbild); QX-90 bekommt die MP-Stimme, höher und greller

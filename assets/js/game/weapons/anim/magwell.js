@@ -23,6 +23,7 @@ const OVERRIDE = {
   qx90: { axis: [0, 0, 1], tilt: 0.105, tiltS: 0.022, margin: [0.004, 0.004, -0.003, 0.004] },
   // HM-60: Gurtkasten hängt seitlich an der Halterung links unter dem Gehäuse – nach unten abziehen
   hm60: { axis: [0, -1, 0] },
+  orkan: { axis: [0, -1, 0] },   // RG-6 Orkan (13.11.): Gurtkasten wie HM-60 nach unten ab
 };
 const _cache = new Map();
 const _v = new THREE.Vector3(), _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();

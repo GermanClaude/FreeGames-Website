@@ -674,6 +674,16 @@ export class ClientSync {
         if (W && pos) W.grenadeSystem.remoteBoom(m.gid || null, m.type, pos, owner);
         return;
       }
+      case 'ti': { // Trophäensystem hat ein Geschoss abgefangen (Host)
+        const T = W && W.grenadeSystem && W.grenadeSystem.trophies;
+        if (T && Number.isFinite(m.id)) T.remoteIntercept(m.id, m.k === 'r' ? 'rocket' : 'grenade', Number.isFinite(m.p) ? m.p : null, vec3(m.pos));
+        return;
+      }
+      case 'td': { // Trophäensystem zerstört (leer oder zerschossen)
+        const T = W && W.grenadeSystem && W.grenadeSystem.trophies;
+        if (T && Number.isFinite(m.id)) T.remoteDestroy(m.id, m.w === 'z' ? 'zerschossen' : 'leer');
+        return;
+      }
       case 'rk': {
         if (!W) return;
         const rs = W.rocketSystem;

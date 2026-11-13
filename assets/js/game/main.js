@@ -18,6 +18,7 @@
 import * as THREE from 'three';
 import { settings } from '../shared/settings.js?v=20261028051912';
 import { profile } from '../shared/profile.js?v=20261028051912';
+import { TrophyToasts } from './ui/trophy-toast.js?v=20261028051912';
 import * as weaponsData from '../shared/weapons.data.js?v=20261028051912';
 import * as modesData from '../shared/modes.data.js?v=20261028051912';
 import * as mapsData from '../shared/maps.data.js?v=20261028051912';
@@ -447,6 +448,9 @@ function normalizeConfig(cfg = {}) {
     lethal: [lo.lethal, last.lethal].find(okEq) || def.lethal,
     melee: [lo.melee, last.melee].find((id) => okW(id, 'melee')) || 'knife', // Messer-Wahl (Lobby)
   };
+  // Taktisch (13.11.): Rauch/Blend/Netz/Trophäensystem aus Lobby bzw. letzter Ausrüstung (ohne Wahl: Standard des Controllers)
+  const tac = [lo.tactical, last.tactical].find((id) => okEq(id) && EQ[id].kind === 'tactical');
+  if (tac) loadout.tactical = tac;
   // modes-ui: Klasse, Tarnungen, Outfit, Spielstil, Matchlänge, Tageszeit (Lobby bzw. URL style=/cls=)
   const CL = classesData.CLASSES; // core-mechanics: Klassen/Spielstile aus shared/classes.data.js
   if (lo.cls && CL[lo.cls]) loadout.cls = lo.cls;
@@ -2391,6 +2395,7 @@ async function bootstrap() {
     G.bots = new G.modules.bots.BotManager(G);
     G.vehicles = new G.modules.vehicles.VehicleSystem(G);
     G.hud = new G.modules.hud.HUD(G);
+    G.trophyToasts = safe('trophyToasts', () => new TrophyToasts(G)) || null; // Trophäen-Hinweise (13.11.)
     G.menus = new G.modules.menus.Menus(G);
     // Mehrspieler: Sitzung/Raum (öffnet erst bei host()/join() eine Verbindung); fehlt das Modul, bleibt G.net null
     const netMod = G.modules.net;

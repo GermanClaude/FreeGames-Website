@@ -11,7 +11,7 @@ import { ICON } from './icons.js?v=20261028051912';
 import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261028051912';
 import { getWeaponModelMeta } from '../weapons/models.js?v=20261028051912';
 
-const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['melee', 'Messer'], ['lethal', 'Granate']];
+const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['melee', 'Messer'], ['lethal', 'Granate'], ['tactical', 'Taktisch']];
 
 export class LoadoutPanel {
   constructor(G) {
@@ -70,7 +70,7 @@ export class LoadoutPanel {
 
   value() {
     const lo = this.lo || {};
-    return { primary: lo.primary, secondary: lo.secondary, lethal: lo.lethal, melee: lo.melee || 'knife', cls: lo.cls, camo: { ...(lo.camo || {}) }, skin: lo.skin || null };
+    return { primary: lo.primary, secondary: lo.secondary, lethal: lo.lethal, tactical: lo.tactical || 'smoke', melee: lo.melee || 'knife', cls: lo.cls, camo: { ...(lo.camo || {}) }, skin: lo.skin || null };
   }
 
   /** Klassenausrüstung merken (settings.classLoadouts / lastClass, core-mechanics). */
@@ -79,10 +79,10 @@ export class LoadoutPanel {
     const v = this.value();
     try {
       const all = { ...(S.get('classLoadouts') || {}) };
-      all[v.cls] = { primary: v.primary, secondary: v.secondary, lethal: v.lethal, melee: v.melee, cls: v.cls };
+      all[v.cls] = { primary: v.primary, secondary: v.secondary, lethal: v.lethal, tactical: v.tactical, melee: v.melee, cls: v.cls };
       S.set('classLoadouts', all);
       S.set('lastClass', v.cls);
-      S.set('lastLoadout', { primary: v.primary, secondary: v.secondary, lethal: v.lethal, melee: v.melee, cls: v.cls });
+      S.set('lastLoadout', { primary: v.primary, secondary: v.secondary, lethal: v.lethal, tactical: v.tactical, melee: v.melee, cls: v.cls });
     } catch { /* Einstellungen gesperrt */ }
   }
 
@@ -99,12 +99,14 @@ export class LoadoutPanel {
     }).join('');
     const c = CLASSES[lo.cls];
     const slots = SLOTS.map(([k, label]) => {
-      const def = k === 'lethal' ? d.EQ[lo[k]] : d.W[k === 'melee' ? lo.melee || 'knife' : lo[k]];
+      const def = k === 'lethal' ? d.EQ[lo[k]] : k === 'tactical' ? d.EQ[lo.tactical || 'smoke'] : d.W[k === 'melee' ? lo.melee || 'knife' : lo[k]];
       return `<button type="button" class="m-tab lp-slot" role="tab" data-lslot="${k}" aria-selected="${k === this.slot}"><small>${label}</small><span>${esc(def ? def.name : '—')}</span></button>`;
     }).join('');
     let items = '';
     if (this.slot === 'lethal') {
       items = Object.values(d.EQ).filter((x) => !x.kind || x.kind === 'lethal').map((x) => this._item(x, x.id === lo.lethal, true, '')).join('');
+    } else if (this.slot === 'tactical') {
+      items = Object.values(d.EQ).filter((x) => x.kind === 'tactical').map((x) => this._item(x, x.id === (lo.tactical || 'smoke'), true, '')).join('');
     } else {
       for (const w of Object.values(d.W)) {
         if (w.slot !== this.slot) continue;
@@ -113,7 +115,7 @@ export class LoadoutPanel {
         items += this._item(w, on, ok, ok ? (this.slot === 'melee' ? (w.special ? 'Nahkampf' : 'Messer') : d.WC[w.cls] || w.cls) : `Nicht für ${c.name}`);
       }
     }
-    const wid = this.slot === 'lethal' ? null : this.slot === 'melee' ? lo.melee || 'knife' : lo[this.slot];
+    const wid = this.slot === 'lethal' || this.slot === 'tactical' ? null : this.slot === 'melee' ? lo.melee || 'knife' : lo[this.slot];
     this.host.innerHTML = `
       <div class="lp">
         <div class="lp-classes" role="group" aria-label="Klasse">${classes}</div>

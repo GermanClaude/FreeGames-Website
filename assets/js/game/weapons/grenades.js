@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { EQUIPMENT as DATA_EQUIPMENT } from '../../shared/weapons.data.js?v=20261028051912';
 import { clamp } from './ballistics/math.js?v=20261028051912';
+import { TrophySystem } from './trophy.js?v=20261028051912';
 
 export const GRENADE_GRAVITY = 16; // m/s² (weniger als Spieler – weite, gut lesbare Bögen wie in COD)
 const RADIUS = 0.06;
@@ -39,6 +40,7 @@ export class GrenadeSystem {
     this._templates = new Map();
     this._ledTex = null;
     this._ledMat = null;
+    this.trophies = new TrophySystem(this);   // Trophäensystem (13.11.): aufgestellte Abwehrgeräte
   }
 
   get G() { return this.system.G; }
@@ -207,12 +209,13 @@ export class GrenadeSystem {
       this._removeMesh(g);
     }
     const eq = g ? g.eq : this._eq(type);
-    this._boom(position.clone(), eq, actor || (g ? g.actor : null));
+    this._boom(position.clone(), eq, actor || (g ? g.actor : null), netId);
   }
 
   /* ------------------------------------------------------------ Simulation */
 
   update(dt) {
+    this.trophies.update(dt);
     if (this.fires.length) this._updateFires(dt);
     if (this.nets && this.nets.length) this._updateNets(dt);
     const list = this.list;
@@ -231,8 +234,17 @@ export class GrenadeSystem {
         if (g.fuse < -4) { list.splice(i, 1); this._removeMesh(g); }
         continue;
       }
+      // Trophäensystem: stellt sich auf, sobald es liegt (spätestens nach der Zündzeit)
+      if (g.eq.trophy && g.fuse > 0 && g.age > 0.15 && (g.rest || (g.rolling && g.velocity.lengthSq() < 1.2))) g.fuse = 0;
       if (g.fuse <= 0) this._explode(g, i);
     }
+  }
+
+  /** Granate ohne Wirkung entfernen (vom Trophäensystem abgefangen). */
+  removeSilently(g) {
+    const i = this.list.indexOf(g);
+    if (i >= 0) this.list.splice(i, 1);
+    this._removeMesh(g);
   }
 
   _simulate(g, dt, world) {
@@ -431,11 +443,12 @@ export class GrenadeSystem {
     const p = g.position.clone();
     if (!g.stuckTo || g.stuckTo === 'world') p.y += 0.08;
     this.G.events.emit('grenade:explode', { grenade: g, type: g.type, actor: g.actor, position: p.clone() });
-    this._boom(p, g.eq, g.actor);
+    this._boom(p, g.eq, g.actor, g.netId != null ? g.netId : g.id);
   }
 
-  _boom(p, eq, actor) {
+  _boom(p, eq, actor, id = null) {
     const G = this.G;
+    if (eq.trophy) return this.trophies.deploy(p, eq, actor, id);
     if (eq.fire) return this._ignite(p, eq, actor);
     if (eq.flash) return this._flashBang(p, eq, actor);
     if (eq.smoke) return this._smoke(p, eq, actor);
@@ -620,10 +633,12 @@ export class GrenadeSystem {
     for (const g of this.list) this._removeMesh(g);
     this.list.length = 0;
     this.fires.length = 0;
+    this.trophies.clear();
   }
 
   dispose() {
     this.clear();
+    this.trophies.dispose();
     for (const t of this._templates.values()) {
       if (t.fallback) { t.fallback.geo.dispose(); t.fallback.mat.dispose(); }
     }

@@ -75,7 +75,7 @@ export class Lobby {
       mapId: pick(S.get('lastMap'), d.MAPS, d.MAP_ORDER[0] || 'hafen'),
       difficulty: DIFF_ORDER.includes(S.get('difficulty')) ? S.get('difficulty') : 'regulaer',
       allies: null, enemies: null, balance: true,
-      primary: last.primary, secondary: last.secondary, lethal: last.lethal, melee: last.melee,
+      primary: last.primary, secondary: last.secondary, lethal: last.lethal, melee: last.melee, tactical: last.tactical,
       style: GAME_STYLES[S.get('gameStyle')] ? S.get('gameStyle') : 'arcade', cls: CLASSES[S.get('lastClass')] ? S.get('lastClass') : 'sturm',
       matchLength: 'standard',
       // atmosphere-weather: Wetter/Tageszeit wie die übrigen Lobby-Optionen gemerkt ('standard' = Kartenvorgabe)
@@ -112,6 +112,7 @@ export class Lobby {
     if (!okW(base.secondary, 'secondary')) base.secondary = def.secondary;
     if (!base.lethal || !d.EQ[base.lethal] || !this.unlocked(base.lethal)) base.lethal = def.lethal;
     if (!okW(base.melee, 'melee')) base.melee = 'knife';
+    if (!base.tactical || !d.EQ[base.tactical] || d.EQ[base.tactical].kind !== 'tactical' || !this.unlocked(base.tactical)) base.tactical = 'smoke';
     this.cfg = base;
     this._fixMode();
   }
@@ -189,7 +190,7 @@ export class Lobby {
       modeId: c.modeId, mapId: c.mapId, difficulty: c.difficulty, allies: c.allies, enemies: c.enemies,
       style: c.style, crosshair: c.style === 'realistisch' ? !!this.G.settings.get('realisticCrosshair') : null,
       matchLength: c.matchLength, timeOfDay: this._todFor(c) || 'standard', vehicles: c.vehicles !== 'aus', tankEra: c.tankEra || 'karte', weather: c.weather && c.weather !== 'standard' ? c.weather : null,
-      loadout: { primary: c.primary, secondary: c.secondary, lethal: c.lethal, melee: c.melee || 'knife', cls: c.cls, camo, att: pickAtt(c), ...(skin ? { skin } : {}) },
+      loadout: { primary: c.primary, secondary: c.secondary, lethal: c.lethal, tactical: c.tactical || 'smoke', melee: c.melee || 'knife', cls: c.cls, camo, att: pickAtt(c), ...(skin ? { skin } : {}) },
       modeOpts: this._modeOpts(c.modeId), // Modus-Einstellungen (der Modus liest sie offline aus settings.modeOptions)
       ...(c.limits && c.limits.modeId === c.modeId ? { timeLimit: c.limits.timeLimit, scoreLimit: c.limits.scoreLimit } : {}),
     };
@@ -508,10 +509,12 @@ export class Lobby {
     const d = this._data();
     const c = this.cfg;
     const lvl = this.level();
-    const slots = [['primary', 'Primär', d.W[c.primary]], ['secondary', 'Sekundär', d.W[c.secondary]], ['melee', 'Messer', d.W[c.melee || 'knife']], ['lethal', 'Granate', d.EQ[c.lethal]]];
+    const slots = [['primary', 'Primär', d.W[c.primary]], ['secondary', 'Sekundär', d.W[c.secondary]], ['melee', 'Messer', d.W[c.melee || 'knife']], ['lethal', 'Granate', d.EQ[c.lethal]], ['tactical', 'Taktisch', d.EQ[c.tactical || 'smoke']]];
     let list = '';
     if (this.slot === 'lethal') {
       list = Object.values(d.EQ).filter((x) => !x.kind || x.kind === 'lethal').map((x) => this._item(x, x.id === c.lethal, lvl, 'Ausrüstung')).join('');
+    } else if (this.slot === 'tactical') {
+      list = Object.values(d.EQ).filter((x) => x.kind === 'tactical').map((x) => this._item(x, x.id === (c.tactical || 'smoke'), lvl, 'Taktisch')).join('');
     } else {
       const ws = Object.values(d.W).filter((w) => w.slot === this.slot);
       const order = d.CLASS_ORDER.length ? d.CLASS_ORDER : [...new Set(ws.map((w) => w.cls))];
@@ -571,7 +574,11 @@ export class Lobby {
     const locked = !this.unlocked(id);
     const isEq = !!d.EQ[id];
     let body = '';
-    if (isEq) {
+    if (isEq && def.trophy) {
+      body = `<div class="lo-facts">
+        ${fact('Abfangradius', meters(def.trophy.radius, 0))}${fact('Ladungen', String(def.trophy.charges))}${fact('Haltbarkeit', num(def.trophy.health))}
+        ${fact('Fängt ab', 'Granaten, Werfer, Raketen')}${fact('Anzahl', String(def.count || 1))}</div>`;
+    } else if (isEq) {
       body = `<div class="lo-facts">
         ${fact('Zündzeit', secs(def.fuse, 1))}${fact('Radius', meters(def.radius, 1))}${fact('Max. Schaden', num(def.maxDamage))}
         ${fact('Vorkochen', def.cookable ? 'Ja' : 'Nein')}${fact('Haftend', def.sticky ? 'Ja' : 'Nein')}${fact('Anzahl', String(def.count || 1))}</div>`;
@@ -609,9 +616,10 @@ export class Lobby {
           ${fact('Visier', (d.SIGHTS[def.sight] && d.SIGHTS[def.sight].name) || '—')}${fact('Feuermodus', d.fireModesOf ? d.fireModesOf(def).map((m) => d.fireModeLabel(def, m)).join(' / ') : d.FIRE[def.fireMode] || def.fireMode)}
         </div>`;
     }
-    const equipped = c[isEq ? 'lethal' : def.slot] === id;
+    const eqSlot = isEq && def.kind === 'tactical' ? 'tactical' : 'lethal';
+    const equipped = (isEq ? c[eqSlot] || (eqSlot === 'tactical' ? 'smoke' : null) : c[def.slot]) === id;
     host.innerHTML = `
-      <div class="lo-dhead"><small>${esc(isEq ? 'Granate' : (d.CLASSES[def.cls] || def.cls))}</small><h3>${esc(def.name)}<em>.</em></h3></div>
+      <div class="lo-dhead"><small>${esc(isEq ? (def.kind === 'tactical' ? 'Taktisch' : 'Granate') : (d.CLASSES[def.cls] || def.cls))}</small><h3>${esc(def.name)}<em>.</em></h3></div>
       <p class="lo-desc">${esc(def.description || '')}</p>
       ${locked ? `<div class="lo-locked">${ICON.lock}<span>${def.og ? 'Nur für Spieler der ersten Stunde (bis 13.10.2026) – ein Dankeschön, nicht mehr freischaltbar.' : `Freischaltung ab <b>Stufe ${def.unlockLevel}</b>. Du bist Stufe ${this.level()}.`}</span></div>` : equipped ? `<div class="lo-on">${ICON.check}<span>Ausgerüstet</span></div>` : ''}
       ${body}
@@ -626,8 +634,8 @@ export class Lobby {
     this.view = id;
     if (d.W[id] && !classAllows(c.cls, d.W[id].cls)) { this.menus.sound('error'); this._renderLoadout(); this._showView(); return; }
     if (this.unlocked(id)) {
-      const slot = d.EQ[id] ? 'lethal' : def.slot;
-      if (slot === 'primary' || slot === 'secondary' || slot === 'melee' || slot === 'lethal') c[slot] = id;
+      const slot = d.EQ[id] ? (d.EQ[id].kind === 'tactical' ? 'tactical' : 'lethal') : def.slot;
+      if (slot === 'primary' || slot === 'secondary' || slot === 'melee' || slot === 'lethal' || slot === 'tactical') c[slot] = id;
       this.menus.sound('confirm');
     } else this.menus.sound('error');
     this._renderLoadout();
@@ -677,7 +685,7 @@ export class Lobby {
     const c = this.cfg;
     try {
       const all = { ...(this.G.settings.get('classLoadouts') || {}) };
-      all[c.cls] = { primary: c.primary, secondary: c.secondary, lethal: c.lethal, cls: c.cls };
+      all[c.cls] = { primary: c.primary, secondary: c.secondary, lethal: c.lethal, tactical: c.tactical, cls: c.cls };
       this.G.settings.set('classLoadouts', all);
     } catch { /* */ }
   }
@@ -701,11 +709,13 @@ export class Lobby {
     const p = d.W[c.primary];
     const s = d.W[c.secondary];
     const g = d.EQ[c.lethal];
+    const tq = d.EQ[c.tactical || 'smoke'];
     const streaks = (d.MODES[c.modeId] || {}).streaks ? Object.values(d.STREAKS).sort((a, b) => a.kills - b.kills) : [];
     this.el.kit.innerHTML = `
       <div class="lb-kit-row"><small>Primär</small><span class="ico">${p && p.icon ? p.icon : ''}</span><b>${esc(p ? p.name : '—')}</b></div>
       <div class="lb-kit-row"><small>Sekundär</small><span class="ico">${s && s.icon ? s.icon : ''}</span><b>${esc(s ? s.name : '—')}</b></div>
       <div class="lb-kit-row"><small>Granate</small><span class="ico sm">${g && g.icon ? g.icon : ''}</span><b>${esc(g ? g.name : '—')}</b></div>
+      <div class="lb-kit-row"><small>Taktisch</small><span class="ico sm">${tq && tq.icon ? tq.icon : ''}</span><b>${esc(tq ? tq.name : '—')}</b></div>
       ${streaks.length ? `<div class="lb-kit-streaks">${streaks.map((x) => `<span title="${esc(x.description)}"><i>${x.icon}</i>${x.kills}</span>`).join('')}</div>` : ''}`;
   }
 
@@ -715,7 +725,7 @@ export class Lobby {
     const wid = id || (this.tab === 'loadout' ? this.view || this.cfg[this.slot] : this.cfg.primary);
     const def = d.W[wid];
     const pv = this.menus.preview;
-    if (this.el.stageName) this.el.stageName.innerHTML = def ? `<small>${esc(d.CLASSES[def.cls] || '')}</small><b>${esc(def.name)}</b>` : (d.EQ[wid] ? `<small>Granate</small><b>${esc(d.EQ[wid].name)}</b>` : '');
+    if (this.el.stageName) this.el.stageName.innerHTML = def ? `<small>${esc(d.CLASSES[def.cls] || '')}</small><b>${esc(def.name)}</b>` : (d.EQ[wid] ? `<small>${d.EQ[wid].kind === 'tactical' ? 'Taktisch' : 'Granate'}</small><b>${esc(d.EQ[wid].name)}</b>` : '');
     if (pv && typeof pv.setCamo === 'function') pv.camo = def ? equippedCamo(this.G, wid) || null : null; // vor setWeapon: neues Modell gleich mit Tarnung
     if (pv && (def || d.EQ[wid])) pv.setWeapon(wid);
     if (pv && typeof pv.setCamo === 'function' && def) pv.setCamo(equippedCamo(this.G, wid) || null);

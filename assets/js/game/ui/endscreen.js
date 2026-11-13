@@ -100,6 +100,7 @@ export class EndScreen {
           <ul class="e-break">${(pr.breakdown || []).map((b, i) => `<li style="--i:${i}"><span>${esc(b.label)}</span><b>${b.xp >= 0 ? '+' : ''}${num(b.xp)}</b></li>`).join('')}</ul>
           ${pr.levelUp ? `<div class="e-up" data-xp-up hidden><b>Aufgestiegen<em>.</em></b> Stufe ${pr.levelAfter}${pr.rankUp ? ` · Neuer Dienstgrad: ${esc(pr.rankAfter.name)}` : ''}</div>` : ''}
           ${unlocks ? `<div class="e-unlocks"><small>Neu freigeschaltet</small>${unlocks}</div>` : ''}
+          ${(pr.trophies || []).length ? `<div class="e-unlocks e-troph"><small>Trophäen freigeschaltet</small>${pr.trophies.slice(0, 8).map((t) => `<div class="e-unlock tier-${esc(t.tier)}" title="${esc(t.text)}"><span class="ico">${ICON[t.icon] || ICON.trophy}</span><span>${esc(t.name)}<em>${esc({ bronze: 'Bronze', silber: 'Silber', gold: 'Gold', platin: 'Platin' }[t.tier] || '')}</em></span></div>`).join('')}${pr.trophies.length > 8 ? `<div class="e-unlock"><span>und ${pr.trophies.length - 8} weitere</span></div>` : ''}</div>` : ''}
           ${(pr.challenges || []).length ? `<div class="e-unlocks e-chall"><small>Herausforderungen erfüllt</small>${pr.challenges.map((c) => `<div class="e-unlock"><span class="ico">${ICON.trophy}</span><span>${esc(c.text)} <b>+${num(c.xp)} EP</b></span></div>`).join('')}</div>` : ''}
         </div>`;
     } else if (G.match && G.match.unranked) {

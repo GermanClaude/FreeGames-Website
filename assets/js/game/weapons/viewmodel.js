@@ -188,6 +188,7 @@ export class ViewModel {
       molotov: this._prop(createWeaponModel('molotov', { lod: 'first' })),
       flash: this._prop(createWeaponModel('flash', { lod: 'first' })),
       smoke: this._prop(createWeaponModel('smoke', { lod: 'first' })),
+      trophy: this._prop(createWeaponModel('trophy', { lod: 'first' })),   // Trophäensystem (13.11.)
       plate: this._prop(createWeaponModel('plate', { lod: 'first' })),
     };
     this._meleeKey = 'knife';
@@ -1038,6 +1039,7 @@ export class ViewModel {
     const rs = this.G?.settings?.get?.('reticleSize');
     if (rs !== this._reticleSize) { this._reticleSize = rs; setReticleSize(rs); }
     this._magNow = s.mag ?? 1;
+    this._spin = s.spin || 0;   // Gatling-Drehzahl (controller.js spin, 0–1)
     this._fireMode = s.fireMode || 'auto';
     this._magRaw = typeof s.mag === 'number' ? s.mag : null;   // Magazininhalt (ohne Controller: voll)
     const player = this.G?.player;
@@ -1596,6 +1598,14 @@ export class ViewModel {
       if (this._ejPend && ((pulse > 0.68 && dcO) || this._boltT >= 0.6 || this._boltLocked)) { this._ejPend = false; this._ejectFromBolt(); }
     }
     if (this._ejPend && !this._part('bolt')) this._ejPend = false;
+    // Gatling (RG-6 Orkan, 13.11.): Laufbündel dreht mit der Drehzahl. Echte 30 U/s ergäben bei 60 Bildern je Bild eine
+    // halbe Umdrehung (Stroboskop: Bündel scheint zu stehen) – sichtbar wird deshalb eine scheinbare Drehung von ≈ 3 U/s
+    // gezeigt, die mit der Drehzahl quadratisch anläuft und beim Auslaufen langsam ausdreht
+    if (this._part('rotor')) {
+      const w = (this._spin || 0) * (this._spin || 0) * 19;
+      this._rotorA = ((this._rotorA || 0) + w * dt) % (Math.PI * 2);
+      this._setPartOffset('rotor', 0, 0, 0, 0, 0, this._rotorA);
+    }
     // MG mit Gurtkasten (Nutzer 13.10.2026): Gurt rückt beim Schuss eine Teilung zur Waffe, der lose Kastendeckel
     // hüpft je Schuss verschieden hoch und prellt nach (Feder mit Anschlag)
     if (this._part('belt') && !act) this._setPartOffset('belt', 0.0068 * pulse, 0.0082 * pulse, 0); // eine Gliederteilung

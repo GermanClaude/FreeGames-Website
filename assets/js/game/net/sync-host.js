@@ -180,6 +180,9 @@ export class HostSync {
     s.on('explosion', (e) => this._relayExplosion(e));
     s.on('grenade:throw', (e) => this._relayGrenade(e));
     s.on('grenade:explode', (e) => this._relayGrenadeBoom(e));
+    // Trophäensystem (13.11.): Abfangen/Zerstörung entscheidet der Host; Aufstellen kommt über 'gb' (Zündung der Wurf-Granate)
+    s.on('trophy:intercept', (e) => { if (e && e.trophy && this.net.online) this.net.send('all', { t: 'ev', e: 'ti', id: e.trophy.id, k: e.kind === 'rocket' ? 'r' : 'g', p: e.kind === 'rocket' ? e.rid : e.gid, pos: arr3(e.position, 3) }); });
+    s.on('trophy:destroy', (e) => { if (e && e.trophy && this.net.online) this.net.send('all', { t: 'ev', e: 'td', id: e.trophy.id, w: e.why === 'leer' ? 'l' : 'z' }); });
     s.on('projectile:launch', (e) => this._relayRocket(e));
     s.on('projectile:detonate', (e) => this._relayRocketEnd(e, false));
     s.on('projectile:dud', (e) => this._relayRocketEnd(e, true));

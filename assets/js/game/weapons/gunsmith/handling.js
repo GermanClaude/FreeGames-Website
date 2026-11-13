@@ -9,6 +9,7 @@ export const ID_TO_MODEL = {
   karambit: 'karambit', machete: 'machete', tomahawk: 'tomahawk', kampfaxt: 'kampfaxt', schlagstock: 'schlagstock', kampfstock: 'kampfstock', spaten: 'spaten',
   ar_ursprung: 'ursprung', pi_funke: 'funke', erstlicht: 'erstlicht', // Waffen der ersten Stunde
   pi_p9a: 'p9a', smg_wirbel: 'wirbel', // neue Waffen (26.10.)
+  hmg_orkan: 'orkan', // RG-6 Orkan (13.11.)
 };
 
 // Hüfte (wie CoD Mobile): Waffe etwas höher und mittiger, rechte Hand mit Daumen und Fingern am Pistolengriff
@@ -94,6 +95,8 @@ HANDLING.kampfstock = { ...HANDLING.machete, weight: 0.55 };
 for (const k of ['m17', 'kv47', 'vp9', 'qx90']) HANDLING[k].inspectStyle = k === 'vp9' ? 'magcheck' : 'rifle';
 HANDLING.sk14.inspectStyle = 'magcheck';
 HANDLING.hm60.inspectStyle = 'belt';
+// RG-6 Orkan (13.11.): schwer, tief an der Hüfte, kaum Hochschlag (Masse 14 kg), dafür Zittern; Gurtwechsel wie HM-60
+HANDLING.orkan = { ...HANDLING.hm60, hip: [0.13, -0.19, -0.42], kick: { back: 0.008, up: 0.006, side: 0.006, roll: 0.012, kickRot: 0.004 }, weight: 2.2, flash: 1.1, flashLen: 0.9, reloadTime: 7.5, emptyTime: 8.5, equipTime: 1.3, cycle: 0.03, inspectStyle: 'belt' };
 HANDLING.brecher.inspectStyle = 'bolt';
 HANDLING.bulldog.inspectStyle = 'pump';
 HANDLING.p9.inspectStyle = 'pistol';
@@ -178,6 +181,8 @@ export const BODYCAM = {
   vp9: bcRifle('vp9', BC_RIFLE_HIP, BC_RIFLE_ROT),
   qx90: bcRifle('qx90', BC_RIFLE_HIP, BC_RIFLE_ROT),
   hm60: bcRifle('hm60', BC_RIFLE_HIP, BC_RIFLE_ROT),
+  // RG-6 Orkan (13.11.): schwer und breit – tiefer, weiter vorn und kaum gekantet, sonst deckt das Gehäuse das halbe Bild
+  orkan: bcRifle('orkan', [0.14, -0.19, -0.38], [0.02, 0.1, 0.16]),
   brecher: bcRifle('brecher', BC_RIFLE_HIP, BC_RIFLE_ROT),
   bulldog: bcRifle('bulldog', BC_RIFLE_HIP, BC_RIFLE_ROT),
   p9: bcRifle('p9', [0.06, -0.15, -0.34], [0.0, 0.03, 0.0], BC_PISTOL),

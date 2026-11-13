@@ -7,8 +7,9 @@ import { CLASSES, SOLDIER_CLASS_ORDER } from '../../shared/classes.data.js?v=202
 import { esc, num } from './dom.js?v=20261028051912';
 import { ICON } from './icons.js?v=20261028051912';
 import { camoCtx, swatch } from './loadout-panel.js?v=20261028051912';
+import { trophyView, TROPHY_TIERS } from '../../shared/trophies.data.js?v=20261028051912';
 
-const SECTIONS = [['challenges', 'Herausforderungen'], ['camos', 'Tarnungen'], ['outfits', 'Outfits'], ['secrets', 'Geheimnisse']];
+const SECTIONS = [['challenges', 'Herausforderungen'], ['trophies', 'Trophäen'], ['camos', 'Tarnungen'], ['outfits', 'Outfits'], ['secrets', 'Geheimnisse']];
 
 export class ProgressView {
   constructor(G) {
@@ -41,7 +42,7 @@ export class ProgressView {
     let prof;
     try { prof = this.G.profile.get(); } catch { prof = {}; }
     const tabs = SECTIONS.map(([id, label]) => `<button type="button" role="radio" data-psec="${id}" aria-checked="${id === this.sec}">${esc(label)}</button>`).join('');
-    const body = this.sec === 'camos' ? this._camos(prof) : this.sec === 'outfits' ? this._outfits(prof) : this.sec === 'secrets' ? this._secrets(prof) : this._challenges(prof);
+    const body = this.sec === 'camos' ? this._camos(prof) : this.sec === 'outfits' ? this._outfits(prof) : this.sec === 'secrets' ? this._secrets(prof) : this.sec === 'trophies' ? this._trophies(prof) : this._challenges(prof);
     this.host.innerHTML = `<div class="pg"><div class="m-seg pg-seg" role="radiogroup" aria-label="Fortschritt">${tabs}</div><div class="pg-body">${body}</div></div>`;
   }
 
@@ -96,6 +97,24 @@ export class ProgressView {
       return `<li class="pg-out"><span class="pg-cls">${ICON[id] || ICON.user}</span><span class="pg-ct"><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span>
         <span class="pg-tiers">${OPERATOR_TIERS.map((t) => `<em class="${lvl >= t.level ? 'on' : ''}${cur === t.id ? ' cur' : ''}" title="${esc(lvl >= t.level ? t.text : `Ab Stufe ${t.level}`)}">${esc(t.name)}</em>`).join('')}</span></li>`;
     }).join('')}</ul>`;
+  }
+
+  /** Trophäen (13.11.): Raster mit Stufe, Fortschritt, gesperrt/offen; Zähler je Stufe. */
+  _trophies(prof) {
+    let rows = [];
+    try { rows = trophyView(prof); } catch (err) { console.error('[NULLPUNKT] Trophäen:', err); }
+    const n = rows.filter((r) => r.done).length;
+    const fmt = (v, t) => (t.stat === 'longestKill' ? `${num(Math.floor(v))} m` : t.stat === 'hours' ? `${(Math.floor(v * 10) / 10).toLocaleString('de-DE')} h` : num(Math.floor(v)));
+    const per = Object.keys(TROPHY_TIERS).map((k) => {
+      const all = rows.filter((r) => r.tier === k);
+      return `<span class="tr-sum tier-${k}"><i></i>${esc(TROPHY_TIERS[k].name)} <b>${all.filter((r) => r.done).length}/${all.length}</b></span>`;
+    }).join('');
+    const card = (t) => `<li class="tr-card tier-${t.tier}${t.done ? ' is-done' : ''}" title="${esc(t.text)}">
+        <span class="tr-ico">${t.done ? ICON[t.icon || 'trophy'] || ICON.trophy : ICON.lock}</span>
+        <span class="tr-txt"><b>${esc(t.name)}</b><small>${esc(t.text)}</small></span>
+        <span class="tr-foot"><em>${esc(TROPHY_TIERS[t.tier].name)}</em><span>${t.done ? (t.at ? new Date(t.at).toLocaleDateString('de-DE') : 'Freigeschaltet') : `${fmt(t.value, t)} / ${fmt(t.goal, t)}`}</span></span>
+        <i class="pg-bar"><u style="transform:scaleX(${t.progress.toFixed(3)})"></u></i></li>`;
+    return `<p class="pg-count"><b>${n}</b> / ${rows.length} Trophäen freigeschaltet</p><div class="tr-sums">${per}</div><ul class="tr-grid">${rows.map(card).join('')}</ul>`;
   }
 
   _secrets(prof) {

@@ -1,5 +1,6 @@
 // Welle 2 – Nahkampf & Wurfmittel: Karambit, Machete, Kampfbeil; Aufschlag-, Brand-, Blend- und Rauchgranate;
 // Schutzplatte (Westen-Einschub, Requisit der Ego-Ansicht). Ursprung = Griffmitte; Klinge/Kopf nach −Z bzw. oben.
+import * as THREE from 'three';
 import { ellipsePts } from './parts.js?v=20261028051912';
 
 // Gummierter Griff entlang u (Länge len, Radius r, Ringe)
@@ -183,6 +184,95 @@ export function molotov(b) {
   b.anchor('pinGrab', 0.022, 0.122, 0, { part: 'pin' });
   b.anchor('rightHandGrip', 0, 0, 0);
   b.meta = { sight: 'none', kind: 'grenade' };
+}
+
+export function trophy(b) {
+  // Trophäensystem (13.11.), zusammengeklappt (Hand/Wurf): Gehäuse-Puck mit Gummifuß, gelbem Kennring, Sensorkuppel,
+  // drei angelegten Stativbeinen, Kühlschlitzen, Status-LED und Sicherungssplint. Aufgestellt: weapons/trophy.js.
+  const s = b.seg(22, 8);
+  b.cyl('polymerOD', 0.042, 0.045, 0.05, 0, 0, 0, { axis: 'v', seg: s });
+  b.cyl('rubber', 0.046, 0.046, 0.008, 0, -0.028, 0, { axis: 'v', seg: s });
+  b.cyl('paintYellow', 0.0429, 0.0434, 0.005, 0, 0.012, 0, { axis: 'v', seg: s });
+  b.cyl('steelDark', 0.03, 0.035, 0.012, 0, 0.031, 0, { axis: 'v', seg: s });
+  b.sphere('lens', 0.022, 0, 0.037, 0, { sy: 0.7, seg: b.seg(18, 7), hseg: b.seg(10, 4) });
+  if (b.hi) b.torus('steel', 0.0225, 0.0016, 0, 0.037, 0, { rx: Math.PI / 2, seg: 8, tseg: 24 });
+  for (let i = 0; i < 3; i++) {
+    const a = i * 2 * Math.PI / 3 + 0.5;
+    b.box('aluOD', 0.008, 0.054, 0.006, Math.cos(a) * 0.0465, -0.002, Math.sin(a) * 0.0465, { ry: a, c: 0.0012 });
+    b.sphere('rubber', 0.005, Math.cos(a) * 0.0468, -0.03, Math.sin(a) * 0.0468, { seg: 8, hseg: 6 });
+  }
+  if (b.hi) for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3 + Math.PI / 6;
+    for (const dv of [-0.006, -0.016]) b.box('cavity', 0.0016, 0.004, 0.014, Math.cos(a) * 0.0437, dv, Math.sin(a) * 0.0437, { ry: a, c: 0 });
+  }
+  b.part('led', 0, 0.02, 0);
+  b.sphere('glowGreen', 0.0032, 0.0, 0.02, 0.044, { part: 'led', seg: 8, hseg: 6 });
+  b.part('pin', -0.045, 0.031, 0);
+  b.torus('steelBright', 0.0105, 0.0014, -0.058, 0.031, 0, { part: 'pin', ry: Math.PI / 2, seg: b.seg(6, 3), tseg: b.seg(18, 8) });
+  b.cyl('steelBright', 0.0011, 0.0011, 0.024, -0.046, 0.031, 0, { part: 'pin', axis: 'x', seg: 6 });
+  b.anchor('pinGrab', -0.066, 0.031, 0, { part: 'pin' });
+  b.anchor('rightHandGrip', 0, 0, 0);
+  b.meta = { sight: 'none', kind: 'grenade' };
+}
+
+/**
+ * Trophäensystem aufgestellt (13.11.): Dreibein (Ursprung = Boden), Gelenkring, Gehäuse mit Kennring und Kühlschlitzen,
+ * drehender Sensorkopf (Teil 'trophyHead': vier Sensorfenster, Kuppel, Abfangrohr nach vorn, Anker 'muzzle'), Antenne,
+ * Status-LED (Teil 'led'). Drehen/Blinken: weapons/trophy.js.
+ */
+export function trophyDeployed(b) {
+  const s = b.seg(24, 8), H = 0.2;
+  const up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3(), q = new THREE.Quaternion();
+  for (let i = 0; i < 3; i++) {
+    const a = i * 2 * Math.PI / 3 + Math.PI / 6;
+    const fx = Math.cos(a) * 0.19, fu = Math.sin(a) * 0.19, hx = Math.cos(a) * 0.03, hu = Math.sin(a) * 0.03;
+    dir.set(fx - hx, 0.012 - H, -(fu - hu));
+    const len = dir.length();
+    q.setFromUnitVectors(up, dir.normalize());
+    const pre = new THREE.Matrix4().makeRotationFromQuaternion(q);
+    b.cyl('aluOD', 0.0058, 0.0068, len, (fx + hx) / 2, (0.012 + H) / 2, (fu + hu) / 2, { axis: 'v', pre, seg: b.seg(10, 6) });
+    // Strebe vom Bein zur Mittelsäule, Gelenk, Gummifuß
+    const mx = hx + (fx - hx) * 0.45, mv = H + (0.012 - H) * 0.45, mu = hu + (fu - hu) * 0.45;
+    dir.set(-mx, H - 0.075 - mv, mu);
+    const sl = dir.length();
+    q.setFromUnitVectors(up, dir.normalize());
+    b.cyl('steelDark', 0.0028, 0.0028, sl, mx / 2, (mv + H - 0.075) / 2, mu / 2, { axis: 'v', pre: new THREE.Matrix4().makeRotationFromQuaternion(q), seg: b.seg(8, 5) });
+    b.sphere('steelDark', 0.0095, hx, H - 0.004, hu, { seg: b.seg(10, 6), hseg: b.seg(8, 4) });
+    b.cyl('rubber', 0.015, 0.016, 0.009, fx, 0.0045, fu, { axis: 'v', seg: b.seg(12, 6) });
+  }
+  b.cyl('steelDark', 0.008, 0.008, 0.08, 0, H - 0.04, 0, { axis: 'v', seg: b.seg(10, 6) });
+  b.cyl('steelDark', 0.037, 0.037, 0.02, 0, H, 0, { axis: 'v', seg: s });
+  b.cyl('rubber', 0.046, 0.046, 0.008, 0, H + 0.014, 0, { axis: 'v', seg: s });
+  b.cyl('polymerOD', 0.042, 0.045, 0.05, 0, H + 0.043, 0, { axis: 'v', seg: s });
+  b.cyl('paintYellow', 0.0429, 0.0434, 0.005, 0, H + 0.055, 0, { axis: 'v', seg: s });
+  if (b.hi) for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3 + Math.PI / 6;
+    for (const dv of [0.026, 0.036]) b.box('cavity', 0.0016, 0.004, 0.014, Math.cos(a) * 0.0437, H + dv, Math.sin(a) * 0.0437, { ry: a, c: 0 });
+  }
+  // Antenne (am Gehäuse, dreht nicht mit)
+  b.cyl('steelDark', 0.0016, 0.0022, 0.13, -0.034, H + 0.12, -0.014, { axis: 'v', seg: 6 });
+  b.sphere('rubber', 0.0042, -0.034, H + 0.186, -0.014, { seg: 8, hseg: 6 });
+  // Status-LED
+  b.part('led', 0, H + 0.04, 0);
+  b.sphere('glowGreen', 0.0036, 0, H + 0.04, 0.0448, { part: 'led', seg: 8, hseg: 6 });
+  // Sensorkopf
+  const hv = H + 0.075;
+  b.part('trophyHead', 0, hv, 0);
+  b.cyl('steelDark', 0.031, 0.035, 0.016, 0, hv, 0, { part: 'trophyHead', axis: 'v', seg: s });
+  b.sphere('lens', 0.023, 0, hv + 0.008, 0, { part: 'trophyHead', sy: 0.72, seg: b.seg(20, 8), hseg: b.seg(12, 5) });
+  if (b.hi) b.torus('steel', 0.0235, 0.0017, 0, hv + 0.008, 0, { part: 'trophyHead', rx: Math.PI / 2, seg: 8, tseg: 28 });
+  for (let k = 0; k < 4; k++) {
+    const a = k * Math.PI / 2 + Math.PI / 4;
+    b.box('polymer', 0.007, 0.013, 0.018, Math.cos(a) * 0.034, hv, Math.sin(a) * 0.034, { part: 'trophyHead', ry: a, c: 0.0012 });
+    b.box('lens', 0.002, 0.008, 0.012, Math.cos(a) * 0.0378, hv, Math.sin(a) * 0.0378, { part: 'trophyHead', ry: a, c: 0 });
+  }
+  // Abfangrohr (zeigt nach vorn, u) mit Halter
+  b.box('steelDark', 0.016, 0.012, 0.03, 0, hv + 0.02, 0.01, { part: 'trophyHead', c: 0.002 });
+  b.cyl('steel', 0.0085, 0.0095, 0.062, 0, hv + 0.03, 0.024, { part: 'trophyHead', seg: b.seg(14, 6) });
+  b.cyl('cavity', 0.006, 0.006, 0.002, 0, hv + 0.03, 0.0555, { part: 'trophyHead', seg: b.seg(12, 6) });
+  b.anchor('muzzle', 0, hv + 0.03, 0.057, { part: 'trophyHead' });
+  b.anchor('rightHandGrip', 0, 0, 0);
+  b.meta = { sight: 'none', kind: 'gear' };
 }
 
 export function plate(b) {
