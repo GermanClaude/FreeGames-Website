@@ -34,7 +34,10 @@ const TIME_STEPS = [0, 180, 300, 480, 600, 900, 1200, 1800, 2700, 3600];
 const timeIdx = (m, s) => (s.timeLimit ? Math.max(0, TIME_STEPS.findIndex((t) => t >= s.timeLimit)) : 0);
 const scoreSteps = (m) => {
   if (!m || !(m.scoreLimit > 0) || m.id === 'gun') return [];
-  return [...new Set([0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6].map((f) => Math.max(1, Math.round(m.scoreLimit * f))))].sort((a, b) => a - b);
+  const base = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6].map((f) => Math.max(1, Math.round(m.scoreLimit * f)));
+  // Abschuss-Modi (13.11.): Ziele bis 1000 Abschüsse
+  if (m.scoreUnit === 'Abschüsse') base.push(250, 500, 1000);
+  return [...new Set(base)].sort((a, b) => a - b);
 };
 const minText = (sec) => `${Math.round(sec / 60)} min`;
 const limitText = (m, s) => ({

@@ -54,6 +54,9 @@ export const MODES = {
     lethals: true,
     online: true,
     onlineVehicles: true,
+    options: [
+      { id: 'ziel', label: 'Abschussziel', values: [20, 40, 75, 100, 250, 500, 1000], def: 40, limit: 'scoreLimit', hint: 'Abschüsse bis zum Sieg. Über 100 gibt es kein Zeitlimit.' },
+    ],
     recommendedMaps: ['hafen', 'altstadt', 'werk'],
     icon: icon('<path d="M3 6l6.5 6L3 18"/><path d="M21 6l-6.5 6 6.5 6"/><path d="M12 4v3M12 17v3"/>'),
   },
@@ -87,6 +90,9 @@ export const MODES = {
     lethals: true,
     online: true,
     onlineVehicles: true,
+    options: [
+      { id: 'ziel', label: 'Abschussziel', values: [10, 25, 50, 100, 250, 500, 1000], def: 25, limit: 'scoreLimit', hint: 'Abschüsse bis zum Sieg. Über 100 gibt es kein Zeitlimit.' },
+    ],
     recommendedMaps: ['altstadt', 'werk', 'hafen'],
     icon: icon('<circle cx="12" cy="12" r="7"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/><circle cx="12" cy="12" r="1"/>'),
   },

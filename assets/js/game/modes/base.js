@@ -3,7 +3,7 @@
 // Unterklassen überschreiben die Haken onKillScored / onSuicide / tick / decide / extraRow.
 
 import * as THREE from 'three';
-import { MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261028051912';
+import { modeOptionValues, parseModeOptions, MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261028051912';
 import { WEAPONS } from '../../shared/weapons.data.js?v=20261028051912';
 import { chooseSpawn } from './spawns.js?v=20261028051912';
 import { MedalTracker } from './medals.js?v=20261028051912';
@@ -24,7 +24,32 @@ const num = (...vals) => {
   return 0;
 };
 
+
+// Abschussziel (13.11.): Modi mit Option „ziel“ und limit 'scoreLimit' (TDM, FFA) – offline aus der Lobby-Option,
+// online gilt das Punkteziel des Raums. Große Ziele (über 100) heben das Zeitlimit auf, sonst wären 1000 Abschüsse
+// in 10 Minuten nicht zu schaffen (ausdrücklich gesetztes Zeitlimit bleibt).
+function killGoalOption(def) {
+  return ((def && def.options) || []).find((o) => o.id === 'ziel' && o.limit === 'scoreLimit') || null;
+}
+
 export class BaseMode {
+  _applyKillGoal(G, opts = {}) {
+    const opt = killGoalOption(this.def);
+    if (!opt || this.def.id === 'hp') return;
+    const online = !!(G.match && G.match.net);
+    const explicit = Number(opts.scoreLimit ?? opts.score);
+    if (online || (Number.isFinite(explicit) && explicit > 0)) return;
+    let raw = {};
+    try { raw = { ...((G.settings.get('modeOptions') || {})[this.id] || {}) }; } catch { raw = {}; }
+    const url = G.params && typeof G.params.get === 'function' ? G.params.get('mopt') : null;
+    if (url) raw = { ...raw, ...parseModeOptions(url) };
+    const ziel = Number(modeOptionValues(this.id, opts.modeOpts || raw).ziel);
+    if (!(ziel > 0)) return;
+    this.scoreLimit = ziel;
+    const explicitTime = Number(opts.timeLimit ?? opts.time);
+    if (ziel > 100 && !(Number.isFinite(explicitTime) && explicitTime > 0)) this.timeLimit = 0;
+  }
+
   constructor(G, modeId, opts = {}) {
     this.cheats = null; // Cheat-Menü (attach → _attachCheats)
     this.G = G;
@@ -36,6 +61,9 @@ export class BaseMode {
     this.scoreLimit = num(opts.scoreLimit, opts.score, this.def.scoreLimit);
     this.timeLimit = num(opts.timeLimit, opts.time, this.def.timeLimit);
     this.respawnDelay = Number.isFinite(this.def.respawnDelay) ? this.def.respawnDelay : 3;
+    this._applyKillGoal(G, opts);
+    // Riesige Abschussziele (auch online aus dem Raum-Menü): ohne ausdrückliches Zeitlimit keine Zeitgrenze
+    if (this.def.scoreUnit === 'Abschüsse' && this.scoreLimit > 100 && !(Number(opts.timeLimit ?? opts.time) > 0)) this.timeLimit = 0;
     // Spielstil (Arcade/Realistisch): main setzt G.match.style + G.match.styleFlags (core-mechanics, classes.data.js)
     const m = G.match || {};
     this.style = m.style === 'realistisch' && this.id !== 'training' ? 'realistisch' : 'arcade';
@@ -676,7 +704,7 @@ export class BaseMode {
       shotsFired: ps.shotsFired | 0, shotsHit: Math.min(ps.shotsHit | 0, ps.shotsFired | 0), bestStreak: ps.bestStreak | 0,
       longestKill: Math.round((ps.longestKill || 0) * 10) / 10, damage: Math.round(ps.damage || 0), captures: ps.captures | 0,
       medals: this.medals.medalsOf(actor), weaponStats, duration, placement, players,
-      counters: { ...(this.counters.get(actor) || {}) }, style: this.style, cls: actor.cls || (actor.loadout && actor.loadout.cls) || null,
+      scoreLimit: this.scoreLimit | 0, counters: { ...(this.counters.get(actor) || {}) }, style: this.style, cls: actor.cls || (actor.loadout && actor.loadout.cls) || null,
     };
   }
 
