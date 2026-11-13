@@ -65,17 +65,7 @@ export function g7(b) {
   });
   // ---------------------------------------------------------------- Griffstück, Griff, Schacht, Magazin
   slab(b, 'gaPolyOD', M(R.LOWER), LOW_W, { id: 'g7Lower', r: 0.003, holes: (R.LOWER_HOLES || []).map(M) });
-  slab(b, 'gaPolyOD', M(R.GRIP), GRIP_W, {
-    id: 'g7Grip', r: 0.006,
-    mod: (d, x, v, u) => {
-      // Fischhaut-Feld an den Griffseiten (eingelassen, fein geriffelt am PC)
-      if (Math.abs(x) > GRIP_W - 0.002 && v < V(160) && v > V(262)) {
-        const g = Math.abs(Math.sin((u + v) * 1400)) * Math.abs(Math.sin((u - v) * 1400));
-        d = Math.max(d, -(0.00035 * g - (GRIP_W - Math.abs(x))));
-      }
-      return d;
-    },
-  });
+  slab(b, 'gaGripOD', M(R.GRIP), GRIP_W, { id: 'g7Grip', r: 0.006 });
   slab(b, 'gaSteel', M(R.WELL), 0.0182, {
     id: 'g7Well', r: 0.0015, cav: STEEL,
     // Prägefeld (Verstärkung) schräg auf der Seite wie am Original
