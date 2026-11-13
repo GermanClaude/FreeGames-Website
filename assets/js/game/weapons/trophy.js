@@ -350,7 +350,7 @@ export class TrophySystem {
       const beam = new THREE.Mesh(this._beamGeo, this._beamMat.clone());
       beam.position.copy(from);
       beam.quaternion.setFromUnitVectors(UP, _d.subVectors(at, from).normalize());
-      beam.scale.set(0.012, len, 0.012);
+      beam.scale.set(0.006, len, 0.006);
       beam.renderOrder = 6;
       G.scene.add(beam);
       const flash = new THREE.Sprite(this._ledVariant(0xffe2b0).clone());
@@ -402,7 +402,7 @@ export class TrophySystem {
       f.t += dt;
       const k = Math.max(0, 1 - f.t / f.life);
       f.beam.material.opacity = k * k;
-      f.beam.scale.x = f.beam.scale.z = 0.012 * (0.4 + k);
+      f.beam.scale.x = f.beam.scale.z = 0.006 * (0.4 + k);
       f.flash.material.opacity = k;
       f.flash.scale.setScalar(0.2 + (1 - k) * 0.9);
       f.muz.material.opacity = k * k;

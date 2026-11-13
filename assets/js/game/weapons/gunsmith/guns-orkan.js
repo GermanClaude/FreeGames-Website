@@ -2,8 +2,8 @@
 // (Gurtkasten links als Teil 'mag' mit Deckel 'lid', Gurt 'belt', Zuführdeckel 'cover', Ladehebel 'charge'), dazu das
 // Laufbündel als eigenes Teil 'rotor' (Drehpunkt auf der Bündelachse) – das Viewmodel dreht es mit der Hochdrehzahl
 // der Waffe (controller.js spin) und lässt es nachlaufen.
-import { ejectionPort, triggerGuard } from './parts.js?v=20261028051912';
-import { magRounds } from './magfill.js?v=20261028051912';
+import { ejectionPort, triggerGuard } from './parts.js?v=20261113221339';
+import { magRounds } from './magfill.js?v=20261113221339';
 
 export function orkan(b) {
   const axis = 0.072;          // Achse des Laufbündels

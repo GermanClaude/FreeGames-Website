@@ -3,9 +3,9 @@
 // Trophäen oben rechts ein. Gespeichert werden sie erst am Match-Ende (profile.recordMatch) – ungewertete Matches
 // (Gottmodus, Testlimits) und der Schießstand zeigen deshalb keinen Hinweis.
 
-import { trophyView, TROPHY_TIERS } from '../../shared/trophies.data.js?v=20261028051912';
-import { ICON } from './icons.js?v=20261028051912';
-import { esc } from './dom.js?v=20261028051912';
+import { trophyView, TROPHY_TIERS } from '../../shared/trophies.data.js?v=20261113221339';
+import { ICON } from './icons.js?v=20261113221339';
+import { esc } from './dom.js?v=20261113221339';
 
 const TOAST_LIFE = 4600; // ms (CSS-Animation tr-toast)
 

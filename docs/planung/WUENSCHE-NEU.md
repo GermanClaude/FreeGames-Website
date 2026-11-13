@@ -5,10 +5,10 @@ Reihenfolge laut Nathanael: 1) Mehrspieler, 2) Rest der Liste, 3) neue Wunschlis
 
 | # | Wunsch | Stand | Einschätzung |
 |---|---|---|---|
-| N1 | Deathmatch/TDM bis 1000 Abschüsse | in Arbeit (13.11.) | Abschussziel 10–1000 offline (Lobby) und online (Raum-Menü); über 100 ohne Zeitlimit |
-| N2 | Minigun | in Arbeit (13.11.) | Hochdrehen, sehr hohe Kadenz, langsames Laufen |
-| N3 | Trophäensystem (Abwehrgerät gegen Granaten/Raketen) | in Arbeit (13.11.) | Taktik-Ausrüstung, 2–3 Abfangladungen |
-| N4 | Trophäen/Erfolge | in Arbeit (13.11.) | Bronze/Silber/Gold/Platin im Fortschritt-Reiter |
+| N1 | Deathmatch/TDM bis 1000 Abschüsse | fertig (13.11.) | Abschussziel 10–1000 offline (Lobby) und online (Raum-Menü); über 100 ohne Zeitlimit |
+| N2 | Minigun | fertig (13.11.) | Hochdrehen, sehr hohe Kadenz, langsames Laufen |
+| N3 | Trophäensystem (Abwehrgerät gegen Granaten/Raketen) | fertig (13.11.) | Taktik-Ausrüstung, 2–3 Abfangladungen |
+| N4 | Trophäen/Erfolge | fertig (13.11.) | Bronze/Silber/Gold/Platin im Fortschritt-Reiter |
 | N5 | Größere Lobbys: 100 offline | offen | machbar mit LOD/vereinfachter KI für ferne Bots, 2–3 Sitzungen |
 | N6 | 1000 Spieler offline | offen, unsicher | nur als „Massenschlacht“ mit stark vereinfachten Figuren denkbar – erst Machbarkeitstest |
 | N7 | 100 Spieler online | offen, nicht mit P2P | bräuchte eigenen Server (laufende Kosten) |
