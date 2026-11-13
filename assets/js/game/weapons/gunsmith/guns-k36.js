@@ -5,8 +5,8 @@
 // Griffstück mit Abzugsbügel und Paddel-Magazinhalter, beidseitiger Wahlhebel, durchscheinendes Magazin mit Kuppelzapfen.
 // Umrisse aus dem Foto (photo-kit.js: Distanzfeld-Platten), Rundteile gedreht, Kleinteile von Hand.
 import * as R from './k36-ref.js?v=20261113221339';
-import { calib, slab, pocket, rib, crossHole, barrel, pins, screwHead, STEEL, POLY } from './photo-kit.js?v=20261113221339';
-import { sdfMesh, sdRoundRect, roundMax } from './sdfkit.js?v=20261113221339';
+import { calib, slab, pocket, rib, barrel, pins, slottedHider, STEEL, POLY } from './photo-kit.js?v=20261113221339';
+import { sdRoundRect } from './sdfkit.js?v=20261113221339';
 import { redDot } from './parts.js?v=20261113221339';
 import { magRounds } from './magfill.js?v=20261113221339';
 import { schrift } from './schrift.js?v=20261113221339';
@@ -76,21 +76,9 @@ export function k36(b) {
   const mu0 = U(R.MUZZLE_U[0]), mu1 = U(R.MUZZLE_U[1]);
   if (b.hi) {
     barrel(b, 'gaBlued', [[U(520), 0.0084], [mu0 + 0.001, 0.0084]], AX);
-    // Vier Zinken: Rohr mit vier Längsschlitzen von vorn, Bund hinten
-    const fr = 0.0106;
-    sdfMesh(b, (x, v, u) => {
-      const rr = Math.hypot(x, v - AX);
-      let d = Math.max(rr - (u < mu0 + 0.004 ? fr + 0.0008 : fr), Math.max(mu0 - u, u - mu1));
-      d = Math.max(d, -(rr - 0.0064));
-      if (u > mu0 + 0.006) {
-        const a = Math.atan2(v - AX, x), k = Math.abs(((a / (Math.PI / 2)) % 1 + 1) % 1 - 0.5) * (Math.PI / 2) * rr;
-        d = Math.max(d, -(0.0013 - (Math.PI / 4 * rr - k)));
-      }
-      return d;
-    }, [-0.013, AX - 0.013, mu0 - 0.002], [0.013, AX + 0.013, mu1 + 0.002], 0.0011, 'gaBlued', { cav: STEEL, fine: 0.6 });
-    b.bore(0.0046, 0, AX, mu1 - 0.004);
+    slottedHider(b, 'gaBlued', mu0, mu1, AX, { r: 0.0106, ri: 0.0064, n: 4, phase: Math.PI / 4 });
   } else {
-    b.cyl('gaBlued', 0.0105, 0.0105, mu1 - mu0, 0, AX, (mu0 + mu1) / 2, { seg: 6 });
+    slottedHider(b, 'gaBlued', mu0, mu1, AX);
   }
   b.anchor('muzzle', 0, AX, mu1 + 0.002);
   slab(b, 'gaSteel', M(R.LOOP), 0.006, { id: 'k36Loop', r: 0.0012, cav: STEEL, holes: [M([[521.5, 112], [529.5, 112], [529.5, 121], [521.5, 121]])], noLow: true });
@@ -155,7 +143,7 @@ export function k36(b) {
   mark(b, 'NP 041376', REC_W + 0.0002, V(92), U(345), 0.0026);
   // ---------------------------------------------------------------- Magazin (durchscheinend, Kuppelzapfen)
   k36Mag(b);
-  b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0.34, gw: 0.0152, gd: 0.022, gu: 0.0, ho: 0.02, tu: U(293) } });
+  b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0.34, gw: 0.0152, gd: 0.022, gu: 0.0, ho: 0.02, tu: 0.034 } });
   b.anchor('leftHandGrip', 0, V(104), U(470), { data: { style: 'under', w: HG_W, h: (V(60) - V(104)) / 2 } });
   b.meta = { sight: 'reddot', axis: AX, kind: 'rifle' };
 }

@@ -462,7 +462,7 @@ Object.assign(DEFS, {
   // Schwarz eloxiertes Aluminium (Vector-Oberteil, Minigun-Gehäuse)
   gbAlu: () => wearPatch(phys({ color: 0x232427, metalness: 0.35, roughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.4, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 3), normalScale: new THREE.Vector2(0.08, 0.08) }), ALU_WEAR),
   // Schichtholz (RPK, Pflaume-Lack) – Kacheln, Lack glänzt, Kanten hell abgegriffen
-  gbWood: () => wearPatch(phys({ color: 0xc89a82, map: woodMap('warm'), metalness: 0.0, roughness: 0.46, clearcoat: 0.3, clearcoatRoughness: 0.35, roughnessMap: wearMap(), normalMap: grainNormal(), normalScale: new THREE.Vector2(0.12, 0.12) }), { col: 0x8a5a3c, metal: 0, rough: 0.7, k: 0.6, bump: 0.00004, tone: 0.1, smear: 0.2 }),
+  gbWood: () => wearPatch(phys({ color: 0x9c7062, map: woodMap('warm'), metalness: 0.0, roughness: 0.46, clearcoat: 0.3, clearcoatRoughness: 0.35, roughnessMap: wearMap(), normalMap: grainNormal(), normalScale: new THREE.Vector2(0.12, 0.12) }), { col: 0x8a5a3c, metal: 0, rough: 0.7, k: 0.6, bump: 0.00004, tone: 0.1, smear: 0.2 }),
   // Oliv lackierter Stahl (Munitionskasten), Bakelit-Braun (RPK-Griff, Magazin AK-Stil)
   gbOlive: () => wearPatch(std({ color: 0x4b5232, metalness: 0.3, roughness: 0.62, ...GB_STEEL(2) }), { col: 0x7d7f78, metal: 1, rough: 0.35, k: 0.8, bump: 0.00006, tone: 0.1, smear: 0.25 }),
   gbBakelite: () => wearPatch(phys({ color: 0x5a2a17, metalness: 0.0, roughness: 0.42, clearcoat: 0.25, clearcoatRoughness: 0.3, ...GB_POLY(2) }), { col: 0x8a4a2a, metal: 0, rough: 0.5, k: 0.6, bump: 0.00004, tone: 0.12, smear: 0.2 }),

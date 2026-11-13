@@ -51,7 +51,9 @@ export function slab(b, mat, pts, hw, o = {}) {
     };
     sdfMesh(b, f, [x0 - W - 0.002, v0, u0], [x0 + W + 0.002, v1, u1], step, mat, { cav, part });
   };
+  const t0 = performance.now();
   if (id) b.shared(id, make); else make();
+  (globalThis.__pk ||= []).push([id || mat, Math.round(performance.now() - t0)]);
 }
 
 /** Vertieftes Feld (Tasche) in den Seitenflächen einer Platte: Rechteck (Mitte cu, cv, Halbmaße hu, hv, Ecke rr), Tiefe t. */
@@ -92,4 +94,25 @@ export function screwHead(b, mat, x, v, u, r, s = 1) {
   if (!b.hi) return;
   b.lathe(mat, [[0, 0], [0, r], [0.0006, r * 0.95], [0.0011, r * 0.6], [0.0011, 0]], s * x, v, u, { axis: 'x', ry: s > 0 ? 0 : Math.PI, seg: b.seg(16, 6) });
   if (b.max) b.box('cavity', 0.0003, r * 1.5, r * 0.3, s * (x + 0.0011), v, u, { c: 0 });
+}
+
+/**
+ * Mündungsfeuerdämpfer als Rohr mit n Längsschlitzen von vorn (Zinken), Bund hinten: u0…u1 entlang der Achse, Außenradius r,
+ * Bohrung ri, Schlitzbreite sw, Schlitze ab u0 + slot0. Bots: einfacher Zylinder.
+ */
+export function slottedHider(b, mat, u0, u1, axis, o = {}) {
+  const { r = 0.0106, ri = 0.0064, n = 4, sw = 0.0013, slot0 = 0.006, collar = 0.004, phase = 0, closed = false } = o;
+  if (!b.hi) { b.cyl(mat, r, r, u1 - u0, 0, axis, (u0 + u1) / 2, { seg: 6 }); return; }
+  const seg = (Math.PI * 2) / n;
+  sdfMesh(b, (x, v, u) => {
+    const rr = Math.hypot(x, v - axis);
+    let d = Math.max(rr - (u < u0 + collar ? r + 0.0008 : r), Math.max(u0 - u, u - u1));
+    d = Math.max(d, -(rr - ri));
+    if (u > u0 + slot0 && (!closed || u < u1 - 0.004)) {
+      const a = Math.atan2(v - axis, x) + phase, k = ((a / seg) % 1 + 1) % 1 - 0.5;   // −0,5…0,5 um die Schlitzmitte
+      d = Math.max(d, -(sw - Math.abs(k) * seg * rr));
+    }
+    return d;
+  }, [-r - 0.002, axis - r - 0.002, u0 - 0.002], [r + 0.002, axis + r + 0.002, u1 + 0.002], 0.0011, mat, { cav: STEEL, fine: 0.6 });
+  b.bore(ri * 0.72, 0, axis, u1 - (closed ? 0.0006 : 0.004));
 }

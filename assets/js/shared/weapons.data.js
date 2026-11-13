@@ -496,7 +496,7 @@ const FEEL = {
   ar_k36: { handling: { mass: 2.9, inertia: 0.88, swayScale: 0.95, aimDrift: 0.00045, reach: 0.84 }, recoil: { visual: 0.95, firstShotSpread: 0.75 } },
   ar_bx20: { handling: { mass: 3.7, inertia: 0.92, swayScale: 0.95, aimDrift: 0.0004, reach: 0.92 }, recoil: { visual: 0.9, firstShotSpread: 0.7 } },
   ar_g7: { handling: { mass: 4.6, inertia: 1.15, swayScale: 1.1, aimDrift: 0.0006, reach: 1.1 }, recoil: { visual: 1.25, firstShotSpread: 0.75 } },
-  smg_wespe: { handling: { mass: 2.1, inertia: 0.65, swayScale: 0.85, aimDrift: 0.00045, reach: 0.65 }, recoil: { visual: 0.8, firstShotSpread: 0.9 } },
+  smg_wespe: { handling: { mass: 2.7, inertia: 0.7, swayScale: 0.86, aimDrift: 0.00045, reach: 0.8 }, recoil: { visual: 0.8, firstShotSpread: 0.9 } },
   smg_keiler: { handling: { mass: 3.0, inertia: 0.85, swayScale: 0.92, aimDrift: 0.0004, reach: 0.81 }, recoil: { visual: 1.0, firstShotSpread: 0.8 } },
   lmg_lm8: { handling: { mass: 6.2, inertia: 1.35, swayScale: 1.15, aimDrift: 0.0008, reach: 1.09 }, recoil: { visual: 1.05, firstShotSpread: 0.85 } },
   sr_titan: { handling: { mass: 12.5, inertia: 1.75, swayScale: 1.3, aimDrift: 0, reach: 1.35 }, recoil: { visual: 1.0, firstShotSpread: 1 } },
@@ -723,7 +723,7 @@ const RAW = {
   },
   smg_wespe: {
     id: 'smg_wespe', name: 'KM-7 Wespe', cls: 'smg', slot: 'primary', unlockLevel: 8,
-    description: 'Winzige Maschinenpistole mit Magazin im Griff und über tausend Schuss pro Minute. Auf Türrahmen-Distanz ein Sturm – auf der Straße nur noch ein Summen.',
+    description: 'Kompakte Maschinenpistole mit Rückstoßumlenkung und über tausend Schuss pro Minute. Auf Türrahmen-Distanz ein Sturm – auf der Straße nur noch ein Summen.',
     damage: { max: 22, min: 13, rangeStart: 9, rangeEnd: 20 }, headMult: 1.25, limbMult: 0.9, pellets: 1,
     rpm: 1050, fireMode: 'auto', burstCount: 1, mag: 32, reserve: 160,
     reloadTime: 1.8, reloadEmptyTime: 2.3, perShellReload: false,
