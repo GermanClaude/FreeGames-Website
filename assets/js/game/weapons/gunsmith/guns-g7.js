@@ -5,8 +5,8 @@
 // fester Schaft mit Fächern und Kappen, Griffstück mit Wahlhebel (S-E-F) und Haltebolzen, gerades Stahlmagazin.
 // Umrisse aus dem Foto (photo-kit.js), Gehäuse und Kleinteile wie beim VP-9 (hk-parts.js).
 import * as R from './g7-ref.js?v=20261113221339';
-import { calib, slab, pocket, rib, barrel, pins, slottedHider, STEEL, POLY } from './photo-kit.js?v=20261113221339';
-import { field2, box2, sdfMesh, sdRoundRect, roundMax, segDist } from './sdfkit.js?v=20261113221339';
+import { calib, slab, rib, groove, barrel, pins, slottedHider, STEEL } from './photo-kit.js?v=20261113221339';
+import { field2, box2, sdfMesh, sdRoundRect, roundMax } from './sdfkit.js?v=20261113221339';
 import { hkSection, hkDrum, hkHood, hkCockingHandle, hkSelector } from './hk-parts.js?v=20261113221339';
 import { magRounds } from './magfill.js?v=20261113221339';
 import { schrift } from './schrift.js?v=20261113221339';
@@ -58,10 +58,7 @@ export function g7(b) {
     mod: (d, x, v, u) => {
       if (d > 0.003) return d;
       // Längsrillen (sieben je Seite) und Laufdurchtritt
-      for (let i = 0; i < 7; i++) {
-        const gv = V(66 + i * 7.5);
-        if (Math.abs(x) > HG_W - 0.003 && Math.abs(v - gv) < 0.0016 && u > U(668) && u < U(1040)) d = Math.max(d, -(0.0011 - Math.abs(v - gv) * 0.7 - Math.max(0, HG_W - Math.abs(x) - 0.0009)));
-      }
+      for (let i = 0; i < 6; i++) d = groove(d, x, v, u, HG_W, U(672), U(1036), V(68 + i * 8.5), 0.0024, 0.0011);
       d = Math.max(d, -(Math.hypot(x, v - SEC.tubeV) - TUBE_R - 0.0004));
       return d;
     },
@@ -147,9 +144,7 @@ function g7Receiver(b) {
     if (d2 > 0.006) return d2;
     let d = roundMax(d2, hkSection(x, v, SEC), 0.0012);
     const ax = Math.abs(x);
-    if (ax > SEC.hw - 0.004) {
-      for (const [g0, g1, gv] of grooves) d = Math.max(d, -(segDist(u, v, g0 + 0.004, gv, g1 - 0.004, gv) + Math.max(0, ax - SEC.hw) * 0 - 0.0016 + Math.max(0, SEC.hw - ax) * 1.2));
-    }
+    for (const [g0, g1, gv] of grooves) d = groove(d, x, v, u, SEC.hw, g0 + 0.006, g1 - 0.006, gv, 0.0035, 0.0014);
     if (x > 0) d = Math.max(d, -Math.max(sdRoundRect(u - port.cu, v - port.cv, port.hu, port.hv, port.hv * 0.95), 0.008 - x));
     return d;
   };

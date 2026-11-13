@@ -18,7 +18,7 @@ import { Builder, DETAIL, clearPartCache, setWeaponDetail as setDetail } from '.
 import { sk14 } from './gunsmith/guns-ar.js?v=20261113221339';
 import { kv47 } from './gunsmith/guns-kv47.js?v=20261113221339';
 import { m17 } from './gunsmith/guns-m17.js?v=20261113221339';
-import { hm60 } from './gunsmith/guns-auto.js?v=20261113221339';
+import { hm60 } from './gunsmith/guns-hm60.js?v=20261113221339';   // HM-60 Hammer nach Vorbild (M60, 13.11.)
 import { vp9 } from './gunsmith/guns-vp9.js?v=20261113221339';   // VP-9 nach Foto (24.10.)
 import { qx90 } from './gunsmith/guns-qx90.js?v=20261113221339';   // QX-90 nach Foto (25.10.)
 import { brecher, titan } from './gunsmith/guns-praezision.js?v=20261113221339';   // Brecher (AWM), Titan (M82A1) nach Vorbild (13.11.)

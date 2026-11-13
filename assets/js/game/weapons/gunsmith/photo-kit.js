@@ -21,6 +21,14 @@ export function calib(ppm, xg, yg, ya, flip = false) {
   return { U, V, M: ring, AXIS: V(ya), ppm };
 }
 
+/** Aufeinanderfolgende doppelte Punkte entfernen (Kante der Länge 0 ergäbe NaN im Polygonabstand). */
+export function dedupe(pts) {
+  const out = [];
+  for (const p of pts) { const q = out[out.length - 1]; if (!q || Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-6) out.push(p); }
+  while (out.length > 2 && Math.hypot(out[0][0] - out[out.length - 1][0], out[0][1] - out[out.length - 1][1]) < 1e-6) out.pop();
+  return out;
+}
+
 /** Raster der Umrissfelder je Detailstufe (PC hoch fein, sonst gröber – bilinear abgefragt). */
 const G2 = (b, s) => (b.max ? s : b.lite ? s * 3 : s * 2.2);
 
@@ -31,7 +39,9 @@ const G2 = (b, s) => (b.max ? s : b.lite ? s * 3 : s * 2.2);
  * o.part bewegliches Teil, o.id geteilter Block. Bots (b.hi = false): flache Extrusion des vereinfachten Umrisses.
  */
 export function slab(b, mat, pts, hw, o = {}) {
-  const { holes = [], r = Math.min(0.0025, hw * 0.45), step = 0.0032, cav = POLY, part, id, mod, hwFn, x0 = 0, lowTol = 0.0025 } = o;
+  pts = dedupe(pts);
+  const { holes: holes0 = [], r = Math.min(0.0025, hw * 0.45), step = 0.0032, cav = POLY, part, id, mod, hwFn, x0 = 0, lowTol = 0.0025 } = o;
+  const holes = holes0.map(dedupe);
   if (!b.hi) {
     if (o.noLow) return;
     b.side(mat, simplifyRing(pts, lowTol), hw * 2, x0, { part });
@@ -115,4 +125,16 @@ export function slottedHider(b, mat, u0, u1, axis, o = {}) {
     return d;
   }, [-r - 0.002, axis - r - 0.002, u0 - 0.002], [r + 0.002, axis + r + 0.002, u1 + 0.002], 0.0011, mat, { cav: STEEL, fine: 0.6 });
   b.bore(ri * 0.72, 0, axis, u1 - (closed ? 0.0006 : 0.004));
+}
+
+/**
+ * Längsrille (Sicke/Nut) in den Seitenflächen einer Platte: Rundkanal mit Radius rr entlang u0…u1 auf Höhe gv, so tief,
+ * dass er depth in die Fläche (halbe Breite hw) einschneidet; Enden gerundet. Liefert das neue Feld.
+ */
+export function groove(d, x, v, u, hw, u0, u1, gv, rr, depth) {
+  const ax = Math.abs(x);
+  if (ax < hw - depth - 0.001) return d;
+  const uc = Math.min(u1, Math.max(u0, u));
+  const e = Math.hypot(u - uc, v - gv, ax - (hw + rr - depth)) - rr;
+  return Math.max(d, -e);
 }

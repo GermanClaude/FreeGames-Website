@@ -11,7 +11,7 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
 ## Texturen (69)
 
-54 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
+53 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
