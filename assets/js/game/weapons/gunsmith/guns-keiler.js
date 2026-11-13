@@ -6,7 +6,7 @@
 // Auswurffenster rechts, Picatinny oben; Griffstück mit Schacht, Abzugsbügel, Griff; Klappschaft (Rahmen mit zwei
 // Fenstern, Gelenk mit Riegel); Trommeldiopter; Mündungsfeuerdämpfer (vier Schlitze), Laufmutter; Magazin mit Rippen.
 import { ref, slab, rrect, pocket, POLY } from './gbkit.js?v=20261113221339';
-import { redDot, triggerGuard } from './parts.js?v=20261113221339';
+import { redDot } from './parts.js?v=20261113221339';
 import { magRounds } from './magfill.js?v=20261113221339';
 
 const R = ref(2193, 898, 315);
@@ -55,8 +55,9 @@ export function keiler(b) {
   slab(b, STOCK, (u, v) => (u > U(1465) ? 0.0105 : 0.0165), 0.004, 'gbPoly', { hwMax: 0.0165, holes: STOCK_HOLES, id: 'stock' });
   if (b.hi) {
     // Schaftkappe mit Gummirillen, Gelenk + Riegel (Wippe), Riemenöse
-    for (let i = 0; i < 6; i++) b.box('rubber', 0.034, L(198) * 0.12, 0.004, 0, V(165) - i * L(33), U(1528) - 0.001, { c: 0.001 });
-    b.cyl('gbSteel', 0.0075, 0.0075, 0.05, 0, V(150), U(1094), { axis: 'v', seg: 14 });
+    b.box('rubber', 0.031, L(196), 0.006, 0, V(246), U(1525), { c: 0.002 });
+    for (let i = 0; i < 7; i++) b.box('cavity', 0.032, 0.0012, 0.0062, 0, V(165) + 0.002 - i * L(26), U(1525), { c: 0 });
+    for (const y of [127, 224]) b.cyl('gbSteel', 0.0075, 0.0075, 0.003, 0, V(y), U(1094), { axis: 'v', seg: 14 });
     b.box('gbGrip', 0.006, L(70), L(28), -0.023, V(182), U(1068), { rx: -0.25, c: 0.002 });
     b.cyl('gbSteel', 0.0035, 0.0035, 0.034, 0, V(325), U(1452), { axis: 'x', seg: 10 });
   }
@@ -90,7 +91,7 @@ export function keiler(b) {
   if (b.hi) {
     b.box('gbGrip', 0.004, L(14), L(58), -0.0205, V(232), U(842), { rx: 0.35, c: 0.0015 });
     b.cyl('gbSteel', L(14), L(14), 0.004, -0.0205, V(232), U(818), { axis: 'x', seg: 14 });
-    b.box('gbGrip', 0.03, L(30), L(14), 0, V(338), U(639), { c: 0.002 });
+    b.box('gbGrip', 0.03, L(62), L(14), 0, V(320), U(639), { c: 0.002 });
     for (const [x, y] of [[190, 178], [430, 175], [650, 200], [985, 210], [525, 230], [1175, 188], [1200, 180]]) for (const s of [-1, 1]) {
       const hw = x < 1092 ? (y > 140 ? 0.023 : 0.0215) : 0.0165;
       b.cyl('gbSteel', L(x === 650 ? 13 : 9), L(x === 650 ? 13 : 9), 0.0016, s * (hw + 0.0003), V(y), U(x), { axis: 'x', seg: 14 });
@@ -98,7 +99,9 @@ export function keiler(b) {
   }
 
   // --- Abzugsbügel (Teil des Griffstücks) und Abzug
-  triggerGuard(b, 'gbPoly', U(845) + 0.002, U(690) - 0.002, V(286), L(70), { t: 0.005, w: 0.012, trigPos: 0.38 });
+  slab(b, M([[688, 280], [704, 356], [802, 358], [826, 332], [846, 280]]), 0.0065, 0.0022, 'gbPoly',
+    { holes: [M([[703, 288], [715, 345], [796, 347], [813, 328], [829, 288]])], id: 'guard' });
+  b.side('gbSteel', M([[786, 288], [790, 300], [796, 318], [795, 338], [790, 346], [786, 344], [788, 330], [786, 312], [781, 298], [780, 288]]), 0.006, 0, { bevel: 0.001 });
 
   // --- Spannschieber links vorn (läuft im Kanal zurück)
   b.part('charge', -0.02, V(108), U(265));

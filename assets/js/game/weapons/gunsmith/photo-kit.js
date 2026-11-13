@@ -31,7 +31,7 @@ const G2 = (b, s) => (b.max ? s : b.lite ? s * 3 : s * 2.2);
  * o.part bewegliches Teil, o.id geteilter Block. Bots (b.hi = false): flache Extrusion des vereinfachten Umrisses.
  */
 export function slab(b, mat, pts, hw, o = {}) {
-  const { holes = [], r = Math.min(0.0025, hw * 0.45), step = 0.0024, cav = POLY, part, id, mod, hwFn, x0 = 0, lowTol = 0.0025 } = o;
+  const { holes = [], r = Math.min(0.0025, hw * 0.45), step = 0.0032, cav = POLY, part, id, mod, hwFn, x0 = 0, lowTol = 0.0025 } = o;
   if (!b.hi) {
     if (o.noLow) return;
     b.side(mat, simplifyRing(pts, lowTol), hw * 2, x0, { part });

@@ -176,7 +176,7 @@ function k36Mag(b) {
   if (b.hi) {
     // Kuppelzapfen (links/rechts oben), Bodenplatte
     for (const s of [-1, 1]) b.box('smokeDark', 0.003, 0.006, 0.008, s * 0.0148, V(150), U(345), { part: 'mag', c: 0.001 });
-    b.box('gaPolyDark', 0.029, 0.005, 0.072, 0, V(214), U(367), { part: 'mag', rx: -0.28, c: 0.0016 });
+    b.box('gaPolyDark', 0.029, 0.005, 0.068, 0, V(215), U(367), { part: 'mag', rx: 0.29, c: 0.0016 });
   }
   magRounds(b, { cal: 'r556', width: 0.021, depth: 0.05, show: 'all', path: [[0, V(124), U(352)], [0, V(165), U(358)], [0, V(208), U(366)]] });
   b.anchor('magGrab', 0, V(180), U(360), { part: 'mag', data: { w: 0.0134, d: 0.03 } });

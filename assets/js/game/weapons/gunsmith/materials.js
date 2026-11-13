@@ -445,11 +445,12 @@ export function disposeMaterials() {
 // SM-45 Keiler (UMP45), LM-8 Bär (RPK), HM-60 Hammer (M60), RG-6 Orkan (M134). Gemeinsame Oberflächen mit Gebrauchsspuren
 // (wearPatch: Kantenabrieb, Schmutz in Kehlen, Griffspuren, Mikrowellen), Mikrokorn/Kratzer aus finishMaps.
 const GB_STEEL = (n = 2.5) => ({ roughnessMap: fine(finishMaps('steel').rough, n), normalMap: fine(finishMaps('steel').normal, n * 1.6), normalScale: new THREE.Vector2(0.09, 0.09) });
-const GB_POLY = (n = 2) => ({ roughnessMap: fine(finishMaps('alu').rough, n), normalMap: grainNormal(), normalScale: new THREE.Vector2(0.16, 0.16) });
+const GB_POLY = (n = 2) => ({ roughnessMap: fine(finishMaps('alu').rough, n), normalMap: grainNormal(), normalScale: new THREE.Vector2(0.06, 0.06) });
+const GB_POLY_WEAR = { ...POLY_WEAR, bump: 0.00002 };
 Object.assign(DEFS, {
   // Glasfaserverstärktes Polymer (Vector, UMP, M60-Schaft): seidenmatt, leicht körnig
-  gbPoly: () => wearPatch(std({ color: 0x212225, metalness: 0.0, roughness: 0.66, ...GB_POLY(2) }), POLY_WEAR),
-  gbPolyGrey: () => wearPatch(std({ color: 0x2b2d2f, metalness: 0.0, roughness: 0.72, ...GB_POLY(2.5) }), POLY_WEAR),
+  gbPoly: () => wearPatch(std({ color: 0x212225, metalness: 0.0, roughness: 0.66, ...GB_POLY(2) }), GB_POLY_WEAR),
+  gbPolyGrey: () => wearPatch(std({ color: 0x2b2d2f, metalness: 0.0, roughness: 0.72, ...GB_POLY(2.5) }), GB_POLY_WEAR),
   // Griffflächen mit Struktur (Stippling/Riffelung)
   gbGrip: () => wearPatch(std({ color: 0x1b1c1e, metalness: 0.0, roughness: 0.86, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.5, 0.5) }), { ...POLY_WEAR, k: 0.5 }),
   // Phosphatierter Stahl (Gehäuse M60/RPK, Schienen), brünierter Lauf, blanker Verschluss
