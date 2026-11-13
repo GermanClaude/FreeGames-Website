@@ -77,7 +77,7 @@ export const TROPHIES = [
   { id: 'geheimnis_alle', name: 'Schatzsucher', text: 'Finde alle Geheimnisse.', tier: 'gold', stat: 'secrets', goal: Math.max(1, SECRETS.length) },
   { id: 'waffen_10', name: 'Waffennarr', text: 'Je 25 Abschüsse mit 10 verschiedenen Waffen.', tier: 'silber', stat: 'weapons25', goal: 10 },
   // Waffen-Trophäen (nur sichtbar, wenn die Waffe existiert)
-  { id: 'minigun_250', name: 'Dauerfeuer', text: '250 Abschüsse mit der Minigun.', tier: 'silber', stat: 'w:minigun', goal: 250, weapon: /minigun|gatling/i },
+  { id: 'minigun_250', name: 'Dauerfeuer', text: '250 Abschüsse mit der Minigun RG-6 Orkan.', tier: 'silber', stat: 'w:minigun', goal: 250, weapon: /minigun|gatling|orkan/i },
   // Platin
   { id: 'nullpunkt', name: 'Nullpunkt', text: 'Schalte alle anderen Trophäen frei.', tier: 'platin', stat: 'allOthers', goal: 0, icon: 'star' },
 ];
