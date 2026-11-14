@@ -150,11 +150,14 @@ export const LIB_MATERIALS = {
 // Fliesen, Planken, Wellblech), pom (Parallaxe-Tiefe in m, nur ultra; Höhe = AO-Kanal). textures.js applyLook().
 // hex (texturen 14.11., nur high/ultra): Kachel-Auflösung nach Mikkelsen (engine/surface.js) – Kontrast 0..1, hexScale
 // (Zellen je Texturwiederholung), hexRot (Drehung 0..1: nur ungerichtete Böden; Wände ohne, wegen Laufspuren). Ersetzt dort „anti“.
-const LOOK_GROUND = { detail: 0.34, ds: 1.25, anti: 0.6, fade: [7, 30], hex: 0.6, hexScale: 1.3, hexRot: 1 };
-const LOOK_WALL = { detail: 0.22, ds: 1.6, anti: 0.4, fade: [5, 22], hex: 0.5, hexScale: 1.2, hexRot: 0 };
-const LOOK_MASONRY = { detail: 0.16, ds: 2.4, anti: 0, fade: [4, 18] };
-const LOOK_METAL = { detail: 0.1, ds: 3.2, anti: 0, fade: [3, 14] };
-const LOOK_WOOD = { detail: 0.08, ds: 3.0, anti: 0, fade: [3, 12] };
+// texturen3 (14.11.): hexEq/eq – großräumige Flecken des Scans per grober Mip-Stufe herausrechnen (gegen das Dreiecks-
+// Flickenmuster der Hex-Kachelung auf hellem Putz und gegen die 2,5-m-Wiederholung dunkler Wolken auf Ziegelfassaden);
+// weather – Regenläufer/Verfärbung in Weltkoordinaten auf senkrechten Flächen (engine/surface.js). Ab medium.
+const LOOK_GROUND = { detail: 0.34, ds: 1.25, anti: 0.6, fade: [7, 30], hex: 0.6, hexScale: 1.3, hexRot: 1, hexEq: 0.6 };
+const LOOK_WALL = { detail: 0.22, ds: 1.6, anti: 0.4, fade: [5, 22], hex: 0.35, hexScale: 0.9, hexRot: 0, hexEq: 0.9, weather: [0.8, 0.6, 0.5] };
+const LOOK_MASONRY = { detail: 0.16, ds: 2.4, anti: 0, fade: [4, 18], eq: 0.75, weather: [0.9, 0.5, 0.6] };
+const LOOK_METAL = { detail: 0.1, ds: 3.2, anti: 0, fade: [3, 14], eq: 0.5, weather: [0.6, 0.3, 0.4] };
+const LOOK_WOOD = { detail: 0.08, ds: 3.0, anti: 0, fade: [3, 12], eq: 0.5 };
 export const LIB_LOOK = {
   concrete: { ...LOOK_GROUND, joint: [6, 0.012, 1, 0.1] }, asphalt: LOOK_GROUND, // joint: Plattenfugen (texturen 14.11.) sand: LOOK_GROUND, dirt: LOOK_GROUND, mud: LOOK_GROUND, ground_dry: LOOK_GROUND,
   gravel: { ...LOOK_GROUND, detail: 0.2 }, rubble: { ...LOOK_GROUND, detail: 0.2 }, grass: { ...LOOK_GROUND, detail: 0.25 },
@@ -295,7 +298,7 @@ export function createWorldAssets(G, def, quality) {
       if (q === 'low') look = look && lowLit ? lowLook(look) : null;
       else if (look && q !== 'ultra' && look.pom) look = { ...look, pom: 0 };
       // texturen 14.11.: Hex-Kachelung (≈ 2× Texturabfragen) nur high/ultra; dort ersetzt sie die Gegen-Kachelung „anti“
-      if (look && look.hex) look = q === 'high' || q === 'ultra' ? { ...look, anti: 0 } : { ...look, hex: 0 };
+      if (look && look.hex) look = q === 'high' || q === 'ultra' ? { ...look, anti: 0 } : { ...look, hex: 0, eq: look.eq ?? look.hexEq ?? 0 };
       const lk = look ? ':L' + JSON.stringify(look) : '';
       // sizeM in der Zuordnung: abweichender Weltmaßstab der Textur (z. B. kleinere Pflastersteine)
       plan.set(name, { ...spec, look, tier, sizeM: spec.sizeM ?? e.sizeM?.[0], key: `${spec.id}@${tier}:${calib}${spec.sizeM ? ':s' + spec.sizeM : ''}${q === 'low' ? ':lo' : ''}${lk}` });

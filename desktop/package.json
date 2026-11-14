@@ -71,7 +71,7 @@
         }
       ],
       "icon": "../assets/img/icon-512.png",
-      "artifactName": "NULLPUNKT-${version}-win-${arch}.${ext}"
+      "artifactName": "NULLPUNKT-win-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -80,10 +80,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "NULLPUNKT",
-      "artifactName": "NULLPUNKT-Setup-${version}.${ext}"
+      "artifactName": "NULLPUNKT-Setup.${ext}"
     },
     "portable": {
-      "artifactName": "NULLPUNKT-${version}-portable.${ext}"
+      "artifactName": "NULLPUNKT-portable.${ext}"
     },
     "linux": {
       "target": [
@@ -91,7 +91,7 @@
       ],
       "category": "Game",
       "icon": "../assets/img/icon-512.png",
-      "artifactName": "NULLPUNKT-${version}-${arch}.${ext}",
+      "artifactName": "NULLPUNKT-linux.${ext}",
       "syncDesktopName": true
     },
     "publish": null

@@ -1,5 +1,5 @@
 // NULLPUNKT — Desktop-Brücke (läuft isoliert vor der Seite). Das Spiel erkennt die App an window.nullpunktDesktop
-// (Grafikstufe „Extrem“, Einladungslinks auf die öffentliche Seite). Nur Daten und wenige harmlose Befehle – kein Node.
+// (Grafikstufe „Extrem“, Einladungslinks auf die öffentliche Seite, Bereich „App“ auf der Startseite). Nur Daten und wenige harmlose Befehle – kein Node.
 'use strict';
 
 const { contextBridge, ipcRenderer } = require('electron');
@@ -23,4 +23,8 @@ contextBridge.exposeInMainWorld('nullpunktDesktop', Object.freeze({
   /** https-Link im Standardbrowser öffnen. */
   openExternal: (url) => ipcRenderer.invoke('np:open-external', String(url)),
   quit: () => ipcRenderer.invoke('np:quit'),
+  /** App-Einstellung setzen (vsync, startFullscreen: bool; lastCrash: null = Absturzmerker löschen) → Promise<bool>. */
+  setConfig: (key, value) => ipcRenderer.invoke('np:set-config', String(key), value),
+  /** App neu starten (z. B. nach VSync-Wechsel). */
+  relaunch: () => ipcRenderer.invoke('np:relaunch'),
 }));

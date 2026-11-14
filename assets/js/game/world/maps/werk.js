@@ -18,6 +18,7 @@ import {
 } from './werk-ausstattung.js?v=20261114060746';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
 import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
+import { hofAusbau } from './werk-hof.js?v=20261114060746'; // gelaende (Runde 3)
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
@@ -127,6 +128,8 @@ export default {
       [26, 18], [25.7, -15], [36, 16], [35, 0], [48, 12], [47.5, -30], [24, -38],
       [-68, 1.5], [-57, 14], [-57, -14], [-72, 26], [-72, -24], [-64, 38], [-64, -37],
     ]) spawns.ffa.push({ x, z });
+    // gelaende (Runde 3): Halden, Schüttgutboxen, Erdwälle im Lkw-Hof und Außenlager (begehbares Relief, feste Deckung)
+    b.gelaende = hofAusbau(b, spawns);
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
     belebe(b, { stil: 'industrie', huellen: ['building', 'container'], boden: { asphalt: true }, bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
     return {

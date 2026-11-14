@@ -8,10 +8,11 @@
 //   culverts [{ at: [x, z], half, out }] }] (Erddämme, nur Aufschüttung), roads [{ id, kind 'asphalt'|'gravel'|'dirt',
 //   width, shoulder, pts, bridge? { a: [x, z], b: [x, z], y } }], fields [{ x, z, w, d, ry, kind 'acker'|'wiese' }],
 //   forests [{ x, z, r }], trenches [{ pts, width, depth, ramps }], craters { list: [[x, z, r, depth]], count, seed, area, r, depth, avoid },
-//   wasteland { dirt, mud } (Ödland statt Wiese)
+//   wasteland { dirt, mud } (Ödland statt Wiese), relief { knolls, ridges, sunken, scatter, avoid, avoidRects } (relief.js)
 // Reihenfolge: Grundform → Details → Fluss → Bauflächen → Dämme → Straßen (planieren) → Felder → Splat/Maske.
 import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261114060746';
 import { Heightfield } from './heightfield.js?v=20261114060746';
+import { applyRelief } from './relief.js?v=20261114060746'; // gelaende (Runde 3): Kuppen, Senken, Wälle, Hohlwege
 
 /** Catmull-Rom-Kurve durch pts ([[x, z], …]), Abtastung ~step m. → [[x, z], …] */
 export function sampleSpline(pts, step = 2) {
@@ -133,6 +134,8 @@ export async function generateTerrain(spec, { onProgress } = {}) {
     if ((j & 15) === 0) await breathe();
   }
   onProgress?.(0.3, 'Gelände: Details');
+  // 1b) Kleinrelief (relief.js) – vor Fluss/Bauflächen/Straßen, die es unter sich wieder einebnen
+  if (spec.relief) { applyRelief(H, { n, res, minX, minZ, waterY }, spec.relief, (x, z) => noise2(x + 311.7, z - 97.3)); await breathe(); }
   const hf = new Heightfield({ n, res, minX, minZ, heights: H, waterY });
   const dist = new Float32Array(N), along = new Float32Array(N);
   const splat = new Uint8Array(N * 4), mask = new Uint8Array(N);

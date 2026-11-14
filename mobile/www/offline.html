@@ -1,0 +1,19 @@
+<!doctype html>
+<!-- NULLPUNKT Android-App: wird gezeigt, wenn die Webseite nicht erreichbar ist und noch nichts offline gespeichert ist
+     (capacitor.config.json server.errorPath). Nach dem ersten Start mit Netz übernimmt der Service Worker (sw.js). -->
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NULLPUNKT – keine Verbindung</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0A0B0D; color: #E9E6DF; font: 16px/1.5 system-ui, sans-serif; }
+  main { min-height: 100%; display: grid; align-content: center; gap: 16px; padding: 24px max(24px, env(safe-area-inset-left)); box-sizing: border-box; max-width: 640px; }
+  h1 { font-size: 40px; line-height: 1; margin: 0; font-weight: 800; letter-spacing: -.01em; }
+  h1 span { color: #FF5B1F; }
+  p { margin: 0; color: #B9B5AC; }
+  button { justify-self: start; min-height: 48px; padding: 0 24px; border: 0; background: #E9E6DF; color: #0A0B0D; font: 700 18px system-ui, sans-serif; }
+</style></head>
+<body><main>
+  <h1>NULLPUNKT<span>.</span></h1>
+  <p><strong style="color:#E9E6DF">Keine Verbindung.</strong> Beim ersten Start lädt die App das Spiel aus dem Netz. Danach läuft es auch offline (Karten, die du schon gespielt hast).</p>
+  <p>Mehrspieler braucht immer eine Verbindung.</p>
+  <button type="button" onclick="location.href='https://germanclaude.github.io/FreeGames-Website/index.html?quelle=android'">Erneut versuchen</button>
+</main></body></html>

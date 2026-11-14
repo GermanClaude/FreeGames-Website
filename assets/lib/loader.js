@@ -216,7 +216,11 @@ export class AssetLibrary {
         this._loaded.set(`tex:${key}`, { type: 'texture', id, tier: t, paths });
         // texturen 14.11.: normalXY = Normalen als X (RGB) + Y (Alpha), Z wird im Shader rekonstruiert (engine/surface.js)
         if (files.normalXY) normalMap.userData = { ...(normalMap.userData || {}), normalXY: true };
-        return { id, tier: t, map, normalMap, ormMap, meta: e, sizeM: e.sizeM, detailRepeat: e.detailRepeat || 1, normalXY: !!files.normalXY, materials: new Set() };
+        // texturen3: Poly-Haven-Scans liegen ungespiegelt im KTX2 (Zeile 0 = Bildoberkante, OpenGL-Normalen) – außer
+        // Stufen mit vflip (gespiegelt kodiert). unflipped → Spielmaterialien zeichnen mit negativer V-Wiederholung und
+        // negieren Normal-Y (engine/textures.js, engine/surface.js, Gelände world/terrain/splat.js)
+        const unflipped = e.source === 'polyhaven' && !files.vflip;
+        return { id, tier: t, map, normalMap, ormMap, meta: e, sizeM: e.sizeM, detailRepeat: e.detailRepeat || 1, normalXY: !!files.normalXY, unflipped, materials: new Set() };
       })();
       p.catch(() => this._sets.delete(key));
       this._sets.set(key, p);

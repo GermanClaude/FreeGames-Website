@@ -283,6 +283,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/concrete_wall_dark/concrete_wall_dark_4096_albedo.ktx2",
+     "normal": "textures/concrete_wall_dark/concrete_wall_dark_2048_nxy.ktx2",
+     "orm": "textures/concrete_wall_dark/concrete_wall_dark_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 2908533,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2908533,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    },
    "license": "CC0 1.0",
@@ -1958,6 +1996,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/sandstone_blocks/sandstone_blocks_4096_albedo.ktx2",
+     "normal": "textures/sandstone_blocks/sandstone_blocks_2048_nxy.ktx2",
+     "orm": "textures/sandstone_blocks/sandstone_blocks_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3269700,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3269700,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    },
    "license": "CC0 1.0",
@@ -3561,6 +3637,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/asphalt_cracked/asphalt_cracked_4096_albedo.ktx2",
+     "normal": "textures/asphalt_cracked/asphalt_cracked_2048_nxy.ktx2",
+     "orm": "textures/asphalt_cracked/asphalt_cracked_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3199193,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3199193,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    },
    "license": "CC0 1.0",
@@ -4422,6 +4536,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/wood_planks/wood_planks_4096_albedo.ktx2",
+     "normal": "textures/wood_planks/wood_planks_2048_nxy.ktx2",
+     "orm": "textures/wood_planks/wood_planks_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 2693396,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2693396,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    },
    "license": "CC0 1.0",
@@ -11493,7 +11645,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/concrete_floor_worn2/concrete_floor_worn2_1024_albedo.ktx2",
@@ -11562,6 +11715,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/concrete_floor_worn2/concrete_floor_worn2_4096_albedo.ktx2",
+     "normal": "textures/concrete_floor_worn2/concrete_floor_worn2_2048_normal.ktx2",
+     "orm": "textures/concrete_floor_worn2/concrete_floor_worn2_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 2762463,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2762463,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -11622,7 +11813,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/concrete_garage/concrete_garage_1024_albedo.ktx2",
@@ -11751,7 +11943,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/paving_slabs/paving_slabs_1024_albedo.ktx2",
@@ -11820,6 +12013,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/paving_slabs/paving_slabs_4096_albedo.ktx2",
+     "normal": "textures/paving_slabs/paving_slabs_2048_normal.ktx2",
+     "orm": "textures/paving_slabs/paving_slabs_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3148232,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3148232,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -11880,7 +12111,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/asphalt_light/asphalt_light_1024_albedo.ktx2",
@@ -12009,7 +12241,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/asphalt_dark/asphalt_dark_1024_albedo.ktx2",
@@ -12078,6 +12311,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/asphalt_dark/asphalt_dark_4096_albedo.ktx2",
+     "normal": "textures/asphalt_dark/asphalt_dark_2048_normal.ktx2",
+     "orm": "textures/asphalt_dark/asphalt_dark_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3081971,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3081971,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -12138,7 +12409,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/cobble_rows/cobble_rows_1024_albedo.ktx2",
@@ -12207,6 +12479,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/cobble_rows/cobble_rows_4096_albedo.ktx2",
+     "normal": "textures/cobble_rows/cobble_rows_2048_normal.ktx2",
+     "orm": "textures/cobble_rows/cobble_rows_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3039740,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3039740,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -12267,7 +12577,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/gravel_trail/gravel_trail_1024_albedo.ktx2",
@@ -12396,7 +12707,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/dirt_dry/dirt_dry_1024_albedo.ktx2",
@@ -12525,7 +12837,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/plaster_smooth_grey/plaster_smooth_grey_1024_albedo.ktx2",
@@ -12594,6 +12907,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/plaster_smooth_grey/plaster_smooth_grey_4096_albedo.ktx2",
+     "normal": "textures/plaster_smooth_grey/plaster_smooth_grey_2048_normal.ktx2",
+     "orm": "textures/plaster_smooth_grey/plaster_smooth_grey_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 1953036,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1953036,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -12654,7 +13005,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/plaster_rough/plaster_rough_1024_albedo.ktx2",
@@ -12723,6 +13075,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/plaster_rough/plaster_rough_4096_albedo.ktx2",
+     "normal": "textures/plaster_rough/plaster_rough_2048_normal.ktx2",
+     "orm": "textures/plaster_rough/plaster_rough_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3404833,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3404833,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -12783,7 +13173,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/plaster_stained/plaster_stained_1024_albedo.ktx2",
@@ -12852,6 +13243,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/plaster_stained/plaster_stained_4096_albedo.ktx2",
+     "normal": "textures/plaster_stained/plaster_stained_2048_normal.ktx2",
+     "orm": "textures/plaster_stained/plaster_stained_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3376509,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3376509,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -12912,7 +13341,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/brick_red_weathered/brick_red_weathered_1024_albedo.ktx2",
@@ -12981,6 +13411,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/brick_red_weathered/brick_red_weathered_4096_albedo.ktx2",
+     "normal": "textures/brick_red_weathered/brick_red_weathered_2048_normal.ktx2",
+     "orm": "textures/brick_red_weathered/brick_red_weathered_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3313910,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3313910,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -13041,7 +13509,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/brick_light/brick_light_1024_albedo.ktx2",
@@ -13170,7 +13639,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/brick_clinker/brick_clinker_1024_albedo.ktx2",
@@ -13239,6 +13709,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/brick_clinker/brick_clinker_4096_albedo.ktx2",
+     "normal": "textures/brick_clinker/brick_clinker_2048_normal.ktx2",
+     "orm": "textures/brick_clinker/brick_clinker_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3411073,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3411073,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -13299,7 +13807,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/roof_clay_red/roof_clay_red_1024_albedo.ktx2",
@@ -13368,6 +13877,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/roof_clay_red/roof_clay_red_4096_albedo.ktx2",
+     "normal": "textures/roof_clay_red/roof_clay_red_2048_normal.ktx2",
+     "orm": "textures/roof_clay_red/roof_clay_red_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 3370182,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3370182,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -13428,7 +13975,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/roof_tiles_old/roof_tiles_old_1024_albedo.ktx2",
@@ -13557,7 +14105,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/metal_corrugated_painted/metal_corrugated_painted_1024_albedo.ktx2",
@@ -13626,6 +14175,44 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    },
+    "4096": {
+     "albedo": "textures/metal_corrugated_painted/metal_corrugated_painted_4096_albedo.ktx2",
+     "normal": "textures/metal_corrugated_painted/metal_corrugated_painted_2048_normal.ktx2",
+     "orm": "textures/metal_corrugated_painted/metal_corrugated_painted_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 2236145,
+      "normal": 0,
+      "orm": 0
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 11184811,
+       "mobile": 11184811,
+       "rgba8": 89478486
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2236145,
+     "gpu": {
+      "desktop": 19573420,
+      "mobile": 19573420,
+      "rgba8": 134217730
+     },
+     "normalXY": true,
+     "shared2048": [
+      "normal",
+      "orm"
+     ]
     }
    }
   },
@@ -13686,7 +14273,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/metal_corrugated_worn/metal_corrugated_worn_1024_albedo.ktx2",
@@ -13815,7 +14403,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/metal_rust_heavy/metal_rust_heavy_1024_albedo.ktx2",
@@ -13944,7 +14533,8 @@
       "desktop": 524289,
       "mobile": 524289,
       "rgba8": 4194306
-     }
+     },
+     "vflip": true
     },
     "1024": {
      "albedo": "textures/wood_planks_brown/wood_planks_brown_1024_albedo.ktx2",
@@ -14007,6 +14597,530 @@
       }
      },
      "bytes": 2853735,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "ground_meadow": {
+   "type": "texture",
+   "name": "Wiesenboden mit Streu",
+   "category": "ground",
+   "surface": "grass",
+   "replaces": [],
+   "sizeM": [
+    2.0,
+    2.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#948962",
+    "avgRoughness": 0.936,
+    "avgMetalness": 0.0,
+    "avgAO": 0.477,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "forrest_ground_01",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha), Höhe im Albedo-Alpha ab 1024",
+   "heightAlpha": true,
+   "metalnessScale": 0,
+   "tiers": {
+    "512": {
+     "albedo": "textures/ground_meadow/ground_meadow_512_albedo.ktx2",
+     "normal": "textures/ground_meadow/ground_meadow_512_normal.ktx2",
+     "orm": "textures/ground_meadow/ground_meadow_512_orm.ktx2",
+     "sizes": {
+      "albedo": 70509,
+      "normal": 66755,
+      "orm": 36483
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 173747,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/ground_meadow/ground_meadow_1024_albedo.ktx2",
+     "normal": "textures/ground_meadow/ground_meadow_1024_nxy.ktx2",
+     "orm": "textures/ground_meadow/ground_meadow_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 449420,
+      "normal": 443910,
+      "orm": 211223
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 1104553,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/ground_meadow/ground_meadow_2048_albedo.ktx2",
+     "normal": "textures/ground_meadow/ground_meadow_2048_nxy.ktx2",
+     "orm": "textures/ground_meadow/ground_meadow_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 1731473,
+      "normal": 1689332,
+      "orm": 788628
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 4209433,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "ground_forest": {
+   "type": "texture",
+   "name": "Waldweg Erde mit Steinchen",
+   "category": "ground",
+   "surface": "dirt",
+   "replaces": [],
+   "sizeM": [
+    3.15,
+    3.15
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#6e5e49",
+    "avgRoughness": 0.9,
+    "avgMetalness": 0.0,
+    "avgAO": 0.863,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "forest_ground_04",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha), Höhe im Albedo-Alpha ab 1024",
+   "heightAlpha": true,
+   "metalnessScale": 0,
+   "tiers": {
+    "512": {
+     "albedo": "textures/ground_forest/ground_forest_512_albedo.ktx2",
+     "normal": "textures/ground_forest/ground_forest_512_normal.ktx2",
+     "orm": "textures/ground_forest/ground_forest_512_orm.ktx2",
+     "sizes": {
+      "albedo": 64249,
+      "normal": 68520,
+      "orm": 35194
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 167963,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/ground_forest/ground_forest_1024_albedo.ktx2",
+     "normal": "textures/ground_forest/ground_forest_1024_nxy.ktx2",
+     "orm": "textures/ground_forest/ground_forest_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 395258,
+      "normal": 445706,
+      "orm": 200878
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 1041842,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/ground_forest/ground_forest_2048_albedo.ktx2",
+     "normal": "textures/ground_forest/ground_forest_2048_nxy.ktx2",
+     "orm": "textures/ground_forest/ground_forest_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 1465690,
+      "normal": 1660709,
+      "orm": 740626
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3867025,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "ground_stones": {
+   "type": "texture",
+   "name": "Kiesboden mit Feldsteinen",
+   "category": "ground",
+   "surface": "dirt",
+   "replaces": [],
+   "sizeM": [
+    2.0,
+    2.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#8e8476",
+    "avgRoughness": 0.769,
+    "avgMetalness": 0.0,
+    "avgAO": 0.677,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rocks_ground_01",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha), Höhe im Albedo-Alpha ab 1024",
+   "heightAlpha": true,
+   "metalnessScale": 0,
+   "tiers": {
+    "512": {
+     "albedo": "textures/ground_stones/ground_stones_512_albedo.ktx2",
+     "normal": "textures/ground_stones/ground_stones_512_normal.ktx2",
+     "orm": "textures/ground_stones/ground_stones_512_orm.ktx2",
+     "sizes": {
+      "albedo": 70966,
+      "normal": 80702,
+      "orm": 35680
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 187348,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/ground_stones/ground_stones_1024_albedo.ktx2",
+     "normal": "textures/ground_stones/ground_stones_1024_nxy.ktx2",
+     "orm": "textures/ground_stones/ground_stones_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 433737,
+      "normal": 459729,
+      "orm": 217164
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 1110630,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/ground_stones/ground_stones_2048_albedo.ktx2",
+     "normal": "textures/ground_stones/ground_stones_2048_nxy.ktx2",
+     "orm": "textures/ground_stones/ground_stones_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 1550134,
+      "normal": 1704479,
+      "orm": 762557
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 4017170,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "rock_face": {
+   "type": "texture",
+   "name": "Felswand verwittert",
+   "category": "ground",
+   "surface": "concrete",
+   "replaces": [],
+   "sizeM": [
+    2.7,
+    2.7
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#856b52",
+    "avgRoughness": 0.818,
+    "avgMetalness": 0.0,
+    "avgAO": 0.915,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rock_face_03",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha), Höhe im Albedo-Alpha ab 1024",
+   "heightAlpha": true,
+   "metalnessScale": 0,
+   "tiers": {
+    "512": {
+     "albedo": "textures/rock_face/rock_face_512_albedo.ktx2",
+     "normal": "textures/rock_face/rock_face_512_normal.ktx2",
+     "orm": "textures/rock_face/rock_face_512_orm.ktx2",
+     "sizes": {
+      "albedo": 64840,
+      "normal": 69444,
+      "orm": 34615
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 168899,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/rock_face/rock_face_1024_albedo.ktx2",
+     "normal": "textures/rock_face/rock_face_1024_nxy.ktx2",
+     "orm": "textures/rock_face/rock_face_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 381511,
+      "normal": 433978,
+      "orm": 190446
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 1005935,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/rock_face/rock_face_2048_albedo.ktx2",
+     "normal": "textures/rock_face/rock_face_2048_nxy.ktx2",
+     "orm": "textures/rock_face/rock_face_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 1342503,
+      "normal": 1596030,
+      "orm": 708753
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3647286,
      "gpu": {
       "desktop": 11184812,
       "mobile": 11184812,
@@ -20665,8 +21779,8 @@
  },
  "totals": {
   "textures": {
-   "files": 921,
-   "bytes": 218704050
+   "files": 957,
+   "bytes": 284574797
   },
   "hdri": {
    "files": 80,
@@ -20677,16 +21791,17 @@
    "bytes": 30929416
   },
   "all": {
-   "files": 1103,
-   "bytes": 264904045
+   "files": 1139,
+   "bytes": 330774792
   },
   "byTier": {
-   "512": 22276146,
-   "1024": 79377893,
-   "2048": 142882690
+   "512": 22974103,
+   "1024": 83640853,
+   "2048": 158623604,
+   "4096": 45168916
   },
   "counts": {
-   "textures": 120,
+   "textures": 124,
    "hdris": 20,
    "models": 53
   }

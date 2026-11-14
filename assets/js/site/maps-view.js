@@ -23,7 +23,7 @@ const svg = (tag, attrs = {}) => {
 };
 const idle = (fn) => (window.requestIdleCallback ? window.requestIdleCallback(fn, { timeout: 600 }) : setTimeout(fn, 60));
 const MIN_PX = 9; // kleiner gesetzt wird kein Wort
-const STILLS = new Set(['hafen', 'altstadt', 'werk', 'range']);
+const STILLS = new Set(['hafen', 'altstadt', 'werk', 'range', 'flugplatz']);
 let uid = 0;
 
 /** Baut den SVG-Plan einer Karte (einmal pro Karte, danach wiederverwendet). */

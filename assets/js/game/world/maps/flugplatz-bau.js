@@ -137,7 +137,7 @@ export function tankwagen(b, x, z, ry = 0, y = 0) {
   f.box(0, 0.75, 3.0, 2.4, 1.7, 1.8, 'metal_painted', { tint: '#c8402f', ...KEIN });
   f.box(0, 1.6, 3.91, 2.1, 0.7, 0.02, 'glass', { ...VG, ao: false });
   f.box(0, 0.85, 0, 1.0, 0.3, 7.6, 'metal_painted', { tint: '#26282b', ...VG });
-  f.cyl(0, 2.0, -0.6, 1.15, 5.6, 'metal_galvanized', { axis: 'z', ...KEIN, seg: 16 });
+  f.cyl(0, 2.0, -0.6, 1.15, 5.6, 'metal_painted', { axis: 'z', tint: '#c9ccc8', ...KEIN, seg: 16 }); // (verzinkt las sich auf Zylindern wie Holz)
   f.box(0, 3.15, -0.6, 0.7, 0.08, 4.8, 'metal_grate', { ...VG });
   f.box(0, 1.1, -3.5, 2.2, 0.8, 0.5, 'metal_painted', { tint: '#c8402f', ...VG });
   for (const sx of [-1.05, 1.05]) for (const sz of [3.0, -1.8, -2.9]) f.cyl(sx, 0.52, sz, 0.52, 0.4, 'rubber', { axis: 'x', ...VG, seg: 12 });

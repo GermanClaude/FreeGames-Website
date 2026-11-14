@@ -31,6 +31,10 @@
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/img/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NULLPUNKT">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
@@ -38,13 +42,17 @@
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/site.css">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.min.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
-<script>document.documentElement.classList.replace('no-js', 'js');</script>
+<script>document.documentElement.classList.replace('no-js', 'js');
+// app: Desktop-App (Electron) bzw. Android-App früh kennzeichnen (Download-Bereich aus, „Spielen“ immer sichtbar)
+if (window.nullpunktDesktop) document.documentElement.classList.add('is-app', 'is-desktop-app');
+try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) document.documentElement.classList.add('is-app', 'is-android-app'); } catch (e) {}</script>
 <link rel="modulepreload" href="assets/js/site/main.js?v=20261114060746">
 <link rel="modulepreload" href="assets/js/shared/weapons.data.js?v=20261114060746">
 <link rel="modulepreload" href="assets/js/shared/modes.data.js?v=20261114060746">
 <link rel="modulepreload" href="assets/js/shared/maps.data.js?v=20261114060746">
 <link rel="modulepreload" href="assets/js/shared/settings.js?v=20261114060746">
 <script type="module" src="assets/js/site/main.js?v=20261114060746"></script>
+<script type="module" src="assets/js/shared/pwa.js?v=20261114060746"></script>
 </head>
 <body>
 <a class="skip" href="#einsatz">Zum Inhalt</a>
@@ -63,6 +71,7 @@
       <li><a href="#profil" data-t="Profil"><span>Profil</span></a></li>
       <li><a href="#einstellungen" data-t="Einstellungen"><span>Einstellungen</span></a></li>
       <li><a href="#steuerung" data-t="Steuerung"><span>Steuerung</span></a></li>
+      <li><a href="#app" data-t="App"><span>App</span></a></li>
       <li><a href="#ueber" data-t="Über"><span>Über</span></a></li>
     </ol>
   </nav>
@@ -272,9 +281,65 @@
   </section>
 
   <!-- §08 ─────────────────────────────────────────────── -->
+  <section id="app" class="sec" aria-labelledby="h-app" data-view="app">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">§08</span> / APP / Herunterladen</p>
+      <p class="kicker">Kostenlos. Kein Konto. Alle spielen zusammen.</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-app" data-fit data-fit-slots>APP.</h2>
+      <p class="tagline">Browser, Handy, PC-App und VR. Ein Spiel, ein Raum.</p>
+      <div class="app-root" id="app-root">
+        <div class="app-desk" id="app-desk" hidden></div>
+        <div class="app-get" id="app-get">
+          <div class="dl-grid">
+            <article class="dl-card dl-pc" aria-labelledby="dl-h-pc">
+              <h3 class="mono-h" id="dl-h-pc">PC-App · Windows &amp; Linux</h3>
+              <p>Das volle Spiel als Programm: Grafikstufe <strong>Extrem</strong>, größere Massenschlachten, alle Texturen und Modelle lokal (kein Nachladen), eigener Speicher nur fürs Spiel, Host läuft im Hintergrund weiter.</p>
+              <ul class="dl-links">
+                <li><a class="dl-btn is-main" href="https://github.com/GermanClaude/FreeGames-Website/releases/latest/download/NULLPUNKT-Setup.exe" data-dl="win-setup">Windows-Installer<span class="dl-meta">.exe · ca. 280 MB</span></a></li>
+                <li><a class="dl-btn" href="https://github.com/GermanClaude/FreeGames-Website/releases/latest/download/NULLPUNKT-portable.exe" data-dl="win-portable">Windows portabel<span class="dl-meta">ohne Installation</span></a></li>
+                <li><a class="dl-btn" href="https://github.com/GermanClaude/FreeGames-Website/releases/latest/download/NULLPUNKT-linux.AppImage" data-dl="linux">Linux<span class="dl-meta">AppImage</span></a></li>
+              </ul>
+              <p class="dl-note">Nicht signiert: Windows zeigt beim ersten Start „Der Computer wurde durch Windows geschützt“ → <em>Weitere Informationen</em> → <em>Trotzdem ausführen</em>. <a href="https://github.com/GermanClaude/FreeGames-Website/releases">Alle Versionen</a></p>
+            </article>
+            <article class="dl-card dl-web" aria-labelledby="dl-h-web">
+              <h3 class="mono-h" id="dl-h-web">Im Browser installieren · leicht</h3>
+              <p>Die Webseite als App-Fenster mit eigenem Symbol, auf PC (Chrome, Edge), Android und iPhone. Kein Download vorab, startet schnell, aktualisiert sich selbst, spielt nach dem ersten Mal auch offline.</p>
+              <p class="dl-actions"><button class="dl-btn is-main js-only" type="button" id="pwa-install" hidden>Als App installieren</button><button class="dl-btn js-only" type="button" id="pwa-offline" hidden>Für offline speichern</button></p>
+              <p class="dl-note js-only" id="pwa-hint"></p>
+              <p class="dl-note" id="pwa-state" aria-live="polite"></p>
+            </article>
+            <article class="dl-card dl-phone" aria-labelledby="dl-h-phone">
+              <h3 class="mono-h" id="dl-h-phone">Handy &amp; Tablet</h3>
+              <p><strong>Android:</strong> oben „Als App installieren“ (empfohlen) oder die Android-App: <a class="dl-inline" href="https://github.com/GermanClaude/FreeGames-Website/releases/latest/download/NULLPUNKT-android.apk" data-dl="apk">NULLPUNKT-android.apk</a>. Beim APK fragt Android nach „Unbekannte Apps installieren“ – für deinen Browser einmal erlauben.</p>
+              <p><strong>iPhone &amp; iPad:</strong> in Safari <em>Teilen</em> <span class="dl-share" aria-hidden="true"></span> → <em>Zum Home-Bildschirm</em>. Eine App-Store-Fassung gibt es nicht.</p>
+            </article>
+            <article class="dl-card dl-vr" aria-labelledby="dl-h-vr">
+              <h3 class="mono-h" id="dl-h-vr">VR (Beta)</h3>
+              <p><strong>Meta Quest:</strong> diese Seite im Quest-Browser öffnen (gern über „Installieren“ als App), im Spiel unter Einstellungen → Steuerung → VR einschalten. <strong>PC-VR:</strong> Brille per Link/Air Link oder SteamVR verbinden und die Seite in Chrome oder Edge öffnen.</p>
+            </article>
+          </div>
+          <table class="dl-compare">
+            <caption class="mono-h">Web-App oder PC-App?</caption>
+            <thead><tr><th scope="col"></th><th scope="col">Browser / Web-App</th><th scope="col">PC-App</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Kosten, Konto</th><td>kostenlos, keins</td><td>kostenlos, keins</td></tr>
+              <tr><th scope="row">Download</th><td>nichts vorab, Grafik lädt beim Spielen</td><td>einmal ca. 280 MB, danach alles lokal</td></tr>
+              <tr><th scope="row">Grafik</th><td>Niedrig bis Ultra</td><td>zusätzlich Extrem, Massenschlacht bis 400 je Seite</td></tr>
+              <tr><th scope="row">Updates</th><td>automatisch</td><td>neue Version installieren (die App sagt Bescheid)</td></tr>
+              <tr><th scope="row">Mehrspieler</th><td colspan="2">zusammen in denselben Räumen – Browser, Handy, VR und PC-App, sofern alle dieselbe Spielfassung haben</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §09 ─────────────────────────────────────────────── -->
   <section id="ueber" class="sec" aria-labelledby="h-ueber" data-view="about">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§08</span> / ÜBER / Kontakt, Rechte, Nutzung &amp; Datenschutz</p>
+      <p class="rail-label"><span class="sec-no">§09</span> / ÜBER / Kontakt, Rechte, Nutzung &amp; Datenschutz</p>
     </div>
     <div class="content">
       <h2 class="hl" id="h-ueber" data-fit data-fit-slots>ÜBER.</h2>
@@ -297,6 +362,7 @@
             <div><dt><code>nullpunkt:site</code></dt><dd>Website: Streukreis, Mannschaftsstärken je Modus, zuletzt gesehener Einsatz, Ton</dd></div>
             <div><dt><code>nullpunkt:feedback</code></dt><dd>Spielzeit fürs Feedback, ob du Feedback gegeben hast</dd></div>
             <div><dt><code>nullpunkt:webzeit</code></dt><dd>Wie lange du insgesamt auf dieser Webseite warst (nur eine Zahl)</dd></div>
+            <div><dt><code>Zwischenspeicher np-code / np-lib</code></dt><dd>Nur Spieldateien (Code, Texturen, Modelle), damit die Seite schneller lädt und offline läuft. Keine persönlichen Daten</dd></div>
             <div><dt><code>nullpunkt:og</code></dt><dd>Ob du das Gold der ersten Stunde hast (nur Ja/Nein). Bleibt beim Löschen hier erhalten; ganz weg nur über die Browserdaten dieser Seite</dd></div>
           </dl>
           <p>Nur bis zum Schließen des Tabs (Sitzungsspeicher): eine zufällige Kennung für den Mehrspieler-Verbindungsaufbau und ein Merker fürs Neuladen.</p>
@@ -361,6 +427,7 @@
     <li><a href="#profil">Profil</a></li>
     <li><a href="#einstellungen">Einstellungen</a></li>
     <li><a href="#steuerung">Steuerung</a></li>
+    <li><a href="#app">App</a></li>
     <li><a href="#ueber">Über</a></li>
   </ol>
 </dialog>

@@ -115,6 +115,17 @@ Fotoscans für Böden, Wände, Dächer und Blech (2K-Quellen, als KTX2 512/1024/
 | Rusty Metal 04 | `metal_rust_heavy` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rusty_metal_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Weathered Brown Planks | `wood_planks_brown` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/weathered_brown_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
+### Gelände-Sätze (texturen3, 14.11.2026)
+
+Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Forest Ground 01 | `ground_meadow` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/forrest_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Forest Ground 04 | `ground_forest` | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/forest_ground_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rocks Ground 01 | `ground_stones` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/rocks_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rock Face 03 | `rock_face` | Dario Barresi, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_face_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
 ### Laub- und Bodenatlanten (14.11.2026)
 
 `assets/lib/foliage/`: Foto-Laubatlanten (Busch, Gras, Palmwedel, Blüten, Laubbaum-Büschel) und der Atlas der

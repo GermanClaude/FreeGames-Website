@@ -558,9 +558,10 @@ function fillLibMaterial(mat) {
     if (Array.isArray(opts.repeat)) { rx = opts.repeat[0] * k; ry = opts.repeat[1] * k; } else rx = ry = opts.repeat * k;
   } else rx = ry = 1 / size;
   rx = +rx.toFixed(5); ry = +ry.toFixed(5);
-  // texturen 14.11.: XY-Sätze (1024/2048) sind ungespiegelt kodiert → V negativ, damit das Bild aufrecht steht wie die
-  // gespiegelt kodierte 512er-Stufe (engine/surface.js)
-  if (set.normalXY) ry = -ry;
+  // texturen 14.11./texturen3: ungespiegelt kodierte Scans (alle Poly-Haven-Stufen außer tiers[n].vflip) → V negativ,
+  // damit das Bild aufrecht steht; die Normalen-Y wird im Haken negiert (engine/surface.js nxy/nflip)
+  const flipV = set.unflipped ?? !!set.normalXY;
+  if (flipV) ry = -ry;
   mat.map = libTexture(set, 'map', rx, ry);
   mat.normalMap = libTexture(set, 'normalMap', rx, ry);
   const orm = libTexture(set, 'ormMap', rx, ry);
@@ -591,7 +592,7 @@ function fillLibMaterial(mat) {
   // env-look (medium+): Detailnormalen, Gegen-Kachelung der Albedo, Parallaxe (ultra) – nach dem Makro-Haken
   if (spec.look) applyLook(mat, spec.look, rx, ry);
   // texturen 14.11.: XY-Normalen, Hex-Kachelauflösung (high/ultra), Sockelschmutz – engine/surface.js
-  applySurface(mat, { nxy: !!set.normalXY, hex: spec.look?.hex || 0, hexScale: spec.look?.hexScale, rot: spec.look?.hexRot || 0, grime: opts.grime ? (spec.grime ?? 0.85) : 0, joint: spec.look?.joint || null }, macroTexture());
+  applySurface(mat, { nxy: !!set.normalXY, nflip: flipV && !set.normalXY, hex: spec.look?.hex || 0, hexScale: spec.look?.hexScale, rot: spec.look?.hexRot || 0, hexEq: spec.look?.hexEq || 0, eq: spec.look?.eq || 0, weather: spec.look?.weather || null, grime: opts.grime ? (spec.grime ?? 0.85) : 0, joint: spec.look?.joint || null }, macroTexture());
   libraryStats.materials++;
   mat.needsUpdate = true;
 }

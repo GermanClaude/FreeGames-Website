@@ -53,7 +53,12 @@ const touchPlay = document.getElementById('touch-play');
 const showTouch = () => { if (touchPlay) touchPlay.hidden = !coarseMq.matches; };
 showTouch();
 coarseMq.addEventListener?.('change', showTouch);
-startSiteClock(); // Zeit auf der Webseite fürs Zwiegespräch (§08 Über)
+// app (14.11.): in der Desktop-/Android-App heißt es nicht „im Browser, kein Download“
+if (html.classList.contains('is-app')) {
+  const lead = document.querySelector('.hero-body .lead');
+  if (lead) lead.textContent = window.nullpunktDesktop ? 'Ego-Shooter. Du gegen Bots oder online mit allen – PC-App mit Extrem-Grafik.' : 'Ego-Shooter. Du gegen Bots oder online mit allen.';
+}
+startSiteClock(); // Zeit auf der Webseite fürs Zwiegespräch (§09 Über)
 initNav();
 setNavSound(sound);
 initZero({ sound });
@@ -85,6 +90,7 @@ const VIEWS = {
   settings: () => import('./settings-view.js?v=20261114060746'),
   controls: () => import('./controls-view.js?v=20261114060746'),
   about: () => import('./about-view.js?v=20261114060746'),
+  app: () => import('./app-view.js?v=20261114060746'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
 };
 
 function heroData(D) {

@@ -20,8 +20,10 @@ import {
 } from './hafen-ausstattung.js?v=20261114060746';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
 import { belebe, sperrpunkte, KAMPAGNE, tauwerk } from '../kleinkram.js?v=20261114060746';
+import { kaiAusbau } from './hafen-kai.js?v=20261114060746'; // gelaende (Runde 3): Schwergut an der Kaikante
 
 const H = CONTAINER_H;
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
 const QUAY_X = -44;
 
 export default {
@@ -149,12 +151,12 @@ export default {
     // -----------------------------------------------------------------------
     // Westlicher Rand (x ≈ −24.4)
     stackAt(b, -24.4, -40, 12.19, 'z', ['#2d5f94', '#8d9399']);
-    offenerContainer(b, -24.4, -22.2, { len: 6.06, ry: -Math.PI / 2, color: '#c8402f' }); // 15.10.: wie Gegenstück (Video-Gasse)
+    offenerContainer(b, -24.4, -22.2, { len: 6.06, ry: -Math.PI / 2, color: '#c8402f', phi: Math.PI - 0.06 }); // gelaende: Flügel zurückgeschlagen (vorher sperrten sie den 2-m-Spalt zum Nachbarcontainer → unerreichbares Inneres) // 15.10.: wie Gegenstück (Video-Gasse)
     stackAt(b, -24.4, -14, 6.06, 'z', ['#3e7a4c', '#c9a227']);
     stackAt(b, -24.4, 40, 12.19, 'z', ['#c8402f', '#2d5f94']);
     // Grafik-Vorlage (Video, Containergasse): links ein blauer Container wie im Video (vorher orange)
     // 15.10.: 4,8 m nach Norden – Stirnseite steht wie im Video auf Höhe des Doppelstapels gegenüber
-    offenerContainer(b, -24.4, 22.2, { len: 6.06, ry: Math.PI / 2, color: '#2d5f94' });
+    offenerContainer(b, -24.4, 22.2, { len: 6.06, ry: Math.PI / 2, color: '#2d5f94', phi: Math.PI - 0.06 });
     stackAt(b, -24.4, 14, 6.06, 'z', ['#6b3f7a', '#3e7a4c']);
     container(b, -25.6, 0, 1.5, { len: 6.06, ry: Math.PI / 2 + 0.28, color: '#1f6f6a' });
     // Reihe 2 (doppelt, x ≈ −15.6)
@@ -297,8 +299,10 @@ export default {
     const sA = [[-38, 47], [-31, 43], [-19, 47.5], [-9, 48], [0, 47], [10.5, 47.5], [15.5, 44.5], [34, 49.5], [-21, 41.5], [1.5, 43.5], [55.5, 48.5], [64, 49.5], [72.5, 49.5]];
     for (const [x, z] of sA) { spawns.A.push({ x, z, yaw: 0 }); spawns.B.push({ x, z: -z, yaw: Math.PI }); }
     for (const [x, z] of [[-40, 20], [-38, -8], [-34, -40], [-20, -26], [-20, 26], [-10, 18], [-11, -18], [0, -1], [10.2, -24.4], [10.2, 24.4], [20, -10], [38.5, 8], [24, 14], [38, -14], [30, -40], [-26, -48], [61, -15], [61, 15], [71.5, 0], [52.5, -32], [52.5, 32], [64.5, -44], [64.5, 44]]) spawns.ffa.push({ x, z });
+    // gelaende (Runde 3): Schwergut an der Kaikante (Coils, Lukendeckel, Rohrbündel, Legeblöcke) – feste Deckung
+    b.gelaende = kaiAusbau(b, spawns);
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
-    belebe(b, { stil: 'hafen', huellen: ['building', 'container'], boden: { asphalt: true, bereich: { minX: -43, maxX: 74, minZ: -52, maxZ: 52 } }, bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52 }, sperr: sperrpunkte({ spawns }, KAMPAGNE.hafen || []) });
+    belebe(b, { stil: 'hafen', einrichten: true, huellen: ['building', 'container'], boden: { asphalt: true, bereich: { minX: -43, maxX: 74, minZ: -52, maxZ: 52 } }, bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52 }, sperr: sperrpunkte({ spawns }, [...(KAMPAGNE.hafen || []), ...KAMPAGNE_PUNKTE.hafen]) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 30.6, radius: 5 }, { id: 'B', x: -14.2, z: -0.8, radius: 6 }, { id: 'C', x: -13.6, z: -30.6, radius: 5 }] },

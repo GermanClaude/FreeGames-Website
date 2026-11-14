@@ -13,6 +13,8 @@ import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261114060746'
 // karten-voll (14.11.): Kleinkram an Häusern/Höfen, Freileitungen, Fahrspuren, Hochsitze, Feldstellungen
 import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
 import { landschaft } from './grenzland-land.js?v=20261114060746';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261114060746'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 // Grafik-Vorlage (Video-Dorfplatz bild-7_8s): hellgrau-weißer Putz, Tonziegel rot-orange (Farbe aus der Textur v_roof,
@@ -538,7 +540,7 @@ const H_Y = 15; // Plateauhöhe Funkhügel
 // ---------------------------------------------------------------------------
 /** karten-voll: Ortschaft aufbauen, dann Leben an Fassaden/Fenstern (nur Optik; Starts, Flaggen, Kampagne frei). */
 function leben(b, res, stil) {
-  belebe(b, { stil, sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
+  belebe(b, { stil, einrichten: stil === 'dorf', sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...KAMPAGNE_PUNKTE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
   return res;
 }
 
@@ -727,5 +729,22 @@ const GRENZLAND = {
     { id: 'grenzland-zwerg', name: 'Der Heuboden-Zwerg', hint: 'Wer sich duckt, findet mehr als Stroh.', x: -129.4, y: 3.2, z: 114.1, trigger: { type: 'proximity', radius: 1.6 } },
     { id: 'grenzland-gertrud', name: 'Gertrud', hint: 'Die Scheune hat einen Stammgast.', x: -134.5, y: 0.2, z: 119.5, trigger: { type: 'proximity', radius: 3.2 } },
   ],
+};
+// gelaende (14.11., Runde 3): Kleinrelief (terrain/relief.js) – Kuppen, Senken, Feldraine und eine Bachrinne als
+// Sichtdeckung auf den freien Wiesen zwischen Dorf, Mühle, Brücke und Nordufer. Weich ausgeblendet an Flaggen,
+// Startpunkten, Fahrzeug-Stellplätzen, Ortschaften und Kampagnenpunkten; Straßen/Fluss/Bauflächen ebnen danach ein.
+GRENZLAND.terrain.relief = {
+  ...reliefAvoid(GRENZLAND, KAMPAGNE_PUNKTE.grenzland.map(([x, z]) => [x, z, 5])),
+  knolls: [
+    { x: 72, z: -2, r: 18, h: 3.0, w: 14, ry: 0.5 }, { x: -96, z: -4, r: 18, h: 3.2, w: 15, ry: -0.3 }, { x: -30, z: -84, r: 14, h: 2.4 },
+    { x: 104, z: -80, r: 12, h: 2.2, w: 9, ry: 1.1 }, { x: -24, z: 8, r: 9, h: 1.6, w: 6, ry: 0.4 }, { x: 70, z: 64, r: 12, h: 2.2, w: 8, ry: -0.6 },
+    { x: -82, z: 72, r: 12, h: 2.0, w: 8, ry: 0.9 }, { x: 96, z: 150, r: 14, h: 2.6 }, { x: -130, z: 30, r: 11, h: -1.6, w: 8 },
+  ],
+  ridges: [
+    { pts: [[58, 24], [80, 16], [98, 6]], w: 3.6, h: 1.35 }, { pts: [[-40, 18], [-30, 4], [-34, -6]], w: 3.4, h: 1.2 },
+    { pts: [[110, -60], [120, -76]], w: 3.4, h: 1.3 }, { pts: [[-60, -78], [-44, -96]], w: 3.4, h: 1.3 },
+  ],
+  sunken: [{ pts: [[-114, 66], [-98, 52], [-92, 36], [-96, 22]], w: 3.6, d: 1.5, bank: 5 }],
+  scatter: { seed: 4712, count: 75, area: { minX: -245, maxX: 245, minZ: -245, maxZ: 245 }, r: [9, 19], h: [1.2, 2.8], hollow: 0.3, gap: 6 },
 };
 export default GRENZLAND;

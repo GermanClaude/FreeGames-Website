@@ -354,9 +354,10 @@ export class ViewOverlay {
       dirFromYawPitch(s.lookYaw, s.lookPitch, _d); _v.copy(s.camPos).addScaledVector(_d, 1000);
       const a = s.project(_v), ax = a.x, ay = a.y;
       dirFromYawPitch(s.lookYaw + MIL * 10, s.lookPitch, _d); _v.copy(s.camPos).addScaledVector(_d, 1000);
-      const b = s.project(_v), ppm = Math.hypot(b.x - ax, b.y - ay) / 10;
+      // unter ~3 px/Strich (geringe Vergrößerung) wäre die Platte unlesbar klein → Mindestmaßstab (dann nur angenähert)
+      const b = s.project(_v), ppm = Math.max(3.2, Math.hypot(b.x - ax, b.y - ay) / 10);
       const era = (s.vehicle && s.vehicle.def && s.vehicle.def.era) || 'modern';
-      if (ppm > 0.3 && ppm < 60) {
+      if (ppm < 60) {
         const key = `${era}|${Math.round(ppm * 8)}`;
         if (key !== this._calKey) { this._calKey = key; this._calHtml = opticSvg(era, Math.round(ppm * 8) / 8); }
         retHtml = this._calHtml;

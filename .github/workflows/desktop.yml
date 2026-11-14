@@ -2,6 +2,8 @@
 # Läuft nur bei einem Versions-Tag (v1.2.3) oder von Hand (Actions → „Desktop-App bauen“ → Run workflow).
 # Die Webseite (GitHub Pages) ist davon unabhängig und wird hier nicht angefasst.
 # Ergebnis: Windows-Installer + portable .exe (und ein Linux-AppImage) als Artefakte; bei Tags zusätzlich als Release.
+# Dateinamen ohne Versionsnummer (NULLPUNKT-Setup.exe, NULLPUNKT-portable.exe, NULLPUNKT-linux.AppImage), damit die
+# Download-Knöpfe der Startseite (…/releases/latest/download/<Name>) immer auf die neueste Fassung zeigen.
 name: Desktop-App bauen
 
 on:
@@ -72,7 +74,8 @@ jobs:
           files: ${{ matrix.files }}
           fail_on_unmatched_files: true
           body: |
-            NULLPUNKT als Desktop-Spiel.
-            Windows: `NULLPUNKT-Setup-….exe` (Installer) oder `NULLPUNKT-…-portable.exe` (ohne Installation).
-            Linux: `.AppImage` (ausführbar machen, starten).
-            Die .exe ist nicht signiert – Windows SmartScreen warnt beim ersten Start („Weitere Informationen“ → „Trotzdem ausführen“).
+            NULLPUNKT – kostenlos, ohne Konto. Alle Plattformen spielen zusammen.
+            Windows: `NULLPUNKT-Setup.exe` (Installer) oder `NULLPUNKT-portable.exe` (ohne Installation) – nicht signiert, SmartScreen: „Weitere Informationen“ → „Trotzdem ausführen“.
+            Linux: `NULLPUNKT-linux.AppImage` (ausführbar machen, starten).
+            Android: `NULLPUNKT-android.apk` – Android fragt nach „Unbekannte Apps installieren“; für den Browser einmal erlauben.
+            Leichter geht’s ohne Download: die Webseite öffnen und „Als App installieren“ wählen.

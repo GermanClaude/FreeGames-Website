@@ -262,7 +262,8 @@ export default {
       { x: -300, z: -170, r: 78, h: 14 }, { x: -60, z: -350, r: 120, h: 16 }, { x: 260, z: -350, r: 100, h: 13 },
       { x: -300, z: 340, r: 110, h: 12 }, { x: 320, z: 330, r: 95, h: 11 }, { x: 40, z: 360, r: 80, h: 8 },
     ],
-    edge: { start: 500, end: 548, height: 38 },
+    // Randhöhen flach gehalten: An- und Abflug über die Bahnenden (Test 14.11.: Steigflug nach Osten traf bei 38 m Randhöhe den Kamm)
+    edge: { start: 515, end: 548, height: 16 },
     waterY: -8,
     pads: [
       { x: 0, z: 40, w: 920, d: 84, y: 0, blend: 40, worn: false },        // Startbahn mit Schulter
@@ -274,6 +275,8 @@ export default {
       { x: 0, z: 242, w: 54, d: 30, y: 0, blend: 14 },                      // Haupttor
       { x: 302, z: -165, w: 92, d: 70, y: 0, blend: 20 },                   // Tanklager
       { x: -300, z: -170, w: 50, d: 50, y: R_Y, blend: 22 },                // Radarstellung
+      { x: -525, z: 40, w: 50, d: 150, y: 0, blend: 40, worn: false },      // Anflugschneise West
+      { x: 525, z: 40, w: 50, d: 150, y: 0, blend: 40, worn: false },       // Anflugschneise Ost
     ],
     roads: [
       { id: 'piste', name: 'Startbahn 09/27', kind: 'asphalt', width: RUNWAY.w, shoulder: 6, pts: [[RUNWAY.x0, RUNWAY.z], [0, RUNWAY.z], [RUNWAY.x1, RUNWAY.z]] },
@@ -333,7 +336,7 @@ export default {
   clearings: [
     ...Array.from({ length: 13 }, (_, i) => [-480 + i * 80, 10, 62]),
     ...Array.from({ length: 9 }, (_, i) => [-400 + i * 100, -130, 70]),
-    [-560, 40, 70], [560, 40, 70], [-300, -170, 40], [0, 240, 40],
+    [-560, 40, 70], [560, 40, 70], [-500, 40, 60], [500, 40, 60], [-300, -170, 40], [0, 240, 40],
   ],
 
   sites: [

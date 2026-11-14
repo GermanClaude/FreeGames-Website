@@ -10,6 +10,8 @@ import { sampleSpline } from '../terrain/generate.js?v=20261114060746';
 import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261114060746';
 // karten-voll (14.11.): Grabenleben, Trümmerfeld, ausgebrannte Lastwagen, Ruinen-Schutt
 import { kriegsspuren, ruinenLeben } from './niemandsland-leben.js?v=20261114060746';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261114060746'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -290,4 +292,22 @@ const NIEMANDSLAND = {
   ],
   secrets: [],
 };
+// gelaende (14.11., Runde 3): Kleinrelief im Niemandsland (terrain/relief.js) – punktsymmetrische Kuppen und Rücken als
+// Sichtdeckung zwischen den Fronten, je Flanke ein Hohlweg (verdeckter Anmarsch) und Streukuppen. Gräben, Flaggen,
+// Startpunkte, Ruinen und Kampagnenpunkte bleiben eben (weich ausgeblendet).
+NIEMANDSLAND.terrain.relief = (() => {
+  const a = reliefAvoid(NIEMANDSLAND, [...KAMPAGNE_PUNKTE.niemandsland.map(([x, z]) => [x, z, 5]), ...linienPunkte(TRENCHES.map((t) => t.pts), 5, 6)]);
+  const pair = (k) => [k, { ...k, x: -k.x, z: -k.z }];
+  return {
+    ...a,
+    knolls: [
+      ...pair({ x: -60, z: 60, r: 21, h: 3.4, w: 16, ry: 0.4 }), ...pair({ x: -22, z: -48, r: 12, h: 2.4 }), ...pair({ x: 182, z: 52, r: 20, h: 3.2, w: 15, ry: -0.5 }),
+      ...pair({ x: 92, z: 30, r: 11, h: 2.2, w: 8, ry: 1.0 }), ...pair({ x: -250, z: 40, r: 13, h: 2.4 }),
+    ],
+    ridges: [{ pts: [[-112, 72], [-96, 80], [-78, 86]], w: 3.6, h: 1.4 }, { pts: [[112, -72], [96, -80], [78, -86]], w: 3.6, h: 1.4 },
+      { pts: [[30, 86], [52, 80]], w: 3.4, h: 1.3 }, { pts: [[-30, -86], [-52, -80]], w: 3.4, h: 1.3 }],
+    sunken: [{ pts: [[-206, -98], [-176, -44], [-190, 14], [-168, 98]], w: 4, d: 1.7, bank: 5.5 }, { pts: [[206, 98], [176, 44], [190, -14], [168, -98]], w: 4, d: 1.7, bank: 5.5 }],
+    scatter: { seed: 1917, count: 40, area: { minX: -285, maxX: 285, minZ: -100, maxZ: 100 }, r: [7, 15], h: [1.0, 2.2], hollow: 0.2, gap: 5 },
+  };
+})();
 export default NIEMANDSLAND;

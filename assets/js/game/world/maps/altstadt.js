@@ -15,6 +15,8 @@ import {
 } from './altstadt-ausstattung.js?v=20261114060746';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
 import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
+import { terrassen } from './altstadt-terrassen.js?v=20261114060746'; // gelaende (Runde 3)
 
 const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe
@@ -138,8 +140,10 @@ export default {
       [25, 24.5], [26.5, -36], [33, 12], [33, -27], [40, 5], [-12.6, 17.6], [-34, -38], [33.5, 38],
       [48.5, 20], [48.5, -20], [62, 4.8], [65.5, 28], [65.5, -28], [55, 23], [55, -23],
     ]) spawns.ffa.push({ x, z });
+    // gelaende (Runde 3): Brunnenterrassen – zweite Ebene zwischen Brunnenplatz und den Plätzen A/C
+    b.gelaende = terrassen(b, spawns);
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
-    belebe(b, { stil: 'stadt', boden: true, bereich: { minX: -46, maxX: 69, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, KAMPAGNE.altstadt) });
+    belebe(b, { stil: 'stadt', einrichten: true, boden: true, bereich: { minX: -46, maxX: 69, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, [...KAMPAGNE.altstadt, ...KAMPAGNE_PUNKTE.altstadt]) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 29, radius: 5 }, { id: 'B', x: -7.5, z: 0, radius: 5.5 }, { id: 'C', x: -5, z: -29, radius: 5 }] },

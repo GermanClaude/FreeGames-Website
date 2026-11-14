@@ -10,6 +10,8 @@ import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDe
 // karten-voll (14.11.): Trümmer im Niemandsland (Wagenreste, Blech, Hülsen, Kisten, Drahtreste)
 import { truemmerfeld } from './niemandsland-leben.js?v=20261114060746';
 import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261114060746'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -175,4 +177,18 @@ const BRANDWALD = {
   ],
   secrets: [],
 };
+// gelaende (14.11., Runde 3): Kleinrelief im verbrannten Niemandsland (terrain/relief.js) – punktsymmetrische Kuppen,
+// Rücken und je Flanke eine Rinne; Gräben, Wracks, MG-Nester, Flaggen, Startpunkte und Kampagnenpunkte bleiben eben.
+BRANDWALD.terrain.relief = (() => {
+  const a = reliefAvoid(BRANDWALD, [...KAMPAGNE_PUNKTE.brandwald.map(([x, z]) => [x, z, 5]), ...linienPunkte(TRENCHES.map((t) => t.pts), 5, 6),
+    ...WRECKS.map((w) => [w[0], w[1], 7]), ...NESTS.map((n) => [n[0], n[1], 5]), ...linienPunkte([FORSTWEG], 6, 3)]);
+  const pair = (k) => [k, { ...k, x: -k.x, z: -k.z }];
+  return {
+    ...a,
+    knolls: [...pair({ x: -50, z: 46, r: 11, h: 2.2, w: 8, ry: 0.3 }), ...pair({ x: 142, z: 42, r: 16, h: 3.0, w: 14 }), ...pair({ x: 60, z: 52, r: 9, h: 1.8, w: 6, ry: -0.8 })],
+    ridges: [{ pts: [[-32, -32], [-8, -42]], w: 3.4, h: 1.3 }, { pts: [[32, 32], [8, 42]], w: 3.4, h: 1.3 }],
+    sunken: [{ pts: [[150, -74], [160, -40], [148, -6]], w: 3.6, d: 1.5, bank: 5 }, { pts: [[-150, 74], [-160, 40], [-148, 6]], w: 3.6, d: 1.5, bank: 5 }],
+    scatter: { seed: 2113, count: 45, area: { minX: -170, maxX: 170, minZ: -78, maxZ: 78 }, r: [6, 13], h: [0.9, 2.0], hollow: 0.2, gap: 5 },
+  };
+})();
 export default BRANDWALD;

@@ -1,6 +1,7 @@
 # NULLPUNKT als Desktop-Spiel (Windows-.exe)
 
-Stand: 14.11.2026 · Ordner `desktop/` · Workflow `.github/workflows/desktop.yml`
+Stand: 14.11.2026 · Ordner `desktop/` · Workflow `.github/workflows/desktop.yml` · Überblick aller Plattformen
+(PWA, Android, iOS, VR, Crossplay): [`apps.md`](apps.md)
 
 Die Desktop-App ist eine **Hülle aus Electron** um genau denselben Spielcode wie die Webseite. Es gibt keinen Fork und
 keine Kopie im Repo: Beim Bauen packt electron-builder den aktuellen Stand von `spielen.html` und `assets/**` in die App
@@ -15,11 +16,16 @@ keine Kopie im Repo: Beim Bauen packt electron-builder den aktuellen Stand von `
 | JS-Speicher | Tab-Grenze (2–4 GB, mit anderen Tabs geteilt) | fest 4 GB nur für das Spiel (mehr erlaubt V8 nicht) |
 | GPU | Chrome-Sperrliste kann die GPU abschalten | Sperrliste aus, dedizierte GPU auf Laptops, WebGPU an |
 | Hintergrund | Tab im Hintergrund wird gedrosselt | keine Drosselung (wichtig, wenn du online Host bist) |
-| Vollbild | Browser-Vollbild (Esc beendet) | F11 oder Alt+Enter, startet im Vollbild |
+| Vollbild | Browser-Vollbild (Esc beendet) | F11 oder Alt+Enter, startet im Vollbild, merkt sich Fenster/Vollbild |
+| Start | Startseite bzw. Spiel | interaktive Startseite (`index.html`) mit Bereich §08 „App“ |
+| App-Einstellungen | – | VSync aus (Bildrate frei, nach Neustart), Start im Vollbild, Absturzmerker |
 | Mehrspieler | WebRTC über Nostr-Relays | gleich – Desktop- und Browser-Spieler spielen zusammen |
 
 **Stufe „Extrem“** (Einstellungen → Grafik → Grafikqualität; nur in der App sichtbar): technisch „Ultra“ plus
-- Sonnenschatten 8192² statt 4096² (wenn die GPU so große Texturen kann, sonst 4096²), bis 32 Figuren mit Schatten,
+- Sonnenschatten 8192² statt 4096² – nur wenn GPU ≥ 16K-Texturen kann, eine starke Desktop-GPU ist (NVIDIA/AMD
+  dediziert, Intel Arc, Apple, starke AMD-APU), ≥ 16 GB RAM vorhanden sind und der Spielprozess der App in den letzten
+  3 Tagen nicht abgestürzt ist; sonst 4096² (Rest bleibt Extrem). Software-GL (kein Treiber) bekommt nie 8K,
+  bis 32 Figuren mit Schatten,
 - 1,5× Partikel, 240 Einschusslöcher,
 - Fotoscan-Texturen/Modelle in der größten vorhandenen Stufe (Anforderung 4K – heute gibt es höchstens 2K-Sätze; kommen
   4K-Sätze ins Manifest, nimmt Extrem sie automatisch), HDRI-Licht und Himmel 2K,
@@ -31,6 +37,16 @@ Empfohlen: aktuelle Grafikkarte mit ≥ 8 GB Grafikspeicher und ≥ 16 GB RAM. R
 Technik: Das Spiel erkennt die App an `window.nullpunktDesktop` (aus `desktop/preload.js`). Alle Unterschiede hängen an
 dieser Erkennung (`engine/renderer.js` EXTREME_PRESET, `shared/settings.js`, `world/library.js`, `world/terrain/bigworld.js`,
 `shared/modes.data.js` MASS_SIDE, `bots/crowd.js`, Einladungslinks in `ui/net-menus.js`). Im Browser ist nichts davon aktiv.
+
+## Startseite in der App
+
+Die App startet auf `index.html` (wie die Webseite, nur ohne Download-Karten). Im Bereich **§08 App** stehen statt der
+Downloads: großes „Spielen.“, App-/Systemangaben, die Liste „Nur in der App“, App-Einstellungen (VSync aus, Start im
+Vollbild, Absturzmerker zurücksetzen), Vollbild, „Webseite im Browser“ und „Beenden“. „Spielen.“ steht in der App
+immer in der Statuszeile. Alle Links (`spielen.html?…`, zurück auf `index.html`) laufen im Protokoll `app://nullpunkt/`.
+Ein Einladungslink oder `--query=…` startet direkt im Spiel, `--page=spielen.html` öffnet die Lobby.
+
+App-Einstellungen liegen in `%APPDATA%\NULLPUNKT\nullpunkt-app.json` (Linux `~/.config/NULLPUNKT/`).
 
 ## Mehrspieler zwischen App und Browser
 
@@ -78,9 +94,9 @@ GitHub Pages (die Webseite) wird davon nicht berührt.
 
 ## Installieren (Windows)
 
-- **`NULLPUNKT-Setup-x.y.z.exe`** – Installer: Ordner wählbar, Verknüpfung auf Desktop und im Startmenü,
+- **`NULLPUNKT-Setup.exe`** – Installer: Ordner wählbar, Verknüpfung auf Desktop und im Startmenü,
   deinstallierbar über „Apps & Features“. Installiert pro Benutzer (keine Administratorrechte nötig).
-- **`NULLPUNKT-x.y.z-portable.exe`** – ohne Installation, z. B. vom USB-Stick. Entpackt sich bei jedem Start in einen
+- **`NULLPUNKT-portable.exe`** – ohne Installation, z. B. vom USB-Stick. Entpackt sich bei jedem Start in einen
   Temp-Ordner (Start dauert dadurch einige Sekunden länger).
 
 Spielstände, Profil und Einstellungen liegen in `%APPDATA%\NULLPUNKT` (bleiben bei Updates erhalten). Sie sind getrennt
@@ -100,10 +116,14 @@ Gemessen am Stand 14.11.2026 (Assets ≈ 164 MB):
 
 | Datei | Größe |
 |---|---|
-| `NULLPUNKT-Setup-1.0.0.exe` (Installer) | ≈ 276 MB |
-| `NULLPUNKT-1.0.0-portable.exe` | ≈ 262 MB |
-| `NULLPUNKT-1.0.0-win-x64.zip` | ≈ 303 MB |
-| `NULLPUNKT-1.0.0-x86_64.AppImage` (Linux) | ≈ 283 MB |
+| `NULLPUNKT-Setup.exe` (Installer) | ≈ 276 MB |
+| `NULLPUNKT-portable.exe` | ≈ 262 MB |
+| `NULLPUNKT-win-x64.zip` | ≈ 303 MB |
+| `NULLPUNKT-linux.AppImage` (Linux) | ≈ 283 MB |
+
+Die Dateinamen tragen seit 14.11. **keine Versionsnummer** mehr – so zeigen die Download-Knöpfe der Startseite
+(`…/releases/latest/download/NULLPUNKT-Setup.exe` usw.) immer auf das neueste Release. Die Version steht im Release-Titel
+und in der App (§08 App).
 | installiert (Windows) | ≈ 540 MB (Electron ≈ 360 MB + Spiel ≈ 180 MB) |
 
 Wachsen die Assets (4K-Texturen), wächst die App entsprechend.
@@ -128,6 +148,9 @@ Kein automatischer Updater (bewusst einfach). Neue Version: Installer der neuen 
 - Desktop ↔ Browser nur bei gleicher Spielfassung (siehe oben).
 - Die Windows-.exe wurde unter Linux (wine) gebaut und dort nicht auf einem echten Windows gestartet; der GitHub-Workflow
   baut nativ auf Windows.
-- „Extrem“ ist nur auf einer Maschine **ohne GPU** (Software-Rendering) angelaufen und dort beim Kartenladen abgestürzt
-  (Renderprozess, vermutlich Speicher der 8K-Schattenkarte in der Software-GL). Auf echter Hardware noch nicht gemessen –
-  vor einer Veröffentlichung einmal auf einem Spiele-PC prüfen; im Zweifel `shadowMapSize` in `EXTREME_PRESET` auf 4096.
+- „Extrem“ auf echter Spiele-Hardware ist noch nicht gemessen (die Sandbox hat keine GPU). Abgesichert: 8K-Schatten nur
+  unter den oben genannten Bedingungen, nach einem Absturz automatisch 4K. Ergebnis des Laufs unter xvfb/Software-GL:
+  siehe apps.md „Getestet“.
+- VR aus der App: WebXR/OpenXR-Schalter sind gesetzt, ob Electron eine Brille meldet, ist ungetestet (keine Brille in der
+  Sandbox; Electron enthält den XR-Dienst nicht sicher). Der VR-Abschnitt im Spiel sagt in der App, dass PC-VR über
+  Chrome/Edge geht.

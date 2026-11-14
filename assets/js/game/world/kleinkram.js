@@ -868,6 +868,131 @@ const RAUM = {
 };
 
 /**
+ * Laufweg-Raster eines Raums (0,2 m): frei = Kapselmitte passt (Abstand ≥ 0,38 m zu Wänden/Einbauten wie die Navigation, neue Möbel mit
+ * 0,55 m Sicherheitsrand).
+ * Anker = Türlaibungen (innen) und Treppen-/Deckenlöcher; erreichbar = Flutfüllung ab den Ankern.
+ * passt(cx, cz, hx, hz): würde ein Möbel (achsenparalleles Rechteck) keinen bisher erreichbaren Bereich abschneiden und
+ * keinen Anker belegen? setze(): Möbel eintragen. null, wenn der Raum keinen Anker hat.
+ */
+function laufRaster(ix0, iz0, ix1, iz1, fy, doors, holes, blocks, tris = null) {
+  const C = 0.2, R = 0.38, RF = 0.55, nx = Math.max(1, Math.round((ix1 - ix0) / C)), nz = Math.max(1, Math.round((iz1 - iz0) / C)), N = nx * nz;
+  const X = (i) => ix0 + (i + 0.5) * C, Z = (j) => iz0 + (j + 0.5) * C;
+  const blk = new Uint8Array(N), anchor = new Uint8Array(N);
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+    const x = X(i), z = Z(j), o = j * nx + i;
+    if (x - ix0 < R || ix1 - x < R || z - iz0 < R || iz1 - z < R) blk[o] = 1;
+    for (const f of blocks) {
+      const c = Math.cos(f.ry || 0), sn = Math.sin(f.ry || 0), px = x - f.x, pz = z - f.z;
+      const lx = px * c - pz * sn, lz = px * sn + pz * c;
+      if (Math.abs(lx) < f.hw + R && Math.abs(lz) < f.hd + R) { blk[o] = 1; break; }
+    }
+  }
+  // Kollisionsdreiecke im Raum zwischen Knie- und Kopfhöhe (Geländer, unsichtbare Kollisionsquader ohne Grundriss)
+  if (tris) {
+    const T = tris.a, nT = tris.n;
+    for (let k = 0; k < nT; k += 9) {
+      const y0 = Math.min(T[k + 1], T[k + 4], T[k + 7]), y1 = Math.max(T[k + 1], T[k + 4], T[k + 7]);
+      if (y1 < fy + 0.3 || y0 > fy + 1.7) continue;
+      const a0 = Math.min(T[k], T[k + 3], T[k + 6]) - R, a1 = Math.max(T[k], T[k + 3], T[k + 6]) + R;
+      const c0 = Math.min(T[k + 2], T[k + 5], T[k + 8]) - R, c1 = Math.max(T[k + 2], T[k + 5], T[k + 8]) + R;
+      if (a1 < ix0 || a0 > ix1 || c1 < iz0 || c0 > iz1) continue;
+      // große schräge Flächen (Treppenrampen) nur grob: Hülle; sonst wäre der Raum ohnehin dicht
+      const i0 = Math.max(0, Math.ceil((a0 - ix0) / C - 0.5)), i1 = Math.min(nx - 1, Math.floor((a1 - ix0) / C - 0.5));
+      const j0 = Math.max(0, Math.ceil((c0 - iz0) / C - 0.5)), j1 = Math.min(nz - 1, Math.floor((c1 - iz0) / C - 0.5));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) blk[j * nx + i] = 1;
+    }
+  }
+  // Türen: Laibung ins Rauminnere als Anker (immer frei); Löcher (Treppenaustritt) ebenso
+  for (const d of doors) {
+    const half = d.w / 2 - 0.05;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const x = X(i), z = Z(j), o = j * nx + i;
+      const inn = d.ax ? Math.abs(z - d.z) : Math.abs(x - d.x), along = d.ax ? Math.abs(x - d.x) : Math.abs(z - d.z);
+      if (along < half && inn < R + 0.45) { anchor[o] = 1; blk[o] = 0; }
+    }
+  }
+  for (const h of holes) {
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const x = X(i), z = Z(j);
+      const o = j * nx + i;
+      // Loch im Boden dieses Geschosses: nicht begehbar (Kapselrand R); Rand rundum = Treppenaustritt (Anker)
+      if (x > h.x0 - R && x < h.x1 + R && z > h.z0 - R && z < h.z1 + R) { blk[o] = 1; anchor[o] = 0; }
+      else if (x > h.x0 - R - 0.7 && x < h.x1 + R + 0.7 && z > h.z0 - R - 0.7 && z < h.z1 + R + 0.7 && !blk[o]) anchor[o] = 1;
+    }
+  }
+  // Treppenfuß (Treppen-Grundriss im Raum): Zellen direkt daneben sind Anker
+  for (const f of blocks) {
+    if (f.kind !== 'stairs' || f.y0 > fy + 0.3) continue;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const x = X(i), z = Z(j), o = j * nx + i;
+      if (blk[o]) continue;
+      const c = Math.cos(f.ry || 0), sn = Math.sin(f.ry || 0), px = x - f.x, pz = z - f.z;
+      const lx = px * c - pz * sn, lz = px * sn + pz * c;
+      // Lauflänge entlang lokal z (arch.stairs: ry = Aufstiegsrichtung): Antritt und Austritt je 1,4 m frei
+      if (Math.abs(lx) < f.hw + R + 0.35 && Math.abs(lz) < f.hd + R + 1.4) anchor[o] = 1;
+    }
+  }
+  if (!anchor.some((a) => a)) return null;
+  const reach = new Uint8Array(N), stack = new Int32Array(N);
+  // Flutfüllung je Zusammenhangskomponente ab den Ankern: Anzahl der Komponenten (getrennte Laufbereiche) + Zellen
+  const flood = (extra) => {
+    reach.fill(0);
+    let n = 0, comps = 0;
+    for (let s0 = 0; s0 < N; s0++) {
+      if (!anchor[s0] || reach[s0] || blk[s0] || (extra && extra[s0])) continue;
+      comps++;
+      let sp = 0; reach[s0] = 1; stack[sp++] = s0; n++;
+      while (sp) {
+        const o = stack[--sp], i = o % nx, j = (o / nx) | 0;
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const ii = i + di, jj = j + dj;
+          if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+          const q = jj * nx + ii;
+          if (reach[q] || blk[q] || (extra && extra[q])) continue;
+          reach[q] = 1; stack[sp++] = q; n++;
+        }
+      }
+    }
+    flood.comps = comps;
+    return n;
+  };
+  let base = flood(null), baseComps = flood.comps, baseReach = reach.slice();
+  // Umfeld der Anker (1 m): Navigationsknoten liegen im 1,5-m-Raster – Möbel direkt an Tür-/Treppenaustritten
+  // schneiden dort Verbindungen ab, auch wenn das feine Raster noch einen Spalt sieht
+  const nahe = new Uint8Array(N), D = 5;
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+    if (!anchor[j * nx + i]) continue;
+    for (let jj = Math.max(0, j - D); jj <= Math.min(nz - 1, j + D); jj++) for (let ii = Math.max(0, i - D); ii <= Math.min(nx - 1, i + D); ii++) nahe[jj * nx + ii] = 1;
+  }
+  const cellsOf = (cx, cz, hx, hz) => {
+    const m = new Uint8Array(N);
+    let any = false;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const x = X(i), z = Z(j);
+      if (Math.abs(x - cx) < hx + RF && Math.abs(z - cz) < hz + RF) { m[j * nx + i] = 1; any = true; }
+    }
+    return any ? m : null;
+  };
+  return {
+    passt(cx, cz, hx, hz) {
+      const m = cellsOf(cx, cz, hx, hz);
+      if (!m) return true;
+      let covered = 0;
+      for (let o = 0; o < N; o++) if (m[o]) { if (anchor[o] || nahe[o]) return false; if (baseReach[o]) covered++; }
+      // alles bisher Erreichbare außer der Möbelfläche selbst muss erreichbar bleiben, ohne neue getrennte Bereiche
+      const n = flood(m);
+      return n >= base - covered && flood.comps <= baseComps;
+    },
+    setze(cx, cz, hx, hz) {
+      const m = cellsOf(cx, cz, hx, hz);
+      if (!m) return;
+      for (let o = 0; o < N; o++) if (m[o]) blk[o] = 1;
+      base = flood(null); baseComps = flood.comps; baseReach = reach.slice();
+    },
+  };
+}
+
+/**
  * Leere, begehbare Räume einrichten (Gebäude aus arch.building(), b._gebaeude): Möbel an den Wänden – Türbereiche
  * (1,1 m), Treppenlöcher/Treppen (1,2 m), vorhandene Möbel/Deckung und Kampagnen-/Startpunkte bleiben frei; hohe
  * Möbel nicht vor Fenstern. Räume mit schon ≥ 2 Möbeln oder Bibliotheksmodellen bleiben, wie sie sind. Große Möbel
@@ -877,23 +1002,25 @@ const RAUM = {
 export function einrichten(b, o = {}) {
   const bz = o.bereich || b.bounds, sperr = o.sperr || [], near = footGrid(b);
   let raeume = 0, stuecke = 0;
+  const grund = {};
+  const nein = (k) => { grund[k] = (grund[k] || 0) + 1; };
   for (const g of b._gebaeude || []) {
-    if (!g.interior || g.w < 3.8 || g.d < 3.8 || g.w * g.d < (o.minFlaeche ?? 12) || g.w * g.d > (o.maxFlaeche ?? 140)) continue;
-    if (g.x < bz.minX || g.x > bz.maxX || g.z < bz.minZ || g.z > bz.maxZ) continue;
-    if (/wood/.test(g.mat) && o.holz !== true) continue; // Schuppen/Scheunen
+    if (!g.interior || g.w < 3.8 || g.d < 3.8 || g.w * g.d < (o.minFlaeche ?? 12) || g.w * g.d > (o.maxFlaeche ?? 140)) { nein('groesse'); continue; }
+    if (g.x < bz.minX || g.x > bz.maxX || g.z < bz.minZ || g.z > bz.maxZ) { nein('bereich'); continue; }
+    if (/wood/.test(g.mat) && o.holz !== true) { nein('holz'); continue; } // Schuppen/Scheunen
     const ix0 = g.x - g.w / 2 + g.t, ix1 = g.x + g.w / 2 - g.t, iz0 = g.z - g.d / 2 + g.t, iz1 = g.z + g.d / 2 - g.t;
     for (let li = 0; li < g.levels.length; li++) {
       const fy = g.levels[li], ceil = li + 1 < g.levels.length ? g.levels[li + 1] - 0.3 : g.roofY - 0.3;
-      if (ceil - fy < 2.3) continue;
+      if (ceil - fy < 2.3) { nein('decke'); continue; }
       // nicht begehbar (noNav über dem Boden)?
-      if (b.navExclude.some((e) => e.minX <= g.x && e.maxX >= g.x && e.minZ <= g.z && e.maxZ >= g.z && e.minY <= fy + 0.6 && e.maxY >= fy + 1.6)) continue;
+      if (b.navExclude.some((e) => e.minX <= g.x && e.maxX >= g.x && e.minZ <= g.z && e.maxZ >= g.z && e.minY <= fy + 0.6 && e.maxY >= fy + 1.6)) { nein('noNav'); continue; }
       // schon eingerichtet?
       const inside = (x, z) => x > ix0 && x < ix1 && z > iz0 && z < iz1;
       const vorh = b.footprints.filter((f) => (f.kind === 'cover' || f.kind === 'prop') && inside(f.x, f.z) && f.y0 > fy - 0.3 && f.y0 < fy + 1.2).length
         // Bibliotheksmodelle nur, wenn sie unabhängig von der Bibliothek stehen (mit Ersatzform) – sonst hinge die
         // Einrichtung (und ihre Kollision) davon ab, ob das Gerät die Bibliothek lädt (Mehrspieler!)
         + b.models.filter((m) => m.o && m.o.fallback && inside(m.x, m.z) && m.y > fy - 0.3 && m.y < fy + 1.2).length;
-      if (vorh >= 2) continue;
+      if (vorh >= (o.voll ?? 5)) { nein('moebliert'); continue; }
       // Sperrflächen: Türen (innen 1,1 m), Löcher/Treppen, vorhandene Einbauten
       const doors = [], wins = [];
       for (const op of g.openings) {
@@ -904,6 +1031,10 @@ export function einrichten(b, o = {}) {
       }
       const holes = g.holes.filter((h) => (h.floor ?? 1) === li || (h.floor ?? 1) === li + 1);
       const blocks = b.footprints.filter((f) => f.kind !== 'building' && f.kind !== 'roof' && f.kind !== 'floor' && f.y1 > fy + 0.1 && f.y0 < fy + 2 && Math.abs(f.x - g.x) < g.w / 2 + 2 && Math.abs(f.z - g.z) < g.d / 2 + 2);
+      // gelaende (Runde 3): Laufweg-Raster des Raums – Möbel dürfen keinen Durchgang schließen und keine Nische
+      // abschneiden (früher standen sie in Innen-Durchgängen und erzeugten unerreichbare Nav-Inseln)
+      const lauf = laufRaster(ix0, iz0, ix1, iz1, fy, doors, g.holes.filter((h) => (h.floor ?? 1) === li), blocks, b.colTris);
+      if (!lauf) { nein('keinZugang'); continue; } // kein erkennbarer Zugang (Tür/Treppe) → Raum nicht anfassen
       const sorte = RAUM[o.stil === 'buero' ? 'buero' : o.stil === 'lager' ? 'lager' : li === 0 ? 'erdgeschoss' : 'wohn'];
       let placed = 0, kueche = false;
       const mine = [];
@@ -934,13 +1065,20 @@ export function einrichten(b, o = {}) {
           if (ok) ok = !sperr.some(([sx, sz, r]) => Math.abs(sx - cx) < hx + Math.min(r, 1.6) && Math.abs(sz - cz) < hz + Math.min(r, 1.6));
           // Gegenwand muss weit genug weg sein (Durchgang ≥ 1,6 m)
           if (ok) ok = (along ? (iz1 - iz0) : (ix1 - ix0)) - Dp >= 1.6;
+          if (ok && M.H > 0.6) ok = lauf.passt(cx, cz, hx, hz);
           if (!ok) { cur += 0.45; continue; }
+          if (M.H > 0.6) lauf.setze(cx, cz, hx, hz);
           const ry = Math.atan2(nx, nz);
           const [wx, wz] = along ? [u, c] : [c, u];
           M.fn(b, wx, fy, wz, ry);
-          if (M.H > 0.6) b.box(cx, fy, cz, hx * 2 - 0.04, Math.min(M.H, 1.9), hz * 2 - 0.04, 'black', { visual: false, minimap: false });
+          if (M.H > 0.6) {
+            b.box(cx, fy, cz, hx * 2 - 0.04, Math.min(M.H, 1.9), hz * 2 - 0.04, 'black', { visual: false, minimap: false });
+            // keine Navigationsknoten auf Möbeloberseiten (Tische, Kommoden: sonst unerreichbare Inseln)
+            b.noNav(cx - hx - 0.15, cz - hz - 0.15, cx + hx + 0.15, cz + hz + 0.15, fy + 0.3, fy + 2.3);
+          }
           if (M.kueche) kueche = true;
           mine.push([cx, cz, hx, hz]);
+          if (o.protokoll) o.protokoll.push([id, +cx.toFixed(2), +fy.toFixed(2), +cz.toFixed(2), +hx.toFixed(2), +hz.toFixed(2)]);
           placed++; stuecke++;
           cur += L + 0.25 + hash01(cx, cz, 812) * 0.6;
         }
@@ -948,7 +1086,7 @@ export function einrichten(b, o = {}) {
       if (placed) raeume++;
     }
   }
-  return { raeume, stuecke };
+  return { raeume, stuecke, grund };
 }
 
 /**
@@ -960,6 +1098,7 @@ export function belebe(b, o = {}) {
   // Einrichtung zuerst: sie zählt vorhandene Möbel – Kleinkram dieses Moduls (je Stufe verschieden) darf das nicht beeinflussen
   // Einrichtung leerer Räume nur auf Wunsch (o.einrichten: true) – auf dem Hafen erzeugte sie unerreichbare Nav-Inseln
   const res = { innen: o.einrichten === true ? einrichten(b, { ...o, stil: o.raum || (o.stil === 'industrie' || o.stil === 'hafen' ? 'buero' : o.stil === 'militaer' ? 'lager' : 'wohn') }) : null };
+  if (res.innen && globalThis.location?.search?.includes('debug=1')) console.info(`[gelaende] Einrichtung (${o.stil}): ${res.innen.raeume} Räume, ${res.innen.stuecke} Möbel ${JSON.stringify(res.innen.grund)}`);
   Object.assign(res, { wand: wandkram(b, o), tuer: tuerdetails(b, o), fenster: fensterleben(b, o) });
   if (o.kabel !== false && (o.stil === 'stadt' || o.stil === 'dorf' || o.kabel)) res.kabel = gassenkabel(b, o);
   if (o.dach !== false) res.dach = dachleben(b, o);

@@ -123,8 +123,10 @@ const RESERVED = new Set([
 /** Nur der Host darf sie senden (der Host verwirft sie von Clients). */
 const HOST_ONLY = new Set(['welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject', 'actors', 'vehicles']);
 
-/** Gerät eines Menschen im Roster (Symbol in Punktetabelle und Spielerliste): PC, Handy/Tablet (Touch), VR-Brille. */
-export const DEVICES = Object.freeze(['pc', 'mobile', 'vr']);
+/** Gerät eines Menschen im Roster (Symbol in Punktetabelle und Spielerliste): PC (Browser), PC-App (desktop/), Handy/Tablet
+ * (Touch, auch Android-App), VR-Brille. app (14.11.): kein Protokollbruch – nur ein weiterer Wert im bestehenden Feld,
+ * ältere Gegenstellen würden ihn als 'pc' lesen (online spielen ohnehin nur gleiche Fassungen zusammen). */
+export const DEVICES = Object.freeze(['pc', 'app', 'mobile', 'vr']);
 const normDevice = (d) => (DEVICES.includes(d) ? d : 'pc');
 
 const nowSec = () => performance.now() / 1000;
@@ -440,11 +442,12 @@ export class NetSystem {
     if (G && G.events) for (const ev of ['xr:start', 'xr:end', 'input:mode']) G.events.on(ev, () => this._deviceChanged());
   }
 
-  /** Eigenes Gerät: 'vr' während einer VR-Sitzung, 'mobile' bei Touch-Steuerung, sonst 'pc'. */
+  /** Eigenes Gerät: 'vr' während einer VR-Sitzung, 'mobile' bei Touch-Steuerung, 'app' in der Desktop-App, sonst 'pc'. */
   localDevice() {
     const G = this.G || {};
     if (G.xr && G.xr.presenting) return 'vr';
     if (G.input && G.input.mode === 'touch') return 'mobile';
+    if (typeof window !== 'undefined' && window.nullpunktDesktop) return 'app';
     return 'pc';
   }
 

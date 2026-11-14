@@ -67,9 +67,20 @@ export const EXTREME_PRESET = Object.freeze({
   ...QUALITY_PRESETS.ultra, extreme: true, shadowMapSize: 8192, maxBotsVisibleShadows: 32, particleScale: 1.5, decals: 240,
 });
 /** Vorgabe zu Wunsch q (auch 'extrem') und aufgelöster Stufe. */
-let maxTexSize = 16384; // vom Kontext (createRenderer); 8K-Schatten nur, wenn die GPU so große Texturen kann
+const EXTREME_PRESET_4K = Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096 });
+// app (14.11.): 8K-Schatten (256 MB Tiefentextur) nur, wenn alles dafür spricht – GPU kann ≥ 16K-Texturen, ist eine
+// starke Desktop-GPU (keine Software-GL, kein iGPU-/Mobilchip), ≥ 16 GB RAM, und der letzte Spielprozess der App ist
+// nicht abgestürzt (desktop/main.js meldet lastCrash). Sonst „Extrem“ mit 4096² (wie Ultra) – der Rest bleibt Extrem.
+let extremeBigShadow = false; // vom Kontext (createRenderer)
+const BIG_GPU = new Set(['nvidia', 'amd', 'intel-arc', 'apple', 'amd-apu-hoch']);
+function bigShadowOk(maxTex, cls) {
+  const d = typeof window !== 'undefined' ? window.nullpunktDesktop : null;
+  if (!d || d.lastCrash) return false;
+  const memGB = Number(d.memoryGB) || 0;
+  return maxTex >= 16384 && BIG_GPU.has(cls) && memGB >= 15.5;
+}
 const presetFor = (q, tier) => (q === EXTREME && tier === 'ultra' && isDesktopApp()
-  ? (maxTexSize >= 8192 ? EXTREME_PRESET : Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096 })) : QUALITY_PRESETS[tier]);
+  ? (extremeBigShadow ? EXTREME_PRESET : EXTREME_PRESET_4K) : QUALITY_PRESETS[tier]);
 
 /** Standardwerte des Bloom (Schwelle in Bildwerten nach Belichtung, d. h. vor dem Tonemapping). */
 export const BLOOM_DEFAULTS = Object.freeze({ threshold: 3.0, strength: 0.24, radius: 0.4, maxBright: 8 });
@@ -175,7 +186,6 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   // Max. Anisotropie jetzt abfragen (three.js merkt sie sich): gl.getParameter wartet, bis die GPU alle
   // anstehenden Befehle abgearbeitet hat – beim ersten Kartenladen kostete das einen langen Hänger.
   renderer.capabilities.getMaxAnisotropy();
-  maxTexSize = renderer.capabilities.maxTextureSize || 4096; // desktop: Stufe Extrem
   // 'auto' (21.10.): mit dem echten Kontext entscheiden – GPU-Klasse, GPU-Test beim ersten Start, gelernte Stufe
   // (engine/device.js). Noch ist nichts kompiliert, ein Wechsel der Stufe kostet hier nichts. Auch bei fester Stufe
   // (dann ohne GPU-Test): wer später auf „Automatisch“ zurückstellt, bekommt so die GPU-Klasse statt nur der Gerätewerte
@@ -183,6 +193,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   let auto = null;
   let gpu = { name: '', cls: 'unbekannt' };
   try { const name = gpuName(renderer.getContext()); gpu = { name, cls: classifyGpu(name, deviceInfo()).cls }; } catch { /* ohne Namen */ }
+  extremeBigShadow = bigShadowOk(renderer.capabilities.maxTextureSize || 4096, gpu.cls); // desktop: Stufe Extrem
   const startAuto = !QUALITY_LEVELS.includes(quality) && !(quality === EXTREME && isDesktopApp());
   try {
     const d = decideAuto(renderer, { bench: benchmark && startAuto });
