@@ -19,7 +19,7 @@ import {
   festesModell,
 } from './hafen-ausstattung.js?v=20261114060746';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
-import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
+import { belebe, sperrpunkte, KAMPAGNE, tauwerk } from '../kleinkram.js?v=20261114060746';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -85,6 +85,8 @@ export default {
     b.decal(QUAY_X + 0.9, 0.01, 0, 0.4, 104, 'line', { ry: 0, tint: '#e8c22c', kind: 'paint', opacity: 0.85 });
     for (let z = -100; z <= 50; z += 6) b.cyl(QUAY_X - 0.75, -2.6, z, 0.32, 2.4, 'rubber', { seg: 10, collide: false, minimap: false, grad: false });
     for (let z = -46; z <= 48; z += 11.5) bollard(b, QUAY_X + 0.9, z, { mooring: true });
+    // karten-voll: aufgeschossene Festmacher neben jedem zweiten Poller (nur Optik)
+    for (let z = -46, i = 0; z <= 48; z += 11.5, i++) if (i % 2 === 0) tauwerk(b, QUAY_X + 1.75, 0, z + 0.9);
     // Kaikante (kein Sturz ins Wasser): Kollision an der Mauer, sichtbar gemacht durch Pfosten mit Kette auf der Kante
     b.collider(QUAY_X - 0.2, -3, 0, 0.4, 12, 112);
     kaiAbsperrung(b, QUAY_X + 0.28, -51.6, 51.6);
@@ -296,7 +298,7 @@ export default {
     for (const [x, z] of sA) { spawns.A.push({ x, z, yaw: 0 }); spawns.B.push({ x, z: -z, yaw: Math.PI }); }
     for (const [x, z] of [[-40, 20], [-38, -8], [-34, -40], [-20, -26], [-20, 26], [-10, 18], [-11, -18], [0, -1], [10.2, -24.4], [10.2, 24.4], [20, -10], [38.5, 8], [24, 14], [38, -14], [30, -40], [-26, -48], [61, -15], [61, 15], [71.5, 0], [52.5, -32], [52.5, 32], [64.5, -44], [64.5, 44]]) spawns.ffa.push({ x, z });
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
-    belebe(b, { stil: 'hafen', boden: { asphalt: true, bereich: { minX: -43, maxX: 74, minZ: -52, maxZ: 52 } }, bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52 }, sperr: sperrpunkte({ spawns }, KAMPAGNE.hafen || []) });
+    belebe(b, { stil: 'hafen', huellen: ['building', 'container'], boden: { asphalt: true, bereich: { minX: -43, maxX: 74, minZ: -52, maxZ: 52 } }, bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52 }, sperr: sperrpunkte({ spawns }, KAMPAGNE.hafen || []) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 30.6, radius: 5 }, { id: 'B', x: -14.2, z: -0.8, radius: 6 }, { id: 'C', x: -13.6, z: -30.6, radius: 5 }] },

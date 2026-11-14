@@ -128,7 +128,7 @@ export default {
       [-68, 1.5], [-57, 14], [-57, -14], [-72, 26], [-72, -24], [-64, 38], [-64, -37],
     ]) spawns.ffa.push({ x, z });
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
-    belebe(b, { stil: 'industrie', boden: { asphalt: true }, bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
+    belebe(b, { stil: 'industrie', huellen: ['building', 'container'], boden: { asphalt: true }, bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -36, z: 27, radius: 5 }, { id: 'B', x: 0, z: 0, radius: 5.5 }, { id: 'C', x: -36, z: -27, radius: 5 }] },

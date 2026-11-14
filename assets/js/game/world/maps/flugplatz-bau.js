@@ -339,10 +339,12 @@ function bueroEinbau(b, x, zb, o) {
   stahlregal(b, x + 3, yF, zb + 0.5, 0);
   stahlregal(b, x + 5, yF, zb + 0.5, 0);
   stahlregal(b, x + 7, yF, zb + 0.5, 0);
-  munitionskisten(b, x + 9, yF, zb + 3.2, 0.2, 3);
+  munitionskisten(b, x + 9, yF, zb + 1.6, 0.2, 3);
   deckenleuchte(b, x - 5, yC, zb + 2.6, 0, 1.25, { real: true });
   deckenleuchte(b, x + 5, yC, zb + 2.6, 0, 1.25);
-  besprechung(b, x - 5, yF2, zb + 2.4, 0, 2.4, 1.0, 3);
+  besprechung(b, x - 5, yF2, zb + 1.7, 0, 2.0, 0.9, 2);
+  // Wegketten durch beide Büros (über die Tür in der Trennwand): das 1,6-m-Raster trifft die 5 m tiefen Räume schlecht
+  for (const yy of [yF, yF2]) b.navLine(x - 10.4, yy + 0.2, zb + 3.8, x + 10.4, yy + 0.2, zb + 3.8, 1.1);
   pinnwand(b, x - 8, yF2 + 1.1, zb + 0.06, 0, 1.6, 1.0);
   schreibtisch(b, x + 4, yF2, zb + 1.3, 0);
   bueroStuhl(b, x + 4, yF2, zb + 2.2, PI);
@@ -606,7 +608,6 @@ export function tanklager(b, x, z) {
     }
     b.navPoint(tx, h + 0.75, tz);
   });
-  b.noNav(x - 30, z - 30, x + 20, z + 30, h - 0.8, h + 6);
   // Rohrleitungen von den Tanks zum Pumpenhaus (Sammelleitung über Kopf zwischen den Wannen)
   for (const [lx, lz] of tanks) pipe(b, [[x + lx, 0.6, z + lz + (lz < 0 ? r : -r)], [x + lx, 0.6, z + (lz < 0 ? -2.0 : 0.0)], [x + lx, 2.6, z - 1], [x + 22, 2.6, z - 1]], { r: 0.16, tint: '#d9a72a' });
   for (const lx of [-20, -4, 12]) for (const s of [-1, 1]) b.box(x + lx, 0, z - 1 + s * 0.6, 0.15, 2.45, 0.15, 'metal_painted', { tint: '#4a5048', ...KEIN });

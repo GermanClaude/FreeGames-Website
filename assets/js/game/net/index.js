@@ -1480,7 +1480,7 @@ export class NetSystem {
     const st = this.room && this.room.settings ? this.room.settings : DEFAULT_ROOM;
     const actors = st.botFill !== false ? Math.min(MAX_PLAYERS, 2 * (st.teamSize || DEFAULT_ROOM.teamSize)) : 0;
     // Fahrzeuge der Karte (Grenzland: je Team 2 Panzer + 3 Geländewagen, sonst je Team 1 + 1)
-    const vehicles = st.vehicles && militaryVehiclesAllowed(st.map) ? (st.map === 'grenzland' ? 10 : st.map === 'brandwald' ? 2 : 4) : 0;
+    const vehicles = st.vehicles && militaryVehiclesAllowed(st.map) ? (st.map === 'grenzland' ? 10 : st.map === 'flugplatz' ? 18 : st.map === 'brandwald' ? 2 : 4) : 0;
     return recommend({
       actors, vehicles,
       cores: Number.isFinite(nav.hardwareConcurrency) ? nav.hardwareConcurrency : null,

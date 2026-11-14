@@ -4,6 +4,9 @@
 //   • nxy   – Normalen-Karten als XY-Paar (X in RGB, Y in Alpha; Z rekonstruiert). ETC1S hat getrennte Farb- und
 //             Alpha-Ebenen → deutlich sauberere Normalen als RGB-ETC1S (gemessen PSNR 27 → 33 dB) bei ≈ 1,7× Datei.
 //             Die Sätze tragen im Manifest tiers[n].normalXY (assets/lib/loader.js setzt set.normalXY).
+//             Dabei wird Y negiert (OpenGL-Scan ohne Y-Spiegelung im KTX2) und die Sätze werden mit negativer
+//             V-Wiederholung gezeichnet (engine/textures.js) – Bilder stehen aufrecht, Relief ist nicht mehr vertikal
+//             invertiert (die 512er-Stufe ist dafür gespiegelt kodiert).
 //   • hex   – Kachel-Auflösung nach Mikkelsen („Practical Real-Time Hex-Tiling“, 2022): drei versetzte (und für
 //             ungerichtete Böden gedrehte) Abtastungen je Karte auf einem Dreiecksgitter, gewichtet nach Helligkeit –
 //             keine sichtbare Wiederholung mehr auf großen Flächen. Albedo, Normalen (Drehung zurückgerechnet) und ORM
@@ -11,6 +14,7 @@
 //   • grime – Sockelschmutz/Spritzwasser an Wandfüßen und eine feuchte Kante direkt am Boden (Vertex-Attribut
 //             npGrime aus world/builder.js: 1 am Fuß, 0 ab ≈ 1,6 m), unregelmäßiger Rand über Weltraum-Rauschen.
 //             Ab medium (der Builder setzt das Attribut nicht auf low).
+//   • joint – Plattenfugen in Weltkoordinaten auf Böden (Beton), mit Helligkeitsstreuung je Platte. Ab medium.
 //
 // Technik: Die three-Bausteine (map_fragment, normal_fragment_maps, roughness-/metalness-/aomap_fragment) bleiben
 // unangetastet; nur „texture2D“ wird um diese Einschlüsse herum auf eigene Abtastfunktionen umgelenkt. So vertragen
@@ -51,7 +55,9 @@ vec4 npHexMap( sampler2D s, vec2 uv ) {
 }
 vec3 npNrmDecode( vec4 t ) {
 #ifdef NP_NXY
-  vec2 xy = vec2( t.r, t.a ) * 2.0 - 1.0;
+  // Y negiert: KTX2 liegt ohne Y-Spiegelung vor (Zeile 0 = Bildoberkante bei t = 0), die Scans sind OpenGL-Normalen
+  // (+Y = Bild-oben = −t); three erwartet +Y = +t (Bitangente aus den UV-Ableitungen)
+  vec2 xy = vec2( t.r, 1.0 - t.a ) * 2.0 - 1.0;
   return vec3( xy, sqrt( clamp( 1.0 - dot( xy, xy ), 0.0, 1.0 ) ) );
 #else
   return t.xyz * 2.0 - 1.0;
@@ -77,13 +83,17 @@ vec4 npHexOrm( sampler2D s, vec2 uv ) {
 
 const NXY_FN = /* glsl */`
 vec4 npNxyTex( sampler2D s, vec2 uv ) {
-  vec4 t = texture( s, uv ); vec2 xy = vec2( t.r, t.a ) * 2.0 - 1.0;
+  vec4 t = texture( s, uv ); vec2 xy = vec2( t.r, 1.0 - t.a ) * 2.0 - 1.0; // Y negiert (siehe npNrmDecode)
   return vec4( vec3( xy, sqrt( clamp( 1.0 - dot( xy, xy ), 0.0, 1.0 ) ) ) * 0.5 + 0.5, 1.0 );
 }
 `;
 
+const JOINT_FN = /* glsl */`
+uniform vec4 npJoint; // x: Plattenmaß (m), y: Fugenbreite (m), z: Fugen-Abdunklung, w: Helligkeitsstreuung je Platte
+float npJm = 0.0; vec2 npJg = vec2( 0.0 );
+`;
+
 const GRIME_FN = /* glsl */`
-uniform sampler2D npSurfNoise;
 uniform vec4 npGrimeP; // x: Schmutz, y: Nässe, z: Rauheit-Zuschlag Schmutz, w: Rauheit-Abschlag Nässe
 varying float vNpGrime;
 float npGrM = 0.0, npWetM = 0.0;
@@ -95,7 +105,7 @@ const wrap = (inc, fn) => `#undef texture2D\n#define texture2D( s, c ) ${fn}( s,
 const _fns = new Map();
 /**
  * Haken-Funktion je Variante (gleiche Variante = gleiche Funktion und gleicher Programmtext).
- * v: { nxy, hex (Kontrast 0..1, 0 = aus), hexScale, rot (0..1), grime (0..1), wet (0..1) }
+ * v: { nxy, hex (Kontrast 0..1, 0 = aus), hexScale, rot (0..1), grime (0..1), wet (0..1), joint ([Maß m, Fuge m, Abdunklung, Streuung]) }
  */
 function surfaceFn(v, noiseTex) {
   const key = variantKey(v);
@@ -105,15 +115,19 @@ function surfaceFn(v, noiseTex) {
     npSurf: { value: new THREE.Vector4(v.hex || 0, v.hexScale || 1.4, v.rot || 0, 0) },
     npSurfNoise: { value: noiseTex },
     npGrimeP: { value: new THREE.Vector4(v.grime || 0, v.wet ?? 0.8, 0.12, 0.38) },
+    npJoint: { value: new THREE.Vector4(...(v.joint || [6, 0.012, 1, 0.1])) },
   };
   fn = (shader) => {
     Object.assign(shader.uniforms, u);
+    if (v.grime || v.joint) ensureWorldVaryings(shader); // vor dem Lesen des Fragment-Texts (fügt dort Varyings ein)
     let fs = shader.fragmentShader;
     const head = [];
     if (v.nxy) head.push('#define NP_NXY 1');
     if (v.hex) head.push('#define NP_HEX 1', HEX_FN);
     else if (v.nxy) head.push(NXY_FN);
-    if (v.grime) { head.push(GRIME_FN); ensureWorldVaryings(shader); }
+    if (v.grime || v.joint) head.push('uniform sampler2D npSurfNoise;');
+    if (v.grime) head.push(GRIME_FN);
+    if (v.joint) head.push(JOINT_FN);
     fs = fs.replace('#include <common>', '#include <common>\n' + head.join('\n'));
     if (v.hex) {
       fs = fs.replace('#include <map_fragment>', wrap('map_fragment', 'npHexMap'))
@@ -123,6 +137,25 @@ function surfaceFn(v, noiseTex) {
         .replace('#include <aomap_fragment>', wrap('aomap_fragment', 'npHexOrm'));
     } else if (v.nxy) {
       fs = fs.replace('#include <normal_fragment_maps>', wrap('normal_fragment_maps', 'npNxyTex'));
+    }
+    if (v.joint) {
+      // Plattenfugen in Weltkoordinaten (nur nach oben weisende Flächen): Fuge abdunkeln, Kante zur Fuge neigen,
+      // jede Platte leicht anders hell – ersetzt die in den früheren 6-m-Satz gemalten Fugen, gestochen scharf
+      fs = fs.replace('#include <color_fragment>', `#include <color_fragment>
+        if ( normalize( vNpNormal ).y > 0.85 ) {
+          vec2 npJp = vNpWorld.xz / npJoint.x, npJc = floor( npJp ), npJf = fract( npJp ) - 0.5;
+          vec2 npJd = ( 0.5 - abs( npJf ) ) * npJoint.x;
+          float npJdm = min( npJd.x, npJd.y ), npJaa = fwidth( npJdm ) + 1e-4;
+          float npJw = npJoint.y * ( 0.7 + 0.6 * texture2D( npSurfNoise, vNpWorld.xz * 0.37 ).b );
+          npJm = ( 1.0 - smoothstep( npJw - npJaa, npJw + npJaa * 2.5, npJdm ) ) * ( 1.0 - smoothstep( 0.6, 2.0, npJaa / npJoint.y ) );
+          npJg = npJd.x < npJd.y ? vec2( sign( npJf.x ), 0.0 ) : vec2( 0.0, sign( npJf.y ) );
+          float npJh = fract( sin( dot( npJc, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
+          diffuseColor.rgb *= ( 1.0 + ( npJh - 0.5 ) * npJoint.w ) * mix( 1.0, 0.42, npJm * npJoint.z );
+        }`)
+        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        if ( npJm > 0.001 ) normal = normalize( normal + ( viewMatrix * vec4( npJg.x, 0.0, npJg.y, 0.0 ) ).xyz * npJm * 0.7 );`)
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = min( 1.0, roughnessFactor + npJm * 0.15 );`);
     }
     if (v.grime) {
       shader.vertexShader = shader.vertexShader
@@ -149,7 +182,7 @@ function surfaceFn(v, noiseTex) {
 }
 
 function variantKey(v) {
-  return [v.nxy ? 'n' : '', v.hex ? `h${v.hex}/${v.hexScale || 1.4}/${v.rot || 0}` : '', v.grime ? `g${v.grime}/${v.wet ?? 0.8}` : ''].filter(Boolean).join('-');
+  return [v.nxy ? 'n' : '', v.hex ? `h${v.hex}/${v.hexScale || 1.4}/${v.rot || 0}` : '', v.grime ? `g${v.grime}/${v.wet ?? 0.8}` : '', v.joint ? 'j' + v.joint.join('/') : ''].filter(Boolean).join('-');
 }
 
 /**

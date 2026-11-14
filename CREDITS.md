@@ -88,6 +88,33 @@ verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmi
 | Bark Brown 02 | `bark_brown` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/bark_brown_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rock Boulder Dry | `rock_boulder` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_boulder_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
+### Weitere Welt-Sätze (texturen, 14.11.2026)
+
+Fotoscans für Böden, Wände, Dächer und Blech (2K-Quellen, als KTX2 512/1024/2048 kodiert; Farben im Spiel kalibriert).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Concrete Floor Worn 02 | `concrete_floor_worn2` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/concrete_floor_worn_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Garage Floor | `concrete_garage` | Jenelle van Heerden | [Poly Haven](https://polyhaven.com/a/garage_floor) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Concrete Pavement | `paving_slabs` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/concrete_pavement) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Asphalt 04 | `asphalt_light` | Jenelle van Heerden, Sergej Majboroda | [Poly Haven](https://polyhaven.com/a/asphalt_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Worn Asphalt | `asphalt_dark` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/worn_asphalt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Cobblestone Pavement | `cobble_rows` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/cobblestone_pavement) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rocky Trail | `gravel_trail` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rocky_trail) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brown Mud Dry | `dirt_dry` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Plastered Wall 04 | `plaster_smooth_grey` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/plastered_wall_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rough Plaster 03 | `plaster_rough` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/rough_plaster_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Grey Plaster 02 | `plaster_stained` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/grey_plaster_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Red Bricks 04 | `brick_red_weathered` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/red_bricks_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brick Wall 09 | `brick_light` | Rob Tuytel, Matterfield | [Poly Haven](https://polyhaven.com/a/brick_wall_09) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Red Brick 03 | `brick_clinker` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/red_brick_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Clay Roof Tiles 03 | `roof_clay_red` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/clay_roof_tiles_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Roof Tiles 14 | `roof_tiles_old` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/roof_tiles_14) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Corrugated Iron 03 | `metal_corrugated_painted` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/corrugated_iron_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Worn Corrugated Iron | `metal_corrugated_worn` | Jenelle van Heerden, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/worn_corrugated_iron) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rusty Metal 04 | `metal_rust_heavy` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rusty_metal_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Weathered Brown Planks | `wood_planks_brown` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/weathered_brown_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
 ### Laub- und Bodenatlanten (14.11.2026)
 
 `assets/lib/foliage/`: Foto-Laubatlanten (Busch, Gras, Palmwedel, Blüten, Laubbaum-Büschel) und der Atlas der
@@ -106,6 +133,26 @@ Blättern/Halmen bzw. maskierten Ausschnitten dieser CC0-Scans zusammengesetzt (
 | Rocky Gravel | Splitt | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/rocky_gravel) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirt | Schmutzrand am Wandfuß | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/dirt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Forest Leaves 02 | Schmutzrand am Wandfuß | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/forest_leaves_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Bäume: Zweig-Atlas und Rinden (14.11.2026, Strang „baeume“)
+
+`assets/lib/foliage/baeume.webp` (+ `baeume-1k.webp`): Zweigkarten je Baumart (Eiche, Buche, Birke, Linde, Pappel –
+Blattformen aus freigestellten Einzelblatt-Scans maskiert, umgefärbt und an gezeichnete Zweige gesetzt), Fichten- und
+Kiefernzweige, Farnwedel und Rindenstreifen, zusammengesetzt aus den folgenden CC0-Scans. Rinden-Sätze
+`assets/lib/textures/bark_*` (KTX2) aus den Poly-Haven-Rindentexturen; die Birkenrinde ist aus „Knotted Pine Bark“
+aufgehellt und mit gezeichneten Korkporen versehen.
+
+| Asset | Verwendet für | Urheber:in | Quelle | Lizenz |
+|---|---|---|---|---|
+| Island Tree 01 | Einzelblätter (alle Laubarten) | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/island_tree_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Fir Tree 01 | Fichtenzweige | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/fir_tree_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Pine Tree 01 | Kiefernzweige | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/pine_tree_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Fern 02 | Farnwedel | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/fern_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Jolcham Oak Bark 01 | `bark_eiche` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/jolcham_oak_bark_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Knotted Pine Bark | `bark_buche`, `bark_birke` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/knotted_pine_bark) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Bark Brown 01 | `bark_pappel` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/bark_brown_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Pine Bark | `bark_kiefer` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/pine_bark) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Bark Willow | `bark_fichte` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/bark_willow) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
 ## HDRIs (8)
 
@@ -196,6 +243,16 @@ Blättern/Halmen bzw. maskierten Ausschnitten dieser CC0-Scans zusammengesetzt (
 | Potted Plant 02 | `potted_plant_02` | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/potted_plant_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Shrub 04 | `shrub_04` | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Weed Plant 02 | `weed_plant_02` | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/weed_plant_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+## Soldatenköpfe
+
+Die Köpfe der Soldaten (Nahansicht und Zwischensequenzen) beruhen auf dem Grundnetz **hm08** und den Form-Zielen
+(Alter, Herkunft, Statur, Kiefer, Kinn, Nase, Wangen, Lippen, Augen …) von **MakeHuman**
+([makehumancommunity/makehuman](https://github.com/makehumancommunity/makehuman), Assets seit 09/2020
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de); Urheber: Manuel Bastioni und das MakeHuman-Team,
+Data Collection AB, Joel Palmius, Jonas Hauquier). Von uns auf Kopf + Hals zugeschnitten, neu UV-gepackt und um
+Mimik-Ziele ergänzt (`assets/lib/models/kopf/`, ebenfalls CC0). Hauttexturen, Bart, Brauen, Augen und Zähne sind
+prozedural erzeugt (keine Bilddateien).
 
 ## Klänge
 

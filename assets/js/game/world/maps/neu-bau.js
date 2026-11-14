@@ -47,7 +47,9 @@ export function flight(b, o) {
     b.box(mx, y0 + rise / 2 - 0.34, mz, w, 0.16, len, mat, { ry, rx: -ang, tint: o.tint, ...VG, uv: 'local', interior: o.interior });
   }
   // Kollision: schräge Platte, Oberkante durch die Stufenkanten
-  b.box(mx, y0 + rise / 2 - 0.22, mz, w, 0.22, len + 0.12, 'black', { ry, rx: -ang, visual: false, minimap: 'stairs' });
+  // (Platte je Ende ≈ 0,2 m länger: die Drehung um die Unterkante verschiebt die Oberseite um 0,1 m zurück – sonst bliebe
+  // oben ein Spalt zum Podest, den die Navigation als Loch wertet)
+  b.box(mx, y0 + rise / 2 - 0.22, mz, w, 0.22, len + 0.42, 'black', { ry, rx: -ang, visual: false, minimap: 'stairs' });
   const [ax, az] = P(-0.6), [bx, bz] = P(run + 0.6);
   b.navPoint(ax, y0 + 0.2, az);
   const [sx0, sz0] = P(0.35), [sx1, sz1] = P(run - 0.3);
@@ -100,7 +102,8 @@ export function stairCore(b, o) {
     const [g0x, g0z] = P(-L / 2 + land + 0.02, -w / 2 + 0.03), [g1x, g1z] = P(-L / 2 + land + 0.02, -gap / 2);
     railing(b, g0x, g0z, g1x, g1z, top, { h: 1.0, tint: o.railTint || '#2c2f33', posts: 2 });
     const [h0x, h0z] = P(-L / 2 + land, 0), [h1x, h1z] = P(L / 2 - 0.05, 0);
-    railing(b, h0x, h0z, h1x, h1z, top, { h: 1.0, tint: o.railTint || '#2c2f33', posts: 4 });
+    // Handlauf über dem Treppenauge nur als Optik: sein Kollisionsquader ragte sonst über dem Zwischenpodest in Kopfhöhe
+    railing(b, h0x, h0z, h1x, h1z, top, { h: 1.0, tint: o.railTint || '#2c2f33', posts: 4, collider: false });
   }
   const holeRect = () => {
     const [ax, az] = P(-L / 2 + land, -w / 2), [bx, bz] = P(L / 2, w / 2);
@@ -192,7 +195,12 @@ export function rubble(b, x, z, r = 1.6, o = {}) {
 
 /** Einschlagloch/Durchbruch-Kante (nur Optik): Brandfleck + Ruß auf einer Wand (Normale n). */
 export function soot(b, x, y, z, n, s = 1.6) {
-  b.decal(x, y, z, s, s * 1.2, 'soot', { normal: n, tangent: [Math.abs(n[2]) > 0.5 ? 1 : 0, 0, Math.abs(n[0]) > 0.5 ? 1 : 0], opacity: 0.85 });
+  b.decal(x, y, z, s, s * 1.2, 'soot', { normal: n, tangent: [n[2], 0, -n[0]], opacity: 0.85 });
+}
+
+/** Abgeplatzter Putz (Mauerwerk sichtbar) an einer Wand mit Normale n (waagerecht). */
+export function chip(b, x, y, z, n, w = 0.8, cell = 'chip_brick') {
+  b.decal(x, y, z, w, w * 0.7, cell, { normal: n, tangent: [n[2], 0, -n[0]], opacity: 1 });
 }
 
 /** Stahlgeländer-Absperrung (Bauzaun-Element) von A nach B. */

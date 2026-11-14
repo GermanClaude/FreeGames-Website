@@ -156,7 +156,7 @@ const LOOK_MASONRY = { detail: 0.16, ds: 2.4, anti: 0, fade: [4, 18] };
 const LOOK_METAL = { detail: 0.1, ds: 3.2, anti: 0, fade: [3, 14] };
 const LOOK_WOOD = { detail: 0.08, ds: 3.0, anti: 0, fade: [3, 12] };
 export const LIB_LOOK = {
-  concrete: LOOK_GROUND, asphalt: LOOK_GROUND, sand: LOOK_GROUND, dirt: LOOK_GROUND, mud: LOOK_GROUND, ground_dry: LOOK_GROUND,
+  concrete: { ...LOOK_GROUND, joint: [6, 0.012, 1, 0.1] }, asphalt: LOOK_GROUND, // joint: Plattenfugen (texturen 14.11.) sand: LOOK_GROUND, dirt: LOOK_GROUND, mud: LOOK_GROUND, ground_dry: LOOK_GROUND,
   gravel: { ...LOOK_GROUND, detail: 0.2 }, rubble: { ...LOOK_GROUND, detail: 0.2 }, grass: { ...LOOK_GROUND, detail: 0.25 },
   epoxy: { ...LOOK_GROUND, detail: 0.14, anti: 0.4 }, epoxy_blue: { ...LOOK_GROUND, detail: 0.14, anti: 0.4 },
   concrete_dark: LOOK_WALL, concrete_panel: { ...LOOK_WALL, anti: 0, hex: 0 }, concrete_dirty: LOOK_WALL, concrete_painted: LOOK_WALL,

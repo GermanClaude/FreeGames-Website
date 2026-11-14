@@ -128,6 +128,7 @@ function cylPrim(r0, r1, h, seg, caps, rows, arc = Math.PI * 2) {
     P[pi] = x; P[pi + 1] = y; P[pi + 2] = z; N[pi] = nx; N[pi + 1] = ny; N[pi + 2] = nz; pi += 3;
     U[ui++] = u; U[ui++] = v;
   };
+  const chordK = Math.sin(arc / seg / 2), chordM = 2 * circ * chordK, slant = Math.hypot(1, slope);
   for (let i = 0; i < seg; i++) {
     const a0 = (i / seg) * arc, a1 = ((i + 1) / seg) * arc;
     const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
@@ -139,7 +140,10 @@ function cylPrim(r0, r1, h, seg, caps, rows, arc = Math.PI * 2) {
       for (let k = 0; k < 6; k++) {
         const c = CYL_IDX[k], second = c === 1 || c === 2, top = c >= 2;
         const cc = second ? c1 : c0, ss = second ? s1 : s0, rr = top ? rb : ra, l = second ? l1 : l0;
-        put(cc * rr, top ? y1 : y0, ss * rr, cc * l, slope * l, ss * l, (second ? a1 : a0) * circ, top ? y1 : y0);
+        // texturen 14.11.: U je Fläche um die Flächenmitte mit der echten Sehnenbreite der Reihe, V entlang der Mantellinie –
+        // Kegel/Pyramidendächer ohne Scherung und Stauchung (vorher U = Winkel × mittlerer Radius, V = Höhe)
+        const uc = (i + 0.5) * chordM, half = rr * chordK;
+        put(cc * rr, top ? y1 : y0, ss * rr, cc * l, slope * l, ss * l, uc + (second ? half : -half), (top ? y1 : y0) * slant);
       }
     }
   }

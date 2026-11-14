@@ -597,7 +597,7 @@ export class Director {
    */
   wave(id, w) {
     const n = w.scale === false ? w.count : this.scaled(w.count);
-    const bots = this._spawnBots('B', n);
+    const bots = this._spawnBots('B', n, { difficulty: w.difficulty || null }); // w.difficulty: z. B. 'rekrut' für Wachen beim Schleichen
     const pts = (w.at || []).map((p) => this.vec(p));
     const wave = { id, bots, total: bots.length, killed: 0, attack: w.attack || 'player', radius: w.radius || 6, hold: !!w.hold };
     bots.forEach((b, i) => {

@@ -250,7 +250,7 @@ float npCoverMask( vec3 q ) {
 	float front = smoothstep( -0.02, -0.07, q.z );
 	if ( uCover < 1.5 ) {
 		// Sturmhaube: alles außer dem Augenschlitz
-		float bx = smoothstep( 0.056, 0.05, ax ), by = smoothstep( 0.0185, 0.0145, abs( q.y - 0.0065 ) );
+		float bx = smoothstep( 0.056, 0.05, ax ), by = smoothstep( 0.0185, 0.0145, abs( q.y - 0.0045 ) );
 		return 1.0 - bx * by * smoothstep( -0.04, -0.06, q.z );
 	}
 	// Halstuch / Shemagh: Unterkante unter den Augen vorn, seitlich/hinten tiefer

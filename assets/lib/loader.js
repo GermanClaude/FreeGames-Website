@@ -253,7 +253,7 @@ export class AssetLibrary {
       // XY-Normalen (X in RGB, Y in Alpha): Z rekonstruieren – eigener kleiner Haken (Spielmaterialien: engine/surface.js)
       m.onBeforeCompile = (sh) => {
         sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_maps>', '#undef texture2D\n#define texture2D( s, c ) npLibNxy( s, c )\n#include <normal_fragment_maps>\n#undef texture2D\n#define texture2D texture')
-          .replace('#include <common>', '#include <common>\nvec4 npLibNxy( sampler2D s, vec2 uv ) { vec4 t = texture( s, uv ); vec2 xy = vec2( t.r, t.a ) * 2.0 - 1.0; return vec4( vec3( xy, sqrt( clamp( 1.0 - dot( xy, xy ), 0.0, 1.0 ) ) ) * 0.5 + 0.5, 1.0 ); }');
+          .replace('#include <common>', '#include <common>\nvec4 npLibNxy( sampler2D s, vec2 uv ) { vec4 t = texture( s, uv ); vec2 xy = vec2( t.r, 1.0 - t.a ) * 2.0 - 1.0; return vec4( vec3( xy, sqrt( clamp( 1.0 - dot( xy, xy ), 0.0, 1.0 ) ) ) * 0.5 + 0.5, 1.0 ); }');
       };
       m.customProgramCacheKey = () => 'np-lib-nxy';
     }

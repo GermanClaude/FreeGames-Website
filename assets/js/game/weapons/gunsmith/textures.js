@@ -338,11 +338,12 @@ export function reticleMap(type, dot = 1) {
       g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.18, 'rgba(255,255,255,1)'); g.addColorStop(0.3, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.shadowBlur = 0; ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
     } else if (type === 'chevron') {
-      ctx.lineWidth = 7; ctx.lineJoin = 'miter';
-      ctx.beginPath(); ctx.moveTo(m - 22, m + 18); ctx.lineTo(m, m - 6); ctx.lineTo(m + 22, m + 18); ctx.stroke();
+      // Spitze genau in der Bildmitte = Haltepunkt (visier, 14.11.: lag 6 px darüber, Treffer saßen unter der Spitze)
+      ctx.lineWidth = 6; ctx.lineJoin = 'miter';
+      ctx.beginPath(); ctx.moveTo(m - 20, m + 22); ctx.lineTo(m, m + 1); ctx.lineTo(m + 20, m + 22); ctx.stroke();
       ctx.lineWidth = 3; ctx.globalAlpha = 0.65;
-      ctx.beginPath(); ctx.moveTo(m, m + 18); ctx.lineTo(m, m + 56); ctx.stroke();
-      for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.moveTo(m - 9 + k, m + 18 + k * 10); ctx.lineTo(m + 9 - k, m + 18 + k * 10); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(m, m + 24); ctx.lineTo(m, m + 60); ctx.stroke();
+      for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.moveTo(m - 9 + k, m + 24 + k * 10); ctx.lineTo(m + 9 - k, m + 24 + k * 10); ctx.stroke(); }
     } else if (type === 'cross') {
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0, m); ctx.lineTo(S, m); ctx.moveTo(m, 0); ctx.lineTo(m, S); ctx.stroke();

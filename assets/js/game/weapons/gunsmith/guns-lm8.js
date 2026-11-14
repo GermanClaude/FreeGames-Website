@@ -12,11 +12,14 @@ import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., 
 const MARK_LM8 = schrift('lm8').mark;
 
 const AXIS = 0.062;
-const SV = 0.0925;  // Visierlinie (Kimmenkerbe/Kornspitze)
+// Visierlinie (Kimmenkerbe/Kornspitze). visier (14.11.): 30 mm höher (vorher 0,0925 – unter der Oberkante von Gasrohr-Holzauflage
+// und Gasblock, die im Anschlag das ganze Ziel verdeckten); Kimmenfuß, Klappe und Kornfuß wachsen mit (DV)
+const DV = 0.03;
+const SV = 0.0925 + DV;
 
 const REC = mm([[-176, 74], [150, 74], [150, 8], [96, 8], [92, 2], [60, 2], [56, 8], [-30, 8], [-42, 4], [-176, 22]]);
 const COVER = mm([[-182, 74], [146, 74], [146, 82], [140, 88], [-150, 88], [-176, 84], [-184, 80]]);
-const RSBLOCK = mm([[150, 74], [222, 74], [228, 66], [228, 48], [150, 46]]);
+const RSBLOCK = mm([[150, 104], [222, 104], [228, 96], [228, 48], [150, 46]]);
 const HG_LOW = mm([[232, 38], [442, 42], [452, 50], [452, 84], [232, 84]]);
 const HG_UP = mm([[226, 88], [436, 90], [446, 96], [446, 108], [436, 112], [244, 112], [226, 104]]);
 const STOCK = mm([[-178, 70], [-396, 58], [-404, 48], [-404, -78], [-396, -88], [-372, -88], [-354, -74], [-334, -46], [-296, -24], [-244, -6], [-200, 8], [-178, 14], [-176, 30]]);
@@ -46,12 +49,12 @@ export function lm8(b) {
   // Kimmenfuß mit Tangentenvisier
   slab(b, RSBLOCK, 0.0165, 0.003, 'gbBlued', { id: 'rs', cav: STEEL });
   if (b.hi) {
-    b.side('gbSteel', mm([[156, 74], [222, 82], [222, 90], [156, 86]]), 0.016, 0, { bevel: 0.0008 });
+    b.side('gbSteel', mm([[156, 104], [222, 112], [222, 120], [156, 116]]), 0.016, 0, { bevel: 0.0008 });
     // Schieber auf der Klappe unter der Kerbe (visier, 14.11.: ragte bis 0,5 mm unter die Visierlinie und füllte die Kerbe)
-    b.box('gbSteel', 0.02, 0.006, 0.012, 0, 0.0865, 0.186, { c: 0.0015 });
+    b.box('gbSteel', 0.02, 0.006, 0.012, 0, 0.0865 + DV, 0.186, { c: 0.0015 });
     // Kimmenblatt mit ausgeschnittener Kerbe 2,6 × 2,5 mm (vorher Vollblatt mit schwarzem Kästchen: Korn unsichtbar)
-    notchSight(b, 'gbSteel', mm([[152, 84], [160, 84], [160, 93.5], [152, 93.5]]), 0.007, { nw: 0.0026, vN: SV - 0.0025, bevel: 0.0005 });
-  } else b.box('gbBlued', 0.016, 0.014, 0.07, 0, 0.082, 0.19);
+    notchSight(b, 'gbSteel', mm([[152, 114], [160, 114], [160, 123.5], [152, 123.5]]), 0.007, { nw: 0.0026, vN: SV - 0.0025, bevel: 0.0005 });
+  } else b.box('gbBlued', 0.016, 0.014, 0.07, 0, 0.082 + DV, 0.19);
 
   // --- Gasrohr mit Holzauflage, Holzhandschutz unten, Lauf, Gasblock
   slab(b, HG_LOW, 0.0235, 0.012, 'gbWood', { id: 'hgl', cav: POLY, cut: (x, v, u, d) => pocket(d, x, rrect(u, v, 0.33, 0.055, 0.07, 0.003, 0.003), 0.021) });
@@ -62,11 +65,11 @@ export function lm8(b) {
   b.cyl('gbBarrel', 0.0122, 0.0122, 0.19, 0, AXIS, 0.555, { seg: b.seg(20, 6) });
   b.cyl('gbBarrel', 0.0118, 0.0118, 0.025, 0, AXIS, 0.66, { seg: b.seg(20, 6) });
   // Korn mit Ringschutz (Kornfuß), Laufschutzkappe (Gewinde)
-  slab(b, mm([[612, 50], [636, 50], [640, 74], [634, 82], [618, 82], [612, 74]]), 0.0125, 0.003, 'gbBlued', { id: 'fsb', cav: STEEL });
+  slab(b, mm([[612, 50], [636, 50], [640, 96], [634, 112], [618, 112], [612, 96]]), 0.0125, 0.003, 'gbBlued', { id: 'fsb', cav: STEEL });
   if (b.hi) {
-    for (const s of [-1, 1]) b.side('gbBlued', mm([[616, 80], [632, 80], [630, 100], [618, 100]]), 0.003, s * 0.0085, { bevel: 0.0008 });
+    for (const s of [-1, 1]) b.side('gbBlued', mm([[616, 110], [632, 110], [630, 130], [618, 130]]), 0.003, s * 0.0085, { bevel: 0.0008 });
     b.cyl('gbSteel', 0.0018, 0.0018, 0.012, 0, SV - 0.006, 0.624, { axis: 'v', seg: 8 });
-  } else b.box('gbBlued', 0.016, 0.04, 0.016, 0, 0.1, 0.624);
+  } else b.box('gbBlued', 0.016, 0.04, 0.016, 0, 0.1 + DV, 0.624);
   b.lathe('gbBlued', [[0, 0], [0, 0.0125], [0.002, 0.0132], [0.024, 0.0132], [0.026, 0.0118], [0.026, 0]], 0, AXIS, 0.672, { seg: b.seg(20, 6) });
   b.bore(0.0045, 0, AXIS, 0.6985);
   b.anchor('muzzle', 0, AXIS, 0.7);

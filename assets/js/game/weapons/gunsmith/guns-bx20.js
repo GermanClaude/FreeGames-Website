@@ -74,12 +74,18 @@ export function bx20(b) {
   const swapped = swapOptic(b, 'acog', U(262), railTop);
   // Visierrohr (gedreht), Augenmuschel, Objektivkappe, Linsen, Absehen
   const prof = R.SCOPE_PROFILE.map(([x, r]) => [U(x), mm(r)]);
-  barrel(b, 'gaPolyOD', prof, SV, { seg: 28 });
+  // visier (14.11.): in den Ego-Stufen ein offenes Rohr (Innenlippe bis r 11,5/13,5 mm) – barrel() schloss beide Enden mit vollen
+  // Scheiben, im Anschlag blickte man auf den Deckel des Okulars statt durch das Visier. Bot-Stufe bleibt geschlossen.
+  if (b.hi) {
+    const u0 = prof[0][0];
+    b.lathe('gaPolyOD', [[0, mm(11.5)], ...prof.map(([u, r]) => [u - u0, r]), [prof[prof.length - 1][0] - u0, mm(13.5)]], 0, SV, u0, { seg: b.seg(28, 6) });
+  } else barrel(b, 'gaPolyOD', prof, SV, { seg: 28 });
   if (b.hi) {
     b.lathe('rubber', [[0, mm(15.5)], [-0.004, mm(16.5)], [-0.009, mm(16.5)], [-0.009, mm(13)]], 0, SV, U(s0), { seg: b.seg(24, 8) });
     b.lathe('cavity', [[U(s1) - U(s0) - 0.002, mm(13.5)], [0.004, mm(11.5)]], 0, SV, U(s0), { seg: 20 });
-    b.circle('lensClear', mm(14.5), 0, SV, U(s1) - 0.002, { renderOrder: 1 });
-    b.circle('lensClear', mm(12), 0, SV, U(s0) + 0.002, { renderOrder: 1 });
+    // visier (14.11.): Objektiv nach vorn (Reflexe außen), Okular zum Auge nur leicht getönt
+    b.circle('lensClear', mm(14.5), 0, SV, U(s1) - 0.002, { renderOrder: 1, ry: Math.PI });
+    b.circle('lensEye', mm(12), 0, SV, U(s0) + 0.002, { renderOrder: 1 });
     b.plane('reticleChevron', 0.011, 0.011, 0, SV, U(s0) + 0.004, { renderOrder: 3 });
     // Einstelltürme seitlich/oben am Bügel
     b.cyl('gaPolyOD', 0.0062, 0.0062, 0.006, REC_W + 0.003, SV, U(320), { axis: 'x', seg: 16 });

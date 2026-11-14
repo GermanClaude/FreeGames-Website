@@ -77,6 +77,8 @@ export function normProfile(p = {}) {
 function shapedPositions(A, P) {
   const pos = new Float32Array(A.pos);
   const q = A.json.qScale;
+  const L = A.land;
+  const eyeL = L.eyeL.slice(), eyeR = L.eyeR.slice();
   const apply = (name, w) => {
     if (!w) return;
     const s = A.sparse.get('s:' + name);
@@ -84,14 +86,14 @@ function shapedPositions(A, P) {
     const { idx, d } = s;
     const k = w * q;
     for (let i = 0; i < idx.length; i++) { const v = idx[i] * 3; pos[v] += d[i * 3] * k; pos[v + 1] += d[i * 3 + 1] * k; pos[v + 2] += d[i * 3 + 2] * k; }
+    // Augäpfel wandern mit dem Lidrand
+    const e = L.eyeShift[name];
+    if (e) for (let c = 0; c < 3; c++) { eyeL[c] += e[0][c] * w; eyeR[c] += e[1][c] * w; }
   };
-  const L = A.land;
-  const eyeL = L.eyeL.slice(), eyeR = L.eyeR.slice();
-  const eyeAdd = (name, w) => { const e = L.eyeShift[name]; if (!e || !w) return; for (let c = 0; c < 3; c++) { eyeL[c] += e[0][c] * w; eyeR[c] += e[1][c] * w; } };
   // Alter 25 → 0, 90 → 1 (MakeHuman-Makro); Herkunft als Gewichte
   const a = sat((P.age - 25) / 65);
   const af = sat(P.african), as = sat(P.asian) * (1 - af), cau = 1 - af - as;
-  for (const [n, w] of [['old', cau * a], ['african', af * (1 - a)], ['africanOld', af * a], ['asian', as * (1 - a)], ['asianOld', as * a]]) { apply(n, w); eyeAdd(n, w); }
+  for (const [n, w] of [['old', cau * a], ['african', af * (1 - a)], ['africanOld', af * a], ['asian', as * (1 - a)], ['asianOld', as * a]]) apply(n, w);
   apply('muscle', sat(P.muscle));
   if (P.weight > 0) apply('heavy', P.weight); else apply('lean', -P.weight);
   for (const n of ['jaw', 'chin', 'nose', 'noseW', 'brow', 'cheek', 'lips', 'mouthW', 'skull', 'eyes', 'neck', 'bags', 'laugh', 'fat', 'prog', 'angles']) {

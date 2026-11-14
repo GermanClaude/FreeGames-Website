@@ -139,7 +139,8 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
       }
     }
     // Leberflecke
-    for (const [mx, my, mr, mk] of moles) {
+    for (let mi = 0; mi < moles.length; mi++) {
+      const M = moles[mi], mx = M[0], my = M[1], mr = M[2], mk = M[3];
       const d = Math.hypot(x - mx, (y - my) * 1.0) - mr;
       if (d < 0.0005 && z < 0.02) { const mm = sstep(0.0003, -0.0002, d) * mk; r *= 1 - 0.45 * mm; g *= 1 - 0.55 * mm; bl *= 1 - 0.55 * mm; hgt += 0.00006 * mm; }
     }
@@ -232,7 +233,7 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
     occ *= 1 - Math.min(0.35, wr * 0.25);
     // --- Lippen: Lippenrot, Rillen, glatter
     if (lip > 0.01) {
-      r *= 1 - lip * 0.05; g *= 1 - lip * 0.24 * red - lip * 0.08; bl *= 1 - lip * 0.2 * red - lip * 0.06;
+      r *= 1 - lip * 0.04; g *= 1 - lip * 0.15 * red - lip * 0.06; bl *= 1 - lip * 0.12 * red - lip * 0.05;
       const rill = Math.pow(Math.abs(Math.sin((x / 0.0011) * Math.PI + vnoise(x * 300, y * 900, 5) * 2.5)), 3) * sstep(0.2, 0.7, lip);
       hgt -= rill * 0.00004;
       occ *= 1 - rill * 0.08;
@@ -254,8 +255,8 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
       const cl = mix(slitY + 0.017, ey - 0.012, sstep(0.026, 0.068, ax)) + nB; // Wangenlinie
       const must = ax < cornerX + 0.006 ? nose[1] - 0.011 + 0.004 * sstep(0.008, 0.02, ax) : -9; // Oberlippe bis Nasensteg
       const top = Math.max(cl, Math.min(must, nose[1] - 0.008));
-      const bot = slitY - 0.088 + 0.025 * sstep(0.02, 0.06, ax) + nB;
-      bm = sstep(0.002, -0.002, y - top) * sstep(-0.004, 0.004, y - bot) * (1 - sat(lip * 1.6)) * (1 - mIn) * (1 - ear);
+      const bot = slitY - 0.06 + 0.02 * sstep(0.02, 0.06, ax) + nB;
+      bm = sstep(0.006, -0.004, y - top) * sstep(-0.012, 0.006, y - bot) * (1 - sat(lip * 1.6)) * (1 - mIn) * (1 - ear);
       // Koteletten (vor dem Ohr bis Augenhöhe)
       const sb = sstep(0.058, 0.066, ax) * sstep(tmjZ + 0.016, tmjZ + 0.004, z) * sstep(tmjZ - 0.02, tmjZ - 0.008, z) * sstep(ey + 0.008, ey - 0.002, y) * sstep(slitY - 0.02, slitY, y);
       bm = Math.max(bm, sb * (1 - ear));
@@ -264,7 +265,7 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
       if (beard === 'kinnbart') bm *= Math.max(sstep(cornerX + 0.01, cornerX - 0.002, ax), 0.35);
       if (bm > 0.001) {
         // Follikel: ≈ 50 je cm² (1,4 mm), Stoppel als dunkler Punkt + kurzer Strich nach unten
-        const fs = 1 / 0.0013;
+        const fs = 1 / 0.00085;
         const f = worley(x * fs, y * fs, z * fs);
         const dens = sstep(0.15, 0.35, f.id + 0.25) * (0.6 + 0.4 * sstep(0.3, 0.7, vnoise(x * 70, y * 70, z * 70)));
         const len = 0.18 + beardLen * 1.6; // Strichlänge in Zelleinheiten
@@ -274,10 +275,14 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
         const ux = gx / gl, uy = gy / gl;
         const along = -(f.dx * ux + f.dy * uy), across = Math.abs(-f.dx * uy + f.dy * ux) + Math.abs(f.dz) * 0.4;
         const strand = sstep(0.11 + beardLen * 0.04, 0.03, across) * sstep(-0.08, 0.0, along) * sstep(len, len * 0.6, along);
-        const dot = sstep(0.16, 0.05, f.d);
+        const dot = sstep(0.3, 0.12, f.d);
         let hc = Math.max(strand, dot * 0.8) * dens;
-        if (beardLen > 0.5) hc = Math.max(hc, sstep(0.35, 0.65, fbm(x * 900 * ux + y * 120, y * 900 * uy - x * 120, z * 300, 2)) * 0.85);
-        hairC = Math.max(hairC, hc * bm * sat(stub * 1.3));
+        if (beardLen > 0.5) {
+          const bu = x * ux + y * uy, bv = -x * uy + y * ux;
+          const s1 = vnoise(bu * 380, bv * 2300, z * 400), s2 = vnoise(bu * 210, bv * 1300, z * 300 + 5.5);
+          hc = Math.max(hc, (0.45 + 0.55 * sstep(0.35, 0.68, s1 * 0.65 + s2 * 0.35)) * mix(0.75, 1, beardLen) * (0.75 + 0.25 * vnoise(x * 120, y * 120, z * 120)));
+        }
+        hairC = Math.max(hairC, (hc * 0.75 + 0.22) * bm * sat(stub * 1.1));
         hgt += hc * bm * 0.00004 * (0.5 + beardLen);
         // Bartschatten (Haare unter der Haut): blaugrau
         const sh = bm * stub * (beardLen > 0.5 ? 0.7 : 0.45);
@@ -287,14 +292,14 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
     }
     // --- Kopfhaar (Kurzhaar unter Helm/Mütze sichtbar an Schläfen und Nacken)
     if (L.hair > 0.01 && ear < 0.5) {
-      const nB = (vnoise(x * 150, y * 150, z * 150) - 0.5) * 0.005 + (vnoise(x * 900, y * 900, z * 900) - 0.5) * 0.0012;
+      const nB = (vnoise(x * 110, y * 110, z * 110) - 0.5) * 0.003 + (vnoise(x * 700, y * 700, z * 700) - 0.5) * 0.0016;
       const frontY = ey + 0.07 - 0.012 * sstep(0.012, 0.045, ax) * L.recede - 0.004 * sstep(0.03, 0.05, ax);
       const sideY = ey + 0.012; // über dem Ohr
       const backY = ey - 0.072;
       let hy = mix(frontY, sideY, sstep(-0.078, -0.03, z));
       hy = mix(hy, backY, sstep(0.0, 0.07, z));
       // Schläfe: Haaransatz vor dem Ohr senkt sich zu den Koteletten
-      hy = Math.min(hy, mix(9, ey - 0.0, sstep(0.062, 0.07, ax) * sstep(tmjZ - 0.026, tmjZ - 0.012, z) * sstep(tmjZ + 0.02, tmjZ + 0.006, z)) + 0);
+      hy = Math.min(hy, mix(9, ey - 0.024, sstep(0.06, 0.068, ax) * sstep(tmjZ - 0.03, tmjZ - 0.016, z) * sstep(tmjZ + 0.016, tmjZ + 0.004, z)));
       const hm = sstep(-0.0015, 0.003, y - hy + nB) * L.hair;
       if (hm > 0.001) {
         const fs = 1 / 0.0006;
@@ -311,7 +316,7 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
     if (front > 0.2 && Math.abs(y - browY) < 0.016 && ax > 0.004 && ax < 0.068) {
       const s = sat((ax - 0.009) / 0.052);
       const cy = browY - 0.0018 + 0.0042 * Math.sin(s * Math.PI * 0.82) - 0.0035 * sstep(0.72, 1.0, s);
-      const th = mix(0.0045, 0.0018, s) * L.brows * (1 - 0.15 * age);
+      const th = mix(0.0062, 0.0026, s) * L.brows * (1 - 0.1 * age);
       const dyb = y - cy;
       const prof = sstep(th + 0.0012, th * 0.45, Math.abs(dyb + (dyb > 0 ? 0 : -0.0006))) * sstep(0.0, 0.07, s + 0.03) * sstep(1.05, 0.9, s);
       if (prof > 0.001) {
@@ -319,9 +324,9 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
         const an = mix(1.25, 0.18, sstep(0.0, 0.45, s)) - 0.25 * sstep(0.7, 1, s);
         const ux = Math.cos(an) * side, uy = Math.sin(an);
         const u = x * ux + y * uy, v = -x * uy + y * ux;
-        const st = vnoise(u * 330, v * 2600, side * 3.3 + 1.7);
+        const st = vnoise(u * 260, v * 1500, side * 3.3 + 1.7);
         const st2 = vnoise(u * 160, v * 1700, 9.1);
-        const hc = prof * (0.35 + 0.65 * sstep(0.42, 0.66, st * 0.7 + st2 * 0.3));
+        const hc = prof * (0.55 + 0.45 * sstep(0.38, 0.62, st * 0.7 + st2 * 0.3));
         hairC = Math.max(hairC, Math.min(1, hc * 1.05));
         hgt += hc * 0.00007;
         rough = mix(rough, 0.55, prof);
@@ -403,21 +408,26 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
 
 function dilate(img, cov, w, h, passes) {
   const c = new Uint8Array(cov);
+  const idx = new Int32Array(w * h), val = new Uint8Array(w * h * 4);
   for (let p = 0; p < passes; p++) {
-    const add = [];
+    let n0 = 0;
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const i = y * w + x;
       if (c[i]) continue;
       let n = 0, s0 = 0, s1 = 0, s2 = 0, s3 = 0;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const xx = x + dx, yy = y + dy;
-        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-        const j = yy * w + xx;
-        if (!c[j]) continue;
-        n++; s0 += img[j * 4]; s1 += img[j * 4 + 1]; s2 += img[j * 4 + 2]; s3 += img[j * 4 + 3];
+      for (let dy = -1; dy <= 1; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= h) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= w) continue;
+          const j = yy * w + xx;
+          if (!c[j]) continue;
+          n++; s0 += img[j * 4]; s1 += img[j * 4 + 1]; s2 += img[j * 4 + 2]; s3 += img[j * 4 + 3];
+        }
       }
-      if (n) add.push(i, Math.round(s0 / n), Math.round(s1 / n), Math.round(s2 / n), Math.round(s3 / n));
+      if (n) { idx[n0] = i; val[n0 * 4] = s0 / n; val[n0 * 4 + 1] = s1 / n; val[n0 * 4 + 2] = s2 / n; val[n0 * 4 + 3] = s3 / n; n0++; }
     }
-    for (let k = 0; k < add.length; k += 5) { const i = add[k]; img[i * 4] = add[k + 1]; img[i * 4 + 1] = add[k + 2]; img[i * 4 + 2] = add[k + 3]; img[i * 4 + 3] = add[k + 4]; c[i] = 1; }
+    for (let k = 0; k < n0; k++) { const i = idx[k]; img[i * 4] = val[k * 4]; img[i * 4 + 1] = val[k * 4 + 1]; img[i * 4 + 2] = val[k * 4 + 2]; img[i * 4 + 3] = val[k * 4 + 3]; c[i] = 1; }
   }
 }

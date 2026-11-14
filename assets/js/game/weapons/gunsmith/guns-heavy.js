@@ -92,7 +92,7 @@ export function donner(b) {
     holes: [[[-0.0025, sv - 0.006], [0.0025, sv - 0.006], [0.0025, sv + 0.006], [-0.0025, sv + 0.006]]], bevel: 0.0008,
   });
   if (b.hi) {
-    for (let i = 0; i < 4; i++) b.box('paintWhite', 0.004, 0.0008, 0.0006, 0.008, axis + 0.044 + i * 0.008, -0.0262, { c: 0 }); // Stufenmarken
+    for (let i = 0; i < 4; i++) b.box('paintWhite', 0.004, 0.0008, 0.0006, 0.008, axis + 0.044 + i * 0.0055, -0.0262, { c: 0 }); // Stufenmarken (visier: alle auf dem Blatt)
     b.cyl('steelBright', 0.0022, 0.0022, 0.032, 0, axis + 0.033, -0.022, { axis: 'x', seg: 10 });   // Klappachse
   }
   b.box('steelDark', 0.018, 0.016, 0.03, 0, axis + 0.027, 0.36, { c: 0.002 });
@@ -276,7 +276,8 @@ export function trommel(b) {
   if (b.hi) {
     for (const s2 of [-1, 1]) b.box('polymer', 0.004, 0.026, 0.054, s2 * 0.019, 0.142, -0.003, { c: 0.001 });
     b.box('polymer', 0.026, 0.004, 0.054, 0, 0.165, -0.003, { c: 0.001 });
-    b.plane('lensClear', 0.022, 0.026, 0, 0.144, 0.018, { renderOrder: 2 });
+    b.plane('lensClear', 0.022, 0.026, 0, 0.144, 0.0182, { renderOrder: 2, ry: Math.PI });   // visier: außen spiegelnd, nach vorn
+    b.plane('lensEye', 0.022, 0.026, 0, 0.144, 0.018, { renderOrder: 2 });
     b.cyl('polymer', 0.006, 0.006, 0.012, 0.024, 0.142, 0.0, { axis: 'x', seg: 12 });
   }
   b.torus('steel', 0.0095, 0.0022, 0, sv, -0.04, { seg: b.seg(8, 4), tseg: b.seg(20, 8) });

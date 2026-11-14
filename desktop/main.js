@@ -198,6 +198,8 @@ function createWindow() {
   });
   win.webContents.on('render-process-gone', (_e, details) => {
     if (details.reason === 'clean-exit') return;
+    console.error('[NULLPUNKT] Spielprozess beendet:', JSON.stringify(details));
+    if (process.env.NULLPUNKT_NO_DIALOGS === '1') return; // Tests
     const r = dialog.showMessageBoxSync(win, {
       type: 'error', title: 'NULLPUNKT', message: 'Das Spiel wurde unerwartet beendet.',
       detail: `Grund: ${details.reason}. Bei „oom“ hilft eine niedrigere Grafikstufe oder weniger Bots.`, buttons: ['Neu laden', 'Beenden'],

@@ -15,6 +15,8 @@ const C1 = { at: [6.0, 26.6], label: 'Container 1' };      // Reihe 4, blauer Co
 const C2 = { at: [-12.3, 12.5], label: 'Container 2' };    // Reihe 2, gelber Container
 const C3 = { at: [-22.3, -14], label: 'Container 3' };     // Westrand, grüner Container
 const OFFICE = [-31.5, -21.6];                             // Kaibüro Nord (begehbar)
+/** Wachen beim Schleichen: Wahrnehmung eine Stufe unter der Kampagnen-Schwierigkeit (fair im Halbdunkel). */
+const STEALTH_DIFF = { rekrut: 'rekrut', regulaer: 'rekrut', veteran: 'regulaer', elite: 'veteran' };
 
 const CUT_INTRO = {
   location: ['Containerterminal Nordkai', '19:46 Uhr · Tag 23 der Waffenruhe'],
@@ -124,7 +126,7 @@ export const MISSION_4 = {
         yield m.cutsceneAt('intro');
         m.introduce('waffe', 'smg_wespe', 'KM-7 Wespe mit Schalldämpfer: leise und ohne Mündungsfeuer – Wachen hören den Schuss kaum.');
         weber(m);
-        m.wave('g1', { count: 3, scale: false, at: [[10.5, 30], [0.4, 14], [-1.5, 36]], hold: true, patrol: [[[10.5, 30], [10.5, 8], [10.5, 30]], [[0.4, 14], [0.4, 4]], [[-1.5, 36], [-1.5, 26]]] });
+        m.wave('g1', { count: 3, scale: false, at: [[10.5, 30], [0.4, 14], [-1.5, 36]], hold: true, difficulty: STEALTH_DIFF[m.diffId] || 'rekrut', patrol: [[[10.5, 30], [10.5, 8], [10.5, 30]], [[0.4, 14], [0.4, 4]], [[-1.5, 36], [-1.5, 26]]] });
         guard(m, ['g1']);
         m.tip('Geduckt bist du leiser und schwerer zu sehen. Die Anzeige oben zeigt, wie nah eine Wache daran ist, dich zu erkennen.', 7);
         m.say('weber', 'Erster Container steht gleich vorn, Reihe vier. Der blaue.', { radio: false });
@@ -140,7 +142,7 @@ export const MISSION_4 = {
       setup(m) { weber(m); },
       *run(m) {
         m.clearObjectives();
-        m.wave('g2', { count: 3, scale: false, at: [[-7.5, 18], [-20.6, 18], [-11.5, -2]], hold: true, patrol: [[[-7.5, 18], [-7.5, 8]], [[-20.6, 18], [-20.6, 24]], [[-11.5, -2], [-11.5, -6]]] });
+        m.wave('g2', { count: 3, scale: false, at: [[-7.5, 18], [-20.6, 18], [-11.5, -2]], hold: true, difficulty: STEALTH_DIFF[m.diffId] || 'rekrut', patrol: [[[-7.5, 18], [-7.5, 8]], [[-20.6, 18], [-20.6, 24]], [[-11.5, -2], [-11.5, -6]]] });
         guard(m, ['g1', 'g2']);
         m.say('weber', 'Der gelbe Container am Kranplatz. Zwei Wachen, eine geht Streife.', { radio: false });
         yield markContainer(m, 'c2', C2, 2);
@@ -155,7 +157,7 @@ export const MISSION_4 = {
       setup(m) { weber(m); },
       *run(m) {
         m.clearObjectives();
-        m.wave('g3', { count: 2, scale: false, at: [[-20.8, 2], [-28, -8]], hold: true, patrol: [[[-20.8, 2], [-20.8, -20]], [[-28, -8], [-28, 6]]] });
+        m.wave('g3', { count: 2, scale: false, at: [[-20.8, 2], [-28, -8]], hold: true, difficulty: STEALTH_DIFF[m.diffId] || 'rekrut', patrol: [[[-20.8, 2], [-20.8, -20]], [[-28, -8], [-28, 6]]] });
         guard(m, ['g1', 'g2', 'g3']);
         yield markContainer(m, 'c3', C3, 3);
         m.say('lenz', 'Alle drei markiert. Die Pioniere warten auf euer Zeichen. Jetzt der Kapitän.', { radio: true });
@@ -170,7 +172,7 @@ export const MISSION_4 = {
       *run(m) {
         m.clearObjectives();
         const vogt = m.extra('vogt', { pos: OFFICE, yaw: Math.PI, variant: 'sanitaeter', name: 'Kapitän Vogt', crouch: true, protect: true, aim: -1.1 });
-        m.wave('g4', { count: 3, scale: false, at: [[-30, -16], [-36, -24], [-27.5, -27]], hold: true, patrol: [[[-30, -16], [-34, -16]], [[-36, -24], [-36, -34]], [[-27.5, -27], [-27.5, -33]]] });
+        m.wave('g4', { count: 3, scale: false, at: [[-30, -16], [-36, -24], [-27.5, -27]], hold: true, difficulty: STEALTH_DIFF[m.diffId] || 'rekrut', patrol: [[[-30, -16], [-34, -16]], [[-36, -24], [-36, -34]], [[-27.5, -27], [-27.5, -33]]] });
         const st = guard(m, ['g1', 'g2', 'g3', 'g4']);
         m.say('weber', 'Das Kaibüro. Drei Wachen davor. Pass auf, dass du den Kapitän nicht triffst.');
         yield m.reach('tuer', 'Erreiche das Kaibüro', { at: [-31.5, -19.2], r: 2.2, label: 'Kaibüro' });

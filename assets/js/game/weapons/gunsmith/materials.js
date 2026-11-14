@@ -355,7 +355,7 @@ export function lodInfo(key) {
 }
 
 // Materialien, die in der Bot-Detailstufe entfallen (Durchsicht, Leuchten, Hohlräume)
-export const LOD_SKIP = new Set(['cavity', 'glass', 'lens', 'lensClear', 'smoke', 'reticleHolo', 'reticleDot', 'reticleChevron', 'glowRed', 'glowGreen', 'glowAmber']);
+export const LOD_SKIP = new Set(['cavity', 'glass', 'lens', 'lensClear', 'lensEye', 'smoke', 'reticleHolo', 'reticleDot', 'reticleChevron', 'glowRed', 'glowGreen', 'glowAmber']);
 
 export function getMat(key) {
   let m = mats.get(key);
@@ -579,9 +579,15 @@ Object.assign(DEFS, {
   // Laufkrone: blank gedreht, aber berußt (Schmauch aus dem Builder, Schmutzkanal)
   crown: () => wearPatch(std({ color: 0x8f9398, metalness: 1, roughness: 0.24, side: THREE.DoubleSide }), { col: 0xb5b9be, metal: 1, rough: 0.18, k: 0.4, bump: 0.00001, tone: 0.1, smear: 0.3 }),
   // Optik-Linsen: Mehrschicht-Vergütung als Dünnschicht-Interferenz (grün/violette Reflexe je nach Blickwinkel), Glas fast schwarz
-  lens: () => phys({ color: 0x04080b, side: THREE.DoubleSide, metalness: 0, roughness: 0.02, envMapIntensity: 2.4, clearcoat: 1, clearcoatRoughness: 0.02, iridescence: 1, iridescenceIOR: 1.85, iridescenceThicknessRange: [220, 460], specularIntensity: 1, emissive: 0x02070b, emissiveIntensity: 1 }),
+  // visier (14.11.): wieder einseitig – jede Linse zeigt jetzt nach außen (Objektiv nach vorn, Okular nach hinten, parts.js /
+  // guns-praezision.js); beidseitig spiegelte die Rückseite des Objektivs ins Rohr und schloss die Durchsicht
+  lens: () => phys({ color: 0x04080b, metalness: 0, roughness: 0.02, envMapIntensity: 2.4, clearcoat: 1, clearcoatRoughness: 0.02, iridescence: 1, iridescenceIOR: 1.85, iridescenceThicknessRange: [220, 460], specularIntensity: 1, emissive: 0x02070b, emissiveIntensity: 1 }),
   lensClear: () => phys({ color: 0x8fb8d8, metalness: 0.6, roughness: 0.03, transparent: true, opacity: 0.16, depthWrite: false, envMapIntensity: 1.8, iridescence: 0.9, iridescenceIOR: 1.8, iridescenceThicknessRange: [240, 420] }),
   glass: () => phys({ color: 0x9fd8d0, metalness: 0.4, roughness: 0.04, transparent: true, opacity: 0.18, depthWrite: false, envMapIntensity: 1.4, iridescence: 0.6, iridescenceIOR: 1.6, iridescenceThicknessRange: [260, 400] }),
+  // Augenseite durchsichtiger Optiken (visier, 14.11.): Okular von Rotpunkt/Holo/Kampfvisier, zum Auge gerichtet – nur ein Hauch
+  // Tönung und kaum Spiegelung, damit man im Anschlag frei durchsieht. Die Außenseite (Objektiv/Frontscheibe) zeigt nach vorn und
+  // behält die kräftigen Vergütungsreflexe (lensClear/glass), wird von hinten aber nicht gezeichnet.
+  lensEye: () => phys({ color: 0xc4dcec, metalness: 0.1, roughness: 0.04, transparent: true, opacity: 0.06, depthWrite: false, envMapIntensity: 0.6, iridescence: 0.5, iridescenceIOR: 1.8, iridescenceThicknessRange: [240, 420] }),
 });
 // Bot-Stufe: Ersatzfarben/Metallgruppe wie vor dem Umbau (die Bot-Fassung baut keine Detail-Sätze)
 Object.assign(LOD_META, {

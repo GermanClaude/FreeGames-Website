@@ -12,6 +12,23 @@ import { actor } from './cast.js?v=20261114060746';
 import { mapFor, purgeDead, prop, ostbund, guardZone, stopGuard } from './hilfen-b.js?v=20261114060746';
 
 const COORDS = {
+  // Stadtkern „Lindenplatz“ (karten-neu): Team A Süd (+z, Hinterstraße z ≈ 51), Lindenallee bei z 0, Kaufhaus Nord
+  // (x −14…14, z −24…−36, 2 Geschosse, Dachterrasse) = Funkhaus; Kessar auf dem Dach (roof: true → Höhe aus dem Gelände).
+  stadtkern: {
+    place: 'Veldmark · Lindenplatz',
+    start: [-2, 51.5], startYaw: 0,
+    gasse: [-8, 41],
+    civ: [{ at: [-6, 20], yaw: 2.6 }, { at: [10, 21], yaw: -2.4 }],
+    platz: [0, 5],
+    platzFoes: [[-22, -12.4], [22, -12.4], [0, -16], [-38, -12.4], [38, -12.4], [-14, -5], [12, -14], [-30, -30]],
+    platzFlank: [[52, 0], [48, -20], [-52, 0]],
+    tor: [5.5, -20],
+    gang: [12, -18],
+    haus: [2, -29], hausYaw: 3.1,
+    inside: [[-8, -29], [6, -31], [-11, -27], [10, -33], [0, -33], [-4, -26]],
+    kessar: [-4, -30], kessarYaw: 0, roof: true,
+    sender: [-9, -31],
+  },
   altstadt: {
     place: 'Veldmark · Altstadtviertel',
     start: [4.5, 47], startYaw: 0,
@@ -85,18 +102,20 @@ const CUT_OUTRO = (m) => {
   const c = C(m);
   const [kx, kz] = c.kessar;
   const [sx, sz] = c.sender;
+  const Y = c.Y || 0, top = !!c.roof;
+  const cam = (p) => [p[0], p[1] + Y, p[2]];
   return {
     location: ['Funkhaus', '06:58 Uhr'],
     cast: {
-      kessar: actor('kessar', { pos: [kx, kz], yaw: c.kessarYaw, aim: -1.2, weapon: null }),
-      falk: actor('falk', { pos: [kx - 2.2, kz + 1.4], yaw: c.kessarYaw - 2.6, aim: -0.9 }),
-      daren: actor('daren', { pos: [kx - 1.2, kz + 2.8], yaw: c.kessarYaw - 2.9, aim: -1.0 }),
-      lenz: actor('lenz', { pos: [kx - 3.4, kz - 0.4], yaw: c.kessarYaw - 2.2, aim: -1.2 }),
-      weber: actor('weber', { pos: [sx, sz + 2.2], yaw: 0.4, crouch: true, aim: -0.7 }),
-      brandt: actor('brandt', { pos: [sx + 1.4, sz + 2.6], yaw: -0.6, aim: -0.9 }),
+      kessar: actor('kessar', { pos: [kx, kz], yaw: c.kessarYaw, aim: -1.2, weapon: null, top }),
+      falk: actor('falk', { pos: [kx - 2.2, kz + 1.4], yaw: c.kessarYaw - 2.6, aim: -0.9, top }),
+      daren: actor('daren', { pos: [kx - 1.2, kz + 2.8], yaw: c.kessarYaw - 2.9, aim: -1.0, top }),
+      lenz: actor('lenz', { pos: [kx - 3.4, kz - 0.4], yaw: c.kessarYaw - 2.2, aim: -1.2, top }),
+      weber: actor('weber', { pos: [sx, sz + 2.2], yaw: 0.4, crouch: true, aim: -0.7, top }),
+      brandt: actor('brandt', { pos: [sx + 1.4, sz + 2.6], yaw: -0.6, aim: -0.9, top }),
     },
     beats: [
-      { cam: { from: [kx - 9, 3.2, kz + 7], to: [kx - 7, 2.6, kz + 5], look: [kx - 1, 1.4, kz + 1] }, dur: 5, fadeIn: 1.2,
+      { cam: { from: cam([kx - 9, 3.2, kz + 7]), to: cam([kx - 7, 2.6, kz + 5]), look: cam([kx - 1, 1.4, kz + 1]) }, dur: 5, fadeIn: 1.2,
         say: { who: 'kessar', text: 'Sie glauben, Sie hätten gewonnen, Unteroffizier. Sie haben einen einzigen Mann verhaftet.', expr: 'ernst' } },
       { cam: { close: 'falk', side: 0.35, dist: 0.9 },
         say: { who: 'falk', text: 'Einen Mann, der sich vor einem Gericht verantworten wird. Das genügt für heute.', expr: 'entschlossen' } },
@@ -107,7 +126,7 @@ const CUT_OUTRO = (m) => {
       { cam: { close: 'lenz', side: 0.4, dist: 0.9 },
         act: [{ who: 'lenz', look: 'kessar' }],
         say: { who: 'lenz', text: 'In seiner Jacke: ein Notizbuch. Zahlungen, Daten, Treffpunkte. Und immer derselbe Absender – „Kranich“.', expr: 'angespannt' } },
-      { cam: { from: [sx + 6, 2.4, sz + 6], to: [sx + 4.5, 2.2, sz + 5], look: [sx + 0.6, 1.4, sz + 2.4] }, loc: false,
+      { cam: { from: cam([sx + 6, 2.4, sz + 6]), to: cam([sx + 4.5, 2.2, sz + 5]), look: cam([sx + 0.6, 1.4, sz + 2.4]) }, loc: false,
         say: { who: 'daren', text: 'Hier spricht Major Ilja Daren, Ostbund, Dritte Grenzbrigade. An alle Einheiten beider Seiten.' } },
       { cam: { close: 'brandt', side: 0.35, dist: 0.9, push: 0.1 },
         say: { who: 'brandt', text: 'Und Hauptmann Elias Brandt, Nordkorps. Die Waffenruhe gilt – für beide Seiten, ab sofort und ohne Ausnahme. Niemand schießt, der nicht muss.', expr: 'entschlossen' } },
@@ -117,7 +136,7 @@ const CUT_OUTRO = (m) => {
         say: { who: 'kranich', text: 'Kessar ist gescheitert. Das war vorhersehbar. Phase zwei beginnt.' } },
       { cam: { close: 'brandt', side: -0.3, dist: 0.85 },
         say: { who: 'brandt', text: 'Wer spricht da? Melden Sie sich!', expr: 'fragend' }, fadeOut: 1.6 },
-      { cam: { from: [sx + 6, 6, sz + 10], to: [sx + 8, 12, sz + 16], look: [sx, 1.5, sz] }, card: ['Ende von Akt II · Feuer im Tal', 'Die Geschichte geht weiter', 'Akt III erscheint mit einem kommenden Update.'], dur: 6, fadeIn: 1.2 },
+      { cam: { from: cam([sx + 6, 6, sz + 10]), to: cam([sx + 8, 12, sz + 16]), look: cam([sx, 1.5, sz]) }, card: ['Ende von Akt II · Feuer im Tal', 'Die Geschichte geht weiter', 'Akt III erscheint mit einem kommenden Update.'], dur: 6, fadeIn: 1.2 },
     ],
   };
 };
@@ -148,6 +167,7 @@ export const MISSION_11 = {
     const G = m.G;
     const id = G.match && G.match.mapId;
     m.set('C', COORDS[id] || auto(G));
+    { const c0 = m.get('C'); c0.Y = 0; if (c0.roof && G.world && G.world.groundHeight) { const y = G.world.groundHeight(c0.kessar[0], c0.kessar[1], 40); if (Number.isFinite(y)) c0.Y = y; } }
     if (!COORDS[id]) console.warn(`[Kampagne] M11: keine Koordinaten für Karte ${id} – Notablauf aus den Startpunkten`);
     const c = C(m);
     const [x, z] = c.start;
@@ -240,7 +260,15 @@ export const MISSION_11 = {
         const c = C(m);
         m.clearObjectives();
         m.order('hold');
-        const k = prop(m, { role: 'kessar', at: c.kessar, yaw: c.kessarYaw, aim: -1.2, weapon: null, face: undefined });
+        const k = prop(m, { role: 'kessar', at: c.kessar, yaw: c.kessarYaw, aim: -1.2, weapon: null, top: !!c.roof });
+        if (c.roof) {
+          const roofAt = [c.kessar[0], (c.Y || 0) + 0.1, c.kessar[1]];
+          m.zone('dach', { at: roofAt, r: 9, h: 2.5 });
+          m.objective('dach', 'Steig über das Treppenhaus aufs Dach', { pos: roofAt, label: 'Dach' });
+          m.say('weber', 'Er ist oben auf dem Dach, am Sendemast! Treppenhaus an der Ostseite!', { expr: 'angespannt' });
+          yield () => m.inZone('dach');
+          m.done('dach');
+        }
         m.wave('leib', { count: 3, at: [[c.kessar[0] + 2.5, c.kessar[1] + 1.5], [c.kessar[0] - 2.5, c.kessar[1] + 1], [c.kessar[0], c.kessar[1] + 3]], hold: true });
         m.say('lenz', 'Da ist er – mit zwei, drei Mann Leibwache. Nicht auf Kessar schießen, Falke! Nur die Wachen!', { expr: 'angespannt' });
         m.tip('Kessar ist unbewaffnet. Schalte die Leibwache aus und fordere ihn zur Aufgabe auf.', 6);

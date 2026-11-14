@@ -73,7 +73,12 @@ export function hasShaderPatch(material, key) { return !!REG.get(material)?.patc
 
 /** Weltposition (vNpWorld) + Objektnormale (vNpNormal) als Varyings bereitstellen – nur einmal je Shader. */
 export function ensureWorldVaryings(shader) {
-  if (shader.vertexShader.includes('varying vec3 vNpWorld;')) return;
+  if (shader.vertexShader.includes('varying vec3 vNpWorld;')) {
+    // texturen 14.11.: Vertex-Teil schon vorhanden (anderer Haken), Fragment-Teil fehlt evtl. → nachtragen (sonst
+    // „vNpWorld undeclared“ auf werk)
+    if (!shader.fragmentShader.includes('varying vec3 vNpWorld;')) shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vNpWorld;\nvarying vec3 vNpNormal;');
+    return;
+  }
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', '#include <common>\nvarying vec3 vNpWorld;\nvarying vec3 vNpNormal;')
     .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>

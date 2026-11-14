@@ -32,8 +32,10 @@ const geoCache = new Map();
 function cached(key, fn) { if (!geoCache.has(key)) geoCache.set(key, fn()); return geoCache.get(key); }
 
 /** Bibliotheksmodell ohne Kollision mit prozeduralem Ersatz. */
+/** Schwere Fotoscans (≥ 4000 Dreiecke in der Nahstufe): für Massen-Kleinkram nur auf ultra, sonst Primitive. */
+const SCHWER = new Set(['metal_trash_can', 'exterior_aircon_unit', 'schoolchair_01', 'metal_office_desk']);
 function lib(b, id, x, y, z, o, ersatz) {
-  if (b.hasModel(id)) b.model(id, x, y, z, { ...o, collide: false, minimap: false, fallback: ersatz });
+  if (b.hasModel(id) && (!SCHWER.has(id) || ultra(b) || !ersatz)) b.model(id, x, y, z, { ...o, collide: false, minimap: false, fallback: ersatz });
   else if (ersatz) ersatz(b);
 }
 
@@ -308,6 +310,13 @@ export function kanaldeckel(b, x, y, z) {
   else b.decal(x, y + 0.012, z, 1.1, 1.1, 'manhole', { opacity: 1, ry: 0 });
 }
 
+/** Aufgeschossenes Tauwerk (Festmacher) neben einem Poller. */
+export function tauwerk(b, x, y, z, o = {}) {
+  const g = cached('tau', () => new THREE.TorusGeometry(0.34, 0.035, 5, 18).rotateX(Math.PI / 2).toNonIndexed());
+  const n = 3 + Math.floor(hash01(x, z, 470) * 3), t = o.tint || (hash01(x, z, 471) < 0.5 ? '#c8b07a' : '#3a5a8a');
+  for (let i = 0; i < n; i++) b.geom(g, x + (hash01(x, i, 472) - 0.5) * 0.06, y + 0.035 + i * 0.065, z + (hash01(z, i, 473) - 0.5) * 0.06, 'tarp', { ...DN, tint: t, sx: 1 - i * 0.04, sz: 1 - i * 0.04 });
+}
+
 /** Werkzeugkiste, Kanister, Fass … Gruppe Industrie-/Hafenkram an der Wand. */
 function industrieKram(b, x, y, z, ry, k) {
   const f = frame(b, x, y, z, ry);
@@ -427,7 +436,7 @@ export const KAMPAGNE = {
   werk: [[-70, 0], [-64, -6], [-60, 8], [-58, 22], [-56, -18], [-17, -39], [-9, -44], [-3, 42], [-1, 37], [-1, 42], [0, -42], [0, 31], [0, 32], [0, 33], [0, 38], [1, 36], [2, 39], [2, 42], [2, 44], [3, 37], [4, 38], [4, 43], [5, 37], [5, 40], [7, 39], [9, -44], [17, -39]],
   // kampagne-a Runde 2 (M4 Hafennacht, M6 Feuerlinie): Stell-/Zielpunkte frei halten
   hafen: [[10.5, 46], [6, 26.6], [-12.3, 12.5], [-22.3, -14], [-31.5, -21.6], [-31.5, -19.2], [-40.6, 45.4], [-38.5, 40], [-36, 6], [10.5, 30], [10.5, 8], [0.4, 14], [0.4, 4], [-1.5, 36], [-1.5, 26], [-7.5, 18], [-7.5, 8], [-20.6, 18], [-20.6, 24], [-11.5, -2], [-20.8, 2], [-20.8, -20], [-28, -8], [-28, 6], [-30, -16], [-34, -16], [-36, -24], [-36, -34], [-27.5, -27], [-27.5, -33], [-36, 40], [-34, 41.5], [-38, 41.5], [6.5, 28.5], [-12, 16.5], [-21.5, -8], [-30.5, -17.5]],
-  brandwald: [[24, 141], [19, 146], [96, 6], [100, -27], [112, -17], [113, -16], [118, -30], [98, -14], [98, -32], [114, -12], [96, -12], [120, -28], [108, -36], [90, -24], [124, -18], [104, -8], [76, 96], [62, 116], [64.4, 112.6], [66.2, 113.8]],
+  brandwald: [[24, 141], [19, 146], [96, -3], [100, -27], [112, -17], [113, -16], [118, -30], [98, -14], [98, -32], [114, -12], [96, -12], [120, -28], [108, -36], [90, -24], [124, -18], [104, -8], [76, 96], [62, 116], [64.4, 112.6], [66.2, 113.8]],
   grenzland: [[-30, 94], [-26, 58], [-14, 82], [-8, 41], [-6, 74], [3, 126], [4, 92], [4, 128], [5, 124], [6, 70], [6, 126], [8, 66], [8, 124], [8, 126], [9, 118], [9, 127], [10, 125], [11, 122], [14, 121], [18, 63], [22, 58], [24, -78], [24, 95], [26, 4], [31, -9], [32, -42], [33, -8], [34, -50], [34, -12], [35, -7], [35, 41], [35, 46], [38, -19], [40, -52], [40, -30], [40, -28], [44, -44], [50, -48], [52, -40], [62, -78]],
 };
 
@@ -464,7 +473,8 @@ export function wandkram(b, o = {}) {
     ...(b.doors || []).map((d) => [d.hx, d.hz, (d.w || 1) + 1.0, d.y + 1])];
   const T = TABELLE[stil] || TABELLE.stadt;
   let n = 0;
-  const buildings = b.footprints.filter((f) => f.kind === 'building' && f.y1 - f.y0 > 2.2 && f.hw > 1.4 && f.hd > 1.4 && (o.yMax == null || f.y0 < o.yMax));
+  const kinds = o.huellen || ['building'];
+  const buildings = b.footprints.filter((f) => kinds.includes(f.kind) && f.y1 - f.y0 > 2.2 && f.hw > 1.1 && f.hd > 1.1 && f.y0 < 0.5 + (o.y ?? 0) && (o.yMax == null || f.y0 < o.yMax));
   for (const f of buildings) {
     if (f.x < bz.minX || f.x > bz.maxX || f.z < bz.minZ || f.z > bz.maxZ) continue;
     const c = Math.cos(f.ry || 0), s = Math.sin(f.ry || 0);
@@ -653,7 +663,7 @@ export function fensterleben(b, o = {}) {
   }
   // Klimageräte gesammelt (Fotoscan exterior_aircon_unit, sonst Primitive)
   for (const [x, y, z, ry] of b._acs || []) {
-    if (b.hasModel('exterior_aircon_unit')) b.model('exterior_aircon_unit', x, y - 0.1, z, { part: hash01(x, z, 7) < 0.55 ? 'exterior_aircon_unit_rusted' : 'exterior_aircon_unit', ry, s: 0.8, collide: false, minimap: false });
+    if (b.hasModel('exterior_aircon_unit') && ultra(b)) b.model('exterior_aircon_unit', x, y - 0.1, z, { part: hash01(x, z, 7) < 0.55 ? 'exterior_aircon_unit_rusted' : 'exterior_aircon_unit', ry, s: 0.8, collide: false, minimap: false });
     else { const f = frame(b, x, y, z, ry); f.box(0, 0, 0, 0.8, 0.55, 0.3, 'metal_painted', { ...DN, tint: '#d8d9d4' }); f.cyl(0.15, 0.28, 0.16, 0.18, 0.02, 'black', { ...DN, axis: 'z', seg: 12 }); }
   }
   b._acs = null;
@@ -737,7 +747,7 @@ export function dachleben(b, o = {}) {
     if ((r.x1 - r.x0) * (r.z1 - r.z0) > 30 && fein(b)) {
       const j = (k + 2) % 4, ax = cx[j & 1], az = cz[j >> 1];
       const ry = Math.atan2(r.x - ax, r.z - az);
-      if (b.hasModel('exterior_aircon_unit')) b.model('exterior_aircon_unit', ax, r.y, az, { ry, s: 0.9, collide: false, minimap: false });
+      if (b.hasModel('exterior_aircon_unit') && ultra(b)) b.model('exterior_aircon_unit', ax, r.y, az, { ry, s: 0.9, collide: false, minimap: false });
       else { const f = frame(b, ax, r.y, az, ry); f.box(0, 0, 0, 0.9, 0.62, 0.36, 'metal_painted', { ...DG, tint: '#d8d9d4' }); }
       if (hash01(r.x, r.z, 445) < 0.5) satschuessel(b, cx[(j + 1) & 1], r.y, cz[((j + 1) & 3) >> 1], Math.atan2(r.x - cx[(j + 1) & 1], r.z - cz[((j + 1) & 3) >> 1]) + Math.PI);
     }

@@ -1,0 +1,78 @@
+# NULLPUNKT — Desktop-App bauen (desktop/, Electron + electron-builder).
+# Läuft nur bei einem Versions-Tag (v1.2.3) oder von Hand (Actions → „Desktop-App bauen“ → Run workflow).
+# Die Webseite (GitHub Pages) ist davon unabhängig und wird hier nicht angefasst.
+# Ergebnis: Windows-Installer + portable .exe (und ein Linux-AppImage) als Artefakte; bei Tags zusätzlich als Release.
+name: Desktop-App bauen
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win nsis portable --x64
+            files: |
+              desktop/dist/*.exe
+          - os: ubuntu-latest
+            target: --linux AppImage --x64
+            files: |
+              desktop/dist/*.AppImage
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Abhängigkeiten
+        run: npm ci --no-audit --no-fund
+
+      - name: Version aus dem Tag übernehmen
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm version --no-git-tag-version --allow-same-version "${GITHUB_REF_NAME#v}"
+
+      - name: Bauen
+        run: npx electron-builder ${{ matrix.target }} --publish never
+        env:
+          # Ohne Zertifikat wird nicht signiert (Windows zeigt dann die SmartScreen-Warnung, siehe docs/planung/desktop.md)
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Artefakte hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: nullpunkt-${{ runner.os }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Release (nur bei Tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.files }}
+          fail_on_unmatched_files: true
+          body: |
+            NULLPUNKT als Desktop-Spiel.
+            Windows: `NULLPUNKT-Setup-….exe` (Installer) oder `NULLPUNKT-…-portable.exe` (ohne Installation).
+            Linux: `.AppImage` (ausführbar machen, starten).
+            Die .exe ist nicht signiert – Windows SmartScreen warnt beim ersten Start („Weitere Informationen“ → „Trotzdem ausführen“).

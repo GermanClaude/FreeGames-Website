@@ -2380,7 +2380,7 @@ async function bootstrap() {
     if (!G.renderer) { showFatal('webgl'); return; }
     G.renderer.onQualityChange(onQualityChanged);
     // 21.10.: Browser ohne GPU-Beschleunigung (Software-Rendering, häufige Ursache für ≈ 10 FPS) – beim ersten Match sagen
-    if (G.renderer.gpu && G.renderer.gpu.cls === 'software') tierNotice = { text: 'Grafik läuft ohne GPU-Beschleunigung – im Browser die Hardwarebeschleunigung einschalten.', short: 'Grafik ohne GPU – anderen Browser testen.' };
+    if (G.renderer.gpu && G.renderer.gpu.cls === 'software') tierNotice = window.nullpunktDesktop ? { text: 'Grafik läuft ohne GPU-Beschleunigung – Grafiktreiber aktualisieren.', short: 'Grafik ohne GPU – Treiber prüfen.' } /* desktop */ : { text: 'Grafik läuft ohne GPU-Beschleunigung – im Browser die Hardwarebeschleunigung einschalten.', short: 'Grafik ohne GPU – anderen Browser testen.' };
     if (G.renderer.onStyleChange) G.renderer.onStyleChange(applyQualityClasses); // Bildstil (core-render)
     if (DEBUG && G.renderer.exposure) G.renderer.exposure.track = true;
     applyQualityClasses();

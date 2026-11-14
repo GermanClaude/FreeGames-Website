@@ -1,4 +1,4 @@
-// NULLPUNKT — Kampagne, Mission 10 „Rollfeld“ (Flugplatz Hallstein; Rückfall: Grenzland, Kieswerk als Ausweichplatz):
+// NULLPUNKT — Kampagne, Mission 10 „Rollfeld“ (Fliegerhorst Hagenmoor; Rückfall: Grenzland, Kieswerk als Ausweichplatz):
 // Großangriff mit Luftunterstützung. Libelle 1 bringt den Trupp heran; im Anflug wird Pilot Sander getroffen, und Falk
 // muss den Hubschrauber selbst in die Landezone fliegen (Pilot!). Am Boden: zwei Flugabwehrstellungen sprengen, die Jäger
 // räumen das Vorfeld, die Hallen durchkämmen und Kessars startbereite Maschine auf dem Vorfeld zerstören, bevor sie abhebt.
@@ -14,8 +14,24 @@ import { actor } from './cast.js?v=20261114060746';
 import { mapFor, clearAir, purgeDead, strike, jetPass, giveLauncher, prop } from './hilfen-b.js?v=20261114060746';
 
 const COORDS = {
+  // Fliegerhorst Hagenmoor (karten-neu): Startbahn z 40 (W–O), Vorfeld z −132…−45, Hangars x −120/−40/40 bei z −150
+  // (Tor nach Süden), Flakstellungen südlich der Bahn (±60, 84), Gefechtsstand A im Westen (−415, −110).
+  flugplatz: {
+    place: ['Fliegerhorst Hagenmoor', 'Hangars'],
+    stage: [-392, -84], stageYaw: -1.57,
+    flyFrom: [-360, -40], flyYaw: -2.12, alt: 40,
+    hit: [-230, 40],
+    lz: [-140, 76],
+    flak: [[-60, 84], [60, 84]],
+    flakGuards: [[[-54, 90], [-66, 78], [-52, 76]], [[66, 90], [54, 78], [68, 76]]],
+    apron: [[-40, -110], [-20, -100], [-60, -104], [0, -112]],
+    hall: [-40, -136], hallIn: [[-48, -145], [-32, -155], [-40, -142], [-50, -158], [-30, -146], [-36, -160]],
+    plane: [40, -100],
+    reinf: [[140, -60], [120, -20], [150, 10]],
+    outro: null,
+  },
   grenzland: {
-    place: ['Kieswerk Hallstein · Ausweichplatz', 'Halle'],
+    place: ['Kieswerk · Ausweichplatz', 'Halle'],
     stage: [56, 200], stageYaw: 2.9,           // Bereitstellung (Intro, Wiedereinstieg vor dem Flug)
     flyFrom: [50, 168], flyYaw: 2.9, alt: 42,   // Start in der Luft
     hit: [72, 40],                              // hier wird Sander getroffen
@@ -40,7 +56,7 @@ function auto(G) {
   const L = (t, s = 0) => { const d = b.clone().sub(a); const n = new THREE.Vector3(-d.z, 0, d.x).normalize(); const p = a.clone().addScaledVector(d, t).addScaledVector(n, s); return [Math.round(p.x), Math.round(p.z)]; };
   const yaw = Math.atan2(-(b.x - a.x), -(b.z - a.z));
   return {
-    place: ['Flugplatz Hallstein', 'Hangar'], stage: L(0), stageYaw: yaw, flyFrom: L(0.05), flyYaw: yaw, alt: 40, hit: L(0.25), lz: L(0.45),
+    place: ['Fliegerhorst Hagenmoor', 'Hangar'], stage: L(0), stageYaw: yaw, flyFrom: L(0.05), flyYaw: yaw, alt: 40, hit: L(0.25), lz: L(0.45),
     flak: [L(0.55, 12), L(0.6, -12)], flakGuards: [[L(0.56, 15), L(0.54, 9)], [L(0.61, -15), L(0.59, -9)]],
     apron: [L(0.7, 5), L(0.72, -5), L(0.68, 0)], hall: L(0.8), hallIn: [L(0.8, 3), L(0.82, -3), L(0.78, 0)], plane: L(0.88), reinf: [L(1, 10), L(1, -10)],
     outro: null,
@@ -210,7 +226,7 @@ export const MISSION_10 = {
         try { if (G.player.vehicle !== heli) air.board(G.player, heli, 1); } catch { /* */ }
         const hit = m.vec(c.hit);
         air.fly(heli, { to: hit, alt: c.alt, speed: 22 });
-        m.objective('ankunft', 'Anflug auf Hallstein – Kinnturm besetzt', { pos: c.lz, label: 'Landezone' });
+        m.objective('ankunft', 'Anflug auf den Flugplatz – Kinnturm besetzt', { pos: c.lz, label: 'Landezone' });
         m.say('sander', 'Libelle 1, Kurs auf die Landezone. Noch zwei Minuten.', { radio: true });
         m.wave('boden', { count: 4, at: [[c.hit[0] + 20, c.hit[1] - 30], [c.hit[0] - 18, c.hit[1] - 34], [c.hit[0] + 4, c.hit[1] - 44], [c.hit[0] + 26, c.hit[1] - 52]], hold: true });
         m.tip('Kinnturm: zielen mit der Maus, feuern mit der linken Maustaste.', 5);
@@ -277,7 +293,7 @@ export const MISSION_10 = {
           m.progress('flaks', i + 1, 2);
         }
         m.done('flaks');
-        m.say('funk', 'Anker an Hallstein: Luftraum frei. Zwei Jäger fliegen das Vorfeld an.', { radio: true });
+        m.say('funk', 'Anker an Libelle 1: Luftraum frei. Zwei Jäger fliegen das Vorfeld an.', { radio: true });
         yield 1;
       },
     },

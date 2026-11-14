@@ -91,8 +91,10 @@ export function hm60(b) {
   slab(b, mm([[584, 34], [620, 34], [624, 46], [620, 96], [584, 96]]), 0.0155, 0.003, 'gbSteel', { id: 'gasblock', cav: STEEL });
   // Tragegriff: Klemme am Lauf, Bügel, Griffstück
   b.cyl('gbSteel', 0.017, 0.017, 0.02, 0, AXIS, 0.42, { seg: b.seg(18, 6) });
-  b.tube('gbSteel', [[0, AXIS + 0.014, 0.41], [0, AXIS + 0.05, 0.42], [0, AXIS + 0.06, 0.46], [0, AXIS + 0.052, 0.51], [0, AXIS + 0.014, 0.52]], 0.0055);
-  b.lathe('gbGrip', [[0, 0], [0, 0.0085], [0.004, 0.0095], [0.062, 0.0095], [0.066, 0.0085], [0.066, 0]], 0, AXIS + 0.06, 0.432, { seg: b.seg(14, 5) });
+  // visier (14.11.): Bügel links seitlich abgeklappt (wie beim Vorbild in Schussposition) – stand senkrecht genau auf der Visierlinie
+  // und verdeckte im Anschlag das Korn
+  b.tube('gbSteel', [[-0.014, AXIS - 0.004, 0.41], [-0.05, AXIS - 0.01, 0.42], [-0.06, AXIS - 0.012, 0.46], [-0.052, AXIS - 0.01, 0.51], [-0.014, AXIS - 0.004, 0.52]], 0.0055);
+  b.lathe('gbGrip', [[0, 0], [0, 0.0085], [0.004, 0.0095], [0.062, 0.0095], [0.066, 0.0085], [0.066, 0]], -0.06, AXIS - 0.012, 0.432, { seg: b.seg(14, 5) });
   // Zweibein: Bügel am Gaszylinder, Beine (Teleskop) nach vorn geklappt, Füße
   b.box('gbSteel', 0.036, 0.018, 0.024, 0, AXIS - 0.038, 0.6, { c: 0.002 });
   for (const s of [-1, 1]) {

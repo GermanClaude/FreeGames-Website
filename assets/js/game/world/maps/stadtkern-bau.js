@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { building, wall, railing, slab } from '../arch.js?v=20261114060746';
 import { frame, hash01, sandbags, car, jersey, lampPost, awning, tree, bench, dumpster, electricBox, crateStack, barrelGroup, palletStack, tires, cone } from '../props.js?v=20261114060746';
-import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, igel, tonnen, bauzaun } from './neu-bau.js?v=20261114060746';
+import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, chip, igel, tonnen, bauzaun } from './neu-bau.js?v=20261114060746';
 import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, regal, kommode, kueche, bild, teppich, theke, waschtisch } from './grenzland-innen.js?v=20261114060746';
 import { shelf, armchair, wardrobe, dresser, picture, rug } from './altstadt-ausstattung.js?v=20261114060746';
 import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde, pinnwand } from './hafen-ausstattung.js?v=20261114060746';
@@ -41,9 +41,13 @@ function ladenInnen(b, kind, R, s) {
   const ryIn = s > 0 ? 0 : PI;                         // Front lokal +z zeigt in den Raum (weg von der Straße)… Regale an der Rückwand blicken zur Straße
   const toStreet = s > 0 ? PI : 0;
   const w = R.x1 - R.x0, cx = (R.x0 + R.x1) / 2;
-  // Regale an der Rückwand (blicken zur Straße), an einer Seitenwand
+  // Regale an der Rückwand (blicken zur Straße) – Durchgänge der Mittelwand (R.gaps) bleiben frei –, an einer Seitenwand
   const n = Math.max(1, Math.floor((w - 1.0) / 1.25));
-  for (let i = 0; i < n; i++) shelf(b, R.x0 + 0.7 + i * 1.25, y, zb - dir * 0.24, toStreet, { w: 1.2, goods: S.goods, h: 2.0 });
+  for (let i = 0; i < n; i++) {
+    const sx = R.x0 + 0.7 + i * 1.25;
+    if ((R.gaps || []).some((g) => Math.abs(g - sx) < 1.25)) continue;
+    shelf(b, sx, y, zb - dir * 0.24, toStreet, { w: 1.2, goods: S.goods, h: 2.0 });
+  }
   shelf(b, R.x0 + 0.22, y, (zf + zb) / 2 + dir * 0.6, Q, { w: 1.2, goods: S.goods });
   // Theke quer im Raum (Kasse)
   if (kind === 'cafe') {
@@ -74,8 +78,9 @@ function wohnungInnen(b, R, s, seed) {
   // Vorderzimmer (Wohnzimmer): Sofa (Sessel), Tisch, Regal, Teppich, Bild, Kommode
   const fz = (R.zf + R.zm) / 2;
   teppich(b, cx - 0.5, y, fz, Math.min(3.2, w - 2.5), 2.2, 0, ['#7a3a2e', '#4a5a6a', '#6a5a3a'][Math.floor(h(1) * 3)]);
-  armchair(b, cx - 1.6, y, R.zm - dir * 0.6, toStreet, ['#7a3a2a', '#3a4a5a', '#5a6a3a'][Math.floor(h(2) * 3)]);
-  armchair(b, cx - 0.8, y, R.zm - dir * 0.6, toStreet, ['#7a3a2a', '#3a4a5a', '#5a6a3a'][Math.floor(h(2) * 3)]);
+  // Sessel zwischen Fenster und Tisch (Blick in den Raum) – die Durchgänge der Mittelwand bleiben frei
+  armchair(b, cx - 1.6, y, fz - dir * 1.05, fromStreet, ['#7a3a2a', '#3a4a5a', '#5a6a3a'][Math.floor(h(2) * 3)]);
+  armchair(b, cx - 0.8, y, fz - dir * 1.05, fromStreet, ['#7a3a2a', '#3a4a5a', '#5a6a3a'][Math.floor(h(2) * 3)]);
   tisch(b, cx - 1.2, y, fz, { w: 1.0, d: 0.6 });
   regal(b, R.x0 + 0.2, y, fz, Q, { w: 1.4 });
   if (mittel(b)) { bild(b, R.x1 - 0.03, y + 1.5, fz, -Q, { w: 0.8, h: 0.6, tint: ['#6a7a5a', '#8a6a4a', '#4a6a8a'][Math.floor(h(3) * 3)] }); kommode(b, R.x1 - 0.3, y, fz + dir * 1.2, -Q); }
@@ -159,6 +164,9 @@ export function altbau(b, o) {
     if (o.sideWin) for (const at of [-d / 4, d / 4]) ops.push({ side: o.sideWin, at: s * at, w: 1.0, h: 1.5, sill: 0.95, kind: 'window', floor: f, glass: false });
   }
   if (o.sideWin) ops.push({ side: o.sideWin, at: s * d / 4, w: 1.0, h: 1.4, sill: 1.0, kind: 'window', floor: 0, glass: false });
+  // Granattreffer in der Straßenfassade: Loch zwischen zwei Fensterachsen (Durchblick/-schuss, Mauerwerk sichtbar)
+  const shell = floors >= 3 && H(140) < 0.6 ? { f: 1 + Math.floor(H(141) * (floors - 1)), k: Math.floor(H(142) * (nAx - 1)) } : null;
+  if (shell) ops.push({ side: SS, at: ax0 + shell.k * 2.6 + 1.3, w: 1.25, h: 1.5, sill: 0.55, kind: 'gap', frame: false, floor: shell.f });
   // Brandwand-Durchbrüche (Schusslöcher zum Nachbarhaus) – nur wenn angegeben
   for (const hole of o.breaches || []) ops.push({ side: hole.side, at: hole.at, w: 1.0, h: 1.9, kind: 'gap', floor: hole.floor, frame: false });
   const ruin = o.roof === 'ruin';
@@ -170,6 +178,9 @@ export function altbau(b, o) {
     plinth: { h: 0.8, mat: 'stone_wall', tint: '#a8a092', over: 0.04 }, band: { mat: 'plaster_white', tint: '#e8e0cc' },
     interiorFactor: 0.5,
   });
+  // Fundamentplatte unter dem ganzen Grundriss (Oberkante 0,1): Türschwellen in der Wandstärke haben Boden (Navigation,
+  // Laufen) – Arena ohne Gelände darunter
+  b.box(x, -0.3, zc, w, 0.4, d, 'concrete', { tint: '#9a968c', minimap: false, grad: false });
   // Ladenboden: Fliesen
   if (o.shop) b.box(shopC, 0.12, (zf + (zf + zb) / 2) / 2 + s * 0.1, shopW - 0.1, 0.012, d / 2 - 0.6, 'tiles_pattern', { ...VG, ao: false });
   // Gesims über dem Erdgeschoss und unter der Traufe (stärker), Fensterverdachungen
@@ -190,7 +201,7 @@ export function altbau(b, o) {
   for (let f = 0; f < floors; f++) {
     const yy = f === 0 ? 0.12 : f * fh, hh = fh - 0.25 - (f === 0 ? 0.12 : 0);
     // Hausflurwand mit Wohnungs-/Ladentür am Podest (EG: Tür zum Laden-Lager)
-    wall(b, { x0: fx, z0: wz0, x1: fx, z1: wz1, y: yy, h: hh, t: 0.15, mat: 'plaster_white', tint: '#e6dcc6', openings: [{ at: landZ - wz0, w: 1.0, h: 2.1, kind: 'door', leaf: f === 0 ? 'closed' : 'open', leafTint: '#6a4a32' }] });
+    wall(b, { x0: fx, z0: wz0, x1: fx, z1: wz1, y: yy, h: hh, t: 0.15, mat: 'plaster_white', tint: '#e6dcc6', openings: [{ at: landZ - wz0, w: 1.0, h: 2.1, kind: 'gap', frameMat: 'wood_dark', frameTint: '#6a4a32' }] }); // Wohnungstüren herausgerissen (Krieg) – spart bewegliche Türen
     if (f === 0 && gx != null) for (const sx of [-1, 1]) wall(b, { x0: gx + sx * (gw / 2 + 0.08), z0: wz0, x1: gx + sx * (gw / 2 + 0.08), z1: wz1, y: yy, h: hh, t: 0.16, mat: 'plaster_white', tint: shadeHex(color, 0.92) });
     // Mittelwand (Vorder-/Hinterzimmer) zwischen Flur und Außenwand bzw. Torwand
     const mx0 = ce > 0 ? (f === 0 && o.gate === 'w' ? gx + gw / 2 + 0.16 : x0 + t) : fx + 0.08;
@@ -198,7 +209,8 @@ export function altbau(b, o) {
     const mw = mx1 - mx0;
     if (mw > 2) wall(b, { x0: mx0, z0: zm, x1: mx1, z1: zm, y: yy, h: hh, t: 0.14, mat: 'plaster_white', tint: f === 0 ? '#e0d8c8' : ['#d8cdb2', '#c9d2c4', '#d6c4b4', '#cfcab8'][Math.floor(H(90 + f) * 4)], openings: [{ at: mw * 0.3, w: 1.0, h: 2.1, kind: 'gap' }, ...(mw > 6 ? [{ at: mw * 0.78, w: 1.0, h: 2.1, kind: 'gap' }] : [])] });
     // Einrichtung
-    const Rin = { x0: mx0, x1: mx1, y: yy, yC: (f + 1) * fh - 0.25, zf: zIn0 + s * 0.02, zb: zm - s * 0.08, zm };
+    const gaps = mw > 2 ? [mx0 + mw * 0.3, ...(mw > 6 ? [mx0 + mw * 0.78] : [])] : [];
+    const Rin = { x0: mx0, x1: mx1, y: yy, yC: (f + 1) * fh - 0.25, zf: zIn0 + s * 0.02, zb: zm - s * 0.08, zm, gaps };
     if (f === 0) {
       if (o.shop) ladenInnen(b, o.shop, Rin, s);
       // Lager hinter dem Laden
@@ -229,7 +241,7 @@ export function altbau(b, o) {
     const dSide = ce > 0 ? 'w' : 'e';
     for (const [sid, ax, az, ex, ez] of [['n', hx0, lz0 + 0.1, hx1, lz0 + 0.1], ['s', hx1, lz1 - 0.1, hx0, lz1 - 0.1], ['e', hx1 - 0.1, lz0, hx1 - 0.1, lz1], ['w', hx0 + 0.1, lz1, hx0 + 0.1, lz0]]) {
       const len = Math.hypot(ex - ax, ez - az);
-      const door = sid === dSide ? [{ at: sid === 'e' ? landZ2 - lz0 : lz1 - landZ2, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', leafTint: '#4a4a44' }] : [];
+      const door = sid === dSide ? [{ at: sid === 'e' ? landZ2 - lz0 : lz1 - landZ2, w: 1.0, h: 2.1, kind: 'gap', frameMat: 'metal_painted', frameTint: '#4a4a44' }] : [];
       wall(b, { x0: ax, z0: az, x1: ex, z1: ez, y: roofY, h: hh, t: 0.2, mat: 'plaster_white', tint: shadeHex(color, 0.9), openings: door, minimap: false });
       void len;
     }
@@ -261,6 +273,17 @@ export function altbau(b, o) {
   // Ruß über einzelnen Fenstern, Einschusslöcher (Decals), Schutt vor dem Haus
   if (mittel(b)) for (let f = 1; f < floors; f++) if (H(100 + f) < 0.35) soot(b, x + ax0 + Math.floor(H(110 + f) * nAx) * 2.6, f * fh + 2.6, zf - s * 0.02, [0, 0, -s], 1.4);
   if (H(120) < 0.6) rubble(b, x + (H(121) - 0.5) * (w - 4), zf - s * 1.3, 0.9 + H(122) * 0.8, { mat: 'plaster_damaged', brick: H(123) < 0.5 });
+  // Abplatzungen (Ziegel sichtbar) und Brandspuren an der Straßenfassade; Schutt unter dem Granatloch
+  if (mittel(b)) {
+    const nrm = [0, 0, -s];
+    for (let k = 0; k < 7; k++) chip(b, x + (H(150 + k) - 0.5) * (w - 1.2), 1.2 + H(160 + k) * (floors * fh - 2.2), zf - s * 0.015, nrm, 0.5 + H(170 + k) * 0.9, H(180 + k) < 0.7 ? 'chip_brick' : 'chip_stone');
+  }
+  if (shell) {
+    const hx = x + ax0 + shell.k * 2.6 + 1.3, hy = shell.f * fh + 0.55 + 0.75;
+    chip(b, hx, hy, zf - s * 0.016, [0, 0, -s], 2.4, 'chip_brick');
+    soot(b, hx, hy + 1.1, zf - s * 0.017, [0, 0, -s], 1.8);
+    rubble(b, hx, zf - s * 1.4, 1.1, { mat: 'plaster_damaged', brick: true });
+  }
   // Ladenschild + Markise
   if (o.shop) {
     const S = SHOPS[o.shop], key = 'laden_' + o.shop;
@@ -294,6 +317,7 @@ export function kaufhaus(b, x, zs, s, w = 28, d = 12) {
   ops.push({ side: BS, at: -8, w: 2.6, h: 2.8, kind: 'gap', floor: 0 });
   ops.push({ side: BS, at: 4, w: 1.2, h: 1.4, kind: 'window', floor: 1, glass: false });
   ops.push({ side: 'w', at: 0, w: 1.2, h: 2.2, kind: 'door', leaf: 'open', floor: 0 });
+  b.box(x, -0.3, zc, w, 0.4, d, 'concrete', { tint: '#9a968c', minimap: false, grad: false }); // Fundament/Schwellen
   building(b, {
     x, z: zc, w, d, floors: 2, fh, mat: 'stone_wall', tint: '#cfc6b4', holes: [core.holes(1), core.holes(2)], openings: ops,
     roof: { parapet: 1.1, mat: 'concrete', tint: '#9a958a', capTint: '#d6ccb8' }, floorMat: 'tiles_pattern', upperFloorMat: 'linoleum', floorTint: '#c8c0b0',
@@ -334,7 +358,7 @@ export function kaufhaus(b, x, zs, s, w = 28, d = 12) {
   const lz0 = Math.min(r.z0, r.z1, landZ - core.land / 2) - 0.2, lz1 = Math.max(r.z0, r.z1, landZ + core.land / 2) + 0.2;
   b.interior(hx0, lz0, hx1, lz1, roofY, roofY + 2.5, 0.6);
   for (const [sid, ax, az, ex, ez] of [['n', hx0, lz0 + 0.1, hx1, lz0 + 0.1], ['s', hx1, lz1 - 0.1, hx0, lz1 - 0.1], ['e', hx1 - 0.1, lz0, hx1 - 0.1, lz1], ['w', hx0 + 0.1, lz1, hx0 + 0.1, lz0]]) {
-    const door = sid === 'w' ? [{ at: lz1 - landZ, w: 1.0, h: 2.1, kind: 'door', leaf: 'open' }] : [];
+    const door = sid === 'w' ? [{ at: lz1 - landZ, w: 1.0, h: 2.1, kind: 'gap', frameMat: 'metal_painted', frameTint: '#4a4a44' }] : [];
     void ax;
     wall(b, { x0: ax, z0: az, x1: ex, z1: ez, y: roofY, h: 2.5, t: 0.2, mat: 'stone_wall', tint: '#c8bfae', openings: door, minimap: false });
   }
@@ -362,13 +386,14 @@ export function hofAusstattung(b, x0, z0, x1, z1, s) {
   b.cyl(tx, 1.75, cz - s * 2, 0.04, 2.6, 'metal_painted', { tint: '#3d4247', ...KEIN, axis: 'x', seg: 6 });
   if (mittel(b)) b.box(tx, 0.9, cz - s * 2, 1.6, 0.85, 0.02, 'tarp', { tint: '#7a3a2e', ...VG, rx: 0.02 });
   for (let k = 0; k < 3; k++) {
-    const bx = xi - outer * (3 + k * 0.7), bz = z1 - s * 2.0;
+    const bx = xi + outer * (3 + k * 0.7), bz = z0 + s * 2.5;
     b.cyl(bx, 0.35, bz - 0.5, 0.33, 0.04, 'rubber', { ...KEIN, axis: 'x', seg: 12 });
     b.cyl(bx, 0.35, bz + 0.5, 0.33, 0.04, 'rubber', { ...KEIN, axis: 'x', seg: 12 });
     b.box(bx, 0.35, bz, 0.04, 0.5, 1.0, 'metal_painted', { tint: ['#2f5f94', '#c8402f', '#3d4247'][k], ...VG, rx: 0.4 });
   }
-  // Holzschuppen am äußeren Hofende (Tor zur Hofmitte)
-  const sx = xo - outer * 3.5, sz = z1 - s * 3.5;
+  // Holzschuppen an der Hinterhaus-Fassade zwischen Haustür und Toreinfahrt (Tor zur Hofmitte)
+  const sx = xo - outer * 10, sz = z1 - s * 3.5;
+  b.box(sx, -0.3, sz, 4, 0.4, 5, 'concrete', { tint: '#9a968c', minimap: false, grad: false });
   building(b, { x: sx, z: sz, w: 4, d: 5, floors: 1, fh: 2.6, mat: 'wood_planks', tint: '#8a6a4a', openings: [{ side: outer < 0 ? 'e' : 'w', at: 0, w: 2.2, h: 2.1, kind: 'gap', frame: false }], roof: { edge: false, mat: 'wood_planks', tint: '#5a4a3a' }, floorMat: 'wood_planks', pipes: false });
   b.noNav(sx - 2.3, sz - 2.8, sx + 2.3, sz + 2.8, 2.3, 30);
   palletStack(b, sx + outer * 0.8, sz - 1, { n: 4, y: 0.12 });
@@ -379,7 +404,7 @@ export function hofAusstattung(b, x0, z0, x1, z1, s) {
   // Schutt, Kisten (Deckung), Müllcontainer
   rubble(b, cx + outer * 9, z0 + s * 5, 1.3, { mat: 'plaster_damaged', brick: true });
   crateStack(b, cx - outer * 7, cz + s * 3, { ry: 0.3 });
-  dumpster(b, xo - outer * 1.2, cz - s * 3, { ry: Q });
+  dumpster(b, xi + outer * 1.2, cz - s * 2, { ry: Q });
 }
 
 // ---------------------------------------------------------------------------

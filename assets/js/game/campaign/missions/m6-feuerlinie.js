@@ -11,7 +11,7 @@ import { actor } from './cast.js?v=20261114060746';
 
 const PAD = [24, 141];
 const YARD = [106, -22];
-const LZ = [96, 6];
+const LZ = [96, -3]; // Rand der Lichtung am Holzplatz (keine Baumleichen)
 const LINE2 = [76, 96];
 const EVAC = [62, 116];
 const WORKERS = [
@@ -54,17 +54,23 @@ function CUT_INTRO(m) {
   };
 }
 
-const CUT_OUTRO = {
+/** Abflug: Lage relativ zum Landeplatz der Evakuierung. */
+function CUT_OUTRO(m) {
+  const [ex, ez] = m.get('evac') || [EVAC[0], EVAC[1]];
+  const dx = ex - 62 + 9, dz = ez - 116; // 9 m neben dem schwebenden Hubschrauber
+  const o = (x, z) => [x + dx, z + dz];
+  const c3 = (x, y, z) => [x + dx, y, z + dz];
+  return {
   groundRel: true,
   location: ['Alte Frontstellung Süd', '18:57 Uhr'],
   cast: {
-    falk: actor('falk', { pos: [64.4, 112.6], yaw: 2.6, aim: -0.6 }),
-    lenz: actor('lenz', { pos: [66.2, 113.8], yaw: 2.2, aim: -0.6 }),
-    weber: actor('weber', { pos: [63.2, 114.8], yaw: -2.6, aim: -0.7, crouch: true }),
-    haller: actor('zivil', { pos: [65.6, 111.0], yaw: -2.9, aim: -1.1, variant: 'kundschafter', weapon: null, name: 'Arbeiter Haller' }),
+    falk: actor('falk', { pos: o(64.4, 112.6), yaw: 2.6, aim: -0.6 }),
+    lenz: actor('lenz', { pos: o(66.2, 113.8), yaw: 2.2, aim: -0.6 }),
+    weber: actor('weber', { pos: o(63.2, 114.8), yaw: -2.6, aim: -0.7, crouch: true }),
+    haller: actor('zivil', { pos: o(65.6, 111.0), yaw: -2.9, aim: -1.1, variant: 'kundschafter', weapon: null, name: 'Arbeiter Haller' }),
   },
   beats: [
-    { cam: { from: [44, 14, 96], to: [50, 9, 102], look: [64, 2, 113] }, dur: 5.5, fadeIn: 1,
+    { cam: { from: c3(44, 14, 96), to: c3(50, 9, 102), look: c3(64, 2, 113) }, dur: 5.5, fadeIn: 1,
       say: { who: 'sander', text: 'Alle an Bord? Ich zähle vierzehn Zivilisten und euch drei. Libelle 1 hebt ab.' } },
     { cam: { close: 'haller', side: 0.4, dist: 1.0, push: 0.1 },
       say: { who: 'haller', text: 'Wir dachten, niemand kommt. Das Feuer war schon am Sägewerk.', expr: 'traurig' } },
@@ -76,10 +82,11 @@ const CUT_OUTRO = {
       say: { who: 'weber', text: 'Und die Brigade von Major Daren hat Befehl, mitzumarschieren.', expr: 'angespannt' } },
     { cam: { over: ['falk', 'weber'] },
       say: { who: 'daren', text: 'Hier Daren, offener Kanal. Ich habe den Befehl erhalten. Ich werde ihn nicht ausführen.', expr: 'ernst' } },
-    { cam: { from: [56, 6, 104], to: [52, 12, 98], look: [64, 2, 113] }, dur: 4, fadeOut: 1.4,
+    { cam: { from: c3(56, 6, 104), to: c3(52, 12, 98), look: c3(64, 2, 113) }, dur: 4, fadeOut: 1.4,
       say: { who: 'brandt', text: 'Dann stehen wir morgen nicht allein. Kommt nach Hause, alle.', expr: 'entschlossen' } },
   ],
 };
+}
 
 /* ------------------------------------------------------------ Hilfen */
 
@@ -328,14 +335,20 @@ export const MISSION_6 = {
         m.clearObjectives();
         const heli = m.get('heli');
         const air = m.G.vehicles.air;
-        if (heli && heli.alive) air.fly(heli, { to: m.vec(EVAC), alt: 6, speed: 20 });
+        // Landeplatz ohne Baumleichen (Rotorkreis frei) nahe der Frontstellung
+        let spot = null;
+        try { spot = air.findSpot ? air.findSpot(m.vec(EVAC), 'heli', { maxR: 70 }) : null; } catch { spot = null; }
+        const ev = spot ? [spot.position.x, spot.position.z] : EVAC;
+        m.set('evac', ev);
+        if (heli && heli.alive) air.fly(heli, { to: m.vec(ev), alt: 10, speed: 20 });
         m.say('sander', 'Libelle 1 im Anflug auf die Frontstellung. Zwanzig Sekunden!', { radio: true });
         const rest = ['nord3', 'jaeger'].filter((w) => m.waves.has(w));
         if (rest.length) m.objective('rest', 'Halte die Verfolger auf Abstand', { quiet: true });
-        yield m.reach('evac', 'Bring alle zum Hubschrauber', { at: EVAC, r: 9, label: 'Libelle 1' });
-        if (heli && heli.alive) air.fly(heli, { hover: true, alt: 2.5 });
+        yield m.reach('evac', 'Bring alle zum Hubschrauber', { at: ev, r: 9, label: 'Libelle 1' });
+        if (heli && heli.alive) air.fly(heli, { hover: true, alt: spot ? 2.5 : 8 });
         const ids = WORKERS.map((w) => w.id);
-        yield m.until(() => ids.every((id) => { const x = m.extras.get(id); return !x || x.position.distanceTo(m.vec(EVAC)) < 12; }));
+        const evp = m.vec(ev);
+        yield m.until(() => ids.every((id) => { const x = m.extras.get(id); return !x || x.position.distanceTo(evp) < 12; }));
         yield 1;
         m.complete();
       },

@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw } from './flugplatz-bau.js?v=20261114060746';
 import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261114060746';
 import { mgNest } from './grenzland-stellungen.js?v=20261114060746';
+import { burntWreck } from './brandwald-bau.js?v=20261114060746';
 import { KEIN, VG } from './neu-bau.js?v=20261114060746';
 
 const PI = Math.PI, Q = PI / 2;
@@ -152,6 +153,13 @@ function piste(b, ctx) {
   papi(b, RUNWAY.x0 + 300, RUNWAY.z - RUNWAY.w / 2 - 14, hf.heightAt(RUNWAY.x0 + 300, RUNWAY.z - 30));
   papi(b, RUNWAY.x1 - 300, RUNWAY.z + RUNWAY.w / 2 + 14 - 27, hf.heightAt(RUNWAY.x1 - 300, RUNWAY.z + 30));
   windsack(b, -10, 72, hf.heightAt(-10, 72), 0.9);
+  // Restlängentafeln (schwarz, weiße Ziffer = verbleibende Bahnlänge in 100 m) beidseits alle 100 m
+  for (let k = 1; k <= 7; k++) for (const [x, side, key] of [[RUNWAY.x0 + k * 100, -1, 'rest' + (8 - k)], [RUNWAY.x1 - k * 100, 1, 'rest' + (8 - k)]]) {
+    b.defineSign(key, { style: 'number', text: String(8 - k), bg: '#141414', fg: '#f2f0ea' });
+    const z = RUNWAY.z + side * (RUNWAY.w / 2 + 12), y = hf.heightAt(x, z);
+    b.box(x, y, z, 0.25, 1.4, 1.6, 'metal_painted', { tint: '#141414', minimap: false });
+    b.sign(x + side * 0.13, y + 0.75, z, 1.2, 1.2, key, { ry: side > 0 ? Q : -Q, back: false });
+  }
   anflug(b, hf, RUNWAY.x0 - 15, RUNWAY.z, -1, 3);
   anflug(b, hf, RUNWAY.x1 + 15, RUNWAY.z, 1, 3);
   return {};
@@ -185,6 +193,9 @@ function flakstellungen(b, ctx) {
     const f = frame(b, x, y, z, ry);
     for (const [lx, lz] of [[-2.4, -2.0], [2.3, -2.2]]) { const [px, pz] = f.P(lx, lz); b.box(px, y, pz, 0.6, 0.35, 0.4, 'metal_painted', { ry, tint: '#4b5a3a', ...KEIN }); b.box(px, y + 0.35, pz, 0.6, 0.35, 0.4, 'metal_painted', { ry: ry + 0.2, tint: '#56653f', ...KEIN }); }
   }
+  // Kriegsspuren: abgestürztes Schulflugzeug neben der Bahn, ausgebrannte Lkw am Rollweg
+  { const x = 215, z = 76, y = hf.heightAt(x, z); schulflugzeug(b, x, z, 2.2, { y: y - 0.35, tint: '#2e2a26', akzent: '#3a3430', open: true }); b.decal(x, y + 0.03, z, 16, 14, 'soot', { opacity: 0.85 }); b.decal(x - 3, y + 0.04, z + 2, 10, 8, 'cracks', { opacity: 0.6 }); }
+  for (const [x, z, ry, k] of [[-262, -8, 0.4, 'lkw'], [258, -60, 2.6, 'lkw'], [-120, 70, 1.2, 'pkw']]) burntWreck(b, x, hf.heightAt(x, z), z, ry, k, 7);
   return {};
 }
 
@@ -273,6 +284,13 @@ export default {
       { x: -220, z: -340, r: 80 }, { x: 110, z: -335, r: 70 }, { x: 390, z: -310, r: 60 }, { x: -430, z: -300, r: 55 },
       { x: -520, z: 160, r: 60 }, { x: 520, z: 170, r: 60 }, { x: 220, z: 345, r: 60 }, { x: -360, z: 340, r: 55 },
     ],
+    // Splitterschutzwälle (Erdwälle 2,6 m hoch) als Deckung auf den freien Grasflächen
+    dams: [
+      { a: [-330, -72], b: [-282, -78], y: 2.6, crown: 1.6, slope: 1.4 }, { a: [282, -78], b: [330, -72], y: 2.6, crown: 1.6, slope: 1.4 },
+      { a: [-205, 78], b: [-160, 84], y: 2.4, crown: 1.6, slope: 1.4 }, { a: [160, 84], b: [205, 78], y: 2.4, crown: 1.6, slope: 1.4 },
+      { a: [-90, -200], b: [-40, -204], y: 2.4, crown: 1.6, slope: 1.4 }, { a: [40, -204], b: [90, -200], y: 2.4, crown: 1.6, slope: 1.4 },
+      { a: [-345, 200], b: [-300, 215], y: 2.6, crown: 1.6, slope: 1.4 }, { a: [300, 215], b: [345, 200], y: 2.6, crown: 1.6, slope: 1.4 },
+    ],
     // Bombentrichter neben Bahn und Rollweg (Kriegsspuren; keiner auf Asphalt)
     craters: {
       list: [[-330, 2, 6, 1.8], [-250, -80, 5, 1.5], [-90, -8, 4.5, 1.4], [60, -6, 5, 1.6], [230, -82, 6, 1.8], [310, -60, 5, 1.5], [-180, 74, 5, 1.5],
@@ -349,7 +367,10 @@ export default {
     ffa: [[-130, 150], [150, 152], [-40, -100], [60, -90], [125, -120], [300, -130], [-300, -130], [0, 120], [-60, 70], [80, 0], [-200, -170], [220, -170], [0, 200], [-330, 60], [330, 60]],
     hq: { A: LA.spawns, B: LB.spawns },
   },
-  vehicles: [...veh('A', LA), ...veh('B', LB)],
+  // Fahrzeuge: je Gefechtsstand Jet (auf der Bahn), 2 Hubschrauber, 2 Panzer, 3 Geländewagen; dazu 2 neutrale
+  // Geländewagen im Fahrzeughof (wer zuerst kommt)
+  vehicles: [...veh('A', LA), ...veh('B', LB),
+    { id: 'hof-jeep-1', team: null, kind: 'jeep', x: 159.25, z: 166, yaw: 0 }, { id: 'hof-jeep-2', team: null, kind: 'jeep', x: 164.75, z: 166, yaw: 0 }],
   secrets: [
     { id: 'flugplatz-ente', name: 'Die Tower-Ente', hint: 'Wer ganz oben sitzt, hat einen Glücksbringer.', x: 125 + 6.05 - 1.2 + 2.6, y: 17.1, z: -150 + 3.2, trigger: { type: 'proximity', radius: 1.6 } },
   ],

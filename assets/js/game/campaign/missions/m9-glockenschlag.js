@@ -2,7 +2,7 @@
 // Kessar will über das Relais im Glockenturm gefälschte Angriffsbefehle an alle Einheiten senden. Lenz liegt im
 // Lazarett; Falk führt den Trupp zum ersten Mal selbst – diesmal von Osten nach Westen. Ein Countdown läuft bis zur
 // Sendung. Unterwegs flüchten Einwohner in die Kirche am Brunnenplatz, die nicht fallen darf. Am Ende wird der Funker
-// lebend in der Marktgasse gestellt und verrät den Flugplatz Hallstein.
+// lebend in der Marktgasse gestellt und verrät den Fliegerhorst Hagenmoor.
 // Checkpoints: start, kirche, turm, funker. Fehlschlag: Countdown endet, Kirche fällt.
 
 import { actor } from './cast.js?v=20261114060746';
@@ -62,7 +62,7 @@ const CUT_OUTRO = {
     { cam: { close: 'falk', side: -0.35, dist: 0.9 },
       say: { who: 'falk', text: 'Hier schießt niemand mehr. Wo ist Kessar?', expr: 'ernst' } },
     { cam: { over: ['falk', 'malek'] },
-      say: { who: 'malek', text: 'Er war nie hier. Er sprach über eine Leitung aus dem Flugplatz Hallstein. Morgen früh fliegt er außer Landes – mit allem, was er über seine Geldgeber hat.', expr: 'traurig' } },
+      say: { who: 'malek', text: 'Er war nie hier. Er sprach über eine Leitung aus dem Fliegerhorst Hagenmoor. Morgen früh fliegt er außer Landes – mit allem, was er über seine Geldgeber hat.', expr: 'traurig' } },
     { cam: { close: 'weber', side: 0.35, dist: 0.9 },
       say: { who: 'weber', text: 'Geldgeber? Kessar handelt nicht allein?', expr: 'fragend' } },
     { cam: { close: 'malek', side: -0.4, dist: 0.85, push: 0.1 },
@@ -70,7 +70,7 @@ const CUT_OUTRO = {
     { cam: { close: 'hofer', side: 0.4, dist: 0.95 },
       say: { who: 'hofer', text: 'Seine Hand blutet. Ich verbinde ihn – dann gehört er der Kommission.', expr: 'ernst' } },
     { cam: { close: 'falk', side: 0.3, dist: 1.0 },
-      say: { who: 'brandt', text: 'Gut gemacht, Falke. Du hast heute niemanden verloren. Ruht euch aus – um fünf Uhr fliegt ihr nach Hallstein. Lenz besteht darauf, mitzukommen.' } },
+      say: { who: 'brandt', text: 'Gut gemacht, Falke. Du hast heute niemanden verloren. Ruht euch aus – um fünf Uhr fliegt ihr nach Hagenmoor. Lenz besteht darauf, mitzukommen.' } },
     { cam: { from: [-24, 3, 20], to: [-20, 7, 26], look: [-32, 1.4, 12.5] }, dur: 4, fadeOut: 1.4,
       say: { who: 'falk', text: 'Natürlich tut er das.', expr: 'erleichtert' } },
   ],

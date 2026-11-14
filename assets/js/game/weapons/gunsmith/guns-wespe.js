@@ -64,8 +64,10 @@ export function wespe(b) {
   b.picatinny('gbAlu', 0, RAIL, -0.124, 0.198);
   b.picatinny('gbAlu', 0, -0.028, 0.166, 0.216, { rz: Math.PI });
   // Klappvisiere (aufgeklappt): Korn vorn mit Schutzohren, Diopter hinten
-  sight(b, 0.178, true);
-  sight(b, -0.104, false);
+  // visier (14.11.): mit montierter Optik (Aufsatz) liegen beide Klappvisiere umgelegt auf der Schiene
+  const folded = !!(b.att && b.att.optik);
+  sight(b, 0.178, true, folded);
+  sight(b, -0.104, false, folded);
 
   // --- Lauf, Mündungsgewinde, Feuerdämpfer
   b.cyl('gbBlued', 0.0076, 0.0076, 0.04, 0, AXIS, 0.286, { seg: b.seg(18, 6) });
@@ -112,9 +114,13 @@ export function wespe(b) {
 }
 
 // Klappvisier (aufgeklappt) auf der Schiene: Fuß mit Klemme, Flügel, Korn (Säule mit Ohren) bzw. Diopter (Lochblende)
-function sight(b, u, front) {
+function sight(b, u, front, folded = false) {
   const base = RAIL + 0.0077;
   b.box('gbAlu', 0.024, 0.008, 0.026, 0, base + 0.004, u, { c: 0.002 });
+  if (folded) {   // umgelegt: Flügel flach nach vorn (Korn) bzw. hinten (Diopter) auf dem Fuß
+    b.box('gbAlu', 0.016, 0.004, 0.026, 0, base + 0.01, u + (front ? 0.006 : -0.006), { c: b.hi ? 0.001 : 0 });
+    return;
+  }
   if (!b.hi) { b.box('gbAlu', 0.016, 0.02, 0.008, 0, base + 0.014, u); return; }
   b.box('gbAlu', 0.004, 0.004, 0.02, 0.014, base + 0.002, u, { c: 0.001 });
   if (front) {

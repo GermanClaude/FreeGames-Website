@@ -24,9 +24,11 @@ const MARK_TITAN = schrift('titan').mark;
 
 /** Vergütete Linse: dunkle Tiefe, spiegelnde Deckschicht und Fassung. dir = +1 Objektiv (vorn), −1 Okular. */
 function coatedLens(b, r, axis, u, dir) {
-  b.circle('lens', r, 0, axis, u - dir * 0.006, { seg: b.seg(32, 10) });
+  // visier (14.11.): Objektiv (dir +1) zeigt nach vorn, Okular nach hinten – einseitige Linsen statt DoubleSide
+  const ry = dir > 0 ? Math.PI : 0;
+  b.circle('lens', r, 0, axis, u - dir * 0.006, { seg: b.seg(32, 10), ry });
   if (!b.hi) return;
-  b.circle('lensClear', r * 0.995, 0, axis, u - dir * 0.0015, { seg: 32 });
+  b.circle('lensClear', r * 0.995, 0, axis, u - dir * 0.0015, { seg: 32, ry });
   // Innenwand zwischen Deckglas und Linse (schwarz eloxiert) + Fassungsring mit feiner Fase
   b.cyl('cavity', r, r, 0.006, 0, axis, u - dir * 0.0035, { seg: 32, open: true });
   b.lathe('crown', [[0, r * 0.99], [dir * 0.0006, r * 1.04]], 0, axis, u, { seg: 32 });

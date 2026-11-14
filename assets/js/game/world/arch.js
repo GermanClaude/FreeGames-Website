@@ -436,8 +436,9 @@ export function pitchedRoof(b, o) {
     const off = (half / 2) * s;
     const cx = along === 'x' ? x : x + off, cz = along === 'x' ? z + off : z;
     const yy = y + rise / 2 - ov * Math.tan(ang) / 2 - 0.08;
-    if (along === 'x') b.box(cx, yy, cz, len, 0.12, slope, mat, { rx: ang * s, tint: o.tint, grad: false, minimap: 'roof', uv: 'local' });
-    else b.box(cx, yy, cz, slope, 0.12, len, mat, { rz: -ang * s, tint: o.tint, grad: false, minimap: 'roof', uv: 'local' });
+    // texturen 14.11.: Ziegelreihen parallel zum First, Bild-oben zum First (V steigt hangaufwärts) auf beiden Seiten
+    if (along === 'x') b.box(cx, yy, cz, len, 0.12, slope, mat, { rx: ang * s, tint: o.tint, grad: false, minimap: 'roof', uv: 'local', uvScale: s < 0 ? -1 : 1 });
+    else b.box(cx, yy, cz, slope, 0.12, len, mat, { rz: -ang * s, tint: o.tint, grad: false, minimap: 'roof', uv: 'local', uvSwap: true, uvScale: s > 0 ? -1 : 1 });
   }
   // Giebel: je Seite zwei gegenläufige Keile (gleichschenkliges Dreieck)
   const gmat = o.gableMat || 'plaster_white';
