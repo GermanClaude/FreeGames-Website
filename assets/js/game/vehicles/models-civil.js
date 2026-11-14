@@ -16,6 +16,8 @@
 import * as THREE from 'three';
 import { VEHICLES } from './data.js?v=20261114060746';
 import { civilPaint } from './materials.js?v=20261114060746';
+import { pkwBodyHQ } from './models-car.js?v=20261114060746';
+import { tire, alloyRim, steelRim, brakeDisc, bodyLoft } from './bodykit.js?v=20261114060746';
 
 const PI = Math.PI, HP = PI / 2;
 const _q = new THREE.Quaternion(), _e = new THREE.Euler(), _d = new THREE.Vector3(), AZ = new THREE.Vector3(0, 0, 1);
@@ -81,12 +83,36 @@ function addWheels(K, S, lod, seg, spec) {
       const spin = new THREE.Group();
       const R = new K.Bucket();
       const n = w.twin ? 2 : 1, rr = w.r, ww = w.w;
+      const face = side * ww * 0.42;
+      if (K.HQ && lod === 0) {
+        // Nutzer 14.11.: Reifen mit Flanke und Profil, Leichtmetall- bzw. Stahlfelge mit Fenstern, Bremsscheibe
+        const fine = lod === 0 && K.DET >= 2, ts = fine ? 36 : 20, ri = rr * 0.66;
+        for (let k = 0; k < n; k++) {
+          const ox = -side * k * (ww + 0.03);
+          R.add(tire(rr, ww, ri, { kind: w.alloy ? 'road' : 'truck', seg: ts }), S.rubber, [ox, 0, 0]);
+          const { face: fg, barrel } = alloyRim(ri, ww * 0.8, { spokes: w.alloy ? 5 : 6, twin: !!w.alloy, seg: fine ? 28 : 14 });
+          R.add(barrel, S.dark, [ox, 0, 0]);
+          if (k === 0) {
+            if (w.alloy) R.add(fg, w.rim || S.rim, [side * ww * 0.18, 0, 0], side < 0 ? [0, PI, 0] : null);
+            else { R.add(steelRim(ri, { holes: w.twin ? 10 : 8, seg: fine ? 24 : 12 }), w.rim || S.rim, [side * ww * 0.16, 0, 0], side < 0 ? [0, PI, 0] : null); fg.dispose(); }
+          } else fg.dispose();
+        }
+        if (fine) R.add(brakeDisc(ri * 0.95, 20), S.steel, [side * -0.02, 0, 0], side < 0 ? [0, PI, 0] : null);
+        R.add(K.cyl(rr * 0.12, rr * 0.13, 0.04, Math.max(8, seg >> 1)), S.chrome, [side * ww * 0.3, 0, 0], [0, 0, HP]);
+        if (fine) for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * PI * 2 + 0.3;
+          R.add(K.cyl(0.011, 0.011, 0.025, 6), S.chrome, [side * ww * 0.29, Math.sin(a) * rr * 0.2, Math.cos(a) * rr * 0.2], [0, 0, HP]);
+        }
+        const x = side * w.x;
+        R.build(spin, { shadow: true, off: [x + side * (w.dx || 0), rr, w.z] });
+        out.push({ spin, axle, side, x, z: w.z, dx: side * (w.dx || 0), dy: w.dy || 0 });
+        continue;
+      }
       for (let k = 0; k < n; k++) {
         const ox = -side * k * (ww + 0.03);
         R.add(K.tireGeometry(rr, ww, seg, false), S.rubber, [ox, 0, 0], [0, 0, HP]);
         R.add(K.cyl(rr * 0.64, rr * 0.64, ww * 0.82, seg), w.rim || S.rim, [ox, 0, 0], [0, 0, HP]);
       }
-      const face = side * ww * 0.42;
       R.add(K.cyl(rr * 0.17, rr * 0.19, 0.05, Math.max(6, seg >> 1)), S.chrome, [face + side * 0.02, 0, 0], [0, 0, HP]);
       if (lod === 0) {
         // Felgenschüssel: fünf Speichen + Radmuttern (außen)
@@ -202,10 +228,14 @@ function gauges(K, B, S, cx, y, z, gap = 0.17, n = 2, r = 0.055) {
 function buildPkw(lod, S, K, variant) {
   K.setLod(lod);
   const D = VEHICLES.pkw;
-  const paint = civilPaint(civilColor('pkw', variant));
+  const paint = civilPaint(civilColor('pkw', variant), K.DET);
   const hull = new THREE.Group();
   const B = new K.Bucket(), GB = new K.Bucket(), LB = new K.Bucket();
   const step = [0.04, 0.08, 0.16][lod], seg = [20, 12, 7][lod];
+  // Nutzer 14.11.: Detailkarosserie (models-car.js) ab medium in den Nahstufen; low und Fernstufe wie bisher
+  const hq = K.HQ && lod < 2;
+  if (hq) pkwBodyHQ(K, S, B, GB, LB, lod, paint, variant);
+  else {
   // Seitenprofil (u = vorwärts): Heck mit Kofferraum, Gürtellinie, Motorhaube, Bug
   const top = lin([[-2.35, 0.6], [-2.33, 0.86], [-2.27, 0.96], [-2.1, 1.0], [-1.86, 1.01], [-1.05, 0.97], [1.0, 0.95], [1.9, 0.82], [2.22, 0.75], [2.33, 0.66], [2.35, 0.5]]);
   const low = lowLine(lin([[-2.35, 0.38], [-2.2, 0.28], [2.2, 0.28], [2.35, 0.36]]), [{ u: 1.38, y: 0.32, R: 0.37 }, { u: -1.43, y: 0.32, R: 0.37 }]);
@@ -253,20 +283,21 @@ function buildPkw(lod, S, K, variant) {
       B.add(K.cyl(0.035, 0.035, 0.12, 8), S.dark, [0.55, 0.3, 2.37], [HP, 0, 0]);   // Auspuff
     }
   }
+  }
   // Innenraum
   if (lod < 2) {
     const P = S.plastic;
-    B.add(K.box(1.66, 0.04, 2.02), S.interior, [0, 0.31, 0.0]);                      // Teppich
-    B.add(K.box(1.66, 0.58, 0.03), P, [0, 0.62, -0.985]);                            // Stirnwand
-    B.add(K.box(1.7, 0.2, 0.36), P, [0, 0.85, -0.8]);                                // Armaturenbrett
-    B.add(K.box(1.7, 0.04, 0.5), P, [0, 0.975, -0.78], [-0.14, 0, 0]);
+    B.add(K.box(hq ? 1.54 : 1.66, 0.04, 2.02), S.interior, [0, 0.31, 0.0]);                      // Teppich
+    B.add(K.box(hq ? 1.5 : 1.66, 0.58, 0.03), P, [0, 0.62, -0.985]);                            // Stirnwand
+    B.add(K.box(hq ? 1.54 : 1.7, 0.2, 0.36), P, [0, 0.85, -0.8]);                                // Armaturenbrett
+    B.add(K.box(hq ? 1.56 : 1.7, 0.04, 0.5), P, [0, 0.975, -0.78], [-0.14, 0, 0]);
     B.add(K.box(0.44, 0.07, 0.18), P, [-0.38, 1.02, -0.66], [-0.1, 0, 0]);           // Instrumentenhutze
     B.add(K.box(0.26, 0.28, 0.8), P, [0, 0.47, -0.28]);                              // Mittelkonsole
-    B.add(K.box(1.5, 0.02, 0.84), P, [0, 1.005, 1.46]);                              // Hutablage
+    B.add(K.box(hq ? 1.42 : 1.5, 0.02, 0.84), P, [0, 1.005, 1.46]);                              // Hutablage
     B.add(K.box(1.52, 0.02, 1.4), S.trim, [0, 1.39, 0.44]);                          // Himmel
     for (const sx of [-1, 1]) {
       B.add(K.box(0.02, 0.56, 2.0), S.trim, [sx * 0.845, 0.66, 0.0]);               // Türverkleidung
-      B.add(K.box(0.07, 0.05, 0.7), P, [sx * 0.81, 0.72, -0.05]);                    // Armlehne
+      B.add(K.box(0.07, 0.05, 0.7), P, [sx * (hq ? 0.75 : 0.81), 0.72, -0.05]);                    // Armlehne
       B.add(K.box(0.36, 0.02, 0.16), S.trim, [sx * 0.38, 1.37, -0.2], [0.12, 0, 0]); // Sonnenblende
     }
     B.add(K.box(0.22, 0.06, 0.02), P, [0, 1.33, -0.3]);                              // Innenspiegel
@@ -286,16 +317,18 @@ function buildPkw(lod, S, K, variant) {
     }
   } else B.add(K.box(1.6, 0.5, 1.9), S.interior, [0, 0.62, 0.0]);
   // Scheiben
+  if (!hq) {
   bar(K, GB, S.glass, [0, 0.96, -0.99], [0, 1.4, -0.28], 1.56, 0.012);
   bar(K, GB, S.glass, [0, 1.01, 1.88], [0, 1.41, 1.17], 1.46, 0.012);
   for (const sx of [-1, 1]) {
     sidePanel(K, GB, S.glass, [[-0.08, 0.96], [0.96, 0.96], [0.29, 1.39], [-0.08, 1.39]], sx * 0.83);
     sidePanel(K, GB, S.glass, [[-1.04, 0.97], [-0.12, 0.97], [-0.12, 1.39], [-1.04, 1.39]], sx * 0.83);
   }
+  }
   B.build(hull, { shadow: true });
   GB.build(hull, { shadow: false });
   LB.build(hull, { shadow: false });
-  const wheels = addWheels(K, S, lod, seg, [{ z: D.wheels.z[0], r: 0.32, w: 0.21, x: D.wheels.x }, { z: D.wheels.z[1], r: 0.32, w: 0.21, x: D.wheels.x }]);
+  const wheels = addWheels(K, S, lod, seg, [{ z: D.wheels.z[0], r: 0.32, w: 0.21, x: D.wheels.x, alloy: true }, { z: D.wheels.z[1], r: 0.32, w: 0.21, x: D.wheels.x, alloy: true }]);
   const out = { hull, wheels };
   if (lod === 0) {
     const C = [-0.38, 0.99, -0.52], tilt = -0.43, r = 0.185;
@@ -312,7 +345,7 @@ function buildPkw(lod, S, K, variant) {
 function buildTransporter(lod, S, K, variant) {
   K.setLod(lod);
   const D = VEHICLES.transporter;
-  const paint = civilPaint(civilColor('transporter', variant));
+  const paint = civilPaint(civilColor('transporter', variant), K.DET);
   const hull = new THREE.Group();
   const B = new K.Bucket(), GB = new K.Bucket(), LB = new K.Bucket();
   const step = [0.04, 0.08, 0.16][lod], seg = [20, 12, 7][lod];
@@ -322,9 +355,18 @@ function buildTransporter(lod, S, K, variant) {
   const topNose = lin([[1.8, 1.31], [2.2, 1.25], [2.48, 1.15], [2.6, 1.0], [2.64, 0.64]]);
   const belt = lin([[-0.1, 1.38], [1.8, 1.32]]);
   const bev = lod < 2, bw = bev ? 1.94 : 2.0;
+  if (K.HQ && lod < 2) {
+    // Nutzer 14.11.: gerundete Karosserie (Querschnitts-Loft: Draufsicht gerundet, Flanken eingezogen, Dachkante rund)
+    const q = lod === 0 ? 4 : 2, zs = (a, b, n) => { const o = []; for (let i = 0; i <= n; i++) o.push(a + (b - a) * (i / n)); for (const ar of arches) for (let k = -8; k <= 8; k++) { const z = -ar.u + (k / 8) * ar.R; if (z > a && z < b) o.push(z); } return [...new Set(o)].sort((x, y) => x - y); };
+    const wAt = (z) => 1.0 - 0.05 * Math.max(0, (z - 2.5) / 0.12) ** 2 - 0.06 * Math.max(0, (-z - 2.45) / 0.19) ** 2;
+    B.add(bodyLoft(zs(0.1, 2.62, lod === 0 ? 28 : 12), (z) => ({ yb: low(-z), ys: 2.24, yt: topCargo(-z), w: wAt(z), wt: wAt(z) - 0.03, rb: 0.07, rs: 0.16, crown: 0.025 }), { q }), paint);
+    B.add(bodyLoft(zs(-2.64, -1.8, lod === 0 ? 16 : 6), (z) => ({ yb: low(-z), ys: Math.min(topNose(-z) - 0.08, 1.2), yt: topNose(-z), w: wAt(z), wt: wAt(z) - 0.04, rb: 0.07, rs: 0.12, crown: 0.03 }), { q }), paint);
+    B.add(bodyLoft(zs(-1.8, 0.1, lod === 0 ? 20 : 8), (z) => ({ yb: low(-z), ys: belt(-z), w: 0.995, wt: 0.975, rb: 0.07 }), { q, open: true, thick: 0.045 }), paint);
+  } else {
   B.add(K.sideExtrude(sideBlock(-2.62, -0.1, topCargo, low, step), bw, bev), paint);  // Laderaum
   B.add(K.sideExtrude(sideBlock(1.8, 2.64, topNose, low, step), bw, bev), paint);     // Bug
   for (const sx of [-1, 1]) B.add(K.sideExtrude(sideBlock(-0.1, 1.8, belt, low, step), 0.05), paint, [sx * 0.975, 0, 0]);
+  }
   // Fahrerhaus oben: A-/B-Säulen, Dach, Holm über den Fenstern, Stirnbalken
   for (const sx of [-1, 1]) {
     bar(K, B, paint, [sx * 0.95, 1.31, -1.82], [sx * 0.93, 2.42, -1.18], 0.08, 0.08);
@@ -413,7 +455,7 @@ function buildZugmaschine(lod, S, K, variant) {
   K.setLod(lod);
   const D = VEHICLES.zugmaschine;
   const col = civilColor('zugmaschine', variant);
-  const paint = civilPaint(col), paint2 = civilPaint(new THREE.Color(col).multiplyScalar(0.9).getHex());
+  const paint = civilPaint(col, K.DET), paint2 = civilPaint(new THREE.Color(col).multiplyScalar(0.9).getHex(), K.DET);
   const hull = new THREE.Group();
   const B = new K.Bucket(), GB = new K.Bucket(), LB = new K.Bucket();
   const step = [0.05, 0.1, 0.2][lod], seg = [22, 12, 8][lod];
@@ -527,7 +569,7 @@ function radlauf(uc, yc, R, y0, n) {
 function buildStapler(lod, S, K, variant) {
   K.setLod(lod);
   const D = VEHICLES.stapler;
-  const paint = civilPaint(civilColor('stapler', variant));
+  const paint = civilPaint(civilColor('stapler', variant), K.DET);
   const load = staplerLoad(variant);
   const hull = new THREE.Group();
   const B = new K.Bucket(), LB = new K.Bucket();

@@ -22,7 +22,7 @@ import { getDetailNormalTexture } from '../../engine/textures.js?v=2026111406074
 export const TERRAIN_LAYERS = [
   { key: 'grass', lib: 'ground_meadow', proc: 'grass', size: 3.2, rough: 0.96, normal: 0, cal: [0.53, 0.67, 0.43], nStr: 0.75 },
   { key: 'dirt', lib: 'ground_forest', proc: 'dirt', size: 3.5, rough: 0.93, normal: 1, cal: [0.99, 0.98, 0.95], nStr: 1.0 },
-  { key: 'gravel', lib: 'ground_stones', proc: 'gravel', size: 2.6, rough: 0.88, normal: 3, cal: [0.98, 1.0, 1.04], nStr: 1.05 },
+  { key: 'gravel', lib: 'ground_stones', proc: 'gravel', size: 2.6, rough: 0.88, normal: 3, cal: [0.8, 0.82, 0.85], nStr: 1.05 },
   { key: 'rock', lib: 'rock_face', proc: 'concrete_dark', size: 4.5, rough: 0.86, normal: 2, cal: [1.25, 1.35, 1.5], nStr: 1.2 },
   { key: 'mud', lib: 'mud', proc: 'dirt', size: 3.2, rough: 0.8, normal: -1, nStr: 0.8 },
 ];
@@ -305,7 +305,7 @@ export async function createTerrainMaterial(o) {
         else { w = vec3(-t.z, 1.0 - t.y, 1.0 - t.x); v0 = b + vec2(1.0); v1 = b + vec2(1.0, 0.0); v2 = b + vec2(0.0, 1.0); }
         vec2 h0 = tHxH(v0), h1 = tHxH(v1), h2 = tHxH(v2);
         mat2 r0 = tHxR(h0), r1 = tHxR(h1), r2 = tHxR(h2);
-        vec2 u0 = r0 * uv + h0, u1 = r1 * uv + h1.yx, u2 = r2 * uv + fract(h2 * 1.7);
+        vec2 u0 = r0 * uv + h0, u1 = r1 * uv + h1, u2 = r2 * uv + h2; // Versatz nur aus dem Eckpunkt (sonst Kanten)
         vec4 a0 = textureGrad(tA, u0, r0 * dx, r0 * dy), a1 = textureGrad(tA, u1, r1 * dx, r1 * dy), a2 = textureGrad(tA, u2, r2 * dx, r2 * dy);
         vec3 W = (vec3(a0.a, a1.a, a2.a) * 0.7 + 0.3) * pow(w, vec3(7.0));
         W /= max(W.x + W.y + W.z, 1e-5);

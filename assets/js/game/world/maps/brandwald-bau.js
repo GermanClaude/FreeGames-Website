@@ -11,6 +11,7 @@ import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261114060746';
 import { getMaterial } from '../../engine/textures.js?v=20261114060746';
 import { createSimplex } from '../terrain/noise.js?v=20261114060746';
 import { mgNest } from './grenzland-stellungen.js?v=20261114060746';
+import { autoWrack } from '../autowrack.js?v=20261114060746';
 
 const Y = new THREE.Vector3(0, 1, 0);
 const _d = new THREE.Vector3(), _qq = new THREE.Quaternion(), _ee = new THREE.Euler();
@@ -845,6 +846,13 @@ export function burntWreck(b, x, y, z, ry, kind = 'lkw', seed = 1) {
   const col = () => BURN[Math.floor(r() * BURN.length)];
   const panel = (lx, ly, lz, w, h, d, o = {}) => { const [px, py, pz] = f(lx, ly, lz); b.box(px, py, pz, w, h, d, o.mat || (r() < 0.25 ? 'metal_rust' : 'metal_painted'), { ry, rz: tilt + (o.rz || 0), rx: o.rx || 0, tint: o.tint || col(), collide: false, minimap: false, grad: false, uv: 'local' }); };
   const rim = (lx, lz, rr) => { const [px, py, pz] = f(lx, rr * 0.8, lz); b.cyl(px, py, pz, rr, 0.2, 'metal_rust', { axis: 'x', ry, tint: '#4a3a2e', collide: false, minimap: false, seg: 12 }); b.cyl(px, py, pz, rr * 0.45, 0.24, 'metal_rust', { axis: 'x', ry, tint: '#2a2420', collide: false, minimap: false, seg: 8 }); };
+  if (kind === 'pkw' && b.quality && b.quality !== 'low') {
+    // Nutzer 14.11.: echte Karosserie (autowrack.js) ab medium
+    autoWrack(b, x, y, z, ry, { seed, color: ['#5a4a3c', '#3d4a52', '#6b6a62', '#4a3a32'][Math.abs(seed | 0) % 4] });
+    b.solid(x, y, z, 1.8, 1.3, 4.6, { ry, minimap: 'vehicle' });
+    b.decal(x, y + 0.02, z, 3.4, 5.4, 'stain', { ry, opacity: 0.75, tint: '#141210' });
+    return;
+  }
   if (kind === 'pkw') {
     const L = 4.5, W = 1.75;
     panel(0, 0.28, 0, W, 0.45, L);                                        // Wanne/Schweller

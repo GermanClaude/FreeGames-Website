@@ -19,6 +19,7 @@ import { boxUV } from '../engine/textures.js?v=20261114060746';
 import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261114060746';
 import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261114060746';
 import { CIVIL_BUILDERS } from './models-civil.js?v=20261114060746';
+import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261114060746';
 import { attachCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261114060746';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -1237,21 +1238,22 @@ function treadTire(r, w) {
 /** env-look: Geländewagen – Seilwinde, Abschleppösen, Blinker, Scheinwerferringe, Wischer, Außenspiegel, Antenne,
  * Trittbretter, Kotflügelverbreiterungen, Rammschutz, Planenrolle, Schmutzfänger; high: Munitionskisten, Spaten,
  * Anhängerkupplung, Scheinwerfergitter. Nur HQ (medium+). */
-function jeepDetail(B, S, paint, lod, seg) {
+function jeepDetail(B, S, paint, lod, seg, hqb = false) {
   const D = VEHICLES.jeep;
-  if (lod < 2) {
+  if (lod < 2 && !hqb) {
     for (const sx of [-1, 1]) {
       B.add(box(0.06, 0.06, 1.6), paint, [sx * 0.96, 0.66, 0.35]);                  // Trittbrett
       B.add(box(0.08, 0.06, 1.1), S.rubber, [sx * 1.0, 1.0, -1.47]);               // Kotflügelverbreiterung
       B.add(box(0.07, 0.05, 0.04), S.lensOff, [sx * 0.88, 0.86, -2.4]);             // Blinker
     }
-    B.add(cyl(0.09, 0.09, 0.62, Math.max(8, seg >> 1)), S.dark, [0, 0.56, -2.62], [0, 0, HP]); // Seilwinde
   }
+  if (lod < 2) B.add(cyl(0.09, 0.09, 0.62, Math.max(8, seg >> 1)), S.dark, [0, 0.56, -2.62], [0, 0, HP]); // Seilwinde
   if (lod === 0) {
     for (const sx of [-1, 1]) B.add(new THREE.TorusGeometry(0.06, 0.016, 4, 10), S.dark, [sx * 0.62, 0.48, -2.6], [0, HP, 0]); // Ösen
-    for (const L of D.lights) B.add(new THREE.TorusGeometry(0.125, 0.015, 4, 16), S.dark, [L[0], L[1], L[2] - 0.03]);
+    if (!hqb) for (const L of D.lights) B.add(new THREE.TorusGeometry(0.125, 0.015, 4, 16), S.dark, [L[0], L[1], L[2] - 0.03]);
     for (const sx of [-1, 1]) {
       B.add(box(0.5, 0.012, 0.02), S.dark, [sx * 0.42, 1.31, -0.96], [0, 0, sx * 0.25]); // Wischer
+      if (hqb) continue;
       B.add(cyl(0.01, 0.01, 0.3, 4), S.dark, [sx * 0.98, 1.62, -0.92], [0, 0, sx * 1.1]); // Spiegelarm
       B.add(box(0.03, 0.16, 0.12), S.dark, [sx * 1.1, 1.7, -0.92]);
       B.add(box(0.005, 0.13, 0.1), S.glass, [sx * 1.118, 1.7, -0.92]);
@@ -1276,8 +1278,8 @@ function jeepDetail(B, S, paint, lod, seg) {
     B.add(box(0.02, 0.2, 0.16), S.dark, [0.97, 1.16, 1.26]);
     B.add(box(0.14, 0.08, 0.16), S.dark, [0, 0.56, 2.4]);
     B.add(new THREE.TorusGeometry(0.045, 0.014, 4, 8), S.dark, [0, 0.56, 2.5], [HP, 0, 0]);
-    for (const L of D.lights) for (const dx of [-0.07, 0, 0.07]) B.add(box(0.012, 0.24, 0.012), S.dark, [L[0] + dx, L[1], L[2] - 0.1]);
-    for (const sx of [-1, 1]) B.add(box(0.05, 0.06, 0.08), S.dark, [sx * 0.82, 1.12, -1.7]);
+    for (const L of D.lights) for (const dx of [-0.07, 0, 0.07]) B.add(box(0.012, 0.24, 0.012), S.dark, [L[0] + dx, L[1], L[2] - (hqb ? 0.2 : 0.1)]);
+    if (!hqb) for (const sx of [-1, 1]) B.add(box(0.05, 0.06, 0.08), S.dark, [sx * 0.82, 1.12, -1.7]);
   }
 }
 
@@ -1289,6 +1291,10 @@ function buildJeep(lod, S, team) {
   const mark = S.mark[team] || S.mark.null;
   const hull = new THREE.Group();
   const B = new Bucket();
+  // Nutzer 14.11.: Detailkarosserie ab medium in den Nahstufen (models-jeep.js); low und Fernstufe wie bisher
+  const hqb = HQ && lod < 2;
+  if (hqb) jeepBodyHQ({ B, box, cyl, sideExtrude }, S, paint, DET === 2 ? lod : 1);
+  else {
   // Rahmen
   for (const sx of [-1, 1]) B.add(box(0.12, 0.16, 4.3), S.dark, [sx * 0.5, 0.52, 0]);
   // Motorhaube + Front
@@ -1320,6 +1326,7 @@ function buildJeep(lod, S, team) {
     B.add(cyl(0.03, 0.03, 1.9, 8), S.dark, [sx * 0.86, 1.62, 1.15], [1.08, 0, 0]);
   }
   B.add(cyl(0.035, 0.035, 1.72, 8), S.dark, [0, 2.1, 0.3], [0, 0, HP]);
+  }
   // Sitze, Lenkrad (env-look LOD0: gepolsterte Kissen mit gerundeten Kanten)
   const seat = (w, h, d, pos, rot) => {
     if (HQ && lod === 0) { const g = topExtrude([[-w / 2 + 0.04, d / 2 - 0.04], [w / 2 - 0.04, d / 2 - 0.04], [w / 2 - 0.04, -d / 2 + 0.04], [-w / 2 + 0.04, -d / 2 + 0.04]], h - 0.08, true); g.translate(0, -h / 2 + 0.04, 0); B.add(g, S.canvas, pos, rot); }
@@ -1360,13 +1367,13 @@ function buildJeep(lod, S, team) {
   }
   if (lod === 0) for (const sx of [-1, 1]) B.add(box(0.16, 0.44, 0.32), sx < 0 ? paint : S.dark, [sx * -0.55 - 0.1, 1.2, 2.3]);
   // Kennung
-  B.add(cyl(0.24, 0.24, 0.015, seg), mark, [0, 1.165, -1.62], [0.05, 0, 0]);
-  B.add(cyl(0.15, 0.15, 0.015, seg), mark, [-0.5, 1.12, 2.186], [HP, 0, 0]);
-  if (HQ) jeepDetail(B, S, paint, lod, seg);
+  B.add(cyl(0.24, 0.24, 0.015, seg), mark, [0, hqb ? 1.188 : 1.165, -1.62], [0.05, 0, 0]);
+  B.add(cyl(0.15, 0.15, 0.015, seg), mark, [-0.5, 1.12, hqb ? 2.212 : 2.186], [HP, 0, 0]);
+  if (HQ) jeepDetail(B, S, paint, lod, seg, hqb);
   B.build(hull, { shadow: true });
   if (HQ && lod < 2) {
     const MK = new Bucket();
-    for (const sx of [-1, 1]) MK.add(new THREE.PlaneGeometry(0.5, 0.125), markingMaterial(team), [sx * 0.866, 0.95, -1.62], [0, sx * HP, 0], null, { keepUV: true });
+    for (const sx of [-1, 1]) MK.add(new THREE.PlaneGeometry(0.5, 0.125), markingMaterial(team), [sx * 0.853, 0.95, -1.62], [0, sx * HP, 0], null, { keepUV: true });
     MK.build(hull, { shadow: false });
   }
   // Glas
@@ -1374,7 +1381,7 @@ function buildJeep(lod, S, team) {
   GB.add(box(1.66, 0.5, 0.015), S.glass, [0, 1.53, -0.92], [-0.08, 0, 0]);
   GB.build(hull, { shadow: false });
   const LB = new Bucket();
-  for (const L of D.lights) LB.add(cyl(0.1, 0.1, 0.03, seg), S.lensOff, [L[0], L[1], L[2] - 0.03], [HP, 0, 0], null, { tag: { lens: true } });
+  for (const L of D.lights) LB.add(cyl(0.1, 0.1, 0.03, seg), S.lensOff, [L[0], L[1], L[2] - (hqb ? 0.165 : 0.03)], [HP, 0, 0], null, { tag: { lens: true } });
   LB.build(hull, { shadow: false });
 
   // MG (eigene Lafette)
@@ -1399,6 +1406,12 @@ function buildJeep(lod, S, team) {
     for (const sx of [-1, 1]) {
       const spin = new THREE.Group();
       const R = new Bucket();
+      if (hqb && lod === 0) {
+        jeepWheelHQ(R, { box, cyl }, S, paint, W.radius, sx, DET === 2 ? lod : 1);
+        R.build(spin, { shadow: true, off: [sx * W.x, W.radius, z] });
+        wheels.push({ spin, axle, side: sx, x: sx * W.x, z });
+        continue;
+      }
       R.add(tireGeometry(W.radius, 0.32, seg, HQ && lod === 0), S.rubber, null, [0, 0, HP]);
       R.add(cyl(0.25, 0.25, 0.3, seg), S.dark, null, [0, 0, HP]);
       if (lod === 0) R.add(cyl(0.08, 0.08, 0.34, 8), paint, null, [0, 0, HP]);

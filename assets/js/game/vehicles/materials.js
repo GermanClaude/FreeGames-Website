@@ -135,7 +135,7 @@ function paintLookPatch(team) {
   const base = _ca.set(TEAM_TINT[team] ?? TEAM_TINT.null);
   const ratio = (hex) => { _cb.set(hex); return new THREE.Vector3(_cb.r / Math.max(1e-4, base.r), _cb.g / Math.max(1e-4, base.g), _cb.b / Math.max(1e-4, base.b)); };
   const [t2, t3] = CAMO[team] || CAMO.null;
-  const u = { uCamo2: { value: ratio(t2) }, uCamo3: { value: ratio(t3) }, uMud: { value: new THREE.Color(0x4a3e2f) }, uDust: { value: new THREE.Color(0x9a8f78) } };
+  const u = { uCamo2: { value: ratio(t2) }, uCamo3: { value: ratio(t3) }, uMud: { value: new THREE.Color(0x4a3e2f).copy(VEH_ENV.uEnvMud.value) }, uDust: { value: new THREE.Color(0x9a8f78).copy(VEH_ENV.uEnvDust.value) } };
   LOOK_U[team ?? 'null'] = u;
   return (sh) => {
     Object.assign(sh.uniforms, u);
@@ -268,10 +268,88 @@ export function vehicleMaterials() {
   return SET;
 }
 
-/** Autolack einer Farbe (geteilt je Farbton): glatter Klarlack, leicht metallisch – Zivilfahrzeuge. */
-export function civilPaint(hex) {
-  const S = vehicleMaterials(), k = String(hex);
-  if (!S.civ[k]) S.civ[k] = new THREE.MeshStandardMaterial({ name: `veh:lack${k}`, color: new THREE.Color(hex), roughness: 0.34, metalness: 0.4, envMapIntensity: 1.1 });
+/**
+ * Kartenstimmung der Fahrzeuge (Nutzer 14.11.: „passend zur Map“): Schmutzfarbe unten (Schlamm im Grenzland, Staub in
+ * der Altstadt, Ruß im Brandwald …), Staub auf Oberseiten, Menge und Nässe. Geteilte Uniforms für den Zivil-Lack;
+ * Schlamm/Staub der Militärlackierung (vehLook) werden mitgesetzt. setVehicleEnvironment(mapId) je Match (index.js).
+ */
+const VEH_ENV_PRESET = {
+  neutral: { mud: 0x4a4236, dust: 0x9a8f78, amt: 0.8, wet: 0.2 },
+  grenzland: { mud: 0x4b3b28, dust: 0x8f8266, amt: 1.15, wet: 0.55 },
+  niemandsland: { mud: 0x3d3326, dust: 0x7a705c, amt: 1.3, wet: 0.6 },
+  brandwald: { mud: 0x211d1a, dust: 0x5e5953, amt: 1.15, wet: 0.1 },
+  altstadt: { mud: 0x7d6c52, dust: 0xb6a689, amt: 0.85, wet: 0 },
+  stadtkern: { mud: 0x4f4a43, dust: 0x9b9386, amt: 0.75, wet: 0.15 },
+  hafen: { mud: 0x48443f, dust: 0x8f8b84, amt: 0.7, wet: 0.35 },
+  werk: { mud: 0x3b3833, dust: 0x7a756c, amt: 0.9, wet: 0.2 },
+  flugplatz: { mud: 0x6b604d, dust: 0xa89d84, amt: 0.75, wet: 0.05 },
+};
+export const VEH_ENV = { uEnvMud: { value: new THREE.Color(VEH_ENV_PRESET.neutral.mud) }, uEnvDust: { value: new THREE.Color(VEH_ENV_PRESET.neutral.dust) }, uEnvAmt: { value: 0.8 }, uEnvWet: { value: 0.2 } };
+let envId = 'neutral';
+export function setVehicleEnvironment(mapId) {
+  const key = Object.keys(VEH_ENV_PRESET).find((k) => mapId && String(mapId).startsWith(k)) || 'neutral';
+  envId = key;
+  const P = VEH_ENV_PRESET[key];
+  VEH_ENV.uEnvMud.value.setHex(P.mud); VEH_ENV.uEnvDust.value.setHex(P.dust); VEH_ENV.uEnvAmt.value = P.amt; VEH_ENV.uEnvWet.value = P.wet;
+  for (const u of Object.values(LOOK_U)) { u.uMud.value.setHex(P.mud); u.uDust.value.setHex(P.dust); }
+  return key;
+}
+export const vehicleEnvironment = () => envId;
+
+/** Straßenschmutz/Staub/Regenschlieren im Fahrzeugraum (aVeh), Klarlack wird unter Schmutz stumpf. */
+function civilDirtPatch(sh) {
+  Object.assign(sh.uniforms, VEH_ENV);
+  sh.vertexShader = sh.vertexShader
+    .replace('#include <common>', '#include <common>\nattribute vec3 aVeh;\nvarying vec3 vCvP;\nvarying vec3 vCvN;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCvP = aVeh;\nvCvN = objectNormal;');
+  sh.fragmentShader = sh.fragmentShader
+    .replace('#include <common>', `#include <common>
+      varying vec3 vCvP; varying vec3 vCvN; uniform vec3 uEnvMud, uEnvDust; uniform float uEnvAmt, uEnvWet;
+      float cvH( vec3 p ) { p = fract( p * 0.3183099 + 0.1 ); p *= 17.0; return fract( p.x * p.y * p.z * ( p.x + p.y + p.z ) ); }
+      float cvN( vec3 x ) { vec3 i = floor( x ), f = fract( x ); f = f * f * ( 3.0 - 2.0 * f );
+        return mix( mix( mix( cvH( i ), cvH( i + vec3( 1.0, 0.0, 0.0 ) ), f.x ), mix( cvH( i + vec3( 0.0, 1.0, 0.0 ) ), cvH( i + vec3( 1.0, 1.0, 0.0 ) ), f.x ), f.y ),
+                    mix( mix( cvH( i + vec3( 0.0, 0.0, 1.0 ) ), cvH( i + vec3( 1.0, 0.0, 1.0 ) ), f.x ), mix( cvH( i + vec3( 0.0, 1.0, 1.0 ) ), cvH( i + vec3( 1.0, 1.0, 1.0 ) ), f.x ), f.y ), f.z ); }
+      float cvDirt = 0.0;`)
+    .replace('#include <map_fragment>', `#include <map_fragment>
+      {
+        float n1 = cvN( vCvP * vec3( 3.0, 1.4, 3.0 ) ), n2 = cvN( vCvP * 9.0 + 4.0 );
+        // Spritzschmutz: unten dicht, nach oben fleckig auslaufend; Spritzfahnen hinter den Rädern
+        float low = 1.0 - smoothstep( 0.22 + n1 * 0.18, 0.62 + n1 * 0.35, vCvP.y );
+        float wheel = smoothstep( 0.55, 0.9, n2 ) * ( 1.0 - smoothstep( 0.3, 0.95, vCvP.y ) );
+        float streak = smoothstep( 0.72, 0.9, cvN( vec3( vCvP.x * 22.0, vCvP.y * 1.5, vCvP.z * 22.0 ) ) ) * ( 1.0 - smoothstep( 0.5, 1.2, vCvP.y ) ) * step( abs( normalize( vCvN ).y ), 0.6 );
+        cvDirt = clamp( ( low * 0.7 + wheel * 0.4 + streak * 0.2 ) * uEnvAmt, 0.0, 1.0 );
+        diffuseColor.rgb = mix( diffuseColor.rgb, uEnvMud * ( 0.8 + 0.4 * n2 ), cvDirt * 0.82 );
+        // Staub auf Haube/Dach/Kofferraum
+        float up = clamp( normalize( vCvN ).y, 0.0, 1.0 );
+        float dust = smoothstep( 0.55, 0.95, up ) * ( 0.1 + 0.25 * cvN( vCvP * 1.7 + 2.0 ) ) * uEnvAmt * ( 1.0 - uEnvWet * 0.6 );
+        diffuseColor.rgb = mix( diffuseColor.rgb, uEnvDust, dust );
+        cvDirt = max( cvDirt, dust * 1.4 );
+      }`)
+    .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+      roughnessFactor = mix( roughnessFactor, mix( 0.92, 0.55, uEnvWet ), clamp( cvDirt, 0.0, 1.0 ) );`);
+  if (sh.fragmentShader.includes('#include <clearcoat_normal_fragment_begin>')) {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
+      material.clearcoat *= 1.0 - clamp( cvDirt * 1.3, 0.0, 1.0 );`);
+  }
+}
+
+/**
+ * Autolack einer Farbe (geteilt je Farbton und Stufe) – Zivilfahrzeuge. det 0 (low): glatter Standardlack wie bisher;
+ * det 1 (medium): + Straßenschmutz/Staub (Kartenstimmung); det 2 (high/ultra): Basislack + Klarlack (MeshPhysical).
+ */
+export function civilPaint(hex, det = 0) {
+  const S = vehicleMaterials(), k = `${hex}:${det | 0}`;
+  if (!S.civ[k]) {
+    const c = new THREE.Color(hex);
+    // helle/bunte Töne als Uni-Lack, dunkle/graue als Metallic
+    const hsl = c.getHSL({});
+    const metallic = hsl.s < 0.25 && hsl.l > 0.12 && hsl.l < 0.85;
+    const m = det >= 2
+      ? new THREE.MeshPhysicalMaterial({ name: `veh:lack${hex}`, color: c, roughness: metallic ? 0.36 : 0.42, metalness: metallic ? 0.55 : 0.05, clearcoat: 1, clearcoatRoughness: 0.07, envMapIntensity: 1.15 })
+      : new THREE.MeshStandardMaterial({ name: `veh:lack${hex}`, color: c, roughness: 0.34, metalness: 0.4, envMapIntensity: 1.1 });
+    if (det >= 1) addShaderPatch(m, 'civDirt', civilDirtPatch);
+    S.civ[k] = m;
+  }
   return S.civ[k];
 }
 

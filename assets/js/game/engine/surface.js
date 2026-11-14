@@ -44,7 +44,9 @@ void npHxSetup( vec2 uv ) {
   else { npHxW = vec3( -t.z, 1.0 - t.y, 1.0 - t.x ); v0 = b + vec2( 1.0 ); v1 = b + vec2( 1.0, 0.0 ); v2 = b + vec2( 0.0, 1.0 ); }
   vec2 h0 = npHxHash( v0 ), h1 = npHxHash( v1 ), h2 = npHxHash( v2 );
   npHxR0 = npHxRot( h0 ); npHxR1 = npHxRot( h1 ); npHxR2 = npHxRot( h2 );
-  npHxO0 = h0; npHxO1 = h1.yx; npHxO2 = fract( h2 * 1.7 );
+  // texturen3: Versatz NUR aus dem Eckpunkt (früher je Platz h0 / h1.yx / fract(h2·1,7) – derselbe Gitterpunkt bekam in den
+  // beiden angrenzenden Dreiecken verschiedene Versätze → harte, gerade Kanten = das Dreiecks-Flickenmuster auf Putz)
+  npHxO0 = h0; npHxO1 = h1; npHxO2 = h2;
   npHxWf = npHxW / ( npHxW.x + npHxW.y + npHxW.z );
 }
 vec4 npHxTap( sampler2D s, vec2 uv, mat2 R, vec2 o ) { return textureGrad( s, R * uv + o, R * npHxDx, R * npHxDy ); }

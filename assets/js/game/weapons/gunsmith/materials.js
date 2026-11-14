@@ -12,6 +12,7 @@ import { p9aMaps, CAMO_REPEAT as P9A_CAMO_REPEAT } from './p9a-tex.js?v=20261114
 import { wirbelWoodMaps, wirbelMantelAlpha, WOOD_CAMO_REPEAT as WIRBEL_WOOD_REPEAT, MANTEL_CAMO_REPEAT as WIRBEL_MANTEL_REPEAT } from './wirbel-tex.js?v=20261114060746';
 import { dropCached } from './textures.js?v=20261114060746';
 import { kitMaps, KIT_R } from './finish-kit.js?v=20261114060746';
+import { vmLight } from './vmlight.js?v=20261114060746';   // Weltschatten auf der Ego-Waffe (waffen, 14.11.)
 
 const mats = new Map();
 
@@ -34,7 +35,7 @@ const fine = (t, n) => { const c = t.clone(); c.repeat.set(n, n); c.needsUpdate 
 // Metall), fleckige Rauheit (Fett/Griffspuren) und leichte Farbschwankung des Eloxals; Kehlen verdecken Umgebungslicht.
 // Fehlt das Attribut (Bot-Detailstufe), liefert WebGL (0, 0) → nur die Krümmungsanteile.
 const WEAR_GLSL = `
-varying vec2 vWD; varying vec3 vObjP; uniform vec3 uWearCol;
+varying vec2 vWD; varying vec3 vObjP; varying vec3 vObjN; uniform vec3 uWearCol; uniform vec4 uDust;
 float wh3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 float wn3(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(mix(wh3(i), wh3(i + vec3(1, 0, 0)), f.x), mix(wh3(i + vec3(0, 1, 0)), wh3(i + vec3(1, 1, 0)), f.x), f.y),
@@ -50,8 +51,9 @@ function wearPatch(m, { col, metal, rough, k = 1, bump = 0.00012, tone = 0.12, s
   const f = (v) => v.toFixed(5);
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWearCol = { value: wc };
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 wearDirt;\nvarying vec2 vWD;\nvarying vec3 vObjP;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWD = wearDirt; vObjP = transformed;');
+    sh.uniforms.uDust = DUST;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 wearDirt;\nvarying vec2 vWD;\nvarying vec3 vObjP;\nvarying vec3 vObjN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWD = wearDirt; vObjP = transformed; vObjN = objectNormal;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>' + WEAR_GLSL)
       .replace('#include <color_fragment>', `#include <color_fragment>
         float kBare = 0.0;
@@ -74,10 +76,31 @@ function wearPatch(m, { col, metal, rough, k = 1, bump = 0.00012, tone = 0.12, s
         float wEdge = clamp(max(max(vWD.x, wConv * 0.9) * (0.06 + 0.94 * wPatch) * ${f(k)}, kBare), 0.0, 1.0);
         float wDirt = clamp(max(vWD.y, wConc * 0.7), 0.0, 1.0);
         diffuseColor.rgb *= 1.0 + ${f(tone)} * (wBig - 0.5) + ${f(tone * 0.5)} * (wLow - 0.5);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uWearCol, wEdge * 0.9) * (1.0 - 0.55 * wDirt);`)
+        diffuseColor.rgb = mix(diffuseColor.rgb, uWearCol, wEdge * 0.9) * (1.0 - 0.55 * wDirt);
+        // Kartenstaub (waffen 14.11.): feiner Staub in Kehlen, Rillen und auf nach oben weisenden Flächen, fleckig; Farbe/Menge
+        // aus dem Kartenboden (setWeaponDust, Viewmodel je Karte). Kanten bleiben sauber (dort reibt die Hand ihn ab).
+        float wUp = clamp(normalize(vObjN).y, 0.0, 1.0);
+        float wDust = clamp((wDirt * 0.85 + wUp * wUp * 0.32 * smoothstep(0.35, 0.8, wn3(vObjP * 70.0 + 19.0)) + 0.05 * wn3(vObjP * 260.0 + 3.0)) * (1.0 - wEdge), 0.0, 1.0) * uDust.a;
+        diffuseColor.rgb = mix(diffuseColor.rgb, uDust.rgb, wDust * 0.75);`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor *= 1.0 + ${f(smear)} * (wLow - 0.5) + ${f(smear * 0.6)} * (wBig - 0.5);
-        roughnessFactor = clamp(mix(mix(roughnessFactor, ${f(rough)}, wEdge), 0.92, wDirt), 0.04, 1.0);`)
+        roughnessFactor = clamp(mix(mix(roughnessFactor, ${f(rough)}, wEdge), 0.92, wDirt), 0.04, 1.0);
+        roughnessFactor = mix(roughnessFactor, 0.95, wDust * 0.8);
+        // Fingerabdrücke/Hautfett (waffen 14.11.): vereinzelte ovale Abdrücke (~12 × 9 mm) mit Papillarlinien (0,45 mm) – im
+        // Glanzlicht sichtbar; Linien blenden aus, sobald sie kleiner als ein Pixel werden (kein Flimmern)
+        {
+          vec3 fc = floor(vObjP * 28.0), fq = fract(vObjP * 28.0) - 0.5;
+          float fh = wh3(fc + 41.0);
+          if (fh > 0.8) {
+            vec3 fo = vec3(wh3(fc + 3.1), wh3(fc + 5.7), wh3(fc + 9.3)) - 0.5;
+            vec3 fd = (fq - fo * 0.4) / 28.0;
+            float fr = length(fd * vec3(1.0, 1.25, 1.0));
+            float fSpot = 1.0 - smoothstep(0.0035, 0.0062, fr);
+            float fRid = 0.5 + 0.5 * sin(fr * 13960.0 + fh * 40.0);
+            float fAA = 1.0 - smoothstep(0.3, 0.9, fwidth(fr) * 2800.0);
+            roughnessFactor *= 1.0 - fSpot * (0.16 + 0.22 * mix(0.5, fRid, fAA)) * (1.0 - wDust);
+          }
+        }`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, ${f(metal)}, wEdge);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
         vec3 wGrad = vec3(0.0); float wDet = 1.0;
@@ -99,8 +122,15 @@ function wearPatch(m, { col, metal, rough, k = 1, bump = 0.00012, tone = 0.12, s
       .replace('#include <aomap_fragment>', `#include <aomap_fragment>
         { float wAO = 1.0 - 0.7 * wDirt; reflectedLight.indirectDiffuse *= wAO; reflectedLight.indirectSpecular *= wAO * wAO; }`);
   };
-  m.customProgramCacheKey = () => `wear5:${col}:${metal}:${rough}:${k}:${bump}:${tone}:${smear}:${kit ? kt : '-'}`;
+  m.customProgramCacheKey = () => `wear6:${col}:${metal}:${rough}:${k}:${bump}:${tone}:${smear}:${kit ? kt : '-'}`;
   return m;
+}
+// Kartenstaub (waffen 14.11.): geteiltes Uniform aller wearPatch-Materialien; rgb = Staubfarbe (linear), a = Menge 0…1
+const DUST = { value: new THREE.Vector4(0.32, 0.29, 0.25, 0) };
+/** Staubfarbe (THREE.Color oder Hex, sRGB) und -menge (0…1) für alle Ego-Waffen setzen (viewmodel.js je Karte). */
+export function setWeaponDust(color, amount = 0.5) {
+  const c = color && color.isColor ? color.clone() : new THREE.Color(color ?? 0x8a7d6a);
+  DUST.value.set(c.r, c.g, c.b, Math.max(0, Math.min(1, amount)));
 }
 const ALU_WEAR = { col: 0x8f9398, metal: 1, rough: 0.3 }, STEEL_WEAR = { col: 0x85878a, metal: 1, rough: 0.34, bump: 0.00008 };
 const POLY_WEAR = { col: 0x3d3e41, metal: 0, rough: 0.5, k: 0.7, bump: 0.00006, tone: 0.06, smear: 0.25 };
@@ -362,7 +392,7 @@ export function getMat(key) {
   if (!m) {
     const make = DEFS[key];
     if (!make) throw new Error(`Unbekanntes Waffenmaterial: ${key}`);
-    m = make();
+    m = vmLight(make());
     m.name = 'gs:' + key;
     mats.set(key, m);
   }

@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { chamferBoxGeometry } from './builder.js?v=20261114060746';
 import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js?v=20261114060746';
 import { takeMaterials, parkMaterials } from './materials.js?v=20261114060746';
+import { vmLight } from './vmlight.js?v=20261114060746';
 import { contactHit, MultiCollider } from './contact.js?v=20261114060746';
 
 // Fingermaße + Bindehaltung des Handschuhnetzes (hands-v3): gemeinsam mit tools/assets/hands/build-hand.mjs
@@ -1237,7 +1238,7 @@ function makeArmMaterials() {
     watchCase: new THREE.MeshStandardMaterial({ color: 0x1b1c1d, roughness: 0.55, metalness: 0.2 }),
     watchFace: new THREE.MeshStandardMaterial({ map: watchTex, emissive: 0xffffff, emissiveMap: watchTex, emissiveIntensity: 0.16, roughness: 0.15, metalness: 0.0 }),
   };
-  for (const [k, m] of Object.entries(set)) m.name = 'vm:' + k;
+  for (const [k, m] of Object.entries(set)) { m.name = 'vm:' + k; vmLight(m); }   // Weltschatten (vmlight.js)
   return set;
 }
 

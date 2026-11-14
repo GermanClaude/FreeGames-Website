@@ -154,7 +154,7 @@ export const LIB_MATERIALS = {
 // Flickenmuster der Hex-Kachelung auf hellem Putz und gegen die 2,5-m-Wiederholung dunkler Wolken auf Ziegelfassaden);
 // weather – Regenläufer/Verfärbung in Weltkoordinaten auf senkrechten Flächen (engine/surface.js). Ab medium.
 const LOOK_GROUND = { detail: 0.34, ds: 1.25, anti: 0.6, fade: [7, 30], hex: 0.6, hexScale: 1.3, hexRot: 1, hexEq: 0.6 };
-const LOOK_WALL = { detail: 0.22, ds: 1.6, anti: 0.4, fade: [5, 22], hex: 0.35, hexScale: 0.9, hexRot: 0, hexEq: 0.9, weather: [0.8, 0.6, 0.5] };
+const LOOK_WALL = { detail: 0.22, ds: 1.6, anti: 0.4, fade: [5, 22], hex: 0.4, hexScale: 1.0, hexRot: 0, hexEq: 0.7, weather: [0.55, 0.5, 0.4] };
 const LOOK_MASONRY = { detail: 0.16, ds: 2.4, anti: 0, fade: [4, 18], eq: 0.75, weather: [0.9, 0.5, 0.6] };
 const LOOK_METAL = { detail: 0.1, ds: 3.2, anti: 0, fade: [3, 14], eq: 0.5, weather: [0.6, 0.3, 0.4] };
 const LOOK_WOOD = { detail: 0.08, ds: 3.0, anti: 0, fade: [3, 12], eq: 0.5 };

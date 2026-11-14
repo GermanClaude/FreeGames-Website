@@ -102,6 +102,8 @@ export class VehicleSystem {
     this.military = militaryVehiclesAllowed((G.match && G.match.mapId) || (this.world && this.world.id) || null);
     this.civilOnly = !!civilOnly || !this.military; // Panzer & Fahrzeuge aus (Lobby/Raum) bzw. kleine Karte
     this.quality = (G.renderer && G.renderer.quality) || 'high';
+    // Kartenstimmung der Fahrzeuge (Schlamm/Staub/Ruß je Karte, materials.js)
+    if (typeof MATS.setVehicleEnvironment === 'function') MATS.setVehicleEnvironment((G.match && G.match.mapId) || (this.world && this.world.id) || null);
     this.group = new THREE.Group();
     this.group.name = 'vehicles';
     G.scene.add(this.group);

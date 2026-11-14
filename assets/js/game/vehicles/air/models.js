@@ -15,6 +15,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { boxUV } from '../../engine/textures.js?v=20261114060746';
 import { VEHICLES } from '../data.js?v=20261114060746';
 import { vehicleMaterials, markingMaterial } from '../materials.js?v=20261114060746';
+import { heliDetailHQ, heliInteriorHQ, jetDetailHQ, jetInteriorHQ, jetGearDetailHQ } from './models-detail.js?v=20261114060746';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -622,6 +623,7 @@ function buildHeli(team, quality) {
     const B = new Bucket();
     heliFuselage(B, M, P, det);
     if (det) heliInterior(B, M);
+    if (det && quality !== 'low') { heliDetailHQ(B, M, P); heliInteriorHQ(B, M); } // Nutzer 14.11.: Detailstufe
     B.build(lv);
     lod.addLevel(lv, det ? 0 : LOD_DIST[quality] || 150);
   }
@@ -738,6 +740,7 @@ function buildJet(team, quality) {
     const B = new Bucket();
     jetFuselage(B, M, P, det);
     if (det) jetInterior(B, M);
+    if (det && quality !== 'low') { jetDetailHQ(B, M, P); jetInteriorHQ(B, M); }
     B.build(lv);
     lod.addLevel(lv, det ? 0 : LOD_DIST[quality] || 150);
   }
@@ -774,6 +777,7 @@ function buildJet(team, quality) {
     B.add(cylY(r, r, 0.24, 18), M.rubber, [0, -len, 0], [0, 0, HP]);
     B.add(cylY(r * 0.5, r * 0.5, 0.26, 12), M.steel, [0, -len, 0], [0, 0, HP]);
     B.add(box(0.05, len * 0.9, 0.5), P, [x ? Math.sign(x) * 0.18 : 0.2, -len * 0.45, 0]);  // Fahrwerkstür
+    if (quality !== 'low') jetGearDetailHQ(B, M, r, len, !x);
     B.build(leg);
     leg.userData.side = Math.sign(x);
     gear.add(leg); legs.push(leg);

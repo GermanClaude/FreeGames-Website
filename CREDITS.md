@@ -117,7 +117,7 @@ Fotoscans für Böden, Wände, Dächer und Blech (2K-Quellen, als KTX2 512/1024/
 
 ### Gelände-Sätze (texturen3, 14.11.2026)
 
-Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert).
+Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert). Außerdem haben 15 vorhandene Poly-Haven-Welt-Sätze eine 4096er-Albedo aus den 4K-Quellen derselben Scans bekommen (nur Desktop-Stufe „Extrem“; gleiche Lizenz CC0).
 
 | Name | Satz | Autor:innen | Quelle | Lizenz |
 |---|---|---|---|---|

@@ -1591,7 +1591,7 @@ function buildJeepCockpit(D, S, det) {
   const eye = [-0.46, 1.62, -0.05];
   // Armaturenbrett: Blende, Instrumententräger vor dem Fahrer, Schalterleiste, Zündung, Handschuhfach, Haltegriff
   B.add(rbox(1.72, 0.24, 0.05, 0.015), M.olive, [0, 1.16, -0.645], [-0.12, 0, 0]);
-  const IP = [-0.46, 1.19, -0.61];
+  const IP = [-0.46, 1.38, -0.7]; // Instrumententräger auf dem Armaturenbrett (über dem Lenkrad sichtbar)
   const F = new Frame(B, IP, aim(IP, eye));
   F.add(rbox(0.4, 0.17, 0.07, 0.02), M.black, [0, 0, -0.03]);
   F.add(box(0.42, 0.03, 0.09), M.black, [0, 0.095, -0.01]); // Blendschutz

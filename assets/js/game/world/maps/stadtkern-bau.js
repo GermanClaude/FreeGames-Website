@@ -476,6 +476,52 @@ export function strassenbahn(b, x, z, o = {}) {
     f.box(sx, y0, sz * 0.75, 0.5, 0.45, 0.8, 'metal_painted', { tint: burnt ? '#2a2622' : '#7a2e26', ...KEIN });
     f.box(sx - 0.22, y0 + 0.45, sz * 0.75, 0.08, 0.5, 0.8, 'metal_painted', { tint: burnt ? '#2a2622' : '#7a2e26', ...VG });
   }
+  // Nutzer 14.11.: Detail ab medium – gerundete Dachkanten, Drehgestelle mit Rahmen, Federn und Radsatzlagern,
+  // Scherenstromabnehmer, Dachaufbauten mit Gittern, Fensterdichtungen, Stirnfront mit Scheinwerfern, Kupplung, Puffer
+  if (b.quality && b.quality !== 'low') {
+    const dk = burnt ? '#24211e' : '#2a2c2e', st = burnt ? '#3d342c' : '#5a5e62';
+    for (const sz of [-1, 1]) {
+      f.cyl(0, H - 0.04, sz * (W / 2 - 0.1), 0.15, L - 0.1, 'metal_painted', { ...KEIN, axis: 'x', tint: roofT, seg: 12 });
+      f.box(0, y0 + 0.98, sz * (W / 2 + 0.005), L - 0.1, 0.04, 0.03, 'rubber', { ...VG });             // Dichtung unten
+      f.box(0, y0 + 2.08, sz * (W / 2 + 0.005), L - 0.1, 0.04, 0.03, 'rubber', { ...VG });             // Dichtung oben
+      f.box(0, y0 + 0.5, sz * (W / 2 + 0.01), L - 0.4, 0.06, 0.02, 'metal_galvanized', { ...VG, tint: burnt ? '#4a4038' : '#c8ccd0' }); // Zierleiste
+    }
+    for (const bx of [-1, 1]) {
+      const cx = bx * (L / 2 - 2.2);
+      for (const sz of [-1, 1]) {
+        f.box(cx, 0.24, sz * 0.7, 2.2, 0.22, 0.12, 'metal_painted', { ...KEIN, tint: dk });            // Drehgestellrahmen
+        for (const dx of [-0.55, 0.55]) {
+          f.box(cx + dx, 0.24, sz * 0.72, 0.26, 0.22, 0.18, 'metal_painted', { ...KEIN, tint: st });  // Radsatzlager
+          f.cyl(cx + dx, 0.46, sz * 0.7, 0.07, 0.16, 'metal_galvanized', { ...KEIN, tint: st, seg: 8 }); // Feder
+        }
+      }
+      f.cyl(cx, 0.38, 0, 0.06, 1.3, 'metal_painted', { ...KEIN, axis: 'z', tint: dk, seg: 8 });
+    }
+    for (const e of [-1, 1]) {
+      const ex = e * (L / 2 + 0.02);
+      for (const sz of [-1, 1]) {
+        f.cyl(ex, y0 + 0.62, sz * 0.78, 0.11, 0.08, 'metal_painted', { ...KEIN, axis: 'x', tint: dk, seg: 12 });
+        f.cyl(ex + e * 0.03, y0 + 0.62, sz * 0.78, 0.085, 0.02, 'glass', { ...VG, axis: 'x', seg: 12 });
+        f.box(ex, y0 + 0.86, sz * 0.82, 0.04, 0.06, 0.18, 'polymer', { ...VG, tint: burnt ? '#2a2420' : '#d8861a' });
+      }
+      f.box(ex + e * 0.06, y0 + 0.08, 0, 0.14, 0.24, W - 0.3, 'metal_painted', { ...KEIN, tint: dk });     // Schürze/Puffer
+      f.box(ex + e * 0.25, y0 + 0.12, 0, 0.4, 0.12, 0.16, 'metal_painted', { ...KEIN, tint: st });         // Kupplung
+      f.box(ex, y0 + 1.0, 0, 0.05, 0.05, W - 0.1, 'rubber', { ...VG });                                       // Frontscheiben-Dichtung
+      f.box(ex, y0 + 2.08, 0, 0.05, 0.05, W - 0.1, 'rubber', { ...VG });
+      f.box(ex, y0 + 1.55, 0, 0.05, 1.05, 0.06, 'metal_painted', { ...VG, tint: body });                     // Mittelsteg
+    }
+    // Dachaufbauten (Widerstände/Klima mit Gittern) + Scherenstromabnehmer
+    for (const [dx, w] of [[-3.2, 1.6], [4.4, 1.2]]) {
+      f.box(dx, H + 0.12, 0, w, 0.32, 1.2, 'metal_painted', { ...VG, tint: burnt ? '#2e2a26' : '#b8bcc0' });
+      for (let k = 0; k < 6; k++) f.box(dx - w / 2 + 0.12 + k * (w - 0.24) / 5, H + 0.45, 0, 0.03, 0.02, 1.1, 'metal_painted', { ...VG, tint: '#1e1e1e' });
+    }
+    for (const e of [-1, 1]) {
+      f.box(1.5 + e * 0.32, H + 0.62, 0, 0.7, 0.04, 0.04, 'metal_galvanized', { ...VG, rz: e * 0.85 });
+      f.box(1.5 + e * 0.3, H + 1.12, 0, 0.7, 0.04, 0.04, 'metal_galvanized', { ...VG, rz: -e * 0.85 });
+      for (const sz of [-0.3, 0.3]) f.box(1.5 + e * 0.38, H + 0.18, sz, 0.08, 0.12, 0.08, 'polymer', { ...VG, tint: '#7a5a3a' }); // Isolatoren
+    }
+    f.box(1.5, H + 1.4, 0, 0.08, 0.05, 1.7, 'metal_galvanized', { ...VG });
+  }
   // Zielschild
   b.defineSign('tram', { style: 'plate', text: '7  LINDENPLATZ', bg: '#1c1c1c', fg: '#f2c230' });
   const [sx, sz] = f.P(L / 2 + 0.01, 0);
