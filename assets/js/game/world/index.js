@@ -622,6 +622,10 @@ export async function loadWorld(G, mapId, opts = {}) {
   if (quality !== 'low' && def.lookDecals !== false) {
     try { world.stats.lookDecals = (await import('./decals.js?v=20261114004313')).placeLookDecals(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def }); } catch (err) { console.warn('[world] Decals', err); }
   }
+  // gfx-welt: Bodenauflage (Pfützen, Ölflecken, Laub, Splitt, Schmutzränder am Wandfuß, Unkraut in Fugen), medium+
+  if (quality !== 'low' && def.groundDressing !== false) {
+    try { world.stats.groundDressing = (await import('./bodenauflage.js?v=20261114004313')).placeGroundDressing(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def: { ...def, id } }); } catch (err) { console.warn('[world] Bodenauflage', err); }
+  }
   // Welt-Shading: alle Weltmaterialien bekommen den gemeinsamen Haken; Sonden + Fernkaskade aktivieren
   world.stats.lighting = activateLighting(G, def, world, group, light, probes, quality, debug);
   if (atmos) world.stats.lighting.atmos = atmos.stats;

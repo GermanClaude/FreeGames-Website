@@ -26,6 +26,8 @@ import { falloff, raycastHumanoid } from '../combat.js?v=20261114004313';
 import { Thermal } from './thermal.js?v=20261114004313';
 import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261114004313';
 import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261114004313';
+import { Aircraft } from './air/aircraft.js?v=20261114004313';
+import { AirSupport, AIR_CAP } from './air/index.js?v=20261114004313';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -68,6 +70,7 @@ export class VehicleSystem {
     this._noVeh = false; // world.raycast-Hülle: Fahrzeuge auslassen (feste Messungen, bullet-holes.js)
     this.hud = null;
     this.audio = new VehicleAudio(G);
+    this.air = new AirSupport(this); // Luftfahrzeuge (air/index.js): Stellplätze, Flugsteuerung, HUD, Flugabwehr, Skript-API
     this._own = 0;
     this._vehHits = [];
     this._ignore = null;
@@ -141,7 +144,8 @@ export class VehicleSystem {
     // Panzer-Tarnungen (skins.js): Erfahrung sammeln, gewählte Tarnung auf die Fahrzeuge des eigenen Teams
     this.tankProgress = new TankProgress(G);
     this._skinTeam = undefined; // update(): sobald das eigene Team feststeht
-    if (!this.replica) this._setupSpawns();
+    this.air.attach();
+    if (!this.replica) { this._setupSpawns(); this.air.setupSpawns(); }
     else {
       if (!this.civilOnly) prepareVehicleModels([...this.tankTypes, 'jeep'].filter((t) => VEHICLES[t]), ['A', 'B'], this.quality);
       this._prepareCivil(this._civilEntries());
@@ -156,6 +160,7 @@ export class VehicleSystem {
       warm.position.set(0, -9999, 0);
       const g = new THREE.BoxGeometry(0.01, 0.01, 0.01);
       const extra = typeof MATS.vehicleWarmMaterials === 'function' ? (MATS.vehicleWarmMaterials(this.quality) || []) : [];
+      if (this.list.some((v) => v.isAircraft) || (this.replica && this.air.enabled())) extra.push(...this.air.warmMaterials());
       for (const m of new Set([this.shells.mat, S.lensOn, S.cone, S.wreck, ...extra])) if (m) warm.add(new THREE.Mesh(g, m));
       // Abbild: Fahrzeuge kommen erst mit der Liste des Hosts – Modelle beider Teams einmal mitkompilieren, nach dem
       // Countdown wieder weg (update)
@@ -213,6 +218,7 @@ export class VehicleSystem {
     if (!this.attached) return;
     const G = this.G;
     if (this.thermal) { this.thermal.dispose(); this.thermal = null; }
+    this.air.detach();
     if (this.net) { this.net.dispose(); this.net = null; }
     this.remote = null;
     if (this._warmModels) { for (const md of this._warmModels) { md.root.removeFromParent(); md.dispose(); } this._warmModels = null; }
@@ -249,9 +255,10 @@ export class VehicleSystem {
   }
 
   _spawnAt(sp) {
-    const civil = !!VEHICLES[sp.type].civil;
-    const count = this.list.reduce((n, v) => n + (!!v.def.civil === civil ? 1 : 0), 0);
-    if (count >= ((civil ? CIV_CAP : CAP)[this.quality] || 16)) {
+    const civil = !!VEHICLES[sp.type].civil, air = !!VEHICLES[sp.type].air;
+    // eigene Obergrenzen: zivil, Luftfahrzeuge (nehmen Panzern auf dem Handy keinen Platz), Militär am Boden
+    const count = this.list.reduce((n, v) => n + (!!v.def.civil === civil && !!v.def.air === air ? 1 : 0), 0);
+    if (count >= ((civil ? CIV_CAP : air ? AIR_CAP : CAP)[this.quality] || 16)) {
       // Stufen-Obergrenze: ein Stellplatz, der nie ein Fahrzeug bekam, bleibt leer – sonst nähme er beim ersten Wrack den
       // Platz eines anderen Teams/Typs ein (Grenzland low: je Team 2 Panzer + 1 Geländewagen bleiben so erhalten)
       if (!sp.spawned) { sp.capped = true; sp.respawnAt = null; return null; }
@@ -266,11 +273,12 @@ export class VehicleSystem {
   }
 
   /** Fahrzeug erzeugen (Modi/Tests/Bots). position = Bodenpunkt unter der Wannenmitte. */
-  spawnVehicle(type, position, yaw = 0, team = null, { spawn = null, variant = 0 } = {}) {
+  spawnVehicle(type, position, yaw = 0, team = null, { spawn = null, variant = 0, airborne = false, speed = 0 } = {}) {
     if (!this.attached || !VEHICLES[type]) return null;
     if (this.civilOnly && !VEHICLES[type].civil) return null; // kleine Karte / Fahrzeuge aus: keine Militärfahrzeuge
     const pos = position.clone ? position.clone() : new THREE.Vector3(position.x, position.y, position.z);
-    const v = new Vehicle(this, type, { position: pos, yaw, team, quality: this.quality, spawn, variant });
+    const Cls = VEHICLES[type].air ? Aircraft : Vehicle; // Luftfahrzeuge: air/aircraft.js
+    const v = new Cls(this, type, { position: pos, yaw, team, quality: this.quality, spawn, variant, airborne, speed });
     // Rammen: Wand gibt unter dem Stoß nach (Host/Einzelspiel; Abbilder simulieren nicht)
     if (!this.replica) {
       v.body.onWall = (p, n, vn) => this.breaching.ram(v, p, n, vn);
@@ -642,6 +650,8 @@ export class VehicleSystem {
     if (pos && actor.body) {
       if (typeof actor.body.teleport === 'function') actor.body.teleport(pos); else actor.body.position.copy(pos);
       if (actor.body.velocity) actor.body.velocity.copy(v.body.vel).multiplyScalar(0.5).setY(Math.max(0, v.body.vel.y));
+      // Absprung aus dem Luftfahrzeug (Jet: Schleudersitz nach oben); den Fallschirm öffnet air/index.js
+      if (v.isAircraft && !v.body.onGround && actor.body.velocity) actor.body.velocity.copy(v.body.vel).multiplyScalar(0.6).setY(v.air === 'jet' ? 14 : Math.max(0, v.body.vel.y));
     }
     if (actor.isPlayer) this._playerExit(actor, v);
     this.G.events.emit('vehicle:exit', { vehicle: v, actor, seat: idx });
@@ -728,6 +738,7 @@ export class VehicleSystem {
   }
 
   _findExit(v, idx) {
+    if (v.isAircraft) { const ap = this.air.exitPoint(v, idx); if (ap) return ap; }
     const w = this.world, seat = v.seats[idx];
     // walls 2: mehr Ausweichpunkte (Diagonalen, weiter außen) – an Gelände-/Mauerkanten (Grenzland-Panzer) war sonst
     // gelegentlich kein Punkt frei
@@ -812,7 +823,7 @@ export class VehicleSystem {
       if (vi < 0) vi = firstFp(seat.def);
       if (seat.view !== vi) this.setSeatView(player, vi);
     } else if (isTp(viewOf(seat)) && !this.rules.thirdPerson) this.setSeatView(player, firstFp(seat.def)); // Regel geändert
-    const act = readPlayerControls(G.input, v, seat, dt, { frozen, view: viewOf(seat), xr });
+    const act = v.isAircraft && seat.def.drive ? this.air.readControls(G.input, v, seat, dt, { frozen, view: viewOf(seat), xr }) : readPlayerControls(G.input, v, seat, dt, { frozen, view: viewOf(seat), xr });
     if (xr) {
       seat.zoomIndex = 0;
       const vw = viewOf(seat);
@@ -821,7 +832,7 @@ export class VehicleSystem {
     }
     // Wirksame Sicht: Außenansicht + Zielen mit Lafette → vorübergehend die erste Optik
     let eff = viewOf(seat);
-    if (eff.tp && seat.def.mount && act.ads && !xr) {
+    if (eff.tp && seat.def.mount && seat.def.mount !== 'fixed' && act.ads && !xr) {
       eff = viewsOf(seat.def)[opticIndex(seat.def)];
       seat.zoomIndex = seat._zoomHi && (eff.zoom || []).length > 1 ? 1 : 0;
     }
@@ -832,7 +843,7 @@ export class VehicleSystem {
     if (act.thermal && thermalOk) { this.thermal.toggle(); this._viewLabel = { text: this.thermal.on ? 'Wärmebild an' : 'Wärmebild aus', until: now + 1.2 }; }
     this.thermal.update(dt, thermalOk);
     // Zielen: 1P/Optik → Blickrichtung (Strichplatte); Außenansicht → Bildmitte-Strahl (Rohr konvergiert, Ballistik)
-    if (seat.def.mount) {
+    if (seat.def.mount && seat.def.mount !== 'fixed') {
       const dir = viewLookDir(v, seat, eff, _d);
       if (!eff.tp || !this.camera.ready) {
         seat.intent.aimDir = (seat.intent.aimDir || new THREE.Vector3()).copy(dir);
@@ -935,6 +946,7 @@ export class VehicleSystem {
     }
     for (const v of this.list) { v.sync(dt); this._pinOccupants(v); }
     this._updatePlayer(dt);
+    this.air.update(dt);
     this.audio.update(dt, this.list, G.player && G.player.vehicle);
     this._stats.ms = performance.now() - t0;
   }
@@ -958,6 +970,7 @@ export class VehicleSystem {
     this.shells.update(dt);
     for (const v of this.list) { v.sync(dt); this._pinOccupants(v); }
     this._updatePlayer(dt);
+    this.air.update(dt);
     this.audio.update(dt, this.list, G.player && G.player.vehicle);
   }
 
@@ -1012,7 +1025,7 @@ export class VehicleSystem {
       const v = p.vehicle, seat = v.seats[v.seatOf(p)];
       if (!seat) return;
       const eff = this._eff && this._eff.seat === seat ? this._eff.view : viewOf(seat);
-      const r = this.camera.update(G.camera, v, seat, dt, this.world, p.baseFov || 70, eff);
+      const r = v.isAircraft ? this.air.camera(G.camera, v, seat, dt, this.world, p.baseFov || 70, eff) : this.camera.update(G.camera, v, seat, dt, this.world, p.baseFov || 70, eff);
       const d = this.camera.dir;
       p.yaw = Math.atan2(-d.x, -d.z);
       p.pitch = Math.asin(clamp(d.y, -1, 1));
@@ -1029,7 +1042,7 @@ export class VehicleSystem {
       }
       // Rohr-Marker: wohin die Waffe tatsächlich zeigt
       let gun = null;
-      if (seat.def.mount && seat.weapons.length) {
+      if (seat.def.mount && seat.weapons.length && !v.isAircraft) { // Luftfahrzeuge: Zielmarken im Flug-HUD
         v.muzzle(seat.index, _a, _b, true);
         const w = seat.weapons[seat.weaponIndex];
         const range = w.def.kind === 'shell' ? 400 : w.def.range;
@@ -1097,6 +1110,7 @@ export class VehicleSystem {
       }
     }
     if (this._msg && now > this._msg.until) this._msg = null;
+    if (this.air.hud) this.air.hud.update(dt, state);
     if (this.hud) {
       this.hud.update(dt, state);
       if (this._msg && this.hud.el) { this.hud._set('warn', this.hud.el.warn, 'text', this._msg.text); this.hud._set('warnH', this.hud.el.warn, 'hidden', false); }
@@ -1243,7 +1257,11 @@ export class VehicleSystem {
       if (actor.stats) actor.stats.shotsFired = (actor.stats.shotsFired || 0) + 1;
       actor.lastFiredTime = G.time.elapsed;
     }
-    if (def.kind === 'shell') {
+    if (def.kind === 'rocket' || def.kind === 'bomb') {
+      // Luftfahrzeug-Raketen/-Bomben: ballistische Körper (ShellPool, Darstellung def.look), Splash wie Granaten
+      this.shells.fire(def, origin, dir, actor, v);
+      this.air.fireFx(v, def, origin, dir, isPlayer);
+    } else if (def.kind === 'shell') {
       this.shells.fire(def, origin, dir, actor, v);
       G.effects?.muzzleFlash?.(origin, dir, { cls: 'sniper', scale: 3.4 });
       G.effects?.muzzleLight?.(origin, 34, 3, 0.09, 20);
@@ -1265,6 +1283,7 @@ export class VehicleSystem {
       const res = G.combat.fireHitscan({ shooter: actor, origin, dir: _d, range: def.range, weapon: def });
       this._ignore = null;
       if (w.shots % (def.tracerEvery || 3) === 0 && res && res.point) G.events.emit('tracer', { from: origin.clone(), to: res.point.clone ? res.point.clone() : res.point, actor, weaponId: def.id });
+      if (def.he) this.air.cannonHit(def, res, actor); // Bordkanone mit Sprenggeschossen
       G.effects?.muzzleFlash?.(origin, _d, { cls: 'lmg', actor, scale: 1.25 });
       this.audio.play(def.profile || 'lmg', { position: isPlayer ? null : origin, player: isPlayer, actor, weapon: def.id });
       if (isPlayer) actor.shake?.(0.05);
@@ -1287,7 +1306,7 @@ export class VehicleSystem {
     try { wh = w.raycast(p, d, len); } finally { this._noVeh = was; }
     if (wh && wh.distance <= len) best = { point: wh.point, normal: wh.normal, distance: wh.distance, surface: wh.surface, solid: wh.solid || null };
     for (const v of this.list) {
-      if (v === s.vehicle && s.age < 0.25) continue;
+      if (v === s.vehicle && s.age < (s.def.selfSafe || 0.25)) continue;
       const h = v.raycast(p, d, best ? best.distance : len);
       if (h) best = h;
     }

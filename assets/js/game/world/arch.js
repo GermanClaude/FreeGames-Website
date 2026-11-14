@@ -382,6 +382,27 @@ export function building(b, o) {
     b.box(x0 + 0.06, roofY, z, 0.14, 0.2, d - 0.1, e, { tint: et, grad: false, minimap: false });
     b.box(x1 - 0.06, roofY, z, 0.14, 0.2, d - 0.1, e, { tint: et, grad: false, minimap: false });
   }
+  // gfx-welt (14.11.): Fallrohre an zwei gegenüberliegenden Ecken (Regenrinnen-Kasten oben, Knie unten) – brechen die
+  // glatten Putz-/Ziegelfassaden auf. Rein optisch (keine Kollision/Minikarte), Ecke aus der Lage gehasht (berührt den
+  // Zufallsstrom der Karte nicht), Holzschuppen und Gebäude ohne Dach ohne Rohre. o.pipes: false schaltet ab.
+  if (o.pipes !== false && o.roof !== false && floors >= 1 && !/wood/.test(mat) && w > 3 && d > 3) {
+    const hsh = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
+    const top = roofY + (o.roof && o.roof.parapet ? o.roof.parapet - 0.12 : -0.05);
+    const pm = o.pipeMat || 'metal_galvanized', pt = o.pipeTint || '#8d9296', r = 0.055, off = 0.11;
+    const corners = hsh < 0.5 ? [[x0, z0, 1, 1], [x1, z1, -1, -1]] : [[x1, z0, -1, 1], [x0, z1, 1, -1]];
+    for (const [cx, cz, sx, sz] of corners) {
+      // Rohr an der Längsseite der Ecke, 0,3 m von der Kante, 0,11 m vor der Wand
+      const alongX = w >= d;
+      const px = alongX ? cx + sx * 0.3 : cx - sx * off, pz = alongX ? cz - sz * off : cz + sz * 0.3;
+      const ox = alongX ? 0 : -sx, oz = alongX ? -sz : 0; // nach außen
+      b.cyl(px, y0 + 0.32, pz, r, top - y0 - 0.5, pm, { tint: pt, seg: 8, caps: false, collide: false, minimap: false, grad: false, ao: false, cast: false });
+      // Knie unten (Auslauf nach außen) und Kasten oben
+      b.box(px + ox * 0.06, y0 + 0.2, pz + oz * 0.06, ox ? 0.24 : 0.12, 0.12, oz ? 0.24 : 0.12, pm, { tint: pt, collide: false, minimap: false, grad: false, ao: false });
+      b.box(px, top - 0.12, pz, 0.24, 0.3, 0.24, pm, { tint: pt, collide: false, minimap: false, grad: false, ao: false });
+      // Schellen alle ≈ 1,6 m
+      for (let yy = y0 + 1.4; yy < top - 0.6; yy += 1.6) b.box(px - ox * 0.05, yy, pz - oz * 0.05, ox ? 0.1 : 0.14, 0.04, oz ? 0.1 : 0.14, pm, { tint: '#6a6e72', collide: false, minimap: false, grad: false, ao: false });
+    }
+  }
   // Footprint für die Minikarte (Gebäude als Block)
   b.footprints.push({ x, z, hw: w / 2, hd: d / 2, ry: 0, y0, y1: roofY, kind: 'building' });
   return { x0, x1, z0, z1, levels, roofY, fh, t };

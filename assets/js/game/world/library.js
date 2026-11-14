@@ -54,6 +54,9 @@ export const LIB_MATERIALS = {
   wood_floor: { id: 'wood_floor_old', color: 1.2 },
   osb: { id: 'osb', color: 0.9, roughness: 1.4 }, // textures-2: Ø 0,58 → 0,81
   bark_palm: { id: 'bark_palm', color: 0.8, macro: false },
+  // gfx-welt 14.11.: Stämme/Äste und Felsen der Großkarten als Fotoscans (Poly Haven bark_brown_02, rock_boulder_dry)
+  bark: { id: 'bark_brown', color: [1.75, 1.8, 1.95], macro: false },
+  fels: { id: 'rock_boulder', color: 0.78, macro: false },
   // cardboard: bleibt prozedural – der Fotoscan ist nackte Wellpappe; Klebeband/Aufdruck des prozeduralen Kartons lesen
   // sich auf Kistenflächen besser (Kartenzuordnung assets.materials.cardboard = 'cardboard' schaltet ihn wieder zu)
   metal_painted: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },

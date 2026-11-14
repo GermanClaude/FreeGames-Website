@@ -141,6 +141,7 @@ export class Menus {
       const act = b.dataset.act;
       if (act === 'start') this._start(b);
       else if (act === 'net-host') this.net.createRoom({}, b);
+      else if (act === 'camp-start') this.lobby.campaign.start(); // Kampagne (campaign/menu.js)
       else if (act === 'settings') this.showSettings('lobby');
       else if (act === 'profile') { this.settingsPanel.group = 'profil'; this.showSettings('lobby'); }
       else if (act === 'controls') this.showControls('lobby');
@@ -488,6 +489,8 @@ export class Menus {
         if (this.onExit) this.onExit();
       }
     });
+    // Kampagne: Missionsergebnis, „Nächste Mission“, „Kampagnenmenü“ (campaign/mode.js decorateEnd)
+    if (result && result.campaign && G.campaign && typeof G.campaign.decorateEnd === 'function') { try { G.campaign.decorateEnd(s, result); } catch (err) { console.error('[NULLPUNKT] Kampagne/Ende:', err); } }
     this.endScreen.animate(s, progression);
     this._focusFirst(s);
   }

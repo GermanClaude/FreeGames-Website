@@ -32,7 +32,7 @@ export const DEFAULTS = Object.freeze({
   audioMix: 'auto', hearingProtection: false, audioRecordings: true,
   // HUD-Stil, erweiterte Grafik, Gyro-Kalibrierung, Controller-Symbole (Realismus-Plan S6–S9, §5.3; ui-controls)
   hudStyle: 'voll', bodycamStamp: false,
-  gfxPost: 'auto', gfxShadows: 'auto', gfxAA: 'auto', gfxAO: 'auto', gfxBloom: 'auto', gfxEffects: 'auto', gfxPixelRatio: 'auto', gfxTextures: 'auto',
+  gfxPost: 'auto', gfxShadows: 'auto', gfxAA: 'auto', gfxAO: 'auto', gfxContact: 'auto', gfxSSR: 'auto', gfxDOF: 'auto', gfxBloom: 'auto', gfxEffects: 'auto', gfxPixelRatio: 'auto', gfxTextures: 'auto',
   renderScale: 'auto', fpsLimit: '0',
   gyroBiasX: 0, gyroBiasY: 0, gyroBiasZ: 0, padIcons: 'auto',
   // Kernmechanik (core-mechanics): Spielstil, Klassen, stufenlose Zielhilfe und Auto-Feuer
@@ -41,7 +41,7 @@ export const DEFAULTS = Object.freeze({
   // Vollbild (engine/fullscreen.js): auto = bei „Einsatz starten“, „Fortsetzen“ und (Touch) Tippen auf die Steuerung im Match | off = nur Knopf/Taste
   fullscreen: 'auto',
   // Lobby: Wetter/Tageszeit (atmosphere-weather): 'standard' | 'zufall' | Wetter-/Zeit-id
-  lastWeather: 'standard', lastTime: 'standard', lastVehicles: 'an', lastTankEra: 'karte',
+  lastWeather: 'standard', lastTime: 'standard', lastVehicles: 'an', lastTankEra: 'karte', lastMass: 'aus', // masse: Massenschlacht (Lobby)
   // Lobby: Modus-Einstellungen je Modus (B6, 26.10.; MODES[id].options, z. B. { hp: { wechsel: 45 } } – nur Abweichungen)
   modeOptions: Object.freeze({}),
   // Lernende Bots (ai-adapt): Gegner stellen sich auf den Spielstil ein (Stärke nach Schwierigkeit)
@@ -195,10 +195,23 @@ export const SETTINGS_SCHEMA = Object.freeze({
   },
   gfxAA: {
     type: 'enum', label: 'Kantenglättung', group: 'erweitert',
-    options: ['auto', 'aus', 'fxaa', 'smaa'], labels: { auto: 'Automatisch', aus: 'Aus', fxaa: 'FXAA', smaa: 'SMAA' },
+    options: ['auto', 'aus', 'fxaa', 'smaa', 'taa'], labels: { auto: 'Automatisch', aus: 'Aus', fxaa: 'FXAA', smaa: 'SMAA', taa: 'TAA + SMAA' },
   },
   gfxAO: {
     type: 'enum', label: 'Umgebungsverdeckung (GTAO)', group: 'erweitert',
+    options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
+  },
+  // gfx-licht: Bildschirmraum-Kontaktschatten und -Reflexionen ('auto' = Stufe: Kontaktschatten ab hoch, SSR ultra)
+  gfxContact: {
+    type: 'enum', label: 'Kontaktschatten', group: 'erweitert',
+    options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
+  },
+  gfxSSR: {
+    type: 'enum', label: 'Bildschirmraum-Reflexionen (SSR)', group: 'erweitert',
+    options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
+  },
+  gfxDOF: {
+    type: 'enum', label: 'Tiefenschärfe beim Zielen', group: 'erweitert',
     options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
   },
   gfxBloom: {
@@ -243,6 +256,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   lastWeather: { type: 'id', label: 'Letztes Wetter', group: 'intern' },
   lastVehicles: { type: 'id', label: 'Panzer & Fahrzeuge (Lobby)', group: 'intern' },
   lastTankEra: { type: 'id', label: 'Panzer-Generation (Lobby)', group: 'intern' },
+  lastMass: { type: 'id', label: 'Massenschlacht (Lobby)', group: 'intern' },
   lastTime: { type: 'id', label: 'Letzte Tageszeit', group: 'intern' },
   classLoadouts: { type: 'classLoadouts', label: 'Ausrüstung je Klasse', group: 'intern' },
   modeOptions: { type: 'modeOptions', label: 'Modus-Einstellungen (Lobby)', group: 'intern' },

@@ -12,6 +12,7 @@
 // Mehrere Shader-Haken je Material (z. B. Weltraum-Variation aus engine/textures.js + dieser) laufen über
 // addShaderPatch(): ein Verteiler statt überschriebener onBeforeCompile-Funktionen.
 import * as THREE from 'three';
+import { GFX } from '../engine/post/common.js?v=20261114004313'; // gfx-licht: weiche Sonnenschatten (Proben, TAA-Drehung)
 
 // ---------------------------------------------------------------------------
 // Verteiler für mehrere onBeforeCompile-Haken je Material
@@ -125,6 +126,8 @@ export const WS = {
   npFogMax: { value: 1 },
   npFogCam: { value: 1 },   // Himmelssicht an der Kamera (Sonden, geglättet): Einstreuung drinnen gedämpft
   npSpecAA: { value: 0 }, // die Welt schaltet es ein (Kartenwert lighting.specAA, Standard 1)
+  // gfx-licht: x Proben der weichen Sonnenschatten (0 = three.js-Standard, 5), y Drehung je Bild (TAA), z Radiusfaktor
+  npGfx: GFX.npGfx,
 };
 
 let dummyDepth = null;
@@ -190,6 +193,7 @@ uniform vec3 npFogSunCol;
 uniform float npFogMax;
 uniform float npFogCam;
 uniform float npSpecAA;
+uniform vec4 npGfx;
 `;
 
 // nach shadowmap_pars_fragment (Fernkarte, Überblendung der Kaskaden)
@@ -206,6 +210,28 @@ float npFarMapShadow( vec3 wp, vec3 wn ) {
 		texture( npFarMap, vec3( c.xy + vec2( 0.4, 1.0 ) * t, z ) ) +
 		texture( npFarMap, vec3( c.xy + vec2( -1.0, 0.4 ) * t, z ) ) );
 }
+// gfx-licht: weiche Sonnenschatten ab „hoch“ – 12/16 Proben auf einer Vogel-Scheibe (statt 5), Drehung je Bild
+// (TAA mittelt zu glatten Halbschatten statt festem Rauschmuster), etwas breiterer Halbschatten auf ultra
+#if defined( USE_SHADOWMAP ) && defined( SHADOWMAP_TYPE_PCF )
+float npSoftShadow( sampler2DShadow map, vec2 size, float inten, float bias, float radius, vec4 coord ) {
+	if ( npGfx.x < 0.5 ) return getShadow( map, size, inten, bias, radius, coord );
+	coord.xyz /= coord.w;
+	coord.z += bias;
+	if ( coord.x < 0.0 || coord.x > 1.0 || coord.y < 0.0 || coord.y > 1.0 || coord.z > 1.0 ) return 1.0;
+	float r = radius * npGfx.z / size.x;
+	float phi = ( interleavedGradientNoise( gl_FragCoord.xy ) + npGfx.y ) * PI2;
+	int n = int( npGfx.x );
+	float s = 0.0;
+	for ( int k = 0; k < 16; k ++ ) {
+		if ( k >= n ) break;
+		s += texture( map, vec3( coord.xy + vogelDiskSample( k, n, phi ) * r, coord.z ) );
+	}
+	return mix( 1.0, s / float( n ), inten );
+}
+#define NP_SUN_SHADOW npSoftShadow
+#else
+#define NP_SUN_SHADOW getShadow
+#endif
 // Nahkaskade (three.js) → außerhalb ihres Rands die Fernkarte bzw. die Sonnensicht der Sonden
 float npSunShadow( float nearS, vec4 nearCoord, vec3 wp, vec3 wn, float probeSun ) {
 	if ( npFar.x < 0.5 ) return nearS;
@@ -300,7 +326,7 @@ function lightsBegin() {
   must('IncidentLight directLight;', SETUP);
   // Sonne (Index 0): Kaskaden-Überblendung zur Fernkarte; andere Richtungslichter unverändert
   must(DIR_SHADOW_LINE, `#if ( UNROLLED_LOOP_INDEX == 0 )
-		directLight.color *= ( directLight.visible && receiveShadow ) ? npSunShadow( getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ), vDirectionalShadowCoord[ i ], npWP, npWN, npPB.r ) : 1.0;
+		directLight.color *= ( directLight.visible && receiveShadow ) ? npSunShadow( NP_SUN_SHADOW( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowIntensity, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ), vDirectionalShadowCoord[ i ], npWP, npWN, npPB.r ) : 1.0;
 		#else
 		${DIR_SHADOW_LINE}
 		#endif`);

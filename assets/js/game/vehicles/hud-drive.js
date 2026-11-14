@@ -140,7 +140,7 @@ export class DriveHUD {
     const v = s && s.seated ? s.vehicle : null;
     const seat = s && s.seat;
     const D = v && v.body && v.body.drive;
-    if (!v || !seat || !seat.def.drive || !D || s.visible === false) {
+    if (!v || !seat || !seat.def.drive || !D || s.visible === false || v.isAircraft) { // Luftfahrzeuge: Flug-HUD (air/hud.js)
       this._veh = null;
       this._set('rootH', this.root, 'hidden', true);
       this._body('vehicleDrive', null);

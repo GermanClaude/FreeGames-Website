@@ -51,7 +51,29 @@ export class Killfeed {
       html = `<span class="kf-w" title="${esc(label)}">${this.weaponIcon(weaponId)}</span><span class="kf-name kf-${this.side(victim)}">${esc(victim.name)}</span>`;
     }
     const mine = killer === this.G.player || victim === this.G.player || (killer && killer.isStreakEntity && killer.owner === this.G.player);
+    // masse: große Schlachten – fremde Abschüsse höchstens alle 0,7 s einzeln, dazwischen als Sammelzeile „+N weitere“
+    if (!mine && this.G.actors && this.G.actors.length > 64) {
+      const now = this.G.time ? this.G.time.real : 0;
+      if (now - (this._otherAt ?? -1e9) < 0.7) { this._more(); return; }
+      this._otherAt = now;
+    }
     this._push(html, mine ? 'is-mine' : '');
+  }
+
+  /** masse: Sammelzeile für unterdrückte fremde Abschüsse (eine, wird hochgezählt und lebt dabei neu auf). */
+  _more() {
+    const r = this._moreRow;
+    if (r && this.rows.includes(r) && !r.out) {
+      r.n++;
+      r.t = LIFE;
+      r.row.lastChild.textContent = `+${r.n} weitere Abschüsse`;
+      return;
+    }
+    this._push('<span class="kf-name kf-neutral"></span>', 'kf-text kf-more');
+    const row = this.rows[0];
+    row.n = 1;
+    row.row.lastChild.textContent = '+1 weiterer Abschuss';
+    this._moreRow = row;
   }
 
   /** Freier Eintrag (z. B. Geschütz zerstört, Flagge erobert). */
@@ -80,5 +102,7 @@ export class Killfeed {
   clear() {
     for (const r of this.rows) r.row.remove();
     this.rows = [];
+    this._moreRow = null;
+    this._otherAt = -1e9;
   }
 }

@@ -1338,6 +1338,7 @@ export class ViewModel {
     const scoped = !vr && this._scopeOverlay === 'sniper' && a > 0.96 && (!this.action || this.action.type === 'boltCycle');
     this.showScopeOverlay = scoped;
     this.root.visible = this._visible && !scoped;
+    this.scene.userData.npAds = scoped || !this._visible ? 0 : a; // gfx-licht: Tiefenschärfe beim Zielen (engine/post/dof.js)
     if (scoped) this.flash.hide();
 
     // ---- Hände

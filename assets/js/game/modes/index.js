@@ -17,8 +17,9 @@ import { InfectedMode } from './infected.js?v=20261114004313';
 import { UltimateMode } from './ultimate.js?v=20261114004313';
 import { KnifeMode } from './knife.js?v=20261114004313';
 import { HoldPointMode } from './hp.js?v=20261114004313';
+import { CampaignMode } from '../campaign/mode.js?v=20261114004313'; // Kampagne „Stille Grenze“ (game/campaign/*)
 
-export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode, messer: KnifeMode, ult: UltimateMode, hp: HoldPointMode };
+export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode, messer: KnifeMode, ult: UltimateMode, hp: HoldPointMode, kampagne: CampaignMode };
 
 export function createMode(G, modeId, opts = {}) {
   const Cls = MODE_CLASSES[modeId];

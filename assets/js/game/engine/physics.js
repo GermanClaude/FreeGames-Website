@@ -365,8 +365,22 @@ export class CapsuleBody {
  * Weiche Trennung lebender Akteure (Spieler/Bots laufen nicht ineinander, schieben sich sanft weg).
  * Rein horizontal, höchstens maxPush m pro Aufruf und Akteur; Wände löst der nächste step() auf.
  */
+const _sweep = [];
+export const SEPARATE = { sweep: true }; // masse: Prüfstand (A/B) – false = alte O(N²)-Schleife
+const _byX = (a, b) => a.body.position.x - b.body.position.x;
 export function separateActors(actors, maxPush = 0.12) {
-  const n = actors.length;
+  // masse: große Matches (Massenschlacht) – nach x sortiert und nur Paare im Fenster der doppelten Kapselbreite prüfen
+  // (Sweep statt O(N²)); kleine Matches wie bisher in Akteursreihenfolge
+  let n = actors.length;
+  let rMax = 0;
+  if (n > 48 && SEPARATE.sweep) {
+    _sweep.length = 0;
+    for (let i = 0; i < n; i++) { const a = actors[i]; if (a && a.alive && a.body) { _sweep.push(a); if (a.body.radius > rMax) rMax = a.body.radius; } }
+    _sweep.sort(_byX);
+    actors = _sweep;
+    n = actors.length;
+  }
+  const win = rMax * 2;
   for (let i = 0; i < n; i++) {
     const a = actors[i];
     if (!a || !a.alive || !a.body) continue;
@@ -375,6 +389,7 @@ export function separateActors(actors, maxPush = 0.12) {
       const b = actors[j];
       if (!b || !b.alive || !b.body) continue;
       const pb = b.body.position;
+      if (win && pb.x - pa.x > win) break;
       const dy = pb.y - pa.y;
       if (dy > a.body.height - 0.2 || -dy > b.body.height - 0.2) continue; // übereinander (stehen auf Kopf o. Ä.)
       const minD = a.body.radius + b.body.radius;

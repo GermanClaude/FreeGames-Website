@@ -186,8 +186,11 @@ export class Minimap {
     const noEnemies = flags.minimapEnemies === false;
     const blips = uav && uav.own && flags.uavEnemies !== false ? uav.own.blips : null;
     const blipAge = uav && uav.own ? now - uav.own.sweepAt : 0;
+    // masse: Akteure außerhalb des Kartenausschnitts gar nicht erst zeichnen (Massenschlacht: Hunderte Mitspieler)
+    const cull = (this.range * 1.5) ** 2; // um die Kartenmitte (px, pz)
     for (const a of G.actors) {
       if (a === p || !a.alive) continue;
+      if ((a.position.x - px) ** 2 + (a.position.z - pz) ** 2 > cull) continue;
       const hostile = G.combat ? G.combat.isHostile(p, a) : a.team !== p.team;
       if (!hostile) {
         toScreen(a.position.x, a.position.z, pt);

@@ -357,8 +357,11 @@ function setState(state) {
 
 const errorKeys = new Set();
 function step(key, fn) {
+  // masse: Prüfstand – G.prof = {} sammelt die CPU-Zeit je Schritt (ms, aufsummiert), sonst kein Aufwand
+  const pr = G.prof, t0 = pr ? performance.now() : 0;
   try {
     fn();
+    if (pr) pr[key] = (pr[key] || 0) + performance.now() - t0;
   } catch (err) {
     const k = `${key}:${err && err.message}`;
     if (!errorKeys.has(k)) {
@@ -422,15 +425,19 @@ function normalizeConfig(cfg = {}) {
   const modeId = MODES[cfg.modeId] ? cfg.modeId : MODES[settings.get('lastMode')] ? settings.get('lastMode') : 'tdm';
   const maps = mapsForMode(modeId);
   const rec = (MODES[modeId] && MODES[modeId].recommendedMaps) || [];
-  const mapId = [cfg.mapId, settings.get('lastMap'), ...rec, maps[0]].find((id) => id && maps.includes(id)) || 'hafen';
+  // Kampagne: die Mission bestimmt die Karte (MODES.kampagne.missionMaps)
+  const missionMap = modeId === 'kampagne' && cfg.campaign && MODES.kampagne && MODES.kampagne.missionMaps ? MODES.kampagne.missionMaps[cfg.campaign.mission] : null;
+  const mapId = [missionMap, cfg.mapId, settings.get('lastMap'), ...rec, maps[0]].find((id) => id && maps.includes(id)) || 'hafen';
   const difficulty = DIFFS.includes(cfg.difficulty) ? cfg.difficulty : DIFFS.includes(settings.get('difficulty')) ? settings.get('difficulty') : 'regulaer';
   const counts = modeCounts(modeId);
-  // modes-ui: Teamgrößen je Karte und Gerät (limitsFor, GROSSKAMPF §3.2: Arena 12 v 12, Großkarte 32 v 32)
+  // modes-ui: Teamgrößen je Karte und Gerät (limitsFor, GROSSKAMPF §3.2: Arena 12 v 12, Großkarte 50 v 50; masse: Massenschlacht)
+  let mass = false;
   if (typeof G.data.limitsFor === 'function') {
     const L = safe('limitsFor', () => G.data.limitsFor(modeId, (G.data.MAPS || {})[mapId] || mapId, {
       tier: (G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
+      mass: cfg.mass === true || cfg.mass === '1' || cfg.mass === 'an',
     }));
-    if (L) Object.assign(counts, { alliesRange: L.allies, enemiesRange: L.enemies, allies: L.recommended.allies, enemies: L.recommended.enemies });
+    if (L) { Object.assign(counts, { alliesRange: L.allies, enemiesRange: L.enemies, allies: L.recommended.allies, enemies: L.recommended.enemies }); mass = !!L.mass; }
   }
   const ffa = isFfaMode(modeId);
   const allies = ffa ? 0 : intParam(cfg.allies, counts.allies, counts.alliesRange[0], Math.max(counts.alliesRange[1], 0));
@@ -467,12 +474,14 @@ function normalizeConfig(cfg = {}) {
   for (const k of Object.keys(loadout)) delete loadout[k];
   Object.assign(loadout, full, extra);
   return {
-    modeId, mapId, difficulty, allies, enemies, loadout, ffa, armor: armorFor(cfg, mapId, modeId),
+    modeId, mapId, difficulty, allies, enemies, loadout, ffa, armor: armorFor(cfg, mapId, modeId), mass,
     style, crosshair: typeof cfg.crosshair === 'boolean' ? cfg.crosshair : null,
     matchLength: ['kurz', 'standard', 'lang'].includes(cfg.matchLength) ? cfg.matchLength : 'standard',
     timeOfDay: typeof cfg.timeOfDay === 'string' ? cfg.timeOfDay : null,
     weather: typeof cfg.weather === 'string' ? cfg.weather : null, // atmosphere-weather: id | 'standard' | 'zufall'
     timeLimit: numParam(cfg.timeLimit), scoreLimit: numParam(cfg.scoreLimit),
+    // Kampagne (game/campaign): Mission + Checkpoint
+    campaign: modeId === 'kampagne' && cfg.campaign && typeof cfg.campaign === 'object' ? { mission: String(cfg.campaign.mission || ''), checkpoint: cfg.campaign.checkpoint ? String(cfg.campaign.checkpoint) : null } : null,
   };
 }
 
@@ -491,11 +500,12 @@ function isUnranked(cfg) {
 function configFromParams() {
   return {
     modeId: params.get('mode'), mapId: params.get('map'), difficulty: params.get('diff'),
-    allies: params.get('allies'), enemies: params.get('enemies'),
+    allies: params.get('allies'), enemies: params.get('enemies'), mass: params.get('mass'), // masse: mass=1 Massenschlacht
     loadout: { primary: params.get('primary'), secondary: params.get('secondary'), lethal: params.get('lethal'), cls: params.get('cls'), armor: params.get('vest'), helmet: params.get('helmet') },
     timeLimit: params.get('time'), scoreLimit: params.get('score'), style: params.get('style'), armor: params.get('armor'),
     // atmosphere-weather: weather=klar|dunst|morgennebel|bewoelkt|zufall, tod=<Tageszeit-id> (time= nur, wenn nicht numerisch)
     weather: params.get('weather'), timeOfDay: params.get('tod') || (params.get('time') && !/^[\d.]+$/.test(params.get('time')) ? params.get('time') : null),
+    campaign: params.get('mission') ? { mission: params.get('mission'), checkpoint: params.get('cp') } : null, // Kampagne: mode=kampagne&mission=m1[&cp=…]
   };
 }
 
@@ -524,6 +534,7 @@ function spawnActor(actor, fixed = null) {
     if (s) spawn = { position: s.position.clone(), yaw: s.yaw || 0 };
   }
   if (!spawn) spawn = { position: new THREE.Vector3(), yaw: 0 };
+  else if (!fixed && G.bots && typeof G.bots.spreadSpawn === 'function') spawn = safe('spreadSpawn', () => G.bots.spreadSpawn(actor, spawn)) || spawn; // masse: belegte Punkte → freier Knoten daneben
   // core-mechanics: vorgemerkte Ausrüstung (Pausemenü/Todesbildschirm) gilt ab diesem Spawn; Klasse + Panzerung ausgeben
   if (actor === G.player && G.match.pendingLoadout) {
     const lo = G.match.pendingLoadout;
@@ -1144,9 +1155,11 @@ async function runStart(config, gen) {
       vehicles: netCfg ? !!netCfg.vehicles : undefined, // online: Raum-Einstellung „Fahrzeuge“ (vor spawnBots – Werfer der Bots)
       prebuildAll: prebuildAll(cfg), // 26.10.: Waffenspiel-Leiter ganz vorbauen (Online-Host) statt im Leerlauf (WeaponController.warmup)
       tankEra: (netCfg ? netCfg.tankEra : cfg.tankEra) || 'karte', // Panzer-Generation (vehicles/index.js tankType)
+      campaign: cfg.campaign, // Kampagne: { mission, checkpoint } (campaign/mode.js)
     });
     // Online: Modus/Karte/Schwierigkeit gehören dem Raum – die Lobby-Vorauswahl für Einzelspieler bleibt
     if (netCfg) settings.patch({ lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
+    else if (cfg.modeId === 'kampagne') settings.patch({ lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' }); // Kampagne ändert die Lobby-Vorauswahl nicht
     else settings.patch({ lastMode: cfg.modeId, lastMap: cfg.mapId, difficulty: cfg.difficulty, lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
     applyStyle(cfg); // core-mechanics: G.match.style/styleFlags/armor
     setState('loading');
@@ -1196,7 +1209,7 @@ async function runStart(config, gen) {
     const opts = {
       timeLimit: cfg.timeLimit ?? undefined, scoreLimit: cfg.scoreLimit ?? undefined,
       time: cfg.timeLimit ?? undefined, score: cfg.scoreLimit ?? undefined,
-      difficulty: cfg.difficulty, allies: cfg.allies, enemies: cfg.enemies, mapId: cfg.mapId,
+      difficulty: cfg.difficulty, allies: cfg.allies, enemies: cfg.enemies, mapId: cfg.mapId, campaign: cfg.campaign,
     };
     // Mehrspieler: von den Serienprämien online Aufklärer, FPV-Drohne und Präzisionsschlag (ONLINE_STREAKS, Einsatz bestätigt der Host –
     // net/sync-host.js); Client führt den Modus als Abbild (Zustand vom Host)

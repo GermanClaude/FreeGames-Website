@@ -5,6 +5,8 @@
 // Räder: `mountY` = Aufhängungspunkt; Ruhelage so gewählt, dass die Radunterkante bei statischer Last auf y = 0 steht
 // (mountY = rest + radius − statische Einfederung).
 
+import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261114004313';
+
 const deg = (d) => (d * Math.PI) / 180;
 
 /** Fahrzeugwaffen. Maschinengewehre sind Hitscan über combat.fireHitscan (gleiches Schema wie WEAPONS),
@@ -776,6 +778,12 @@ export const CIVIL_TYPES = ['pkw', 'transporter', 'stapler', 'zugmaschine'];
 /** Militärfahrzeug (Panzer aller Generationen, Geländewagen) – nur auf großen Karten (maps.data.js militaryVehiclesAllowed). */
 export const isMilitary = (type) => !!(VEHICLES[type] && !VEHICLES[type].civil);
 
+// Luftfahrzeuge (air/data.js): am Ende angehängt – Typ-/Waffen-Indizes der Bodenfahrzeuge bleiben gleich
+Object.assign(VEHICLES, AIR_VEHICLES);
+Object.assign(VEHICLE_WEAPONS, AIR_WEAPONS);
+/** Luftfahrzeug (Hubschrauber/Jet)? */
+export const isAirType = (type) => !!(VEHICLES[type] && VEHICLES[type].air);
+
 export const VEHICLE_IDS = Object.keys(VEHICLES);
 
 /** Schwerkraft der Fahrzeugsimulation (m/s², etwas „schwerer“ als 9,81 – Fahrzeuge kleben besser). */
@@ -784,12 +792,14 @@ export const VEHICLE_GRAVITY = 13;
 /** Statische Einfederung (m) aus Masse, Federrate und Radzahl. */
 export function staticComp(def) {
   const w = def.wheels;
+  if (!w) return 0; // Luftfahrzeuge: kein Federfahrwerk
   return (def.mass * VEHICLE_GRAVITY) / (w.stiffness * w.z.length * 2);
 }
 
 /** Aufhängungshöhe: Radunterkante bei statischer Last auf y = 0 (siehe Kopf). */
 export function mountY(def) {
   const w = def.wheels;
+  if (!w) return 0;
   return w.rest + w.radius - staticComp(def);
 }
 

@@ -3,12 +3,19 @@
 //  low  („lite“, Telefone): Welt + Viewmodel → HDR-Ziel (R11G11B10F, interne Auflösung) → [Belichtungsmessung
 //       32², jedes 2. Bild] → EIN Pass aufs Bild: Objektiv (Verzeichnung, ohne Farbsaum), FXAA-Konsole +
 //       Schärfen, Belichtung, AgX, LUT, Vignette, Körnung, Kompression, Gehäuse, Dither.
-//  medium+: Welt → HDR (+ GTAO ultra) → Viewmodel (Tiefe gelöscht) → Belichtung 64² → Bloom (Mip-Kette, belichtet)
+//  medium+: Welt → HDR (+ GTAO high/ultra) [+ Kontaktschatten, SSR, TAA – gfx-licht, siehe unten] → Viewmodel (Tiefe
+//       gelöscht) → Belichtung 64² → Bloom (Mip-Kette, belichtet)
 //       → Grade (Belichtung, Bloom + Linsenschmutz, AgX, LUT) → 8-Bit → [FXAA medium | SMAA high/ultra]
 //       → Objektiv aufs Bild (Verzeichnung, Farbsaum, RCAS bzw. EASU bei Skala < 1, Körnung, Kompression,
 //       Gehäuse, Vignette, Schaden/Unterdrückung, Dither).
 //  direct: low im Stil „Klassisch“ mit MSAA-Kontext (bisheriger Weg ohne Nachbearbeitung) bzw. Geräte ohne
 //       HDR-Renderziele.
+//
+// gfx-licht (14.11.): Bildschirmraum-Licht der Welt vor dem Viewmodel – Normalen-/Glanz-Vorpass (GTAO-Vorpass,
+// post/ssr.js gbufferMaterial) → Kontaktschatten zur Sonne (high/ultra) → Reflexionen SSR (ultra) → TAA (ultra; Welt mit
+// Halton-Versatz, post/taa.js). Weiche Sonnenschatten (12/16 Proben, je Bild gedreht) über GFX.npGfx (world/shading.js).
+// Danach (nur beim Zielen) Tiefenschärfe auf die Welt (post/dof.js, high/ultra).
+// Alles über Vorgabefelder (taa, ssr, contactShadows, dof, shadowTaps, shadowSoft; Einstellungen gfxAA/gfxSSR/gfxContact/gfxDOF).
 //
 // Dynamische Auflösung: Mit Kette rendert nur die Szene in der verkleinerten internen Auflösung; die Leinwand
 // bleibt bei der vollen Stufenauflösung und der Objektiv-Pass skaliert hoch (FSR 1.0 EASU auf medium+, „lite“
@@ -18,7 +25,10 @@ import * as THREE from 'three';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-import { Fullscreen, hdrFormat, hdrTarget, ldrTarget } from './common.js?v=20261114004313';
+import { Fullscreen, hdrFormat, hdrTarget, ldrTarget, GFX } from './common.js?v=20261114004313';
+import { TemporalAA } from './taa.js?v=20261114004313';
+import { AimDepthOfField } from './dof.js?v=20261114004313';
+import { ScreenSpaceReflections, ContactShadows, gbufferMaterial } from './ssr.js?v=20261114004313';
 import { LensModel, LensPass } from './lens.js?v=20261114004313';
 import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261114004313';
 import { AutoExposure } from './exposure.js?v=20261114004313';
@@ -80,6 +90,13 @@ export class PostPipeline {
     this.gtao = null;
     this.aoScale = 1;
     this.shafts = null;
+    this.taa = null; // gfx-licht: temporale Kantenglättung (post/taa.js)
+    this.ssr = null; // Bildschirmraum-Reflexionen (post/ssr.js)
+    this.contact = null; // Kontaktschatten (post/ssr.js)
+    this.dof = null; // Tiefenschärfe beim Zielen (post/dof.js)
+    this.aoOn = false; // GTAO-Verdeckung mischen (sonst nur der Normalen-Vorpass für SSR)
+    this._sunLight = null;
+    this._hemiLight = null;
     /** Sonne für Lichtstrahlen: Richtung zur Sonne (Welt) – setSun(). */
     this.sunDir = null;
     this.moodSpec = 'neutral';
@@ -131,6 +148,7 @@ export class PostPipeline {
     else mode = 'full';
     this._disposeTargets();
     this.mode = mode;
+    GFX.npGfx.value.set(mode === 'full' ? preset.shadowTaps || 0 : 0, 0, preset.shadowSoft || 1, 0);
     if (mode === 'direct') return prevMode !== mode;
     const r = this.renderer;
     // medium+: lesbare Tiefe für Lichtstrahlen; low: Tiefenpuffer (nicht lesbar, billiger auf Kachel-GPUs)
@@ -144,7 +162,12 @@ export class PostPipeline {
       if (preset.bloom) this.bloom = new Bloom({ levels: preset.id === 'medium' ? 4 : preset.id === 'ultra' ? 6 : 5 });
       if (preset.smaa) { this.aa = new SMAAPass(); this.ldr[1] = ldrTarget(this.inner.w, this.inner.h); }
       else if (preset.fxaa) { this.aa = new FXAAPass(); this.ldr[1] = ldrTarget(this.inner.w, this.inner.h); }
-      if (preset.ssao) {
+      if (preset.taa) this.taa = new TemporalAA(this.fmt);
+      if (preset.ssr) this.ssr = new ScreenSpaceReflections(this.fmt);
+      if (preset.contactShadows) this.contact = new ContactShadows();
+      if (preset.dof) this.dof = new AimDepthOfField(this.fmt);
+      this.aoOn = !!preset.ssao;
+      if (preset.ssao || preset.ssr) {
         // Grafik-Vorlage Etappe 0: AO ab „hoch“ – dort in halber Auflösung mit 8 Proben (zweiter Szenendurchlauf nur
         // für Normalen/Tiefe, ¼ der Pixel), „ultra“ voll mit 12; das Ergebnis wird beim Mischen bilinear hochskaliert
         this.aoScale = Math.max(0.25, Math.min(1, preset.aoScale ?? (preset.id === 'ultra' ? 1 : 0.5)));
@@ -153,6 +176,14 @@ export class PostPipeline {
         this.gtao.output = GTAOPass.OUTPUT.Off;
         this.gtao.blendIntensity = 0.85;
         this.gtao.updateGtaoMaterial({ radius: AO_RADIUS, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: this.aoScale < 1 ? 8 : 12 });
+        // SSR: Normalen-Vorpass schreibt zusätzlich Rauheit/Metall in Alpha (GTAO liest nur rgb)
+        if (this.ssr) {
+          const gb = gbufferMaterial();
+          if (gb) { this.gtao.normalMaterial.dispose(); this.gtao.normalMaterial = gb; } else { this.ssr.dispose(); this.ssr = null; }
+          // Auflösung wie der Normalen-Vorpass (ultra voll): halbe Auflösung ließ dünne Dinge vor glänzenden Flächen
+          // (Kettengeländer vor dem Wasser) beim Hochskalieren die Spiegelung ihrer Nachbarn annehmen
+          if (this.ssr) this.ssr.scale = Math.max(0.5, this.aoScale);
+        }
         // Normal-/Tiefen-Vorpass nur für deckende Geometrie: durchsichtige Effekte ohne Tiefenschreiben
         // (Sonnenstrahlen-Quader, Rauch, Decals, Mündungsfeuer, Sprites) sonst als riesige Verdecker → dunkle Keile.
         // Alpha-getestete Karten (Laub, Gras, Schilder) ebenso: der Normalen-Durchlauf (MeshNormalMaterial) kennt keinen
@@ -206,6 +237,9 @@ export class PostPipeline {
   setSun(sun) {
     const d = sun && (sun.isVector3 ? sun : sun.sunDirection);
     this.sunDir = d && d.isVector3 ? d.clone().normalize() : null;
+    // Kontaktschatten: Anteil des Sonnenlichts (Sonne vs. Himmel, live – Wetter/Tageszeit ändern die Lichter)
+    this._sunLight = sun && sun.sun && sun.sun.isLight ? sun.sun : null;
+    this._hemiLight = sun && sun.hemi && sun.hemi.isLight ? sun.hemi : null;
   }
 
   /** Größen: Ausgabe (Zeichenpuffer), interne Skala (dynamische Auflösung), CSS-Größe (Lens-API in px). */
@@ -232,6 +266,10 @@ export class PostPipeline {
     if (this.aa) this.aa.setSize(w, h);
     if (this.gtao) this.gtao.setSize(Math.max(1, Math.round(w * this.aoScale)), Math.max(1, Math.round(h * this.aoScale)));
     if (this.shafts) this.shafts.setSize(this.renderer, w, h);
+    if (this.taa) this.taa.setSize(this.renderer, w, h);
+    if (this.ssr) this.ssr.setSize(this.renderer, w, h);
+    if (this.contact) this.contact.setSize(w, h);
+    if (this.dof) this.dof.setSize(this.renderer, w, h);
   }
 
   /** Kamera-Drehgeschwindigkeit → Bewegung (Kompression) und Gehäuse-Wackeln; Sprünge → Belichtung zurücksetzen. */
@@ -264,7 +302,10 @@ export class PostPipeline {
     }
     const target = Math.max(0, Math.min(1, (this._angVel - 0.8) / 3.5));
     this._motion += (target - this._motion) * Math.min(1, dt * (target > this._motion ? 8 : 2.5));
-    if (this.exposure && p.distanceToSquared(this._prevPos) > 36) this.exposure.reset(); // Respawn/Teleport
+    if (p.distanceToSquared(this._prevPos) > 36) { // Respawn/Teleport
+      if (this.exposure) this.exposure.reset();
+      if (this.taa) this.taa.reset();
+    }
     this._prevQ.copy(q);
     this._prevPos.copy(p);
   }
@@ -317,11 +358,16 @@ export class PostPipeline {
     let shaftsOn = false;
     try {
       if (F > 1.0001) { widen(camera, F); if (hasVm) widen(vmCamera, F); }
+      // TAA: Subpixel-Versatz der Welt; Schattenproben drehen sich mit (GFX.npGfx.y)
+      const taaOn = !!this.taa && this.postRelief < 3 && !!this.hdr.depthTexture;
+      if (this.taa && !taaOn) this.taa.reset();
+      GFX.npGfx.value.y = taaOn ? this.taa.jitter(camera) : 0;
       r.setRenderTarget(this.hdr);
       r.autoClear = true;
       r.render(scene, camera);
       this.stats.sceneRenders++;
-      if (this.gtao && this.relief < 1) {
+      const gbuf = this.gtao && this.relief < 1;
+      if (gbuf) {
         this.gtao.scene = scene;
         // Normalen-/Tiefen-Vorpass nur so weit, wie die AO noch sichtbar ist (21.10.): er zeichnete die ganze Szene ein
         // zweites Mal (Grenzland hoch: ≈ 550 Draw Calls). Grenze = Entfernung, ab der der AO-Radius (0,5 m) auf weniger
@@ -344,14 +390,31 @@ export class PostPipeline {
           ao.updateProjectionMatrix();
           this.gtao.camera = ao;
         } else this.gtao.camera = camera;
-        this.gtao.render(r, null, null);
-        const bm = this.gtao.blendMaterial;
-        bm.uniforms.intensity.value = this.gtao.blendIntensity;
-        bm.uniforms.tDiffuse.value = this.gtao.pdRenderTarget.texture;
-        r.autoClear = false;
-        this.fs.draw(r, bm, this.hdr);
+        if (this.gtao.normalMaterial.npResetCache) this.gtao.normalMaterial.npResetCache();
+        if (this.aoOn) {
+          this.gtao.render(r, null, null);
+          const bm = this.gtao.blendMaterial;
+          bm.uniforms.intensity.value = this.gtao.blendIntensity;
+          bm.uniforms.tDiffuse.value = this.gtao.pdRenderTarget.texture;
+          r.autoClear = false;
+          this.fs.draw(r, bm, this.hdr);
+        } else {
+          // nur Normalen/Glanz für SSR (AO abgeschaltet)
+          const gt = this.gtao;
+          gt._overrideVisibility();
+          gt._renderOverride(r, gt.normalMaterial, gt.normalRenderTarget, 0x7777ff, 1.0);
+          gt._restoreVisibility();
+        }
         this.stats.sceneRenders++;
       }
+      // gfx-licht: Kontaktschatten (Strahl zur Sonne in der Tiefe), dann Reflexionen – beide vor TAA/Viewmodel
+      const seed = this.frame & 63;
+      r.autoClear = false;
+      if (this.contact && this.relief < 1 && this.sunDir && this.hdr.depthTexture && !style.classic) {
+        const k = this._contactStrength();
+        if (k > 0.01) this.contact.render(r, this.fs, this.hdr, gbuf ? this.gtao.normalRenderTarget.texture : null, camera, this.sunDir, seed, k);
+      }
+      if (this.ssr && gbuf && this.hdr.depthTexture) this.ssr.render(r, this.fs, this.hdr, this.gtao.normalRenderTarget.texture, camera, seed);
       // Lichtstrahlen: Himmelsmaske braucht die Tiefe der Welt (vor dem Viewmodel), Sonne im überscannten Bild
       shaftsOn = false;
       const sStrength = style.classic ? 0 : this.mood.shafts || 0;
@@ -362,6 +425,17 @@ export class PostPipeline {
         this.shafts.render(r, this.fs, this.hdr.texture, this.hdr.depthTexture, this.inner.w / this.inner.h, gs, camera);
         shaftsOn = true;
       }
+      // TAA: Verlauf auflösen (Welt ohne Viewmodel), dann Versatz zurücknehmen
+      if (taaOn) {
+        r.autoClear = false;
+        this.taa.resolve(r, this.fs, this.hdr, this.hdr.depthTexture, this._gradeState(post, false));
+      }
+      if (this.taa) this.taa.unjitter(camera);
+      // Tiefenschärfe beim Zielen (nur Welt; Anlegen meldet das Viewmodel über scene.userData.npAds)
+      if (this.dof) {
+        r.autoClear = false;
+        this.dof.render(r, this.fs, this.hdr, camera, hasVm && !style.classic ? vmScene.userData.npAds || 0 : 0, dt);
+      }
       // Himmelsmaske für den Bloom (Himmel trägt weniger zum Schein bei → keine Blendung), vor dem Waffen-Durchgang
       if (this.bloom && this.postRelief < 2 && this.hdr.depthTexture) { r.autoClear = false; this.bloom.captureSky(r, this.fs, this.hdr.depthTexture); }
       if (hasVm) {
@@ -371,6 +445,7 @@ export class PostPipeline {
         this.stats.sceneRenders++;
       }
     } finally {
+      if (this.taa) this.taa.unjitter(camera);
       if (F > 1.0001) {
         camera.fov = fov0; camera.updateProjectionMatrix();
         if (hasVm) { vmCamera.fov = vfov0; vmCamera.updateProjectionMatrix(); }
@@ -472,7 +547,7 @@ export class PostPipeline {
     u.uBorderShift.value.copy(this._shift);
     // Schärfe: low/medium etwas kräftiger (FXAA/bilineares Hochziehen weicht auf), Hochskalierung zusätzlich
     const sharpBase = style.sharpen * (cfg.sharpness ?? 0.5);
-    u.uSharp.value = Math.min(1, sharpBase * (resample === 1 ? 1.1 : 0.9) + (upscale && sharpBase > 0 ? 0.12 : 0));
+    u.uSharp.value = Math.min(1, sharpBase * (resample === 1 ? 1.1 : 0.9) + (upscale && sharpBase > 0 ? 0.12 : 0) + (this.taa && sharpBase > 0 ? 0.15 : 0));
     this.fs.draw(r, lm, null);
     r.autoClear = autoClear0;
     return true;
@@ -493,6 +568,7 @@ export class PostPipeline {
       this.fs.compile(r, this.lensPass.material({ resample: 2 }), null);
       if (this.bloom) for (const m of this.bloom.materials()) this.fs.compile(r, m, off);
       if (this.shafts) for (const m of this.shafts.materials()) this.fs.compile(r, m, off);
+      for (const fx of [this.taa, this.ssr, this.contact, this.dof]) if (fx) for (const m of fx.materials()) this.fs.compile(r, m, off);
     }
     if (this.exposure) for (const m of this.exposure.materials()) this.fs.compile(r, m, off);
   }
@@ -508,6 +584,10 @@ export class PostPipeline {
     if (this.shafts) out.push({ name: 'Lichtstrahlen', bytes: this.shafts.bytes() });
     if (this.aa instanceof SMAAPass) out.push({ name: 'SMAA', bytes: this.inner.w * this.inner.h * 8 + 160 * 560 + 64 * 16 });
     if (this.gtao) out.push({ name: 'GTAO', bytes: Math.round(this.inner.w * this.inner.h * this.aoScale * this.aoScale) * (8 + 4 + 4 + 4) });
+    if (this.taa) out.push({ name: 'TAA-Verlauf', bytes: this.taa.bytes() });
+    if (this.contact) out.push({ name: 'Kontaktschatten', bytes: this.contact.bytes() });
+    if (this.dof) out.push({ name: 'Tiefenschärfe', bytes: this.dof.bytes() });
+    if (this.ssr) out.push({ name: 'Reflexionen (SSR)', bytes: this.ssr.bytes() });
     if (this.exposure) out.push({ name: 'Belichtung', bytes: this.exposure.bytes() });
     if (this.lut) out.push({ name: 'LUT', bytes: this.lut.image.width ** 3 * 4 });
     return out;
@@ -520,6 +600,7 @@ export class PostPipeline {
       passes: this.stats.passes, sceneRenders: this.stats.sceneRenders,
       lens: this.lens.active ? { kappa: Math.round(this.lens.kappa * 1000) / 1000, overscan: Math.round(this.lens.F * 1000) / 1000 } : null,
       mood: this.mood.id, exposure: this.exposure && this.exposure.last ? Math.round(this.exposure.last.factor * 100) / 100 : null,
+      light: [this.aoOn && this.gtao ? 'gtao' : null, this.contact ? 'kontakt' : null, this.ssr ? 'ssr' : null, this.taa ? 'taa' : null, this.dof ? 'dof' : null].filter(Boolean).join('+') || null,
       upscaler: this.inner.w < this.out.w - 1 ? (this.mode === 'lite' ? 'lite' : this.cfg.upscaler === 'bilinear' ? 'bilinear' : 'fsr1') : 'nativ',
     };
   }
@@ -539,6 +620,17 @@ export class PostPipeline {
     this.gtao = null;
     if (this.shafts) this.shafts.dispose();
     this.shafts = null;
+    for (const k of ['taa', 'ssr', 'contact', 'dof']) { if (this[k]) this[k].dispose(); this[k] = null; }
+  }
+
+  /** Kontaktschatten-Stärke aus dem Sonnenanteil (Sonne flach/bedeckt → schwächer). */
+  _contactStrength() {
+    const s = this._sunLight;
+    if (!s) return 0.4;
+    if (!s.visible || s.intensity <= 0) return 0;
+    const sunI = s.intensity * Math.max(0.15, this.sunDir.y);
+    const hemiI = this._hemiLight ? this._hemiLight.intensity * 1.2 : 0.6;
+    return 0.6 * Math.min(1, sunI / (sunI + hemiI + 1e-3) * 1.4);
   }
 
   dispose() {

@@ -8,6 +8,9 @@
 import { esc, kd } from './dom.js?v=20261114004313';
 import { ICON, deviceOf } from './icons.js?v=20261114004313';
 
+/** masse: höchstens so viele Zeilen je Team-Block (große Schlachten), danach eine Sammelzeile. */
+const LIST_MAX = 32;
+
 /** Ping-Zelle: Bots „BOT“, Host „–“ (läuft dort), sonst Millisekunden mit Farbstufe. */
 function pingCell(r) {
   if (r.isBot && !r.isHuman) return '<td class="sb-ping is-bot">BOT</td>';
@@ -43,8 +46,21 @@ export function scoreboardHtml(rows, opts = {}) {
       `${extraLabel ? `<td class="sb-extra">${r.extra ? r.extra.value : '–'}</td>` : ''}${online ? pingCell(r) : ''}</tr>`;
   };
   const tcls = `sb-table${online ? ' sb-online' : ''}`;
+  // masse: große Schlachten (bis 250 je Seite) – je Block die besten LIST_MAX Zeilen + die eigene, Rest als Sammelzeile
+  const cols = 7 + (extraLabel ? 1 : 0) + (online ? 1 : 0);
+  const rowsOf = (list) => {
+    if (list.length <= LIST_MAX + 8) return list.map(row).join('');
+    let html = '';
+    for (let i = 0; i < LIST_MAX; i++) html += row(list[i], i);
+    const me = list.findIndex((r) => r.isPlayer);
+    if (me >= LIST_MAX) html += row(list[me], me);
+    const rest = list.length - LIST_MAX - (me >= LIST_MAX ? 1 : 0);
+    let k = 0, dd = 0;
+    for (let i = LIST_MAX; i < list.length; i++) if (i !== me) { k += list[i].kills | 0; dd += list[i].deaths | 0; }
+    return `${html}<tr class="sb-row sb-more"><td class="sb-rank">…</td><td class="sb-name" colspan="${cols - 1}">und ${rest} weitere · ${k} Abschüsse · ${dd} Tode</td></tr>`;
+  };
   if (!opts.teams) {
-    return `<table class="${tcls} sb-ffa">${head}${rows.map(row).join('')}</table>`;
+    return `<table class="${tcls} sb-ffa">${head}${rowsOf(rows)}</table>`;
   }
   const mine = opts.playerTeam === 'B' ? 'B' : 'A';
   const other = mine === 'A' ? 'B' : 'A';
@@ -60,7 +76,7 @@ export function scoreboardHtml(rows, opts = {}) {
         || String(a.squad).localeCompare(String(b.squad)) || b.score - a.score);
     }
     return `<div class="sb-team sb-${side}"><div class="sb-thead"><span class="sb-tname">${esc(names[team] || team)}</span><span class="sb-tside">${side === 'ally' ? 'Dein Team' : 'Gegner'}</span><b class="sb-tscore">${sc[team] ?? ''}</b></div>` +
-      `<table class="${tcls}">${head}${list.map(row).join('')}</table></div>`;
+      `<table class="${tcls}">${head}${rowsOf(list)}</table></div>`;
   };
   return `<div class="sb-teams">${block(mine, 'ally')}${block(other, 'enemy')}</div>`;
 }

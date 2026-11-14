@@ -82,10 +82,10 @@ export class Vehicle {
     this.spawnTeam = team;
     this.spawn = spawn;
     this.isVehicle = true;
-    this.body = new VehicleBody(def);
+    this.body = this._makeBody(def);
     this.body.setPose(position, yaw);
     this.variant = variant | 0; // Zivilfahrzeuge: Lackierung/Last je Stellplatz (Netz: Fahrzeugliste)
-    this.model = createVehicleModel(type, { team, quality, variant: this.variant });
+    this.model = this._makeModel(type, { team, quality, variant: this.variant });
     this.health = this.maxHealth = def.health;
     this.zones = {};
     for (const [k, z] of Object.entries(def.zones)) this.zones[k] = { id: k, label: z.label, hp: z.hp, max: z.hp };
@@ -116,6 +116,10 @@ export class Vehicle {
     this.gun = createGun(this);
     this._modelState = {};
   }
+
+  /** Körper/Modell erzeugen (Luftfahrzeuge überschreiben beides: air/aircraft.js). */
+  _makeBody(def) { return new VehicleBody(def); }
+  _makeModel(type, opts) { return createVehicleModel(type, opts); }
 
   /* --------------------------------------------------------------- Abfragen */
 

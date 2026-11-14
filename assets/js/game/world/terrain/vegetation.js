@@ -14,7 +14,7 @@
 // weiches Ausblenden im Shader, spärliche Wiesenblumen (medium+). Alles aus Positions-Hashes – berührt weder die
 // Zufallsströme noch die Kollision (Felsen werden nur gelesen, um Gras aus ihnen herauszuhalten).
 import * as THREE from 'three';
-import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM } from '../atlas.js?v=20261114004313';
+import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM, spruceMaterial } from '../atlas.js?v=20261114004313';
 import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261114004313';
 import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261114004313';
 
@@ -291,13 +291,14 @@ function farBroadleaf(lite = false) {
 /** Stamm + Hauptäste des Laubbaums (Rinde mit UV): Stamm bis in die Krone, je Kranz-Büschel ein Ast schräg nach außen. */
 function broadleafWood() {
   const parts = [], up = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion();
-  const trunk = new THREE.CylinderGeometry(0.14, 0.27, 5.6, 7, 1, true); trunk.translate(0, 2.8, 0);
+  const trunk = new THREE.CylinderGeometry(0.14, 0.27, 5.6, 7, 1, true); meterUV(trunk, 1.3, 5.6); trunk.translate(0, 2.8, 0);
   parts.push(trunk);
   LAUBBAUM.clumps.forEach(([x, y, z], i) => {
     if (i >= LAUBBAUM.limbs) return; // oberer Kranz, Wipfel, Kern sitzen über dem Stamm
     const lower = i < 5, start = new THREE.Vector3(0, 2.7 + (i % 5) * 0.3 + (lower ? 0 : 1.6), 0);
     const dir = new THREE.Vector3(x * 0.8, y - 0.3, z * 0.8).sub(start), len = dir.length();
     const g = new THREE.CylinderGeometry(0.04, lower ? 0.12 : 0.09, len, 5, 1, true);
+    meterUV(g, 0.5, len);
     g.translate(0, len / 2, 0); g.applyQuaternion(q.setFromUnitVectors(up, dir.normalize())); g.translate(start.x, start.y, start.z);
     parts.push(g);
   });
@@ -314,6 +315,77 @@ function broadleafWood() {
   out.computeBoundingSphere();
   return out;
 }
+/** gfx-welt: Zylinder-UVs in Metern (Umfang, Länge) – Rinde (Fotoscan, 1 m je Kachel) unverzerrt statt längs gestreckt. */
+function meterUV(g, circ, len) {
+  const uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * circ, uv.getY(i) * len);
+  return g;
+}
+
+/**
+ * gfx-welt: Sichtgeometrie eines Felsens – feiner Ikosaeder (detail 3 bzw. 2 auf low/medium) auf der Hülle des
+ * Kollisionsfelsens (rockGeometry, Strahl von innen je Richtung) plus Kanten-Rauschen (Schichtung, Abplatzungen,
+ * ±6 % → die Kollision bleibt praktisch deckungsgleich und ist auf allen Stufen dieselbe). Glatte Normalen,
+ * Planar-UVs je Dreieck entlang der Hauptachse (Meter, Fotoscan-Fels ohne Verzerrung; Nähte gehen im Gestein unter).
+ */
+function rockVisualGeometry(seed, detail = 3) {
+  const bg = rockGeometry(seed), base = bg.index ? bg.toNonIndexed() : bg, bp = base.attributes.position;
+  const tri = [];
+  for (let i = 0; i < bp.count; i += 3) tri.push([new THREE.Vector3().fromBufferAttribute(bp, i), new THREE.Vector3().fromBufferAttribute(bp, i + 1), new THREE.Vector3().fromBufferAttribute(bp, i + 2)]);
+  base.dispose(); bg.dispose();
+  const ray = new THREE.Ray(new THREE.Vector3(), new THREE.Vector3()), hit = new THREE.Vector3();
+  const geo = new THREE.IcosahedronGeometry(1, detail);
+  // Ikosaeder kommt ohne Index → gleiche Punkte verschweißen, damit Rauschen und Normalen stetig bleiben
+  const p = geo.attributes.position, key = new Map(), idx = [], pos = [];
+  for (let i = 0; i < p.count; i++) {
+    const k = `${p.getX(i).toFixed(4)},${p.getY(i).toFixed(4)},${p.getZ(i).toFixed(4)}`;
+    let j = key.get(k);
+    if (j === undefined) { j = pos.length / 3; key.set(k, j); pos.push(p.getX(i), p.getY(i), p.getZ(i)); }
+    idx.push(j);
+  }
+  geo.dispose();
+  const sn = createSimplex(seed * 7 + 3), out = new Float32Array(pos.length);
+  // Bruchflächen: 7 Ebenen je Fels, 84–94 % der Hüllweite in ihrer Richtung → kantige Flächen statt Kuppel
+  const rr = rng(seed * 13 + 5), planes = [];
+  for (let k = 0; k < 7; k++) {
+    const n = new THREE.Vector3(rr() * 2 - 1, rr() * 1.4 - 0.2, rr() * 2 - 1).normalize();
+    let sup = 0; for (const t3 of tri) for (const v of t3) sup = Math.max(sup, v.dot(n));
+    planes.push([n, sup * (0.84 + rr() * 0.1)]);
+  }
+  for (let j = 0; j < pos.length; j += 3) {
+    ray.direction.set(pos[j], pos[j + 1], pos[j + 2]).normalize();
+    let best = 1;
+    for (const [a, b, c] of tri) if (ray.intersectTriangle(a, b, c, false, hit)) { best = hit.length(); break; }
+    const d = ray.direction, x = d.x * 2.1, y = d.y * 2.1, z = d.z * 2.1;
+    for (const [n, dd] of planes) { const c = d.dot(n); if (c > 0.05 && best * c > dd) best = dd / c; }
+    // Schichtung (waagerechte Bänder) + Abplatzungen (Grat-Rauschen) + Feinkorn
+    const strata = Math.abs(sn(y * 3.1 + sn(x * 0.7, z * 0.7) * 0.4, 7.3)) * 0.06;
+    const chip = (1 - Math.abs(sn(x * 1.6 + 11, z * 1.6 - y * 1.3))) ** 3 * 0.08;
+    const fine = sn(x * 4.3 - z, y * 4.3 + z * 2.1) * 0.025;
+    const r = best * (1 - strata - chip + fine);
+    out[j] = d.x * r; out[j + 1] = Math.max(-0.35, d.y * r); out[j + 2] = d.z * r;
+  }
+  const ig = new THREE.BufferGeometry();
+  ig.setAttribute('position', new THREE.BufferAttribute(out, 3));
+  ig.setIndex(idx);
+  ig.computeVertexNormals();
+  const g2 = ig.toNonIndexed(); ig.dispose();
+  const P = g2.attributes.position, uv = new Float32Array(P.count * 2), e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  for (let i = 0; i < P.count; i += 3) {
+    a.fromBufferAttribute(P, i); b.fromBufferAttribute(P, i + 1); c.fromBufferAttribute(P, i + 2);
+    e1.subVectors(b, a); e2.subVectors(c, a); e1.cross(e2);
+    const ax = Math.abs(e1.x), ay = Math.abs(e1.y), az = Math.abs(e1.z);
+    for (let k = 0; k < 3; k++) {
+      const v = k === 0 ? a : k === 1 ? b : c;
+      const [u, w] = ay >= ax && ay >= az ? [v.x, v.z] : ax >= az ? [v.z, v.y] : [v.x, v.y];
+      uv[(i + k) * 2] = u * 2.2 + seed * 0.37; uv[(i + k) * 2 + 1] = w * 2.2 + seed * 0.11;
+    }
+  }
+  g2.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g2.computeBoundingSphere();
+  return g2;
+}
+
 /** Fels: verformter Ikosaeder. */
 function rockGeometry(seed) {
   const g = new THREE.IcosahedronGeometry(1, 1);
@@ -607,13 +679,13 @@ export class Vegetation {
     farMat.color.setRGB(0.2, 0.25, 0.17);
     const bark = getMaterial('bark');
     this._own = [farMat];
-    const trunkGeo = new THREE.CylinderGeometry(0.16, 0.24, 3.4, 7, 1, true); trunkGeo.translate(0, 1.7, 0);
+    const trunkGeo = new THREE.CylinderGeometry(0.16, 0.24, 3.4, 7, 1, true); meterUV(trunkGeo, 1.3, 3.4); trunkGeo.translate(0, 1.7, 0);
     const spruceGeo = spruceGeometry();
     this._geoms = [trunkGeo, spruceGeo];
     const sp = this.species;
     const nearCap = (kind) => Math.min(sp[kind]?.count || 0, kind === 'busch' ? 3000 : 2400);
     if (sp.fichte) {
-      sp.fichte.near = make(spruceGeo, foliageMat, nearCap('fichte'), 'veg-fichte', t.treeShadow);
+      sp.fichte.near = make(spruceGeo, spruceMaterial(q), nearCap('fichte'), 'veg-fichte', t.treeShadow); // gfx-welt: eigene Zweigtextur
       const fg = farSpruce(q === 'low'); this._geoms.push(fg);
       sp.fichte.far = make(fg, farMat, sp.fichte.count, 'veg-fichte-fern', false);
     }
@@ -630,15 +702,17 @@ export class Vegetation {
     if (sp.schilf) sp.schilf.near = make(rp.geometry, foliageMatN, sp.schilf.count, 'veg-schilf', false);
     // Felsen: statisch, ein InstancedMesh je Variante
     if (this.rocks.length) {
-      const rockMat = getMaterial('concrete_dark');
-      this._rockGeoms = this._rockGeoms || [rockGeometry(11), rockGeometry(23), rockGeometry(37)];
+      // gfx-welt: Fotoscan-Fels auf feiner Sichtgeometrie (Kollision bleibt rockGeometry, siehe colliders)
+      const rockMat = getMaterial('fels');
+      const det = q === 'low' ? 1 : q === 'medium' ? 3 : q === 'high' ? 4 : 6; // Dreiecke 80 / 320 / 500 / 980 (low wie der alte Fels)
+      this._rockVis = this._rockVis || [11, 23, 37].map((sd) => rockVisualGeometry(sd, det));
       for (let v = 0; v < 3; v++) {
         const list = this.rocks.filter(r => r.v === v);
         if (!list.length) continue;
-        const m = new THREE.InstancedMesh(this._rockGeoms[v], rockMat, list.length);
+        const m = new THREE.InstancedMesh(this._rockVis[v], rockMat, list.length);
         list.forEach((rk, i) => {
           _q.setFromAxisAngle(_up, rk.ry); _s.set(rk.sx ?? rk.s, rk.sy ?? rk.s, rk.sz ?? rk.s); _p.set(rk.x, rk.y, rk.z); _m.compose(_p, _q, _s); m.setMatrixAt(i, _m);
-          m.setColorAt(i, _c.set('#a39a8c').multiplyScalar(0.8 + hash2(i, v) * 0.3));
+          m.setColorAt(i, _c.set('#bdb5aa').multiplyScalar(0.75 + hash2(i, v) * 0.35));
         });
         m.name = 'veg-felsen'; m.castShadow = q !== 'low'; m.receiveShadow = true;
         m.computeBoundingSphere();
@@ -831,6 +905,7 @@ export class Vegetation {
   dispose() {
     for (const g of this._geoms || []) g.dispose();
     for (const g of this._rockGeoms || []) g.dispose();
+    for (const g of this._rockVis || []) g.dispose();
     for (const m of this._own || []) m.dispose();
     for (const p of this._protos || []) p.geometry.dispose();
     this.group.traverse(o => { if (o.isInstancedMesh) o.dispose(); });

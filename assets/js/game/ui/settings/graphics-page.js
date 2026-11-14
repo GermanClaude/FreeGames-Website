@@ -19,8 +19,8 @@ const SECTIONS = [
   ['Qualitätsstufe', ['quality']],
   ['Auflösung', ['renderScale', 'gfxPixelRatio', 'upscaler', 'sharpness']],
   ['Bildrate', ['fpsLimit', 'showFps']],
-  ['Licht und Schatten', ['gfxShadows', 'gfxAO', 'autoExposure']],
-  ['Nachbearbeitung', ['gfxPost', 'gfxAA', 'gfxBloom', 'colorLook', 'lensStyle', 'lensStrength', 'grain', 'lensArtifacts', 'lensBorder']],
+  ['Licht und Schatten', ['gfxShadows', 'gfxAO', 'gfxContact', 'gfxSSR', 'autoExposure']],
+  ['Nachbearbeitung', ['gfxPost', 'gfxAA', 'gfxBloom', 'gfxDOF', 'colorLook', 'lensStyle', 'lensStrength', 'grain', 'lensArtifacts', 'lensBorder']],
   ['Texturen', ['gfxTextures']],
   ['Effekte', ['gfxEffects']],
 ];
@@ -32,7 +32,10 @@ const LOCAL_HINTS = {
   gfxShadows: 'Auflösung und Reichweite der Sonnenschatten, Schatten der Figuren.',
   gfxAO: 'Verdeckung in Ecken und Fugen. Rendert die Szene ein zweites Mal (auf „Hoch“ in halber Auflösung) – kostet Leistung.',
   gfxPost: 'Einfach: alles in einem Durchgang (Handys). Voll: Leuchten, Kantenglättung, Lichtstrahlen.',
-  gfxAA: 'FXAA ist billig, SMAA schärfer und ruhiger.',
+  gfxAA: 'FXAA ist billig, SMAA schärfer und ruhiger. TAA verrechnet mehrere Bilder: feine Details (Zäune, Gras, Kanten) und weiche Schatten stehen ruhig, das Bild wird etwas weicher.',
+  gfxContact: 'Feine Schatten dort, wo Dinge den Boden berühren (Füße, Kisten, Leisten) – ergänzt die Schattenkarte. Ab „Hoch“.',
+  gfxDOF: 'Beim Zielen wird Nahes vor dem Ziel (Deckungskanten, Gras) weich, das Ziel bleibt scharf. Ab „Hoch“.',
+  gfxSSR: 'Spiegelungen der Umgebung in Wasser, Glas, Metall und glatten Flächen (nur was im Bild ist). Ultra.',
   gfxBloom: 'Leuchten heller Lichter, mit Linsenschmutz im Bodycam-Stil.',
   colorLook: 'Natürlich: kräftigere Farben. Video-Look: grau-grün und entsättigt wie die Video-Vorlage. Ab Stufe „Mittel“.',
   gfxTextures: 'Auflösung der Fotoscan-Texturen (Böden, Wände, Holz, Metall). Ultra lädt 2048er-Scans: deutlich schärfer aus der Nähe, braucht mehr Grafikspeicher und Ladezeit. Nur auf Qualitätsstufe Hoch/Ultra und nicht auf Telefonen. Gilt ab dem nächsten Match.',
@@ -179,7 +182,7 @@ export function graphicsPage(P) {
     if (!host) return;
     const p = effPreset();
     const lite = !p.post;
-    for (const k of ['gfxAA', 'gfxBloom', 'gfxAO']) setRowDisabled(host, k, lite, 'Nur mit voller Nachbearbeitung.');
+    for (const k of ['gfxAA', 'gfxBloom', 'gfxAO', 'gfxContact', 'gfxSSR', 'gfxDOF']) setRowDisabled(host, k, lite, 'Nur mit voller Nachbearbeitung.');
     const style = S.get('lensStyle');
     for (const k of ['lensStrength', 'grain', 'lensArtifacts', 'lensBorder']) setRowDisabled(host, k, style !== 'bodycam', 'Nur im Bildstil „Bodycam“.');
     setRowDisabled(host, 'sharpness', style === 'klassisch', 'Im Stil „Klassisch“ ohne Nachschärfen.');
@@ -188,6 +191,7 @@ export function graphicsPage(P) {
     setRowCost(host, 'gfxShadows', p.shadows ? `${p.shadowMapSize}² · ${cost('gfxShadows')}` : '');
     setRowCost(host, 'gfxAO', cost('gfxAO'));
     setRowCost(host, 'gfxAA', cost('gfxAA'));
+    setRowCost(host, 'gfxSSR', cost('gfxSSR'));
     setRowCost(host, 'gfxBloom', cost('gfxBloom'));
     setRowCost(host, 'renderScale', `${sz.w} × ${sz.h}`);
     setRowCost(host, 'gfxPixelRatio', `${sz.ow} × ${sz.oh}`);

@@ -271,6 +271,11 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     const i = Math.round((x - hf.minX) / BR), j = Math.round((z - hf.minZ) / BR);
     return i < 0 || j < 0 || i >= bn || j >= bn ? false : block[j * bn + i] === 1;
   };
+  // gfx-welt: Rinde und Felsen der Vegetation als Fotoscans – ihre Sätze laufen nicht über die Ortschaften (lib.load je
+  // Ortschaft lädt nur deren Materialien), daher hier nachladen, bevor veg.build() die Materialien anlegt
+  if (libOk && libPlan) {
+    try { const vn = ['bark', 'fels'].filter((n) => libPlan.has(n)); if (vn.length) resolveLibraryMaterials((await lib.load({ names: vn, plan: libPlan })).sets); } catch (err) { console.warn('[world] Vegetation-Sätze', err); }
+  }
   const veg = new Vegetation({ hf, spec: def.vegetation, quality, tier, blocked, bounds: pb, fields: def.terrain?.fields || [] });
   const vegCol = veg.colliders();
   group.add(veg.build(getMaterial));
@@ -475,6 +480,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     targets: [],
     terrain: { heightfield: hf, chunks, size: hf.size, waterY: hf.waterY, material: tmat.material, source: tmat.source },
     roads, vehicleSpawns, vehicleSpots, secrets, secretsAuto: true,
+    vegetation: veg, // Baumstandorte (vehicles/air: Stellplätze der Luftfahrzeuge frei von Kronen)
     civilVehicles: civilList(sites.flatMap((st) => st.b.civilSpots || [])), // fahrbare Zivilautos der Ortschaften
     emplacements: sites.flatMap((st) => st.b.emplacements || []), // benutzbare MG-Stellungen (game/mappoints.js)
     doors: sites.flatMap((st) => st.b.doors || []), gates: sites.flatMap((st) => st.b.gates || []), windows: sites.flatMap((st) => st.b.windows || []), // game/doors.js

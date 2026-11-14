@@ -127,6 +127,7 @@ const MATS = {
   grabenlehm_hell:   { tex: 'grabenlehm_hell', tile: 2.8, surface: 'dirt' },
   schlamm:           { tex: 'schlamm', tile: 2.6, surface: 'mud', params: { roughness: 0.75 } },
   bark_palm:         { tex: 'bark_palm', tile: 1.2, surface: 'wood' },
+  fels:              { tex: 'concrete_dark', tile: 3, surface: 'concrete' }, // gfx-welt: Felsen (Bibliothek: rock_boulder, sonst prozedural)
   cardboard:         { tex: 'cardboard', tile: 1, surface: 'wood' },
   metal_painted:     { tex: 'metal_painted', tile: 2, surface: 'metal', params: { metalness: 1 } },
   // Autolack: wie lackiertes Metall, Oberfläche Fahrzeugblech (Kugeln gehen durch Autos, combat.js)

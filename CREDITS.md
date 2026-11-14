@@ -9,7 +9,7 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (69)
+## Texturen (71)
 
 45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
@@ -85,6 +85,27 @@ verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmi
 | Plastic 006 | `polymer_black` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Plastic006) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Lacquered Cherry Wood | `wood_stock` | Jenelle van Heerden, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/lacquered_cherry_wood) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rubber 004 | `rubber` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Rubber004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Bark Brown 02 | `bark_brown` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/bark_brown_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rock Boulder Dry | `rock_boulder` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_boulder_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Laub- und Bodenatlanten (14.11.2026)
+
+`assets/lib/foliage/`: Foto-Laubatlanten (Busch, Gras, Palmwedel, Blüten, Laubbaum-Büschel) und der Atlas der
+Bodenauflage (Laub, Erde, Sand, Splitt, Pfützen-/Ölmasken, Schmutzrand, Einzelblätter) sind aus freigestellten
+Blättern/Halmen bzw. maskierten Ausschnitten dieser CC0-Scans zusammengesetzt (WebP); der Fichtenzweig ist eigen gezeichnet.
+
+| Asset | Verwendet für | Urheber:in | Quelle | Lizenz |
+|---|---|---|---|---|
+| Shrub 03 | Blätter (Busch, Laubbaum, Einzelblätter) | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Shrub 04 | Blätter (Busch, Laubbaum, Blüten, Einzelblätter) | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Grass Medium 01 | Grasbüschel | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/grass_medium_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Grass Medium 02 | Palmfiedern | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/grass_medium_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Dry Decay Leaves | Laubstreu | Amal Kumar | [Poly Haven](https://polyhaven.com/a/dry_decay_leaves) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brown Mud Dry | Erde/Schlamm | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Coast Sand 01 | Sand-/Staubverwehung | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/coast_sand_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rocky Gravel | Splitt | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/rocky_gravel) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Dirt | Schmutzrand am Wandfuß | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/dirt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Forest Leaves 02 | Schmutzrand am Wandfuß | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/forest_leaves_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
 ## HDRIs (8)
 
