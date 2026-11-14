@@ -146,3 +146,17 @@ Grenzen auf iOS: Speicher pro Seite knapper, Safari kann den Zwischenspeicher na
 - Service Worker in der Android-WebView (Offline-Start der App) ungetestet.
 - PC-VR aus der Electron-App ungetestet (siehe oben).
 - Die Release-Links der Startseite gehen erst, wenn ein Release mit den neuen festen Dateinamen existiert.
+
+## Getestet (14.11., Sandbox ohne GPU)
+
+- **Desktop-App (Electron 45, xvfb, unverpackt aus `desktop/`):** startet auf `app://nullpunkt/index.html`, erkennt sich
+  (`is-desktop-app`), §08 zeigt den App-Bereich statt der Downloads; Klick auf „Lobby & Mehrspieler“ → `spielen.html`,
+  Lobby lädt, eigenes Gerät im Netz = `app`. Keine Seitenfehler, keine 404.
+- **Extrem in Electron:** Match Hafen (TDM, 4 Bots) mit `quality=extrem` lief an (nach 289 s Software-GL), Preset
+  `extreme: true`, Schatten **4096** (Software-GL → kein 8K), keine Fehler. Der frühere Absturz trat mit 8K-Schatten in
+  der Software-GL auf; mit der Absicherung lädt die Karte. 8K auf echter GPU weiterhin ungemessen.
+- **PWA (Chromium/Playwright, localhost mit `?sw=1`):** Service Worker aktiv, Chrome meldet **keine
+  Installierbarkeits-Fehler**, Manifest ohne Fehler; zweiter Aufruf der Startseite: 40/40 Anfragen aus dem Service
+  Worker; „Für offline speichern“: 495 Dateien (12 MB) in 3 s; `spielen.html` danach 389/389 aus dem Service Worker;
+  **offline** (Netz aus) laden Startseite (200) und Spiel-Lobby vollständig. iPhone-Ansicht zeigt die Safari-Anleitung.
+  Der Install-Knopf selbst (`beforeinstallprompt`) erscheint im kopflosen Testbrowser nicht – nur im echten Chrome/Edge.

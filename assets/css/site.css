@@ -1247,6 +1247,8 @@ html.static-type .hl { --sq: 0; }
   .dl-compare td:nth-of-type(2)::before { content: 'PC-App: '; color: var(--np-ink); }
   .dl-compare td[colspan]::before { content: ''; }
 }
+/* Handy/Tablet: Web-App und Handy zuerst, PC-App danach */
+@media (pointer: coarse) { .dl-pc { order: 3; } .dl-vr { order: 4; } }
 /* Desktop-App */
 .app-play { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin-bottom: 40px; }
 .app-sys { margin: 0 0 40px; }

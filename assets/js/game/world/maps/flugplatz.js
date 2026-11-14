@@ -11,6 +11,8 @@ import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, f
 import { mgNest } from './grenzland-stellungen.js?v=20261114060746';
 import { burntWreck } from './brandwald-bau.js?v=20261114060746';
 import { KEIN, VG } from './neu-bau.js?v=20261114060746';
+import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261114060746'; // gelaende (Runde 3)
+import { reliefAvoid } from '../terrain/relief.js?v=20261114060746';
 
 const PI = Math.PI, Q = PI / 2;
 const R_Y = 13;                                   // Plateau der Radarstellung
@@ -230,7 +232,7 @@ const veh = (side, L) => {
   ];
 };
 
-export default {
+const FLUGPLATZ = {
   id: 'flugplatz',
   name: 'Flugplatz',
   scale: 'gross',
@@ -359,6 +361,8 @@ export default {
     { id: 'piste', name: 'Startbahn', bounds: { minX: -520, maxX: 520, minZ: -60, maxZ: 90 }, chunkSize: 360, build: (b, ctx) => piste(b, ctx) },
     { id: 'zaun', name: 'Zaun', bounds: { minX: -470, maxX: 470, minZ: -265, maxZ: 265 }, chunkSize: 480, build: (b, ctx) => zaun(b, ctx) },
     { id: 'flak', name: 'Flakstellungen', bounds: { minX: -280, maxX: 280, minZ: -215, maxZ: 215 }, chunkSize: 600, build: (b, ctx) => flakstellungen(b, ctx) },
+    // gelaende (Runde 3): Erdwälle, Splitterschutz, Materiallager, Fahrzeugstellungen (flugplatz-gelaende.js)
+    { id: 'gelaende', name: 'Deckung', bounds: { minX: -360, maxX: 360, minZ: -130, maxZ: 135 }, chunkSize: 360, build: (b, ctx) => { b.gelaende = flugplatzGelaende(b, ctx, FLUGPLATZ); return {}; } },
   ],
 
   flags: {
@@ -390,3 +394,20 @@ export default {
     { id: 'flugplatz-ente', name: 'Die Tower-Ente', hint: 'Wer ganz oben sitzt, hat einen Glücksbringer.', x: 125 + 6.05 - 1.2 + 2.6, y: 17.1, z: -150 + 3.2, trigger: { type: 'proximity', radius: 1.6 } },
   ],
 };
+
+// gelaende (14.11., Runde 3): Kleinrelief außerhalb der Bauflächen (terrain/relief.js) – Kuppen und Senken in den
+// Wiesen/Feldern um den Fliegerhorst. Bahn, Rollwege, Vorfeld, Schneisen und Ortschaften sind Bauflächen (pads) und
+// werden danach wieder eingeebnet; Flaggen, Startpunkte, Fahrzeuge und Ortschaften sind zusätzlich ausgeblendet.
+FLUGPLATZ.terrain.relief = {
+  ...reliefAvoid(FLUGPLATZ),
+  knolls: [
+    { x: -60, z: 190, r: 20, h: 3.4, w: 15, ry: 0.3 }, { x: 60, z: 190, r: 20, h: 3.4, w: 15, ry: -0.3 },
+    { x: -220, z: -250, r: 22, h: 3.6, w: 16, ry: 0.2 }, { x: 220, z: -250, r: 22, h: 3.6, w: 16, ry: -0.2 },
+    { x: -330, z: 160, r: 18, h: -2.2, w: 13 }, { x: 330, z: 160, r: 18, h: -2.2, w: 13 },
+  ],
+  ridges: [{ pts: [[-300, 120], [-270, 135], [-250, 150]], w: 4, h: 1.5 }, { pts: [[300, 120], [270, 135], [250, 150]], w: 4, h: 1.5 }],
+  sunken: [{ pts: [[-120, -230], [-60, -250], [0, -262]], w: 4, d: 1.6, bank: 5.5 }, { pts: [[120, -230], [60, -250], [0, -262]], w: 4, d: 1.6, bank: 5.5 }],
+  scatter: { seed: 9091, count: 60, area: { minX: -480, maxX: 480, minZ: -290, maxZ: 290 }, r: [10, 22], h: [1.4, 3.4], hollow: 0.3, gap: 8 },
+};
+
+export default FLUGPLATZ;
