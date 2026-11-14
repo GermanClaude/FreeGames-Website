@@ -173,6 +173,11 @@ export class Aircraft extends Vehicle {
       if (this.launchAt == null) { this.launchAt = now + 1.4; G.events.emit('vehicle:airstart', { vehicle: this, phase: 'bereit', at: this.launchAt }); }
       else if (now >= this.launchAt) this.airStart(world);
     } else if (!pilot || !b.onGround) this.launchAt = null;
+    // Startbahn-Karte: einmaliger Hinweis für den Spieler am Steuer (Start vom Boden)
+    if (this.air === 'jet' && pilot && pilot === G.player && b.onGround && world && world.runway && !this._rwHint) {
+      this._rwHint = true;
+      this.sys._flash?.('Start von der Bahn: Schub W, Nachbrenner Umschalt, ab ≈ 250 km/h Nase hoch');
+    }
     // Schäden → Flugleistung
     const Z = this.zones;
     const eng = Z.engine && Z.engine.hp <= 0, tail = Z.tracks && Z.tracks.hp <= 0;

@@ -520,6 +520,7 @@ function cabinMats(S) {
     lampRed: std('lampe-rot', { color: 0x3a0806, emissive: 0xff2a14, emissiveIntensity: 3.2, roughness: 0.3 }),
     lampGreen: std('lampe-gruen', { color: 0x06200a, emissive: 0x3cff5a, emissiveIntensity: 2.4, roughness: 0.3 }),
     lampAmber: std('lampe-gelb', { color: 0x2a1a04, emissive: 0xffa21c, emissiveIntensity: 2.4, roughness: 0.3 }),
+    disp: std('anzeige', { color: 0x0a1a0c, emissive: 0x52d070, emissiveIntensity: 0.55, roughness: 0.3 }),
     lampOff: std('lampe-aus', { color: 0x221a18, roughness: 0.25, metalness: 0.2 }),
     lampWarm: std('gluehlampe', { color: 0xffe0b0, emissive: 0xffb860, emissiveIntensity: 3.5, roughness: 0.3 }),
     flame: std('flamme', { color: 0xffc070, emissive: 0xff8a2a, emissiveIntensity: 5, roughness: 0.5 }),
@@ -541,7 +542,7 @@ function cabinMats(S) {
   CM.remap = new Map([
     [S.cabin, CM.wall.modern], [S.cabinWk2, CM.wall.wk2], [S.cabinWk1, CM.wall.wk1], [S.dark, CM.metal], [S.steel, CM.steel],
     [S.rubber, CM.rubber], [S.canvas, CM.canvas], [S.red, CM.red], [S.shell, CM.shell], [S.brass, CM.brass], [S.wood, CM.wood],
-    [S.sleeve, CM.sleeve], [S.lensOn, CM.lampGreen], [S.lamp, CM.lampWarm],
+    [S.sleeve, CM.sleeve], [S.lensOn, CM.disp], [S.lamp, CM.lampWarm],
   ]);
   return CM;
 }
@@ -660,6 +661,20 @@ function harness(B, C, pts, det, colors = 3) {
     const p = curve.getPointAt(i / n), t = curve.getTangentAt(i / n);
     B.add(tor(0.022, 0.004, 4, 10), C.steel, p.toArray(), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), t));
   }
+}
+
+/** Fläche nach innen kehren (Wicklung + Normalen). */
+function inwardGeom(geom) {
+  const g = geom.index ? geom.toNonIndexed() : geom;
+  if (g !== geom) geom.dispose();
+  g.deleteAttribute('uv');
+  for (const name of ['position', 'normal']) {
+    const a = g.attributes[name].array;
+    for (let t = 0; t < a.length; t += 9) for (let k = 0; k < 3; k++) { const x = a[t + 3 + k]; a[t + 3 + k] = a[t + 6 + k]; a[t + 6 + k] = x; }
+  }
+  const n = g.attributes.normal.array;
+  for (let i = 0; i < n.length; i++) n[i] = -n[i];
+  return g;
 }
 
 /** Raum aus Seitenprofil [[z, y], …] (konvex) über x = xl…xr, Flächen nach innen. */
@@ -1057,6 +1072,9 @@ function buildTurret(D, C, det, era, cab, A) {
       const yr = Math.min(hy, 0.75) - 0.03;
       B.add(tor(r + 0.05, 0.032, 6, det ? 32 : 16), C.steel, [hx, yr, hz], [HP, 0, 0]);
       B.add(tor(r + 0.1, 0.04, 6, det ? 32 : 16), C.pad, [hx, yr - 0.06, hz], [HP, 0, 0]);
+      // Kuppelschacht: Wand zwischen Turmdecke und Spiegelkranz, die Winkelspiegel sitzen darin
+      { const hgt = Math.max(0.12, 0.76 - (yr - 0.17)); const g2 = inwardGeom(cyl(r + 0.075, r + 0.075, hgt, det ? 32 : 16, true)); B.add(g2, W, [hx, yr - 0.17 + hgt / 2, hz]); }
+      B.add(tor(r + 0.075, 0.015, 4, det ? 32 : 16), C.steel, [hx, yr - 0.17, hz], [HP, 0, 0]);
       const n = modern ? 6 : 7;
       for (let i = 0; i < n; i++) {
         const a = (i / n) * PI * 2 + 0.3;
@@ -1178,8 +1196,8 @@ function buildTurret(D, C, det, era, cab, A) {
 
   // ---------------------------------------------------------------- Allgemein: Kabel, Leitungen, Lüfter, Polster, Schalter, Schilder
   if (det) {
-    harness(B, C, [[0.98, 0.71, -0.85], [1.02, 0.71, 0.0], [0.98, 0.71, 1.2], [0.6, 0.71, 1.7]], det);
-    harness(B, C, [[-0.98, 0.71, -0.85], [-1.02, 0.71, 0.1], [-0.98, 0.71, 1.25]], det, 2);
+    harness(B, C, [[1.02, 0.71, -0.85], [1.07, 0.71, 0.0], [1.06, 0.71, 1.05]], det);
+    harness(B, C, [[-1.02, 0.71, -0.85], [-1.07, 0.71, 0.1], [-1.06, 0.71, 1.05]], det, 2);
     harness(B, C, [[-0.3, 0.72, -1.05], [0, 0.72, -1.08], [0.35, 0.72, -1.05]], det, 2);
   } else B.tube(C.black, [[1.0, 0.71, -0.85], [1.0, 0.71, 1.2]], 0.014, 4, 2);
   if (modern) {
@@ -1193,7 +1211,7 @@ function buildTurret(D, C, det, era, cab, A) {
   }
   if (!wk1) {
     // Lüfter in der Turmdecke (dreht), Gitter, Schild
-    const fp = [0.35, 0.7, 0.75];
+    const fp = [-0.15, 0.7, 1.2];
     B.add(cyl(0.13, 0.13, 0.08, det ? 24 : 12, true), C.metal, fp);
     for (const rr of det ? [0.04, 0.08, 0.12] : [0.12]) B.add(tor(rr, 0.004, 4, det ? 20 : 10), C.steel, [fp[0], fp[1] - 0.042, fp[2]], [HP, 0, 0]);
     const fan = part(grp, 'luefter', [fp[0], fp[1] - 0.01, fp[2]]);
