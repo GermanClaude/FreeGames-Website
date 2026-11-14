@@ -943,32 +943,32 @@
      "normal": "textures/plaster_beige/plaster_beige_512_normal.ktx2",
      "orm": "textures/plaster_beige/plaster_beige_512_orm.ktx2",
      "sizes": {
-      "albedo": 34997,
-      "normal": 54359,
-      "orm": 42752
+      "albedo": 49895,
+      "normal": 86088,
+      "orm": 29548
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398102
+       "rgba8": 1398101
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398102
+       "rgba8": 1398101
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398102
+       "rgba8": 1398101
       }
      },
-     "bytes": 132108,
+     "bytes": 165531,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194306
+      "rgba8": 4194303
      }
     },
     "1024": {
@@ -976,75 +976,41 @@
      "normal": "textures/plaster_beige/plaster_beige_1024_normal.ktx2",
      "orm": "textures/plaster_beige/plaster_beige_1024_orm.ktx2",
      "sizes": {
-      "albedo": 169788,
-      "normal": 220306,
-      "orm": 147467
+      "albedo": 165453,
+      "normal": 241161,
+      "orm": 106284
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592406
+       "rgba8": 5592405
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592406
+       "rgba8": 5592405
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592406
+       "rgba8": 5592405
       }
      },
-     "bytes": 537561,
+     "bytes": 512898,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777218
-     }
-    },
-    "2048": {
-     "albedo": "textures/plaster_beige/plaster_beige_2048_albedo.ktx2",
-     "normal": "textures/plaster_beige/plaster_beige_2048_normal.ktx2",
-     "orm": "textures/plaster_beige/plaster_beige_2048_orm.ktx2",
-     "sizes": {
-      "albedo": 659550,
-      "normal": 845532,
-      "orm": 516870
-     },
-     "gpuFiles": {
-      "albedo": {
-       "desktop": 2796203,
-       "mobile": 2796203,
-       "rgba8": 22369622
-      },
-      "normal": {
-       "desktop": 2796203,
-       "mobile": 2796203,
-       "rgba8": 22369622
-      },
-      "orm": {
-       "desktop": 2796203,
-       "mobile": 2796203,
-       "rgba8": 22369622
-      }
-     },
-     "bytes": 2021952,
-     "gpu": {
-      "desktop": 8388609,
-      "mobile": 8388609,
-      "rgba8": 67108866
+      "rgba8": 16777215
      }
     }
    },
-   "license": "CC0 1.0",
-   "source": "polyhaven",
-   "sourceId": "beige_wall_002",
+   "license": "eigen (NULLPUNKT)",
+   "source": "procedural",
+   "sourceId": "plaster_beige",
    "maps": [
     "altstadt"
-   ],
-   "scan": "albedo+normal+orm"
+   ]
   },
   "plaster_white": {
    "type": "texture",
@@ -15863,8 +15829,8 @@
  },
  "totals": {
   "textures": {
-   "files": 661,
-   "bytes": 128272564
+   "files": 658,
+   "bytes": 126259372
   },
   "hdri": {
    "files": 80,
@@ -15875,13 +15841,13 @@
    "bytes": 10562100
   },
   "all": {
-   "files": 805,
-   "bytes": 154105243
+   "files": 802,
+   "bytes": 152092051
   },
   "byTier": {
-   "512": 17426801,
-   "1024": 55153703,
-   "2048": 81524739
+   "512": 17460224,
+   "1024": 55129040,
+   "2048": 79502787
   },
   "counts": {
    "textures": 92,
