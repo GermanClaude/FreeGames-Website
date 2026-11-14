@@ -785,19 +785,19 @@ export class Vegetation {
       const barkMats = new Map(), variants = [];
       for (const g of order) {
         const S = TREE_SPECIES[g.kind], seed = 1009 + g.v * 97 + g.kind.length * 13;
-        const near = buildTreeVariant(g.kind, seed, 0), mid = buildTreeVariant(g.kind, seed, L.midLod || 1);
-        this._geoms.push(near.wood, mid.mid); if (near.leaves) this._geoms.push(near.leaves);
+        const near = N > 0 ? buildTreeVariant(g.kind, seed, 0) : null, mid = buildTreeVariant(g.kind, seed, L.midLod || 1);
+        this._geoms.push(mid.mid); if (near) this._geoms.push(near.wood); if (near?.leaves) this._geoms.push(near.leaves);
         let bm = barkMats.get(g.kind);
-        if (!bm) {
+        if (!bm && near) {
           bm = createBarkMaterial(getMaterial(S.bark), { lod: [0, 0, N - L.bandN, N], moss: S.mossK, tint: S.barkTint || null });
           barkMats.set(g.kind, bm); this._own.push(bm);
         }
-        g.wood = make(near.wood, bm, g.n, `baum-${g.kind}-${g.v}-holz`, t.treeShadow);
-        g.leaf = near.leaves ? make(near.leaves, leafNear, g.n, `baum-${g.kind}-${g.v}-laub`, t.treeShadow) : null;
+        g.wood = near ? make(near.wood, bm, g.n, `baum-${g.kind}-${g.v}-holz`, t.treeShadow) : null;
+        g.leaf = near?.leaves ? make(near.leaves, leafNear, g.n, `baum-${g.kind}-${g.v}-laub`, t.treeShadow) : null;
         // Mittelstufe ohne Schatten: die Nahkaskade reicht nur ≈ 16–22 m (shadows.js NEAR_CAP), die Vegetation ist nicht
         // in der Fernkarte – Schattenwurf der Mittelstufe (ab 18–40 m) wäre unsichtbare Vertexarbeit im Schattenpass
         g.mid = make(mid.mid, midMat, g.n, `baum-${g.kind}-${g.v}-mittel`, false);
-        g.tris = [(near.wood.index.count + (near.leaves ? near.leaves.index.count : 0)) / 3, mid.mid.index.count / 3];
+        g.tris = [near ? (near.wood.index.count + (near.leaves ? near.leaves.index.count : 0)) / 3 : 0, mid.mid.index.count / 3];
         variants.push({ geo: mid.mid, box: mid.box });
       }
       const t0 = performance.now();
@@ -876,7 +876,7 @@ export class Vegetation {
   /** Stufen der Bäume neu zuordnen (nach ≥ 4 m Kamerabewegung): nah / mittel / Impostor mit 4 m Rand um die Bänder. */
   _updateTrees(p) {
     const T = this._tr, mg = 4;
-    const nHi = T.N + mg, mLo = T.N - T.bandN - mg, mHi = T.M + mg, iLo = T.M - T.bandM - mg, F2 = T.F * T.F;
+    const nHi = T.N + mg, mLo = T.N > 0 ? T.N - T.bandN - mg : -1, mHi = T.M + mg, iLo = T.M - T.bandM - mg, F2 = T.F * T.F;
     for (const g of T.order) { g.cn = 0; g.cm = 0; }
     let ci = 0, nn = 0, nm = 0;
     const im = T.impMesh, ia = T.impAttr ? T.impAttr.array : null;
@@ -892,7 +892,7 @@ export class Vegetation {
         const dx = Ls[i * 5] - p.x, dz = Ls[i * 5 + 2] - p.z, d2 = dx * dx + dz * dz;
         if (d2 > F2) continue;
         const d = Math.sqrt(d2), g = T.order[s.grp[i]];
-        if (d < nHi) { put(g.wood, g.cn, s, i); if (g.leaf) put(g.leaf, g.cn, s, i); g.cn++; nn++; }
+        if (g.wood && d < nHi) { put(g.wood, g.cn, s, i); if (g.leaf) put(g.leaf, g.cn, s, i); g.cn++; nn++; }
         if (d > mLo && d < mHi) { put(g.mid, g.cm++, s, i); nm++; }
         if (d > iLo && im) {
           put(im, ci, s, i);

@@ -48,7 +48,7 @@ function stab(f, ax, ay, bx, by, lz, th, mat, tint) {
 // ---------------------------------------------------------------------------
 // Einzelstücke (Unterkante-Mitte (x,y,z), ry: lokal +z = Vorderseite, meist von der Wand weg)
 // ---------------------------------------------------------------------------
-const TONNE = ['#3a3d40', '#2f5e3e', '#2c4f86', '#6b4a32', '#3a3d40', '#c9a227'];
+const TONNE = ['#6a7076', '#3f7a4f', '#3a6aa8', '#8a6040', '#5c6268', '#d4b02a']; // hell genug, dass Polymer nicht schwarz wirkt
 /** 240-l-Mülltonne (Kunststoff) mit Deckel, Griff und Rädern. */
 export function muelltonne(b, x, y, z, ry, o = {}) {
   const f = frame(b, x, y, z, ry), t = o.tint || TONNE[Math.floor(hash01(x, z, 41) * TONNE.length)];

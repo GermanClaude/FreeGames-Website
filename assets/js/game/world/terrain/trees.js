@@ -55,7 +55,8 @@ export const DEFAULT_MIX = {
 
 /** LOD-Abstände je Stufe (m): nah bis near, mittel bis mid, Impostor bis zur Fernsichtweite; Bänder = Überblendung. */
 export const TREE_LOD = {
-  low: { near: 6, mid: 30, bandN: 3, bandM: 8, variants: 1, imp: [64, 128], midLod: 2 },
+  // low (Handy): keine Nahstufe – das Mittelmodell gilt ab 0 m (weniger Draw Calls/Dreiecke als die alten Kartenkronen)
+  low: { near: 0, mid: 30, bandN: 0, bandM: 8, variants: 1, imp: [64, 128], midLod: 2 },
   medium: { near: 18, mid: 70, bandN: 5, bandM: 10, variants: 1, imp: [96, 192] },
   high: { near: 28, mid: 105, bandN: 6, bandM: 12, variants: 2, imp: [128, 256] },
   ultra: { near: 34, mid: 150, bandN: 7, bandM: 14, variants: 2, imp: [128, 256] },
