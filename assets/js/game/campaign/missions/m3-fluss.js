@@ -39,16 +39,16 @@ const CUT_INTRO = {
 const CUT_OUTRO = {
   location: ['Flussbrücke', '06:12 Uhr'],
   cast: {
-    falk: actor('falk', { pos: [35.2, -21.5], yaw: -2.6, aim: -0.6 }),
-    lenz: actor('lenz', { pos: [37.2, -20.6], yaw: -2.8, aim: -0.4 }),
-    brandt: actor('brandt', { pos: [33.6, -23.4], yaw: -2.4, aim: -0.9 }),
-    daren: actor('daren', { pos: [47.5, -40.5], yaw: 0.6, aim: -1.1 }),
+    falk: actor('falk', { pos: [32.6, -7.5], yaw: -2.6, aim: -0.6 }),
+    lenz: actor('lenz', { pos: [34.8, -6.8], yaw: -2.8, aim: -0.4 }),
+    brandt: actor('brandt', { pos: [31.0, -9.2], yaw: -2.4, aim: -0.9 }),
+    daren: actor('daren', { pos: [40.5, -27.5], yaw: 0.4, aim: -1.1, top: true }),
   },
   beats: [
-    { cam: { from: [20, 9, -6], to: [24, 7, -10], look: [40, 1, -30] }, dur: 5, fadeIn: 1,
+    { cam: { from: [18, 9, 4], to: [22, 7, 0], look: [40, 1, -26] }, dur: 5, fadeIn: 1,
       say: { who: 'funk', text: 'Pioniere melden: Alle Sprengladungen an der Brücke entfernt. Die Straße ins Tal ist offen.' } },
     { cam: { over: ['lenz', 'daren'], dist: 1.4 },
-      act: [{ who: 'daren', walk: [[44, -34], [40.6, -28.4]], speed: 1.1 }],
+      act: [{ who: 'daren', walk: [[37.5, -19], [34.4, -11.6]], speed: 1.1 }],
       say: { who: 'lenz', text: 'Bewegung auf der Südseite. Ein Mann, allein. Er hat die Hände oben.', expr: 'angespannt' } },
     { cam: { close: 'daren', side: 0.4, dist: 1.1, push: 0.15 },
       say: { who: 'daren', text: 'Nicht schießen. Ich bin Major Daren.', expr: 'ernst' } },
@@ -61,9 +61,9 @@ const CUT_OUTRO = {
       say: { who: 'lenz', text: 'Und warum sollten wir Ihnen trauen?', expr: 'fragend' } },
     { cam: { over: ['brandt', 'daren'] },
       say: { who: 'daren', text: 'Weil ich meine Leute nach Hause bringen will. Genau wie Sie.', expr: 'traurig' } },
-    { cam: { from: [30, 3, -15], to: [27, 6, -10], look: [38, 1.5, -25] },
+    { cam: { from: [26, 3, -2], to: [24, 6, 2], look: [33.5, 1.5, -10] },
       say: { who: 'brandt', text: 'Dann fangen wir damit an. Gemeinsam.', expr: 'entschlossen' }, dur: 4.5, fadeOut: 1.4 },
-    { cam: { from: [27, 6, -10], look: [38, 1.5, -25] }, card: ['Kampagne · Stille Grenze', 'Fortsetzung folgt', 'Mission 4 „Hafennacht“ ist in Vorbereitung'], dur: 4.5 },
+    { cam: { from: [24, 6, 2], look: [33.5, 1.5, -10] }, card: ['Kampagne · Stille Grenze', 'Fortsetzung folgt', 'Mission 4 „Hafennacht“ ist in Vorbereitung'], dur: 4.5 },
   ],
 };
 

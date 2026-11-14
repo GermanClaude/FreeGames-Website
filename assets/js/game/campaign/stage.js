@@ -34,12 +34,27 @@ const EASE = {
 export const yawTo = (from, to) => Math.atan2(-(to.x - from.x), -(to.z - from.z));
 
 /** [x, z] | [x, y, z] | Vector3 → Vector3 (y aus dem Boden, wenn fehlt). */
-export function toVec(G, p, out = new THREE.Vector3(), lift = 0) {
+export function toVec(G, p, out = new THREE.Vector3(), lift = 0, top = false) {
   if (!p) return null;
   if (p.isVector3) return out.copy(p);
   if (p.length === 3) return out.set(p[0], p[1], p[2]);
-  const y = groundY(G, p[0], p[1], 30);
+  const y = top ? groundY(G, p[0], p[1], 60) : floorY(G, p[0], p[1]);
   return out.set(p[0], y + lift, p[1]);
+}
+
+/** Unterste begehbare Fläche (Straße statt Dach/Obergeschoss): von oben nach unten durch alle Flächen. */
+export function floorY(G, x, z) {
+  const W = G.world;
+  const gh = (from) => { try { const v = W && W.groundHeight ? W.groundHeight(x, z, from) : null; return Number.isFinite(v) ? v : null; } catch { return null; } };
+  let y = gh(60);
+  if (y == null) return 0;
+  for (let i = 0; i < 8; i++) {
+    const y2 = gh(y - 0.4);
+    if (y2 == null) break;
+    if (y2 >= y - 0.3) break;
+    y = y2;
+  }
+  return y;
 }
 
 export function groundY(G, x, z, from = 30) {
@@ -77,7 +92,7 @@ export class StageActor {
     if (def.weapon && G.data.WEAPONS[def.weapon] && G.bots && typeof G.bots.makeGun === 'function') {
       try { const gun = G.bots.makeGun(G.data.WEAPONS[def.weapon], null); if (gun) this.soldier.setWeaponModel(gun, G.data.WEAPONS[def.weapon]); } catch (err) { console.warn('[Kampagne] Waffe der Figur:', err); }
     }
-    this.pos = toVec(G, def.pos || [0, 0], new THREE.Vector3());
+    this.pos = toVec(G, def.pos || [0, 0], new THREE.Vector3(), 0, !!def.top);
     this.yaw = Number(def.yaw) || 0;
     this.aimYaw = this.yaw;
     this.pitch = Number.isFinite(def.aim) ? def.aim : -0.35; // Waffe leicht gesenkt
@@ -101,7 +116,7 @@ export class StageActor {
   }
 
   place(p, yaw = this.yaw) {
-    toVec(this.G, p, this.pos);
+    toVec(this.G, p, this.pos, 0, !!this.def.top);
     this.yaw = this.aimYaw = yaw;
     this.path = null;
     this.vel.set(0, 0, 0);
