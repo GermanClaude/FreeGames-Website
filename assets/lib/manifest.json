@@ -56,32 +56,32 @@
      "normal": "textures/concrete_floor_worn/concrete_floor_worn_512_normal.ktx2",
      "orm": "textures/concrete_floor_worn/concrete_floor_worn_512_orm.ktx2",
      "sizes": {
-      "albedo": 22937,
-      "normal": 1690,
-      "orm": 24832
+      "albedo": 50643,
+      "normal": 12739,
+      "orm": 42179
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 49459,
+     "bytes": 105561,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -89,32 +89,32 @@
      "normal": "textures/concrete_floor_worn/concrete_floor_worn_1024_normal.ktx2",
      "orm": "textures/concrete_floor_worn/concrete_floor_worn_1024_orm.ktx2",
      "sizes": {
-      "albedo": 70817,
-      "normal": 21504,
-      "orm": 76583
+      "albedo": 164806,
+      "normal": 138557,
+      "orm": 147439
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 168904,
+     "bytes": 450802,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     },
     "2048": {
@@ -122,43 +122,44 @@
      "normal": "textures/concrete_floor_worn/concrete_floor_worn_2048_normal.ktx2",
      "orm": "textures/concrete_floor_worn/concrete_floor_worn_2048_orm.ktx2",
      "sizes": {
-      "albedo": 199559,
-      "normal": 129293,
-      "orm": 232907
+      "albedo": 585725,
+      "normal": 638162,
+      "orm": 493729
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "normal": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "orm": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       }
      },
-     "bytes": 561759,
+     "bytes": 1717616,
      "gpu": {
       "desktop": 8388609,
       "mobile": 8388609,
-      "rgba8": 67108863
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "concrete_floor_worn",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "concrete_floor_worn_001",
    "maps": [
     "hafen",
     "werk",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "concrete_wall_dark": {
    "type": "texture",
@@ -188,32 +189,32 @@
      "normal": "textures/concrete_wall_dark/concrete_wall_dark_512_normal.ktx2",
      "orm": "textures/concrete_wall_dark/concrete_wall_dark_512_orm.ktx2",
      "sizes": {
-      "albedo": 23176,
-      "normal": 15405,
-      "orm": 13256
+      "albedo": 60273,
+      "normal": 72887,
+      "orm": 39745
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 51837,
+     "bytes": 172905,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -221,42 +222,76 @@
      "normal": "textures/concrete_wall_dark/concrete_wall_dark_1024_normal.ktx2",
      "orm": "textures/concrete_wall_dark/concrete_wall_dark_1024_orm.ktx2",
      "sizes": {
-      "albedo": 57018,
-      "normal": 42434,
-      "orm": 29968
+      "albedo": 190477,
+      "normal": 233806,
+      "orm": 148024
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 129420,
+     "bytes": 572307,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/concrete_wall_dark/concrete_wall_dark_2048_albedo.ktx2",
+     "normal": "textures/concrete_wall_dark/concrete_wall_dark_2048_normal.ktx2",
+     "orm": "textures/concrete_wall_dark/concrete_wall_dark_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 717485,
+      "normal": 908054,
+      "orm": 550332
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2175871,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "concrete_wall_dark",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "concrete_wall_006",
    "maps": [
     "hafen",
     "werk"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "concrete_panels": {
    "type": "texture",
@@ -286,32 +321,32 @@
      "normal": "textures/concrete_panels/concrete_panels_512_normal.ktx2",
      "orm": "textures/concrete_panels/concrete_panels_512_orm.ktx2",
      "sizes": {
-      "albedo": 9850,
-      "normal": 6735,
-      "orm": 3228
+      "albedo": 47803,
+      "normal": 63320,
+      "orm": 30815
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 19813,
+     "bytes": 141938,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -319,42 +354,76 @@
      "normal": "textures/concrete_panels/concrete_panels_1024_normal.ktx2",
      "orm": "textures/concrete_panels/concrete_panels_1024_orm.ktx2",
      "sizes": {
-      "albedo": 26329,
-      "normal": 25214,
-      "orm": 8735
+      "albedo": 159430,
+      "normal": 209818,
+      "orm": 124722
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 60278,
+     "bytes": 493970,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/concrete_panels/concrete_panels_2048_albedo.ktx2",
+     "normal": "textures/concrete_panels/concrete_panels_2048_normal.ktx2",
+     "orm": "textures/concrete_panels/concrete_panels_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 605315,
+      "normal": 824688,
+      "orm": 418705
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1848708,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "concrete_panels",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "concrete_wall_004",
    "maps": [
     "hafen",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "concrete_dirty": {
    "type": "texture",
@@ -382,32 +451,32 @@
      "normal": "textures/concrete_dirty/concrete_dirty_512_normal.ktx2",
      "orm": "textures/concrete_dirty/concrete_dirty_512_orm.ktx2",
      "sizes": {
-      "albedo": 60543,
-      "normal": 89611,
-      "orm": 27684
+      "albedo": 66105,
+      "normal": 73643,
+      "orm": 40300
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 177838,
+     "bytes": 180048,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -415,42 +484,76 @@
      "normal": "textures/concrete_dirty/concrete_dirty_1024_normal.ktx2",
      "orm": "textures/concrete_dirty/concrete_dirty_1024_orm.ktx2",
      "sizes": {
-      "albedo": 202865,
-      "normal": 258230,
-      "orm": 115864
+      "albedo": 211385,
+      "normal": 236372,
+      "orm": 152259
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 576959,
+     "bytes": 600016,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/concrete_dirty/concrete_dirty_2048_albedo.ktx2",
+     "normal": "textures/concrete_dirty/concrete_dirty_2048_normal.ktx2",
+     "orm": "textures/concrete_dirty/concrete_dirty_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 800029,
+      "normal": 907433,
+      "orm": 538346
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2245808,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "concrete_dirty",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "dirty_concrete",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "concrete_painted_peeling": {
    "type": "texture",
@@ -478,32 +581,32 @@
      "normal": "textures/concrete_painted_peeling/concrete_painted_peeling_512_normal.ktx2",
      "orm": "textures/concrete_painted_peeling/concrete_painted_peeling_512_orm.ktx2",
      "sizes": {
-      "albedo": 15327,
-      "normal": 7533,
-      "orm": 17427
+      "albedo": 70822,
+      "normal": 11872,
+      "orm": 36819
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 40287,
+     "bytes": 119513,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -511,42 +614,76 @@
      "normal": "textures/concrete_painted_peeling/concrete_painted_peeling_1024_normal.ktx2",
      "orm": "textures/concrete_painted_peeling/concrete_painted_peeling_1024_orm.ktx2",
      "sizes": {
-      "albedo": 39832,
-      "normal": 26708,
-      "orm": 45313
+      "albedo": 219598,
+      "normal": 109158,
+      "orm": 139630
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 111853,
+     "bytes": 468386,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/concrete_painted_peeling/concrete_painted_peeling_2048_albedo.ktx2",
+     "normal": "textures/concrete_painted_peeling/concrete_painted_peeling_2048_normal.ktx2",
+     "orm": "textures/concrete_painted_peeling/concrete_painted_peeling_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 808105,
+      "normal": 559894,
+      "orm": 539326
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1907325,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "concrete_painted",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_concrete",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "concrete_epoxy": {
    "type": "texture",
@@ -578,31 +715,31 @@
      "orm": "textures/concrete_epoxy/concrete_epoxy_512_orm.ktx2",
      "sizes": {
       "albedo": 10245,
-      "normal": 966,
-      "orm": 8300
+      "normal": 42551,
+      "orm": 38346
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 19511,
+     "bytes": 91142,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -611,41 +748,42 @@
      "orm": "textures/concrete_epoxy/concrete_epoxy_1024_orm.ktx2",
      "sizes": {
       "albedo": 27561,
-      "normal": 1282,
-      "orm": 17432
+      "normal": 160368,
+      "orm": 139939
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 46275,
+     "bytes": 327868,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "concrete_epoxy",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_concrete_02",
    "maps": [
     "hafen",
     "range"
-   ]
+   ],
+   "scan": "normal+orm (Albedo eigen, einfärbbar)"
   },
   "rubble": {
    "type": "texture",
@@ -673,32 +811,32 @@
      "normal": "textures/rubble/rubble_512_normal.ktx2",
      "orm": "textures/rubble/rubble_512_orm.ktx2",
      "sizes": {
-      "albedo": 51461,
-      "normal": 90402,
-      "orm": 32211
+      "albedo": 67050,
+      "normal": 84427,
+      "orm": 48568
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 174074,
+     "bytes": 200045,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -706,42 +844,76 @@
      "normal": "textures/rubble/rubble_1024_normal.ktx2",
      "orm": "textures/rubble/rubble_1024_orm.ktx2",
      "sizes": {
-      "albedo": 133930,
-      "normal": 255028,
-      "orm": 91652
+      "albedo": 208976,
+      "normal": 258607,
+      "orm": 150425
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 480610,
+     "bytes": 618008,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/rubble/rubble_2048_albedo.ktx2",
+     "normal": "textures/rubble/rubble_2048_normal.ktx2",
+     "orm": "textures/rubble/rubble_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 761377,
+      "normal": 918017,
+      "orm": 467864
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2147258,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
    "sourceId": "rubble",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "plaster_beige": {
    "type": "texture",
@@ -771,32 +943,32 @@
      "normal": "textures/plaster_beige/plaster_beige_512_normal.ktx2",
      "orm": "textures/plaster_beige/plaster_beige_512_orm.ktx2",
      "sizes": {
-      "albedo": 49895,
-      "normal": 86088,
-      "orm": 29548
+      "albedo": 34997,
+      "normal": 54359,
+      "orm": 42752
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 165531,
+     "bytes": 132108,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -804,41 +976,75 @@
      "normal": "textures/plaster_beige/plaster_beige_1024_normal.ktx2",
      "orm": "textures/plaster_beige/plaster_beige_1024_orm.ktx2",
      "sizes": {
-      "albedo": 165453,
-      "normal": 241161,
-      "orm": 106284
+      "albedo": 169788,
+      "normal": 220306,
+      "orm": 147467
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 512898,
+     "bytes": 537561,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/plaster_beige/plaster_beige_2048_albedo.ktx2",
+     "normal": "textures/plaster_beige/plaster_beige_2048_normal.ktx2",
+     "orm": "textures/plaster_beige/plaster_beige_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 659550,
+      "normal": 845532,
+      "orm": 516870
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2021952,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "plaster_beige",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "beige_wall_002",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "plaster_white": {
    "type": "texture",
@@ -866,32 +1072,32 @@
      "normal": "textures/plaster_white/plaster_white_512_normal.ktx2",
      "orm": "textures/plaster_white/plaster_white_512_orm.ktx2",
      "sizes": {
-      "albedo": 50076,
-      "normal": 82268,
-      "orm": 31829
+      "albedo": 59801,
+      "normal": 80379,
+      "orm": 41081
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 164173,
+     "bytes": 181261,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -899,42 +1105,76 @@
      "normal": "textures/plaster_white/plaster_white_1024_normal.ktx2",
      "orm": "textures/plaster_white/plaster_white_1024_orm.ktx2",
      "sizes": {
-      "albedo": 144112,
-      "normal": 252114,
-      "orm": 104737
+      "albedo": 188660,
+      "normal": 258022,
+      "orm": 147478
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 500963,
+     "bytes": 594160,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/plaster_white/plaster_white_2048_albedo.ktx2",
+     "normal": "textures/plaster_white/plaster_white_2048_normal.ktx2",
+     "orm": "textures/plaster_white/plaster_white_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 705869,
+      "normal": 969697,
+      "orm": 549027
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2224593,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "plaster_white",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "white_stucco_02",
    "maps": [
     "hafen",
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "plaster_white_peeling": {
    "type": "texture",
@@ -962,32 +1202,32 @@
      "normal": "textures/plaster_white_peeling/plaster_white_peeling_512_normal.ktx2",
      "orm": "textures/plaster_white_peeling/plaster_white_peeling_512_orm.ktx2",
      "sizes": {
-      "albedo": 44377,
-      "normal": 41928,
-      "orm": 27669
+      "albedo": 70213,
+      "normal": 76144,
+      "orm": 42496
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 113974,
+     "bytes": 188853,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -995,41 +1235,42 @@
      "normal": "textures/plaster_white_peeling/plaster_white_peeling_1024_normal.ktx2",
      "orm": "textures/plaster_white_peeling/plaster_white_peeling_1024_orm.ktx2",
      "sizes": {
-      "albedo": 124895,
-      "normal": 172698,
-      "orm": 85538
+      "albedo": 222493,
+      "normal": 236743,
+      "orm": 139125
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 383131,
+     "bytes": 598361,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "plaster_white_peeling",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "white_rough_plaster",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "plaster_damaged_brick": {
    "type": "texture",
@@ -1057,32 +1298,32 @@
      "normal": "textures/plaster_damaged_brick/plaster_damaged_brick_512_normal.ktx2",
      "orm": "textures/plaster_damaged_brick/plaster_damaged_brick_512_orm.ktx2",
      "sizes": {
-      "albedo": 37674,
-      "normal": 45708,
-      "orm": 17950
+      "albedo": 69740,
+      "normal": 78850,
+      "orm": 39102
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 101332,
+     "bytes": 187692,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1090,42 +1331,76 @@
      "normal": "textures/plaster_damaged_brick/plaster_damaged_brick_1024_normal.ktx2",
      "orm": "textures/plaster_damaged_brick/plaster_damaged_brick_1024_orm.ktx2",
      "sizes": {
-      "albedo": 89781,
-      "normal": 153671,
-      "orm": 46613
+      "albedo": 219450,
+      "normal": 241965,
+      "orm": 124701
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 290065,
+     "bytes": 586116,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/plaster_damaged_brick/plaster_damaged_brick_2048_albedo.ktx2",
+     "normal": "textures/plaster_damaged_brick/plaster_damaged_brick_2048_normal.ktx2",
+     "orm": "textures/plaster_damaged_brick/plaster_damaged_brick_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 803385,
+      "normal": 862182,
+      "orm": 377604
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2043171,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "plaster_damaged_brick",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "damaged_plaster",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "plaster_worn_patched": {
    "type": "texture",
@@ -1153,32 +1428,32 @@
      "normal": "textures/plaster_worn_patched/plaster_worn_patched_512_normal.ktx2",
      "orm": "textures/plaster_worn_patched/plaster_worn_patched_512_orm.ktx2",
      "sizes": {
-      "albedo": 58003,
-      "normal": 48854,
-      "orm": 20118
+      "albedo": 63727,
+      "normal": 48794,
+      "orm": 23574
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 126975,
+     "bytes": 136095,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1186,41 +1461,75 @@
      "normal": "textures/plaster_worn_patched/plaster_worn_patched_1024_normal.ktx2",
      "orm": "textures/plaster_worn_patched/plaster_worn_patched_1024_orm.ktx2",
      "sizes": {
-      "albedo": 190494,
-      "normal": 188747,
-      "orm": 65925
+      "albedo": 199283,
+      "normal": 171227,
+      "orm": 75948
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 445166,
+     "bytes": 446458,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/plaster_worn_patched/plaster_worn_patched_2048_albedo.ktx2",
+     "normal": "textures/plaster_worn_patched/plaster_worn_patched_2048_normal.ktx2",
+     "orm": "textures/plaster_worn_patched/plaster_worn_patched_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 739475,
+      "normal": 669703,
+      "orm": 261984
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1671162,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "plaster_worn_patched",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "worn_plaster_wall",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "plaster_blue_weathered": {
    "type": "texture",
@@ -1248,32 +1557,32 @@
      "normal": "textures/plaster_blue_weathered/plaster_blue_weathered_512_normal.ktx2",
      "orm": "textures/plaster_blue_weathered/plaster_blue_weathered_512_orm.ktx2",
      "sizes": {
-      "albedo": 41958,
-      "normal": 34149,
-      "orm": 24403
+      "albedo": 62927,
+      "normal": 47330,
+      "orm": 19263
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 100510,
+     "bytes": 129520,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1281,41 +1590,75 @@
      "normal": "textures/plaster_blue_weathered/plaster_blue_weathered_1024_normal.ktx2",
      "orm": "textures/plaster_blue_weathered/plaster_blue_weathered_1024_orm.ktx2",
      "sizes": {
-      "albedo": 113156,
-      "normal": 166678,
-      "orm": 79558
+      "albedo": 200749,
+      "normal": 168369,
+      "orm": 63866
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 359392,
+     "bytes": 432984,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/plaster_blue_weathered/plaster_blue_weathered_2048_albedo.ktx2",
+     "normal": "textures/plaster_blue_weathered/plaster_blue_weathered_2048_normal.ktx2",
+     "orm": "textures/plaster_blue_weathered/plaster_blue_weathered_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 739821,
+      "normal": 667676,
+      "orm": 198702
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1606199,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "plaster_blue_weathered",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "blue_plaster_weathered",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "plaster_painted": {
    "type": "texture",
@@ -1344,31 +1687,31 @@
      "orm": "textures/plaster_painted/plaster_painted_512_orm.ktx2",
      "sizes": {
       "albedo": 11810,
-      "normal": 1704,
-      "orm": 9802
+      "normal": 52688,
+      "orm": 14187
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 23316,
+     "bytes": 78685,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1377,40 +1720,41 @@
      "orm": "textures/plaster_painted/plaster_painted_1024_orm.ktx2",
      "sizes": {
       "albedo": 39015,
-      "normal": 14680,
-      "orm": 31708
+      "normal": 188693,
+      "orm": 76018
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 85403,
+     "bytes": 303726,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "plaster_painted",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_plaster_wall",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "normal+orm (Albedo eigen, einfärbbar)"
   },
   "wallpaper_stained": {
    "type": "texture",
@@ -1419,8 +1763,8 @@
    "surface": "concrete",
    "replaces": [],
    "sizeM": [
-    1,
-    1
+    2.5,
+    2.5
    ],
    "tintable": false,
    "alpha": false,
@@ -1438,32 +1782,32 @@
      "normal": "textures/wallpaper_stained/wallpaper_stained_512_normal.ktx2",
      "orm": "textures/wallpaper_stained/wallpaper_stained_512_orm.ktx2",
      "sizes": {
-      "albedo": 41457,
-      "normal": 979,
-      "orm": 12581
+      "albedo": 66971,
+      "normal": 43338,
+      "orm": 46274
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 55017,
+     "bytes": 156583,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1471,41 +1815,42 @@
      "normal": "textures/wallpaper_stained/wallpaper_stained_1024_normal.ktx2",
      "orm": "textures/wallpaper_stained/wallpaper_stained_1024_orm.ktx2",
      "sizes": {
-      "albedo": 102794,
-      "normal": 6718,
-      "orm": 27103
+      "albedo": 214361,
+      "normal": 163654,
+      "orm": 158665
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 136615,
+     "bytes": 536680,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "wallpaper_stained",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "decrepit_wallpaper",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "sandstone_blocks": {
    "type": "texture",
@@ -1535,32 +1880,32 @@
      "normal": "textures/sandstone_blocks/sandstone_blocks_512_normal.ktx2",
      "orm": "textures/sandstone_blocks/sandstone_blocks_512_orm.ktx2",
      "sizes": {
-      "albedo": 65133,
-      "normal": 105780,
-      "orm": 34149
+      "albedo": 71121,
+      "normal": 90150,
+      "orm": 49998
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 205062,
+     "bytes": 211269,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1568,32 +1913,32 @@
      "normal": "textures/sandstone_blocks/sandstone_blocks_1024_normal.ktx2",
      "orm": "textures/sandstone_blocks/sandstone_blocks_1024_orm.ktx2",
      "sizes": {
-      "albedo": 217479,
-      "normal": 303736,
-      "orm": 124120
+      "albedo": 227090,
+      "normal": 281497,
+      "orm": 163897
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 645335,
+     "bytes": 672484,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     },
     "2048": {
@@ -1601,41 +1946,42 @@
      "normal": "textures/sandstone_blocks/sandstone_blocks_2048_normal.ktx2",
      "orm": "textures/sandstone_blocks/sandstone_blocks_2048_orm.ktx2",
      "sizes": {
-      "albedo": 861561,
-      "normal": 1081726,
-      "orm": 492475
+      "albedo": 838779,
+      "normal": 1013097,
+      "orm": 513939
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "normal": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "orm": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       }
      },
-     "bytes": 2435762,
+     "bytes": 2365815,
      "gpu": {
       "desktop": 8388609,
       "mobile": 8388609,
-      "rgba8": 67108863
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "sandstone_blocks",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "sandstone_blocks_05",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "brick_factory": {
    "type": "texture",
@@ -1663,32 +2009,32 @@
      "normal": "textures/brick_factory/brick_factory_512_normal.ktx2",
      "orm": "textures/brick_factory/brick_factory_512_orm.ktx2",
      "sizes": {
-      "albedo": 46009,
-      "normal": 50841,
-      "orm": 23708
+      "albedo": 70302,
+      "normal": 75297,
+      "orm": 53332
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 120558,
+     "bytes": 198931,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1696,32 +2042,32 @@
      "normal": "textures/brick_factory/brick_factory_1024_normal.ktx2",
      "orm": "textures/brick_factory/brick_factory_1024_orm.ktx2",
      "sizes": {
-      "albedo": 120764,
-      "normal": 185671,
-      "orm": 69473
+      "albedo": 227212,
+      "normal": 240633,
+      "orm": 185725
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 375908,
+     "bytes": 653570,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     },
     "2048": {
@@ -1729,41 +2075,42 @@
      "normal": "textures/brick_factory/brick_factory_2048_normal.ktx2",
      "orm": "textures/brick_factory/brick_factory_2048_orm.ktx2",
      "sizes": {
-      "albedo": 347336,
-      "normal": 577165,
-      "orm": 205059
+      "albedo": 843167,
+      "normal": 906156,
+      "orm": 652934
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "normal": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "orm": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       }
      },
-     "bytes": 1129560,
+     "bytes": 2402257,
      "gpu": {
       "desktop": 8388609,
       "mobile": 8388609,
-      "rgba8": 67108863
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "brick_factory",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "factory_brick",
    "maps": [
     "werk"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "brick_dark": {
    "type": "texture",
@@ -1793,32 +2140,32 @@
      "normal": "textures/brick_dark/brick_dark_512_normal.ktx2",
      "orm": "textures/brick_dark/brick_dark_512_orm.ktx2",
      "sizes": {
-      "albedo": 35997,
-      "normal": 45291,
-      "orm": 20966
+      "albedo": 64013,
+      "normal": 69446,
+      "orm": 26303
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 102254,
+     "bytes": 159762,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1826,42 +2173,76 @@
      "normal": "textures/brick_dark/brick_dark_1024_normal.ktx2",
      "orm": "textures/brick_dark/brick_dark_1024_orm.ktx2",
      "sizes": {
-      "albedo": 97580,
-      "normal": 172717,
-      "orm": 63224
+      "albedo": 206144,
+      "normal": 219100,
+      "orm": 79404
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 333521,
+     "bytes": 504648,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/brick_dark/brick_dark_2048_albedo.ktx2",
+     "normal": "textures/brick_dark/brick_dark_2048_normal.ktx2",
+     "orm": "textures/brick_dark/brick_dark_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 755911,
+      "normal": 807852,
+      "orm": 270593
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1834356,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "brick_dark",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "brick_wall_10",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "cobblestone": {
    "type": "texture",
@@ -1889,32 +2270,32 @@
      "normal": "textures/cobblestone/cobblestone_512_normal.ktx2",
      "orm": "textures/cobblestone/cobblestone_512_orm.ktx2",
      "sizes": {
-      "albedo": 53494,
-      "normal": 59007,
-      "orm": 24560
+      "albedo": 69073,
+      "normal": 86267,
+      "orm": 51163
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 137061,
+     "bytes": 206503,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -1922,41 +2303,75 @@
      "normal": "textures/cobblestone/cobblestone_1024_normal.ktx2",
      "orm": "textures/cobblestone/cobblestone_1024_orm.ktx2",
      "sizes": {
-      "albedo": 151784,
-      "normal": 183890,
-      "orm": 75036
+      "albedo": 216735,
+      "normal": 263814,
+      "orm": 176519
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 410710,
+     "bytes": 657068,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/cobblestone/cobblestone_2048_albedo.ktx2",
+     "normal": "textures/cobblestone/cobblestone_2048_normal.ktx2",
+     "orm": "textures/cobblestone/cobblestone_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 796883,
+      "normal": 949454,
+      "orm": 615871
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2362208,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "cobblestone",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "cobblestone_floor_08",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "paving_flagstone": {
    "type": "texture",
@@ -1986,32 +2401,32 @@
      "normal": "textures/paving_flagstone/paving_flagstone_512_normal.ktx2",
      "orm": "textures/paving_flagstone/paving_flagstone_512_orm.ktx2",
      "sizes": {
-      "albedo": 63262,
-      "normal": 56585,
-      "orm": 28872
+      "albedo": 69583,
+      "normal": 51426,
+      "orm": 49810
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 148719,
+     "bytes": 170819,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2019,41 +2434,75 @@
      "normal": "textures/paving_flagstone/paving_flagstone_1024_normal.ktx2",
      "orm": "textures/paving_flagstone/paving_flagstone_1024_orm.ktx2",
      "sizes": {
-      "albedo": 209415,
-      "normal": 196035,
-      "orm": 106274
+      "albedo": 219327,
+      "normal": 178193,
+      "orm": 172613
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 511724,
+     "bytes": 570133,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/paving_flagstone/paving_flagstone_2048_albedo.ktx2",
+     "normal": "textures/paving_flagstone/paving_flagstone_2048_normal.ktx2",
+     "orm": "textures/paving_flagstone/paving_flagstone_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 822183,
+      "normal": 702784,
+      "orm": 615720
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2140687,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "paving_flagstone",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "pavement_02",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "roof_clay_tiles": {
    "type": "texture",
@@ -2081,32 +2530,32 @@
      "normal": "textures/roof_clay_tiles/roof_clay_tiles_512_normal.ktx2",
      "orm": "textures/roof_clay_tiles/roof_clay_tiles_512_orm.ktx2",
      "sizes": {
-      "albedo": 41431,
-      "normal": 20821,
-      "orm": 12704
+      "albedo": 73362,
+      "normal": 85162,
+      "orm": 36114
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 74956,
+     "bytes": 194638,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2114,41 +2563,75 @@
      "normal": "textures/roof_clay_tiles/roof_clay_tiles_1024_normal.ktx2",
      "orm": "textures/roof_clay_tiles/roof_clay_tiles_1024_orm.ktx2",
      "sizes": {
-      "albedo": 114229,
-      "normal": 54490,
-      "orm": 30334
+      "albedo": 234561,
+      "normal": 270438,
+      "orm": 102245
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 199053,
+     "bytes": 607244,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/roof_clay_tiles/roof_clay_tiles_2048_albedo.ktx2",
+     "normal": "textures/roof_clay_tiles/roof_clay_tiles_2048_normal.ktx2",
+     "orm": "textures/roof_clay_tiles/roof_clay_tiles_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 853041,
+      "normal": 930973,
+      "orm": 284644
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2068658,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "roof_clay_tiles",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "clay_roof_tiles_02",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "tiles_terracotta": {
    "type": "texture",
@@ -2178,32 +2661,32 @@
      "normal": "textures/tiles_terracotta/tiles_terracotta_512_normal.ktx2",
      "orm": "textures/tiles_terracotta/tiles_terracotta_512_orm.ktx2",
      "sizes": {
-      "albedo": 16344,
-      "normal": 9803,
-      "orm": 20357
+      "albedo": 52803,
+      "normal": 23756,
+      "orm": 42266
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 46504,
+     "bytes": 118825,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2211,41 +2694,75 @@
      "normal": "textures/tiles_terracotta/tiles_terracotta_1024_normal.ktx2",
      "orm": "textures/tiles_terracotta/tiles_terracotta_1024_orm.ktx2",
      "sizes": {
-      "albedo": 47526,
-      "normal": 22271,
-      "orm": 57660
+      "albedo": 175964,
+      "normal": 133323,
+      "orm": 146386
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 127457,
+     "bytes": 455673,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/tiles_terracotta/tiles_terracotta_2048_albedo.ktx2",
+     "normal": "textures/tiles_terracotta/tiles_terracotta_2048_normal.ktx2",
+     "orm": "textures/tiles_terracotta/tiles_terracotta_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 678502,
+      "normal": 598433,
+      "orm": 511661
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1788596,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "tiles_terracotta",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "terracotta_floor_tiles",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "tiles_worn": {
    "type": "texture",
@@ -2275,32 +2792,32 @@
      "normal": "textures/tiles_worn/tiles_worn_512_normal.ktx2",
      "orm": "textures/tiles_worn/tiles_worn_512_orm.ktx2",
      "sizes": {
-      "albedo": 34782,
-      "normal": 5152,
-      "orm": 12397
+      "albedo": 66307,
+      "normal": 22139,
+      "orm": 51133
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 52331,
+     "bytes": 139579,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2308,42 +2825,76 @@
      "normal": "textures/tiles_worn/tiles_worn_1024_normal.ktx2",
      "orm": "textures/tiles_worn/tiles_worn_1024_orm.ktx2",
      "sizes": {
-      "albedo": 87075,
-      "normal": 12442,
-      "orm": 29281
+      "albedo": 208642,
+      "normal": 115778,
+      "orm": 171067
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 128798,
+     "bytes": 495487,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/tiles_worn/tiles_worn_2048_albedo.ktx2",
+     "normal": "textures/tiles_worn/tiles_worn_2048_normal.ktx2",
+     "orm": "textures/tiles_worn/tiles_worn_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 770716,
+      "normal": 568333,
+      "orm": 599075
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1938124,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "tiles_worn",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "worn_tile_floor",
    "maps": [
     "hafen",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "tiles_checker": {
    "type": "texture",
@@ -2373,32 +2924,32 @@
      "normal": "textures/tiles_checker/tiles_checker_512_normal.ktx2",
      "orm": "textures/tiles_checker/tiles_checker_512_orm.ktx2",
      "sizes": {
-      "albedo": 56871,
-      "normal": 7299,
-      "orm": 18841
+      "albedo": 62475,
+      "normal": 7119,
+      "orm": 20610
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 83011,
+     "bytes": 90204,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2406,42 +2957,76 @@
      "normal": "textures/tiles_checker/tiles_checker_1024_normal.ktx2",
      "orm": "textures/tiles_checker/tiles_checker_1024_orm.ktx2",
      "sizes": {
-      "albedo": 184836,
-      "normal": 77334,
-      "orm": 61822
+      "albedo": 193485,
+      "normal": 77020,
+      "orm": 69452
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 323992,
+     "bytes": 339957,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/tiles_checker/tiles_checker_2048_albedo.ktx2",
+     "normal": "textures/tiles_checker/tiles_checker_2048_normal.ktx2",
+     "orm": "textures/tiles_checker/tiles_checker_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 706175,
+      "normal": 387269,
+      "orm": 208088
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1301532,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "tiles_checker",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "floor_tiles_06",
    "maps": [
     "altstadt",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "tiles_white_wall": {
    "type": "texture",
@@ -2469,32 +3054,32 @@
      "normal": "textures/tiles_white_wall/tiles_white_wall_512_normal.ktx2",
      "orm": "textures/tiles_white_wall/tiles_white_wall_512_orm.ktx2",
      "sizes": {
-      "albedo": 17524,
-      "normal": 13830,
-      "orm": 12378
+      "albedo": 49883,
+      "normal": 46556,
+      "orm": 31068
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 43732,
+     "bytes": 127507,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2502,42 +3087,43 @@
      "normal": "textures/tiles_white_wall/tiles_white_wall_1024_normal.ktx2",
      "orm": "textures/tiles_white_wall/tiles_white_wall_1024_orm.ktx2",
      "sizes": {
-      "albedo": 45962,
-      "normal": 38943,
-      "orm": 30803
+      "albedo": 164021,
+      "normal": 142834,
+      "orm": 92505
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 115708,
+     "bytes": 399360,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "tiles_white_wall",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "long_white_tiles",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "linoleum": {
    "type": "texture",
@@ -2566,31 +3152,31 @@
      "orm": "textures/linoleum/linoleum_512_orm.ktx2",
      "sizes": {
       "albedo": 39320,
-      "normal": 2076,
-      "orm": 13195
+      "normal": 8270,
+      "orm": 41499
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 54591,
+     "bytes": 89089,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2599,40 +3185,41 @@
      "orm": "textures/linoleum/linoleum_1024_orm.ktx2",
      "sizes": {
       "albedo": 98185,
-      "normal": 19849,
-      "orm": 30093
+      "normal": 106510,
+      "orm": 148179
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 148127,
+     "bytes": 352874,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "linoleum",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "linoleum_brown",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "normal+orm (Albedo eigen, einfärbbar)"
   },
   "carpet_dirty": {
    "type": "texture",
@@ -2660,32 +3247,32 @@
      "normal": "textures/carpet_dirty/carpet_dirty_512_normal.ktx2",
      "orm": "textures/carpet_dirty/carpet_dirty_512_orm.ktx2",
      "sizes": {
-      "albedo": 53572,
-      "normal": 91734,
-      "orm": 31588
+      "albedo": 65577,
+      "normal": 78928,
+      "orm": 50424
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 176894,
+     "bytes": 194929,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2693,41 +3280,42 @@
      "normal": "textures/carpet_dirty/carpet_dirty_1024_normal.ktx2",
      "orm": "textures/carpet_dirty/carpet_dirty_1024_orm.ktx2",
      "sizes": {
-      "albedo": 171760,
-      "normal": 285085,
-      "orm": 122227
+      "albedo": 207587,
+      "normal": 252370,
+      "orm": 174442
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 579072,
+     "bytes": 634399,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "carpet_dirty",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "dirty_carpet",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "ceiling_office": {
    "type": "texture",
@@ -2736,8 +3324,8 @@
    "surface": "concrete",
    "replaces": [],
    "sizeM": [
-    3.85,
-    3.85
+    2.0,
+    2.0
    ],
    "tintable": false,
    "alpha": false,
@@ -2755,32 +3343,32 @@
      "normal": "textures/ceiling_office/ceiling_office_512_normal.ktx2",
      "orm": "textures/ceiling_office/ceiling_office_512_orm.ktx2",
      "sizes": {
-      "albedo": 18401,
-      "normal": 76348,
-      "orm": 31141
+      "albedo": 61641,
+      "normal": 85133,
+      "orm": 43624
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 125890,
+     "bytes": 190398,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2788,41 +3376,75 @@
      "normal": "textures/ceiling_office/ceiling_office_1024_normal.ktx2",
      "orm": "textures/ceiling_office/ceiling_office_1024_orm.ktx2",
      "sizes": {
-      "albedo": 49886,
-      "normal": 224375,
-      "orm": 112272
+      "albedo": 197544,
+      "normal": 276182,
+      "orm": 154880
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 386533,
+     "bytes": 628606,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/ceiling_office/ceiling_office_2048_albedo.ktx2",
+     "normal": "textures/ceiling_office/ceiling_office_2048_normal.ktx2",
+     "orm": "textures/ceiling_office/ceiling_office_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 744317,
+      "normal": 1016683,
+      "orm": 559986
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2320986,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "ceiling_office",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "ceiling_interior",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "rubber_floor": {
    "type": "texture",
@@ -2833,8 +3455,8 @@
     "rubber_floor"
    ],
    "sizeM": [
-    0.75,
-    0.75
+    2.0,
+    2.0
    ],
    "tintable": false,
    "alpha": false,
@@ -2852,32 +3474,32 @@
      "normal": "textures/rubber_floor/rubber_floor_512_normal.ktx2",
      "orm": "textures/rubber_floor/rubber_floor_512_orm.ktx2",
      "sizes": {
-      "albedo": 42890,
-      "normal": 25884,
-      "orm": 15953
+      "albedo": 16455,
+      "normal": 7981,
+      "orm": 42519
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 84727,
+     "bytes": 66955,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2885,42 +3507,43 @@
      "normal": "textures/rubber_floor/rubber_floor_1024_normal.ktx2",
      "orm": "textures/rubber_floor/rubber_floor_1024_orm.ktx2",
      "sizes": {
-      "albedo": 97733,
-      "normal": 92149,
-      "orm": 52013
+      "albedo": 83053,
+      "normal": 47052,
+      "orm": 149850
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 241895,
+     "bytes": 279955,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "rubber_floor",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rubber_tiles",
    "maps": [
     "werk",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "asphalt_cracked": {
    "type": "texture",
@@ -2950,32 +3573,32 @@
      "normal": "textures/asphalt_cracked/asphalt_cracked_512_normal.ktx2",
      "orm": "textures/asphalt_cracked/asphalt_cracked_512_orm.ktx2",
      "sizes": {
-      "albedo": 46787,
-      "normal": 69470,
-      "orm": 34133
+      "albedo": 65243,
+      "normal": 67727,
+      "orm": 50686
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 150390,
+     "bytes": 183656,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -2983,32 +3606,32 @@
      "normal": "textures/asphalt_cracked/asphalt_cracked_1024_normal.ktx2",
      "orm": "textures/asphalt_cracked/asphalt_cracked_1024_orm.ktx2",
      "sizes": {
-      "albedo": 122560,
-      "normal": 218873,
-      "orm": 112985
+      "albedo": 207039,
+      "normal": 225345,
+      "orm": 178802
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 454418,
+     "bytes": 611186,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     },
     "2048": {
@@ -3016,42 +3639,43 @@
      "normal": "textures/asphalt_cracked/asphalt_cracked_2048_normal.ktx2",
      "orm": "textures/asphalt_cracked/asphalt_cracked_2048_orm.ktx2",
      "sizes": {
-      "albedo": 354929,
-      "normal": 698255,
-      "orm": 373468
+      "albedo": 785934,
+      "normal": 896113,
+      "orm": 642794
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "normal": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "orm": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       }
      },
-     "bytes": 1426652,
+     "bytes": 2324841,
      "gpu": {
       "desktop": 8388609,
       "mobile": 8388609,
-      "rgba8": 67108863
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "asphalt",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "asphalt_02",
    "maps": [
     "hafen",
     "werk"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "gravel": {
    "type": "texture",
@@ -3081,32 +3705,32 @@
      "normal": "textures/gravel/gravel_512_normal.ktx2",
      "orm": "textures/gravel/gravel_512_orm.ktx2",
      "sizes": {
-      "albedo": 61537,
-      "normal": 107243,
-      "orm": 31892
+      "albedo": 68310,
+      "normal": 87796,
+      "orm": 46295
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 200672,
+     "bytes": 202401,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3114,43 +3738,77 @@
      "normal": "textures/gravel/gravel_1024_normal.ktx2",
      "orm": "textures/gravel/gravel_1024_orm.ktx2",
      "sizes": {
-      "albedo": 176814,
-      "normal": 301749,
-      "orm": 98807
+      "albedo": 219552,
+      "normal": 291149,
+      "orm": 169301
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 577370,
+     "bytes": 680002,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/gravel/gravel_2048_albedo.ktx2",
+     "normal": "textures/gravel/gravel_2048_normal.ktx2",
+     "orm": "textures/gravel/gravel_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 855341,
+      "normal": 1094256,
+      "orm": 596382
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2545979,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "gravel",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "gravel_floor_02",
    "maps": [
     "hafen",
     "werk",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "sand": {
    "type": "texture",
@@ -3180,32 +3838,32 @@
      "normal": "textures/sand/sand_512_normal.ktx2",
      "orm": "textures/sand/sand_512_orm.ktx2",
      "sizes": {
-      "albedo": 53961,
-      "normal": 90953,
-      "orm": 35183
+      "albedo": 58714,
+      "normal": 75406,
+      "orm": 49473
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 180097,
+     "bytes": 183593,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3213,42 +3871,76 @@
      "normal": "textures/sand/sand_1024_normal.ktx2",
      "orm": "textures/sand/sand_1024_orm.ktx2",
      "sizes": {
-      "albedo": 178453,
-      "normal": 256829,
-      "orm": 127217
+      "albedo": 182738,
+      "normal": 235168,
+      "orm": 164532
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 562499,
+     "bytes": 582438,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/sand/sand_2048_albedo.ktx2",
+     "normal": "textures/sand/sand_2048_normal.ktx2",
+     "orm": "textures/sand/sand_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 679008,
+      "normal": 864739,
+      "orm": 581535
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2125282,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "sand",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "dense_sand",
    "maps": [
     "altstadt",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "dirt": {
    "type": "texture",
@@ -3278,32 +3970,32 @@
      "normal": "textures/dirt/dirt_512_normal.ktx2",
      "orm": "textures/dirt/dirt_512_orm.ktx2",
      "sizes": {
-      "albedo": 47887,
-      "normal": 80616,
-      "orm": 32923
+      "albedo": 58790,
+      "normal": 78062,
+      "orm": 23528
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 161426,
+     "bytes": 160380,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3311,42 +4003,76 @@
      "normal": "textures/dirt/dirt_1024_normal.ktx2",
      "orm": "textures/dirt/dirt_1024_orm.ktx2",
      "sizes": {
-      "albedo": 130025,
-      "normal": 231983,
-      "orm": 99922
+      "albedo": 188610,
+      "normal": 248944,
+      "orm": 83364
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 461930,
+     "bytes": 520918,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/dirt/dirt_2048_albedo.ktx2",
+     "normal": "textures/dirt/dirt_2048_normal.ktx2",
+     "orm": "textures/dirt/dirt_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 705153,
+      "normal": 942324,
+      "orm": 309845
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1957322,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
    "sourceId": "dirt",
    "maps": [
     "altstadt",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "mud": {
    "type": "texture",
@@ -3374,32 +4100,32 @@
      "normal": "textures/mud/mud_512_normal.ktx2",
      "orm": "textures/mud/mud_512_orm.ktx2",
      "sizes": {
-      "albedo": 30394,
-      "normal": 26862,
-      "orm": 24927
+      "albedo": 65493,
+      "normal": 95193,
+      "orm": 54698
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 82183,
+     "bytes": 215384,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3407,41 +4133,42 @@
      "normal": "textures/mud/mud_1024_normal.ktx2",
      "orm": "textures/mud/mud_1024_orm.ktx2",
      "sizes": {
-      "albedo": 79388,
-      "normal": 101392,
-      "orm": 76502
+      "albedo": 205596,
+      "normal": 299587,
+      "orm": 181782
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 257282,
+     "bytes": 686965,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "mud",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "brown_mud_02",
    "maps": [
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "ground_dry_cracked": {
    "type": "texture",
@@ -3469,32 +4196,32 @@
      "normal": "textures/ground_dry_cracked/ground_dry_cracked_512_normal.ktx2",
      "orm": "textures/ground_dry_cracked/ground_dry_cracked_512_orm.ktx2",
      "sizes": {
-      "albedo": 45239,
-      "normal": 66656,
-      "orm": 29219
+      "albedo": 65914,
+      "normal": 69335,
+      "orm": 42302
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 141114,
+     "bytes": 177551,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3502,41 +4229,75 @@
      "normal": "textures/ground_dry_cracked/ground_dry_cracked_1024_normal.ktx2",
      "orm": "textures/ground_dry_cracked/ground_dry_cracked_1024_orm.ktx2",
      "sizes": {
-      "albedo": 122009,
-      "normal": 219602,
-      "orm": 83633
+      "albedo": 209502,
+      "normal": 219377,
+      "orm": 150161
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 425244,
+     "bytes": 579040,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/ground_dry_cracked/ground_dry_cracked_2048_albedo.ktx2",
+     "normal": "textures/ground_dry_cracked/ground_dry_cracked_2048_normal.ktx2",
+     "orm": "textures/ground_dry_cracked/ground_dry_cracked_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 779051,
+      "normal": 811580,
+      "orm": 511703
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2102334,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "ground_dry",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "dry_ground_01",
    "maps": [
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "grass": {
    "type": "texture",
@@ -3547,8 +4308,8 @@
     "grass"
    ],
    "sizeM": [
-    1.4,
-    1.4
+    2.0,
+    2.0
    ],
    "tintable": false,
    "alpha": false,
@@ -3567,32 +4328,32 @@
      "normal": "textures/grass/grass_512_normal.ktx2",
      "orm": "textures/grass/grass_512_orm.ktx2",
      "sizes": {
-      "albedo": 65620,
-      "normal": 99848,
-      "orm": 36738
+      "albedo": 71228,
+      "normal": 86134,
+      "orm": 52384
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 202206,
+     "bytes": 209746,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3600,43 +4361,44 @@
      "normal": "textures/grass/grass_1024_normal.ktx2",
      "orm": "textures/grass/grass_1024_orm.ktx2",
      "sizes": {
-      "albedo": 234024,
-      "normal": 291474,
-      "orm": 143775
+      "albedo": 233557,
+      "normal": 279698,
+      "orm": 186170
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 669273,
+     "bytes": 699425,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "grass",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "leafy_grass",
    "maps": [
     "hafen",
     "altstadt",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "wood_planks": {
    "type": "texture",
@@ -3666,32 +4428,32 @@
      "normal": "textures/wood_planks/wood_planks_512_normal.ktx2",
      "orm": "textures/wood_planks/wood_planks_512_orm.ktx2",
      "sizes": {
-      "albedo": 21078,
-      "normal": 9799,
-      "orm": 9895
+      "albedo": 57580,
+      "normal": 30000,
+      "orm": 21629
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 40772,
+     "bytes": 109209,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3699,44 +4461,78 @@
      "normal": "textures/wood_planks/wood_planks_1024_normal.ktx2",
      "orm": "textures/wood_planks/wood_planks_1024_orm.ktx2",
      "sizes": {
-      "albedo": 47561,
-      "normal": 32296,
-      "orm": 23504
+      "albedo": 183184,
+      "normal": 150494,
+      "orm": 72395
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 103361,
+     "bytes": 406073,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/wood_planks/wood_planks_2048_albedo.ktx2",
+     "normal": "textures/wood_planks/wood_planks_2048_normal.ktx2",
+     "orm": "textures/wood_planks/wood_planks_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 679859,
+      "normal": 620966,
+      "orm": 209534
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1510359,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
    "sourceId": "wood_planks",
    "maps": [
     "hafen",
     "altstadt",
     "werk",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "wood_planks_weathered": {
    "type": "texture",
@@ -3764,32 +4560,32 @@
      "normal": "textures/wood_planks_weathered/wood_planks_weathered_512_normal.ktx2",
      "orm": "textures/wood_planks_weathered/wood_planks_weathered_512_orm.ktx2",
      "sizes": {
-      "albedo": 37511,
-      "normal": 31213,
-      "orm": 20508
+      "albedo": 58460,
+      "normal": 36641,
+      "orm": 20558
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 89232,
+     "bytes": 115659,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3797,41 +4593,75 @@
      "normal": "textures/wood_planks_weathered/wood_planks_weathered_1024_normal.ktx2",
      "orm": "textures/wood_planks_weathered/wood_planks_weathered_1024_orm.ktx2",
      "sizes": {
-      "albedo": 103057,
-      "normal": 107842,
-      "orm": 59311
+      "albedo": 184569,
+      "normal": 165114,
+      "orm": 72831
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 270210,
+     "bytes": 422514,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/wood_planks_weathered/wood_planks_weathered_2048_albedo.ktx2",
+     "normal": "textures/wood_planks_weathered/wood_planks_weathered_2048_normal.ktx2",
+     "orm": "textures/wood_planks_weathered/wood_planks_weathered_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 677542,
+      "normal": 679003,
+      "orm": 288350
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1644895,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "wood_planks_weathered",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "weathered_planks",
    "maps": [
     "hafen"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "wood_planks_dark": {
    "type": "texture",
@@ -3861,32 +4691,32 @@
      "normal": "textures/wood_planks_dark/wood_planks_dark_512_normal.ktx2",
      "orm": "textures/wood_planks_dark/wood_planks_dark_512_orm.ktx2",
      "sizes": {
-      "albedo": 25087,
-      "normal": 15220,
-      "orm": 13621
+      "albedo": 59572,
+      "normal": 42121,
+      "orm": 45416
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 53928,
+     "bytes": 147109,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3894,42 +4724,76 @@
      "normal": "textures/wood_planks_dark/wood_planks_dark_1024_normal.ktx2",
      "orm": "textures/wood_planks_dark/wood_planks_dark_1024_orm.ktx2",
      "sizes": {
-      "albedo": 61437,
-      "normal": 52854,
-      "orm": 31997
+      "albedo": 187355,
+      "normal": 160203,
+      "orm": 154853
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 146288,
+     "bytes": 502411,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/wood_planks_dark/wood_planks_dark_2048_albedo.ktx2",
+     "normal": "textures/wood_planks_dark/wood_planks_dark_2048_normal.ktx2",
+     "orm": "textures/wood_planks_dark/wood_planks_dark_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 699962,
+      "normal": 650184,
+      "orm": 538866
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1889012,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "wood_planks_dark",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "dark_wooden_planks",
    "maps": [
     "altstadt",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "wood_crate": {
    "type": "texture",
@@ -3959,32 +4823,32 @@
      "normal": "textures/wood_crate/wood_crate_512_normal.ktx2",
      "orm": "textures/wood_crate/wood_crate_512_orm.ktx2",
      "sizes": {
-      "albedo": 56646,
-      "normal": 42234,
-      "orm": 24981
+      "albedo": 61577,
+      "normal": 42378,
+      "orm": 34933
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 123861,
+     "bytes": 138888,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -3992,41 +4856,75 @@
      "normal": "textures/wood_crate/wood_crate_1024_normal.ktx2",
      "orm": "textures/wood_crate/wood_crate_1024_orm.ktx2",
      "sizes": {
-      "albedo": 183706,
-      "normal": 184850,
-      "orm": 93375
+      "albedo": 191708,
+      "normal": 167918,
+      "orm": 118515
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 461931,
+     "bytes": 478141,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/wood_crate/wood_crate_2048_albedo.ktx2",
+     "normal": "textures/wood_crate/wood_crate_2048_normal.ktx2",
+     "orm": "textures/wood_crate/wood_crate_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 705604,
+      "normal": 667715,
+      "orm": 456133
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1829452,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "wood_crate",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "raw_plank_wall",
    "maps": [
     "hafen"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "osb": {
    "type": "texture",
@@ -4054,32 +4952,32 @@
      "normal": "textures/osb/osb_512_normal.ktx2",
      "orm": "textures/osb/osb_512_orm.ktx2",
      "sizes": {
-      "albedo": 58115,
-      "normal": 69491,
-      "orm": 28482
+      "albedo": 70301,
+      "normal": 22408,
+      "orm": 55418
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 156088,
+     "bytes": 148127,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4087,42 +4985,76 @@
      "normal": "textures/osb/osb_1024_normal.ktx2",
      "orm": "textures/osb/osb_1024_orm.ktx2",
      "sizes": {
-      "albedo": 163787,
-      "normal": 194558,
-      "orm": 87925
+      "albedo": 227650,
+      "normal": 146680,
+      "orm": 188571
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 446270,
+     "bytes": 562901,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/osb/osb_2048_albedo.ktx2",
+     "normal": "textures/osb/osb_2048_normal.ktx2",
+     "orm": "textures/osb/osb_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 847473,
+      "normal": 663239,
+      "orm": 675297
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2186009,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "osb",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "oriented_strand_board",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "wood_floor_old": {
    "type": "texture",
@@ -4150,32 +5082,32 @@
      "normal": "textures/wood_floor_old/wood_floor_old_512_normal.ktx2",
      "orm": "textures/wood_floor_old/wood_floor_old_512_orm.ktx2",
      "sizes": {
-      "albedo": 21258,
-      "normal": 8367,
-      "orm": 8147
+      "albedo": 60785,
+      "normal": 34804,
+      "orm": 32882
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 37772,
+     "bytes": 128471,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4183,41 +5115,75 @@
      "normal": "textures/wood_floor_old/wood_floor_old_1024_normal.ktx2",
      "orm": "textures/wood_floor_old/wood_floor_old_1024_orm.ktx2",
      "sizes": {
-      "albedo": 47639,
-      "normal": 20877,
-      "orm": 16177
+      "albedo": 194252,
+      "normal": 138215,
+      "orm": 113080
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 84693,
+     "bytes": 445547,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/wood_floor_old/wood_floor_old_2048_albedo.ktx2",
+     "normal": "textures/wood_floor_old/wood_floor_old_2048_normal.ktx2",
+     "orm": "textures/wood_floor_old/wood_floor_old_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 732585,
+      "normal": 569479,
+      "orm": 461633
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1763697,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "wood_floor_old",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "old_wood_floor",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "wood_peeling_paint": {
    "type": "texture",
@@ -4245,32 +5211,32 @@
      "normal": "textures/wood_peeling_paint/wood_peeling_paint_512_normal.ktx2",
      "orm": "textures/wood_peeling_paint/wood_peeling_paint_512_orm.ktx2",
      "sizes": {
-      "albedo": 38352,
-      "normal": 25941,
-      "orm": 15791
+      "albedo": 65298,
+      "normal": 59283,
+      "orm": 32187
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 80084,
+     "bytes": 156768,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4278,42 +5244,43 @@
      "normal": "textures/wood_peeling_paint/wood_peeling_paint_1024_normal.ktx2",
      "orm": "textures/wood_peeling_paint/wood_peeling_paint_1024_orm.ktx2",
      "sizes": {
-      "albedo": 96491,
-      "normal": 81611,
-      "orm": 38506
+      "albedo": 207977,
+      "normal": 196237,
+      "orm": 90762
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 216608,
+     "bytes": 494976,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "wood_peeling_paint",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "wood_peeling_paint_weathered",
    "maps": [
     "altstadt",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "bark_palm": {
    "type": "texture",
@@ -4538,31 +5505,31 @@
      "orm": "textures/metal_painted/metal_painted_512_orm.ktx2",
      "sizes": {
       "albedo": 12024,
-      "normal": 4226,
-      "orm": 16251
+      "normal": 5402,
+      "orm": 16546
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 32501,
+     "bytes": 33972,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4571,31 +5538,31 @@
      "orm": "textures/metal_painted/metal_painted_1024_orm.ktx2",
      "sizes": {
       "albedo": 29692,
-      "normal": 12356,
-      "orm": 37434
+      "normal": 18419,
+      "orm": 76372
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 79482,
+     "bytes": 124483,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     },
     "2048": {
@@ -4604,43 +5571,44 @@
      "orm": "textures/metal_painted/metal_painted_2048_orm.ktx2",
      "sizes": {
       "albedo": 74605,
-      "normal": 34064,
-      "orm": 92043
+      "normal": 65878,
+      "orm": 261652
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "normal": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       },
       "orm": {
        "desktop": 2796203,
        "mobile": 2796203,
-       "rgba8": 22369621
+       "rgba8": 22369622
       }
      },
-     "bytes": 200712,
+     "bytes": 402135,
      "gpu": {
       "desktop": 8388609,
       "mobile": 8388609,
-      "rgba8": 67108863
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_painted",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "green_metal_rust",
    "maps": [
     "hafen",
     "altstadt",
     "werk",
     "range"
-   ]
+   ],
+   "scan": "normal+orm (Albedo eigen, einfärbbar)"
   },
   "metal_rust_painted": {
    "type": "texture",
@@ -4670,32 +5638,32 @@
      "normal": "textures/metal_rust_painted/metal_rust_painted_512_normal.ktx2",
      "orm": "textures/metal_rust_painted/metal_rust_painted_512_orm.ktx2",
      "sizes": {
-      "albedo": 51681,
-      "normal": 11584,
-      "orm": 26306
+      "albedo": 70363,
+      "normal": 55652,
+      "orm": 36889
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 89571,
+     "bytes": 162904,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4703,42 +5671,43 @@
      "normal": "textures/metal_rust_painted/metal_rust_painted_1024_normal.ktx2",
      "orm": "textures/metal_rust_painted/metal_rust_painted_1024_orm.ktx2",
      "sizes": {
-      "albedo": 138618,
-      "normal": 55371,
-      "orm": 71991
+      "albedo": 222134,
+      "normal": 174479,
+      "orm": 136240
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 265980,
+     "bytes": 532853,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_rust_painted",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rusty_metal_02",
    "maps": [
     "werk",
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "metal_corrugated": {
    "type": "texture",
@@ -4766,32 +5735,32 @@
      "normal": "textures/metal_corrugated/metal_corrugated_512_normal.ktx2",
      "orm": "textures/metal_corrugated/metal_corrugated_512_orm.ktx2",
      "sizes": {
-      "albedo": 47321,
-      "normal": 21950,
-      "orm": 23854
+      "albedo": 51736,
+      "normal": 21453,
+      "orm": 39684
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 93125,
+     "bytes": 112873,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4799,42 +5768,76 @@
      "normal": "textures/metal_corrugated/metal_corrugated_1024_normal.ktx2",
      "orm": "textures/metal_corrugated/metal_corrugated_1024_orm.ktx2",
      "sizes": {
-      "albedo": 164933,
-      "normal": 85335,
-      "orm": 112918
+      "albedo": 171762,
+      "normal": 85225,
+      "orm": 164679
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 363186,
+     "bytes": 421666,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/metal_corrugated/metal_corrugated_2048_albedo.ktx2",
+     "normal": "textures/metal_corrugated/metal_corrugated_2048_normal.ktx2",
+     "orm": "textures/metal_corrugated/metal_corrugated_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 649412,
+      "normal": 432221,
+      "orm": 655189
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1736822,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_corrugated",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "corrugated_iron_02",
    "maps": [
     "hafen",
     "werk"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "metal_corrugated_rusty": {
    "type": "texture",
@@ -4862,32 +5865,32 @@
      "normal": "textures/metal_corrugated_rusty/metal_corrugated_rusty_512_normal.ktx2",
      "orm": "textures/metal_corrugated_rusty/metal_corrugated_rusty_512_orm.ktx2",
      "sizes": {
-      "albedo": 35403,
-      "normal": 64814,
-      "orm": 22379
+      "albedo": 58175,
+      "normal": 25442,
+      "orm": 22041
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 122596,
+     "bytes": 105658,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4895,42 +5898,76 @@
      "normal": "textures/metal_corrugated_rusty/metal_corrugated_rusty_1024_normal.ktx2",
      "orm": "textures/metal_corrugated_rusty/metal_corrugated_rusty_1024_orm.ktx2",
      "sizes": {
-      "albedo": 93254,
-      "normal": 246289,
-      "orm": 66996
+      "albedo": 189716,
+      "normal": 135136,
+      "orm": 81775
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 406539,
+     "bytes": 406627,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/metal_corrugated_rusty/metal_corrugated_rusty_2048_albedo.ktx2",
+     "normal": "textures/metal_corrugated_rusty/metal_corrugated_rusty_2048_normal.ktx2",
+     "orm": "textures/metal_corrugated_rusty/metal_corrugated_rusty_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 704988,
+      "normal": 643970,
+      "orm": 266951
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1615909,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_corrugated_rusty",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rusty_corrugated_iron",
    "maps": [
     "hafen",
     "werk"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "metal_cladding_green": {
    "type": "texture",
@@ -4958,32 +5995,32 @@
      "normal": "textures/metal_cladding_green/metal_cladding_green_512_normal.ktx2",
      "orm": "textures/metal_cladding_green/metal_cladding_green_512_orm.ktx2",
      "sizes": {
-      "albedo": 16681,
-      "normal": 8951,
-      "orm": 8366
+      "albedo": 56807,
+      "normal": 19418,
+      "orm": 41713
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 33998,
+     "bytes": 117938,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -4991,41 +6028,75 @@
      "normal": "textures/metal_cladding_green/metal_cladding_green_1024_normal.ktx2",
      "orm": "textures/metal_cladding_green/metal_cladding_green_1024_orm.ktx2",
      "sizes": {
-      "albedo": 44144,
-      "normal": 26101,
-      "orm": 22839
+      "albedo": 174263,
+      "normal": 66140,
+      "orm": 146274
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 93084,
+     "bytes": 386677,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/metal_cladding_green/metal_cladding_green_2048_albedo.ktx2",
+     "normal": "textures/metal_cladding_green/metal_cladding_green_2048_normal.ktx2",
+     "orm": "textures/metal_cladding_green/metal_cladding_green_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 609771,
+      "normal": 224337,
+      "orm": 500448
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1334556,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_cladding_green",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "factory_wall",
    "maps": [
     "werk"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "metal_shutter": {
    "type": "texture",
@@ -5053,32 +6124,32 @@
      "normal": "textures/metal_shutter/metal_shutter_512_normal.ktx2",
      "orm": "textures/metal_shutter/metal_shutter_512_orm.ktx2",
      "sizes": {
-      "albedo": 27225,
-      "normal": 10290,
-      "orm": 5698
+      "albedo": 51932,
+      "normal": 24550,
+      "orm": 27614
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 43213,
+     "bytes": 104096,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -5086,41 +6157,75 @@
      "normal": "textures/metal_shutter/metal_shutter_1024_normal.ktx2",
      "orm": "textures/metal_shutter/metal_shutter_1024_orm.ktx2",
      "sizes": {
-      "albedo": 61124,
-      "normal": 34934,
-      "orm": 14724
+      "albedo": 174618,
+      "normal": 142888,
+      "orm": 98818
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 110782,
+     "bytes": 416324,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
+     }
+    },
+    "2048": {
+     "albedo": "textures/metal_shutter/metal_shutter_2048_albedo.ktx2",
+     "normal": "textures/metal_shutter/metal_shutter_2048_normal.ktx2",
+     "orm": "textures/metal_shutter/metal_shutter_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 675716,
+      "normal": 633471,
+      "orm": 350064
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1659251,
+     "gpu": {
+      "desktop": 8388609,
+      "mobile": 8388609,
+      "rgba8": 67108866
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_shutter",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_metal_shutter",
    "maps": [
     "innenraum"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "metal_galvanized": {
    "type": "texture",
@@ -5131,8 +6236,8 @@
     "metal_galvanized"
    ],
    "sizeM": [
-    1,
-    1
+    2.0,
+    2.0
    ],
    "tintable": false,
    "alpha": false,
@@ -5150,32 +6255,32 @@
      "normal": "textures/metal_galvanized/metal_galvanized_512_normal.ktx2",
      "orm": "textures/metal_galvanized/metal_galvanized_512_orm.ktx2",
      "sizes": {
-      "albedo": 43950,
-      "normal": 3253,
-      "orm": 33185
+      "albedo": 64775,
+      "normal": 12691,
+      "orm": 59522
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 80388,
+     "bytes": 136988,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -5183,44 +6288,45 @@
      "normal": "textures/metal_galvanized/metal_galvanized_1024_normal.ktx2",
      "orm": "textures/metal_galvanized/metal_galvanized_1024_orm.ktx2",
      "sizes": {
-      "albedo": 143090,
-      "normal": 53796,
-      "orm": 107869
+      "albedo": 203348,
+      "normal": 36098,
+      "orm": 206643
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 304755,
+     "bytes": 446089,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_galvanized",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "metal_plate_02",
    "maps": [
     "hafen",
     "altstadt",
     "werk",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "metal_tread": {
    "type": "texture",
@@ -5250,32 +6356,32 @@
      "normal": "textures/metal_tread/metal_tread_512_normal.ktx2",
      "orm": "textures/metal_tread/metal_tread_512_orm.ktx2",
      "sizes": {
-      "albedo": 28190,
-      "normal": 23916,
-      "orm": 18504
+      "albedo": 64159,
+      "normal": 67016,
+      "orm": 62271
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 70610,
+     "bytes": 193446,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -5283,43 +6389,44 @@
      "normal": "textures/metal_tread/metal_tread_1024_normal.ktx2",
      "orm": "textures/metal_tread/metal_tread_1024_orm.ktx2",
      "sizes": {
-      "albedo": 75740,
-      "normal": 59574,
-      "orm": 44601
+      "albedo": 203486,
+      "normal": 211278,
+      "orm": 214260
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 179915,
+     "bytes": 629024,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "metal_tread",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "metal_plate",
    "maps": [
     "hafen",
     "werk",
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "metal_grate": {
    "type": "texture",
@@ -5770,32 +6877,32 @@
      "normal": "textures/burlap/burlap_512_normal.ktx2",
      "orm": "textures/burlap/burlap_512_orm.ktx2",
      "sizes": {
-      "albedo": 52980,
-      "normal": 80102,
-      "orm": 30074
+      "albedo": 61446,
+      "normal": 69233,
+      "orm": 51782
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 163156,
+     "bytes": 182461,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -5803,41 +6910,42 @@
      "normal": "textures/burlap/burlap_1024_normal.ktx2",
      "orm": "textures/burlap/burlap_1024_orm.ktx2",
      "sizes": {
-      "albedo": 181161,
-      "normal": 288158,
-      "orm": 98451
+      "albedo": 216350,
+      "normal": 233502,
+      "orm": 192144
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 567770,
+     "bytes": 641996,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "burlap",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "hessian_230",
    "maps": [
     "range"
-   ]
+   ],
+   "scan": "albedo+normal+orm"
   },
   "canvas": {
    "type": "texture",
@@ -5868,31 +6976,31 @@
      "orm": "textures/canvas/canvas_512_orm.ktx2",
      "sizes": {
       "albedo": 45748,
-      "normal": 60573,
-      "orm": 26539
+      "normal": 51825,
+      "orm": 47944
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 132860,
+     "bytes": 145517,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
@@ -5901,40 +7009,41 @@
      "orm": "textures/canvas/canvas_1024_orm.ktx2",
      "sizes": {
       "albedo": 156923,
-      "normal": 232060,
-      "orm": 89524
+      "normal": 182418,
+      "orm": 169082
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 478507,
+     "bytes": 508423,
      "gpu": {
       "desktop": 2097153,
       "mobile": 2097153,
-      "rgba8": 16777215
+      "rgba8": 16777218
      }
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "canvas",
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rough_linen",
    "maps": [
     "altstadt"
-   ]
+   ],
+   "scan": "normal+orm (Albedo eigen, einfärbbar)"
   },
   "awning_stripes": {
    "type": "texture",
@@ -14754,8 +15863,8 @@
  },
  "totals": {
   "textures": {
-   "files": 565,
-   "bytes": 50531482
+   "files": 661,
+   "bytes": 128272564
   },
   "hdri": {
    "files": 80,
@@ -14766,13 +15875,13 @@
    "bytes": 10562100
   },
   "all": {
-   "files": 709,
-   "bytes": 76364161
+   "files": 805,
+   "bytes": 154105243
   },
   "byTier": {
-   "512": 14894429,
-   "1024": 44951285,
-   "2048": 16518447
+   "512": 17426801,
+   "1024": 55153703,
+   "2048": 81524739
   },
   "counts": {
    "textures": 92,
