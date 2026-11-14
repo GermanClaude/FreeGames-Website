@@ -25,21 +25,26 @@ const _c = new THREE.Color();
 function spruceGeometry() {
   const P = [], U = [], N = [];
   const u0 = 0.005, u1 = 0.495, v0 = 0.505, v1 = 0.995;
-  const tiers = 8, H = 11, R0 = 2.5;
+  const tiers = 12, H = 11, R0 = 2.5;
   const quad = (a, b, c, d, n) => {
     for (const [p, uv] of [[a, [u0, v0]], [b, [u1, v0]], [c, [u1, v1]], [a, [u0, v0]], [c, [u1, v1]], [d, [u0, v1]]]) { P.push(...p); U.push(...uv); N.push(...n); }
   };
+  // gfx-welt 14.11.: dichter (12 Etagen, 4–8 überlappende Zweigkarten + innere Lage unten, ≈ 210 statt 90 Dreiecke) –
+  // mit der Fichtenzweig-Textur (atlas.js spruceMaterial) liest sich die Krone als Nadelmasse statt als Einzelblätter.
+  // Nur Optik: die Kollision der Bäume sind Stamm-Prismen (colliders()), unabhängig von dieser Geometrie.
+  const OUTER = [8, 8, 8, 7, 7, 7, 6, 6, 5, 5, 4, 4];
   for (let t = 0; t < tiers; t++) {
-    const f = t / tiers, y = 1.4 + f * (H - 2.6), r = R0 * Math.pow(1 - f, 0.85) + 0.35;
-    const cards = t < 5 ? 6 : 4;
-    for (let k = 0; k < cards; k++) {
-      const a = (k / cards) * Math.PI * 2 + t * 0.9;
-      const ca = Math.cos(a), sa = Math.sin(a), w = r * 0.62;
-      const px = -sa * w / 2, pz = ca * w / 2;
-      const inY = y + 0.55, outY = y - r * 0.32;
-      const ix = ca * 0.12, iz = sa * 0.12, ox = ca * r, oz = sa * r;
-      const n = [ca * 0.45, 0.85, sa * 0.45];
-      quad([ix - px * 0.4, inY, iz - pz * 0.4], [ix + px * 0.4, inY, iz + pz * 0.4], [ox + px, outY, oz + pz], [ox - px, outY, oz - pz], n);
+    const f = t / tiers, y = 1.2 + f * (H - 2.4), r = R0 * Math.pow(1 - f, 0.85) + 0.35;
+    for (const [cards, rad, wk, dy, rot] of [[OUTER[t], r, 0.95, 0, t * 0.9], ...(t < 8 ? [[4, r * 0.58, 0.9, 0.28, t * 0.9 + 0.4]] : [])]) {
+      for (let k = 0; k < cards; k++) {
+        const a = (k / cards) * Math.PI * 2 + rot + Math.sin(t * 7.3 + k * 3.1) * 0.18;
+        const ca = Math.cos(a), sa = Math.sin(a), w = rad * wk;
+        const px = -sa * w / 2, pz = ca * w / 2;
+        const inY = y + dy + 0.5, outY = y + dy - rad * 0.42;
+        const ix = ca * 0.1, iz = sa * 0.1, ox = ca * rad, oz = sa * rad;
+        const n = [ca * 0.45, 0.85, sa * 0.45];
+        quad([ix - px * 0.35, inY, iz - pz * 0.35], [ix + px * 0.35, inY, iz + pz * 0.35], [ox + px, outY, oz + pz], [ox - px, outY, oz - pz], n);
+      }
     }
   }
   // Spitze: zwei gekreuzte senkrechte Karten

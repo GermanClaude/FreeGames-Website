@@ -758,11 +758,14 @@ function foliageMaterial(cast, tree = false) {
       .replace('#include <alphatest_fragment>', `#ifdef USE_MAP
         vec2 npDx = dFdx(vMapUv) * 1024.0, npDy = dFdy(vMapUv) * 1024.0;
         float npLod = max(0.0, 0.5 * log2(max(dot(npDx, npDx), dot(npDy, npDy))));
-        diffuseColor.a *= 1.0 + 0.24 * min(npLod, 5.0);
+        diffuseColor.a *= 1.0 + 0.13 * min(npLod, 4.0);
       #endif
-      #include <alphatest_fragment>`);
+      #include <alphatest_fragment>`)
+      // Blätter glänzen kaum: Himmelsspiegelung dämpfen (sonst grauer Schleier auf den nach oben gemischten Normalen)
+      .replace('#include <aomap_fragment>', `#include <aomap_fragment>
+      reflectedLight.indirectSpecular *= 0.35; reflectedLight.directSpecular *= 0.6;`);
   };
-  m.customProgramCacheKey = () => 'foliage-v3-wind';
+  m.customProgramCacheKey = () => 'foliage-v4-wind';
   foliageMats.set(key, m);
   return m;
 }

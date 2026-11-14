@@ -12909,15 +12909,15 @@
    "tiers": {
     "512": {
      "glb": "models/old_military_crate/old_military_crate_512.glb",
-     "bytes": 219848,
+     "bytes": 214336,
      "gpu": {
-      "desktop": 443104,
-      "mobile": 443104,
-      "rgba8": 2278112
+      "desktop": 423184,
+      "mobile": 423184,
+      "rgba8": 2258192
      },
      "tris": [
-      1890,
-      1880
+      1679,
+      1676
      ],
      "textures": 3,
      "lodDistances": [
@@ -12928,16 +12928,16 @@
     },
     "1024": {
      "glb": "models/old_military_crate/old_military_crate_1024.glb",
-     "bytes": 602244,
+     "bytes": 579644,
      "gpu": {
-      "desktop": 1420384,
-      "mobile": 1420384,
-      "rgba8": 8760416
+      "desktop": 1328272,
+      "mobile": 1328272,
+      "rgba8": 8668304
      },
      "tris": [
-      3976,
-      1890,
-      1880
+      2472,
+      1679,
+      1676
      ],
      "textures": 3,
      "lodDistances": [
@@ -12987,15 +12987,15 @@
    "tiers": {
     "512": {
      "glb": "models/wooden_military_crate/wooden_military_crate_512.glb",
-     "bytes": 216860,
+     "bytes": 215484,
      "gpu": {
-      "desktop": 412288,
-      "mobile": 412288,
-      "rgba8": 2247296
+      "desktop": 408928,
+      "mobile": 408928,
+      "rgba8": 2243936
      },
      "tris": [
-      1598,
-      1530
+      1530,
+      1528
      ],
      "textures": 3,
      "lodDistances": [
@@ -13006,16 +13006,16 @@
     },
     "1024": {
      "glb": "models/wooden_military_crate/wooden_military_crate_1024.glb",
-     "bytes": 603340,
+     "bytes": 586604,
      "gpu": {
-      "desktop": 1390720,
-      "mobile": 1390720,
-      "rgba8": 8730752
+      "desktop": 1315360,
+      "mobile": 1315360,
+      "rgba8": 8655392
      },
      "tris": [
-      4000,
-      1598,
-      1530
+      2500,
+      1530,
+      1528
      ],
      "textures": 3,
      "lodDistances": [
@@ -13065,15 +13065,15 @@
    "tiers": {
     "512": {
      "glb": "models/metal_jerrycan/metal_jerrycan_512.glb",
-     "bytes": 179816,
+     "bytes": 170736,
      "gpu": {
-      "desktop": 338368,
-      "mobile": 338368,
-      "rgba8": 2173376
+      "desktop": 300112,
+      "mobile": 300112,
+      "rgba8": 2135120
      },
      "tris": [
-      1199,
-      389
+      596,
+      195
      ],
      "textures": 3,
      "lodDistances": [
@@ -13084,16 +13084,16 @@
     },
     "1024": {
      "glb": "models/metal_jerrycan/metal_jerrycan_1024.glb",
-     "bytes": 561468,
+     "bytes": 538468,
      "gpu": {
-      "desktop": 1268800,
-      "mobile": 1268800,
-      "rgba8": 8608832
+      "desktop": 1158544,
+      "mobile": 1158544,
+      "rgba8": 8498576
      },
      "tris": [
-      3000,
-      1199,
-      389
+      1500,
+      596,
+      195
      ],
      "textures": 3,
      "lodDistances": [
@@ -13141,15 +13141,15 @@
    "tiers": {
     "512": {
      "glb": "models/metal_jerrycan_green/metal_jerrycan_green_512.glb",
-     "bytes": 180816,
+     "bytes": 172016,
      "gpu": {
-      "desktop": 338176,
-      "mobile": 338176,
-      "rgba8": 2173184
+      "desktop": 306976,
+      "mobile": 306976,
+      "rgba8": 2141984
      },
      "tris": [
-      1195,
-      389
+      597,
+      337
      ],
      "textures": 3,
      "lodDistances": [
@@ -13160,16 +13160,16 @@
     },
     "1024": {
      "glb": "models/metal_jerrycan_green/metal_jerrycan_green_1024.glb",
-     "bytes": 543236,
+     "bytes": 518116,
      "gpu": {
-      "desktop": 1268608,
-      "mobile": 1268608,
-      "rgba8": 8608640
+      "desktop": 1165072,
+      "mobile": 1165072,
+      "rgba8": 8505104
      },
      "tris": [
-      3000,
-      1195,
-      389
+      1493,
+      597,
+      337
      ],
      "textures": 3,
      "lodDistances": [
@@ -13218,15 +13218,15 @@
    "tiers": {
     "512": {
      "glb": "models/barrel_01/barrel_01_512.glb",
-     "bytes": 173744,
+     "bytes": 166416,
      "gpu": {
-      "desktop": 335776,
-      "mobile": 335776,
-      "rgba8": 2170784
+      "desktop": 306112,
+      "mobile": 306112,
+      "rgba8": 2141120
      },
      "tris": [
-      1071,
-      463
+      600,
+      316
      ],
      "textures": 3,
      "lodDistances": [
@@ -13237,16 +13237,16 @@
     },
     "1024": {
      "glb": "models/barrel_01/barrel_01_1024.glb",
-     "bytes": 512812,
+     "bytes": 496352,
      "gpu": {
-      "desktop": 1250944,
-      "mobile": 1250944,
-      "rgba8": 8590976
+      "desktop": 1164496,
+      "mobile": 1164496,
+      "rgba8": 8504528
      },
      "tris": [
-      2682,
-      1071,
-      463
+      1499,
+      600,
+      316
      ],
      "textures": 3,
      "lodDistances": [
@@ -13295,15 +13295,15 @@
    "tiers": {
     "512": {
      "glb": "models/barrel_02/barrel_02_512.glb",
-     "bytes": 126872,
+     "bytes": 119896,
      "gpu": {
-      "desktop": 342688,
-      "mobile": 342688,
-      "rgba8": 2177696
+      "desktop": 314272,
+      "mobile": 314272,
+      "rgba8": 2149280
      },
      "tris": [
-      1074,
-      604
+      600,
+      486
      ],
      "textures": 3,
      "lodDistances": [
@@ -13314,16 +13314,16 @@
     },
     "1024": {
      "glb": "models/barrel_02/barrel_02_1024.glb",
-     "bytes": 337376,
+     "bytes": 320980,
      "gpu": {
-      "desktop": 1258144,
-      "mobile": 1258144,
-      "rgba8": 8598176
+      "desktop": 1172704,
+      "mobile": 1172704,
+      "rgba8": 8512736
      },
      "tris": [
-      2688,
-      1074,
-      604
+      1500,
+      600,
+      486
      ],
      "textures": 3,
      "lodDistances": [
@@ -13371,15 +13371,15 @@
    "tiers": {
     "512": {
      "glb": "models/barrel_03/barrel_03_512.glb",
-     "bytes": 143696,
+     "bytes": 140500,
      "gpu": {
-      "desktop": 307456,
-      "mobile": 307456,
-      "rgba8": 2142464
+      "desktop": 293488,
+      "mobile": 293488,
+      "rgba8": 2128496
      },
      "tris": [
-      588,
-      356
+      480,
+      173
      ],
      "textures": 3,
      "lodDistances": [
@@ -13390,16 +13390,16 @@
     },
     "1024": {
      "glb": "models/barrel_03/barrel_03_1024.glb",
-     "bytes": 423516,
+     "bytes": 417908,
      "gpu": {
-      "desktop": 1164592,
-      "mobile": 1164592,
-      "rgba8": 8504624
+      "desktop": 1137520,
+      "mobile": 1137520,
+      "rgba8": 8477552
      },
      "tris": [
-      1473,
-      588,
-      356
+      1200,
+      480,
+      173
      ],
      "textures": 3,
      "lodDistances": [
@@ -13448,15 +13448,15 @@
    "tiers": {
     "512": {
      "glb": "models/old_tyre/old_tyre_512.glb",
-     "bytes": 155960,
+     "bytes": 147692,
      "gpu": {
-      "desktop": 337024,
-      "mobile": 337024,
-      "rgba8": 2172032
+      "desktop": 300256,
+      "mobile": 300256,
+      "rgba8": 2135264
      },
      "tris": [
-      1152,
-      408
+      600,
+      194
      ],
      "textures": 3,
      "lodDistances": [
@@ -13467,16 +13467,16 @@
     },
     "1024": {
      "glb": "models/old_tyre/old_tyre_1024.glb",
-     "bytes": 481344,
+     "bytes": 459456,
      "gpu": {
-      "desktop": 1261696,
-      "mobile": 1261696,
-      "rgba8": 8601728
+      "desktop": 1158688,
+      "mobile": 1158688,
+      "rgba8": 8498720
      },
      "tris": [
-      2880,
-      1152,
-      408
+      1500,
+      600,
+      194
      ],
      "textures": 3,
      "lodDistances": [
@@ -13526,15 +13526,15 @@
    "tiers": {
     "512": {
      "glb": "models/cardboard_box_01/cardboard_box_01_512.glb",
-     "bytes": 160032,
+     "bytes": 152128,
      "gpu": {
-      "desktop": 313024,
-      "mobile": 313024,
-      "rgba8": 2148032
+      "desktop": 274816,
+      "mobile": 274816,
+      "rgba8": 2109824
      },
      "tris": [
-      800,
-      260
+      200,
+      64
      ],
      "textures": 3,
      "lodDistances": [
@@ -13545,16 +13545,16 @@
     },
     "1024": {
      "glb": "models/cardboard_box_01/cardboard_box_01_1024.glb",
-     "bytes": 475676,
+     "bytes": 454400,
      "gpu": {
-      "desktop": 1195456,
-      "mobile": 1195456,
-      "rgba8": 8535488
+      "desktop": 1085248,
+      "mobile": 1085248,
+      "rgba8": 8425280
      },
      "tris": [
-      2000,
-      800,
-      260
+      500,
+      200,
+      64
      ],
      "textures": 3,
      "lodDistances": [
@@ -13763,15 +13763,15 @@
    "tiers": {
     "512": {
      "glb": "models/trashbag/trashbag_512.glb",
-     "bytes": 153324,
+     "bytes": 148092,
      "gpu": {
-      "desktop": 325696,
-      "mobile": 325696,
-      "rgba8": 2160704
+      "desktop": 300256,
+      "mobile": 300256,
+      "rgba8": 2135264
      },
      "tris": [
-      1000,
-      324
+      600,
+      194
      ],
      "textures": 3,
      "lodDistances": [
@@ -13782,16 +13782,16 @@
     },
     "1024": {
      "glb": "models/trashbag/trashbag_1024.glb",
-     "bytes": 435452,
+     "bytes": 421512,
      "gpu": {
-      "desktop": 1232128,
-      "mobile": 1232128,
-      "rgba8": 8572160
+      "desktop": 1158688,
+      "mobile": 1158688,
+      "rgba8": 8498720
      },
      "tris": [
-      2500,
-      1000,
-      324
+      1500,
+      600,
+      194
      ],
      "textures": 3,
      "lodDistances": [
@@ -13916,15 +13916,15 @@
    "tiers": {
     "512": {
      "glb": "models/propane_tank/propane_tank_512.glb",
-     "bytes": 166712,
+     "bytes": 160292,
      "gpu": {
-      "desktop": 354400,
-      "mobile": 354400,
-      "rgba8": 2189408
+      "desktop": 329152,
+      "mobile": 329152,
+      "rgba8": 2164160
      },
      "tris": [
-      1199,
-      723
+      693,
+      703
      ],
      "textures": 3,
      "lodDistances": [
@@ -13935,16 +13935,16 @@
     },
     "1024": {
      "glb": "models/propane_tank/propane_tank_1024.glb",
-     "bytes": 505488,
+     "bytes": 482648,
      "gpu": {
-      "desktop": 1284784,
-      "mobile": 1284784,
-      "rgba8": 8624816
+      "desktop": 1182736,
+      "mobile": 1182736,
+      "rgba8": 8522768
      },
      "tris": [
-      2999,
-      1199,
-      723
+      1399,
+      693,
+      703
      ],
      "textures": 3,
      "lodDistances": [
@@ -14168,15 +14168,15 @@
    "tiers": {
     "512": {
      "glb": "models/concrete_road_barrier/concrete_road_barrier_512.glb",
-     "bytes": 168508,
+     "bytes": 159012,
      "gpu": {
-      "desktop": 338080,
-      "mobile": 338080,
-      "rgba8": 2173088
+      "desktop": 294976,
+      "mobile": 294976,
+      "rgba8": 2129984
      },
      "tris": [
-      1196,
-      386
+      516,
+      168
      ],
      "textures": 3,
      "lodDistances": [
@@ -14187,16 +14187,16 @@
     },
     "1024": {
      "glb": "models/concrete_road_barrier/concrete_road_barrier_1024.glb",
-     "bytes": 529752,
+     "bytes": 505072,
      "gpu": {
-      "desktop": 1268416,
-      "mobile": 1268416,
-      "rgba8": 8608448
+      "desktop": 1143616,
+      "mobile": 1143616,
+      "rgba8": 8483648
      },
      "tris": [
-      2998,
-      1196,
-      386
+      1296,
+      516,
+      168
      ],
      "textures": 3,
      "lodDistances": [
@@ -14245,15 +14245,15 @@
    "tiers": {
     "512": {
      "glb": "models/utility_box_01/utility_box_01_512.glb",
-     "bytes": 142812,
+     "bytes": 135680,
      "gpu": {
-      "desktop": 338368,
-      "mobile": 338368,
-      "rgba8": 2173376
+      "desktop": 309712,
+      "mobile": 309712,
+      "rgba8": 2144720
      },
      "tris": [
-      1198,
-      390
+      599,
+      392
      ],
      "textures": 3,
      "lodDistances": [
@@ -14264,16 +14264,16 @@
     },
     "1024": {
      "glb": "models/utility_box_01/utility_box_01_1024.glb",
-     "bytes": 440652,
+     "bytes": 418820,
      "gpu": {
-      "desktop": 1268800,
-      "mobile": 1268800,
-      "rgba8": 8608832
+      "desktop": 1168096,
+      "mobile": 1168096,
+      "rgba8": 8508128
      },
      "tris": [
-      3000,
-      1198,
-      390
+      1499,
+      599,
+      392
      ],
      "textures": 3,
      "lodDistances": [
@@ -15943,11 +15943,11 @@
   },
   "models": {
    "files": 64,
-   "bytes": 18848876
+   "bytes": 18509780
   },
   "all": {
    "files": 805,
-   "bytes": 150526040
+   "bytes": 150186944
   },
   "byTier": {
    "512": 17357528,

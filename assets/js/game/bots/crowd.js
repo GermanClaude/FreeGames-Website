@@ -106,7 +106,7 @@ export class ActorGrid {
 /** Volle Soldaten (nächste sichtbare) je Grafikstufe; der Rest ab IMP_MIN m als Silhouette. */
 export const FULL_BUDGET = Object.freeze({ low: 14, medium: 28, high: 44, ultra: 60 });
 /** Ab hier (m × FOV/60) darf ein Soldat Silhouette werden (low früher: kleiner Bildschirm, schwache GPU). */
-export const IMP_MIN = Object.freeze({ low: 32, medium: 45, high: 55, ultra: 65 });
+export const IMP_MIN = Object.freeze({ low: 34, medium: 50, high: 60, ultra: 70 });
 /** Jenseits davon immer Silhouette (≈ 8–10 Pixel hoch in 1080p) – auch in kleinen Matches. */
 export const IMP_FAR = Object.freeze({ low: 110, medium: 150, high: 180, ultra: 220 });
 
@@ -126,14 +126,11 @@ export function crowdScale(n) {
 
 const POSES = ['stand', 'runA', 'runB', 'crouch', 'prone'];
 // Vertex-Farben je Teil (× Teamfarbe der Instanz): Uniform ≈ 1, Ausrüstung dunkler, Haut heller/wärmer
-const C_UNI = [1, 1, 1], C_PANTS = [0.86, 0.86, 0.84], C_GEAR = [0.62, 0.62, 0.6], C_SKIN = [1.75, 1.32, 1.05], C_GUN = [0.32, 0.32, 0.34], C_BOOT = [0.5, 0.46, 0.42];
+// (gemessen am Bild: volle Soldaten wirken durch Schattierung/Tarnmuster deutlich dunkler als die Grundfarbe)
+const C_UNI = [0.95, 0.95, 0.92], C_PANTS = [0.86, 0.86, 0.82], C_GEAR = [0.62, 0.62, 0.58], C_SKIN = [1.5, 1.15, 0.92], C_GUN = [0.28, 0.28, 0.3], C_BOOT = [0.46, 0.43, 0.38];
 
-/** Quader-Teil (Mittelpunkt, Maße, Drehung um X in rad) in die Sammelpuffer schreiben. */
-function box(out, cx, cy, cz, sx, sy, sz, col, rotX = 0, rotZ = 0) {
-  const g = new THREE.BoxGeometry(sx, sy, sz).toNonIndexed();
-  if (rotX) g.rotateX(rotX);
-  if (rotZ) g.rotateZ(rotZ);
-  g.translate(cx, cy, cz);
+/** Geometrie (nicht indiziert) mit Farbe in die Sammelpuffer übernehmen. */
+function put(out, g, col) {
   const pos = g.getAttribute('position'), nor = g.getAttribute('normal');
   for (let i = 0; i < pos.count; i++) {
     out.p.push(pos.getX(i), pos.getY(i), pos.getZ(i));
@@ -143,57 +140,76 @@ function box(out, cx, cy, cz, sx, sy, sz, col, rotX = 0, rotZ = 0) {
   g.dispose();
 }
 
-/** Bein von Hüfte (hx, hy, hz) mit Neigung `ang` (rad, + = nach vorn, −Z) und Kniebeuge `knee`. */
-function leg(out, hx, hy, hz, ang, knee = 0) {
-  const th = 0.46, sh = 0.46;
-  // Oberschenkel
-  const kx = hx, ky = hy - Math.cos(ang) * th, kz = hz - Math.sin(ang) * th;
-  box(out, hx, (hy + ky) / 2, (hz + kz) / 2, 0.17, th + 0.04, 0.19, C_PANTS, ang);
-  const a2 = ang - knee;
-  const fy = ky - Math.cos(a2) * sh, fz = kz - Math.sin(a2) * sh;
-  box(out, kx, (ky + fy) / 2, (kz + fz) / 2, 0.14, sh + 0.04, 0.16, C_PANTS, a2);
-  box(out, kx, fy + 0.05, fz - 0.06, 0.13, 0.1, 0.28, C_BOOT);
+/** Quader-Teil (Mittelpunkt, Maße, Drehung um X in rad). */
+function box(out, cx, cy, cz, sx, sy, sz, col, rotX = 0) {
+  const g = new THREE.BoxGeometry(sx, sy, sz).toNonIndexed();
+  if (rotX) g.rotateX(rotX);
+  g.translate(cx, cy, cz);
+  put(out, g, col);
 }
 
-/** Geometrie einer Pose (Füße bei y = 0, Blick −Z). */
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _dirV = new THREE.Vector3(), _qq = new THREE.Quaternion(), _Y = new THREE.Vector3(0, 1, 0);
+/** Glied als sechseckiger Kegelstumpf von a nach b (Radien r0 → r1). */
+function limb(out, ax, ay, az, bx, by, bz, r0, r1, col) {
+  _a.set(ax, ay, az); _b.set(bx, by, bz);
+  const len = _a.distanceTo(_b);
+  const g = new THREE.CylinderGeometry(r1, r0, len, 6, 1, false).toNonIndexed();
+  _dirV.subVectors(_b, _a).normalize();
+  _qq.setFromUnitVectors(_Y, _dirV);
+  g.applyQuaternion(_qq);
+  g.translate((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2);
+  put(out, g, col);
+}
+
+/** Bein von der Hüfte (hx, hy, hz): Neigung `ang` (rad, + = nach vorn, −Z), Kniebeuge `knee`. */
+function leg(out, hx, hy, hz, ang, knee = 0) {
+  const th = 0.45, sh = 0.45;
+  const kx = hx, ky = hy - Math.cos(ang) * th, kz = hz - Math.sin(ang) * th;
+  limb(out, hx, hy, hz, kx, ky, kz, 0.095, 0.072, C_PANTS);
+  const a2 = ang - knee;
+  const fy = ky - Math.cos(a2) * sh, fz = kz - Math.sin(a2) * sh;
+  limb(out, kx, ky, kz, kx, fy + 0.06, fz, 0.068, 0.052, C_PANTS);
+  box(out, kx, fy + 0.05, fz - 0.05, 0.11, 0.1, 0.26, C_BOOT);
+}
+
+/** Geometrie einer Pose (Füße bei y = 0, Blick −Z), ≈ 400 Dreiecke. */
 function poseGeometry(pose) {
   const out = { p: [], n: [], c: [] };
   const crouch = pose === 'crouch';
   const run = pose === 'runA' || pose === 'runB';
   const s = pose === 'runB' ? -1 : 1;
-  // Hüfthöhe, Oberkörperneigung
-  const hipY = crouch ? 0.62 : run ? 0.9 : 0.94;
-  const lean = crouch ? 0.32 : run ? 0.22 : 0.06;
+  const hipY = crouch ? 0.6 : run ? 0.88 : 0.93;
+  const lean = crouch ? 0.3 : run ? 0.22 : 0.06;
   if (crouch) {
-    leg(out, -0.1, hipY, 0, 1.25, 2.3); // kniet: linkes Knie vorn
-    leg(out, 0.1, hipY, 0, 0.2, 1.7);
+    leg(out, -0.1, hipY, 0, 1.3, 2.3);
+    leg(out, 0.1, hipY, 0, 0.15, 1.75);
   } else if (run) {
     leg(out, -0.1, hipY, 0, 0.5 * s, 0.2 + (s > 0 ? 0.15 : 0.9));
     leg(out, 0.1, hipY, 0, -0.5 * s, 0.2 + (s > 0 ? 0.9 : 0.15));
   } else {
-    leg(out, -0.11, hipY, 0, 0.04, 0.05);
-    leg(out, 0.11, hipY, 0, -0.04, 0.05);
+    leg(out, -0.1, hipY, 0, 0.04, 0.05);
+    leg(out, 0.1, hipY, 0, -0.04, 0.05);
   }
-  // Becken + Rumpf (geneigt um die Hüfte)
-  box(out, 0, hipY + 0.04, 0, 0.36, 0.2, 0.24, C_PANTS);
-  const tl = 0.56;
+  // Becken, Rumpf (um die Hüfte geneigt), Plattenträger, Rucksack
+  box(out, 0, hipY + 0.03, 0, 0.34, 0.18, 0.22, C_PANTS);
+  const tl = 0.54;
   const ty = hipY + 0.1 + Math.cos(lean) * tl / 2, tz = -Math.sin(lean) * tl / 2;
-  box(out, 0, ty, tz, 0.42, tl, 0.26, C_UNI, -lean);
-  // Weste/Plattenträger
-  box(out, 0, ty - 0.02, tz - 0.06, 0.4, tl * 0.72, 0.2, C_GEAR, -lean);
+  limb(out, 0, hipY + 0.08, 0, 0, hipY + 0.1 + Math.cos(lean) * tl, -Math.sin(lean) * tl, 0.15, 0.19, C_UNI);
+  box(out, 0, ty - 0.02, tz - 0.07, 0.36, tl * 0.66, 0.16, C_GEAR, -lean);
+  box(out, 0, ty + 0.02, tz + 0.14, 0.3, tl * 0.6, 0.14, C_GEAR, -lean);
   const shY = hipY + 0.1 + Math.cos(lean) * tl, shZ = -Math.sin(lean) * tl;
   // Kopf + Helm
-  box(out, 0, shY + 0.13, shZ - 0.02, 0.18, 0.2, 0.2, C_SKIN);
-  box(out, 0, shY + 0.25, shZ, 0.25, 0.12, 0.27, C_GEAR);
-  // Arme im Anschlag: Oberarme nach vorn-unten, Unterarme zur Waffe
-  box(out, -0.24, shY - 0.14, shZ - 0.1, 0.12, 0.32, 0.12, C_UNI, 0.6);
-  box(out, 0.24, shY - 0.14, shZ - 0.1, 0.12, 0.32, 0.12, C_UNI, 0.6);
-  box(out, -0.16, shY - 0.22, shZ - 0.36, 0.1, 0.1, 0.3, C_UNI);
-  box(out, 0.14, shY - 0.2, shZ - 0.24, 0.1, 0.1, 0.24, C_UNI);
-  box(out, -0.1, shY - 0.21, shZ - 0.52, 0.08, 0.08, 0.08, C_SKIN);
-  // Gewehr
-  box(out, 0.04, shY - 0.14, shZ - 0.46, 0.06, 0.1, 0.86, C_GUN);
-  box(out, 0.04, shY - 0.24, shZ - 0.34, 0.05, 0.14, 0.07, C_GUN);
+  const hd = new THREE.SphereGeometry(0.1, 7, 5).toNonIndexed(); hd.translate(0, shY + 0.15, shZ - 0.02); put(out, hd, C_SKIN);
+  const hm = new THREE.SphereGeometry(0.128, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.55).toNonIndexed(); hm.translate(0, shY + 0.17, shZ); put(out, hm, C_GEAR);
+  // Arme im Anschlag (Schulter → Ellbogen → Hand an der Waffe)
+  const gy = shY - 0.16, gz = shZ - 0.42;
+  limb(out, -0.2, shY - 0.03, shZ, -0.2, shY - 0.27, shZ - 0.2, 0.06, 0.05, C_UNI);
+  limb(out, -0.2, shY - 0.27, shZ - 0.2, -0.05, gy - 0.04, gz - 0.12, 0.05, 0.04, C_UNI);
+  limb(out, 0.2, shY - 0.03, shZ, 0.19, shY - 0.3, shZ - 0.06, 0.06, 0.05, C_UNI);
+  limb(out, 0.19, shY - 0.3, shZ - 0.06, 0.06, gy - 0.05, gz + 0.12, 0.05, 0.04, C_UNI);
+  // Gewehr (Schaft an der rechten Schulter)
+  box(out, 0.05, gy, gz, 0.05, 0.08, 0.84, C_GUN);
+  box(out, 0.05, gy - 0.1, gz + 0.06, 0.04, 0.13, 0.06, C_GUN);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(out.p, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(out.n, 3));
@@ -304,8 +320,8 @@ export class CrowdImpostors {
     }
     // Budget: nächste `full` bleiben voll – Abstand des full-nächsten per Auswahl (O(n), keine Sortierung je Bild)
     const limit = cand.length > full ? kth(dist, cand.length, full - 1) : Infinity;
-    // Gedränge (viel mehr sichtbare als volle Soldaten): Silhouetten schon ab 70 % des Mindestabstands
-    const minD = cand.length > full * 3 ? minD0 * 0.7 : minD0;
+    // Gedränge (viel mehr sichtbare als volle Soldaten): Silhouetten schon ab 80 % des Mindestabstands
+    const minD = cand.length > full * 3 ? minD0 * 0.8 : minD0;
     if (!this.root && !cand.some((b) => b.camDist * fovK > farD || (b.camDist * fovK > minD && b.camDist > limit))) { this.counts.impostors = 0; this.counts.full = cand.length; return; }
     this._ensure(scene, bots.length);
     const M = this.meshes;
