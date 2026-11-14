@@ -182,7 +182,8 @@ export const BODYCAM = {
   qx90: bcRifle('qx90', BC_RIFLE_HIP, BC_RIFLE_ROT),
   hm60: bcRifle('hm60', BC_RIFLE_HIP, BC_RIFLE_ROT),
   // RG-6 Orkan (13.11.): schwer und breit – tiefer, weiter vorn und kaum gekantet, sonst deckt das Gehäuse das halbe Bild
-  orkan: bcRifle('orkan', [0.14, -0.19, -0.38], [0.02, 0.1, 0.16]),
+  // 13.11. (Waffen B): höher und näher, kaum gekantet – Stützhand am Vordergriff und Schießhand bleiben im Bild
+  orkan: bcRifle('orkan', [0.12, -0.13, -0.33], [0.03, 0.08, 0.1]),
   brecher: bcRifle('brecher', BC_RIFLE_HIP, BC_RIFLE_ROT),
   bulldog: bcRifle('bulldog', BC_RIFLE_HIP, BC_RIFLE_ROT),
   p9: bcRifle('p9', [0.06, -0.15, -0.34], [0.0, 0.03, 0.0], BC_PISTOL),

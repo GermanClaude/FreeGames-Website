@@ -479,7 +479,7 @@ Object.assign(LOD_META, {
 Object.assign(DEFS, {
   gaPoly: () => wearPatch(std({ color: 0x28292c, metalness: 0.0, roughness: 0.68, ...GB_POLY(2) }), POLY_WEAR),
   gaPolyDark: () => wearPatch(std({ color: 0x1c1d1f, metalness: 0.0, roughness: 0.62, ...GB_POLY(2.5) }), POLY_WEAR),
-  gaPolyTan: () => wearPatch(std({ color: 0x8a7c5e, metalness: 0.0, roughness: 0.74, ...GB_POLY(2) }), { ...POLY_WEAR, col: 0xa89a7c, tone: 0.08 }),
+  gaPolyTan: () => wearPatch(std({ color: 0x766a50, metalness: 0.0, roughness: 0.74, ...GB_POLY(2) }), { ...POLY_WEAR, col: 0xa89a7c, tone: 0.08 }),
   gaPolyOD: () => wearPatch(std({ color: 0x4d5240, metalness: 0.0, roughness: 0.72, ...GB_POLY(2) }), { ...POLY_WEAR, col: 0x6a6f5c }),
   gaGrip: () => wearPatch(std({ color: 0x202124, metalness: 0.0, roughness: 0.86, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.5, 0.5) }), { ...POLY_WEAR, k: 0.5 }),
   gaGripOD: () => wearPatch(std({ color: 0x4a4f3d, metalness: 0.0, roughness: 0.86, normalMap: stippleNormal(), normalScale: new THREE.Vector2(0.45, 0.45) }), { ...POLY_WEAR, col: 0x666b58, k: 0.5 }),
@@ -492,6 +492,6 @@ Object.assign(DEFS, {
   gaMag: () => wearPatch(std({ color: 0x35373a, metalness: 0.5, roughness: 0.46, ...GB_STEEL(2.5) }), { col: 0x8a8d91, metal: 1, rough: 0.3, k: 0.9 }),
 });
 Object.assign(LOD_META, {
-  gaPoly: [0x28292c, 0], gaPolyDark: [0x1c1d1f, 0], gaPolyTan: [0x8a7c5e, 0], gaPolyOD: [0x4d5240, 0], gaGrip: [0x202124, 0], gaGripOD: [0x4a4f3d, 0], gaGripTan: [0x7d7055, 0],
+  gaPoly: [0x28292c, 0], gaPolyDark: [0x1c1d1f, 0], gaPolyTan: [0x766a50, 0], gaPolyOD: [0x4d5240, 0], gaGrip: [0x202124, 0], gaGripOD: [0x4a4f3d, 0], gaGripTan: [0x7d7055, 0],
   gaSteel: [0x2d2e31, 1], gaBlued: [0x1c1d20, 1], gaBolt: [0x6e7176, 1], gaAlu: [0x242528, 0], gaTan: [0x8c7854, 0], gaMag: [0x35373a, 1],
 });

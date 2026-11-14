@@ -486,16 +486,16 @@ const FEEL = {
   smg_qx90: { handling: { mass: 2.8, inertia: 0.75, swayScale: 0.9, aimDrift: 0.0004, reach: 0.67 }, recoil: { visual: 0.85, firstShotSpread: 0.85 } },   // reach 25.10.: Modell nach Foto – Mündung 227 mm vor dem Griff statt 305 mm
   hmg_orkan: { handling: { mass: 14.0, inertia: 2.1, swayScale: 1.35, aimDrift: 0.0011, reach: 1.25 }, recoil: { visual: 0.6, firstShotSpread: 1 } },   // 13.11.: Gatling mit Gurtkasten ≈ 14 kg
   lmg_hm60: { handling: { mass: 8.6, inertia: 1.6, swayScale: 1.25, aimDrift: 0.0009, reach: 1.39 }, recoil: { visual: 1.1, firstShotSpread: 0.85 } },
-  mr_sk14: { handling: { mass: 4.6, inertia: 1.2, swayScale: 1.1, aimDrift: 0, reach: 1.08 }, recoil: { visual: 1.0, firstShotSpread: 0.6 } },
+  mr_sk14: { handling: { mass: 4.6, inertia: 1.2, swayScale: 1.1, aimDrift: 0, reach: 1.15 }, recoil: { visual: 1.0, firstShotSpread: 0.6 } },
   sr_brecher: { handling: { mass: 6.4, inertia: 1.4, swayScale: 1.15, aimDrift: 0, reach: 1.34 }, recoil: { visual: 1.0, firstShotSpread: 1 } },
   sg_bulldog: { handling: { mass: 3.6, inertia: 1.1, swayScale: 1.05, aimDrift: 0.0005, reach: 1.06 }, recoil: { visual: 1.1, firstShotSpread: 1 } },
   pi_p9: { handling: { mass: 0.75, inertia: 0.55, swayScale: 0.8, aimDrift: 0.0006, reach: 0.56 }, recoil: { visual: 1.0, firstShotSpread: 0.75 } },
   pi_adler: { handling: { mass: 2.0, inertia: 0.7, swayScale: 0.9, aimDrift: 0.0007, reach: 0.6 }, recoil: { visual: 1.2, firstShotSpread: 0.75 } },   // reach 25.10.: Modell nach Foto 34 mm kürzer
   pi_p9a: { handling: { mass: 0.9, inertia: 0.55, swayScale: 0.82, aimDrift: 0.0006, reach: 0.56 }, recoil: { visual: 0.9, firstShotSpread: 0.75 } },   // 26.10.: Glock 18C mit 19 Patronen ≈ 0,9 kg
   knife: { handling: { mass: 0.3, inertia: 0.4, swayScale: 0.7, aimDrift: 0, reach: 0 } },
-  ar_k36: { handling: { mass: 2.9, inertia: 0.88, swayScale: 0.95, aimDrift: 0.00045, reach: 0.84 }, recoil: { visual: 0.95, firstShotSpread: 0.75 } },
-  ar_bx20: { handling: { mass: 3.7, inertia: 0.92, swayScale: 0.95, aimDrift: 0.0004, reach: 0.92 }, recoil: { visual: 0.9, firstShotSpread: 0.7 } },
-  ar_g7: { handling: { mass: 4.6, inertia: 1.15, swayScale: 1.1, aimDrift: 0.0006, reach: 1.1 }, recoil: { visual: 1.25, firstShotSpread: 0.75 } },
+  ar_k36: { handling: { mass: 2.9, inertia: 0.88, swayScale: 0.95, aimDrift: 0.00045, reach: 0.865 }, recoil: { visual: 0.95, firstShotSpread: 0.75 } },
+  ar_bx20: { handling: { mass: 3.7, inertia: 0.92, swayScale: 0.95, aimDrift: 0.0004, reach: 0.84 }, recoil: { visual: 0.9, firstShotSpread: 0.7 } },
+  ar_g7: { handling: { mass: 4.6, inertia: 1.15, swayScale: 1.1, aimDrift: 0.0006, reach: 1.13 }, recoil: { visual: 1.25, firstShotSpread: 0.75 } },
   smg_wespe: { handling: { mass: 2.7, inertia: 0.7, swayScale: 0.86, aimDrift: 0.00045, reach: 0.8 }, recoil: { visual: 0.8, firstShotSpread: 0.9 } },
   smg_keiler: { handling: { mass: 3.0, inertia: 0.85, swayScale: 0.92, aimDrift: 0.0004, reach: 0.81 }, recoil: { visual: 1.0, firstShotSpread: 0.8 } },
   lmg_lm8: { handling: { mass: 6.2, inertia: 1.35, swayScale: 1.15, aimDrift: 0.0008, reach: 1.09 }, recoil: { visual: 1.05, firstShotSpread: 0.85 } },
@@ -964,7 +964,7 @@ RAW.erstlicht = {
   melee: { range: 2.2, lungeRange: 4.3, lungeSpeed: 10.5, arc: 0.55, swingTime: 0.64, hitDelay: 0.12, style: 'stab' },
   range: 2.2, sound: { profile: 'melee_swing', pitch: 1.08 }, model: 'erstlicht',
 };
-FEEL.ar_ursprung = FEEL.ar_k36;
+FEEL.ar_ursprung = { ...FEEL.ar_k36, handling: { ...FEEL.ar_k36.handling, reach: 0.95 } };   // 13.11.: Modell auf M4-Basis (Mündung wie M-17)
 FEEL.pi_funke = FEEL.pi_p9;
 FEEL.erstlicht = FEEL.knife;
 ICONS.ursprung = ICONS.k36;

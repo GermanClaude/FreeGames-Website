@@ -15,7 +15,7 @@
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
 import { Builder, DETAIL, clearPartCache, setWeaponDetail as setDetail } from './gunsmith/builder.js?v=20261113221339';
-import { sk14 } from './gunsmith/guns-ar.js?v=20261113221339';
+import { sk14 } from './gunsmith/guns-sk14.js?v=20261113221339';   // SK-14 nach Vorbild Mk 14 EBR (13.11.)
 import { kv47 } from './gunsmith/guns-kv47.js?v=20261113221339';
 import { m17 } from './gunsmith/guns-m17.js?v=20261113221339';
 import { hm60 } from './gunsmith/guns-hm60.js?v=20261113221339';   // HM-60 Hammer nach Vorbild (M60, 13.11.)
@@ -31,7 +31,7 @@ import { p9a } from './gunsmith/guns-p9a.js?v=20261113221339';   // P-9A (Glock 
 import { wirbel } from './gunsmith/guns-wirbel.js?v=20261113221339';   // PS-41 Wirbel (PPSch-41) nach Foto (26.10.)
 import { orkan } from './gunsmith/guns-orkan.js?v=20261113221339';   // RG-6 Orkan (Gatling, 13.11.)
 import { knife, frag, semtex } from './gunsmith/gear.js?v=20261113221339';
-import { bx20 } from './gunsmith/guns-wave2.js?v=20261113221339';
+import { bx20 } from './gunsmith/guns-bx20.js?v=20261113221339';   // BX-20 nach Vorbild Steyr AUG (13.11.)
 import { g7 } from './gunsmith/guns-g7.js?v=20261113221339';   // G-7 nach Vorbild G3A3 (13.11.)
 import { lm8 } from './gunsmith/guns-lm8.js?v=20261113221339';   // LM-8 Bär nach Vorbild (RPK, 13.11.)
 import { wespe } from './gunsmith/guns-wespe.js?v=20261113221339';   // KM-7 Wespe nach Vorbild (Vector, 13.11.)
@@ -47,7 +47,8 @@ import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js
 import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261113221339';
 import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261113221339';
 import { attKey } from '../../shared/attachments.data.js?v=20261113221339';
-import { ursprung, funke, erstlicht } from './gunsmith/guns-og.js?v=20261113221339';
+import { funke, erstlicht } from './gunsmith/guns-og.js?v=20261113221339';
+import { ursprung } from './gunsmith/guns-ursprung.js?v=20261113221339';   // UR-1 auf dem M4-Fotomodell (13.11.)
 
 const BUILDERS = {
   zwilling, // neue Waffe (26.10.): ZW-12 Zwilling
