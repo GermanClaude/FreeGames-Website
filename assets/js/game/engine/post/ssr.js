@@ -99,7 +99,9 @@ const SSR_FRAG = /* glsl */ `
     float gloss = 1.0 - smoothstep(0.18, 0.55, rough);
     if (gloss <= 0.0) return;
     vec3 P = viewPos(vUv, d);
-    vec3 N = normalize(nr.rgb * 2.0 - 1.0);
+    vec3 nRaw = nr.rgb * 2.0 - 1.0;
+    if (!(dot(nRaw, nRaw) > 0.01)) return; // leere Normale → normalize() wäre NaN (echte GPUs)
+    vec3 N = normalize(nRaw);
     vec3 V = normalize(-P);
     float nv = max(dot(N, V), 0.0);
     vec3 F0 = vec3(mix(0.04, 0.6, metal));
@@ -152,7 +154,8 @@ const SSR_FRAG = /* glsl */ `
     float w = F * gloss * hit * back * e.x * e.y * uStrength;
     vec3 c = texture2D(tColor, huv).rgb;
     c = min(c, vec3(64.0)); // Sonnenscheibe/Glanzlichter nicht als Feuerwerk spiegeln
-    gl_FragColor = vec4(c * w, w);
+    vec4 o = vec4(c * w, w);
+    gl_FragColor = all(equal(o, o)) && all(lessThan(abs(o), vec4(1e30))) ? o : vec4(0.0);
   }
 `;
 
@@ -250,6 +253,7 @@ const CONTACT_FRAG = /* glsl */ `
       vec3 py = viewPos(vUv + vec2(0.0, uSize.w), texture2D(tDepth, vUv + vec2(0.0, uSize.w)).x) - P;
       N = normalize(cross(px, py));
     }
+    if (!(dot(N, N) > 0.5)) return; // NaN/leere Normale (echte GPUs) → kein Kontaktschatten
     float nl = dot(N, uSunView);
     if (nl <= 0.02) return; // abgewandt: liegt ohnehin im Eigenschatten
     float n = ign(gl_FragCoord.xy + uSeed * 23.0);

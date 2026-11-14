@@ -31,6 +31,7 @@ const RESOLVE_FRAG = /* glsl */ `
   vec3 toYCoCg(vec3 c) { return vec3(dot(c, vec3(0.25, 0.5, 0.25)), dot(c, vec3(0.5, 0.0, -0.5)), dot(c, vec3(-0.25, 0.5, -0.25))); }
   vec3 fromYCoCg(vec3 y) { return vec3(y.x + y.y - y.z, y.x + y.z, y.x - y.y - y.z); }
   float gE;
+  bool npOk(vec3 c) { return all(equal(c, c)) && all(lessThan(abs(c), vec3(1e30))); }
   vec3 tm(vec3 c) { c *= gE; return c / (1.0 + npMax3(c)); }
   vec3 itm(vec3 c) { return c / max(1.0 - npMax3(c), 1e-3) / gE; }
   vec3 histCR(vec2 uv) {
@@ -49,10 +50,12 @@ const RESOLVE_FRAG = /* glsl */ `
       + texture2D(tHist, vec2(t3.x, t12.y)).rgb * (w3.x * w12.y)
       + texture2D(tHist, vec2(t12.x, t3.y)).rgb * (w12.x * w3.y);
     float ws = w12.x * w0.y + w0.x * w12.y + w12.x * w12.y + w3.x * w12.y + w12.x * w3.y;
-    return max(r / ws, 0.0);
+    vec3 h = max(r / max(ws, 1e-4), 0.0);
+    return npOk(h) ? h : texture2D(tHist, uv).rgb;
   }
   void main() {
     gE = uExp * (uAuto > 0.5 ? texelFetch(tExposure, ivec2(0), 0).r : 1.0);
+    if (!(gE > 1e-6) || gE > 1e6) gE = 1.0; // Schutz: Belichtung 0/NaN → sonst NaN im ganzen Bild
     vec3 cur = tm(texture2D(tCur, vUv).rgb);
     vec3 cY = toYCoCg(cur);
     vec3 m1 = cY, m2 = cY * cY;
@@ -93,7 +96,9 @@ const RESOLVE_FRAG = /* glsl */ `
     // Leuchtdichte-Gewichtung gegen Flackern einzelner heller Pixel
     float wc = a / (1.0 + cY.x), wh = (1.0 - a) / (1.0 + hY.x);
     vec3 res = (cY * wc + hY * wh) / (wc + wh);
-    gl_FragColor = vec4(itm(max(fromYCoCg(res), 0.0)), 1.0);
+    vec3 outC = itm(max(fromYCoCg(res), 0.0));
+    if (!npOk(outC)) outC = npOk(texture2D(tCur, vUv).rgb) ? texture2D(tCur, vUv).rgb : vec3(0.0);
+    gl_FragColor = vec4(outC, 1.0);
   }
 `;
 

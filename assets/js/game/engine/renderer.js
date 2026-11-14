@@ -137,6 +137,26 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.info.autoReset = false;
   renderer.setClearColor(0x0a0b0d, 1);
+  // Diagnose (14.11., Schwarzbild auf echten GPUs): Shader-Fehler sammeln und sichtbar einblenden, damit Spieler sie melden können
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    const log = (s) => (s && gl.getShaderInfoLog(s)) || '';
+    const msg = (gl.getProgramInfoLog(program) || '') + '\n' + log(vs) + '\n' + log(fs);
+    const list = (window.__npShaderErrors = window.__npShaderErrors || []);
+    if (list.length < 8) list.push(msg.trim().slice(0, 600));
+    console.error('NULLPUNKT Shader-Fehler:', msg);
+    try {
+      let box = document.getElementById('np-shader-err');
+      if (!box) {
+        box = document.createElement('pre');
+        box.id = 'np-shader-err';
+        box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;max-height:40vh;overflow:auto;z-index:99999;background:rgba(80,0,0,.92);color:#fff;font:11px/1.35 monospace;padding:8px;white-space:pre-wrap;pointer-events:auto';
+        box.title = 'Bitte Screenshot an den Entwickler – Klick schließt';
+        box.onclick = () => box.remove();
+        document.body.appendChild(box);
+      }
+      box.textContent = 'Grafikfehler (bitte Screenshot schicken, Klick schließt):\n' + navigator.userAgent + '\n\n' + list.join('\n-----\n');
+    } catch { /* ohne DOM */ }
+  };
   // Max. Anisotropie jetzt abfragen (three.js merkt sie sich): gl.getParameter wartet, bis die GPU alle
   // anstehenden Befehle abgearbeitet hat – beim ersten Kartenladen kostete das einen langen Hänger.
   renderer.capabilities.getMaxAnisotropy();
