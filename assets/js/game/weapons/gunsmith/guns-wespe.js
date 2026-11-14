@@ -7,6 +7,8 @@
 // und Teleskopschaft, Klappvisiere, Spannhebel links vorn (klappbarer Knauf).
 import { mm, slab, rrect, pocket, POLY } from './gbkit.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_WESPE = schrift('wespe').mark;
 
 const AXIS = 0.046;
 const RAIL = 0.074;                    // Schienenunterkante (Oberteil-Oberkante)
@@ -27,6 +29,9 @@ const STOCK = mm([[-206, 66], [-352, 70], [-372, 70], [-380, 62], [-380, -30], [
 const MAG = mm([[66, -60], [110, -60], [106, -206], [104, -214], [70, -214], [68, -206]]);
 
 export function wespe(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_WESPE(b, 'KM-7  WESPE  KAL .45', -(0.0215 + 0.0002), 0.05, 0.06, 0.0034);
+  MARK_WESPE(b, 'NP 071345', 0.0215 + 0.0002, 0.052, -0.09, 0.0026);
   // --- Oberteil mit Auswurffenster (rechts) und Längsnut für den Spannhebel (links)
   slab(b, UPPER, 0.0215, 0.003, 'gbAlu', { id: 'upper', cav: POLY, cut: (x, v, u, d) => {
     d = pocket(d, x, rrect(u, v, 0.03, 0.05, 0.026, 0.009, 0.002), 0.012, 1);           // Auswurf

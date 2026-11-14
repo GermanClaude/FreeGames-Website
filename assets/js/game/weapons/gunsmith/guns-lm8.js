@@ -7,6 +7,8 @@
 // Spannhebel am Verschlussträger, Trommelmagazin mit Hals, Sicken und Aufziehknopf.
 import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_LM8 = schrift('lm8').mark;
 
 const AXIS = 0.062;
 const SV = 0.0925;  // Visierlinie (Kimmenkerbe/Kornspitze)
@@ -20,6 +22,9 @@ const STOCK = mm([[-178, 70], [-396, 58], [-404, 48], [-404, -78], [-396, -88], 
 const GRIP = mm([[12, 6], [18, -10], [4, -96], [-6, -104], [-34, -102], [-40, -92], [-26, -14], [-28, 6]]);
 
 export function lm8(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_LM8(b, 'LM-8   1981', -(0.0185 + 0.0002), 0.052, -0.125, 0.0036);
+  MARK_LM8(b, 'NP 470213', -(0.0185 + 0.0002), 0.044, -0.125, 0.0028);
   // --- Gehäuse (gestanzt, phosphatiert): Magazinschacht, Nieten, Auswurf rechts unter dem Deckel
   slab(b, REC, 0.0185, 0.0018, 'gbBlued', { id: 'rec', cav: STEEL, cut: (x, v, u, d) => {
     d = pocket(d, x, rrect(u, v, 0.03, 0.062, 0.05, 0.008, 0.002), 0.012, 1);                 // Auswurf/Verschlussbahn

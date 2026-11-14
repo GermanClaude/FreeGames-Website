@@ -8,6 +8,8 @@
 // Laufbündel 'rotor' (Drehpunkt auf der Bündelachse) – das Viewmodel dreht es mit der Hochdrehzahl (controller.js spin).
 import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_ORKAN = schrift('orkan').mark;
 
 const AXIS = 0.072;          // Achse des Laufbündels
 const R = 0.024;             // Teilkreis der sechs Läufe
@@ -15,6 +17,8 @@ const U0 = 0.16, U1 = 0.74;  // Läufe von … bis (Mündung)
 const HR = 0.052;            // Gehäuseradius
 
 export function orkan(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_ORKAN(b, 'RG-6  ORKAN   7,62 × 51', -(0.029 + 0.0002), 0.024, 0.02, 0.0045);
   // ---- Gehäuse: Rundkörper mit gewölbter Endkappe, Schraubenkränzen, Führungsbahn-Deckel oben (Teil 'cover')
   b.lathe('gbAlu', [[0, 0], [0, 0.03], [0.006, 0.042], [0.016, 0.049], [0.024, HR], [0.27, HR], [0.278, HR - 0.004], [0.29, HR - 0.004], [0.29, 0]], 0, AXIS, -0.13, { seg: b.seg(40, 10) });
   if (b.hi) {

@@ -12,6 +12,9 @@
 // Anker und Teile wie bei den Vorgängern (Pump, Ladehebel, Magazin, Patrone) – Hände/Animationen bleiben.
 import { ejectionPort, engrave, triggerGuard, roundRect, qdCup } from './parts.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_BULLDOG = schrift('bulldog').mark;
+const MARK_HAGEL = schrift('hagel').mark;
 
 /**
  * Fischhaut: zwei Scharen diagonaler Rillen (±45°), auf das Feld u0..u1 × v0..v1 zugeschnitten, auf der Seitenfläche x.
@@ -39,6 +42,9 @@ export function checkering(b, x, u0, u1, v0, v1, o = {}) {
 /* ------------------------------------------------------------------ Bulldog 12 (Vorbild Remington 870) */
 
 export function bulldog(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_BULLDOG(b, 'BULLDOG  KAL 12/76', -(0.0185 + 0.0002), 0.055, 0.04, 0.0036);
+  MARK_BULLDOG(b, 'NP 870 3341', -(0.0185 + 0.0002), 0.047, 0.04, 0.0028);
   const axis = 0.06;
   // Gehäuse: Seitenprofil mit gerundeter Front, langer Oberseite und zum Schaft abfallendem Heck
   b.side('steelDark', [
@@ -132,6 +138,8 @@ export function bulldog(b) {
 /* ------------------------------------------------------------------ HF-12 Hagel (Vorbild Saiga-12) */
 
 export function hagel(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_HAGEL(b, 'HAGEL  12/76', -(0.0215 + 0.0002), 0.056, 0.03, 0.0035);
   const axis = 0.07;
   // Gestanztes Gehäuse (AK-Bauart): Seitenwand mit Magazinschacht-Ausbuchtung, Nietbild, Versteifungsmulde
   b.front('steel', roundRect(-0.0215, 0.028, 0.0215, 0.084, 0.004, b.hi ? 2 : 1), 0.31, -0.095, { bevel: 0.0015 });

@@ -7,6 +7,8 @@
 // Munitionskasten links mit Deckel (hüpft beim Rückstoß, viewmodel.js _animLid) und Gurt (magfill.js, Glied je Patrone).
 import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_HM60 = schrift('hm60').mark;
 
 const AXIS = 0.082;
 const SV = 0.1405;
@@ -20,6 +22,9 @@ const STOCK = mm([[-128, 104], [-300, 98], [-462, 94], [-472, 88], [-472, -50], 
 const COVER = mm([[-52, 108], [200, 108], [206, 114], [194, 132], [-34, 132], [-50, 124]]);
 
 export function hm60(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_HM60(b, 'HM-60  KAL 7,62 × 51', -(0.0245 + 0.0002), 0.07, 0.06, 0.0042);
+  MARK_HM60(b, 'NP 600417', -(0.0245 + 0.0002), 0.061, 0.06, 0.003);
   // --- Gehäuse (Stahlblech): Längsleisten (Prägung), Nietreihen, Auswurf rechts
   slab(b, REC, 0.0245, 0.0022, 'gbBlued', { id: 'rec', cav: STEEL, cut: (x, v, u, d) => {
     d = pocket(d, x, rrect(u, v, 0.04, 0.072, 0.03, 0.009, 0.002), 0.014, 1);

@@ -8,8 +8,12 @@
 import { triggerGuard } from './parts.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
 import { checkering } from './guns-flinten.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_KOBRA = schrift('kobra').mark;
 
 export function kobra(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_KOBRA(b, 'KOBRA  .357 MAGNUM', -(0.0118 + 0.0003), 0.074, 0.165, 0.003);
   const axis = 0.074;
   const cu = 0.062, cr = 0.0205, cl = 0.058;           // Trommel: Mitte (u), Radius, Länge
   // Rahmen: Brücke über der Trommel (oben gerundet), Rahmenfenster, Bügelansatz, Griffrahmen

@@ -8,6 +8,8 @@
 import { ref, slab, rrect, pocket, POLY } from './gbkit.js?v=20261114004313';
 import { redDot } from './parts.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_KEILER = schrift('keiler').mark;
 
 const R = ref(2193, 898, 315);
 const { U, V, M, L } = R;
@@ -37,6 +39,9 @@ const hwRec = (u, v) => {
 };
 
 export function keiler(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_KEILER(b, 'SM-45  KEILER  KAL .45', -(0.0215 + 0.0002), V(121), U(720), 0.0034);
+  MARK_KEILER(b, 'NP 450918', -(0.0215 + 0.0002), V(131), U(735), 0.0026);
   // --- Gehäuse mit Kanälen, Durchbrüchen, Auswurffenster (rechts)
   const slotsL = [[225, 318, 152, 5], [358, 452, 151, 7], [465, 525, 176, 8]].map(([x0, x1, y, h]) => [(U(x0) + U(x1)) / 2, V(y), (U(x0) - U(x1)) / 2, L(h)]);
   const cutRec = (x, v, u, d) => {

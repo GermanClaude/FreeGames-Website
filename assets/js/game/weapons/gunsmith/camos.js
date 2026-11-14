@@ -311,6 +311,13 @@ export function camoMaterial(baseKey, id) {
   m.roughness = f.roughness ?? Math.max(0.55, base.roughness ?? 0.7);
   if (!metallic) m.metalnessMap = null;
   if (f.env) m.envMapIntensity = f.env;
+  // Gebrauchsspuren/Oberflächen-Baukasten (materials.js wearPatch) gelten auch unter der Tarnung – clone() übernimmt
+  // onBeforeCompile nicht (14.11.: Tarnungen wirkten dadurch glatt wie neu)
+  if (base.onBeforeCompile && base.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) {
+    const ck = base.customProgramCacheKey();
+    m.onBeforeCompile = base.onBeforeCompile;
+    m.customProgramCacheKey = () => ck + ':camo';
+  }
   if (def.shimmer) shimmer(m);
   m.userData = { camo: id, baseKey, shimmer: !!def.shimmer };
   m.needsUpdate = true;

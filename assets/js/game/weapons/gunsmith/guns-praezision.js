@@ -16,6 +16,9 @@
 // und Zielen bleiben unverändert.
 import { swapOptic, ejectionPort, roundRect, engrave, qdCup, triggerGuard, arGrip, muzzleDevice } from './parts.js?v=20261114004313';
 import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+const MARK_BRECHER = schrift('brecher').mark;
+const MARK_TITAN = schrift('titan').mark;
 
 /* ------------------------------------------------------------------ Zielfernrohr 5–25 × 56 */
 
@@ -113,6 +116,8 @@ function flutedBarrel(b, mat, r0, r1, u0, u1, axis, n, f0, f1) {
 /* ------------------------------------------------------------------ Brecher .338 (Vorbild AWM) */
 
 export function brecher(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_BRECHER(b, 'BRECHER  .338', -(0.0178 + 0.0003), 0.074, 0.0, 0.0032);
   const axis = 0.074;
   // Chassis-Schalen (oliv, Polymer) – Daumenloch, Bügelöffnung, Gelenk hinter dem Griff (Trennfuge)
   const outer = [
@@ -252,6 +257,9 @@ function arrowBrake(b, u0, axis) {
 }
 
 export function titan(b) {
+  // Gravuren: Typ/Kaliber/Nummer (Fantasie), eingeschnitten (schrift.js)
+  MARK_TITAN(b, 'TITAN  KAL .50', -(0.027 + 0.0002), 0.078, 0.02, 0.005);
+  MARK_TITAN(b, 'NP 820614', -(0.027 + 0.0002), 0.078, 0.16, 0.0035);
   const axis = 0.072;
   // Oberteil (Stahlblech, gekantet): langes Rechteckprofil mit gerundeten Oberkanten
   const upper = roundRect(-0.027, 0.05, 0.027, 0.106, 0.007, b.hi ? 3 : 1);

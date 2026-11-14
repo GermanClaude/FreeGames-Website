@@ -43,6 +43,7 @@ import { applyCamo, disposeCamos, disposeCamosFor } from './gunsmith/camos.js?v=
 export { setMagRounds } from './gunsmith/magfill.js?v=20261114004313';
 import { disposeMaterials, freeAtlasMaterials } from './gunsmith/materials.js?v=20261114004313';
 import { disposeTextures } from './gunsmith/textures.js?v=20261114004313';
+import { setKitTier, disposeKits } from './gunsmith/finish-kit.js?v=20261114004313';   // Oberflächen-Baukasten (14.11.)
 import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261114004313';
 import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261114004313';
 import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261114004313';
@@ -90,6 +91,7 @@ export function weaponDetailTier() { return DETAIL.max ? 'max' : DETAIL.lite ? '
 export function setWeaponDetail(quality) {
   const was = weaponDetailTier();
   setDetail(quality);
+  setKitTier(weaponDetailTier());   // Oberflächen-Baukasten: Kartengröße nach Stufe (finish-kit.js)
   return weaponDetailTier() !== was;
 }
 
@@ -428,4 +430,5 @@ export function disposeWeaponModels() {
   disposeCamos();
   disposeMaterials();
   disposeTextures();
+  disposeKits();
 }

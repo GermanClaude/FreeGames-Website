@@ -124,7 +124,21 @@ function cellOf(A, text, { vertical = false, px = 64, weight = '600' } = {}) {
 export function schriftMat(key) {
   const mk = 'schrift:' + key;
   const make = (lite) => () => {
-    const m = new THREE.MeshStandardMaterial({ map: paint(atlasOf(key), lite), color: 0xb9bcc0, metalness: 0.6, roughness: 0.45, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    // 14.11. (gfx-waffen): eingeschnittene statt aufgedruckte Schrift – blanker Schnittgrund etwas gedämpft, die Flanken der Gravur
+    // aus der Deckung (Alpha) als Höhenfeld (≈ 0,15 mm tief) → Licht fängt sich an den Kanten wie an echten Gravuren
+    const m = new THREE.MeshStandardMaterial({ map: paint(atlasOf(key), lite), color: 0x9a9da2, metalness: 0.75, roughness: 0.38, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    if (!lite) {
+      m.onBeforeCompile = (sh) => {
+        sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+          #if defined(USE_MAP) && !defined(FLAT_SHADED)
+          { float eh = -texture2D(map, vMapUv).a * 0.00015;
+            vec3 sp = -vViewPosition, sx = dFdx(sp), sy = dFdy(sp);
+            vec3 r1 = cross(sy, normal), r2 = cross(normal, sx); float det = dot(sx, r1);
+            normal = normalize(abs(det) * normal - sign(det) * (dFdx(eh) * r1 + dFdy(eh) * r2)); }
+          #endif`);
+      };
+      m.customProgramCacheKey = () => 'schrift-graviert1';
+    }
     m.userData.texKey = 'schrift:' + key;
     return m;
   };
