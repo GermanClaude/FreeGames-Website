@@ -13,24 +13,23 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261114060746';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261114060746'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261114060746';
-import { pickNames } from './names.js?v=20261114060746';
-import { Nameplate } from './nameplates.js?v=20261114060746';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261114060746';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261114060746';
-import { analyze } from './ai/tactics.js?v=20261114060746';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261114060746';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261114060746';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261114060746';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261114060746';
-import { BotAdapt } from './ai/spielstil.js?v=20261114060746';
-import { CorpseStore } from './corpses.js?v=20261114060746';
-import { ActorGrid, CrowdImpostors, crowdScale, spreadSpawn } from './crowd.js?v=20261114060746';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261114060746';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261114060746';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261114060746';
+import { Bot } from './bot.js?v=20261113221339';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261113221339'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261113221339';
+import { pickNames } from './names.js?v=20261113221339';
+import { Nameplate } from './nameplates.js?v=20261113221339';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261113221339';
+import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261113221339';
+import { analyze } from './ai/tactics.js?v=20261113221339';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261113221339';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261113221339';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261113221339';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261113221339';
+import { BotAdapt } from './ai/spielstil.js?v=20261113221339';
+import { CorpseStore } from './corpses.js?v=20261113221339';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261113221339';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261113221339';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261113221339';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -59,7 +58,6 @@ const SIM_LOD = [
   { every: 2, sense: 0.6, think: 1.6 }, // mittel
   { every: 3, sense: 0.35, think: 2.5 }, // fern, nicht im Bild
   { every: 4, sense: 0.15, think: 4 }, // sehr fern, nicht im Bild (≈ 1 Hz Entscheidungen)
-  { every: 6, sense: 0.1, think: 6 }, // masse: Massenschlacht (> 120 Bots), weit weg und nicht im Bild
 ];
 // Aussehen je Klasse (Varianten aus soldier/gear.js); Truppführer tragen das Funkgerät
 const CLASS_LOOKS = { sturm: ['sturm', 'grenadier', 'schatten'], sanitaeter: ['sanitaeter'], pionier: ['pionier', 'bastion'], besatzung: ['pionier'], aufklaerer: ['spaeher', 'kundschafter'] };
@@ -101,10 +99,7 @@ export class BotManager {
     this.corpses = new CorpseStore(this); // Leichen bleiben liegen (eingefroren, Obergrenze je Grafikstufe)
     this.lodEnabled = true;
     this._stepEv = { actor: null, sprint: false, crouch: false }; // Simulations-Detailstufen (Prüfstand/Messung: false = alle Bots jedes Bild)
-    this.lodCount = [0, 0, 0, 0, 0];
-    this.grid = new ActorGrid(8); // masse: räumliches Raster aller lebenden Akteure (je Bild neu)
-    this.crowd = new CrowdImpostors(this); // masse: ferne Soldaten als instanzierte Silhouetten
-    this.massOpt = true; // masse: Prüfstand (A/B im selben Match) – false = Silhouetten, Raster und Skalierung aus
+    this.lodCount = [0, 0, 0, 0];
     this.activity = []; // jüngste Gefechtslärm-Positionen { pos, time, actor } (hörbar über die ganze Karte)
     this.debug = { los: 0, paths: 0, ms: 0, losUsed: 0, pathsUsed: 0 };
     // Mehrspieler: Darstellung der Puppen-Schüsse (Einschläge ohne Schaden, Vorbeiflug am Spieler) – abschaltbar, falls das
@@ -349,7 +344,6 @@ export class BotManager {
     this._plates.clear();
     this._plateLos.clear();
     this.corpses.clear(); // eingefrorene Leichen (Matchende/Kartenwechsel)
-    this.crowd.dispose(false); // masse: Silhouetten (Instanzpuffer; Geometrie/Material bleiben für die Revanche)
     this.bots = [];
     this._paths.clear();
     this._pathQ.length = 0;
@@ -695,10 +689,6 @@ export class BotManager {
     const t0 = performance.now();
     this._frame++;
     const low = this.quality === 'low';
-    // masse: Prüfstand (this._botProf = {}) – CPU-Zeit der Abschnitte aufsummieren
-    const P = this._botProf;
-    let pt = t0;
-    const lap = P ? (k) => { const t = performance.now(); P[k] = (P[k] || 0) + t - pt; pt = t; } : null;
     // Sichtstrahlen-Budget: Grundmenge je Qualität, mit dem Bedarf (Bots × Wahrnehmungsrate × dt)
     // wachsend – bei niedriger Bildrate fallen pro Bild mehr Wahrnehmungsschritte an
     const base = low ? LOS_BASE_LOW : LOS_BASE;
@@ -709,10 +699,9 @@ export class BotManager {
     for (let i = 0; i < this.bots.length; i++) {
       const b = this.bots[i];
       if (!b.alive) continue;
-      if (b.puppet) { if (b.isRemoteHuman) humans.push(b); } else demand += b.diff.senseHz * (this.massOpt ? b.lodSense ?? 1 : 1); // masse: gedrosselte Wahrnehmung braucht weniger Strahlen
+      if (b.puppet) { if (b.isRemoteHuman) humans.push(b); } else demand += b.diff.senseHz;
     }
-    // masse: Massenschlacht – Obergrenze 2× statt 3× Grundmenge (Strahlen sind der Hauptaufwand der Wahrnehmung)
-    this._losLeft = Math.min(base * (this.massOpt && (this._aliveAi | 0) > 120 ? 2 : 3), Math.max(base, Math.ceil(demand * dt * LOS_PER_SENSE)));
+    this._losLeft = Math.min(base * 3, Math.max(base, Math.ceil(demand * dt * LOS_PER_SENSE)));
     const losStart = this._losLeft;
     const bots = this.bots;
     // Wer zielt worauf (für Zielverteilung) – Stand des letzten Bildes
@@ -743,21 +732,13 @@ export class BotManager {
       done++;
     }
     this.debug.pathsDone = done;
-    if (lap) lap('m:paths');
     // Kamera: Sichtbarkeit + Abstand
     const now = G.time.elapsed;
     const aimT = G.input && G.input.aimTarget;
-    this.lodCount[0] = this.lodCount[1] = this.lodCount[2] = this.lodCount[3] = this.lodCount[4] = 0;
-    this.debug.anims = 0;
-    // masse: Raster für Nachbarschaftsabfragen; Simulations-Schwellen enger, je mehr KI-Bots leben (bis 64 unverändert)
-    this.grid.rebuild(G.actors, this._frame);
-    const CS = crowdScale(this.massOpt ? this._aliveAi | 0 : 0);
-    const ks = CS.dist;
-    let aliveAi = 0;
+    this.lodCount[0] = this.lodCount[1] = this.lodCount[2] = this.lodCount[3] = 0;
     const cam = G.camera;
     // Entlastung mitten im Match (engine/dynres.js, 21.10.): Animationsraten-Schwellen näher an die Kamera
-    // masse: Massenschlacht (> 120 Bots) zusätzlich ×0,6 – Hunderte Soldaten im Nahbereich animieren sonst jedes Bild
-    const rf = RELIEF_ANIM[Math.min(3, (G.perf && G.perf.relief) | 0)] * (CS.anim || 1);
+    const rf = RELIEF_ANIM[Math.min(3, (G.perf && G.perf.relief) | 0)];
     if (cam) {
       _m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
       this._frustum.setFromProjectionMatrix(_m);
@@ -782,10 +763,7 @@ export class BotManager {
       let dh = d;
       for (let h = 0; h < humans.length; h++) { const hd = humans[h] === b ? Infinity : b.position.distanceTo(humans[h].position); if (hd < dh) dh = hd; }
       // (Sichtkegel ohne Verdeckung: auf der Großkarte liegt fast jeder im Bild → Abstand entscheidet, Sicht hebt eine Stufe an)
-      let tier = !this.lodEnabled || b.puppet ? 0 : !b.alive || duel || dh < 50 * ks || (inView && d < 90 * ks) ? 0 : dh < 120 * ks || (inView && d < 220 * ks) ? 1 : dh < 260 * ks || inView ? 2 : 3;
-      if (tier === 3 && CS.deep && dh > 200) tier = 4;
-      else if (tier < 2 && CS.deep && b.impostor && !duel) tier = 2; // Silhouette (fern, ohne Animation): Takt wie „fern“
-      if (b.alive && !b.puppet) aliveAi++;
+      const tier = !this.lodEnabled || b.puppet ? 0 : !b.alive || duel || dh < 50 || (inView && d < 90) ? 0 : dh < 120 || (inView && d < 220) ? 1 : dh < 260 || inView ? 2 : 3;
       b.simTier = tier;
       const L = SIM_LOD[tier];
       b.simEvery = L.every; b.lodSense = L.sense; b.lodThink = L.think;
@@ -805,16 +783,10 @@ export class BotManager {
         }
       }
     }
-    this._aliveAi = aliveAi;
-    // masse: ferne sichtbare Soldaten → instanzierte Silhouetten (Budget je Grafikstufe; Puppen nie)
-    if (this.massOpt) this.crowd.update(bots, this.scene, this.tier, cam ? cam.fov / 60 : 1, now);
-    else if (this.crowd.root) { for (const b of bots) b.impostor = false; this.crowd.dispose(false); }
-    if (lap) lap('m:lod');
     // Trupptaktik (gestaffelt je Trupp); lernende Bots nur offline
     this.tactics.update(dt, now);
     if (this.adapt.active && this._online()) this._adaptOnline();
     this.adapt.update(dt, now);
-    if (lap) lap('m:tactics');
     // Bots (ferne Detailstufen nur jedes n-te Bild mit aufgelaufener Zeit, Phase je Bot verteilt)
     let simmed = 0;
     for (let i = 0; i < bots.length; i++) {
@@ -847,15 +819,12 @@ export class BotManager {
       if (b.alive) b.updateCorpsesOnly(sdt);
     }
     this.debug.simmed = simmed;
-    if (lap) lap('m:bots'); // enthält die Abschnitte der Bots (sense/think/aim/move/physics/weapon/animate)
     // Eingefrorene Leichen: Pakete nachbauen, Lebensdauer (Einstellung „Leichen“)
     this.corpses.update(dt, cam ? this._frustum : null);
     // Schatten (nächste N sichtbare)
     this._shadowT -= dt;
     if (this._shadowT <= 0) { this._shadowT = 0.5; this._assignShadows(); }
-    if (lap) lap('m:corpses');
     this._updatePlates(dt);
-    if (lap) lap('m:plates');
     this.debug.losUsed = losStart - this._losLeft;
     this.debug.ms = performance.now() - t0;
   }
@@ -872,9 +841,6 @@ export class BotManager {
   }
 
   /* ================================================================ Dienste für Bots */
-
-  /** masse: große Matches – belegten Spawnpunkt auf einen freien Navigationsknoten daneben verlegen (main.spawnActor). */
-  spreadSpawn(actor, spawn) { return spreadSpawn(this.G, actor, spawn); }
 
   /** Sichtlinien-Budget (true = Strahl erlaubt). */
   takeLos() {
@@ -1072,24 +1038,13 @@ export class BotManager {
 
   _hear(actor, range, err, now, source = 'sound', alert = true) {
     const G = this.G;
-    let bots = this.bots;
-    // masse: große Matches – kurze Reichweiten (Schritte, nahe Einschläge) nur über die Nachbarn im Raster; Abstand vor der
-    // (teureren) Feind-Prüfung (Schüsse und Schritte von Hunderten Bots: sonst O(N²) je Sekunde)
-    if (this.massOpt && bots.length > 48 && range * 1.6 <= 40 && this.grid.frame === this._frame) {
-      const near = this._hearNear || (this._hearNear = []);
-      near.length = 0;
-      this.grid.each(actor.position.x, actor.position.z, range * 1.6, this._hearPush || (this._hearPush = (a) => { if (a.memory) this._hearNear.push(a); }));
-      bots = near;
-    }
-    const ax = actor.position.x, ay = actor.position.y, az = actor.position.z;
+    const bots = this.bots;
     for (let i = 0; i < bots.length; i++) {
       const b = bots[i];
-      if (!b.alive || b.puppet || b === actor) continue;
+      if (!b.alive || b.puppet || b === actor || !G.combat.isHostile(b, actor)) continue;
+      const d = b.position.distanceTo(actor.position);
       const r = range * b.diff.hearing;
-      const dx = b.position.x - ax, dy = b.position.y - ay, dz = b.position.z - az;
-      const d2 = dx * dx + dy * dy + dz * dz;
-      if (d2 > r * r || !G.combat.isHostile(b, actor)) continue;
-      const d = Math.sqrt(d2);
+      if (d > r) continue;
       const rec = b.memory.get(actor);
       if (rec && rec.visible) continue;
       b.memory.hear(actor, actor.position, now, err + d * 0.05, source);
@@ -1156,18 +1111,11 @@ export class BotManager {
   _onImpact({ point, shooter } = {}) {
     if (!point || !shooter || !shooter.position || shooter.isStreakEntity) return;
     const now = this.G.time.elapsed;
-    let bots = this.bots;
-    // masse: große Matches – nur Nachbarn des Einschlags (Raster), Abstand vor der Feind-Prüfung
-    if (this.massOpt && bots.length > 48 && this.grid.frame === this._frame) {
-      const near = this._hearNear || (this._hearNear = []);
-      near.length = 0;
-      this.grid.each(point.x, point.z, 2.5, this._hearPush || (this._hearPush = (a) => { if (a.memory) this._hearNear.push(a); }));
-      bots = near;
-    }
+    const bots = this.bots;
     for (let i = 0; i < bots.length; i++) {
       const b = bots[i];
-      if (!b.alive || b.puppet || b === shooter || b.position.distanceToSquared(point) > 6.25) continue;
-      if (!this.G.combat.isHostile(b, shooter)) continue;
+      if (!b.alive || b.puppet || b === shooter || !this.G.combat.isHostile(b, shooter)) continue;
+      if (b.position.distanceToSquared(point) > 6.25) continue;
       b.memory.hear(shooter, shooter.position, now, 3, 'sound');
       if (!b.gunner.rec || !b.gunner.rec.visible) b.alert(shooter.position, now);
     }
@@ -1240,8 +1188,6 @@ export class BotManager {
       let target = 0;
       let fade = 6;
       const d = bot.camDist;
-      // masse: unsichtbares Schild, das es auch bleibt (außer Sicht, zu weit, Gegner nicht im Visier) → ohne Kopfposition
-      if (p.alpha < 0.02 && (!bot.alive || !bot.inView || (p.kind === 'ally' ? d >= 60 : d >= 7 && aimT !== bot))) { p._target = 0; p._fade = fade; continue; }
       const s = bot.soldier;
       const pos = p._pos || (p._pos = new THREE.Vector3());
       if (s && bot.alive) s.getHeadPosition(pos); else pos.copy(bot.position).setY(bot.position.y + 1.7);
@@ -1300,7 +1246,7 @@ export class BotManager {
     }
     for (let i = 0; i < bots.length; i++) {
       const p = this._plates.get(bots[i]);
-      if (p && (p._target > 0 || p.alpha >= 0.02 || p.sprite.visible)) p.update(p._pos, cam, viewH, p._target || 0, dt, p._fade || 6, p._size || 1);
+      if (p) p.update(p._pos, cam, viewH, p._target || 0, dt, p._fade || 6, p._size || 1);
     }
   }
 

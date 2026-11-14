@@ -1,6 +1,6 @@
 // Sturmgewehre & Präzisionsgewehr: M-17 Falke (M4-artig, Holo), KV-47 (AK-artig, Holz), SK-14 (DMR, ACOG)
-import { ejectionPort, triggerGuard, arGrip, engrave } from './parts.js?v=20261114060746';
-import { magRounds } from './magfill.js?v=20261114060746';
+import { holoSight, acog, birdcage, brake, ejectionPort, triggerGuard, arGrip, slots, roundRect, engrave, qdCup } from './parts.js?v=20261113221339';
+import { magRounds } from './magfill.js?v=20261113221339';
 
 // Achteckiger Querschnitt um (0, axis)
 export function octagon(r, axis) {
@@ -102,4 +102,42 @@ export function arMag(b, mat, o = {}) {
     path: [[0, 0.0505, 0.0885], [0, 0.0, 0.0895], [0, -0.05 * len, 0.0955], [0, -0.1 * len, 0.1055], [0, -0.133 * len, 0.114]],
   });
   b.anchor('magGrab', 0, -0.07 * len, 0.099, { part: 'mag', data: { w: 0.0113, d: 0.029 } });
+}
+
+export function sk14(b) {
+  const axis = 0.093;
+  arLower(b, { lowerMat: 'aluTan', upperMat: 'aluTan', gripMat: 'grip', axis, upperFront: 0.13 });
+  // Längerer, runder Handschutz mit Schienen in 3/6/9/12 Uhr
+  b.cyl('aluTan', 0.0255, 0.0255, 0.285, 0, axis, 0.272, { seg: b.seg(16, 8) });
+  b.rail('aluTan', 0, axis + 0.024, 0.13, 0.41);
+  b.rail('aluTan', 0.024, axis, 0.3, 0.4, { rz: -Math.PI / 2 });
+  b.rail('aluTan', -0.024, axis, 0.3, 0.4, { rz: Math.PI / 2 });
+  if (b.hi) {
+    for (let i = 0; i < 7; i++) for (const s of [-1, 1]) b.box('cavity', 0.012, 0.004, 0.018, s * 0.018, axis - 0.018, 0.15 + i * 0.034, { rz: s * 0.78, c: 0 });
+  }
+  // Schwerer Lauf + Mündungsbremse
+  b.cyl('steelDark', 0.011, 0.012, 0.16, 0, axis, 0.493, { seg: b.seg(14, 6) });
+  const end = brake(b, 0.572, axis, 0.0135, 0.065);
+  b.anchor('muzzle', 0, axis, end + 0.002);
+  // Präzisionsschaft mit Wangenauflage
+  b.side('aluTan', [
+    [-0.16, 0.112], [-0.18, 0.118], [-0.21, 0.126], [-0.3, 0.126], [-0.31, 0.12], [-0.31, -0.012], [-0.3, -0.018],
+    [-0.28, -0.012], [-0.25, 0.03], [-0.22, 0.062], [-0.18, 0.074], [-0.16, 0.08],
+  ], 0.038, 0, { bevel: 0.004, bevelSeg: 2, holes: [roundRect(-0.27, 0.02, -0.235, 0.06, 0.012, 3)] });
+  b.box('polymer', 0.032, 0.012, 0.09, 0, 0.133, -0.25, { c: 0.004 });                  // Wangenauflage
+  b.box('rubber', 0.042, 0.142, 0.016, 0, 0.055, -0.318, { c: 0.004 });
+  if (b.hi) for (const du of [-0.225, -0.275]) b.cyl('steel', 0.004, 0.004, 0.044, 0, 0.123, du, { axis: 'v', seg: 8 });
+  acog(b, 0.0, 0.124);
+  // Gerades Stahlmagazin (20 Schuss)
+  b.part('mag', 0, 0.0, 0.088);
+  b.side('steel', [[0.119, 0.045], [0.12, 0.0], [0.124, -0.09], [0.064, -0.096], [0.058, 0.0], [0.058, 0.045]], 0.024, 0, { part: 'mag', bevel: 0.0018 });
+  b.box('steel', 0.028, 0.008, 0.066, 0, -0.096, 0.092, { part: 'mag', rx: -0.06, c: 0.002 });
+  if (b.hi) for (const s of [-1, 1]) b.box('steel', 0.0015, 0.07, 0.008, s * 0.0122, -0.03, 0.105, { part: 'mag', c: 0 });
+  // Stahl: nur die obersten Patronen (7,62 NATO, auf die Magazintiefe gestaucht) bzw. der leere Zubringer
+  magRounds(b, { cal: 'r308', fit: 0.057, width: 0.021, depth: 0.06, pitch: 0.0066, path: [[0, 0.051, 0.0885], [0, 0.0, 0.0895], [0, -0.075, 0.0925]] });
+  b.anchor('magGrab', 0, -0.05, 0.0915, { part: 'mag', data: { w: 0.012, d: 0.0305 } });
+  // Zweibein-Adapter
+  if (b.hi) b.box('alu', 0.02, 0.012, 0.03, 0, axis - 0.034, 0.385, { c: 0.002 });
+  b.anchor('leftHandGrip', 0, axis - 0.026, 0.27, { data: { style: 'under', r: 0.026 } });
+  b.meta = { sight: 'acog', axis, kind: 'rifle' };
 }

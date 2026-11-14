@@ -12,9 +12,8 @@
 //   handle.stats                         → { download, gpu, sets, models, hdri, ms, failed, tier }
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261114060746';
-import { deviceInfo } from '../engine/device.js?v=20261114060746';
-import { textureAnisotropy } from '../engine/textures.js?v=20261114060746';
+import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261113221339';
+import { textureAnisotropy } from '../engine/textures.js?v=20261113221339';
 
 // ---------------------------------------------------------------------------
 // Zuordnung Spielmaterial → Bibliothekssatz
@@ -54,9 +53,6 @@ export const LIB_MATERIALS = {
   wood_floor: { id: 'wood_floor_old', color: 1.2 },
   osb: { id: 'osb', color: 0.9, roughness: 1.4 }, // textures-2: Ø 0,58 → 0,81
   bark_palm: { id: 'bark_palm', color: 0.8, macro: false },
-  // gfx-welt 14.11.: Stämme/Äste und Felsen der Großkarten als Fotoscans (Poly Haven bark_brown_02, rock_boulder_dry)
-  bark: { id: 'bark_brown', color: [1.75, 1.8, 1.95], macro: false },
-  fels: { id: 'rock_boulder', color: 0.78, macro: false },
   // cardboard: bleibt prozedural – der Fotoscan ist nackte Wellpappe; Klebeband/Aufdruck des prozeduralen Kartons lesen
   // sich auf Kistenflächen besser (Kartenzuordnung assets.materials.cardboard = 'cardboard' schaltet ihn wieder zu)
   metal_painted: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },
@@ -167,20 +163,6 @@ const hdr = () => (hdrLoader ||= new HDRLoader().setDataType(THREE.HalfFloatType
 
 /** Bytes einer Datei aus dem Manifest (Download-Statistik). */
 const fileBytes = (f, k) => f?.sizes?.[k] || 0;
-// Texturqualität (Einstellung gfxTextures, 13.11.): eigene Stufe für die Fotoscan-Sätze, sonst aus der Qualitätsstufe
-const TEX_SETTING_TIER = { niedrig: 512, mittel: 1024, ultra: 2048 };
-function textureTier(G, q) {
-  let v = 'auto';
-  try { v = G.settings && typeof G.settings.get === 'function' ? G.settings.get('gfxTextures') : 'auto'; } catch { v = 'auto'; }
-  let t = TEX_SETTING_TIER[v] || tierFor(q, 'texture');
-  // 2048er-Scans nur auf Hoch/Ultra und nie auf Telefonen (Touch + kurze Bildschirmkante < 900 px): Grafikspeicher/Ladezeit
-  if (t > 1024) {
-    let phone = false;
-    try { const d = deviceInfo(); phone = !!d.touch && d.short > 0 && d.short < 900; } catch { phone = false; }
-    if (phone || q === 'low' || q === 'medium') t = 1024;
-  }
-  return t;
-}
 
 /**
  * Asset-Verwaltung einer Karte (eine Instanz je loadWorld).
@@ -194,7 +176,7 @@ export function createWorldAssets(G, def, quality) {
   const q = ['low', 'medium', 'high', 'ultra'].includes(quality) ? quality : 'high';
   const t0 = performance.now();
   const stats = {
-    tier: { texture: textureTier(G, q), model: tierFor(q, 'model'), hdri: tierFor(q, 'hdri') },
+    tier: { texture: tierFor(q, 'texture'), model: tierFor(q, 'model'), hdri: tierFor(q, 'hdri') },
     download: 0, gpu: { desktop: 0, mobile: 0 }, sets: 0, models: 0, modelsSkipped: [], hdri: null, ms: 0, failed: [], formats: [],
     available: false, reason: '',
   };

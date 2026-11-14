@@ -1,7 +1,7 @@
 // NULLPUNKT — animierte Wasserfläche: zwei gegenläufig scrollende Normalmaps, spiegelt die
 // PMREM-Himmelsumgebung (Fresnel über PBR), billig (keine Spiegelpass) (Owner: world)
 import * as THREE from 'three';
-import { getWaterNormalMap } from '../engine/textures.js?v=20261114060746';
+import { getWaterNormalMap } from '../engine/textures.js?v=20261113221339';
 
 /**
  * Wasserfläche nur in den Zellen (o.cell m, Standard 4), für die o.keep(x0, z0, x1, z1) wahr ist (26.10., K0):
@@ -60,13 +60,9 @@ export function createWater(o) {
     sh.fragmentShader = 'uniform float uTime;\n' + sh.fragmentShader.replace('#include <normal_fragment_maps>',
       THREE.ShaderChunk.normal_fragment_maps.replace('vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;',
         `vec3 mapN = normalize( ( texture2D( normalMap, vNormalMapUv + uTime * vec2( 0.011, 0.007 ) ).xyz * 2.0 - 1.0 )
-          + ( texture2D( normalMap, vNormalMapUv * 1.83 + vec2( 0.37, 0.11 ) - uTime * vec2( 0.009, -0.013 ) ).xyz * 2.0 - 1.0 ) * 0.8
-          // gfx-welt: lange Dünung (grobe dritte Abtastung) bricht die Kachelwiederholung auf großen Flächen
-          + ( texture2D( normalMap, vNormalMapUv * 0.23 + vec2( 0.61, 0.29 ) + uTime * vec2( -0.0031, 0.0042 ) ).xyz * 2.0 - 1.0 ) * vec3( 1.3, 1.3, 0.6 ) );
-        // Feinwellen in der Ferne glätten (kein Flimmern/Raster, Spiegelung des Himmels wird ruhiger wie bei echtem Wasser)
-        mapN = normalize( mix( vec3( 0.0, 0.0, 1.0 ), mapN, 1.0 - 0.65 * smoothstep( 40.0, 320.0, length( vViewPosition ) ) ) );`));
+          + ( texture2D( normalMap, vNormalMapUv * 1.83 + vec2( 0.37, 0.11 ) - uTime * vec2( 0.009, -0.013 ) ).xyz * 2.0 - 1.0 ) * 0.8 );`));
   };
-  mat.customProgramCacheKey = () => 'np-water-v2';
+  mat.customProgramCacheKey = () => 'np-water-v1';
   const mesh = new THREE.Mesh(geo, mat);
   mesh.name = 'water';
   if (!geo.attributes.position.count) mesh.visible = false;

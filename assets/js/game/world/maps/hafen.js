@@ -2,22 +2,21 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261114060746';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261113221339';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261114060746';
-import { clawd } from '../clawd.js?v=20261114060746';
-import { farShore } from '../kulisse.js?v=20261114060746'; // gfx-welt: ferne Ufer
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261114060746';
+} from '../props.js?v=20261113221339';
+import { clawd } from '../clawd.js?v=20261113221339';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261113221339';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261114060746';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261113221339';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261114060746';
+} from './hafen-ausstattung.js?v=20261113221339';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -1019,6 +1018,5 @@ function ship(b) {
   b.boxMM(x0 + 4, 24.2, z0 + 5.9, x1 - 4, 25.05, z0 + 9.1, 'metal_painted', { tint: '#1d1f22', collide: false, minimap: false, grad: false });
   // Ferne Silhouetten
   b.boxMM(-330, -1.7, -260, -300, 5, -140, 'metal_painted', { tint: '#5b6773', collide: false, minimap: false, grad: false, ao: false });
-  // gfx-welt 14.11.: Ufer mit Böschung, Baumreihen und Gewerbe statt flacher grüner Kästen (world/kulisse.js)
-  [[-420, 60, 180, 14, false], [-460, -120, 200, 22, true], [-380, 220, 160, 10, true]].forEach(([x, z, w, h, town], i) => farShore(b, { x: x + 20, z0: z - w / 2, z1: z + w / 2, depth: 70, h, face: 1, seed: 31 + i * 17, town }));
+  for (const [x, z, w, h] of [[-420, 60, 180, 14], [-460, -120, 200, 22], [-380, 220, 160, 10]]) b.box(x, -2, z, 40, h, w, 'grass', { tint: '#6a7356', collide: false, minimap: false, grad: false, ao: false, cast: false });
 }

@@ -11,7 +11,7 @@
 // die Schemafarbe kommt als Uniform aus dem Material → eine Geometrie je Variante × LOD für alle Schemata.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { BONE } from './rig.js?v=20261114060746';
+import { BONE } from './rig.js?v=20261113221339';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -221,7 +221,7 @@ export class SkinBuilder {
   /**
    * Teil hinzufügen. o: { bone, color (Hex, direkt) | pal (Palettenplatz) + shade (sRGB-Faktor, Standard 1),
    *   camo = 0, detail = 0, emis = 0, shine = 0, cls ('cloth'|'gear'|'skin'|'hard'|'leather'|'glass'), wear = 0,
-   *   mirrorBone, tail } – mirrorBone: zusätzlich an x gespiegelt an diesen Knochen; tail: Dreiecke ans Ende (siehe addMesh).
+   *   mirrorBone } – mirrorBone: zusätzlich an x gespiegelt an diesen Knochen.
    */
   add(geo, o) {
     if (!geo) return;
@@ -242,14 +242,14 @@ export class SkinBuilder {
     const np = [o.camo || 0, o.detail ?? (o.camo ? 1 : 0), o.emis || 0, o.shine || 0];
     const seed = hash01(this.parts.length * 7 + bone * 131 + 17);
     const nq = [pal, cls, Math.round(Math.min(1, Math.max(0, o.wear || 0)) * 255), Math.floor(seed * 255)];
-    this.parts.push({ geo, bone, r, g, b, np, nq, seed, tail: !!o.tail });
+    this.parts.push({ geo, bone, r, g, b, np, nq, seed });
     if (o.mirrorBone) {
       const m = geo.clone();
       m.userData = { ...geo.userData, npUv: geo.userData.npUv ? [...geo.userData.npUv] : undefined };
       m.scale(-1, 1, 1);
       flipWinding(m);
       const mb = BONE[o.mirrorBone];
-      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3), tail: !!o.tail });
+      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3) });
     }
   }
 
@@ -257,10 +257,8 @@ export class SkinBuilder {
    * Fertig gehäutetes Netz (body-mesh.js) hinzufügen: D = { n, pos Float32×3, nrm Float32×3, uv Float32×2 (m),
    * ski/skw Uint8×4, reg Uint8, ao Uint8, idx Uint16 }, matFor(region) → Materialangaben wie bei add() (ohne bone).
    * Keine Querskalierung (der Körper hat seine Endmaße); die Feld-Verdeckung wird mit der gebackenen gemischt.
-   * tail (optional, Set von Bereichen): Dreiecke, deren Ecken alle in diesen Bereichen liegen, kommen ans Ende des
-   * Indexpuffers (userData.tailStart) → eine Ansicht ohne sie (z. B. Kopf, wenn face.js ihn zeichnet) ist nur ein drawRange.
    */
-  addMesh(D, matFor, tail = null) {
+  addMesh(D, matFor) {
     const mats = new Map();
     const spec = (r) => {
       let m = mats.get(r);
@@ -275,7 +273,7 @@ export class SkinBuilder {
       }
       return m;
     };
-    this.parts.push({ mesh: D, spec, tail });
+    this.parts.push({ mesh: D, spec });
   }
 
   build() {
@@ -298,7 +296,6 @@ export class SkinBuilder {
     const u8 = (v) => Math.max(0, Math.min(255, Math.round(v * 255)));
     let vo = 0, io = 0;
     const fieldAo = []; // [Startecke, Uint8Array] der fertigen Netze (Feld-Verdeckung)
-    const tailV = new Uint8Array(nv); // Ecken, deren Dreiecke ans Ende sollen (Kopf)
     for (const p of this.parts) {
       if (p.mesh) {
         const D = p.mesh, n = D.n;
@@ -311,7 +308,6 @@ export class SkinBuilder {
           for (let c = 0; c < 4; c++) { np[k * 4 + c] = u8(m.np[c]); nq[k * 4 + c] = m.nq[c]; si[k * 4 + c] = D.ski[i * 4 + c]; sw[k * 4 + c] = D.skw[i * 4 + c]; }
         }
         for (let i = 0; i < D.idx.length; i++) idx[io + i] = D.idx[i] + vo;
-        if (p.tail) for (let i = 0; i < n; i++) if (p.tail.has(D.reg[i])) tailV[vo + i] = 1;
         fieldAo.push([vo, D.ao]);
         io += D.idx.length;
         vo += n;
@@ -329,7 +325,6 @@ export class SkinBuilder {
       const cr = u8(p.r), cg = u8(p.g), cb = u8(p.b);
       const n0 = u8(p.np[0]), n1 = u8(p.np[1]), n2 = u8(p.np[2]), n3 = u8(p.np[3]);
       const bk = this.bulk ? this.bulk[p.bone] : null;
-      if (p.tail) tailV.fill(1, vo, vo + n);
       for (let i = 0; i < n; i++) {
         let x = P[i * 3], z = P[i * 3 + 2];
         const y = P[i * 3 + 1];
@@ -375,17 +370,6 @@ export class SkinBuilder {
     // Körper: gebackene Verdeckung (Ausrüstung auf dem Körper) × Feld-Verdeckung (Achseln, Schritt, Kniekehlen)
     for (const [o, A] of fieldAo) for (let i = 0; i < A.length; i++) ao[o + i] = Math.round(ao[o + i] * (0.3 + 0.7 * A[i] / 255));
     const aoMs = performance.now() - tAo;
-    // Schluss-Dreiecke (Kopf) ans Ende sortieren (stabile Aufteilung)
-    let tailStart = io;
-    if (tailV.some((x) => x)) {
-      const head = [], rest = [];
-      for (let t = 0; t < io; t += 3) {
-        const a = idx[t], b = idx[t + 1], c = idx[t + 2];
-        (tailV[a] && tailV[b] && tailV[c] ? head : rest).push(a, b, c);
-      }
-      idx.set(rest, 0); idx.set(head, rest.length);
-      tailStart = rest.length;
-    }
     const out = new THREE.BufferGeometry();
     out.setAttribute('aNo', new THREE.BufferAttribute(ao, 1, true));
     out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -400,7 +384,6 @@ export class SkinBuilder {
     out.computeBoundingSphere();
     out.computeBoundingBox();
     out.userData.triangles = io / 3;
-    out.userData.tailStart = tailStart;
     out.userData.aoMs = +aoMs.toFixed(1);
     out.userData.bytes = pos.byteLength + nor.byteLength + uv.byteLength + col.byteLength + np.byteLength + nq.byteLength + si.byteLength + sw.byteLength + idx.byteLength + ao.byteLength;
     this.triangles = io / 3;

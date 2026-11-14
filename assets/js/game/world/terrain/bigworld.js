@@ -7,36 +7,36 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261114060746';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261114060746';
-import { createWorldAssets } from '../library.js?v=20261114060746';
-import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261114060746';
-import { createLighting } from '../lighting.js?v=20261114060746';
-import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261114060746';
-import { createAtmosphere } from '../atmos.js?v=20261114060746';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261114060746';
-import { createWater } from '../water.js?v=20261114060746';
-import { TriangleBVH } from '../bvh.js?v=20261114060746';
-import { makeTests } from '../navbuild.js?v=20261114060746';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261114060746';
-import { Heightfield } from './heightfield.js?v=20261114060746';
-import { makeCoarse } from './generate.js?v=20261114060746';
-import { CompositeBVH } from './composite.js?v=20261114060746';
-import { TerrainCollider } from './collide.js?v=20261114060746';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261114060746';
-import { createTerrainMaterial } from './splat.js?v=20261114060746';
-import { Vegetation } from './vegetation.js?v=20261114060746';
-import { Deadwood } from './deadwood.js?v=20261114060746';
-import { Litter } from './litter.js?v=20261114060746';
-import { RoadNetwork } from './roads.js?v=20261114060746';
-import { bigNavFromData } from './bignav.js?v=20261114060746';
-import { createBigMinimap } from './bigminimap.js?v=20261114060746';
-import { terrainJob, worldJob } from './bigjob.js?v=20261114060746';
+import { MAPS } from '../../../shared/maps.data.js?v=20261113221339';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261113221339';
+import { createWorldAssets } from '../library.js?v=20261113221339';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261113221339';
+import { createLighting } from '../lighting.js?v=20261113221339';
+import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261113221339';
+import { createAtmosphere } from '../atmos.js?v=20261113221339';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261113221339';
+import { createWater } from '../water.js?v=20261113221339';
+import { TriangleBVH } from '../bvh.js?v=20261113221339';
+import { makeTests } from '../navbuild.js?v=20261113221339';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261113221339';
+import { Heightfield } from './heightfield.js?v=20261113221339';
+import { makeCoarse } from './generate.js?v=20261113221339';
+import { CompositeBVH } from './composite.js?v=20261113221339';
+import { TerrainCollider } from './collide.js?v=20261113221339';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261113221339';
+import { createTerrainMaterial } from './splat.js?v=20261113221339';
+import { Vegetation } from './vegetation.js?v=20261113221339';
+import { Deadwood } from './deadwood.js?v=20261113221339';
+import { Litter } from './litter.js?v=20261113221339';
+import { RoadNetwork } from './roads.js?v=20261113221339';
+import { bigNavFromData } from './bignav.js?v=20261113221339';
+import { createBigMinimap } from './bigminimap.js?v=20261113221339';
+import { terrainJob, worldJob } from './bigjob.js?v=20261113221339';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261114060746'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261114060746'),
-  brandwald: () => import('../maps/brandwald.js?v=20261114060746'),
+  grenzland: () => import('../maps/grenzland.js?v=20261113221339'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261113221339'),
+  brandwald: () => import('../maps/brandwald.js?v=20261113221339'),
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -56,7 +56,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261114060746', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261113221339', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -271,11 +271,6 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     const i = Math.round((x - hf.minX) / BR), j = Math.round((z - hf.minZ) / BR);
     return i < 0 || j < 0 || i >= bn || j >= bn ? false : block[j * bn + i] === 1;
   };
-  // gfx-welt: Rinde und Felsen der Vegetation als Fotoscans – ihre Sätze laufen nicht über die Ortschaften (lib.load je
-  // Ortschaft lädt nur deren Materialien), daher hier nachladen, bevor veg.build() die Materialien anlegt
-  if (libOk && libPlan) {
-    try { const vn = ['bark', 'fels'].filter((n) => libPlan.has(n)); if (vn.length) resolveLibraryMaterials((await lib.load({ names: vn, plan: libPlan })).sets); } catch (err) { console.warn('[world] Vegetation-Sätze', err); }
-  }
   const veg = new Vegetation({ hf, spec: def.vegetation, quality, tier, blocked, bounds: pb, fields: def.terrain?.fields || [] });
   const vegCol = veg.colliders();
   group.add(veg.build(getMaterial));
@@ -480,7 +475,6 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     targets: [],
     terrain: { heightfield: hf, chunks, size: hf.size, waterY: hf.waterY, material: tmat.material, source: tmat.source },
     roads, vehicleSpawns, vehicleSpots, secrets, secretsAuto: true,
-    vegetation: veg, // Baumstandorte (vehicles/air: Stellplätze der Luftfahrzeuge frei von Kronen)
     civilVehicles: civilList(sites.flatMap((st) => st.b.civilSpots || [])), // fahrbare Zivilautos der Ortschaften
     emplacements: sites.flatMap((st) => st.b.emplacements || []), // benutzbare MG-Stellungen (game/mappoints.js)
     doors: sites.flatMap((st) => st.b.doors || []), gates: sites.flatMap((st) => st.b.gates || []), windows: sites.flatMap((st) => st.b.windows || []), // game/doors.js

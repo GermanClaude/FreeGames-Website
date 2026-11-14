@@ -3,9 +3,9 @@
 // Ohne three-Abhängigkeit: läuft im Welt-Worker (worldgen.worker.js) parallel zu Octree/Licht im Hauptthread,
 // als Rückfall auch direkt im Hauptthread (runWorldJob). loadWorld teilt die Arbeit auf zwei Worker auf:
 // parts ['col'] (Kollision → Startpunkte → Navigation) und ['bullet'] (Kugel-BVH → Sonden-Gitter).
-import { TriangleBVH } from './bvh.js?v=20261114060746';
-import { buildNavData } from './navbuild.js?v=20261114060746';
-import { bakeProbes, probeTransferables } from './probes.js?v=20261114060746';
+import { TriangleBVH } from './bvh.js?v=20261113221339';
+import { buildNavData } from './navbuild.js?v=20261113221339';
+import { bakeProbes, probeTransferables } from './probes.js?v=20261113221339';
 
 /**
  * job: { parts?: ['col', 'bullet'] (Standard beide), colTris: Float32Array, bulletTris: Float32Array, bulletData: Uint32Array,

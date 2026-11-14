@@ -19,8 +19,8 @@ import * as THREE from 'three';
 import {
   ACTION_IDS, ACTION_BY_ID, resolveBindings, codeMap, findConflicts, codeLabel, isBindable,
   TOUCH_BUTTONS, aspectBucket, resolveTouchLayout, loadKeyboardLayout,
-} from '../../shared/bindings.data.js?v=20261114060746';
-import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261114060746';
+} from '../../shared/bindings.data.js?v=20261113221339';
+import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261113221339';
 
 /** Alle Aktionen (Reihenfolge wie ACTION_DEFS; die ursprünglichen 17 sind enthalten). */
 export const ACTIONS = ACTION_IDS;

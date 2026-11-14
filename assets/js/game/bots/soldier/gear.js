@@ -8,10 +8,10 @@
 // Gesichter sind verdeckt (Realismus-Plan C1: Sturmhaube, Halstuch, Shemagh, Gasmaske + Schutzbrillen) – wie Bodycam,
 // das Gesichter verpixelt; so entsteht kein „Uncanny Valley“ aus der Nähe.
 import * as THREE from 'three';
-import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf } from './builder.js?v=20261114060746';
-import { SKIN_TONES } from './materials.js?v=20261114060746';
-import { BONE, DIM } from './rig.js?v=20261114060746';
-import { BODY_MESH } from './body-mesh.js?v=20261114060746';
+import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf } from './builder.js?v=20261113221339';
+import { SKIN_TONES } from './materials.js?v=20261113221339';
+import { BONE, DIM } from './rig.js?v=20261113221339';
+import { BODY_MESH } from './body-mesh.js?v=20261113221339';
 
 export const VARIANTS = [
   // Nutzer 16.10.: Grundausführungen wie die Soldaten im Video – Helm mit Tarnbezug (ohne Nachtsicht), dunkle
@@ -72,11 +72,10 @@ const tiltHelmet = (g) => g.applyMatrix4(HELMET_TILT);
 const AO = [{ cell: 0.02, dirs: 8 }, { cell: 0.022, dirs: 8 }, { cell: 0.03, dirs: 6, steps: [0.04, 0.09, 0.16] }];
 
 /**
- * Geometrie (gecacht) für Variante × Detailstufe. noHead: Kopf (Schädel, Gesicht, Augen, Ohren) weglassen – den zeichnet
- * dann face.js (modellierter Kopf mit Mimik, nur Detailstufe 0) – als Ansicht derselben Puffer (headlessView). `schemeId` wird ignoriert (Farben aus dem Material) und bleibt
+ * Geometrie (gecacht) für Variante × Detailstufe. `schemeId` wird ignoriert (Farben aus dem Material) und bleibt
  * nur für die bisherige Signatur erhalten.
  */
-export function soldierGeometry(variantId, schemeId, lod = 0, { noHead = false } = {}) {
+export function soldierGeometry(variantId, schemeId, lod = 0) {
   void schemeId;
   const l = Math.max(0, Math.min(2, lod | 0));
   const key = `${variantId}|${l}`;
@@ -87,24 +86,7 @@ export function soldierGeometry(variantId, schemeId, lod = 0, { noHead = false }
     g.userData.key = key;
     cache.set(key, g);
   }
-  return noHead ? headlessView(g) : g;
-}
-
-/**
- * Ansicht ohne Kopf: dieselben Puffer (Attribute + Index, kein zweiter Upload), nur der drawRange endet vor den
- * Kopf-Dreiecken (builder: tail → ans Ende sortiert). Wird mit der Geometrie zusammen freigegeben.
- */
-function headlessView(g) {
-  let v = g.userData.headlessView;
-  if (v) return v;
-  v = new THREE.BufferGeometry();
-  for (const k of Object.keys(g.attributes)) v.setAttribute(k, g.attributes[k]);
-  v.setIndex(g.index);
-  v.setDrawRange(0, g.userData.tailStart ?? g.index.count);
-  v.boundingSphere = g.boundingSphere; v.boundingBox = g.boundingBox;
-  v.userData = { key: g.userData.key + '|ohneKopf', variant: g.userData.variant, lod: g.userData.lod, triangles: (g.userData.tailStart ?? g.index.count) / 3, bytes: 0, headless: true };
-  g.userData.headlessView = v;
-  return v;
+  return g;
 }
 
 /** Gecachte Geometrien (Diagnose/Speicherschätzung): { count, bytes, triangles: {key: n} } */
@@ -116,7 +98,7 @@ export function soldierGeometryStats() {
 }
 
 export function disposeSoldierGeometries() {
-  for (const g of cache.values()) { if (g.userData.headlessView) g.userData.headlessView.dispose(); g.dispose(); }
+  for (const g of cache.values()) g.dispose();
   cache.clear();
 }
 
@@ -262,7 +244,7 @@ function buildSoldier(V, lod) {
       default: return C.top;
     }
   };
-  B.addMesh(bodyMesh(lod), bodyMat, L0 ? new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]) : null);
+  B.addMesh(bodyMesh(lod), bodyMat);
   if (V.holster && !FAR) {
     add(R(0.06, 0.17, 0.1, 0.022, { p: [0.238, 0.72, 0.022], r: [0.08, 0, -0.03] }), 'thighR', C.gear2);
     add(R(0.03, 0.075, 0.04, 0.008, { p: [0.24, 0.825, 0.055], r: [0.25, 0, -0.03] }), 'thighR', C.plastic);
@@ -455,10 +437,9 @@ function buildSoldier(V, lod) {
     const F = BODY_MESH.face;
     const eyesHidden = V.eyes === 'shades' || V.eyes === 'glasses' || V.eyes === 'goggles';
     if (L0 && !eyesHidden) {
-      // tail: auf Stufe 0 zeichnet face.js den Kopf – diese Teile liegen am Ende des Indexpuffers (Ansicht ohne Kopf)
-      pair(E(0.012, 0.0052, 0.005, { p: [-0.033, 1.692, F.eyeZ + 0.001] }, undefined, 6, 4), 'head', 'head', { ...C.eyeWhite, tail: true });
-      pair(E(0.0055, 0.0052, 0.003, { p: [-0.033, 1.692, F.eyeZ - 0.0032] }, undefined, 5, 4), 'head', 'head', { ...C.eye, tail: true });
-      if (!covered) pair(rbox(0.032, 0.005, 0.008, 0, 0, { p: [-0.035, 1.712, F.browZ + 0.006], r: [0, 0, -0.08] }), 'head', 'head', { ...C.brow, tail: true });
+      pair(E(0.012, 0.0052, 0.005, { p: [-0.033, 1.692, F.eyeZ + 0.001] }, undefined, 6, 4), 'head', 'head', C.eyeWhite);
+      pair(E(0.0055, 0.0052, 0.003, { p: [-0.033, 1.692, F.eyeZ - 0.0032] }, undefined, 5, 4), 'head', 'head', C.eye);
+      if (!covered) pair(rbox(0.032, 0.005, 0.008, 0, 0, { p: [-0.035, 1.712, F.browZ + 0.006], r: [0, 0, -0.08] }), 'head', 'head', C.brow);
     } else if (!eyesHidden) {
       add(rbox(0.074, 0.011, 0.01, 0, 0, { p: [0, 1.692, F.eyeZ - 0.002] }), 'head', C.eye);
     }

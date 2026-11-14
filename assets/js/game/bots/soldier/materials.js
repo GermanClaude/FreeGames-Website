@@ -13,7 +13,7 @@
 // Texturen: Fotoscan-Satz (KTX2, 512 auf low, sonst 1024) wird im Hintergrund geladen (upgradeSoldierMaterials);
 // bis dahin bzw. ohne Transcoder prozedurale Ersatztexturen – gleiches Programm, kein Neukompilieren beim Tausch.
 import * as THREE from 'three';
-import { assets, tierFor } from '../../../../lib/loader.js?v=20261114060746';
+import { assets, tierFor } from '../../../../lib/loader.js?v=20261113221339';
 
 /* ------------------------------------------------------------------ Farbschemata */
 
@@ -540,16 +540,6 @@ const ALBEDO = /* glsl */`
 		sdDust += vNq.z * ( 1.0 / 255.0 ) * smoothstep( 0.35, 0.75, sdN ) * 0.45;
 		sdDust = clamp( sdDust, 0.0, 0.65 ) * step( 0.5, sdC.y + sdC.z );
 		sdAlb = mix( sdAlb, sdAlb * 0.6 + uDust * 0.4, sdDust );
-		// gfx-soldat: Kantenabrieb + Einfassnaht an Ausrüstung/Leder/Hartteilen aus der Flächenkrümmung (abgerundete Kanten
-		// der Taschen, Platten, Stiefel): Kante heller/entsättigt, knapp innen eine dunkle Naht-/Einfasslinie
-		if ( sdCls == 1 || sdCls == 3 || sdCls == 4 ) {
-			float sdCurv = length( fwidth( normalize( vNormal ) ) ) / max( length( fwidth( vViewPosition ) ), 1e-5 );
-			float sdEdge = smoothstep( 35.0, 140.0, sdCurv ) * ( 0.35 + 0.65 * sdN ) * ( 0.45 + vNq.z * ( 0.55 / 255.0 ) );
-			float sdSeam = smoothstep( 10.0, 22.0, sdCurv ) * ( 1.0 - smoothstep( 28.0, 55.0, sdCurv ) );
-			float sdLumA = dot( sdAlb, vec3( 0.3, 0.59, 0.11 ) );
-			sdAlb = mix( sdAlb, mix( vec3( sdLumA ), sdAlb, 0.6 ) * 1.35 + 0.015, sdEdge * ( sdCls == 3 ? 0.25 : 0.42 ) );
-			sdAlb *= 1.0 - sdSeam * ( sdCls == 1 ? 0.22 : 0.1 );
-		}
 	#endif
 	diffuseColor.rgb *= sdAlb;
 `;
@@ -679,7 +669,7 @@ function newMaterial(schemeId, low) {
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => 'np-soldier-12' + (low ? 'l' : 'h');
+  m.customProgramCacheKey = () => 'np-soldier-11' + (low ? 'l' : 'h');
   return m;
 }
 

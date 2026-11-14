@@ -9,10 +9,7 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (71)
-
-45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
-verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
+## Texturen (69)
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
 |---|---|---|---|---|
@@ -44,14 +41,14 @@ verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmi
 | Linoleum Brown | `linoleum` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/linoleum_brown) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirty Carpet | `carpet_dirty` | Rohit Seervi | [Poly Haven](https://polyhaven.com/a/dirty_carpet) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Office Ceiling 001 | `ceiling_office` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=OfficeCeiling001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Rubber Tiles | `rubber_floor` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rubber_tiles) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rubber 001 | `rubber_floor` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Rubber001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Asphalt 02 | `asphalt_cracked` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/asphalt_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Gravel Floor 02 | `gravel` | Jenelle van Heerden, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/gravel_floor_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dense Sand | `sand` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/dense_sand) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirt | `dirt` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/dirt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Brown Mud 02 | `mud` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dry Ground 01 | `ground_dry_cracked` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/dry_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Leafy Grass | `grass` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/leafy_grass) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Grass 004 | `grass` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Grass004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Wood Planks | `wood_planks` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/wood_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Weathered Planks | `wood_planks_weathered` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/weathered_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dark Wooden Planks | `wood_planks_dark` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/dark_wooden_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -67,7 +64,7 @@ verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmi
 | Rusty Corrugated Iron | `metal_corrugated_rusty` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/rusty_corrugated_iron) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Factory Wall | `metal_cladding_green` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/factory_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Painted Metal Shutter | `metal_shutter` | Dario Barresi, Rico Cilliers, Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/painted_metal_shutter) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Metal Plate 02 | `metal_galvanized` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/metal_plate_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Metal 009 | `metal_galvanized` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Metal009) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Metal Plate | `metal_tread` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/metal_plate) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Metal Walkway 010 | `metal_grate` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=MetalWalkway010) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Fence 007 A | `chainlink` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Fence007A) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -85,27 +82,6 @@ verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmi
 | Plastic 006 | `polymer_black` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Plastic006) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Lacquered Cherry Wood | `wood_stock` | Jenelle van Heerden, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/lacquered_cherry_wood) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rubber 004 | `rubber` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Rubber004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Bark Brown 02 | `bark_brown` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/bark_brown_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Rock Boulder Dry | `rock_boulder` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_boulder_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-
-### Laub- und Bodenatlanten (14.11.2026)
-
-`assets/lib/foliage/`: Foto-Laubatlanten (Busch, Gras, Palmwedel, Blüten, Laubbaum-Büschel) und der Atlas der
-Bodenauflage (Laub, Erde, Sand, Splitt, Pfützen-/Ölmasken, Schmutzrand, Einzelblätter) sind aus freigestellten
-Blättern/Halmen bzw. maskierten Ausschnitten dieser CC0-Scans zusammengesetzt (WebP); der Fichtenzweig ist eigen gezeichnet.
-
-| Asset | Verwendet für | Urheber:in | Quelle | Lizenz |
-|---|---|---|---|---|
-| Shrub 03 | Blätter (Busch, Laubbaum, Einzelblätter) | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Shrub 04 | Blätter (Busch, Laubbaum, Blüten, Einzelblätter) | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Grass Medium 01 | Grasbüschel | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/grass_medium_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Grass Medium 02 | Palmfiedern | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/grass_medium_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Dry Decay Leaves | Laubstreu | Amal Kumar | [Poly Haven](https://polyhaven.com/a/dry_decay_leaves) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Brown Mud Dry | Erde/Schlamm | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Coast Sand 01 | Sand-/Staubverwehung | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/coast_sand_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Rocky Gravel | Splitt | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/rocky_gravel) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Dirt | Schmutzrand am Wandfuß | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/dirt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Forest Leaves 02 | Schmutzrand am Wandfuß | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/forest_leaves_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
 ## HDRIs (8)
 

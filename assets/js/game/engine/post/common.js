@@ -157,11 +157,3 @@ export const GLSL_COMMON = /* glsl */ `
     return float(h) * (1.0 / 4294967296.0);
   }
 `;
-
-/* ------------------------------------------------------------ Geteilte Grafik-Uniforms (gfx-licht) */
-
-/**
- * Von der Kette je Bild gesetzt, von den Welt-Materialien gelesen (world/shading.js WS.npGfx):
- * x Proben der weichen Sonnenschatten (0 = three.js-Standard), y Drehung je Bild 0..1 (nur mit TAA), z Radiusfaktor.
- */
-export const GFX = { npGfx: { value: new THREE.Vector4(0, 0, 1, 0) } };

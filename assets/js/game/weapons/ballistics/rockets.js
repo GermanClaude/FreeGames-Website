@@ -125,8 +125,6 @@ export class RocketSystem {
       const r = this.list[i];
       if (!this.list.includes(r)) continue;
       r.age += dt;
-      // Flugabwehr (vehicles/air/index.js): erfasstes Luftfahrzeug → leichte Lenkung, Annäherungszünder
-      if (r.airTarget && G.vehicles && G.vehicles.air && G.vehicles.air.guide(r, dt)) continue;
       const P = r.P;
       // Schub: Geschwindigkeit steigt bis zur Marschfahrt, danach leichter Luftwiderstand; Schwerkraft schwach
       _d.copy(r.vel).normalize();

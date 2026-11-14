@@ -5,20 +5,16 @@
 //   team: 'A' | 'B' | null (FFA), camo: Schema-Id (SCHEMES) – Standard aus Team, variant: Id/Index
 //   Soldier: root (Group), setWeaponModel(group, def), hitboxes (Liste), animate(dt, params),
 //            playHit(dir, zone, amount), playDeath(dir, info), reset(), dispose()
-//   face: Gesichts-API (soldier/face.js – Viseme, Mimik, Blick, Blinzeln; Doku dort am Dateianfang). Optionen:
-//         face: false (kein modellierter Kopf) | { res, shape, cover: 'auto'|'none'|…, skin, hair, eyes, stubble },
-//         cinematic: true → immer Detailstufe 0 + Kopf 'cine' (Zwischensequenzen, auch auf Telefonen)
 //
 // Ein Soldat = 1 SkinnedMesh je Detailstufe (alles in einer Geometrie + einem Material zusammengeführt)
 // + Waffe (2–4 Draw Calls). Detailstufen: 0 nah, 1 mittel, 2 fern (Schwellen je Qualität).
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261114060746';
-import { Animator } from './soldier/animator.js?v=20261114060746';
-import { Ragdoll } from './soldier/ragdoll.js?v=20261114060746';
-import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261114060746';
-import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261114060746';
-import { raySphere, rayCapsule } from '../combat.js?v=20261114060746';
-import { SoldierFace } from './soldier/face.js?v=20261114060746';
+import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261113221339';
+import { Animator } from './soldier/animator.js?v=20261113221339';
+import { Ragdoll } from './soldier/ragdoll.js?v=20261113221339';
+import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261113221339';
+import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261113221339';
+import { raySphere, rayCapsule } from '../combat.js?v=20261113221339';
 
 export { VARIANTS, VARIANT_IDS, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes };
 
@@ -117,7 +113,7 @@ export function stepDrop(d, dt, world) {
 }
 
 export class Soldier {
-  constructor({ team = null, variant = 0, camo = null, quality = 'high', models = null, name = '', face = undefined, cinematic = false } = {}) {
+  constructor({ team = null, variant = 0, camo = null, quality = 'high', models = null, name = '' } = {}) {
     this.id = ++serial;
     this.team = team;
     this.scheme = camo && SCHEMES[camo] ? camo : team === 'A' ? 'A' : team === 'B' ? 'B' : FFA_SCHEMES[this.id % FFA_SCHEMES.length];
@@ -145,35 +141,20 @@ export class Soldier {
     // Detailstufen (eigenes Material je Soldat aus dem Pool: gleiches Programm, eigene Uniforms für das Auflösen)
     const mat = soldierMaterial(this.scheme, { quality: this.quality });
     this.material = mat;
-    this.cinematic = !!cinematic;
     // Telefone (low): keine volle Stufe – LOD1 (≈ 3 k Dreiecke) auch aus der Nähe; spart ≈ 0,95 MB je Variante
-    const minLod = this.tier === 'low' && !this.cinematic ? 1 : 0;
-    // Gesicht (face.js): modellierter Kopf mit Mimik auf Detailstufe 0 (Körper-Stufe 0 dann ohne eigenen Kopf)
-    this.face = null;
-    if (face !== false && minLod === 0) {
-      try {
-        const fo = typeof face === 'object' && face ? face : {};
-        // Kopfauflösung: Zwischensequenz 24 k, high/ultra 7 k, medium 2,6 k Dreiecke
-        this.face = new SoldierFace(this, { res: this.cinematic ? 'cine' : this.tier === 'medium' ? 'mid' : 'near', low: this.quality === 'low', ...fo });
-      } catch (err) {
-        if (typeof console !== 'undefined') console.warn('[bots] Gesicht nicht verfügbar – Körperkopf.', err);
-        this.face = null;
-      }
-    }
+    const minLod = this.tier === 'low' ? 1 : 0;
     this.meshes = [0, 1, 2].map((lod) => {
-      const l = Math.max(minLod, lod);
-      const m = new THREE.SkinnedMesh(soldierGeometry(this.variant, this.scheme, l, { noHead: l === 0 && !!this.face && !!this.face.mesh }), mat);
+      const m = new THREE.SkinnedMesh(soldierGeometry(this.variant, this.scheme, Math.max(minLod, lod)), mat);
       m.name = `soldat-lod${lod}`;
       m.frustumCulled = false;
       m.castShadow = false;
       m.receiveShadow = lod === 0;
       m.bind(this.skeleton, new THREE.Matrix4());
-      m.visible = lod === (this.cinematic ? 0 : 1);
+      m.visible = lod === 1;
       root.add(m);
       return m;
     });
-    this.lod = this.cinematic ? 0 : 1;
-    if (this.face) { this.face.forceVisible = this.cinematic; this.face.syncVisible(this.lod); }
+    this.lod = 1;
     // Waffenhalter (Modellraum, vom Animator gesetzt)
     this.gunHolder = new THREE.Group();
     this.gunHolder.name = 'waffe';
@@ -252,20 +233,12 @@ export class Soldier {
     if (this.castShadow === on) return;
     this.castShadow = on;
     for (const m of this.meshes) m.castShadow = on;
-    if (this.face) this.face.setShadows(on);
     if (this.gun) this.gun.traverse((o) => { if (o.isMesh) o.castShadow = on; });
-  }
-
-  /** Kopfnetz fertig (face.js): Körper-Stufe 0 ohne eigenen Kopf zeichnen (Ansicht derselben Puffer). */
-  _faceReady() {
-    const m = this.meshes && this.meshes[0];
-    if (m && !(this.tier === 'low' && !this.cinematic)) m.geometry = soldierGeometry(this.variant, this.scheme, 0, { noHead: true });
   }
 
   /** Detailstufe aus Kameraabstand (mit Hysterese). */
   updateLod(dist, quality = this.tier) {
     const [d0, d1] = LOD_DIST[quality] || LOD_DIST.high;
-    if (this.cinematic) dist = 0;
     let lod = this.lod;
     if (lod === 0 && dist > d0 + 1.5) lod = 1;
     if (lod === 1 && dist < d0 - 1) lod = 0;
@@ -275,7 +248,6 @@ export class Soldier {
       this.lod = lod;
       for (let i = 0; i < 3; i++) this.meshes[i].visible = i === lod;
     }
-    if (this.face) this.face.syncVisible(lod);
     return lod;
   }
 
@@ -346,7 +318,6 @@ export class Soldier {
     if (this.props.grenade) this.props.grenade.visible = !!a.grenadeVisible;
     if (this.props.knife) this.props.knife.visible = !!a.knifeVisible;
     this._writePose();
-    if (this.face && this.face.visible) this.face.update(dt);
     return bodyYaw;
   }
 
@@ -515,7 +486,6 @@ export class Soldier {
     const a = this.anim;
     if (this.props.grenade) this.props.grenade.visible = false;
     if (this.props.knife) this.props.knife.visible = false;
-    if (this.face) this.face.setDead(true);
     a.restWeapon(); // Magazin wieder eingesetzt, Schlitten/Hebel/Deckel in Ruhelage – die Waffe fällt vollständig
     const joints = (i, out) => {
       const map = [BONE.thighL, BONE.thighR, BONE.upperArmL, BONE.upperArmR, 'head', BONE.shinL, BONE.footL, BONE.shinR, BONE.footR, BONE.foreArmL, BONE.handL, BONE.foreArmR, BONE.handR];
@@ -597,11 +567,10 @@ export class Soldier {
       rd.apply(this.anim, (v) => this.toModel(v));
       this._writePose();
     }
-    if (this.face && this.face.visible) this.face.update(dt);
     this._updateDrop(dt, world);
     // Auflösen nach ~4,5 s (Uniform des eigenen Materials – kein Materialwechsel, kein neues Programm)
     if (this.deadT > 4.5) {
-      if (this.dissolve === 0) { for (const m of this.meshes) m.castShadow = false; if (this.face) this.face.setShadows(false); }
+      if (this.dissolve === 0) for (const m of this.meshes) m.castShadow = false;
       this.dissolve = Math.min(1, (this.deadT - 4.5) / 1.1);
       this.material.userData.uDissolve.value = Math.max(1e-3, this.dissolve);
       if (this._drop && this.dissolve > 0.6) this._drop.gun.visible = false;
@@ -633,7 +602,6 @@ export class Soldier {
   reset(position, yaw = 0) {
     this._restoreGun();
     for (const m of this.meshes) m.castShadow = this.castShadow;
-    if (this.face) { this.face.setShadows(this.castShadow); this.face.setDead(false); }
     this.material.userData.uDissolve.value = 0;
     this.state = 'alive';
     if (this._pending) this.setWeaponModel(this._pendingGun, this._pendingDef);
@@ -651,7 +619,6 @@ export class Soldier {
     this._restoreGun();
     if (this.gun) this.gun.removeFromParent();
     this.root.removeFromParent();
-    if (this.face) { this.face.dispose(); this.face = null; }
     releaseSoldierMaterial(this.material);
     this.skeleton.dispose();
     // Geometrien sind geteilt (Cache), das Material geht zurück in den Pool (Programm bleibt gebunden)

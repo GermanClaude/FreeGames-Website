@@ -9,7 +9,7 @@ const _v = new THREE.Vector3();
 
 export class TerrainChunks {
   /**
-   * @param {import('./heightfield.js?v=20261114060746').Heightfield} hf
+   * @param {import('./heightfield.js?v=20261113221339').Heightfield} hf
    * @param {THREE.Material} material
    * @param {{ chunk?: number, steps?: number[], dists?: number[], skirt?: number }} [o]
    *   steps: Rasterschritte je Stufe (Zellen), dists: Umschaltabstände (m) zwischen den Stufen
@@ -132,8 +132,7 @@ export class TerrainChunks {
       let use = lv;
       while (!c.geos[use]) {
         if (made < budget) { c.geos[use] = this._geometry(c.ci, c.cj, use); made++; break; }
-        // nach refresh (Krater) fehlen auch gröbere Stufen – dann die vorhandene behalten (sonst Endlosschleife)
-        if (++use >= c.geos.length) { use = c.lv; if (!c.geos[use]) { c.geos[use] = this._geometry(c.ci, c.cj, use); made++; } break; }
+        use++;
       }
       if (use !== c.lv || c.mesh.geometry !== c.geos[use]) { c.lv = use; c.mesh.geometry = c.geos[use]; }
       tris += c.geos[use].userData.tris;

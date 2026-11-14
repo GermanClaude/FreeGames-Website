@@ -9,12 +9,12 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, vehicleWeapon } from './data.js?v=20261114060746';
-import { VehicleBody } from './sim.js?v=20261114060746';
-import { createVehicleModel } from './models.js?v=20261114060746';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261114060746';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261114060746';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261114060746';
+import { VEHICLES, vehicleWeapon } from './data.js?v=20261113221339';
+import { VehicleBody } from './sim.js?v=20261113221339';
+import { createVehicleModel } from './models.js?v=20261113221339';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261113221339';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261113221339';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261113221339';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -82,10 +82,10 @@ export class Vehicle {
     this.spawnTeam = team;
     this.spawn = spawn;
     this.isVehicle = true;
-    this.body = this._makeBody(def);
+    this.body = new VehicleBody(def);
     this.body.setPose(position, yaw);
     this.variant = variant | 0; // Zivilfahrzeuge: Lackierung/Last je Stellplatz (Netz: Fahrzeugliste)
-    this.model = this._makeModel(type, { team, quality, variant: this.variant });
+    this.model = createVehicleModel(type, { team, quality, variant: this.variant });
     this.health = this.maxHealth = def.health;
     this.zones = {};
     for (const [k, z] of Object.entries(def.zones)) this.zones[k] = { id: k, label: z.label, hp: z.hp, max: z.hp };
@@ -116,10 +116,6 @@ export class Vehicle {
     this.gun = createGun(this);
     this._modelState = {};
   }
-
-  /** Körper/Modell erzeugen (Luftfahrzeuge überschreiben beides: air/aircraft.js). */
-  _makeBody(def) { return new VehicleBody(def); }
-  _makeModel(type, opts) { return createVehicleModel(type, opts); }
 
   /* --------------------------------------------------------------- Abfragen */
 

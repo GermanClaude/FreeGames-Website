@@ -626,32 +626,8 @@ function ensureFoliageAtlas(quality) {
   const old = foliageTex;
   foliageTex = atlasTexture(S, S, (ctx, w) => drawFoliageAtlas(ctx, w), { anisotropy: 4, name: 'foliage' });
   foliageSize = S;
-  for (const [k, m] of foliageMats) if (k !== 't' && !(k === 's' && m.map?.name === 'foliage-foto-fichte')) m.map = foliageTex;
+  for (const [k, m] of foliageMats) if (k !== 't') m.map = foliageTex;
   old?.dispose();
-  // gfx-welt: Foto-Laub ersetzt den gezeichneten Atlas, sobald geladen (gleiches Zellraster)
-  photoAtlas('foliage').then((t) => {
-    if (!t || foliageSize !== S) return;
-    const was = foliageTex; foliageTex = t;
-    for (const [k, m] of foliageMats) if (k !== 't' && !(k === 's' && m.map?.name === 'foliage-foto-fichte')) m.map = t;
-    if (was !== t) was?.dispose();
-  });
-}
-
-// gfx-welt (14.11.): Foto-Laubatlanten aus freigestellten CC0-Scans (Poly Haven: shrub_03, shrub_04,
-// grass_medium_01/02, siehe CREDITS.md) im Zellraster der gezeichneten Atlanten; Fichtenzweig (fichte.webp) eigen. WebP mit ausgeblutetem
-// Rand (kein dunkler Saum in den Mipmaps), als <img> hochgeladen (keine Vormultiplikation über eine Canvas). Schlägt
-// das Laden fehl, bleibt der gezeichnete Atlas.
-const PHOTO_URL = { foliage: '../../../lib/foliage/foliage.webp', laub: '../../../lib/foliage/laub.webp', fichte: '../../../lib/foliage/fichte.webp' };
-const photoCache = new Map();
-function photoAtlas(key) {
-  if (!photoCache.has(key)) {
-    photoCache.set(key, new THREE.TextureLoader().loadAsync(new URL(PHOTO_URL[key], import.meta.url).href).then((t) => {
-      t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.name = 'foliage-foto-' + key;
-      t.userData.keep = true;
-      return t;
-    }).catch((err) => { console.warn('[atlas] Foto-Laub', key, err?.message || err); return null; }));
-  }
-  return photoCache.get(key);
 }
 
 // Laubbaum-Blätter (Grafik-Vorlage 15.10.: Bäume im Video haben lockere Kronen aus vielen Blattbüscheln mit Lücken
@@ -709,34 +685,6 @@ function ensureTreeLeafAtlas(quality) {
   treeLeafSize = S;
   if (foliageMats.has('t')) foliageMats.get('t').map = treeLeafTex;
   old?.dispose();
-  photoAtlas('laub').then((t) => {
-    if (!t || treeLeafSize !== S) return;
-    const was = treeLeafTex; treeLeafTex = t;
-    if (foliageMats.has('t')) foliageMats.get('t').map = t;
-    if (was !== t) was?.dispose();
-  });
-}
-
-/**
- * gfx-welt: Fichtenzweig-Material (Großkarten, terrain/vegetation.js spruceGeometry). Die Zweigkarten liegen in Zelle 0
- * des Laub-Atlas (u 0…0,5, v 0,5…1); die eigene Zweigtextur (fichte.webp, 512 × 1024, Spitze oben) wird per
- * repeat/offset auf genau diese Zelle gelegt. Bis sie geladen ist (oder wenn sie fehlt) zeigt die Karte den Atlas.
- */
-export function spruceMaterial(quality = 'high') {
-  ensureFoliageAtlas(quality);
-  const base = foliageMaterial(true);
-  if (foliageMats.has('s')) return foliageMats.get('s');
-  const m = new THREE.MeshStandardMaterial({ map: foliageTex, alphaTest: 0.45, roughness: 0.86, metalness: 0, side: THREE.DoubleSide });
-  m.name = 'foliage'; m.userData.surface = 'grass';
-  m.onBeforeCompile = base.onBeforeCompile;
-  m.customProgramCacheKey = base.customProgramCacheKey;
-  foliageMats.set('s', m);
-  photoAtlas('fichte').then((t) => {
-    if (!t) return;
-    t.repeat.set(2, 2); t.offset.set(0, -1); t.updateMatrix();
-    m.map = t;
-  });
-  return m;
 }
 
 function foliageMaterial(cast, tree = false) {
@@ -753,19 +701,9 @@ function foliageMaterial(cast, tree = false) {
       ${WIND_VERTEX}`);
     // Rückseiten nicht abdunkeln: Normalen der Karte nach oben gemischt
     sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
-      normal = normalize(mix(normal, (viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz, 0.55));`)
-      // gfx-welt: Deckung in den Mipmaps halten (gemittelte Alpha fällt unter die Schwelle → Laub dünnt in der Ferne aus)
-      .replace('#include <alphatest_fragment>', `#ifdef USE_MAP
-        vec2 npDx = dFdx(vMapUv) * 1024.0, npDy = dFdy(vMapUv) * 1024.0;
-        float npLod = max(0.0, 0.5 * log2(max(dot(npDx, npDx), dot(npDy, npDy))));
-        diffuseColor.a *= 1.0 + 0.13 * min(npLod, 4.0);
-      #endif
-      #include <alphatest_fragment>`)
-      // Blätter glänzen kaum: Himmelsspiegelung dämpfen (sonst grauer Schleier auf den nach oben gemischten Normalen)
-      .replace('#include <aomap_fragment>', `#include <aomap_fragment>
-      reflectedLight.indirectSpecular *= 0.35; reflectedLight.directSpecular *= 0.6;`);
+      normal = normalize(mix(normal, (viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz, 0.55));`);
   };
-  m.customProgramCacheKey = () => 'foliage-v4-wind';
+  m.customProgramCacheKey = () => 'foliage-v2-wind';
   foliageMats.set(key, m);
   return m;
 }

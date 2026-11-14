@@ -2,8 +2,6 @@
 // AudioEngine → Lautstärke, Hall/Begrenzer und Stummschaltung gelten mit), Einzelklänge (Kanone, MG, Abpraller,
 // Aufprall) über die vorhandene API `G.audio.play(name, …)` (Katalognamen: explosion, boom_sub, ricochet,
 // impact_metal, Waffenprofile lmg/ar_heavy). Höchstens MAX_VOICES Motoren gleichzeitig (nächste zuerst).
-import { AirVoice, AIR_RANGE } from './air/audio.js?v=20261114060746';
-
 const MAX_VOICES = 3;
 const RANGE = 95;
 
@@ -134,9 +132,9 @@ export class VehicleAudio {
     for (const v of vehicles) {
       if (!v.alive) continue;
       const d = v.body.renderPos.distanceTo(cp);
-      if (d > (v.isAircraft ? AIR_RANGE : RANGE)) continue;
-      // Leerlauf ohne Besatzung: nur wenn sehr nah (Motor aus); Luftfahrzeuge, solange Rotor/Triebwerk auslaufen
-      if (!v.isOccupied && !(v.isAircraft && ((v.sys && v.sys.replica ? v.body.drive.rpmNorm : v.body.rpm) || 0) > 0.05)) continue;
+      if (d > RANGE) continue;
+      // Leerlauf ohne Besatzung: nur wenn sehr nah (Motor aus)
+      if (!v.isOccupied) continue;
       ranked.push([d, v]);
     }
     ranked.sort((a, b) => a[0] - b[0]);
@@ -145,7 +143,7 @@ export class VehicleAudio {
     for (const v of keep) {
       let voice = this.voices.get(v);
       if (!voice) {
-        voice = v.isAircraft ? new AirVoice(this._ctx, dest, v.air, this._noise) : new EngineVoice(this._ctx, dest, PROFILES[v.def.sound] || PROFILES.car, this._noise);
+        voice = new EngineVoice(this._ctx, dest, PROFILES[v.def.sound] || PROFILES.car, this._noise);
         this.voices.set(v, voice);
       }
       voice.set(v, v === listenerVehicle && v.def.armored, dt);

@@ -26,9 +26,7 @@ export class ShellPool {
 
   fire(def, origin, dir, shooter, vehicle, { display = false } = {}) {
     if (this.list.length >= MAX) this._remove(this.list[0]);
-    // Luftfahrzeug-Raketen/-Bomben (def.look): eigene Körper aus air/models.js statt Leuchtspur
-    const air = def.look && this.sys.air ? this.sys.air : null;
-    let mesh = air ? air.projectileMesh(def.look) : this.free.pop();
+    let mesh = this.free.pop();
     if (!mesh) { mesh = new THREE.Mesh(this.geo, this.mat); mesh.frustumCulled = false; mesh.renderOrder = 6; }
     this.group.add(mesh);
     const vel = dir.clone().multiplyScalar(def.speed);
@@ -43,7 +41,7 @@ export class ShellPool {
     const i = this.list.indexOf(s);
     if (i >= 0) this.list.splice(i, 1);
     s.mesh.removeFromParent();
-    if (s.mesh.userData.airLook) this.sys.air?.releaseMesh(s.mesh); else this.free.push(s.mesh);
+    this.free.push(s.mesh);
   }
 
   update(dt) {
@@ -72,8 +70,6 @@ export class ShellPool {
       s.mesh.position.copy(s.pos);
       _q.setFromUnitVectors(_z, _d.copy(s.vel).normalize());
       s.mesh.quaternion.copy(_q);
-      // Rauchspur der Raketen (Luftfahrzeuge)
-      if (s.def.trail && sys.G.effects && typeof sys.G.effects.rocketTrail === 'function' && (s.trailT = (s.trailT || 0) - dt) <= 0) { s.trailT = 0.02; sys.G.effects.rocketTrail(s.pos, _d.copy(s.vel).normalize()); }
       const bounds = sys.world && sys.world.bounds;
       if (bounds && s.pos.y < bounds.min.y - 20) this._remove(s);
     }

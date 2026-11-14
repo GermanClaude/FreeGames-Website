@@ -5,8 +5,8 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261114060746';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261114060746';
+import { sampleSpline } from '../terrain/generate.js?v=20261113221339';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261113221339';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -113,7 +113,7 @@ export default {
     burnt: { ash: 0.75, light: 0.6, dirt: 0.12, mud: 0.3 },
   },
 
-  vegetation: { seed: 21, forests: [], scatter: { count: 0 }, hedges: [], rocks: { count: 20, clusters: [], tint: '#6f6a64' }, grass: false }, // gfx-welt: Felsen verrußt
+  vegetation: { seed: 21, forests: [], scatter: { count: 0 }, hedges: [], rocks: { count: 20, clusters: [] }, grass: false },
   deadwood: {
     seed: 2112, density: 2.4, step: 3.1, clearNoise: 0.5, logs: 0.4,
     mix: { hoch: 0.3, gebrochen: 0.36, stumpf: 0.16, grau: 0.18 },

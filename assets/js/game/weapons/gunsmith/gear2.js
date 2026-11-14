@@ -1,7 +1,7 @@
 // Welle 2 – Nahkampf & Wurfmittel: Karambit, Machete, Kampfbeil; Aufschlag-, Brand-, Blend- und Rauchgranate;
 // Schutzplatte (Westen-Einschub, Requisit der Ego-Ansicht). Ursprung = Griffmitte; Klinge/Kopf nach −Z bzw. oben.
 import * as THREE from 'three';
-import { ellipsePts } from './parts.js?v=20261114060746';
+import { ellipsePts } from './parts.js?v=20261113221339';
 
 // Gummierter Griff entlang u (Länge len, Radius r, Ringe)
 function handle(b, mat, u0, len, r, rings = 5) {
@@ -10,14 +10,6 @@ function handle(b, mat, u0, len, r, rings = 5) {
   for (let i = 0; i < n; i++) { const a = u0 + (i + 0.15) * len / n, c = u0 + (i + 0.85) * len / n; pts.push([a, r], [c, r], [c + len / n * 0.15, r * 0.92]); }
   pts.push([u0 + len, r * 0.9], [u0 + len, 0]);
   b.lathe(mat, pts.map(([u, rr]) => [u - u0, rr]), 0, 0, u0, { seg: b.seg(14, 6), sx: 0.8 });
-}
-
-// Paracord-/Griffband-Wicklung (13.11.): Wendel um die u-Achse von u0 über len (Radius r, Windungen turns)
-function wrap(b, mat, u0, len, r, turns, o = {}) {
-  if (!b.hi) return;
-  const pts = [], n = Math.max(8, Math.round(turns * 10)), sx = o.sx ?? 1;
-  for (let i = 0; i <= n; i++) { const t = i / n, a = t * turns * Math.PI * 2; pts.push([Math.cos(a) * r * sx, (o.v || 0) + Math.sin(a) * r, u0 + t * len]); }
-  b.tube(mat, pts, o.cr ?? 0.0019, { seg: 5, tubSeg: n * 2, part: o.part });
 }
 
 export function karambit(b) {
@@ -53,11 +45,6 @@ export function karambit(b) {
     }
     b.cyl('cavity', 0.0034, 0.0034, 0.0056, 0, C[1] + RO - 0.012, C[0] + 0.016, { axis: 'x', seg: 12, part: 'blade' });
   }
-  if (b.hi) {
-    // G10-Griffschalen mit Rautenmuster (Kerben), Fangriemen am Ring
-    for (const sg of [-1, 1]) for (let i = 0; i < 5; i++) b.box('cavity', 0.0006, 0.018, 0.0012, sg * 0.0112, 0, -0.035 + i * 0.016, { rx: 0.6 * (i % 2 ? 1 : -1), c: 0 });
-    b.tube('cord', [[0, -0.02, -0.07], [0, -0.035, -0.078], [0, -0.055, -0.072]], 0.0017, { seg: 6 });
-  }
   const tip = outer[n];
   b.anchor('muzzle', 0, tip[1], tip[0]);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
@@ -80,12 +67,6 @@ export function machete(b) {
     for (const s of [-1, 1]) b.box('cavity', 0.0008, 0.004, 0.2, s * 0.0024, 0.004, 0.2, { part: 'blade', c: 0 });
     b.side('grip', [[-0.062, -0.012], [-0.05, -0.012], [-0.05, -0.024], [-0.058, -0.026], [-0.066, -0.02]], 0.0185, 0, { bevel: 0.002 });
   }
-  if (b.hi) {
-    // Fangriemen durch die Öse, Schleifspuren an der Schneide, Ricasso
-    b.tube('cord', [[0, -0.012, -0.068], [0, -0.03, -0.08], [0, -0.055, -0.078], [0, -0.07, -0.066]], 0.0018, { seg: 6 });
-    for (let i = 0; i < 6; i++) b.box('steelBright', 0.0032, 0.0004, 0.03, 0, -0.018 + (i % 2) * 0.001, 0.12 + i * 0.045, { part: 'blade', c: 0 });
-    for (const sg of [-1, 1]) b.box('steelDark', 0.0004, 0.012, 0.016, sg * 0.0024, -0.004, 0.078, { part: 'blade', c: 0 });
-  }
   b.anchor('muzzle', 0, 0, 0.42);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
   b.meta = { sight: 'none', kind: 'melee' };
@@ -101,14 +82,6 @@ export function tomahawk(b) {
   b.side('bladeCoat', [[0.272, -0.014], [0.312, -0.014], [0.298, -0.05], [0.29, -0.07], [0.286, -0.05]], 0.009, 0, { part: 'blade', bevel: 0.0016 });
   b.box('steel', 0.026, 0.03, 0.05, 0, 0.0, 0.29, { part: 'blade', c: 0.003 });
   if (b.hi) for (const s of [-1, 1]) b.screw('steel', s * 0.0132, 0.0, 0.29, 'x', 0.0035, { part: 'blade' });
-  // Paracord-Wicklung über dem Griff, Fangriemen, Aussparungen im Kopf, Schneidfase, Dornspitze geschärft
-  wrap(b, 'cord', -0.068, 0.15, 0.0158, 34, { sx: 0.82 });
-  if (b.hi) {
-    b.tube('cord', [[0, -0.012, -0.075], [0, -0.03, -0.088], [0, -0.05, -0.084]], 0.0019, { seg: 6 });
-    for (const [u, v] of [[0.3, 0.04], [0.31, 0.065], [0.285, 0.068]]) b.cyl('cavity', 0.0055, 0.0055, 0.0084, 0, v, u, { axis: 'x', seg: 14, part: 'blade' });
-    b.box('steelBright', 0.0005, 0.004, 0.06, 0.0041, 0.093, 0.31, { part: 'blade', rx: 0.25, c: 0 });
-    b.box('steelBright', 0.0005, 0.03, 0.004, 0.0046, -0.05, 0.293, { part: 'blade', rx: 0.0, c: 0 });
-  }
   b.anchor('muzzle', 0, 0.09, 0.32);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
   b.meta = { sight: 'none', kind: 'melee' };
@@ -124,13 +97,6 @@ export function kampfaxt(b) {
   b.box('bladeCoat', 0.03, 0.034, 0.055, 0, 0.0, 0.3, { part: 'blade', c: 0.004 });
   b.box('steel', 0.026, 0.03, 0.03, 0, -0.03, 0.3, { part: 'blade', c: 0.004 }); // Hammerrücken
   if (b.hi) for (const s of [-1, 1]) b.screw('steel', s * 0.0152, 0.0, 0.3, 'x', 0.0035, { part: 'blade' });
-  if (b.hi) {
-    // Keil im Auge (oben sichtbar), Stahlkragen gegen Überschlag, Holzmaserung als Brandlinien, Schneidfase
-    b.box('steelBright', 0.008, 0.004, 0.03, 0, 0.0185, 0.3, { part: 'blade', c: 0.0005 });
-    b.box('steelDark', 0.028, 0.034, 0.04, 0, 0.0, 0.255, { c: 0.003 });
-    for (let i = 0; i < 6; i++) b.box('woodWalnut', 0.0005, 0.0012, 0.18, 0.0122, -0.012 + i * 0.005, 0.15, { c: 0 });
-    b.box('steelBright', 0.0006, 0.006, 0.08, 0.0046, 0.124, 0.33, { part: 'blade', rx: 0.35, c: 0 });
-  }
   b.anchor('muzzle', 0, 0.12, 0.33);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
   b.meta = { sight: 'none', kind: 'melee' };
@@ -144,13 +110,6 @@ export function schlagstock(b) {
   b.cyl('steelBright', 0.0068, 0.0068, 0.13, 0, 0, 0.455, { seg: b.seg(12, 6) });
   b.sphere('steelBright', 0.011, 0, 0, 0.525);
   if (b.hi) for (const u of [0.25, 0.39]) b.cyl('steel', 0.0112, 0.0112, 0.006, 0, 0, u, { seg: 14 });
-  if (b.hi) {
-    // Endkappe mit Glasbrecher-Spitze, Gürtelclip, Sicherungsringe der Segmente
-    b.cyl('steelDark', 0.0148, 0.0142, 0.016, 0, 0, -0.078, { seg: 16 });
-    b.cyl('steelBright', 0.003, 0.0001, 0.008, 0, 0, -0.09, { seg: 8 });
-    b.box('steelDark', 0.003, 0.008, 0.07, 0.0148, 0.0, -0.035, { c: 0.001 });
-    for (const u of [0.1, 0.245, 0.385]) b.torus('steelBright', 0.0108, 0.0008, 0, 0, u, { seg: 5, tseg: 18 });
-  }
   b.anchor('muzzle', 0, 0, 0.53);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
   b.meta = { sight: 'none', kind: 'melee' };
@@ -164,12 +123,6 @@ export function spaten(b) {
   b.part('blade', 0, 0, 0.34);
   b.side('steel', [[0.355, 0.0], [0.37, 0.075], [0.5, 0.08], [0.56, 0.0], [0.5, -0.08], [0.37, -0.075]], 0.004, 0, { part: 'blade', bevel: 0.0012 });
   if (b.hi) b.side('blade', [[0.5, 0.078], [0.56, 0.0], [0.5, -0.078], [0.498, -0.07], [0.552, 0.0], [0.498, 0.07]], 0.0042, 0, { part: 'blade', bevel: 0.0005 });
-  if (b.hi) {
-    // Sägezahnung an einer Kante, Sicherungsmutter mit Rändel, Stielkappe, Prägung im Blatt
-    for (let i = 0; i < 7; i++) b.side('steel', [[0.372 + i * 0.017, 0.077], [0.38 + i * 0.017, 0.088], [0.389 + i * 0.017, 0.078]], 0.0034, 0, { part: 'blade', bevel: 0 });
-    b.cyl('knurl', 0.022, 0.022, 0.016, 0, 0, 0.3, { seg: 18 });
-    b.sphere('steelDark', 0.017, 0, 0, -0.12, { sy: 0.7, seg: 14, hseg: 8 });
-  }
   b.anchor('muzzle', 0, 0, 0.56);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
   b.meta = { sight: 'none', kind: 'melee' };
@@ -182,7 +135,6 @@ export function kampfstock(b) {
   b.sphere('woodWarm', 0.0135, 0, 0, 0.56);
   b.cyl('rubber', 0.0148, 0.0148, 0.16, 0, 0, -0.005, { seg: b.seg(12, 6) });
   if (b.hi) for (let i = 0; i < 9; i++) b.cyl('woodWalnut', 0.0139, 0.0139, 0.012, 0, 0, 0.12 + i * 0.048, { seg: 12 });
-  wrap(b, 'canvasOD', -0.082, 0.155, 0.015, 34, { cr: 0.0022 });
   b.anchor('muzzle', 0, 0, 0.56);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0 } });
   b.meta = { sight: 'none', kind: 'melee' };
@@ -190,20 +142,13 @@ export function kampfstock(b) {
 
 // Zylindrischer Granatkörper mit Zünderkopf, Löffel und Splint (gemeinsam für Blend/Rauch/Aufschlag)
 function canister(b, body, band, r, h, o = {}) {
-  const s = b.seg(24, 8);
-  b.cyl(body, r, r, h, 0, 0, 0, { axis: 'v', seg: s });
-  if (band) b.cyl(band, r + 0.0004, r + 0.0004, 0.01, 0, h * 0.18, 0, { axis: 'v', seg: s });
-  if (b.hi) {
-    // gebördelte Deckel oben und unten, Bodenprägung
-    for (const sv of [-1, 1]) b.torus(o.rim || 'steel', r - 0.0004, 0.0013, 0, sv * (h / 2 - 0.0006), 0, { rx: Math.PI / 2, seg: 6, tseg: 28 });
-    b.circle('steelDark', r * 0.55, 0, -h / 2 - 0.0002, 0, { rx: Math.PI / 2, seg: 20 });
-  }
+  b.cyl(body, r, r, h, 0, 0, 0, { axis: 'v', seg: b.seg(18, 7) });
+  if (band) b.cyl(band, r + 0.0004, r + 0.0004, 0.01, 0, h * 0.18, 0, { axis: 'v', seg: b.seg(18, 7) });
+  if (o.holes && b.hi) for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; for (const dv of [-0.02, 0.0, 0.02]) b.cyl('cavity', 0.003, 0.003, 0.002, Math.cos(a) * r, dv, Math.sin(a) * r, { axis: 'x', ry: -a, seg: 8 }); }
   b.cyl('steel', 0.0095, 0.011, 0.012, 0, h / 2 + 0.006, 0, { axis: 'v', seg: b.seg(14, 6) });
-  if (b.hi) b.cyl('steelDark', 0.0068, 0.0068, 0.005, 0, h / 2 + 0.0145, 0, { axis: 'v', seg: 12 });
   b.part('spoon', 0.01, h / 2 + 0.01, 0);
   b.box('steel', 0.012, 0.004, 0.014, 0.008, h / 2 + 0.013, 0, { part: 'spoon', c: 0.001 });
   b.box('steel', 0.004, h * 0.8, 0.013, r + 0.002, 0.0, 0, { part: 'spoon', c: 0.001 });
-  if (b.hi) b.box('steel', 0.006, 0.0025, 0.01, r + 0.0005, -h * 0.4 - 0.001, 0, { part: 'spoon', rz: 0.6, c: 0.0005 });
   b.part('pin', -0.012, h / 2 + 0.008, 0);
   b.torus('steelBright', 0.0105, 0.0014, -0.026, h / 2 + 0.008, 0, { part: 'pin', ry: Math.PI / 2, seg: b.seg(6, 3), tseg: b.seg(18, 8) });
   b.cyl('steelBright', 0.0011, 0.0011, 0.026, -0.008, h / 2 + 0.008, 0, { part: 'pin', axis: 'x', seg: 6 });
@@ -212,72 +157,31 @@ function canister(b, body, band, r, h, o = {}) {
   b.meta = { sight: 'none', kind: 'grenade' };
 }
 
-/** Blendgranate (13.11., nach dem Vorbild M84): Stahlrohr mit großen Langlöchern in vier Reihen, Deckel, Zünder oben. */
-export function flash(b) {
-  const r = 0.0225, h = 0.11;
-  canister(b, 'steelDark', null, r, h, { rim: 'steelDark' });
-  if (b.hi) {
-    for (let row = 0; row < 4; row++) for (let i = 0; i < 6; i++) {
-      const a = i * Math.PI / 3 + (row % 2) * Math.PI / 6, v = -0.034 + row * 0.022;
-      b.box('cavity', 0.0012, 0.014, 0.008, Math.cos(a) * (r + 0.0002), v, Math.sin(a) * (r + 0.0002), { ry: -a, c: 0 });
-    }
-    b.cyl('paintWhite', r + 0.0003, r + 0.0003, 0.004, 0, 0.049, 0, { axis: 'v', seg: 24 });     // Kennring
-    for (let i = 0; i < 3; i++) b.box('paintWhite', 0.0004, 0.002, 0.016, r + 0.0003, 0.042 - i * 0.003, 0.0, { ry: Math.PI / 2, c: 0 }); // Aufdruck
-  }
-}
-
-/** Rauchgranate (13.11., nach dem Vorbild M18): Blechdose 64 × 115 mm, olivgrün, farbiger Deckel (Rauchfarbe),
- * vier Austrittslöcher oben (abgeklebt), Beschriftung, Zünder. */
+export function flash(b) { canister(b, 'polymerGrey', 'paintWhite', 0.024, 0.085, { holes: true }); }
 export function smoke(b) {
-  const r = 0.031, h = 0.115;
-  canister(b, 'paintOlive', 'paintWhite', r, h);
-  b.cyl('paintWhite', r + 0.0003, r + 0.0003, 0.012, 0, h / 2 - 0.007, 0, { axis: 'v', seg: b.seg(24, 8) });   // Farbdeckel
-  if (b.hi) {
-    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; b.circle('cavity', 0.0042, Math.cos(a) * 0.019, h / 2 + 0.0004, Math.sin(a) * 0.019, { rx: -Math.PI / 2, seg: 10 }); }
-    b.circle('putty', 0.024, 0, h / 2 + 0.0002, 0, { rx: -Math.PI / 2, seg: 24 });               // Klebeband über den Löchern
-    for (let i = 0; i < 4; i++) b.box('paintWhite', 0.0004, 0.0022, 0.03 - i * 0.006, r + 0.0004, 0.01 - i * 0.006, 0.0, { ry: Math.PI / 2, c: 0 });
-  }
+  canister(b, 'paintOlive', 'paintWhite', 0.027, 0.1);
+  if (b.hi) for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; b.circle('cavity', 0.003, Math.cos(a) * 0.012, -0.0505, Math.sin(a) * 0.012, { rx: Math.PI / 2, seg: 8 }); }
 }
-
-/** Aufschlaggranate: eiförmiger Körper mit Kennring, Aufschlagzünder mit Signalkappe. */
 export function impact(b) {
-  b.sphere('paintOlive', 0.03, 0, 0, 0, { sy: 1.15, seg: b.seg(20, 7), hseg: b.seg(14, 5) });
-  b.cyl('paintYellow', 0.031, 0.031, 0.008, 0, 0.0, 0, { axis: 'v', seg: b.seg(20, 7) });
+  // Aufschlaggranate: kugeliger Körper mit Aufschlagzünder-Kappe (gelb), Splint
+  b.sphere('paintOlive', 0.03, 0, 0, 0, { sy: 1.15, seg: b.seg(16, 7), hseg: b.seg(12, 5) });
+  b.cyl('paintYellow', 0.031, 0.031, 0.008, 0, 0.0, 0, { axis: 'v', seg: b.seg(16, 7) });
   b.cyl('steel', 0.012, 0.016, 0.014, 0, 0.038, 0, { axis: 'v', seg: b.seg(14, 6) });
-  b.sphere('paintSignal', 0.01, 0, 0.048, 0, { seg: b.seg(12, 5), hseg: b.seg(8, 4) });
-  if (b.hi) {
-    for (let i = 0; i < 6; i++) b.box('steelDark', 0.003, 0.004, 0.002, Math.cos(i * Math.PI / 3) * 0.0155, 0.04, Math.sin(i * Math.PI / 3) * 0.0155, { ry: -i * Math.PI / 3, c: 0 });
-    b.torus('paintOlive', 0.0258, 0.0008, 0, -0.018, 0, { rx: Math.PI / 2, seg: 6, tseg: 30 });
-  }
+  b.sphere('paintSignal', 0.01, 0, 0.048, 0, { seg: b.seg(10, 5), hseg: b.seg(8, 4) });
   b.part('pin', -0.012, 0.038, 0);
   b.torus('steelBright', 0.0105, 0.0014, -0.026, 0.038, 0, { part: 'pin', ry: Math.PI / 2, seg: b.seg(6, 3), tseg: b.seg(18, 8) });
   b.anchor('pinGrab', -0.034, 0.038, 0, { part: 'pin' });
   b.anchor('rightHandGrip', 0, 0, 0);
   b.meta = { sight: 'none', kind: 'grenade' };
 }
-
-/** Brandsatz (13.11.): braungrüne Glasflasche (Boden mit Einstich, Schulter, Hals mit Lippe), Benzingemisch zu drei
- * Vierteln gefüllt, Stofflappen im Hals (Teil 'pin': ausgefranst, angesengte Spitze), Etikettrest, Klebeband. */
 export function molotov(b) {
-  const s = b.seg(22, 8);
-  b.lathe('bottleGlass', [[-0.055, 0], [-0.055, 0.027], [-0.053, 0.0305], [-0.048, 0.031], [0.018, 0.031], [0.03, 0.026], [0.042, 0.017],
-    [0.052, 0.0125], [0.07, 0.0112], [0.072, 0.0128], [0.077, 0.0128], [0.078, 0.0105]], 0, 0, 0, { axis: 'v', seg: s });
-  b.lathe('fuel', [[-0.052, 0], [-0.052, 0.0288], [0.008, 0.0288], [0.008, 0]], 0, 0, 0, { axis: 'v', seg: b.seg(18, 6) });
-  if (b.hi) {
-    b.circle('fuel', 0.0285, 0, 0.0082, 0, { rx: -Math.PI / 2, seg: 20 });                    // Flüssigkeitsspiegel
-    b.lathe('bottleGlass', [[-0.055, 0.0], [-0.047, 0.006], [-0.05, 0.014], [-0.055, 0.02]], 0, 0, 0, { axis: 'v', seg: 18 }); // Bodeneinstich
-    b.cyl('paintWhite', 0.0313, 0.0313, 0.03, 0, -0.018, 0, { axis: 'v', seg: 22, t0: 0.4, tl: 2.2 });  // Etikettrest
-    b.cyl('canvasOD', 0.0316, 0.0316, 0.012, 0, 0.002, 0, { axis: 'v', seg: 22, t0: 3.4, tl: 2.4 });   // Klebeband
-  }
-  // Lappen: steckt im Hals, hängt außen herab
-  b.cyl('rag', 0.0098, 0.009, 0.03, 0, 0.078, 0, { axis: 'v', seg: b.seg(10, 5) });
-  b.part('pin', 0.004, 0.09, 0);
-  b.tube('rag', [[0.004, 0.092, 0.0], [0.011, 0.096, 0.001], [0.0165, 0.088, 0.002], [0.0185, 0.075, 0.003], [0.02, 0.06, 0.003]], 0.005, { part: 'pin', seg: 6 });
-  if (b.hi) {
-    b.sphere('ragSoot', 0.006, 0.02, 0.058, 0.003, { part: 'pin', sy: 1.3, seg: 10, hseg: 6 });
-    for (let i = 0; i < 4; i++) b.box('rag', 0.0012, 0.012, 0.002, 0.018 + i * 0.002, 0.05 - (i % 2) * 0.003, 0.003 - i * 0.002, { part: 'pin', rz: 0.2 * (i - 1.5), c: 0 });
-  }
-  b.anchor('pinGrab', 0.022, 0.1, 0, { part: 'pin' });
+  // Flasche (Glas getönt) mit Lappen im Hals; der „Splint“ ist der Lappenzipfel (Feuerzeug-Geste)
+  b.lathe('smoke', [[-0.055, 0], [-0.055, 0.028], [-0.05, 0.031], [0.02, 0.031], [0.035, 0.022], [0.05, 0.012], [0.07, 0.011], [0.074, 0.012], [0.074, 0]], 0, 0, 0, { axis: 'v', seg: b.seg(16, 7) });
+  b.lathe('paintYellow', [[-0.05, 0], [-0.05, 0.0285], [0.0, 0.0285], [0.0, 0]], 0, 0, 0, { axis: 'v', seg: b.seg(14, 6) });
+  b.cyl('cord', 0.0095, 0.008, 0.05, 0, 0.09, 0, { axis: 'v', seg: b.seg(10, 5) });
+  b.part('pin', 0.004, 0.115, 0);
+  b.box('cord', 0.022, 0.01, 0.012, 0.012, 0.118, 0, { part: 'pin', rz: -0.5, c: 0.002 });
+  b.anchor('pinGrab', 0.022, 0.122, 0, { part: 'pin' });
   b.anchor('rightHandGrip', 0, 0, 0);
   b.meta = { sight: 'none', kind: 'grenade' };
 }

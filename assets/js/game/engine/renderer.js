@@ -3,7 +3,7 @@
 //
 // Die Kette selbst steckt in engine/post/pipeline.js (Aufbau je Stufe dort beschrieben):
 //   low     „lite“: Welt + Viewmodel → HDR → EIN Pass (Objektiv, FXAA-Konsole, Belichtung, AgX, LUT, Körnung …)
-//   medium+ Welt → HDR [+ GTAO ab high, dort halbe Auflösung] [+ Kontaktschatten high/ultra, SSR + TAA ultra] → Viewmodel → Belichtung → Bloom → Grade (8 Bit) → [FXAA | SMAA]
+//   medium+ Welt → HDR [+ GTAO ab high, dort halbe Auflösung] → Viewmodel → Belichtung → Bloom → Grade (8 Bit) → [FXAA | SMAA]
 //           → Objektiv (Verzeichnung, Farbsaum, RCAS bzw. FSR-EASU, Körnung, Kompression, Gehäuse) → Bild
 //   direct  low im Stil „Klassisch“ mit MSAA-Kontext: bisheriges direktes Rendern (ACES im Material,
 //           Vignette per CSS über body.np-css-vignette – main fragt `cssVignette`).
@@ -14,12 +14,12 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261114060746';
-import { estimateMemory } from './post/memory.js?v=20261114060746';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261114060746';
-import { resetFormatCache } from './post/common.js?v=20261114060746';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261114060746'; // Erweitert-Grafik (S9, ui-controls)
-import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261114060746';
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261113221339';
+import { estimateMemory } from './post/memory.js?v=20261113221339';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261113221339';
+import { resetFormatCache } from './post/common.js?v=20261113221339';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261113221339'; // Erweitert-Grafik (S9, ui-controls)
+import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261113221339';
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 
@@ -29,9 +29,6 @@ export const QUALITY_LEVELS = ['low', 'medium', 'high', 'ultra'];
 // shadowInterval: Schattenkarte höchstens jedes n-te Bild neu (1 = jedes Bild; Welt meldet Kamerasprünge
 // über invalidateShadows()). Telefone (auto → low) bekommen so Sonnenschatten bei ~⅓ der Kosten.
 // post: volle Nachbearbeitungskette (false = low: ein kombinierter Pass bzw. direktes Rendern).
-// gfx-licht (14.11.): shadowTaps/shadowSoft = weiche Sonnenschatten (Proben, Radiusfaktor; 0 = three.js-Standard),
-// contactShadows = Bildschirmraum-Kontaktschatten, ssr = Bildschirmraum-Reflexionen, taa = temporale Kantenglättung
-// (ergänzt SMAA, das weiter die Waffe glättet), dof = Tiefenschärfe beim Zielen. low/medium unverändert.
 export const QUALITY_PRESETS = Object.freeze({
   low: Object.freeze({
     id: 'low', pixelRatio: 1.5, shadows: true, shadowMapSize: 1024, shadowExtent: 24, shadowInterval: 4,
@@ -47,13 +44,11 @@ export const QUALITY_PRESETS = Object.freeze({
     id: 'high', pixelRatio: 1.5, shadows: true, shadowMapSize: 2048, shadowExtent: null, shadowInterval: 1,
     bloom: true, smaa: true, fxaa: false,
     ssao: true, aoScale: 0.5, grade: true, post: true, maxBotsVisibleShadows: 8, particleScale: 1, decals: 120, anisotropy: 16,
-    shadowTaps: 12, shadowSoft: 1, contactShadows: true, ssr: false, taa: false, dof: true,
   }),
   ultra: Object.freeze({
     id: 'ultra', pixelRatio: 2, shadows: true, shadowMapSize: 4096, shadowExtent: null, shadowInterval: 1,
     bloom: true, smaa: true, fxaa: false,
     ssao: true, aoScale: 1, grade: true, post: true, maxBotsVisibleShadows: 16, particleScale: 1.25, decals: 120, anisotropy: 16,
-    shadowTaps: 16, shadowSoft: 1.3, contactShadows: true, ssr: true, taa: true, dof: true,
   }),
 });
 

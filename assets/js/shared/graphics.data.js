@@ -7,7 +7,7 @@
 // Beschriftungen, Kostenmodell (GPU-Speicher je Option) und Budgets je Stufe.
 
 /** Schlüssel der Optionen, die die Stufenvorgabe überschreiben (Renderer hört auf diese). */
-export const GFX_KEYS = Object.freeze(['gfxPost', 'gfxShadows', 'gfxAA', 'gfxAO', 'gfxContact', 'gfxSSR', 'gfxDOF', 'gfxBloom', 'gfxEffects', 'gfxPixelRatio']);
+export const GFX_KEYS = Object.freeze(['gfxPost', 'gfxShadows', 'gfxAA', 'gfxAO', 'gfxBloom', 'gfxEffects', 'gfxPixelRatio']);
 
 /** Wirkung je Wert (Felder der Stufenvorgabe). */
 export const GFX_APPLY = Object.freeze({
@@ -16,23 +16,18 @@ export const GFX_APPLY = Object.freeze({
     voll: { post: true, grade: true },
   },
   gfxShadows: {
-    aus: { shadows: false, maxBotsVisibleShadows: 0, shadowTaps: 0 },
-    niedrig: { shadows: true, shadowMapSize: 1024, shadowExtent: 24, shadowInterval: 4, maxBotsVisibleShadows: 0, shadowTaps: 0 },
-    mittel: { shadows: true, shadowMapSize: 2048, shadowExtent: null, shadowInterval: 1, maxBotsVisibleShadows: 4, shadowTaps: 0 },
-    // gfx-licht: weiche Sonnenschatten (12/16 Proben, ultra etwas breiterer Halbschatten)
-    hoch: { shadows: true, shadowMapSize: 2048, shadowExtent: null, shadowInterval: 1, maxBotsVisibleShadows: 8, shadowTaps: 12, shadowSoft: 1 },
-    ultra: { shadows: true, shadowMapSize: 4096, shadowExtent: null, shadowInterval: 1, maxBotsVisibleShadows: 16, shadowTaps: 16, shadowSoft: 1.3 },
+    aus: { shadows: false, maxBotsVisibleShadows: 0 },
+    niedrig: { shadows: true, shadowMapSize: 1024, shadowExtent: 24, shadowInterval: 4, maxBotsVisibleShadows: 0 },
+    mittel: { shadows: true, shadowMapSize: 2048, shadowExtent: null, shadowInterval: 1, maxBotsVisibleShadows: 4 },
+    hoch: { shadows: true, shadowMapSize: 2048, shadowExtent: null, shadowInterval: 1, maxBotsVisibleShadows: 8 },
+    ultra: { shadows: true, shadowMapSize: 4096, shadowExtent: null, shadowInterval: 1, maxBotsVisibleShadows: 16 },
   },
   gfxAA: {
-    aus: { smaa: false, fxaa: false, taa: false },
-    fxaa: { smaa: false, fxaa: true, taa: false },
-    smaa: { smaa: true, fxaa: false, taa: false },
-    taa: { smaa: true, fxaa: false, taa: true }, // gfx-licht: TAA für die Welt + SMAA für die Waffe
+    aus: { smaa: false, fxaa: false },
+    fxaa: { smaa: false, fxaa: true },
+    smaa: { smaa: true, fxaa: false },
   },
   gfxAO: { aus: { ssao: false }, an: { ssao: true } },
-  gfxContact: { aus: { contactShadows: false }, an: { contactShadows: true } }, // gfx-licht
-  gfxSSR: { aus: { ssr: false }, an: { ssr: true } }, // gfx-licht
-  gfxDOF: { aus: { dof: false }, an: { dof: true } }, // gfx-licht: Tiefenschärfe beim Zielen
   gfxBloom: { aus: { bloom: false }, an: { bloom: true } },
   gfxEffects: {
     niedrig: { particleScale: 0.45, decals: 40 },
@@ -81,7 +76,7 @@ export function applyGraphics(base, src) {
 }
 
 const COMPARE = ['post', 'grade', 'shadows', 'shadowMapSize', 'shadowExtent', 'shadowInterval', 'maxBotsVisibleShadows', 'smaa', 'fxaa',
-  'ssao', 'aoScale', 'taa', 'ssr', 'contactShadows', 'dof', 'shadowTaps', 'shadowSoft', 'bloom', 'particleScale', 'decals', 'pixelRatio', 'id'];
+  'ssao', 'aoScale', 'bloom', 'particleScale', 'decals', 'pixelRatio', 'id'];
 /** Gleiche wirksame Vorgabe? (Renderer: Neuaufbau nur bei echter Änderung) */
 export function samePreset(a, b) {
   if (a === b) return true;
@@ -99,11 +94,8 @@ export function presetValue(key, preset) {
       if ((p.shadowMapSize || 0) >= 4096) return 'ultra';
       if ((p.shadowMapSize || 0) <= 1024) return 'niedrig';
       return (p.maxBotsVisibleShadows || 0) >= 8 ? 'hoch' : 'mittel';
-    case 'gfxAA': return p.taa ? 'taa' : p.smaa ? 'smaa' : p.fxaa ? 'fxaa' : 'aus';
+    case 'gfxAA': return p.smaa ? 'smaa' : p.fxaa ? 'fxaa' : 'aus';
     case 'gfxAO': return p.ssao ? 'an' : 'aus';
-    case 'gfxContact': return p.contactShadows ? 'an' : 'aus';
-    case 'gfxSSR': return p.ssr ? 'an' : 'aus';
-    case 'gfxDOF': return p.dof ? 'an' : 'aus';
     case 'gfxBloom': return p.bloom ? 'an' : 'aus';
     case 'gfxEffects': {
       const s = p.particleScale ?? 1;
@@ -141,8 +133,7 @@ export function modelCost(key, preset, { w = 1280, h = 720, ow = w, oh = h, hdrB
       return s * s * 8; // Tiefe + Farbe (PCF)
     }
     case 'gfxAO': return p.post && p.ssao ? Math.round(px * (p.aoScale ?? (p.id === 'ultra' ? 1 : 0.5)) ** 2) * 20 : 0;
-    case 'gfxAA': return !p.post ? 0 : (p.smaa ? px * 8 + px * 4 + 160 * 560 + 64 * 16 : p.fxaa ? px * 4 : 0) + (p.taa ? px * hdrBpp * 2 : 0);
-    case 'gfxSSR': return p.post && p.ssr ? Math.round(px / 4) * 8 + (p.ssao ? 0 : Math.round(px / 4) * 12) : 0;
+    case 'gfxAA': return !p.post ? 0 : p.smaa ? px * 8 + px * 4 + 160 * 560 + 64 * 16 : p.fxaa ? px * 4 : 0;
     case 'gfxBloom': return p.post && p.bloom ? Math.round((px / 4) * 8 * 1.33 * 2) : 0;
     case 'gfxPost': return p.post ? px * (hdrBpp + 4) + px * 4 : px * (hdrBpp + 4);
     case 'renderScale': return px * (hdrBpp + 4) + ow * oh * 8;

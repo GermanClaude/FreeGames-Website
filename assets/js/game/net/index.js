@@ -25,20 +25,20 @@
 // (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu). Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der
 // Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host vermerkt es und verteilt das Roster; bei jedem
 // Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261114060746';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261114060746';
-import { hex, randomBytes } from './crypto.js?v=20261114060746';
-import { BUILD } from '../../shared/build.js?v=20261114060746';
-import { MAPS, MAP_ORDER, militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261114060746';
-import { MODES, DIFFICULTY_ORDER, ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, modeOptionDiff, modeOptionValues } from '../../shared/modes.data.js?v=20261114060746';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261114060746';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261114060746';
-import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261114060746';
-import { exportLoadoutCamos, importCC } from '../../shared/customcamo.js?v=20261114060746';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261113221339';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261113221339';
+import { hex, randomBytes } from './crypto.js?v=20261113221339';
+import { BUILD } from '../../shared/build.js?v=20261113221339';
+import { MAPS, MAP_ORDER, militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261113221339';
+import { MODES, DIFFICULTY_ORDER, ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, modeOptionDiff, modeOptionValues } from '../../shared/modes.data.js?v=20261113221339';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261113221339';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261113221339';
+import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261113221339';
+import { exportLoadoutCamos, importCC } from '../../shared/customcamo.js?v=20261113221339';
 const WEAPONS_ALL = { ...WEAPONS, ...UNDER_WEAPONS }; // Trefferprüfung: Waffen + Unterlauf-Aufsätze
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261114060746';
-import { recommend, UploadMeter } from './recommend.js?v=20261114060746';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261114060746';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261113221339';
+import { recommend, UploadMeter } from './recommend.js?v=20261113221339';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261113221339';
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD).
  *  2: Fahrzeuge online (Snapshot-Anhang, Fahrzeug-Absicht, 'veh'/'vhit'/'vehicles' – panzer-mp.md §C).
@@ -52,7 +52,7 @@ import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261114060746';
  *  10: Waffen der ersten Stunde (Waffen-Indizes verschoben), Aufsätze/Tarnung in Ausrüstungen.
  *  11: Versorgung/MG-Gurte im Fahrzeugblock (Byte 63), Militärfahrzeuge nur auf großen Karten.
  *  12: neue Waffen ZW-12 Zwilling, P-9A, PS-41 Wirbel (Waffenindizes verschoben, 26.10.). */
-export const NET_VERSION = 17; // 17: Luftfahrzeuge (Hubschrauber/Jet: Fahrzeugtypen 10/11, Pilot-Eingaben, Täuschkörper 'vf') – 14.11.; 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
+export const NET_VERSION = 16; // 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). 26.10.: aus den Modus-Daten
  *  (MODES[id].online, shared/modes.data.js ONLINE_MODE_IDS) – eine Quelle auch für ui/net-menus.js. */
 export const ONLINE_MODES = ONLINE_MODE_IDS;
@@ -583,7 +583,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261114060746').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261113221339').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
