@@ -92,7 +92,15 @@ body[data-input-mode="touch"] #np-campaign .kc-skip kbd { display: none; }
   #np-campaign .kc-sub.radio { bottom: auto; top: 10px; width: min(56vw, 560px); }
   #np-campaign .kc-card { top: 40%; }
 }
-body[data-input-mode="touch"] #np-campaign .kc-sub.radio { bottom: auto; top: 10px; width: min(56vw, 560px); }
+/* Kampagne: Punktestand der Teams ist bedeutungslos – Platz für Funksprüche oben */
+body[data-campaign="1"] #hud .h-scores { visibility: hidden; }
+/* Touch: Zielliste rechts neben der Minikarte (links darunter liegen Zielen-/Stick-Knöpfe) */
+body[data-input-mode="touch"] #np-campaign .kc-obj { left: 118px; top: 6px; width: min(200px, 23vw); }
+body[data-input-mode="touch"] #np-campaign .kc-obj h4 { font-size: 10px; }
+body[data-input-mode="touch"] #np-campaign .kc-obj li { font-size: 12px; padding: 3px 6px 4px 20px; }
+body[data-input-mode="touch"] #np-campaign .kc-obj li::before { top: 6px; left: 6px; width: 7px; height: 7px; }
+body[data-input-mode="touch"] #np-campaign .kc-sub.radio { bottom: auto; top: 8px; left: calc(50% + 86px); width: min(31vw, 520px); }
+body[data-input-mode="touch"] #np-campaign .kc-sub.radio .kc-txt { font-size: 15px; }
 `;
 
 let styled = false;

@@ -11,6 +11,7 @@ const VILLAGE = [[-26, 58], [18, 63], [-8, 41], [-30, 94], [24, 95], [35, 41], [
 const BRIDGE = [40, -30];
 
 const CUT_INTRO = {
+  groundRel: true, // Kamerahöhen über dem Gelände (Hügel)
   location: ['Grenzland · Bereitstellungsraum Nord', '04:47 Uhr'],
   cast: {
     roth: actor('roth', { pos: [10.4, 124.8], yaw: -1.2, aim: -0.7 }),
@@ -37,6 +38,7 @@ const CUT_INTRO = {
 };
 
 const CUT_OUTRO = {
+  groundRel: true,
   location: ['Flussbrücke', '06:12 Uhr'],
   cast: {
     falk: actor('falk', { pos: [32.6, -7.5], yaw: -2.6, aim: -0.6 }),

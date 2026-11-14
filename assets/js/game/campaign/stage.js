@@ -197,9 +197,10 @@ export class StageActor {
 /* ======================================================================== Kamera */
 
 export class ShotCamera {
-  constructor(G, cast) {
+  constructor(G, cast, groundRel = false) {
     this.G = G;
     this.cast = cast;
+    this.groundRel = groundRel; // y der Kamerapunkte = Höhe über dem Boden (Gelände mit Hügeln)
     this.shot = null;
     this.t = 0;
     this.dur = 1;
@@ -215,6 +216,7 @@ export class ShotCamera {
       const a = this.cast[p];
       return a ? a.headPosition(out) : out.set(0, 1.6, 0);
     }
+    if (this.groundRel && Array.isArray(p) && p.length === 3) return out.set(p[0], floorY(this.G, p[0], p[2]) + p[1], p[2]);
     return toVec(this.G, p, out) || out.set(0, 0, 0);
   }
 
@@ -326,7 +328,7 @@ export class Cutscene {
         this.own.push(a);
       } catch (err) { console.error('[Kampagne] Darsteller', id, err); }
     }
-    this.cam = new ShotCamera(G, this.cast);
+    this.cam = new ShotCamera(G, this.cast, !!d.groundRel);
     this._fov0 = G.camera ? G.camera.fov : 60;
     if (this.ui) {
       this.ui.setMode('cine');
@@ -363,7 +365,8 @@ export class Cutscene {
         this.track = sp.actor.say(b.say.text, b.say.expr, cps);
         // Zuhörer schauen den Sprecher an (außer ausdrücklich anders)
         for (const a of Object.values(this.cast)) if (a !== sp.actor && !b.keepLooks) a.look(sp.actor);
-        if (b.say.look) sp.actor.look(this.cast[b.say.look] || null);
+        // Sprecher: zum angegebenen Gegenüber bzw. geradeaus (Nahaufnahmen zeigen das Gesicht)
+        if (!b.keepLooks) sp.actor.look(b.say.look ? this.cast[b.say.look] || null : null);
       } else {
         this.track = textToVisemes(b.say.text, { cps });
       }

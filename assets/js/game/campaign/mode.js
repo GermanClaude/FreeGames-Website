@@ -57,6 +57,7 @@ export class CampaignMode extends BaseMode {
     window.addEventListener('keydown', onKey, true);
     this._keys = () => window.removeEventListener('keydown', onKey, true);
     G.campaign = this;
+    document.body.dataset.campaign = '1';
   }
 
   onDetach() {
@@ -66,6 +67,7 @@ export class CampaignMode extends BaseMode {
     if (this._keys) { this._keys(); this._keys = null; }
     if (this.ui) { this.ui.dispose(); this.ui = null; }
     delete document.body.dataset.cutscene;
+    delete document.body.dataset.campaign;
     if (G.match && G.match.uiHold) G.holdUi && G.holdUi(false);
     if (G.campaign === this) G.campaign = null;
   }
@@ -83,7 +85,6 @@ export class CampaignMode extends BaseMode {
       G.player.yaw = sp.yaw;
       G.player.pitch = 0;
     }
-    if (this.mission.loadoutHint && this.ui) this.ui.toast(this.mission.loadoutHint, 'tip', 4);
   }
 
   tick(dt) {

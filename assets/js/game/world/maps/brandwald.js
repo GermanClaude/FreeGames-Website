@@ -113,7 +113,7 @@ export default {
     burnt: { ash: 0.75, light: 0.6, dirt: 0.12, mud: 0.3 },
   },
 
-  vegetation: { seed: 21, forests: [], scatter: { count: 0 }, hedges: [], rocks: { count: 20, clusters: [] }, grass: false },
+  vegetation: { seed: 21, forests: [], scatter: { count: 0 }, hedges: [], rocks: { count: 20, clusters: [], tint: '#6f6a64' }, grass: false }, // gfx-welt: Felsen verrußt
   deadwood: {
     seed: 2112, density: 2.4, step: 3.1, clearNoise: 0.5, logs: 0.4,
     mix: { hoch: 0.3, gebrochen: 0.36, stumpf: 0.16, grau: 0.18 },

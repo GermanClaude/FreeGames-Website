@@ -717,7 +717,7 @@ export class Vegetation {
         const m = new THREE.InstancedMesh(this._rockVis[v], rockMat, list.length);
         list.forEach((rk, i) => {
           _q.setFromAxisAngle(_up, rk.ry); _s.set(rk.sx ?? rk.s, rk.sy ?? rk.s, rk.sz ?? rk.s); _p.set(rk.x, rk.y, rk.z); _m.compose(_p, _q, _s); m.setMatrixAt(i, _m);
-          m.setColorAt(i, _c.set('#bdb5aa').multiplyScalar(0.75 + hash2(i, v) * 0.35));
+          m.setColorAt(i, _c.set(this.spec.rocks?.tint || '#bdb5aa').multiplyScalar(0.75 + hash2(i, v) * 0.35)); // spec.rocks.tint: Kartenfarbe (Brandwald: verrußt)
         });
         m.name = 'veg-felsen'; m.castShadow = q !== 'low'; m.receiveShadow = true;
         m.computeBoundingSphere();
