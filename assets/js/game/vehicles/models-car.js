@@ -171,6 +171,10 @@ export function pkwBodyHQ(K, S, B, GB, LB, lod, paint, variant) {
       side(zCg - 0.03, 1.11, paint, B, 0.03, 1, 1);                                                 // C-Säule (schmal)
       side(1.11, 1.98, S.glass, GB, 0.005);                                                     // Seitenfenster hinten
       side(1.98, zr[3], paint, B, 0.03, 2, 3);                                                  // D-Säule
+    } else if (style === 2) {
+      side(zCg - 0.03, zCg + 0.06, paint, B, 0.03, 1, 1);                                        // C-Säule (schmal)
+      side(zCg + 0.06, 1.62, S.glass, GB, 0.005);                                               // Dreiecksfenster hinten
+      side(1.62, zr[3], paint, B, 0.03, 2, fine ? 6 : 2);
     } else side(zCg - 0.03, zr[3], paint, B, 0.03, 2, fine ? 6 : 2);                             // C-Säule
     // A-Säule + Dachkante (Profilleisten), Fenstergummis
     const edge = (z0, z1, t, n) => { const pts = []; for (let i = 0; i <= n; i++) pts.push(ghPoint(SH, lerp(z0, z1, i / n), t)); return pts; };

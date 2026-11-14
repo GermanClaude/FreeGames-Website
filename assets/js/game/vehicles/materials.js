@@ -327,10 +327,11 @@ function civilDirtPatch(sh) {
       }`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
       roughnessFactor = mix( roughnessFactor, mix( 0.92, 0.55, uEnvWet ), clamp( cvDirt, 0.0, 1.0 ) );`);
-  if (sh.fragmentShader.includes('#include <clearcoat_normal_fragment_begin>')) {
-    sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
-      material.clearcoat *= 1.0 - clamp( cvDirt * 1.3, 0.0, 1.0 );`);
-  }
+  // Klarlack nur, wo das Programm ihn hat (MeshPhysical mit clearcoat > 0 → USE_CLEARCOAT); MeshStandard teilt den Shader
+  sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
+      #ifdef USE_CLEARCOAT
+      material.clearcoat *= 1.0 - clamp( cvDirt * 1.3, 0.0, 1.0 );
+      #endif`);
 }
 
 /**
