@@ -241,6 +241,7 @@ export default {
   assets: { hdri: 'np_sky_vormittag_klar', materials: { asphalt: 'asphalt_light' } }, // texturen 14.11.: heller Pistenasphalt
   defaultSurface: 'grass',
   wallMargin: 40,
+  wallTop: 12, // Randwand nur in Bodennähe: Start/Landung geradeaus über die Bahnenden hinaus (Luftraum regelt air/aircraft.js)
   navGrid: 5,
   lighting: {
     sun: { elevation: 34, azimuth: 140, color: '#fff0da', intensity: 3.7 },

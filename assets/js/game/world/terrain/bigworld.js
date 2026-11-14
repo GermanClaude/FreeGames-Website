@@ -342,7 +342,8 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     albList.push(albFill(deadCol.bullet.length / 9, 16, 15, 14)); // verkohlt
   }
   const wallRect = { minX: pb.minX - (def.wallMargin ?? 45), maxX: pb.maxX + (def.wallMargin ?? 45), minZ: pb.minZ - (def.wallMargin ?? 45), maxZ: pb.maxZ + (def.wallMargin ?? 45) };
-  colList.push(boundaryWalls(wallRect, -20, 140));
+  // def.wallTop: Höhe der unsichtbaren Randwand (Flugplatz 12 m – Jets/Hubschrauber fliegen über den Kartenrand an und ab)
+  colList.push(boundaryWalls(wallRect, -20, def.wallTop ?? 140));
   const colTris = concatF32(colList), bulletTris = concatF32(bulList);
   const bulletData = new Uint32Array(bulletTris.length / 9);
   { let o = 0; for (const d of datList) { bulletData.set(d, o); o += d.length; } }

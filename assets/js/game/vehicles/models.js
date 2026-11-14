@@ -2308,7 +2308,7 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
   // Wannen-Außenhülle: mit Turmkorb durch die Drehkranz-Öffnung sichtbar – im Innenraum ausgeblendet (der Kampfraum
   // der Wanne umschließt den Blick), sonst deckte das Wannendach den Korb ab
   model.hullInterior = root.getObjectByName('hullInterior') || null;
-  const hullShell = model.hullInterior ? root.children.find((c) => c.isLOD) : null;
+  const hullShell = model.hullInterior || driverCabin(VEHICLES[type]) ? root.children.find((c) => c.isLOD) : null; // auch ohne Turmkorb (1. WK): Fahrerkammer umschließt den Blick
   model.cabin = null;
   let cabinTried = false;
   model.setInterior = (on) => {
