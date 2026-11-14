@@ -260,11 +260,12 @@ function opticSvg(era, ppm) {
     for (let m = step; m <= 40; m += step) {
       const big = m % 10 === 0;
       for (const sx of [-1, 1]) o.push(`<path d="M${P(sx * m)} ${P(big ? -1.4 : -0.6)}V${P(big ? 1.4 : 0.6)}" stroke-width="${big ? 1.4 : 1}"/>`);
-      if (big) { o.push(txt(P(m), (+P(1.4) + 13).toFixed(1), String(m))); o.push(txt(P(-m), (+P(1.4) + 13).toFixed(1), String(m))); }
+      if (big && (ppm * 10 >= 24 || m % 20 === 0)) { o.push(txt(P(m), (+P(1.4) + 13).toFixed(1), String(m))); o.push(txt(P(-m), (+P(1.4) + 13).toFixed(1), String(m))); }
       if (m <= 20) o.push(`<path d="M${P(big ? -1.4 : -0.6)} ${P(m)}H${P(big ? 1.4 : 0.6)}" stroke-width="1"/>`);
     }
     // Entfernungsschätzung: Treppe für 2,3 m Zielhöhe (Säulen = Zielhöhe in Strich bei 400 … 2000 m)
     const bx = -34, by = 14;
+    if (ppm >= 3) {
     o.push(`<path d="M${P(bx - 2)} ${P(by)}H${P(bx + 20)}" stroke-width="1.2"/>`);
     [400, 800, 1200, 1600, 2000].forEach((d, i) => {
       const h = (2.3 / d) * 1000 / 0.982, x = bx + i * 4.5;
@@ -272,6 +273,7 @@ function opticSvg(era, ppm) {
       o.push(txt(P(x), (+P(by) + 12).toFixed(1), String(d / 100), 'middle', 10));
     });
     o.push(txt(P(bx - 3), (+P(by) + 26).toFixed(1), 'ZIEL 2,3 m · ×100 m', 'start', 10));
+    }
   }
   return `<svg class="vo-cal" viewBox="-200 -200 400 400" fill="none" stroke="#f2efe6" stroke-linecap="round">${o.join('')}</svg>`;
 }

@@ -207,5 +207,5 @@ export const MISSION_9 = {
   ],
 
   /** Testlauf (run.js): Countdown der Sendung nicht verkürzen. */
-  _test(d) { if (d.timerLabel === 'Sendung in' && d.timerLeft != null && d.timerLeft < 60) d.timerLeft = 300; },
+  _test(d) { if (!d.get('befehl')) d.set('befehl', 'test'); if (d.timerLabel === 'Sendung in' && d.timerLeft != null && d.timerLeft < 60) d.timerLeft = 300; },
 };

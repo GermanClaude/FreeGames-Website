@@ -264,6 +264,7 @@ float npCoverMask( vec3 q ) {
 const VERT_HEAD = /* glsl */`
 attribute vec4 aRest;
 varying vec4 vRest;
+flat varying float vPart;
 varying vec3 vMp;
 varying vec2 vFUv;
 uniform float uCoverEars;
@@ -273,6 +274,7 @@ ${GLSL_COMMON}
 const FRAG_HEAD = /* glsl */`
 #define NP_FACE
 varying vec4 vRest;
+flat varying float vPart;
 varying vec3 vMp;
 varying vec2 vFUv;
 float npMouthOcc = 1.0;
@@ -329,8 +331,8 @@ float npHeight( vec2 uv, vec3 q ) {
 // Haut, Augen, Mund, Haare, Abdeckung → diffuseColor, npRough, npSss, npAoT
 const FACE_ALBEDO = /* glsl */`
 	vec3 q = vRest.xyz;
-	float part = floor( vRest.w * 0.5 + 0.01 );
-	float fAo = clamp( vRest.w - part * 2.0, 0.0, 1.0 );
+	float part = vPart;
+	float fAo = clamp( vRest.w - floor( vRest.w * 0.5 + 0.01 ) * 2.0, 0.0, 1.0 );
 	float ax = abs( q.x );
 	vec3 alb = uSkin;
 	npRough = 0.5;
@@ -349,8 +351,8 @@ const FACE_ALBEDO = /* glsl */`
 		if ( part > 4.5 ) {
 			// Mundraum: dunkelrot, nach hinten dunkler (aus der gemorphten Lage)
 			float depth = smoothstep( 0.004, 0.03, vMp.z - uMouthZ );
-			alb = mix( vec3( 0.42, 0.12, 0.11 ), vec3( 0.16, 0.035, 0.03 ), depth );
-			npMouthOcc = mix( 0.75, 0.06, depth );
+			alb = mix( vec3( 0.36, 0.1, 0.09 ), vec3( 0.12, 0.025, 0.02 ), depth );
+			npMouthOcc = mix( 0.55, 0.04, depth );
 			npRough = 0.3;
 			npSss = 0.2;
 		}
@@ -428,7 +430,7 @@ const FACE_ALBEDO = /* glsl */`
 const FACE_NORMAL = /* glsl */`
 	#ifndef NP_LOW
 	{
-		float part = floor( vRest.w * 0.5 + 0.01 );
+		float part = vPart;
 		float cov = npCoverMask( vRest.xyz );
 		if ( ( part < 1.5 || part > 4.5 ) && cov < 0.99 ) {
 			vec3 dpx = dFdx( -vViewPosition ), dpy = dFdy( -vViewPosition );
@@ -506,6 +508,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
     for (const k of Object.keys(U)) shader.uniforms[k] = U[k];
     shader.vertexShader = VERT_HEAD + shader.vertexShader.replace('#include <morphtarget_vertex>', `#include <morphtarget_vertex>
 	vRest = aRest;
+	vPart = floor( aRest.w * 0.5 + 0.01 );
 	vFUv = uv;
 	{
 		// Stoff über dem Gesicht: etwas aufgetragen, Mundbewegung gedämpft; Ohren unter der Haube angelegt
@@ -538,7 +541,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => 'np-face-5' + (low ? 'l' : 'h');
+  m.customProgramCacheKey = () => 'np-face-6' + (low ? 'l' : 'h');
   return m;
 }
 

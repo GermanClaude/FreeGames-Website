@@ -231,7 +231,7 @@ export const MISSION_10 = {
         m.wave('boden', { count: 4, at: [[c.hit[0] + 20, c.hit[1] - 30], [c.hit[0] - 18, c.hit[1] - 34], [c.hit[0] + 4, c.hit[1] - 44], [c.hit[0] + 26, c.hit[1] - 52]], hold: true });
         m.tip('Kinnturm: zielen mit der Maus, feuern mit der linken Maustaste.', 5);
         const t0 = m.elapsed;
-        yield () => heli.body.pos.distanceTo(hit) < 30 || m.elapsed - t0 > 40;
+        yield () => Math.hypot(heli.body.pos.x - hit.x, heli.body.pos.z - hit.z) < 30 || m.elapsed - t0 > 40 || !heli.alive;
         // Treffer: Sander verwundet – Falk übernimmt
         try { G.effects && G.effects.explosion && G.effects.explosion(heli.body.pos.clone().add(new THREE.Vector3(3, -2, 2)), 4, {}); } catch { /* */ }
         try { G.player.shake && G.player.shake(1.2); } catch { /* */ }
@@ -284,7 +284,7 @@ export const MISSION_10 = {
           const id = `fg${i}`;
           m.wave(id, { count: 3, at: c.flakGuards[i], hold: true });
           if (i === 1) m.wave('fr', { count: 4, at: c.reinf, attack: 'player', radius: 10 });
-          m.say(i ? 'weber' : 'lenz', i ? 'Zweite Stellung, weiter südlich. Sie haben uns gehört – Verstärkung kommt!' : 'Erste Flugabwehr, gleich vor uns. Wachen ausschalten, dann Ladung dran.', { expr: 'angespannt' });
+          m.say(i ? 'weber' : 'lenz', i ? 'Jetzt die zweite Stellung. Sie haben uns gehört – Verstärkung kommt!' : 'Erste Flugabwehr, gleich vor uns. Wachen ausschalten, dann Ladung dran.', { expr: 'angespannt' });
           yield m.killObjective(`${id}k`, i ? 'Schalte die Wachen der zweiten Stellung aus' : 'Schalte die Wachen der Flugabwehr aus', id);
           yield m.holdZone(`flak${i}`, 'Bringe die Sprengladung an', { at: c.flak[i], r: 3.5, secs: 5, label: 'Flugabwehr', action: 'Sprengladung anbringen' });
           m.say('weber', 'Ladung sitzt. Weg da – zehn Meter!', { expr: 'angespannt' });

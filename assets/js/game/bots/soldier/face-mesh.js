@@ -291,8 +291,8 @@ function eyeball(out, c, r, segU, segV) {
 /** Zahnreihe als gebogenes Band (Hufeisen): Schneidekante unten (oben) – Zahnzwischenräume im Shader. */
 function teethArch(out, L, upper, segA, jawW) {
   const base = out.pos.length / 3;
-  const front = L.mouthFront + 0.0085; // hinter den Lippen
-  const yEdge = L.slitY + (upper ? 0.0003 : -0.0006);
+  const front = L.mouthFront + 0.0125 + (upper ? 0 : 0.0016); // hinter den Lippen, unten mit Überbiss
+  const yEdge = L.slitY + (upper ? -0.0015 : -0.0022);
   const h = upper ? 0.0105 : 0.0095; // sichtbare Kronenhöhe + Zahnfleisch
   const halfW = 0.0235, depth = 0.034;
   const rows = 4; // Schneidekante gerundet, Fläche, Zahnfleisch, Rücksprung
@@ -398,7 +398,7 @@ export function buildHeadData(A, res = 'near', profile = {}) {
   const nSkin = rv.length / 2;
   // Zusatzteile sammeln
   const X = { pos: [], nrm: [], part: [], ao: [], jaw: [], tip: [], idx: [], toothU: [] };
-  const er = L.eyeRadius * 0.93;
+  const er = L.eyeRadius + 0.0002;
   eyeball(X, eyeL, er, R.eye[0], R.eye[1]);
   eyeball(X, eyeR, er, R.eye[0], R.eye[1]);
   const nEye = X.pos.length / 3;
@@ -437,7 +437,15 @@ export function buildHeadData(A, res = 'near', profile = {}) {
     const d2 = (pos[pb] - pos[pd]) ** 2 + (pos[pb + 1] - pos[pd + 1]) ** 2 + (pos[pb + 2] - pos[pd + 2]) ** 2;
     if (d1 <= d2) idx.push(a, b, c, a, c, d); else idx.push(a, b, d, b, c, d);
   }
-  for (const k of X.idx) idx.push(k + nSkin);
+  // Zusatzteile: Wicklung je Dreieck an den Normalen ausrichten (außen = sichtbar)
+  for (let t = 0; t < X.idx.length; t += 3) {
+    const a = X.idx[t], b = X.idx[t + 1], c = X.idx[t + 2], Q = X.pos, Nn = X.nrm;
+    const ux = Q[b * 3] - Q[a * 3], uy = Q[b * 3 + 1] - Q[a * 3 + 1], uz = Q[b * 3 + 2] - Q[a * 3 + 2];
+    const vx = Q[c * 3] - Q[a * 3], vy = Q[c * 3 + 1] - Q[a * 3 + 1], vz = Q[c * 3 + 2] - Q[a * 3 + 2];
+    const fx = uy * vz - uz * vy, fy = uz * vx - ux * vz, fz = ux * vy - uy * vx;
+    const dn = fx * (Nn[a * 3] + Nn[b * 3] + Nn[c * 3]) + fy * (Nn[a * 3 + 1] + Nn[b * 3 + 1] + Nn[c * 3 + 1]) + fz * (Nn[a * 3 + 2] + Nn[b * 3 + 2] + Nn[c * 3 + 2]);
+    if (dn >= 0) idx.push(a + nSkin, b + nSkin, c + nSkin); else idx.push(a + nSkin, c + nSkin, b + nSkin);
+  }
   D.idx = n > 65535 ? new Uint32Array(idx) : new Uint16Array(idx);
   // Hautgewichte: Kopf (4) oben, Hals (3) unten; Zusatzteile Kopf
   D.ski = new Uint8Array(n * 4); D.skw = new Uint8Array(n * 4);
