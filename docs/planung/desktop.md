@@ -103,8 +103,8 @@ Gemessen am Stand 14.11.2026 (Assets ≈ 164 MB):
 | `NULLPUNKT-Setup-1.0.0.exe` (Installer) | ≈ 276 MB |
 | `NULLPUNKT-1.0.0-portable.exe` | ≈ 262 MB |
 | `NULLPUNKT-1.0.0-win-x64.zip` | ≈ 303 MB |
-| `NULLPUNKT-1.0.0-x86_64.AppImage` (Linux) | ≈ 277 MB |
-| installiert | ≈ 450 MB (Electron ≈ 270 MB + Spiel ≈ 180 MB) |
+| `NULLPUNKT-1.0.0-x86_64.AppImage` (Linux) | ≈ 283 MB |
+| installiert (Windows) | ≈ 540 MB (Electron ≈ 360 MB + Spiel ≈ 180 MB) |
 
 Wachsen die Assets (4K-Texturen), wächst die App entsprechend.
 
@@ -128,3 +128,6 @@ Kein automatischer Updater (bewusst einfach). Neue Version: Installer der neuen 
 - Desktop ↔ Browser nur bei gleicher Spielfassung (siehe oben).
 - Die Windows-.exe wurde unter Linux (wine) gebaut und dort nicht auf einem echten Windows gestartet; der GitHub-Workflow
   baut nativ auf Windows.
+- „Extrem“ ist nur auf einer Maschine **ohne GPU** (Software-Rendering) angelaufen und dort beim Kartenladen abgestürzt
+  (Renderprozess, vermutlich Speicher der 8K-Schattenkarte in der Software-GL). Auf echter Hardware noch nicht gemessen –
+  vor einer Veröffentlichung einmal auf einem Spiele-PC prüfen; im Zweifel `shadowMapSize` in `EXTREME_PRESET` auf 4096.
