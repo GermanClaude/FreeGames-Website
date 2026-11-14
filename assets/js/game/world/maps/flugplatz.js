@@ -238,7 +238,7 @@ export default {
   bounds: { minX: -490, maxX: 490, minZ: -300, maxZ: 300, minY: -10, maxY: 120 },
   runway: RUNWAY,
   ambience: 'range',
-  assets: { hdri: 'np_sky_vormittag_klar' },
+  assets: { hdri: 'np_sky_vormittag_klar', materials: { asphalt: 'asphalt_light' } }, // texturen 14.11.: heller Pistenasphalt
   defaultSurface: 'grass',
   wallMargin: 40,
   navGrid: 5,

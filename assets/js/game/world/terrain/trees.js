@@ -648,7 +648,7 @@ void main() {
   } else c = texture2D(map, vUv);
   if (c.a < 0.5) discard;
   if (mode < 0.5) {
-    vec3 lin = pow(c.rgb, vec3(2.2)) * vAo * (vStrip > -0.5 ? vec3(1.0) : tint);
+    vec3 lin = c.rgb * vAo * (vStrip > -0.5 ? vec3(1.0) : tint); // sRGB-Atlas liefert schon lineare Werte (GPU-Dekodierung)
     gl_FragColor = vec4(pow(lin, vec3(1.0 / 2.2)), 1.0);
   } else gl_FragColor = vec4(normalize(vN) * 0.5 + 0.5, 1.0);
 }`;

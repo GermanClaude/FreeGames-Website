@@ -187,7 +187,8 @@ export function landschaft(b, ctx, def) {
 
 function isOnBridge(r, x, z) {
   const br = r.bridge;
-  if (!br) return false;
+  // Gelände-Straßen tragen die Brücke je nach Erzeuger als { a, b } oder anders – nur die bekannte Form auswerten
+  if (!br || !Array.isArray(br.a) || !Array.isArray(br.b)) return false;
   const [ax, az] = br.a, [bx, bz] = br.b, L = Math.hypot(bx - ax, bz - az), t = ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / (L * L);
   return t > -0.1 && t < 1.1;
 }

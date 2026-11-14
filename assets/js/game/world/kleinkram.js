@@ -958,7 +958,8 @@ export function einrichten(b, o = {}) {
 export function belebe(b, o = {}) {
   const t0 = performance.now();
   // Einrichtung zuerst: sie zählt vorhandene Möbel – Kleinkram dieses Moduls (je Stufe verschieden) darf das nicht beeinflussen
-  const res = { innen: o.einrichten !== false ? einrichten(b, { ...o, stil: o.raum || (o.stil === 'industrie' || o.stil === 'hafen' ? 'buero' : o.stil === 'militaer' ? 'lager' : 'wohn') }) : null };
+  // Einrichtung leerer Räume nur auf Wunsch (o.einrichten: true) – auf dem Hafen erzeugte sie unerreichbare Nav-Inseln
+  const res = { innen: o.einrichten === true ? einrichten(b, { ...o, stil: o.raum || (o.stil === 'industrie' || o.stil === 'hafen' ? 'buero' : o.stil === 'militaer' ? 'lager' : 'wohn') }) : null };
   Object.assign(res, { wand: wandkram(b, o), tuer: tuerdetails(b, o), fenster: fensterleben(b, o) });
   if (o.kabel !== false && (o.stil === 'stadt' || o.stil === 'dorf' || o.kabel)) res.kabel = gassenkabel(b, o);
   if (o.dach !== false) res.dach = dachleben(b, o);

@@ -46,7 +46,7 @@ function haelfte(b, s, zones) {
   // Kaufhaus am Platz
   kaufhaus(b, 0, Z(24), s);
   // Hinterhäuser (3 Geschosse, Hof-Fassade bei z = 38, Tiefe 10; Toreinfahrt zur Hinterstraße)
-  altbau(b, { x: -33, zs: Z(38), s, w: 26, d: 10, floors: 3, shop: null, gate: 'e', core: 'w', roof: 'access', nr: s > 0 ? '12a' : '13a', balcony: false, color: '#b8ad98' });
+  altbau(b, { x: -33, zs: Z(38), s, w: 26, d: 10, floors: 3, shop: null, gate: 'e', core: 'w', roof: 'access', nr: s > 0 ? '12a' : '13a', balcony: false, color: '#b8ad98', mat: 'plaster_patched' });
   altbau(b, { x: 33, zs: Z(38), s, w: 26, d: 10, floors: 3, shop: null, gate: 'w', core: 'e', roof: 'flat', nr: s > 0 ? '24a' : '25a', balcony: false, color: '#c2b49e' });
   // Hinterhöfe
   hofAusstattung(b, -46, Z(21), -14, Z(38), s);
@@ -166,7 +166,8 @@ export default {
   visualBounds: { minX: -130, maxX: 130, minZ: -130, maxZ: 130 },
   chunkSize: 32,
   ambience: 'industrial',
-  assets: { hdri: 'np_sky_nachmittag_dunst', materials: { concrete: { id: 'vh_kai', color: 0.42, macro: [0.12, 0.06, 0.1] } } },
+  // texturen 14.11.: neue Fotoscan-Sätze – dunkler Straßenasphalt, Gehwegplatten; Beton/Putz/Ziegel aus der Standardzuordnung
+  assets: { hdri: 'np_sky_nachmittag_dunst', materials: { asphalt: 'asphalt_dark', paving: 'paving_slabs' } },
   defaultSurface: 'concrete',
   navSpacing: 1.5,
   groundNoise: 0.18,
