@@ -47,6 +47,8 @@ export const POINT_LAYOUT = Object.freeze({
   grenzland: [...BASE, ['funk', 'fB', 3, 0], ['fernglas', 'fA', 3, 0], ['fernglas', 'fC', 3, 0]],
   niemandsland: [...BASE],
   brandwald: [...BASE],
+  flugplatz: [...BASE, ['funk', 'fC', 3, 0], ['fernglas', 'fA', 3, 0]],
+  stadtkern: [...BASE],
   range: [['munition', 'sA', 4, -3], ['sani', 'sA', -4, -3]],
 });
 

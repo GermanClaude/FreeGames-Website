@@ -32,7 +32,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { boxUV } from '../engine/textures.js?v=20261114060746';
 import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261114060746';
-import { driverCabin, VEHICLES } from './data.js?v=20261114060746';
+import { driverCabin, vehicleWeapon } from './data.js?v=20261114060746';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -259,6 +259,8 @@ function atlas() {
   dial('d_rpm', '#141514', '#e8e6dc', '×100 /min', 30, 0.87);
   dial('d_kmh', '#141514', '#e8e6dc', 'km/h', 80);
   dial('d_oel', '#141514', '#e8e6dc', 'ÖL bar', 10, 0.9);
+  dial('d_rpm6', '#141514', '#e8e6dc', '×100 /min', 60, 0.88);
+  dial('d_kmh12', '#141514', '#e8e6dc', 'km/h', 120);
   dial('d_wasser', '#141514', '#e8e6dc', 'KÜHLW. ×10 °C', 12, 0.85);
   dial('w_rpm', '#e6dcbc', '#1b1712', 'U/min ×100', 35, 0.88);
   dial('w_kmh', '#e6dcbc', '#1b1712', 'km/h', 60);
@@ -271,6 +273,25 @@ function atlas() {
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   ATLAS = { tex: t, rects };
   return ATLAS;
+}
+
+/** Blick durch ein Prisma: Himmel, dunstiger Horizont, Gelände, Randabschattung, grünliche Vergütung. */
+let PRISM = null;
+function prismTex() {
+  if (PRISM) return PRISM;
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+  const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, 64);
+  gr.addColorStop(0, '#7f9fae'); gr.addColorStop(0.46, '#b9c8c4'); gr.addColorStop(0.5, '#7d8466'); gr.addColorStop(0.62, '#4f5638'); gr.addColorStop(1, '#2c2f21');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 64);
+  g.fillStyle = 'rgba(40,46,30,0.6)';
+  for (let x = 0; x < 128; x += 2) { const h = 2 + Math.abs(Math.sin(x * 0.09) * 4 + Math.sin(x * 0.31) * 1.5); g.fillRect(x, 31 - h, 2, h); }
+  const v = g.createRadialGradient(64, 32, 18, 64, 32, 72);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,10,8,0.65)');
+  g.fillStyle = v; g.fillRect(0, 0, 128, 64);
+  PRISM = new THREE.CanvasTexture(c);
+  PRISM.colorSpace = THREE.SRGBColorSpace;
+  return PRISM;
 }
 
 /** Steppnaht-Normalenkarte (Rautenpolster). */
@@ -466,7 +487,7 @@ function cabinMats(S) {
   const A = atlas();
   const paintSrc = S.paint.null;
   const wall = (name, color, rough, metal) => {
-    const m = std(name, { color, roughness: rough, metalness: metal });
+    const m = std(name, { color, roughness: rough, metalness: metal, normalScale: new THREE.Vector2(0.35, 0.35) });
     m.userData.wallFrom = paintSrc; // Normalen/ORM aus dem Lack-Fotoscan (resync)
     return m;
   };
@@ -494,7 +515,7 @@ function cabinMats(S) {
     gauge: std('instrument', { map: A.tex, emissive: 0x6a8a5a, emissiveMap: A.tex, emissiveIntensity: 0.35, roughness: 0.2, metalness: 0.1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
     needle: std('zeiger', { color: 0xfff1d0, emissive: 0xffd28a, emissiveIntensity: 0.8, roughness: 0.4 }),
     // Winkelspiegel-Glas: Tageslicht aus dem Prisma (leicht grünlich vergütet)
-    prism: std('prisma', { color: 0x203036, roughness: 0.05, metalness: 0.6, emissive: 0x9ab8c0, emissiveIntensity: 1.1, envMapIntensity: 1.5 }),
+    prism: std('prisma', { color: 0x203036, roughness: 0.05, metalness: 0.6, emissive: 0xffffff, emissiveMap: prismTex(), emissiveIntensity: 1.0, envMapIntensity: 1.5 }),
     lens: std('linse', { color: 0x071214, roughness: 0.04, metalness: 0.9, emissive: 0x0c2a30, emissiveIntensity: 0.8 }),
     lampRed: std('lampe-rot', { color: 0x3a0806, emissive: 0xff2a14, emissiveIntensity: 3.2, roughness: 0.3 }),
     lampGreen: std('lampe-gruen', { color: 0x06200a, emissive: 0x3cff5a, emissiveIntensity: 2.4, roughness: 0.3 }),
@@ -688,7 +709,9 @@ function buildDriver(root, D, C, det, era, cab) {
   if (det) for (let z = zFB + 0.12; z < zB - 0.05; z += 0.11) B.add(box(xr - xl - 0.1, 0.004, 0.012), C.steel, [(xl + xr) / 2, yF + 0.014, z], [0, 0.35, 0]);
   // Schweißnähte / Rippen an Glacis und Decke
   const gl = Math.hypot(zFT - zFB, yR - yF), ga = Math.atan2(yR - yF, zFB - zFT);
-  for (const fx of det ? [0.25, 0.75] : [0.5]) B.add(box(0.03, 0.025, gl - 0.05), C.metal, [xl + (xr - xl) * fx, (yF + yR) / 2, (zFB + zFT) / 2], [ga - PI, 0, 0]);
+  // Schweißnaht quer über das Glacis (flach auf der Fläche)
+  const gn = new THREE.Vector3(0, -(zFB - zFT), yR - yF).normalize(); // Innen-Normale des Glacis (zeigt nach hinten oben)
+  if (det) B.add(box(xr - xl - 0.06, 0.018, 0.012), C.metal, [(xl + xr) / 2, yF + (yR - yF) * 0.55 + gn.y * 0.004, zFB + (zFT - zFB) * 0.55 + gn.z * 0.004], [ga - PI, 0, 0]);
   for (const zz of [zFT + 0.25, (zFT + zB) / 2 + 0.1]) B.add(box(xr - xl - 0.04, 0.03, 0.035), C.metal, [(xl + xr) / 2, yR - 0.016, zz]);
   if (wk1 || era === 'wk2') {
     // Nieten an den Wänden
@@ -721,7 +744,6 @@ function buildDriver(root, D, C, det, era, cab) {
     L.add(cyl(0.012, 0.012, 0.02, 8), C.red, [0, 0.625, 0.125], [0.2, 0, 0]);
     if (det) L.add(box(0.016, 0.03, 0.014), C.black, [-sx * 0.012, 0.51, 0.085]);
     L.build(p, nm);
-    cab.parts[nm] = p;
   }
   label(B, C, 'lenk', [x0, sy + 0.071, sz - 0.25], [-HP, 0, 0], 0.16);
 
@@ -730,13 +752,13 @@ function buildDriver(root, D, C, det, era, cab) {
   if (!modern) peds.push(['pedal:kupplung', x0 - 0.2, 0.08, 0.08]);
   for (const [nm, px, pw, ph] of peds) {
     const p = part(grp, nm, [px, sy + 0.03, sz - 0.8]);
+    p.userData.pedal = true;
     const L = new MB();
     L.add(box(pw + 0.02, 0.03, 0.05), C.metal, [0, 0, 0]);
     L.rod(C.steel, [0, 0, 0], [0, 0.18, 0.1], 0.012, 6);
     L.add(rbox(pw, 0.02, ph + 0.05, 0.008), C.metal, [0, 0.19, 0.11], [-0.95, 0, 0]);
     L.add(box(pw - 0.01, 0.006, ph + 0.03), C.rubber, [0, 0.2, 0.12], [-0.95, 0, 0]);
     L.build(p, nm);
-    cab.parts[nm] = p;
   }
 
   // ---- Gangwahl: modern Wählhebel in Kulisse rechts, Weltkrieg Schalthebel aus dem Boden links
@@ -749,7 +771,6 @@ function buildDriver(root, D, C, det, era, cab) {
     L.rod(C.steel, [0, 0, 0], [0, 0.12, 0], 0.008, 6);
     L.add(rbox(0.04, 0.05, 0.05, 0.015), C.black, [0, 0.14, 0]);
     L.build(p, 'gang');
-    cab.parts.gang = p;
   } else {
     const p = part(grp, 'gang', [x0 - 0.33, sy + 0.02, sz - 0.12]);
     const L = new MB();
@@ -757,7 +778,6 @@ function buildDriver(root, D, C, det, era, cab) {
     L.rod(C.steel, [0, 0, 0], [0, 0.55, 0.05], 0.012, 6);
     L.add(new THREE.SphereGeometry(0.03, 10, 8), wk1 ? C.wood : C.black, [0, 0.57, 0.05]);
     L.build(p, 'gang');
-    cab.parts.gang = p;
   }
 
   // ---- Instrumententafel (schräg, zum Auge gedreht)
@@ -769,8 +789,7 @@ function buildDriver(root, D, C, det, era, cab) {
   PF.add(rbox(pw, 0.3, 0.05, 0.015), C.black, [0, 0, -0.03]);
   PF.add(box(pw + 0.02, 0.025, 0.08), C.metal, [0, 0.16, -0.02]);
   if (det) for (const sx of [-1, 1]) PF.add(cyl(0.006, 0.006, 0.01, 6), C.steel, [sx * (pw / 2 - 0.02), 0.13, 0.0], [HP, 0, 0]);
-  cab.parts.needles = [];
-  const ga2 = (key, x, y, r, kind, max) => cab.parts.needles.push(gauge(PF, C, key, [x, y, 0], r, wk1 ? C.brass : C.steel, grp, kind, max, det));
+  const ga2 = (key, x, y, r, kind, max) => gauge(PF, C, key, [x, y, 0], r, wk1 ? C.brass : C.steel, grp, kind, max, det);
   if (modern) {
     ga2('d_rpm', -pw / 2 + 0.08, 0.055, 0.055, 'rpm', 3000);
     ga2('d_kmh', -pw / 2 + 0.21, 0.055, 0.055, 'kmh', 80);
@@ -816,14 +835,14 @@ function buildDriver(root, D, C, det, era, cab) {
     const c = [x0 + kk * 0.26, yR - 0.085, zFT + 0.1 + Math.abs(kk) * 0.04];
     const F = new Frame(B, c, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -kk * 0.35, 0)));
     F.add(rbox(0.21, 0.15, 0.14, 0.012), C.metal, [0, 0, 0]);
-    F.add(box(0.17, 0.07, 0.01), C.prism, [0, -0.015, 0.071]);
+    F.add(new THREE.PlaneGeometry(0.17, 0.07), C.prism, [0, -0.015, 0.0705], null, null, true);
     F.add(box(0.19, 0.012, 0.02), C.rubber, [0, 0.026, 0.075]);
     F.add(rbox(0.21, 0.05, 0.06, 0.02), C.pad, [0, 0.07, 0.08]);
     if (det) for (const sx of [-1, 1]) F.add(cyl(0.01, 0.01, 0.02, 6), C.steel, [sx * 0.09, -0.06, 0.07], [HP, 0, 0]);
   }
   if (wk1) {
     // Sehschlitze mit Schiebern (1. WK): Schlitz hell, Schieber darüber
-    B.add(box(0.36, 0.035, 0.02), C.prism, [x0, yR - 0.22, zFT + 0.012]);
+    B.add(new THREE.PlaneGeometry(0.36, 0.035), C.prism, [x0, yR - 0.22, zFT + 0.024], null, null, true);
     B.add(box(0.42, 0.09, 0.03), C.metal, [x0, yR - 0.16, zFT + 0.03]);
   }
 
@@ -896,17 +915,760 @@ function buildDriver(root, D, C, det, era, cab) {
     L.add(cyl(0.005, 0.005, 0.1, 5), C.black, [0, -0.02, 0]);
     L.build(p, 'kopfhoerer');
     p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
-    cab.pend.push(p);
   }
   // Deckenleuchten: modern rot (Gefechtslicht), Weltkrieg Glühlampe
   const lp = [x0 - toC * 0.05, yR - 0.03, z0 + 0.32];
   B.add(rbox(0.14, 0.04, 0.08, 0.01), C.black, lp);
   B.add(box(0.1, 0.012, 0.05), modern ? C.lampRed : C.lampWarm, [lp[0], lp[1] - 0.02, lp[2]]);
   if (det) B.add(box(0.12, 0.004, 0.006), C.steel, [lp[0], lp[1] - 0.028, lp[2]]);
-  cab.lamps.push({ obj: grp, pos: new THREE.Vector3(lp[0], lp[1] - 0.06, lp[2]), col: new THREE.Color(modern ? 0xff3a22 : 0xffc27a).multiplyScalar(modern ? 0.9 : 0.9), where: 'fahrer' });
-  cab.lamps.push({ obj: grp, pos: P.clone().addScaledVector(V3(E).sub(P).normalize(), 0.12), col: new THREE.Color(modern ? 0x48ff70 : 0xffb050).multiplyScalar(modern ? 0.28 : 0.15), where: 'fahrer' });
-  cab.lamps.push({ obj: grp, pos: new THREE.Vector3(x0, yR - 0.1, zFT + 0.2), col: new THREE.Color(0x9ab8c8).multiplyScalar(0.25), where: 'fahrer' }); // Tageslicht durch die Winkelspiegel
+  cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(lp[0], lp[1] - 0.06, lp[2]), col: new THREE.Color(modern ? 0xff3a22 : 0xffc27a).multiplyScalar(modern ? 0.9 : 0.9), where: 'fahrer' });
+  cab.lamps.push({ obj: 'hull', pos: P.clone().addScaledVector(V3(E).sub(P).normalize(), 0.12), col: new THREE.Color(modern ? 0x48ff70 : 0xffb050).multiplyScalar(modern ? 0.28 : 0.15), where: 'fahrer' });
+  cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(x0, yR - 0.1, zFT + 0.2), col: new THREE.Color(0x9ab8c8).multiplyScalar(0.25), where: 'fahrer' }); // Tageslicht durch die Winkelspiegel
   B.build(grp, 'fahrerraum');
   cab.driverEye = E;
   return grp;
+}
+
+/* ===================================================================== Turm-/Kampfraum (Gruppenraum des Innenraums) */
+
+/** Ankerpunkte der Plätze im Gruppenraum des Innenraums (KP-1-Aufbau, um shift/scale verschoben). */
+function anchorsOf(D) {
+  const I = D.interior || {}, sh = I.shift || [0, 0, 0], sc = I.scale || 1;
+  const toG = (p) => [(p[0] - sh[0]) / sc, (p[1] - sh[1]) / sc, (p[2] - sh[2]) / sc];
+  const innen = (pred) => { const s = D.seats.find(pred); const v = s && (s.views || []).find((x) => x.interior && x.space === 'turret'); return v ? toG(v.pos) : null; };
+  const hatch = (id) => { const h = D.hatches && D.hatches[id]; return h && h.space === 'turret' ? { pos: toG(h.pos), r: h.r / sc } : null; };
+  const basket = !D.turretLimits && I.basket !== false;
+  const hb = D.hullBox, tp = D.turretPivot, le = I.loaderEye || [0.55, 0.62, 0.35];
+  const yb = basket ? (Math.max(hb[1] - hb[4] + 0.12 - tp[1], sh[1] + sc * le[1] - 1.68) - sh[1]) / sc : 0.07;
+  const ringR = (D.ringR || D.turretBox[3] * 0.8) / sc;
+  return {
+    I, sh, sc, toG, basket, yb, ringR, rc: [-sh[0] / sc, 0.06, -sh[2] / sc],
+    gun: innen((s) => s.mount === 'gun'), cmd: innen((s) => s.id === 'commander'), load: le,
+    hatchC: hatch('commander'), hatchL: hatch('loader'),
+    /** Gruppenraum → Rohrraum (Rohrerhöhung 0) */
+    gunLocal: (p) => [p[0] * sc + sh[0] - D.gunPivot[0], p[1] * sc + sh[1] - D.gunPivot[1], p[2] * sc + sh[2] - D.gunPivot[2]],
+  };
+}
+
+function buildTurret(D, C, det, era, cab, A) {
+  const grp = new THREE.Group();
+  grp.name = 'cabin:turm';
+  const gunG = new THREE.Group();
+  gunG.name = 'cabin:rohr';
+  const B = new MB(), GB = new MB();
+  const modern = era === 'modern', wk1 = era === 'wk1', sc = A.sc;
+  const W = C.wall[era];
+  const tb = (D.interior && D.interior.breech) || [0, 0.42, -0.55];
+  const bs = sc * ((D.interior && D.interior.breechScale) || 1);
+  const breechGun = A.gunLocal(tb);
+
+  // ---------------------------------------------------------------- Richtschütze
+  const g = A.gun;
+  if (g) {
+    if (modern) {
+      // Hauptzieloptik (turmfest) mit Okular, Säule zur Decke, Stirnpolster
+      const O = [g[0] - 0.01, g[1] - 0.01, g[2] - 0.3];
+      const F = new Frame(B, O, aim(O, g));
+      eyepiece(F, C, det);
+      F.add(box(0.12, Math.max(0.05, 0.74 - O[1]), 0.14), C.metal, [0, (0.74 - O[1]) / 2 + 0.1, -0.33]);
+      flabel(F, C, 'optik', [0.0815, 0.02, -0.25], 0.16, [0, HP, 0]);
+      // Steuergriff (eigene Gruppe: kippt mit dem Richten)
+      const gp = F.w([0, -0.3, -0.02]);
+      const p = part(grp, 'griff', gp, F.q);
+      const L = new MB();
+      L.rod(C.metal, [0, 0, -0.04], [0, -0.3, -0.12], 0.025, 8);
+      L.add(rbox(0.3, 0.05, 0.07, 0.015), C.metal, [0, 0, -0.03]);
+      for (const sx of [-1, 1]) {
+        L.add(cyl(0.022, 0.02, 0.13, 12), C.rubber, [sx * 0.15, -0.035, 0], [0.25, 0, sx * 0.15]);
+        L.add(box(0.016, 0.03, 0.02), C.red, [sx * 0.15, 0.005, 0.03]);
+        L.add(cyl(0.008, 0.008, 0.012, 8), C.black, [sx * 0.15, 0.03, -0.005]);
+        L.add(box(0.04, 0.012, 0.03), C.black, [sx * 0.15, -0.09, 0.03], [0.3, 0, 0]); // Handballenschalter
+      }
+      L.build(part(p, 'griff:innen'), 'griff');
+      cab.partNames.push('griff');
+      // Feuerleitrechner-Bildschirm mit Tasten, Munitionswahl darunter
+      const SP = [g[0] + 0.27, g[1] - 0.12, g[2] - 0.24];
+      const SF = new Frame(B, SP, aim(SP, g));
+      SF.add(rbox(0.23, 0.18, 0.06, 0.012), C.black, [0, 0, -0.032]);
+      SF.add(new THREE.PlaneGeometry(0.176, 0.11), screen('fcs', 256, 160).mat, [0, 0.01, 0.001], null, null, true);
+      for (let i = 0; i < 4; i++) for (const sx of [-1, 1]) SF.add(box(0.012, 0.016, 0.01), C.rubber, [sx * 0.103, 0.05 - i * 0.03, 0.002]);
+      for (let i = 0; i < 5; i++) SF.add(box(0.022, 0.01, 0.01), C.rubber, [-0.07 + i * 0.035, -0.072, 0.002]);
+      SF.add(rbox(0.16, 0.06, 0.03, 0.008), C.black, [0, -0.125, -0.01]);
+      flabel(SF, C, 'tasten', [0, -0.125, 0.0065], 0.15);
+      cab.screens.fcs = true;
+      ['mbt_ap', 'mbt_he', 'mg'].forEach((k, i) => {
+        const bp = part(grp, 'btn:' + k, SF.w([-0.053 + i * 0.053, -0.12, 0.01]), SF.q);
+        const bm = new THREE.Mesh(box(0.026, 0.014, 0.008), C.lampOff);
+        bm.name = 'btn'; bp.add(bm);
+        cab.partNames.push('btn:' + k);
+      });
+      cab.lamps.push({ obj: 'tur', pos: V3(SF.w([0, 0.01, 0.12])), col: new THREE.Color(0x40ff60).multiplyScalar(0.22), where: 'turm' });
+      // Rechnerkasten an der Turmwand (Rippen, Stecker)
+      const wx = Math.min(1.16, g[0] + 0.5);
+      B.add(rbox(0.12, 0.26, 0.38, 0.015), C.olive, [wx, g[1] - 0.32, g[2] - 0.12]);
+      if (det) for (let i = 0; i < 6; i++) B.add(box(0.012, 0.22, 0.012), C.metal, [wx - 0.066, g[1] - 0.32, g[2] - 0.27 + i * 0.06]);
+      for (let i = 0; i < 3; i++) B.add(cyl(0.018, 0.018, 0.04, 10), C.metal, [wx - 0.02, g[1] - 0.17, g[2] - 0.22 + i * 0.09]);
+      label(B, C, 'richt', [wx - 0.0615, g[1] - 0.22, g[2] - 0.12], [0, -HP, 0], 0.15);
+      harness(B, C, [[wx - 0.02, g[1] - 0.15, g[2] - 0.13], [wx - 0.05, 0.7, g[2] - 0.1], [wx - 0.04, 0.71, g[2] + 0.5]], det);
+      // Hilfszielfernrohr (am Rohr, nickt mit)
+      const ax = Math.max(0.33, g[0] - 0.26);
+      const a0 = A.gunLocal([ax, g[1] - 0.06, g[2] - 0.3]), a1 = A.gunLocal([ax, g[1] - 0.06, -1.1]);
+      GB.rod(C.metal, a0, a1, 0.03 * sc, 12);
+      GB.add(cyl(0.04 * sc, 0.035 * sc, 0.05 * sc, 12, true), C.rubber, [a0[0], a0[1], a0[2] + 0.02 * sc], [HP, 0, 0]);
+      GB.add(box(0.05 * sc, 0.07 * sc, 0.1 * sc), C.metal, [a0[0], a0[1] - 0.05 * sc, (a0[2] + a1[2]) / 2]);
+    } else {
+      // Zielfernrohr am Rohr (nickt mit), Augenmuschel, Stirnpolster
+      const O = [g[0] - 0.02, g[1] - 0.02, g[2] - 0.28];
+      const Og = A.gunLocal(O), Eg = A.gunLocal(g);
+      const F = new Frame(GB, Og, aim(Og, Eg));
+      eyepiece(F, C, det, { body: [0.09 * sc, 0.1 * sc, 0.12], brass: wk1 });
+      F.add(cyl(0.04 * sc, 0.04 * sc, 0.7 * sc, 12), wk1 ? C.brass : C.metal, [0, 0.01, -0.5 * sc], [HP, 0, 0]);
+      F.add(box(0.05, 0.05, 0.25 * sc), C.metal, [-0.03, -0.05, -0.35 * sc]);
+      if (era === 'wk2') {
+        // Turmrichtungsanzeiger (Uhr) vor dem Richtschützen
+        const AP = [g[0] - 0.22, g[1] - 0.2, g[2] - 0.32];
+        const AF = new Frame(B, AP, aim(AP, g));
+        AF.add(rbox(0.15, 0.15, 0.05, 0.015), C.black, [0, 0, -0.03]);
+        gauge(AF, C, 'w_az', [0, 0, 0], 0.06, C.steel, grp, 'az', 1, det);
+      }
+      // Fußabzüge
+      for (const [i, m] of [[0, C.metal], [1, C.red]]) B.add(rbox(0.09, 0.02, 0.13, 0.008), m, [g[0] - 0.08 + i * 0.13, A.yb + 0.06, g[2] - 0.35], [-0.35, 0, 0]);
+    }
+    // Handräder: Höhe (rechts, Achse quer), Seite (vorn links, Achse zum Schützen)
+    const R = modern ? 0.075 : wk1 ? 0.13 : 0.1;
+    const mat = wk1 ? C.metal : modern ? C.black : C.metal;
+    const ep = [g[0] + 0.22 + R * 0.4, g[1] - 0.34, g[2] - 0.2];
+    handwheel(grp, 'rad:hoehe', ep, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, HP, 0)), R, C, mat, det);
+    B.add(rbox(0.08, 0.1, 0.1, 0.01), C.metal, [ep[0] + 0.07, ep[1], ep[2]]);
+    const tp = [g[0] - 0.18, g[1] - 0.38, g[2] - 0.3];
+    handwheel(grp, 'rad:seite', tp, aim(tp, [g[0] - 0.1, g[1] - 0.2, g[2]]), R * 1.1, C, mat, det);
+    B.add(rbox(0.14, 0.12, 0.12, 0.015), C.metal, [tp[0], tp[1], tp[2] - 0.1]);
+    B.rod(C.metal, [tp[0], tp[1] - 0.06, tp[2] - 0.1], [tp[0], A.yb + 0.1, tp[2] - 0.1], 0.03);
+    cab.partNames.push('rad:hoehe', 'rad:seite');
+    label(B, C, wk1 || era === 'wk2' ? 'wk_achtung' : 'turmsperre', [tp[0], tp[1] + 0.1, tp[2] - 0.035], aim([0, 0, 0], [0, 0, 1]), 0.13);
+  }
+
+  // ---------------------------------------------------------------- Kommandant
+  const c = A.cmd, H = A.hatchC;
+  if (c && !wk1) {
+    if (H) {
+      // Kuppel: Laufring, Polsterring, Winkelspiegel rundum, Lukenunterseite mit Verriegelung und Ausgleichsfeder
+      const [hx, hy, hz] = H.pos, r = H.r;
+      const yr = Math.min(hy, 0.75) - 0.03;
+      B.add(tor(r + 0.05, 0.032, 6, det ? 32 : 16), C.steel, [hx, yr, hz], [HP, 0, 0]);
+      B.add(tor(r + 0.1, 0.04, 6, det ? 32 : 16), C.pad, [hx, yr - 0.06, hz], [HP, 0, 0]);
+      const n = modern ? 6 : 7;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * PI * 2 + 0.3;
+        const p = [hx + Math.sin(a) * (r + 0.02), yr - 0.1, hz + Math.cos(a) * (r + 0.02)];
+        const F = new Frame(B, p, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, a + PI, 0)));
+        F.add(rbox(0.13, 0.1, 0.08, 0.01), C.metal);
+        F.add(new THREE.PlaneGeometry(0.11, 0.05), C.prism, [0, 0.005, 0.0405], null, null, true);
+        F.add(box(0.12, 0.01, 0.012), C.rubber, [0, 0.033, 0.042]);
+      }
+      B.rod(C.steel, [hx - r * 0.7, yr + 0.02, hz], [hx + r * 0.7, yr + 0.02, hz], 0.012);
+      B.add(cyl(0.025, 0.025, 0.12, 10), C.black, [hx + r * 0.5, yr - 0.02, hz + r * 0.3], [0, 0, HP]);
+      B.rod(C.steel, [hx - r * 0.85, yr - 0.03, hz - 0.1], [hx - r * 0.85, yr - 0.03, hz + 0.1], 0.015);
+      label(B, C, 'kopf', [hx, yr - 0.155, hz + r + 0.13], aim([0, 0, 0], [0, 0, -1]), 0.16);
+    }
+    if (modern) {
+      const O = [c[0] + 0.05, c[1] - 0.02, c[2] - 0.29];
+      const F = new Frame(B, O, aim(O, c));
+      eyepiece(F, C, det);
+      F.add(box(0.12, Math.max(0.05, 0.74 - O[1]), 0.14), C.metal, [0, (0.74 - O[1]) / 2 + 0.1, -0.33]);
+      // Lagebildschirm
+      const DP = [c[0] - 0.24, c[1] - 0.16, c[2] - 0.22];
+      const DF = new Frame(B, DP, aim(DP, c));
+      DF.add(rbox(0.25, 0.2, 0.06, 0.012), C.black, [0, 0, -0.032]);
+      DF.add(new THREE.PlaneGeometry(0.19, 0.143), screen('cmd', 256, 192).mat, [0, 0.005, 0.001], null, null, true);
+      for (let i = 0; i < 5; i++) DF.add(box(0.016, 0.012, 0.01), C.rubber, [0.112, 0.06 - i * 0.03, 0.002]);
+      DF.rod(C.steel, [0, -0.1, -0.04], [0, -0.3, -0.12], 0.02);
+      cab.screens.cmd = true;
+      cab.lamps.push({ obj: 'tur', pos: V3(DF.w([0, 0, 0.12])), col: new THREE.Color(0x60ff80).multiplyScalar(0.16), where: 'turm' });
+    }
+    // Funkgeräte an der linken Turmwand (modern: zwei Geräte im Gestell; 2. WK: Empfänger zusätzlich zum Röhrengerät)
+    const rx = -1.12, rz = modern ? 0.95 : 0.3;
+    if (modern) {
+      for (const [i, key] of [[0, 'radio1'], [1, 'radio2']]) {
+        const y = 0.33 + i * 0.16;
+        B.add(rbox(0.2, 0.14, 0.34, 0.01), C.olive, [rx, y, rz]);
+        label(B, C, key, [rx + 0.1015, y, rz], [0, HP, 0], 0.3);
+        for (const [dz, dy] of [[0.07, 0.028], [0.125, 0.028], [0.07, -0.032], [0.125, -0.032]]) B.add(cyl(0.014, 0.014, 0.018, 10), C.black, [rx + 0.11, y + dy, rz + dz], [0, 0, HP]);
+      }
+      for (const sz of [-1, 1]) B.add(box(0.22, 0.36, 0.02), C.metal, [rx, 0.41, rz + sz * 0.18]);
+      label(B, C, 'funk', [rx + 0.101, 0.6, rz], [0, HP, 0], 0.22);
+      harness(B, C, [[rx, 0.48, rz - 0.15], [rx + 0.02, 0.7, rz - 0.3], [rx + 0.05, 0.72, rz - 0.8]], det);
+    } else {
+      B.add(rbox(0.18, 0.2, 0.3, 0.01), C.metal, [-1.1, 0.58, -0.25]);
+      label(B, C, 'wk_funk', [-1.0085, 0.58, -0.25], [0, HP, 0], 0.26);
+      for (let i = 0; i < 2; i++) B.add(cyl(0.025, 0.025, 0.02, 10), C.black, [-1.0, 0.52, -0.33 + i * 0.16], [0, 0, HP]);
+    }
+    // Hörer am Spiralkabel (pendelt) und Kopfhörer am Haken; Bordsprechkasten; Kartentasche
+    const hp = [rx + 0.14, modern ? 0.62 : 0.66, rz - 0.22];
+    {
+      const p = part(grp, 'pendel:hoerer', hp);
+      const L = new MB();
+      L.add(rbox(0.05, 0.2, 0.04, 0.015), C.black, [0, -0.13, 0]);
+      for (const sy of [-1, 1]) L.add(cyl(0.03, 0.03, 0.035, 10), C.black, [0, -0.13 + sy * 0.09, 0.01], [HP, 0, 0]);
+      if (det) {
+        // Spiralkabel zum Gerät (Wendel um eine gebogene Linie)
+        const path = new THREE.CatmullRomCurve3([new THREE.Vector3(0, -0.04, 0), new THREE.Vector3(-0.05, -0.2, 0.05), new THREE.Vector3(-0.12, -0.15, 0.12)]);
+        const hel = [];
+        for (let i = 0; i <= 120; i++) { const t = i / 120, P0 = path.getPointAt(t), a = t * PI * 2 * 14; hel.push(new THREE.Vector3(P0.x + Math.cos(a) * 0.011, P0.y + Math.sin(a) * 0.011, P0.z)); }
+        L.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hel), 240, 0.0035, 4, false), C.black);
+      }
+      L.build(p, 'hoerer');
+      p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
+      cab.partNames.push('pendel:hoerer');
+    }
+    B.add(box(0.03, 0.03, 0.05), C.steel, [hp[0] - 0.01, hp[1] + 0.01, hp[2]]);
+    {
+      const p = part(grp, 'pendel:kopfhoerer', [rx + 0.08, 0.7, c[2] - 0.15]);
+      const L = new MB();
+      L.add(tor(0.075, 0.009, 5, 14, PI), C.black, [0, -0.08, 0], [0, HP, 0]);
+      for (const sz of [-1, 1]) L.add(cyl(0.04, 0.04, 0.03, 12), C.black, [0, -0.09, sz * 0.075], [HP, 0, 0]);
+      L.build(p, 'kopfhoerer');
+      p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
+      cab.partNames.push('pendel:kopfhoerer');
+    }
+    B.add(rbox(0.06, 0.13, 0.13, 0.01), C.black, [-1.15, 0.3, c[2] - 0.2]);
+    label(B, C, 'bsakasten', [-1.1185, 0.3, c[2] - 0.2], [0, HP, 0], 0.12);
+    B.add(rbox(0.04, 0.3, 0.36, 0.015), C.canvas, [-1.17, 0.42, c[2] - 0.62]);
+    label(B, C, 'typ', [-1.149, 0.66, c[2] - 0.62], [0, HP, 0], 0.2);
+  }
+
+  // ---------------------------------------------------------------- Ladeschütze, Koaxial-MG
+  const l = A.load;
+  if (!wk1) {
+    // Sicherungsschalter mit Leuchte an der rechten Wand
+    const sp = [1.17, l[1] - 0.12, l[2] - 0.45];
+    B.add(rbox(0.06, 0.12, 0.16, 0.01), C.black, sp);
+    label(B, C, 'sicher', [sp[0] - 0.0315, sp[1] + 0.1, sp[2]], [0, -HP, 0], 0.14);
+    B.rod(C.steel, [sp[0] - 0.03, sp[1] - 0.02, sp[2] + 0.03], [sp[0] - 0.09, sp[1] + 0.02, sp[2] + 0.03], 0.008);
+    const lp = part(grp, 'lampe:sicher', [sp[0] - 0.032, sp[1] + 0.025, sp[2] - 0.04]);
+    const lm = new THREE.Mesh(cyl(0.014, 0.014, 0.012, 10).rotateZ(HP), C.lampRed); lm.name = 'lampe'; lp.add(lm);
+    cab.partNames.push('lampe:sicher');
+  }
+  if (D.coax && Math.abs(D.coax[0]) >= 0.15 && !wk1) {
+    const cx = D.coax[0], cy = D.coax[1];
+    const zf = (-1.15 * sc + A.sh[2]) - D.gunPivot[2] + 0.04, len = 0.62 * sc;
+    const zc = zf + len / 2;
+    GB.add(rbox(0.1 * sc, 0.13 * sc, len, 0.01), C.black, [cx, cy, zc]);
+    GB.add(box(0.11 * sc, 0.03 * sc, len * 0.45), C.metal, [cx, cy + 0.075 * sc, zc + len * 0.12]);
+    GB.add(cyl(0.022 * sc, 0.022 * sc, 0.2 * sc, 10), C.metal, [cx, cy, zf - 0.05], [HP, 0, 0]);
+    GB.add(rbox(0.035 * sc, 0.035 * sc, 0.12 * sc, 0.008), C.metal, [cx + 0.07 * sc, cy, zc + len * 0.25]); // Spannschieber
+    // Gurtkasten + Zuführung, Hülsenschacht nach unten
+    const ab = [cx + Math.sign(cx) * 0.17 * sc, cy - 0.06 * sc, zc + 0.05 * sc];
+    GB.add(rbox(0.14 * sc, 0.2 * sc, 0.3 * sc, 0.01), C.olive, ab);
+    GB.add(box(0.15 * sc, 0.02 * sc, 0.31 * sc), C.metal, [ab[0], ab[1] + 0.105 * sc, ab[2]]);
+    GB.tube(C.metal, [[ab[0] - Math.sign(cx) * 0.05 * sc, ab[1] + 0.1 * sc, ab[2]], [cx + Math.sign(cx) * 0.07 * sc, cy + 0.06 * sc, zc], [cx + Math.sign(cx) * 0.04 * sc, cy + 0.03 * sc, zc - 0.05 * sc]], 0.02 * sc, 6, 12);
+    GB.add(box(0.06 * sc, 0.25 * sc, 0.08 * sc), C.metal, [cx, cy - 0.18 * sc, zc + 0.05 * sc]);
+  }
+  // Rücklaufschutz: Warnschilder beidseitig (am Rohr, laufen mit zurück)
+  const lk = modern ? 'ruecklauf' : 'wk_achtung';
+  label(GB, C, lk, [breechGun[0] + 0.355 * bs, breechGun[1] - 0.04 * bs, breechGun[2] + 0.5 * bs], [0, HP, 0], 0.2 * bs);
+  label(GB, C, lk, [breechGun[0] - 0.355 * bs, breechGun[1] - 0.04 * bs, breechGun[2] + 0.5 * bs], [0, -HP, 0], 0.2 * bs);
+  if (modern) {
+    // Hülsenfangsack unter dem Verschluss
+    const hb = [breechGun[0], breechGun[1] - 0.48 * bs, breechGun[2] + 0.75 * bs];
+    GB.add(rbox(0.42 * bs, 0.26 * bs, 0.32 * bs, 0.05 * bs, 2), C.canvas, hb);
+    GB.add(box(0.44 * bs, 0.02 * bs, 0.34 * bs), C.steel, [hb[0], hb[1] + 0.13 * bs, hb[2]]);
+    label(GB, C, 'huelse', [hb[0], hb[1], hb[2] + 0.161 * bs], null, 0.16 * bs);
+  }
+
+  // ---------------------------------------------------------------- Allgemein: Kabel, Leitungen, Lüfter, Polster, Schalter, Schilder
+  if (det) {
+    harness(B, C, [[0.98, 0.71, -0.85], [1.02, 0.71, 0.0], [0.98, 0.71, 1.2], [0.6, 0.71, 1.7]], det);
+    harness(B, C, [[-0.98, 0.71, -0.85], [-1.02, 0.71, 0.1], [-0.98, 0.71, 1.25]], det, 2);
+    harness(B, C, [[-0.3, 0.72, -1.05], [0, 0.72, -1.08], [0.35, 0.72, -1.05]], det, 2);
+  } else B.tube(C.black, [[1.0, 0.71, -0.85], [1.0, 0.71, 1.2]], 0.014, 4, 2);
+  if (modern) {
+    // Hydraulikleitungen rechts unten (Turmrichtantrieb) mit Schild
+    for (const dy of [0, 0.045]) B.tube(C.steel, [[1.18, 0.16 + dy, -0.85], [1.19, 0.16 + dy, -0.3], [1.15, 0.12 + dy, 0.2], [0.9, 0.08 + dy, 0.5]], 0.011, 6, 6);
+    label(B, C, 'hydraulik', [1.2, 0.3, -0.55], [0, -HP, 0], 0.17);
+    // Schalterfeld über dem Richtschützen
+    B.add(rbox(0.04, 0.09, 0.3, 0.008), C.black, [1.2, 0.6, -0.55]);
+    label(B, C, 'schalter', [1.179, 0.6, -0.55], [0, -HP, 0], 0.28);
+    for (let i = 0; i < 5; i++) B.add(cyl(0.003, 0.002, 0.03, 5), C.steel, [1.165, 0.6 + (i % 2 ? -0.01 : 0.01), -0.55 + 0.11 - i * 0.055], [0, 0, HP + (i % 2 ? 0.5 : -0.5)]);
+  }
+  if (!wk1) {
+    // Lüfter in der Turmdecke (dreht), Gitter, Schild
+    const fp = [0.35, 0.7, 0.75];
+    B.add(cyl(0.13, 0.13, 0.08, det ? 24 : 12, true), C.metal, fp);
+    for (const rr of det ? [0.04, 0.08, 0.12] : [0.12]) B.add(tor(rr, 0.004, 4, det ? 20 : 10), C.steel, [fp[0], fp[1] - 0.042, fp[2]], [HP, 0, 0]);
+    const fan = part(grp, 'luefter', [fp[0], fp[1] - 0.01, fp[2]]);
+    const L = new MB();
+    for (let i = 0; i < 5; i++) L.add(box(0.11, 0.004, 0.035), C.black, [Math.cos(i / 5 * PI * 2) * 0.06, 0, Math.sin(i / 5 * PI * 2) * 0.06], [0.4, -i / 5 * PI * 2, 0]);
+    L.add(cyl(0.025, 0.025, 0.03, 10), C.black);
+    L.build(fan, 'luefter');
+    cab.partNames.push('luefter');
+    label(B, C, 'luefter', [fp[0] + 0.22, 0.735, fp[2]], [HP, 0, 0], 0.14);
+    // Stoßpolster an der Decke über den Köpfen
+    for (const p of [g, l, c].filter(Boolean)) B.add(rbox(0.3, 0.04, 0.26, 0.018), C.pad, [p[0], 0.725, p[2] + 0.05]);
+  } else {
+    // 1. WK: Holzbank, Seilschlaufen, Kettenzug am Dach, Werkzeug am Haken
+    B.add(rbox(1.2, 0.05, 0.3, 0.01), C.wood, [0.2, 0.25, 0.85]);
+    for (const x of [-0.3, 0.7]) B.add(box(0.05, 0.2, 0.25), C.wood, [x, 0.13, 0.85]);
+    for (const x of [-0.6, 0.0, 0.6]) B.add(tor(0.05, 0.008, 4, 10), C.canvas, [x, 0.68, -0.2], [0, 0, 0]);
+    B.rod(C.metal, [0.9, 0.5, -0.3], [0.9, 0.2, -0.3], 0.012);
+    B.add(box(0.05, 0.16, 0.02), C.metal, [0.9, 0.12, -0.3]);
+  }
+  // Leuchten (Gehäuse) – Lichtquellen für den Innenraum-Shader
+  const lampSpots = wk1 ? [] : [[-0.55, 0.735, -0.3], [0.75, 0.735, 0.95]];
+  for (const lp of lampSpots) {
+    B.add(rbox(0.14, 0.04, 0.08, 0.01), C.black, lp);
+    B.add(box(0.1, 0.012, 0.05), modern ? C.lampRed : C.lampWarm, [lp[0], lp[1] - 0.02, lp[2]]);
+  }
+  const LC = modern ? [0xc8d4ff, 0xff3320, 0xff3320] : era === 'wk2' ? [0xffc27a, 0xffb060, 0xffb060] : [0xff9a40, 0xff9a40, 0xff9a40];
+  const LI = modern ? [0.38, 0.55, 0.5] : era === 'wk2' ? [0.7, 0.5, 0.45] : [0.9, 0.0, 0.0];
+  const L0 = wk1 ? [0.2, 0.5, 0.95] : [0.15, 0.68, 0.1];
+  cab.lamps.push({ obj: 'tur', pos: V3(L0), col: new THREE.Color(LC[0]).multiplyScalar(LI[0]), where: 'turm', flicker: wk1 });
+  if (!wk1) for (let i = 0; i < 2; i++) cab.lamps.push({ obj: 'tur', pos: V3([lampSpots[i][0], 0.68, lampSpots[i][2]]), col: new THREE.Color(LC[i + 1]).multiplyScalar(LI[i + 1]), where: 'turm' });
+  if (A.basket) cab.lamps.push({ obj: 'tur', pos: V3([A.rc[0], A.yb + 0.55, A.rc[2]]), col: new THREE.Color(modern ? 0xffe0c0 : 0xffc27a).multiplyScalar(0.3), where: 'turm' });
+  if (wk1) cab.lamps.push({ obj: 'tur', pos: V3([-0.6, 0.55, -0.6]), col: new THREE.Color(0xffa860).multiplyScalar(0.25), where: 'turm' });
+  // Schild „Geprüft“ am Feuerlöscher des Grund-Innenraums, Typenschild
+  const rackRight = A.I.rack && A.I.rack[0] > 0.5;
+  const fx = rackRight ? -1.1 : 1.1, fz = rackRight ? 0.3 : 0.95;
+  label(B, C, 'loescher', [fx + (fx > 0 ? 0.1 : -0.1), 0.62, fz], [0, fx > 0 ? -HP : HP, 0], 0.15);
+  label(B, C, 'geprueft', [fx + (fx > 0 ? 0.1 : -0.1), 0.56, fz], [0, fx > 0 ? -HP : HP, 0], 0.09);
+  if (A.basket) {
+    const [rx2, , rz2] = A.rc;
+    label(B, C, 'nicht', [rx2, A.yb + 0.2, rz2 - 0.165], [0, PI, 0], 0.12);
+  }
+  B.build(grp, 'turmraum');
+  GB.build(gunG, 'rohrraum');
+  return { tur: grp, gun: gunG };
+}
+
+/* ===================================================================== Vorlage, Anbau, Takt */
+
+const TPL = new Map();
+function eraOf(D) { return D.era === 'wk2' ? 'wk2' : D.era === 'wk1' ? 'wk1' : 'modern'; }
+/** Hülse je Panzer: modern nur der Hülsenboden (verbrennbare Hülse), sonst Messinghülse (Länge, Radius in m). */
+const CASE = { mbt: null, wk2: [0.36, 0.042], wk2h: [0.57, 0.052], wk1: [0.3, 0.034], wk1l: [0.2, 0.024] };
+
+function buildTemplate(D, C, det) {
+  const era = eraOf(D);
+  const info = { lamps: [], screens: {}, partNames: [], driverEye: null };
+  const A = anchorsOf(D);
+  const t = buildTurret(D, C, det, era, info, A);
+  const hull = new THREE.Group();
+  hull.name = 'cabin:wanne';
+  buildDriver(hull, D, C, det, era, info);
+  for (const gg of [t.tur, t.gun, hull]) gg.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  return { tur: t.tur, gun: t.gun, hull, info, A, era };
+}
+
+/** Hülsen-/Dampf-Pool je Anbau (eigene Netze; Geometrie geteilt je Typ). */
+const CASE_GEO = new Map();
+function caseGeom(D) {
+  if (CASE_GEO.has(D.id)) return CASE_GEO.get(D.id);
+  const spec = CASE[D.id] || null, sc = (D.interior && D.interior.scale) || 1;
+  let g;
+  if (!spec) { // Hülsenboden 120 mm
+    const parts = [cyl(0.068, 0.068, 0.012, 20), cyl(0.06, 0.062, 0.07, 20, true)];
+    parts[0].translate(0, -0.035, 0);
+    g = mergeGeometries(parts.map((x) => x.toNonIndexed()), false);
+  } else {
+    const [len, r] = spec;
+    const parts = [cyl(r * 1.12, r * 1.12, 0.01, 16), cyl(r, r * 1.04, len * 0.7, 16, true), cyl(r * 0.78, r, len * 0.1, 16, true), cyl(r * 0.76, r * 0.78, len * 0.2, 16, true)];
+    parts[0].translate(0, -len / 2, 0); parts[1].translate(0, -len / 2 + len * 0.35, 0); parts[2].translate(0, len * 0.25, 0); parts[3].translate(0, len * 0.4, 0);
+    g = mergeGeometries(parts.map((x) => x.toNonIndexed()), false);
+    g.scale(sc, sc, sc);
+  }
+  CASE_GEO.set(D.id, g);
+  return g;
+}
+
+/**
+ * Detail-Innenraum an ein Fahrzeugmodell (models.js createVehicleModel) hängen – erst beim ersten Öffnen einer
+ * Innensicht. → cab | null
+ */
+export function attachCabin(model, D, S, quality = 'high') {
+  if (!model || !model.interior || !D || D.drive !== 'tracked') return null;
+  const C = cabinMats(S);
+  resyncMats();
+  const det = quality === 'low' ? 0 : quality === 'medium' ? 1 : 2;
+  const key = `${D.id}:${det}`;
+  let tpl = TPL.get(key);
+  if (!tpl) { tpl = buildTemplate(D, C, det); TPL.set(key, tpl); }
+  const tur = tpl.tur.clone(true), gun = tpl.gun.clone(true), hull = tpl.hull.clone(true);
+  model.interior.add(tur);
+  if (model.gun) model.gun.add(gun);
+  model.root.add(hull);
+  const cab = {
+    D, C, det, era: tpl.era, A: tpl.A, tur, gun, hull, model, info: tpl.info,
+    needles: [], pend: [], pedals: [], parts: {}, btn: {}, lamps: tpl.info.lamps.map((l) => ({ ...l, w: new THREE.Vector3() })),
+    t: 0, recoilPrev: 0, hitPrev: null, flick: 0, ejectAt: -1, casings: [], smoke: [], vel: null, acc: new THREE.Vector3(), yawPrev: null, pitchPrev: null,
+    screenT: 0,
+  };
+  for (const gg of [tur, gun, hull]) gg.traverse((o) => {
+    if (!o.name || o.isMesh) return;
+    if (o.name.startsWith('zeiger:')) cab.needles.push(o);
+    else if (o.name.startsWith('pendel:')) cab.pend.push(o);
+    else if (o.name.startsWith('pedal:')) cab.pedals.push(o);
+    else if (o.name.startsWith('btn:')) cab.btn[o.name.slice(4)] = o.children[0];
+    else if (o.name.startsWith('hebel:') || o.name.startsWith('rad:') || ['gang', 'griff', 'luefter', 'lampe:sicher'].includes(o.name)) cab.parts[o.name] = o;
+  });
+  for (const p of cab.pend) p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
+  // Munitionsbunker-Tür: Warnschild fährt mit
+  const door = model.interior.getObjectByName('rackDoor');
+  if (door) {
+    const B = new MB();
+    label(B, C, 'tuer', [0.25, 0.12, -0.02], [0, PI, 0], 0.22);
+    label(B, C, 'munition', [-0.25, 0.12, -0.02], [0, PI, 0], 0.22);
+    B.build(door, 'tuerschild');
+  } else {
+    const rg = model.interior.getObjectByName('rackGrp');
+    if (rg) { const B = new MB(); label(B, C, cab.era === 'modern' ? 'munition' : 'wk_munition', [0, 0.36, -0.4], [0, PI, 0], 0.22); B.build(rg, 'gestellschild'); }
+  }
+  // Hülsen (6) und Pulverdampf (3)
+  const cg = caseGeom(D), cm = CASE[D.id] ? C.casing : C.stub;
+  for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(cg, cm); m.visible = false; m.name = 'huelse'; tur.add(m); cab.casings.push({ m, v: new THREE.Vector3(), w: new THREE.Vector3(), rest: true, t: 0 }); }
+  for (let i = 0; i < 3; i++) { const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: C.smoke.map, color: 0xa29a8e, transparent: true, opacity: 0, depthWrite: false })); sm.visible = false; sm.name = 'dampf'; tur.add(sm); cab.smoke.push({ s: sm, t: 9 }); }
+  setCabinVisible(cab, false);
+  return cab;
+}
+
+/** Sichtbarkeit (mit dem Innenraum) + Materialien des Grund-Innenraums auf die Innenlicht-Klone legen. */
+export function setCabinVisible(cab, on) {
+  if (!cab) return;
+  cab.tur.visible = cab.gun.visible = cab.hull.visible = !!on;
+  if (!on) { CAB_U.uCabSun.value = 0.12; return; }
+  resyncMats();
+  const R = CM && CM.remap, M = cab.model;
+  if (!R) return;
+  const swap = (o) => { if (o.isMesh && R.has(o.material)) o.material = R.get(o.material); };
+  for (const gg of [M.interior, M.hullInterior, M.breech]) if (gg) gg.traverse(swap);
+}
+
+const _w = new THREE.Vector3(), _l = new THREE.Vector3(), _iq = new THREE.Quaternion();
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/** Takt (nur sichtbar, nur lokaler Insasse): Hebel/Pedale/Zeiger, Handräder, Bildschirme, Lampen, Hülsen, Pendel. */
+export function syncCabin(cab, v, dt, ctx = {}) {
+  if (!cab || !v) return;
+  cab.t += dt;
+  const D = cab.D, b = v.body, m = v.mount, c = b.controls || {}, drv = b.drive || {}, E = D.engine || {};
+  // --- Fahrer: Lenkhebel (Lenken zieht den kurveninneren Hebel, Bremse beide), Pedale, Gang, Instrumente
+  const steer = clamp(+c.steer || 0, -1, 1), brake = clamp(+c.brake || 0, 0, 1) + (c.handbrake && Math.abs(b.speed || 0) < 0.5 ? 0.3 : 0), thr = clamp(+c.throttle || 0, -1, 1);
+  const P = cab.parts;
+  const ease = (o, k, want) => { o.rotation.x = lerp(o.rotation.x, want, Math.min(1, dt * k)); };
+  if (P['hebel:l']) ease(P['hebel:l'], 10, 0.38 * clamp(Math.max(0, steer) + brake * 0.8, 0, 1));
+  if (P['hebel:r']) ease(P['hebel:r'], 10, 0.38 * clamp(Math.max(0, -steer) + brake * 0.8, 0, 1));
+  for (const p of cab.pedals) {
+    const want = p.name === 'pedal:gas' ? Math.abs(thr) : p.name === 'pedal:bremse' ? clamp(brake, 0, 1) : drv.shifting ? 1 : 0;
+    ease(p, 12, -0.32 * want);
+  }
+  if (P.gang) {
+    const g = drv.gear | 0, maxG = 5;
+    ease(P.gang, 8, clamp(-g / maxG, -1, 1) * 0.32);
+  }
+  const rpm = Math.max(0, +drv.rpm || 0), kmh = Math.abs(b.speed || 0) * 3.6;
+  const on = rpm > 50;
+  for (const n of cab.needles) {
+    const G = n.userData.gauge;
+    let t;
+    switch (G.kind) {
+      case 'rpm': t = rpm / G.max; break;
+      case 'kmh': t = kmh / G.max; break;
+      case 'oel': t = on ? (1.8 + 4.2 * clamp(rpm / (E.ratedRpm || 2600), 0, 1)) / G.max : 0; break;
+      case 'wasser': t = on ? (78 + Math.min(14, cab.t * 0.3)) / G.max : 0.35; break;
+      case 'az': t = 0; break;
+      default: t = 0;
+    }
+    if (G.full) { n.rotation.z = m.turretYaw; continue; }
+    // Zittern bei laufendem Motor
+    const jit = on ? Math.sin(cab.t * 47 + n.id) * 0.006 : 0;
+    const want = 0.75 * PI - 1.5 * PI * clamp(t, 0, 1.04) + jit;
+    n.rotation.z = lerp(n.rotation.z, want, Math.min(1, dt * 6));
+  }
+  // --- Richtschütze: Handräder, Steuergriff
+  if (cab.yawPrev == null) { cab.yawPrev = m.turretYaw; cab.pitchPrev = m.gunPitch; }
+  let dyaw = m.turretYaw - cab.yawPrev; if (dyaw > PI) dyaw -= 2 * PI; if (dyaw < -PI) dyaw += 2 * PI;
+  const dp = m.gunPitch - cab.pitchPrev;
+  cab.yawPrev = m.turretYaw; cab.pitchPrev = m.gunPitch;
+  if (P['rad:seite']) P['rad:seite'].rotateZ(dyaw * 14);
+  if (P['rad:hoehe']) P['rad:hoehe'].rotateZ(-dp * 30);
+  if (P.griff) {
+    const ry = clamp(dyaw / Math.max(dt, 1e-3) * 0.35, -0.25, 0.25), rx = clamp(-dp / Math.max(dt, 1e-3) * 0.6, -0.2, 0.2);
+    P.griff.userData.r = P.griff.userData.r || { x: 0, z: 0 };
+    const r = P.griff.userData.r;
+    r.x = lerp(r.x, rx, Math.min(1, dt * 8)); r.z = lerp(r.z, ry, Math.min(1, dt * 8));
+    P.griff.children[0].rotation.set(r.x, 0, r.z);
+  }
+  if (P.luefter) P.luefter.rotation.y += dt * (on ? 28 : 10);
+  // Munitionswahl-Tasten, Sicherungsleuchte
+  const gun = v.gun;
+  if (gun) {
+    const gs = v.seats.find((s) => s.def.mount === 'gun');
+    const w = gs && gs.weapons && gs.weapons[gs.weaponIndex];
+    const mg = !!(w && w.def && w.def.kind === 'mg');
+    const sel = gun.select || gun.loaded;
+    const C = cab.C;
+    for (const k of Object.keys(cab.btn)) { const want = k === 'mg' ? (mg ? C.lampAmber : C.lampOff) : k === sel ? C.lampGreen : C.lampOff; if (cab.btn[k].material !== want) cab.btn[k].material = want; }
+    const ls = P['lampe:sicher'];
+    if (ls) { const want = gun.loaded && gun.step === 'geladen' ? C.lampGreen : C.lampRed; if (ls.children[0].material !== want) ls.children[0].material = want; }
+  }
+  // --- Bildschirme (≤ 5 Hz)
+  cab.screenT -= dt;
+  if (cab.screenT <= 0) {
+    cab.screenT = 0.2;
+    const I = cab.info.screens;
+    if (I.fcs) {
+      const ammo = gun && (gun.loaded || gun.select);
+      const wd = ammo ? vehicleWeapon(v.type || D.id, ammo) : null;
+      const ready = gun && gun.loaded && gun.step === 'geladen' && !(gun.busy > 0);
+      const mil = (a) => Math.round(a * 6400 / (2 * PI));
+      const el = mil(m.gunPitch), az = ((mil(-m.turretYaw) % 6400) + 6400) % 6400;
+      drawFcs(screen('fcs', 256, 160), {
+        range: Number.isFinite(v._laserRange) ? String(Math.round(v._laserRange)).padStart(4, '0') : '----',
+        ammo: wd ? `${wd.short || ''} ${String(wd.name || '').replace(/\s*\(.*\)/, '').slice(0, 18)}` : ammo ? (ammo === 'mbt_ap' ? 'PG' : 'SG') : '—',
+        ready: ready ? 'BEREIT' : gun && gun.busy > 0 ? 'LADEN' : 'LEER',
+        elev: `${el >= 0 ? '+' : '−'}${String(Math.abs(el)).padStart(3, '0')} Str`, az: `${String(az).padStart(4, '0')} Str`,
+        load: gun && gun._busyMax > 0 && gun.busy > 0 ? 1 - gun.busy / gun._busyMax : ready ? 1 : 0,
+        therm: !!ctx.thermal, t: cab.t,
+      });
+    }
+    if (I.cmd) drawCmd(screen('cmd', 256, 192), { hdg: typeof b.yaw === 'function' ? b.yaw() : 0, tur: m.turretYaw, team: v.team, t: cab.t });
+    if (cab.det >= 0 && cab.era === 'modern' && cab.hull) {
+      const z = v.zones || {};
+      const warn = z.engine && z.engine.hp <= 0 ? 'MOTOR!' : z.tracks && z.tracks.hp <= 0 ? 'KETTE!' : '';
+      drawDrv(screen('drv', 256, 128), { gear: ctx.gearName || String(drv.gear | 0), kmh: Math.round(kmh), rpm: rpm / (E.cutRpm || 2750), warn });
+    }
+  }
+  // --- Schuss: Flackern, Hülse, Dampf; Treffer: Flackern
+  if (v.recoil > cab.recoilPrev + 0.5) { cab.flick = 1; cab.ejectAt = cab.t + 0.22; }
+  cab.recoilPrev = v.recoil;
+  if (cab.hitPrev !== v.lastHitTime) { if (cab.hitPrev != null && v.lastHitTime > 0) cab.flick = 1.4; cab.hitPrev = v.lastHitTime; }
+  cab.flick = Math.max(0, cab.flick - dt * 2.2);
+  if (cab.ejectAt > 0 && cab.t >= cab.ejectAt) { cab.ejectAt = -1; eject(cab); }
+  stepCasings(cab, dt);
+  // --- Pendel (Hörer, Kopfhörer): Beschleunigung der Wanne im Wannenraum + Rückstoß
+  const vel = b.velocity || b.vel;
+  if (vel) {
+    if (!cab.vel) cab.vel = vel.clone();
+    _w.subVectors(vel, cab.vel).divideScalar(Math.max(dt, 1e-3));
+    cab.vel.copy(vel);
+    _iq.copy(b.renderQuat || b.quat || _iq.identity()).invert();
+    _w.applyQuaternion(_iq);
+    cab.acc.lerp(_w, Math.min(1, dt * 10));
+  }
+  for (const p of cab.pend) {
+    const s = p.userData.pend;
+    const kick = cab.flick > 0.95 ? 4 : 0;
+    s.vx += (-s.ax * 38 - s.vx * 2.2 + cab.acc.z * 0.9 + kick) * dt;
+    s.vz += (-s.az * 38 - s.vz * 2.2 - cab.acc.x * 0.9) * dt;
+    s.ax = clamp(s.ax + s.vx * dt, -0.7, 0.7); s.az = clamp(s.az + s.vz * dt, -0.7, 0.7);
+    p.rotation.set(s.ax, 0, s.az);
+  }
+  // --- Lampen → Shader (Weltraum); Satz je nach Platz (Fahrerraum oder Turm)
+  const where = ctx.driver ? 'fahrer' : 'turm';
+  const LP = CAB_U.uCabLP.value, LCo = CAB_U.uCabLC.value;
+  let k = 0;
+  const f = 1 - cab.flick * (0.55 + 0.45 * Math.sin(cab.t * 63)) * 0.8;
+  for (const L of cab.lamps) {
+    if (L.where !== where || k >= 4) continue;
+    const obj = L.obj === 'tur' ? cab.tur : L.obj === 'gun' ? cab.gun : cab.hull;
+    obj.updateWorldMatrix(true, false);
+    LP[k].copy(L.pos).applyMatrix4(obj.matrixWorld);
+    const fl = L.flicker ? 0.82 + 0.1 * Math.sin(cab.t * 13.7) + 0.08 * Math.sin(cab.t * 31.1 + 1.3) : 1;
+    LCo[k].copy(L.col).multiplyScalar(Math.max(0.1, f) * fl);
+    k++;
+  }
+  for (; k < 4; k++) LCo[k].setRGB(0, 0, 0);
+  // offene Luke in der Nähe? → mehr Tageslicht; sonst geschlossener Kasten
+  CAB_U.uCabSun.value = ctx.hatchOpen ? 0.5 : 0.1;
+  CAB_U.uCabAmb.value = ctx.hatchOpen ? 0.55 : 0.3;
+}
+
+/** Hülse aus dem Verschluss (Lage im Turmgruppenraum), fliegt nach hinten unten, rollt aus. */
+function eject(cab) {
+  const M = cab.model;
+  if (!M.breech) return;
+  const slot = cab.casings.reduce((a, x) => (x.t > a.t ? x : a), cab.casings[0]);
+  cab.casings.forEach((x) => { x.t += 1; });
+  slot.t = 0;
+  M.breech.updateWorldMatrix(true, false);
+  _w.set(0, -0.05, 0.3).applyMatrix4(M.breech.matrixWorld);
+  cab.tur.updateWorldMatrix(true, false);
+  cab.tur.worldToLocal(slot.m.position.copy(_w));
+  const s = cab.A.sc;
+  slot.v.set((Math.random() - 0.5) * 0.4, -0.6 - Math.random() * 0.4, 2.0 + Math.random() * 0.6).divideScalar(s);
+  slot.w.set(4 + Math.random() * 6, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 6);
+  slot.m.rotation.set(HP, 0, 0);
+  slot.m.visible = true;
+  slot.rest = false;
+  slot.life = 0;
+  // Pulverdampf aus dem offenen Verschluss
+  for (let i = 0; i < cab.smoke.length; i++) {
+    const S = cab.smoke[i];
+    S.t = -i * 0.12;
+    S.s.position.copy(slot.m.position);
+    S.s.position.y += 0.05 / s;
+    S.s.visible = true;
+  }
+}
+function stepCasings(cab, dt) {
+  const A = cab.A, s = A.sc, floor = A.yb + 0.03 / s;
+  for (const c of cab.casings) {
+    if (!c.m.visible || c.rest) continue;
+    c.life += dt;
+    c.v.y -= (9.81 / s) * dt;
+    c.m.position.addScaledVector(c.v, dt);
+    c.m.rotation.x += c.w.x * dt; c.m.rotation.y += c.w.y * dt; c.m.rotation.z += c.w.z * dt;
+    // Wände des Turmkorbs (grob): Abstand zur Korbmitte begrenzen
+    if (A.basket) {
+      const dx = c.m.position.x - A.rc[0], dz = c.m.position.z - A.rc[2], r = Math.hypot(dx, dz), rm = A.ringR - 0.2;
+      if (r > rm) { c.m.position.x = A.rc[0] + dx / r * rm; c.m.position.z = A.rc[2] + dz / r * rm; c.v.x *= -0.3; c.v.z *= -0.3; }
+    }
+    if (c.m.position.y < floor) {
+      c.m.position.y = floor;
+      if (Math.abs(c.v.y) > 0.6 / s) { c.v.y *= -0.28; c.v.x *= 0.5; c.v.z *= 0.5; c.w.multiplyScalar(0.5); }
+      else { c.rest = true; c.m.rotation.set(c.m.rotation.x > 0 ? HP : HP, c.m.rotation.y, 0); c.m.rotation.x = CASE[cab.D.id] ? HP : 0; }
+    }
+    if (c.life > 4) c.rest = true;
+  }
+  for (const S of cab.smoke) {
+    if (!S.s.visible) continue;
+    S.t += dt;
+    if (S.t < 0) { S.s.material.opacity = 0; continue; }
+    const k = S.t / 2.2;
+    if (k >= 1) { S.s.visible = false; continue; }
+    S.s.position.y += dt * 0.25 / s;
+    S.s.position.z += dt * 0.1 / s;
+    const sz = (0.12 + k * 0.55) / s;
+    S.s.scale.set(sz, sz, sz);
+    S.s.material.opacity = 0.42 * (1 - k) * Math.min(1, S.t * 6);
+  }
+}
+
+/* ===================================================================== Geländewagen: Fahrerplatz im Freien */
+
+let JM = null;
+/** Materialien ohne Innenlicht-Haken (offenes Fahrzeug: Sonne und Himmel wirken normal). */
+function jeepMats(S) {
+  if (JM) return JM;
+  const A = atlas();
+  JM = {
+    label: new THREE.MeshStandardMaterial({ name: 'gw:schild', map: A.tex, roughness: 0.62, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+    gauge: new THREE.MeshStandardMaterial({ name: 'gw:instrument', map: A.tex, emissive: 0x6a8a5a, emissiveMap: A.tex, emissiveIntensity: 0.2, roughness: 0.15, metalness: 0.1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+    needle: new THREE.MeshStandardMaterial({ name: 'gw:zeiger', color: 0xfff1d0, emissive: 0xffd28a, emissiveIntensity: 0.5, roughness: 0.4 }),
+    black: new THREE.MeshStandardMaterial({ name: 'gw:schwarz', color: 0x1c1d1b, roughness: 0.6, metalness: 0.3 }),
+    olive: new THREE.MeshStandardMaterial({ name: 'gw:oliv', color: 0x454b33, roughness: 0.72, metalness: 0.2 }),
+    lampGreen: new THREE.MeshStandardMaterial({ name: 'gw:lampe-gruen', color: 0x06200a, emissive: 0x3cff5a, emissiveIntensity: 1.6 }),
+    lampRed: new THREE.MeshStandardMaterial({ name: 'gw:lampe-rot', color: 0x3a0806, emissive: 0xff2a14, emissiveIntensity: 1.6 }),
+    lampOff: new THREE.MeshStandardMaterial({ name: 'gw:lampe-aus', color: 0x221a18, roughness: 0.25, metalness: 0.2 }),
+  };
+  return JM;
+}
+
+const JTPL = new Map();
+function buildJeepCockpit(D, S, det) {
+  const M = jeepMats(S);
+  const C = { ...M, metal: S.dark, steel: S.steel, rubber: S.rubber, pad: S.canvas, canvas: S.canvas, red: S.red, yellow: M.olive, brass: S.dark, cableRed: S.red, cableYel: M.olive, lens: S.optic };
+  const grp = new THREE.Group();
+  grp.name = 'cabin:gw';
+  const B = new MB();
+  const eye = [-0.46, 1.62, -0.05];
+  // Armaturenbrett: Blende, Instrumententräger vor dem Fahrer, Schalterleiste, Zündung, Handschuhfach, Haltegriff
+  B.add(rbox(1.72, 0.24, 0.05, 0.015), M.olive, [0, 1.16, -0.645], [-0.12, 0, 0]);
+  const IP = [-0.46, 1.19, -0.61];
+  const F = new Frame(B, IP, aim(IP, eye));
+  F.add(rbox(0.4, 0.17, 0.07, 0.02), M.black, [0, 0, -0.03]);
+  F.add(box(0.42, 0.03, 0.09), M.black, [0, 0.095, -0.01]); // Blendschutz
+  gauge(F, C, 'd_kmh12', [-0.1, 0.005, 0], 0.058, S.steel, grp, 'kmh', 120, det);
+  gauge(F, C, 'd_rpm6', [0.07, 0.005, 0], 0.058, S.steel, grp, 'rpm', 6000, det);
+  gauge(F, C, 'd_wasser', [0.165, 0.03, 0], 0.025, S.steel, grp, 'wasser', 120, det);
+  gauge(F, C, 'd_oel', [0.165, -0.035, 0], 0.025, S.steel, grp, 'oel', 10, det);
+  [M.lampGreen, M.lampOff, M.lampRed, M.lampOff].forEach((m, i) => F.add(cyl(0.008, 0.008, 0.01, 8), m, [-0.17 + i * 0.03, -0.065, 0.004], [HP, 0, 0]));
+  const SF = new Frame(B, [0.02, 1.13, -0.62], aim([0.02, 1.13, -0.62], [0, 1.6, 0]));
+  flabel(SF, C, 'schalter', [0, 0, 0.002], 0.26);
+  for (let i = 0; i < 5; i++) SF.add(cyl(0.003, 0.002, 0.03, 6), S.steel, [-0.1 + i * 0.0505, -0.005, 0.014], [i % 2 ? -0.6 : 0.6, 0, 0]);
+  SF.add(cyl(0.015, 0.015, 0.02, 10), M.black, [0.17, -0.02, 0.008], [HP, 0, 0]);
+  flabel(SF, C, 'zuendung', [0.17, 0.035, 0.002], 0.08);
+  B.add(rbox(0.36, 0.13, 0.02, 0.008), M.olive, [0.46, 1.13, -0.612], [-0.12, 0, 0]);
+  B.add(box(0.08, 0.015, 0.02), S.steel, [0.46, 1.17, -0.6]);
+  B.rod(S.steel, [0.26, 1.29, -0.62], [0.66, 1.29, -0.62], 0.014);
+  for (const x of [0.26, 0.66]) B.rod(S.steel, [x, 1.29, -0.62], [x, 1.25, -0.66], 0.014);
+  // Innenspiegel, Kartenhalter
+  B.add(rbox(0.22, 0.07, 0.025, 0.01), M.black, [0, 1.74, -0.9]);
+  B.add(box(0.2, 0.055, 0.004), S.optic, [0, 1.74, -0.886]);
+  B.add(box(0.26, 0.2, 0.01), S.canvas, [0.46, 1.33, -0.73], [-0.9, 0, 0]);
+  // Funkgerät unter dem Armaturenbrett (Mitte), Hörer
+  B.add(rbox(0.32, 0.16, 0.26, 0.01), M.olive, [0, 1.02, -0.52]);
+  label(B, C, 'radio1', [0, 1.02, -0.389], null, 0.3);
+  B.add(rbox(0.05, 0.18, 0.04, 0.015), M.black, [0.2, 1.03, -0.4], [0, 0, 0.2]);
+  // Fußraum: Pedale (Kupplung, Bremse, Gas), Gummimatten
+  for (const [nm, px, pw] of [['pedal:kupplung', -0.62, 0.07], ['pedal:bremse', -0.49, 0.08], ['pedal:gas', -0.34, 0.06]]) {
+    const p = part(grp, nm, [px, 0.93, -0.62]);
+    const L = new MB();
+    L.rod(S.steel, [0, 0, 0], [0, 0.18, 0.08], 0.01, 6);
+    L.add(rbox(pw, 0.02, 0.1, 0.006), S.rubber, [0, 0.19, 0.09], [-0.95, 0, 0]);
+    L.build(p, nm);
+  }
+  for (const sx of [-1, 1]) B.add(box(0.5, 0.012, 0.6), S.rubber, [sx * 0.46, 0.926, -0.35]);
+  // Schalthebel, Verteilergetriebe, Handbremse
+  {
+    const p = part(grp, 'gang', [-0.17, 0.93, -0.32]);
+    const L = new MB();
+    L.add(cyl(0.06, 0.07, 0.06, 10, true), S.rubber);
+    L.rod(S.steel, [0, 0, 0], [0, 0.42, 0.06], 0.011, 6);
+    L.add(new THREE.SphereGeometry(0.028, 10, 8), M.black, [0, 0.43, 0.06]);
+    L.build(p, 'gang');
+  }
+  B.rod(S.steel, [-0.08, 0.93, -0.3], [-0.06, 1.2, -0.25], 0.009);
+  B.add(new THREE.SphereGeometry(0.022, 8, 6), S.red, [-0.06, 1.21, -0.25]);
+  B.rod(S.steel, [-0.1, 0.94, 0.05], [-0.1, 1.08, 0.22], 0.014);
+  B.add(cyl(0.02, 0.02, 0.1, 8), S.rubber, [-0.1, 1.1, 0.25], [1.2, 0, 0]);
+  // Feuerlöscher am Beifahrersitz, Verbandkasten hinter den Sitzen, Munitionskisten neben dem MG-Sockel
+  extinguisher(B, C, [0.82, 1.15, -0.45], 1, det);
+  B.add(rbox(0.22, 0.14, 0.12, 0.01), M.olive, [-0.6, 1.0, 0.38]);
+  label(B, C, 'erstehilfe', [-0.6, 1.0, 0.441], null, 0.18);
+  for (const [x, z] of [[0.32, 0.5], [0.32, 0.8], [-0.3, 0.65]]) {
+    B.add(rbox(0.13, 0.19, 0.28, 0.01), M.olive, [x, 1.015, z]);
+    B.add(box(0.05, 0.02, 0.1), S.dark, [x, 1.115, z]);
+    label(B, C, 'munition', [x + (x > 0 ? 0.066 : -0.066), 1.02, z], [0, x > 0 ? HP : -HP, 0], 0.2);
+  }
+  harness(B, C, [[-0.85, 1.25, -0.7], [-0.88, 1.2, -0.2], [-0.88, 1.15, 0.5]], det, 2);
+  B.build(grp, 'cockpit');
+  grp.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; } });
+  return grp;
+}
+
+/** Fahrerplatz des Geländewagens (lazy, nur lokaler Insasse in der Ego-Sicht). */
+export function attachCockpit(model, D, S, quality = 'high') {
+  if (!model || !D || D.civil || D.drive === 'tracked' || D.model !== 'jeep') return null;
+  const det = quality === 'low' ? 0 : quality === 'medium' ? 1 : 2;
+  let tpl = JTPL.get(det);
+  if (!tpl) { tpl = buildJeepCockpit(D, S, det); JTPL.set(det, tpl); }
+  const grp = tpl.clone(true);
+  model.root.add(grp);
+  const cab = { D, grp, needles: [], pedals: [], parts: {}, t: 0 };
+  grp.traverse((o) => {
+    if (!o.name || o.isMesh) return;
+    if (o.name.startsWith('zeiger:')) cab.needles.push(o);
+    else if (o.name.startsWith('pedal:')) cab.pedals.push(o);
+    else if (o.name === 'gang') cab.parts.gang = o;
+  });
+  grp.visible = false;
+  return cab;
+}
+
+export function syncCockpit(cab, v, dt) {
+  if (!cab || !v) return;
+  cab.t += dt;
+  const b = v.body, c = b.controls || {}, drv = b.drive || {};
+  const thr = Math.abs(+c.throttle || 0), brake = clamp(+c.brake || 0, 0, 1);
+  for (const p of cab.pedals) {
+    const want = p.name === 'pedal:gas' ? thr : p.name === 'pedal:bremse' ? brake : drv.shifting ? 1 : 0;
+    p.rotation.x = lerp(p.rotation.x, -0.32 * want, Math.min(1, dt * 12));
+  }
+  if (cab.parts.gang) cab.parts.gang.rotation.x = lerp(cab.parts.gang.rotation.x, clamp(-(drv.gear | 0) / 4, -1, 1) * 0.3, Math.min(1, dt * 8));
+  const rpm = Math.max(0, +drv.rpm || 0), kmh = Math.abs(b.speed || 0) * 3.6, on = rpm > 50;
+  for (const n of cab.needles) {
+    const G = n.userData.gauge;
+    const t = G.kind === 'rpm' ? rpm / 6000 : G.kind === 'kmh' ? kmh / G.max : G.kind === 'oel' ? (on ? 0.45 + 0.3 * clamp(rpm / 5000, 0, 1) : 0) : on ? 0.72 : 0.35;
+    n.rotation.z = lerp(n.rotation.z, 0.75 * PI - 1.5 * PI * clamp(t, 0, 1.04) + (on ? Math.sin(cab.t * 41 + n.id) * 0.005 : 0), Math.min(1, dt * 6));
+  }
 }

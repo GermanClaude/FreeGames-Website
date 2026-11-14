@@ -1,5 +1,6 @@
 // Pistolen: P-9 Kompakt (Polymer, Schlagbolzen). Adler .50 nach Foto in guns-adler.js (25.10.).
 import { slots } from './parts.js?v=20261114060746';
+import { notchSight } from './pistol-parts.js?v=20261114060746';   // Kimme mit echter Kerbe (visier, 14.11.)
 import { magRounds } from './magfill.js?v=20261114060746';
 import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, sdEllipsoid, simplifyPoly, grid2D, cavityColors } from './sdf.js?v=20261114060746';
 import * as R from './p9-ref.js?v=20261114060746';
@@ -133,12 +134,15 @@ export function p9(b, o = {}) {
   }
   // ---------------------------------------------------------------- Visierung (Polymer, weißer Punkt / weißes U)
   b.side('polymer', o.frontSight || R.M(R.FRONT_SIGHT), 0.0032, 0, { part: 'slide', bevel: 0.0005 });
-  b.side('polymer', o.rearSight || R.M(R.REAR_SIGHT), 0.0148, 0, { part: 'slide', bevel: 0.0006 });
+  // Kimme (visier, 14.11.): Kerbe 3,4 × 2,4 mm wirklich ausgeschnitten (notchSight: Fuß in voller Breite unter der Kerbe, zwei
+  // Ohren darüber) – vorher ein Vollblock mit schwarzem Kästchen davor: im Anschlag ein dunkler Balken, das Korn verschwand darin
+  const rearPts = o.rearSight || R.M(R.REAR_SIGHT);
+  if (b.hi) notchSight(b, 'polymer', rearPts, 0.0074, { nw: 0.0034, vN: Math.max(...rearPts.map((p) => p[1])) - 0.0024, part: 'slide', bevel: 0.0005 });
+  else b.side('polymer', rearPts, 0.0148, 0, { part: 'slide', bevel: 0.0006 });
   if (b.hi) {
     if (o.rearNotch) o.rearNotch(b);
     else {
-      const { rv, ru, uf } = o.notch || { rv: R.V(267), ru: R.U(1540), uf: R.U(1466) };
-      b.box('cavity', 0.0034, 0.0026, uf - ru + 0.0006, 0, rv - 0.0011, (uf + ru) / 2, { part: 'slide', c: 0 });
+      const { rv, ru } = o.notch || { rv: R.V(267), ru: R.U(1540) };
       for (const s of [-1, 1]) b.box('paintWhite', 0.0008, 0.0031, 0.0003, s * 0.0025, rv - 0.0016, ru - 0.0002, { part: 'slide', c: 0 });
       b.box('paintWhite', 0.0058, 0.0008, 0.0003, 0, rv - 0.0034, ru - 0.0002, { part: 'slide', c: 0 });
     }

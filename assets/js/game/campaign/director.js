@@ -15,7 +15,7 @@
 // Wiedereinstieg am Checkpoint k: mission.prepare(m) (gemeinsam, z. B. Verbündete), stages[k].setup(m), dann ab k.
 
 import * as THREE from 'three';
-import { Cutscene, StageActor, toVec, groundY, snapY, floorY, yawTo } from './stage.js?v=20261114060746';
+import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261114060746';
 import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261114060746';
 import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261114060746';
 import { createFaceRig, FaceDriver } from './face.js?v=20261114060746';
@@ -92,6 +92,8 @@ export class Director {
   start() {
     const st = this.mission.stages[this.startIndex];
     if (st && st.checkpoint) this._setSpawn(st.checkpoint);
+    // Fahrzeuge der Karte (Stellplätze inkl. Luftfahrzeuge mit KI-Piloten) räumen: die Mission stellt ihre eigenen auf
+    if (this.mission.mapVehicles === false) this.clearMapVehicles();
     // Startausrüstung der Mission (mission.loadout = { primary, secondary }) – gilt auch nach dem Wiedereinstieg
     const lo = this.mission.loadout;
     if (lo) for (const id of [lo.primary, lo.secondary]) if (id) this.giveWeapon(id, { att: lo.att && lo.att[id] ? lo.att[id] : null });
@@ -374,6 +376,28 @@ export class Director {
     return st;
   }
 
+  /** Brandfläche (nur Bild: Flammen, Glut, Rauch, Licht) bei at [x,z] für duration s. */
+  fire(at, radius = 3, duration = 30) {
+    const E = this.G.effects;
+    if (!E || typeof E.fireArea !== 'function') return null;
+    try { return E.fireArea(this.vec(at), radius, duration); } catch { return null; }
+  }
+
+  /** Rauchwolke (Sichtschutz wie eine Rauchgranate). */
+  smoke(at, { radius = 6, duration = 30, color = null } = {}) {
+    const E = this.G.effects;
+    if (!E || typeof E.smokeCloud !== 'function') return null;
+    try { return E.smokeCloud(this.vec(at), { radius, duration, ...(color ? { color } : {}) }); } catch { return null; }
+  }
+
+  /** Gegner im Blick des Spielers markieren (Minikarte, Namensschild) – für Aufklärung. */
+  markActor(a, seconds = 600) {
+    if (!a) return;
+    const P = this.G.player;
+    a.spottedUntil = Math.max(a.spottedUntil || 0, this.G.time.elapsed + seconds);
+    a.spottedBy = P ? P.team : 'A';
+  }
+
   /* ------------------------------------------------------------ Figuren ohne KI (Zivilisten, Geiseln) */
 
   /**
@@ -430,16 +454,20 @@ export class Director {
     for (const b of G.actors) {
       if (!b || !b.alive || !b._kc || b.vehicle || !b.body || b === G.player) continue;
       const p = b.position;
-      const fy = snapY(G, p.x, p.z, p.y + 0.4);
-      if (!Number.isFinite(fy)) continue;
-      if (p.y < fy - 0.25 || (b.body.onGround && p.y > fy + 2)) {
+      const fy = buriedY(G, p.x, p.z, p.y);
+      if (fy != null) {
         try { b.body.teleport(_v.set(p.x, fy + 0.02, p.z)); if (b.body.velocity) b.body.velocity.set(0, 0, 0); this.groundFixes++; } catch { /* */ }
       }
     }
     const P = G.player;
     if (P && P.alive && !P.vehicle && P.body) {
-      const p = P.position, fy = snapY(G, p.x, p.z, p.y + 0.4);
-      if (Number.isFinite(fy) && p.y < fy - 0.35) { try { P.body.teleport(_v.set(p.x, fy + 0.02, p.z)); this.groundFixes++; } catch { /* */ } }
+      const p = P.position, fy = buriedY(G, p.x, p.z, p.y, 0.35);
+      if (fy != null) { try { P.body.teleport(_v.set(p.x, fy + 0.02, p.z)); this.groundFixes++; } catch { /* */ } }
+    }
+    for (const x of this.extras.values()) {
+      if (x.removed) continue;
+      const p = x.a.pos, fy = buriedY(G, p.x, p.z, p.y);
+      if (fy != null) { p.y = fy; this.groundFixes++; }
     }
   }
 
@@ -541,7 +569,7 @@ export class Director {
       const dt = Math.min(0.25, now - last);
       last = now;
       const inside = this.inZone(id) && this.G.player.alive;
-      if (inside) t += dt;
+      if (inside) t += this.rush ? dt * Math.max(1, secs / 1.5) : dt; // Tests (__game.campaign.director.rush): Halten im Zeitraffer
       ob.progress = t / secs;
       if (this.ui) this.ui.hold(inside && t < secs ? `${action} … ${Math.ceil(secs - t)} s` : null, t / secs);
       if (t >= secs) { if (this.ui) this.ui.hold(null); this.done(id); return true; }
@@ -722,6 +750,19 @@ export class Director {
     return v;
   }
 
+  /** Alle Fahrzeuge der Kartenstellplätze entfernen (kein Neuerscheinen); eigene (m.vehicle/m.heli) bleiben. */
+  clearMapVehicles() {
+    const V = this.G.vehicles;
+    if (!V || !V.attached) return 0;
+    let n = 0;
+    try { if (Array.isArray(V.spawns)) V.spawns.length = 0; } catch { /* */ }
+    for (const v of [...(V.list || [])]) {
+      if (this.vehicles.includes(v)) continue;
+      try { V.removeVehicle(v); n++; } catch { /* */ }
+    }
+    return n;
+  }
+
   /**
    * Feindliches Fahrzeug mit Bot-Besatzung, die auf das Ziel zufährt und auf den Spieler (bzw. dessen Fahrzeug) schießt.
    * o: { type, at, yaw, route: [[x,z], …], range, fireEvery }
@@ -882,7 +923,7 @@ export class Director {
   }
 
   timer(seconds, label = '', onEnd = null) {
-    this.timerLeft = seconds;
+    this.timerLeft = this.rush ? Math.min(seconds, 2) : seconds;
     this.timerLabel = label;
     this.onTimer = onEnd;
     return new Handle(() => this.timerLeft == null);
@@ -945,7 +986,7 @@ class Extra {
   walk(points, speed = 1.6) { this.target = null; this.a.walk(points, speed); }
   face(t) { this.a.face(t); }
   /** Dem Akteur folgen (null = stehen bleiben). */
-  follow(actor) { this.target = actor || null; this.trail = []; if (actor) this.a.crouch = false; }
+  follow(actor, { crouch = false } = {}) { this.target = actor || null; this.trail = []; this.followCrouch = !!crouch; if (actor) this.a.crouch = !!crouch; }
 
   hit(by) {
     this.hits += 1;
@@ -967,7 +1008,7 @@ class Extra {
         // nächster Krumen, der noch vor uns liegt (Abkürzungen nur bei freier Sicht)
         while (this.trail.length > 1 && this.trail[0].distanceToSquared(this.a.pos) < 0.5) this.trail.shift();
         if (d > 30) { this.a.place([tp.x, tp.y, tp.z], this.a.yaw); this.trail = []; } // abgehängt (Teleport/Wiedereinstieg)
-        else this.a.walk([[this.trail[0].x, this.trail[0].z]], d > 8 ? 3.6 : d > 4 ? 2.4 : 1.5);
+        else this.a.walk([[this.trail[0].x, this.trail[0].z]], this.followCrouch ? (d > 8 ? 2.6 : 1.3) : d > 8 ? 3.6 : d > 4 ? 2.4 : 1.5);
       } else if (this.a.path) { this.a.path = null; this.a.face(t); }
     }
     this.a.update(dt, cam);

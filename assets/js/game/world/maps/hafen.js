@@ -36,7 +36,7 @@ export default {
   // Büro-/Pförtnerwände: glatt gestrichener Putz statt Außenputz
   // 16.10.: eigener Himmel je Tageszeit × Wetter (weather.js skyFor); Standard Nachmittag, klar
   // Grafik-Vorlage 15.10.: Boden = Rissbeton 1:1 aus dem Video (Einstellung Containergasse), Kachel 4 m
-  assets: { hdri: 'np_sky_nachmittag_klar', materials: { plaster_white: { id: 'plaster_painted', color: 1.6 }, concrete: { id: 'vh_kai', color: 0.3, macro: [0.12, 0.06, 0.1] } } },
+  assets: { hdri: 'np_sky_nachmittag_klar', materials: { plaster_white: { id: 'plaster_painted', color: 1.6 }, concrete: { id: 'concrete_floor_worn2', color: [0.19, 0.29, 0.45], macro: [0.12, 0.06, 0.1] } /* texturen 14.11.: Fotoscan statt Video-Kai (vh_kai) */ } },
   defaultSurface: 'concrete',
   lighting: {
     // Grafik-Vorlage Etappe 0 (15.10.): klarer Nachmittag wie im Video statt Goldener Stunde – neutral-weiße Sonne,
@@ -296,7 +296,7 @@ export default {
     for (const [x, z] of sA) { spawns.A.push({ x, z, yaw: 0 }); spawns.B.push({ x, z: -z, yaw: Math.PI }); }
     for (const [x, z] of [[-40, 20], [-38, -8], [-34, -40], [-20, -26], [-20, 26], [-10, 18], [-11, -18], [0, -1], [10.2, -24.4], [10.2, 24.4], [20, -10], [38.5, 8], [24, 14], [38, -14], [30, -40], [-26, -48], [61, -15], [61, 15], [71.5, 0], [52.5, -32], [52.5, 32], [64.5, -44], [64.5, 44]]) spawns.ffa.push({ x, z });
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
-    belebe(b, { stil: 'hafen', bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, []) });
+    belebe(b, { stil: 'hafen', boden: { asphalt: true, bereich: { minX: -43, maxX: 74, minZ: -52, maxZ: 52 } }, bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52 }, sperr: sperrpunkte({ spawns }, KAMPAGNE.hafen || []) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 30.6, radius: 5 }, { id: 'B', x: -14.2, z: -0.8, radius: 6 }, { id: 'C', x: -13.6, z: -30.6, radius: 5 }] },

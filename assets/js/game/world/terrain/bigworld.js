@@ -26,6 +26,7 @@ import { TerrainCollider } from './collide.js?v=20261114060746';
 import { TerrainChunks, createFarRing } from './chunks.js?v=20261114060746';
 import { createTerrainMaterial } from './splat.js?v=20261114060746';
 import { Vegetation } from './vegetation.js?v=20261114060746';
+import { loadTreeAtlas, TREE_BARKS } from './trees.js?v=20261114060746';
 import { Deadwood } from './deadwood.js?v=20261114060746';
 import { Litter } from './litter.js?v=20261114060746';
 import { RoadNetwork } from './roads.js?v=20261114060746';
@@ -278,11 +279,12 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   // gfx-welt: Rinde und Felsen der Vegetation als Fotoscans – ihre Sätze laufen nicht über die Ortschaften (lib.load je
   // Ortschaft lädt nur deren Materialien), daher hier nachladen, bevor veg.build() die Materialien anlegt
   if (libOk && libPlan) {
-    try { const vn = ['bark', 'fels'].filter((n) => libPlan.has(n)); if (vn.length) resolveLibraryMaterials((await lib.load({ names: vn, plan: libPlan })).sets); } catch (err) { console.warn('[world] Vegetation-Sätze', err); }
+    try { const vn = ['bark', 'fels', ...TREE_BARKS].filter((n) => libPlan.has(n)); if (vn.length) resolveLibraryMaterials((await lib.load({ names: vn, plan: libPlan })).sets); } catch (err) { console.warn('[world] Vegetation-Sätze', err); }
   }
   const veg = new Vegetation({ hf, spec: def.vegetation, quality, tier, blocked, bounds: pb, fields: def.terrain?.fields || [] });
   const vegCol = veg.colliders();
-  group.add(veg.build(getMaterial));
+  await loadTreeAtlas(quality); // baeume: Zweig-Atlas vor dem Aufbau (Impostor-Aufnahme braucht ihn)
+  group.add(veg.build(getMaterial, renderer?.isWebGLRenderer ? renderer : null));
   // Brandwald (21.10.): verkohltes Totholz – Kollision wie Bäume auf jeder Stufe gleich, Optik nah/fern je Stufe
   const dead = def.deadwood ? new Deadwood({ hf, spec: def.deadwood, quality, tier, blocked, bounds: pb }) : null;
   const deadCol = dead ? dead.colliders() : null;

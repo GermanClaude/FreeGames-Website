@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { VEHICLES, vehicleWeapon } from './data.js?v=20261114060746';
 import { VehicleBody } from './sim.js?v=20261114060746';
+import { gearName } from './drivetrain.js?v=20261114060746';
 import { createVehicleModel } from './models.js?v=20261114060746';
 import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261114060746';
 import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261114060746';
@@ -477,6 +478,10 @@ export class Vehicle {
     this.G.events.emit('vehicle:damaged', { vehicle: this, amount: dealt, attacker, zone, weaponId: info.weaponId || null, kind: info.kind || 'bullet', health: this.health, point: info.point || null });
     // Schadensmodell wie War Thunder (Nutzer 11.10.): Durchschlag trifft Besatzung und Munitionslager
     if (info.kind === 'shell' && info.point && this.def.armored && dealt > 0) this._penetration(info, dealt);
+    // Treffer-/Brandspur am Modell (Granaten, Explosionen; Nutzer 14.11.)
+    if (info.point && (info.kind === 'shell' || info.kind === 'explosion' || info.kind === 'explosive') && this.model.addScar) {
+      try { this.model.addScar(info.point, { hole: info.kind === 'shell', size: info.kind === 'shell' ? 0.7 : 1.1 }); } catch { /* nur Darstellung */ }
+    }
     if (this.health <= 0) { this.destroy(attacker || this.lastAttacker, info.weaponId || this.lastWeaponId); return dealt; }
     if (!this.disabled && this.health < this.maxHealth * 0.2) {
       this.disabled = true;
@@ -718,6 +723,8 @@ export class Vehicle {
       }
     }
     if (M.trackMats.length) M.scrollTracks(b.trackSpeed[0], b.trackSpeed[1], dt);
+    M.syncRunning?.(this, dt); // Rollen/Kettenglieder der Nahstufe (high/ultra)
+    this._driveFx(dt);
     // Lenkrad dreht mit dem Einschlag (aus dem Radwinkel – gilt auch im Abbild); Hinterradlenkung mit Gegenvorzeichen
     if (M.steerWheel) {
       const sw = b.wheels.find((w) => w.steer);
@@ -727,6 +734,45 @@ export class Vehicle {
     if (M.occ.length) this._syncOccupants();
     if (M.lightsOn !== this.lights) M.setLights(this.lights);
     this._syncCrew(dt);
+  }
+
+  /**
+   * Staub/Dreck hinter den Ketten bzw. Hinterrädern (Farbe je Untergrund) und Dieselqualm beim Gasgeben (Nutzer 14.11.:
+   * „Rauch/Staub beim Fahren“). Nur in Kameranähe (≤ 140 m), gedrosselt; läuft auch im Abbild (liest nur Zustand).
+   */
+  _driveFx(dt) {
+    const G = this.G, fx = G.effects, b = this.body;
+    if (!fx || !fx.smoke || !this.alive || this.isAircraft || !G.camera) return;
+    const d2 = G.camera.position.distanceToSquared(b.renderPos);
+    if (d2 > 140 * 140) return;
+    const def = this.def, hb = def.hullBox, sp = Math.abs(b.speed || 0), tracked = def.drive === 'tracked';
+    this._dustT = (this._dustT || 0) - dt;
+    const surf = b.surface || 'default';
+    const soft = surf === 'dirt' || surf === 'sand' || surf === 'grass' || surf === 'default';
+    if (sp > (tracked ? 1.6 : 3) && this._dustT <= 0 && surf !== 'wood' && surf !== 'tile' && surf !== 'metal') {
+      this._dustT = Math.max(0.09, (tracked ? 0.32 : 0.4) - sp * 0.012) * (d2 > 60 * 60 ? 2 : 1);
+      const col = surf === 'sand' ? 0xcdb98f : surf === 'grass' ? 0x7a7258 : surf === 'concrete' ? 0x9d998f : 0x8c7b60;
+      const back = sp * Math.sign(b.speed || 1) > 0 ? hb[2] + hb[5] - 0.2 : hb[2] - hb[5] + 0.2;
+      const xs = tracked && def.wheels ? def.wheels.x : hb[3] * 0.8;
+      for (const sx of [-1, 1]) {
+        b.toWorldRender(_a.set(sx * xs, 0.25, back), _b);
+        fx.smoke(_b, { count: 1, color: col, size: (tracked ? 0.9 : 0.6) + sp * 0.05, life: 1.4 + sp * 0.06, rise: 0.35, alpha: soft ? 0.32 : 0.16 });
+      }
+    }
+    // Abgas: Stoß beim Gasgeben (Drehzahl steigt), sonst leichter Leerlaufqualm
+    const D = b.drive;
+    if (D && D.rpm > 0) {
+      const dr = D.rpm - (this._rpmPrev ?? D.rpm);
+      this._rpmPrev = D.rpm;
+      this._exT = (this._exT || 0) - dt;
+      const burst = dr / Math.max(dt, 1e-3) > (def.engine ? def.engine.ratedRpm * 0.6 : 1500);
+      if (this._exT <= 0 || (burst && this._exT < 0.35)) {
+        this._exT = burst ? 0.12 : 0.9;
+        const ex = def.exhaust || [hb[3] * 0.55, hb[1] + hb[4] * 0.3, hb[2] + hb[5]];
+        b.toWorldRender(_a.set(ex[0], ex[1], ex[2]), _b);
+        fx.smoke(_b, { count: 1, color: tracked ? 0x34312d : 0x5a5854, size: burst ? 0.9 : 0.5, life: burst ? 1.6 : 1.1, rise: 0.7, alpha: burst ? 0.4 : 0.14 });
+      }
+    }
   }
 
   /** Insassenfiguren der Kabine (Zivilfahrzeuge): sichtbar je besetztem Sitz, der eigene Sitz nicht in der Ego-Sicht. */
@@ -756,6 +802,21 @@ export class Vehicle {
     const cv = this.sys && this.sys.camera ? this.sys.camera.view : null;
     const inside = !!(p && p.vehicle === this && cv && cv.interior && this.alive);
     if (st.interior !== inside) { st.interior = inside; M.setInterior?.(inside); }
+    // Detail-Innenraum (cabin.js): Hebel, Zeiger, Handräder, Bildschirme, Lampen, Hülsen – nur innen
+    if (inside && M.syncCabin) {
+      const ctx = this._cabCtx || (this._cabCtx = {});
+      ctx.driver = cv.space === 'hull';
+      ctx.hatchOpen = this.seats.some((x) => x.hatchT > 0.3);
+      ctx.thermal = !!(this.sys && this.sys.thermal && this.sys.thermal.on);
+      ctx.gearName = this.body.drive ? gearName(this.def, this.body.drive.gear | 0) : 'N';
+      M.syncCabin(this, dt, ctx);
+    }
+    // Geländewagen: Fahrerplatz-Ausstattung für den lokalen Insassen (Ego-Sicht)
+    if (M.setCockpit && !this.def.civil && this.def.drive !== 'tracked') {
+      const cock = !!(p && p.vehicle === this && cv && !cv.tp && this.alive);
+      if (st.cockpit !== cock) { st.cockpit = cock; M.setCockpit(cock); }
+      if (cock) M.syncCockpit(this, dt);
+    }
     // Optik/Periskop/Winkelspiegel: eigener Panzer ausgeblendet (kein Rohr/Turmteil verdeckt das Bild, Nutzer 11.10.)
     const sight = !!(p && p.vehicle === this && cv && !cv.tp && ['optic', 'wide', 'peri', 'slit'].includes(cv.overlay));
     if (st.sightHidden !== sight) { st.sightHidden = sight; if (M.root) M.root.visible = !sight; }

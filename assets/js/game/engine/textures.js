@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { generateTexture } from '../world/texgen.js?v=20261114060746';
 import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261114060746';
+import { applySurface } from './surface.js?v=20261114060746';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -117,6 +118,13 @@ const MATS = {
   wood_crate:        { tex: 'wood_crate', tile: 1, surface: 'wood' },
   wood_stock:        { tex: 'wood_stock', tile: 0.4, surface: 'wood', params: { roughness: 1 } },
   bark:              { tex: 'bark', tile: 1.2, surface: 'wood' },
+  // baeume 14.11.: Rinde je Baumart (Bibliothek: Poly-Haven-Fotoscans, world/library.js; Rückfall prozedural 'bark')
+  bark_eiche:        { tex: 'bark', tile: 1.2, surface: 'wood' },
+  bark_buche:        { tex: 'bark', tile: 1.2, surface: 'wood' },
+  bark_birke:        { tex: 'bark', tile: 1.2, surface: 'wood' },
+  bark_pappel:       { tex: 'bark', tile: 1.2, surface: 'wood' },
+  bark_kiefer:       { tex: 'bark', tile: 1.2, surface: 'wood' },
+  bark_fichte:       { tex: 'bark', tile: 1.2, surface: 'wood' },
   // Brandwald (21.10.): verkohlte Borke, Totholz, Brandboden/Asche/Grabenlehm/Schlamm (immer prozedural)
   borke_verkohlt:    { tex: 'borke_verkohlt', tile: 1.0, surface: 'wood' },
   totholz:           { tex: 'totholz', tile: 1.6, surface: 'wood' },
@@ -222,6 +230,31 @@ Object.assign(MATS, {
   tiles_white:       { tex: 'tiles', tile: 2, surface: 'tile', params: { color: '#f2eee6' } },
   linoleum:          { tex: 'epoxy', tile: 3, surface: 'fabric', params: { color: '#d8b48c' } },
   wood_floor:        { tex: 'wood_planks', tile: 2, surface: 'wood', params: { color: '#a0907c' } },
+});
+
+// texturen 14.11.: weitere Fotoscan-Sätze (Poly Haven, CC0) als eigene Spielnamen – für Kartenvielfalt (world/library.js
+// ordnet sie zu; ohne Bibliothek der nächstliegende prozedurale Satz)
+Object.assign(MATS, {
+  concrete_floor2:   { tex: 'concrete', tile: 3, surface: 'concrete', params: { color: '#d8d2c6' } },
+  concrete_hall:     { tex: 'concrete', tile: 3, surface: 'concrete', params: { color: '#cfc8bc' } },
+  paving_slabs:      { tex: 'paving', tile: 2.4, surface: 'concrete' },
+  asphalt_light:     { tex: 'asphalt', tile: 5, surface: 'concrete', params: { color: '#d4d4d0' } },
+  asphalt_dark:      { tex: 'asphalt', tile: 5, surface: 'concrete', params: { color: '#8c8680' } },
+  cobble_rows:       { tex: 'cobble', tile: 1.5, surface: 'concrete' },
+  gravel_trail:      { tex: 'gravel', tile: 2, surface: 'dirt', params: { color: '#e8dccb' } },
+  dirt_dry:          { tex: 'dirt', tile: 3, surface: 'dirt', params: { color: '#e6d6bc' } },
+  plaster_smooth:    { tex: 'plaster_white', tile: 4, surface: 'concrete', params: { color: '#e4e2de' } },
+  plaster_rough:     { tex: 'plaster_warm', tile: 4, surface: 'concrete' },
+  plaster_stained:   { tex: 'plaster_warm', tile: 4, surface: 'concrete', params: { color: '#d8d0c0' } },
+  brick_red:         { tex: 'brick', tile: 2, surface: 'concrete' },
+  brick_light:       { tex: 'brick', tile: 2, surface: 'concrete', params: { color: '#e8d4c4' } },
+  brick_clinker:     { tex: 'brick_dark', tile: 2, surface: 'concrete' },
+  roof_clay:         { tex: 'roof_tiles', tile: 1.6, surface: 'tile' },
+  roof_old:          { tex: 'roof_tiles', tile: 1.6, surface: 'tile', params: { color: '#9a8a72' } },
+  metal_corrugated_painted: { tex: 'metal_corrugated', tile: 2, surface: 'metal', params: { metalness: 0.6, color: '#9fb0ae' } },
+  metal_corrugated_worn: { tex: 'metal_corrugated', tile: 2, surface: 'metal', params: { metalness: 0.8 } },
+  metal_rust_heavy:  { tex: 'metal_rust', tile: 2, surface: 'metal', params: { metalness: 0.35 } },
+  wood_planks_brown: { tex: 'wood_planks', tile: 2, surface: 'wood', params: { color: '#a08a74' } },
 });
 
 export const MATERIAL_NAMES = Object.keys(MATS);
@@ -427,6 +460,9 @@ function applyProcedural(mat, name, def, opts) {
   mat.userData.surface = def.surface;
   mat.userData.materialName = name;
   mat.userData.texGroup = def.tex || null;
+  // texturen 14.11.: Sockelschmutz an Wandfüßen (Builder-Meshes mit npGrime-Attribut, ab medium); setzt auch einen
+  // früheren Bibliotheks-Haken (XY-Normalen/Hex) zurück, falls ein Satz ausfällt
+  applySurface(mat, { grime: opts.grime && def.tex ? 0.85 : 0 }, macroTexture());
   return mat;
 }
 
@@ -551,6 +587,8 @@ function fillLibMaterial(mat) {
   if (spec.macro !== false) applyMacroVariation(mat, spec.macro || [0.16, 0.08, 0.12]);
   // env-look (medium+): Detailnormalen, Gegen-Kachelung der Albedo, Parallaxe (ultra) – nach dem Makro-Haken
   if (spec.look) applyLook(mat, spec.look, rx, ry);
+  // texturen 14.11.: XY-Normalen, Hex-Kachelauflösung (high/ultra), Sockelschmutz – engine/surface.js
+  applySurface(mat, { nxy: !!set.normalXY, hex: spec.look?.hex || 0, hexScale: spec.look?.hexScale, rot: spec.look?.hexRot || 0, grime: opts.grime ? (spec.grime ?? 0.85) : 0 }, macroTexture());
   libraryStats.materials++;
   mat.needsUpdate = true;
 }

@@ -37,7 +37,7 @@ export default {
   // Grafik-Vorlage Etappe 0 (15.10.): Tag wie im Video (Halle mit hellen Fensterbahnen, Gasse mit klarem Himmel) statt
   // Dämmerung; 16.10.: eigener Himmel (Nachmittag, klar) als Himmel und Umgebungslicht
   // Grafik-Vorlage 15.10.: Boden = dunkler Beton aus dem Video (wie Hafen, Gasse und Hallenboden im Video ähnlich)
-  assets: { hdri: 'np_sky_nachmittag_klar', materials: { concrete: { id: 'vh_kai', color: 0.42, macro: [0.12, 0.06, 0.1] } } },
+  assets: { hdri: 'np_sky_nachmittag_klar', materials: { concrete: { id: 'concrete_floor_worn2', color: [0.27, 0.4, 0.62], macro: [0.12, 0.06, 0.1] } /* texturen 14.11.: Fotoscan statt Video-Kai (vh_kai) */ } },
   defaultSurface: 'concrete',
   navSpacing: 1.5,
   groundNoise: 0.22,
@@ -128,7 +128,7 @@ export default {
       [-68, 1.5], [-57, 14], [-57, -14], [-72, 26], [-72, -24], [-64, 38], [-64, -37],
     ]) spawns.ffa.push({ x, z });
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
-    belebe(b, { stil: 'industrie', bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
+    belebe(b, { stil: 'industrie', boden: { asphalt: true }, bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -36, z: 27, radius: 5 }, { id: 'B', x: 0, z: 0, radius: 5.5 }, { id: 'C', x: -36, z: -27, radius: 5 }] },

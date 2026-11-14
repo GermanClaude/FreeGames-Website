@@ -185,6 +185,7 @@ export const MISSION_10 = {
         try { air.board(s, heli, 0); } catch { /* */ }
         s.update = function heliPilot() {};
         m.set('sander', s);
+        air.fly(heli, { hover: true, alt: c.alt }); // während des Intros auf Höhe schweben
       }
       m.on('vehicle:destroyed', (e) => { if (e && e.vehicle === m.get('heli') && !m.get('gelandet')) m.fail('Libelle 1 ist abgestürzt.'); });
     }

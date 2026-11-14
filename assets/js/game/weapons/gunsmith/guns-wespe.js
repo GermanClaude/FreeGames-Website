@@ -7,6 +7,7 @@
 // und Teleskopschaft, Klappvisiere, Spannhebel links vorn (klappbarer Knauf).
 import { mm, slab, rrect, pocket, POLY } from './gbkit.js?v=20261114060746';
 import { magRounds } from './magfill.js?v=20261114060746';
+import { apertureSight } from './pistol-parts.js?v=20261114060746';   // Lochkimme mit Durchblick (visier, 14.11.)
 import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., gfx-waffen)
 const MARK_WESPE = schrift('wespe').mark;
 
@@ -121,8 +122,10 @@ function sight(b, u, front) {
     b.box('gbSteel', 0.0024, 0.02, 0.0024, 0, base + 0.014, u, { c: 0 });
     b.box('gbAlu', 0.02, 0.004, 0.008, 0, base + 0.006, u, { c: 0.001 });
   } else {
-    b.side('gbAlu', [[-0.004, 0], [0.004, 0], [0.003, 0.03], [-0.003, 0.03]].map(([du, dv]) => [u + du, base + dv]), 0.022, 0, { bevel: 0.001, holes: [[[u - 0.004, SIGHT - 0.0018], [u + 0.004, SIGHT - 0.0018], [u + 0.004, SIGHT + 0.0018], [u - 0.004, SIGHT + 0.0018]]] });
-    b.cyl('cavity', 0.0016, 0.0016, 0.012, 0, SIGHT, u, { seg: 12 });
+    // Diopterflügel mit rundem Durchblick Ø 6,4 mm (visier, 14.11.: vorher Vollplatte 22 × 30 mm mit schwarzem Punkt – das Loch lief
+    // quer statt längs, im Anschlag ein Balken vor dem Ziel); Fuß des Flügels breit, oben schmaler Ring um die Blende
+    b.side('gbAlu', [[-0.004, 0], [0.004, 0], [0.003, 0.012], [-0.003, 0.012]].map(([du, dv]) => [u + du, base + dv]), 0.016, 0, { bevel: 0.001 });
+    apertureSight(b, 'gbAlu', { x0: -0.0075, x1: 0.0075, v0: base + 0.011, v1: SIGHT + 0.0068, cv: SIGHT, r: 0.0032, u: u - 0.002, l: 0.004 });
     for (const s of [-1, 1]) b.box('gbAlu', 0.004, 0.02, 0.01, s * 0.0115, base + 0.012, u, { c: 0.001 });
   }
 }

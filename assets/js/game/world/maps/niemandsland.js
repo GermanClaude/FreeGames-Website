@@ -8,6 +8,8 @@ import { wall } from '../arch.js?v=20261114060746';
 import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261114060746';
 import { sampleSpline } from '../terrain/generate.js?v=20261114060746';
 import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261114060746';
+// karten-voll (14.11.): Grabenleben, Trümmerfeld, ausgebrannte Lastwagen, Ruinen-Schutt
+import { kriegsspuren, ruinenLeben } from './niemandsland-leben.js?v=20261114060746';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -183,7 +185,7 @@ function frontWorks(b, ctx) {
 // ---------------------------------------------------------------------------
 // Karte
 // ---------------------------------------------------------------------------
-export default {
+const NIEMANDSLAND = {
   id: 'niemandsland',
   name: 'Niemandsland',
   scale: 'gross',
@@ -240,11 +242,13 @@ export default {
       ruin(b, -132, -12, 10, 8, 3); ruin(b, -112, -14, 9, 9, 7); ruin(b, -136, 10, 8, 10, 11);
       ruin(b, -110, 12, 12, 8, 17, { h: 5.5 }); ruin(b, -96, -2, 7, 7, 23, { h: 3 });
       for (let i = 0; i < 5; i++) sandbags(b, -125 + i * 4, -22, -122 + i * 4, -22, { rows: 2 });
+      ruinenLeben(b, [[-132, -12, 10, 8], [-112, -14, 9, 9], [-136, 10, 8, 10], [-110, 12, 12, 8], [-96, -2, 7, 7]], 0.4);
     }, seeds: [[-120, 0, 0.4]], height: 8 },
     { id: 'kapelle', name: 'Kapellenruine', y: 0.6, bounds: { minX: 106, maxX: 144, minZ: -24, maxZ: 12 }, build: (b) => {
       ruin(b, 125, -6, 12, 20, 31, { h: 6.5, tint: '#a8a092' });
       b.box(125, 0, -18, 2.2, 7.5, 2.2, 'stone_wall', { tint: '#a8a092', minimap: 'pillar' }); // Rest des Turms
       crateStack(b, 118, 6, { n: 2 });
+      ruinenLeben(b, [[125, -6, 12, 20]], 0.6);
     }, seeds: [[125, -6, 0.6]], height: 10 },
     { id: 'mitte', name: 'Panzerwrack', bounds: { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, build: (b) => tankWreck(b, 8, 12, 0.6), seeds: [[0, 18]], height: 6 },
     { id: 'basis_a', name: 'Basis A', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: HQZ - 18, maxZ: HQZ + 18 }, build: (b) => { dugout(b, -18, HQZ, 1); dugout(b, 18, HQZ + 2, 1); }, seeds: [[0, HQZ, 0.5]], nav: true },
@@ -252,6 +256,7 @@ export default {
   ],
   lateSites: [
     { id: 'front', name: 'Gräben und Draht', bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, chunkSize: 80, build: (b, ctx) => frontWorks(b, ctx) },
+    { id: 'leben', name: 'Kriegsspuren', bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, chunkSize: 80, build: (b, ctx) => kriegsspuren(b, ctx, NIEMANDSLAND, TRENCHES) },
   ],
 
   flags: {
@@ -285,3 +290,4 @@ export default {
   ],
   secrets: [],
 };
+export default NIEMANDSLAND;

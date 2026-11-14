@@ -139,7 +139,7 @@ export default {
       [48.5, 20], [48.5, -20], [62, 4.8], [65.5, 28], [65.5, -28], [55, 23], [55, -23],
     ]) spawns.ffa.push({ x, z });
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
-    belebe(b, { stil: 'stadt', bereich: { minX: -46, maxX: 69, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, KAMPAGNE.altstadt) });
+    belebe(b, { stil: 'stadt', boden: true, bereich: { minX: -46, maxX: 69, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, KAMPAGNE.altstadt) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 29, radius: 5 }, { id: 'B', x: -7.5, z: 0, radius: 5.5 }, { id: 'C', x: -5, z: -29, radius: 5 }] },

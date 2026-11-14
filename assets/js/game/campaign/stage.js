@@ -70,11 +70,12 @@ export function floorsAt(G, x, z) {
       if (_fh.back) {
         // Rückseite: wir verlassen einen Körper nach unten. War kein Eintritt gesehen (zusammenfallende Flächen), liegt
         // die Oberseite dieses Körpers auf Höhe des vorigen Treffers – dort ist eine Standfläche ohne Kopffreiheit.
-        if (!inside && prev != null) out.push({ y: prev, clear: 0 });
+        if (!inside && prev != null) out.push({ y: prev, clear: 0, bottom: hy });
+        else if (out.length) out[out.length - 1].bottom = hy;
         inside = false;
         ceil = hy;
       } else {
-        out.push({ y: hy, clear: ceil - hy });
+        out.push({ y: hy, clear: ceil - hy, bottom: -Infinity });
         inside = true;
       }
       prev = hy;
@@ -84,7 +85,7 @@ export function floorsAt(G, x, z) {
   if (!out.length) {
     const gh = (from) => { try { const v = W && W.groundHeight ? W.groundHeight(x, z, from) : null; return Number.isFinite(v) ? v : null; } catch { return null; } };
     const g = gh(TOP);
-    if (g != null) out.push({ y: g, clear: Infinity });
+    if (g != null) out.push({ y: g, clear: Infinity, bottom: -Infinity });
   }
   return out;
 }
@@ -111,6 +112,18 @@ export function snapY(G, x, z, hint, up = 0.9) {
   for (const e of f) if (e.y <= hint + up && (best == null || e.y > best)) best = e.y;
   if (best == null) best = f[f.length - 1].y; // alles über uns (Geländeanstieg): unterste
   return best;
+}
+
+/**
+ * Steckt ein Akteur mit den Füßen bei y in einem festen Körper (Bodenplatte, Gelände)? → Oberseite dieses Körpers, sonst
+ * null. Körper ohne gesehene Unterseite (Gelände) zählen bis 3 m Tiefe. Hocken unter Tischen o. Ä. bleibt unberührt.
+ */
+export function buriedY(G, x, z, y, tol = 0.25) {
+  for (const f of floorsAt(G, x, z)) {
+    const bottom = Number.isFinite(f.bottom) ? f.bottom : f.y - 3;
+    if (y < f.y - tol && y > bottom - 0.05) return f.y;
+  }
+  return null;
 }
 
 /** Boden unter (x, z) ab Höhe from (Laufen); fehlt er (Gelände höher als from), die passende Standfläche. */

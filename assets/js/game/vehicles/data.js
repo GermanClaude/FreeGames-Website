@@ -778,6 +778,42 @@ export const CIVIL_TYPES = ['pkw', 'transporter', 'stapler', 'zugmaschine'];
 /** Militärfahrzeug (Panzer aller Generationen, Geländewagen) – nur auf großen Karten (maps.data.js militaryVehiclesAllowed). */
 export const isMilitary = (type) => !!(VEHICLES[type] && !VEHICLES[type].civil);
 
+/**
+ * Fahrerraum der Kettenfahrzeuge (cabin.js, Nutzer 14.11.): geschlossene Kammer vorn in der Wanne, aus Sitz (Füße),
+ * Winkelspiegel-Sicht, Fahrerluke und Wannenquader abgeleitet (Wannenraum). → { F, xl, xr, floor, roof, zFT (Decke vorn),
+ * zFB (Boden vorn, Glacis dazwischen), zB (Rückwand), eye (Innensicht), hatch } | null
+ */
+export function driverCabin(D) {
+  if (!D || D.drive !== 'tracked' || !D.seats) return null;
+  const s = D.seats.find((x) => x.drive);
+  if (!s) return null;
+  const hb = D.hullBox, F = s.pos;
+  const slit = (s.views || []).find((v) => v.overlay === 'slit') || null;
+  const hatch = D.hatches && D.hatches.driver && D.hatches.driver.space === 'hull' ? D.hatches.driver : null;
+  const hullTop = hb[1] + hb[4] - 0.06;
+  const floor = Math.max(hb[1] - hb[4] + 0.1, F[1] - 0.02);
+  let roof = hatch ? hatch.pos[1] - 0.04 : hullTop;
+  if (!hatch && slit) roof = Math.max(roof, slit.pos[1] + 0.12);
+  roof = Math.max(roof, floor + 1.0);
+  const half = Math.max(0.6, hb[3] - 0.32);
+  const xl = Math.max(-half, F[0] - 0.56), xr = Math.min(half, F[0] + 0.56);
+  const zFT = Math.min((slit ? slit.pos[2] : F[2] - 0.35) - 0.14, F[2] - 0.28);
+  const zFB = Math.min(zFT - 0.25, Math.max(hb[2] - hb[5] + 0.14, F[2] - 1.0));
+  // Rückwand vor dem Kampfraum (models.js hullCompartment beginnt dahinter)
+  const zB = F[2] + 0.62;
+  const eye = [F[0], Math.min(Math.max(F[1] + 0.86, floor + 0.62), roof - 0.17), F[2] + 0.12];
+  return { F, xl, xr, floor, roof, zFT, zFB, zB, eye, hatch };
+}
+// Innensicht „Fahrerraum“ für jeden Kettenfahrzeug-Fahrer – hinten an die Sichtliste gehängt (Sicht-Indizes im Netz
+// bleiben gleich, ältere Gegenstellen kennen die Sicht nur nicht)
+for (const D of Object.values(VEHICLES)) {
+  const R = driverCabin(D);
+  const s = R && D.seats.find((x) => x.drive);
+  if (s && s.views && !s.views.some((v) => v.id === 'innen')) {
+    s.views.push({ id: 'innen', label: 'Fahrerraum', space: 'hull', pos: R.eye, look: 'rel', yaw: [-2.0, 2.0], pitch: [-0.9, 0.5], zoom: [1], interior: true });
+  }
+}
+
 // Luftfahrzeuge (air/data.js): am Ende angehängt – Typ-/Waffen-Indizes der Bodenfahrzeuge bleiben gleich
 Object.assign(VEHICLES, AIR_VEHICLES);
 Object.assign(VEHICLE_WEAPONS, AIR_WEAPONS);

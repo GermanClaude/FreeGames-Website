@@ -425,6 +425,9 @@ export function sperrpunkte(def, extra = [], r = 2.6) {
 export const KAMPAGNE = {
   altstadt: [[-35, -7], [-33, 12], [-32, 30], [-31, 16], [-30, -24], [-30, 2], [-27, 44], [-26, 43], [-25, 44], [-22, 2], [-20, -30], [-19, 43], [-19, 44], [-18, 4], [-17, 44], [-16, 42], [-16, 46], [-15, 44], [-14, -36], [-14, 46], [-13, 42], [-13, 46], [-10, -26], [-2, 2], [3, 0], [8, -20], [10, 14], [12, -6], [13, -5], [14, -8], [14, -6], [14, -4], [22, 9], [26, -16], [36, -24], [40, -12], [42, 6]],
   werk: [[-70, 0], [-64, -6], [-60, 8], [-58, 22], [-56, -18], [-17, -39], [-9, -44], [-3, 42], [-1, 37], [-1, 42], [0, -42], [0, 31], [0, 32], [0, 33], [0, 38], [1, 36], [2, 39], [2, 42], [2, 44], [3, 37], [4, 38], [4, 43], [5, 37], [5, 40], [7, 39], [9, -44], [17, -39]],
+  // kampagne-a Runde 2 (M4 Hafennacht, M6 Feuerlinie): Stell-/Zielpunkte frei halten
+  hafen: [[10.5, 46], [6, 26.6], [-12.3, 12.5], [-22.3, -14], [-31.5, -21.6], [-31.5, -19.2], [-40.6, 45.4], [-38.5, 40], [-36, 6], [10.5, 30], [10.5, 8], [0.4, 14], [0.4, 4], [-1.5, 36], [-1.5, 26], [-7.5, 18], [-7.5, 8], [-20.6, 18], [-20.6, 24], [-11.5, -2], [-20.8, 2], [-20.8, -20], [-28, -8], [-28, 6], [-30, -16], [-34, -16], [-36, -24], [-36, -34], [-27.5, -27], [-27.5, -33], [-36, 40], [-34, 41.5], [-38, 41.5], [6.5, 28.5], [-12, 16.5], [-21.5, -8], [-30.5, -17.5]],
+  brandwald: [[24, 141], [19, 146], [96, 6], [100, -27], [112, -17], [113, -16], [118, -30], [98, -14], [98, -32], [114, -12], [96, -12], [120, -28], [108, -36], [90, -24], [124, -18], [104, -8], [76, 96], [62, 116], [64.4, 112.6], [66.2, 113.8]],
   grenzland: [[-30, 94], [-26, 58], [-14, 82], [-8, 41], [-6, 74], [3, 126], [4, 92], [4, 128], [5, 124], [6, 70], [6, 126], [8, 66], [8, 124], [8, 126], [9, 118], [9, 127], [10, 125], [11, 122], [14, 121], [18, 63], [22, 58], [24, -78], [24, 95], [26, 4], [31, -9], [32, -42], [33, -8], [34, -50], [34, -12], [35, -7], [35, 41], [35, 46], [38, -19], [40, -52], [40, -30], [40, -28], [44, -44], [50, -48], [52, -40], [62, -78]],
 };
 
@@ -744,14 +747,200 @@ export function dachleben(b, o = {}) {
 }
 
 /**
+ * Bodenmarken auf freien, ebenen Flächen (o.y, Standard 0): Kanaldeckel, Straßeneinläufe (Gullys) nahe an
+ * Gebäudekanten, Flickstellen und Risse im Belag. Nur flach (keine Hindernisse, nur Optik). o: { bereich, sperr,
+ * asphalt (Flickstellen), raster (9 m) }
+ */
+export function bodenmarken(b, o = {}) {
+  const bz = o.bereich || b.bounds, near = footGrid(b), y = o.y ?? 0, step = o.raster ?? 9, q = DICHTE[stufe(b)] ?? 1;
+  let n = 0;
+  for (let z = bz.minZ + step / 2; z < bz.maxZ; z += step) for (let x = bz.minX + step / 2; x < bz.maxX; x += step) {
+    const px = x + (hash01(x, z, 460) - 0.5) * step * 0.8, pz = z + (hash01(x, z, 461) - 0.5) * step * 0.8;
+    const h = hash01(px, pz, 462);
+    if (h > 0.5) continue;
+    const fs = near(px, pz);
+    if (fs.some((f) => f.y1 > y + 0.04 && f.y0 < y + 2 && inRect(f, px, pz, 0.9))) continue;
+    // Nähe zu einer Gebäudekante (Gully an der Rinne)?
+    const edge = fs.find((f) => f.kind === 'building' && inRect(f, px, pz, 2.2));
+    const sperrt = (o.sperr || []).some(([sx, sz, r]) => Math.hypot(px - sx, pz - sz) < r * 0.6);
+    if (edge && h < 0.3) {
+      // an die Kante rücken: 0,9 m vor die Wand
+      const c = Math.cos(edge.ry || 0), s = Math.sin(edge.ry || 0), dx = px - edge.x, dz = pz - edge.z;
+      let lx = dx * c - dz * s, lz = dx * s + dz * c;
+      if (Math.abs(lx) / edge.hw > Math.abs(lz) / edge.hd) lx = Math.sign(lx) * (edge.hw + 0.9); else lz = Math.sign(lz) * (edge.hd + 0.9);
+      const gx = edge.x + lx * c + lz * s, gz = edge.z - lx * s + lz * c;
+      if (!fs.some((f) => f !== edge && f.y1 > y + 0.04 && inRect(f, gx, gz, 0.5))) { gully(b, gx, y, gz, (edge.ry || 0) + (Math.abs(lx) > edge.hw ? Math.PI / 2 : 0)); n++; }
+    } else if (h < 0.14 && !sperrt) { kanaldeckel(b, px, y, pz); n++; }
+    else if (o.asphalt && h < 0.38 && fein(b)) {
+      const w = 1.2 + hash01(px, pz, 463) * 2.5, d = 0.8 + hash01(px, pz, 464) * 1.8;
+      b.decal(px, y + 0.011, pz, w, d, 'stain', { ry: Math.round(hash01(px, pz, 465) * 4) * Math.PI / 2 + 0.02, tint: '#2a2a28', opacity: 0.38, kind: 'grime' });
+      n++;
+    } else if (h < 0.5 * Math.min(1, q + 0.2)) { b.decal(px, y + 0.012, pz, 1.5 + h * 3, 1.5 + h * 2, 'cracks', { ry: h * 20, opacity: 0.7 }); n++; }
+  }
+  return n;
+}
+
+// ---------------------------------------------------------------------------
+// Einrichtung leerer Räume
+// ---------------------------------------------------------------------------
+/** Möbel: L = Breite an der Wand, D = Tiefe, H = Höhe (Kollision ab H > 0.6), fn baut das Stück (Unterkante-Mitte,
+ *  lokal +z in den Raum). */
+const MOEBEL = {
+  schrank: { L: 1.0, D: 0.6, H: 2.0, fn: (b, x, y, z, ry) => {
+    const f = frame(b, x, y, z, ry), t = ['#7a5a3a', '#8a6a4a', '#d8d0c0', '#5a4636'][Math.floor(hash01(x, z, 800) * 4)];
+    f.box(0, 0, 0, 1.0, 2.0, 0.6, 'wood_painted', { ...DG, tint: t });
+    f.box(0, 0.05, 0.302, 0.01, 1.9, 0.01, 'black', DN);
+    for (const sx of [-0.06, 0.06]) f.box(sx, 1.0, 0.31, 0.02, 0.14, 0.02, 'metal_galvanized', DN);
+    f.box(0, 2.0, 0, 1.04, 0.04, 0.62, 'wood_painted', { ...DN, tint: t });
+  } },
+  kommode: { L: 1.2, D: 0.62, H: 1.18, fn: (b, x, y, z, ry) => lib(b, 'painted_wooden_cabinet', x, y, z, { ry }, (bb) => { const f = frame(bb, x, y, z, ry); f.box(0, 0, 0, 1.2, 0.9, 0.55, 'wood_painted', { ...DG, tint: '#8a6a4a' }); for (let k = 0; k < 3; k++) f.box(0, 0.1 + k * 0.27, 0.276, 1.1, 0.23, 0.01, 'wood_dark', DN); }) },
+  regal: { L: 0.55, D: 0.37, H: 1.12, fn: (b, x, y, z, ry) => lib(b, 'painted_wooden_shelves', x, y, z, { ry }, (bb) => { const f = frame(bb, x, y, z, ry); for (const sx of [-0.25, 0.25]) f.box(sx, 0, 0, 0.03, 1.1, 0.36, 'wood_planks', DG); for (let k = 0; k < 4; k++) f.box(0, 0.05 + k * 0.33, 0, 0.5, 0.025, 0.36, 'wood_planks', DN); }) },
+  buecherregal: { L: 1.0, D: 0.35, H: 1.9, fn: (b, x, y, z, ry) => {
+    const f = frame(b, x, y, z, ry), t = '#6a5038';
+    for (const sx of [-0.49, 0.49]) f.box(sx, 0, 0, 0.03, 1.9, 0.35, 'wood_dark', { ...DG, tint: t });
+    f.box(0, 0, -0.16, 1.0, 1.9, 0.02, 'wood_dark', { ...DN, tint: t });
+    for (let k = 0; k < 5; k++) {
+      f.box(0, 0.04 + k * 0.38, 0, 0.96, 0.025, 0.34, 'wood_dark', { ...DN, tint: t });
+      if (k < 4 && fein(b)) for (let i = 0; i < 8; i++) { const hh = 0.2 + hash01(x + i, z + k, 801) * 0.1; if (hash01(x + k, z + i, 802) < 0.2) continue; f.box(-0.4 + i * 0.11, 0.065 + k * 0.38, 0.02, 0.07 + hash01(i, k, 803) * 0.04, hh, 0.24, 'tarp', { ...DN, tint: ['#7a2a20', '#2a4a6a', '#3a5a3a', '#c8b890', '#5a3a5a', '#2a2a2a'][Math.floor(hash01(x + i, k, 804) * 6)] }); }
+    }
+  } },
+  bett: { L: 0.95, D: 2.02, H: 0.62, fn: (b, x, y, z, ry) => {
+    const f = frame(b, x, y, z, ry);
+    const [bx, bz] = f.P(0, 1.0);
+    lib(b, 'old_bed_frame', bx, y, bz, { ry }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0, 1.0, 0.92, 0.35, 2.0, 'wood_dark', DG); g.box(0, 0, 0.03, 0.92, 1.0, 0.06, 'wood_dark', DG); });
+    f.box(0, 0.35, 1.0, 0.86, 0.18, 1.92, 'tarp', { ...DN, tint: '#e8e2d4' });
+    f.box(0, 0.5, 1.15, 0.88, 0.06, 1.4, 'tarp', { ...DN, tint: ['#6a7a9a', '#9a5a4a', '#7a8a6a', '#c8b898'][Math.floor(hash01(x, z, 805) * 4)] });
+    f.box(0, 0.52, 0.28, 0.6, 0.12, 0.38, 'tarp', { ...DN, tint: '#f0ece2' });
+  } },
+  herd: { L: 0.52, D: 0.65, H: 0.86, kueche: true, fn: (b, x, y, z, ry) => lib(b, 'electric_stove', x, y, z, { ry }, (bb) => { const f = frame(bb, x, y, z, ry); f.box(0, 0, 0, 0.5, 0.85, 0.6, 'white', { ...DG, tint: '#e8e6e0' }); f.box(0, 0.86, 0, 0.5, 0.01, 0.6, 'black', DN); }) },
+  kueche: { L: 1.8, D: 0.62, H: 0.92, kueche: true, fn: (b, x, y, z, ry) => {
+    const f = frame(b, x, y, z, ry), t = ['#e8e4da', '#9aa88a', '#c8b898'][Math.floor(hash01(x, z, 806) * 3)];
+    f.box(0, 0, 0, 1.8, 0.86, 0.6, 'wood_painted', { ...DG, tint: t });
+    f.box(0, 0.86, 0.01, 1.82, 0.04, 0.62, 'concrete', { ...DN, tint: '#8a8680' });
+    for (let k = 0; k < 3; k++) f.box(-0.6 + k * 0.6, 0.1, 0.301, 0.56, 0.7, 0.01, 'wood_painted', { ...DN, tint: t });
+    f.box(0.4, 0.88, 0.05, 0.5, 0.05, 0.36, 'metal_galvanized', DN); // Spüle
+    f.box(0, 1.45, -0.12, 1.8, 0.7, 0.35, 'wood_painted', { ...DN, tint: t }); // Hängeschrank
+    if (fein(b)) { f.cyl(-0.5, 0.9, 0.05, 0.1, 0.12, 'metal_galvanized', { ...DN, seg: 10 }); f.cyl(-0.2, 0.9, 0.1, 0.05, 0.1, 'white', { ...DN, seg: 8, tint: '#d8d0c0' }); }
+  } },
+  tisch: { L: 1.6, D: 1.15, H: 0.78, stuehle: true, fn: (b, x, y, z, ry) => {
+    const f = frame(b, x, y, z, ry);
+    const [tx, tz] = f.P(0, 0.58);
+    lib(b, 'painted_wooden_table', tx, y, tz, { ry, sx: 0.66, sy: 0.8, sz: 0.85 }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0.72, 0.58, 1.55, 0.05, 0.9, 'wood_planks', { ...DN, tint: '#a8845e' }); for (const sx of [-0.7, 0.7]) for (const sz of [0.2, 0.96]) g.box(sx, 0, sz, 0.06, 0.72, 0.06, 'wood_dark', DN); });
+    for (const sx of [-0.45, 0.45]) { const [cx, cz] = f.P(sx, 1.35); lib(b, 'painted_wooden_chair_01', cx, y, cz, { ry: ry + Math.PI + (hash01(cx, cz, 807) - 0.5) * 0.4 }, (bb) => { const g = frame(bb, cx, y, cz, ry + Math.PI); g.box(0, 0.44, 0, 0.42, 0.04, 0.42, 'wood_planks', DN); g.box(0, 0.48, -0.19, 0.42, 0.45, 0.03, 'wood_planks', DN); for (const a of [-0.18, 0.18]) for (const c of [-0.18, 0.18]) g.box(a, 0, c, 0.03, 0.44, 0.03, 'wood_dark', DN); }); }
+  } },
+  schreibtisch: { L: 2.0, D: 0.95, H: 0.79, buero: true, fn: (b, x, y, z, ry) => {
+    const f = frame(b, x, y, z, ry), [cx, cz] = f.P(0, 0.47);
+    lib(b, 'metal_office_desk', cx, y, cz, { ry }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0.74, 0.47, 2.0, 0.045, 0.94, 'wood_planks', { ...DN, tint: '#8a7a62' }); g.box(-0.72, 0, 0.47, 0.5, 0.74, 0.9, 'metal_painted', { ...DG, tint: '#6f7a80' }); });
+    f.box(0.2, 0.79, 0.25, 0.5, 0.32, 0.04, 'polymer', { ...DN, tint: '#1e2023' });
+    f.box(-0.5, 0.79, 0.5, 0.24, 0.06, 0.32, 'white', { ...DN, tint: '#ece8dc' });
+    const [sx, sz] = f.P(0.1, 1.3);
+    lib(b, 'schoolchair_01', sx, y, sz, { ry: ry + Math.PI }, null);
+  } },
+  stahlregal: { L: 1.1, D: 0.5, H: 2.14, lager: true, fn: (b, x, y, z, ry) => lib(b, 'steel_frame_shelves_01', x, y, z, { ry }, (bb) => { const f = frame(bb, x, y, z, ry); for (const sx of [-0.52, 0.52]) f.box(sx, 0, 0, 0.04, 2.1, 0.5, 'metal_galvanized', DG); for (let k = 0; k < 5; k++) f.box(0, 0.1 + k * 0.48, 0, 1.06, 0.03, 0.48, 'metal_galvanized', DN); }) },
+};
+const RAUM = {
+  wohn: ['schrank', 'kommode', 'regal', 'bett', 'buecherregal', 'tisch', 'kommode', 'regal'],
+  erdgeschoss: ['kueche', 'herd', 'tisch', 'kommode', 'regal', 'buecherregal', 'schrank'],
+  buero: ['schreibtisch', 'stahlregal', 'regal', 'schreibtisch', 'kommode'],
+  lager: ['stahlregal', 'stahlregal', 'regal', 'kommode'],
+};
+
+/**
+ * Leere, begehbare Räume einrichten (Gebäude aus arch.building(), b._gebaeude): Möbel an den Wänden – Türbereiche
+ * (1,1 m), Treppenlöcher/Treppen (1,2 m), vorhandene Möbel/Deckung und Kampagnen-/Startpunkte bleiben frei; hohe
+ * Möbel nicht vor Fenstern. Räume mit schon ≥ 2 Möbeln oder Bibliotheksmodellen bleiben, wie sie sind. Große Möbel
+ * mit Kollision (unabhängig von der Grafikstufe → Mehrspieler gleich; Navigation tastet sie mit ab), Kleinkram ohne.
+ * o: { stil: 'wohn'|'buero'|'lager', bereich, sperr, minFlaeche (12 m²) }
+ */
+export function einrichten(b, o = {}) {
+  const bz = o.bereich || b.bounds, sperr = o.sperr || [], near = footGrid(b);
+  let raeume = 0, stuecke = 0;
+  for (const g of b._gebaeude || []) {
+    if (!g.interior || g.w < 3.8 || g.d < 3.8 || g.w * g.d < (o.minFlaeche ?? 12) || g.w * g.d > (o.maxFlaeche ?? 140)) continue;
+    if (g.x < bz.minX || g.x > bz.maxX || g.z < bz.minZ || g.z > bz.maxZ) continue;
+    if (/wood/.test(g.mat) && o.holz !== true) continue; // Schuppen/Scheunen
+    const ix0 = g.x - g.w / 2 + g.t, ix1 = g.x + g.w / 2 - g.t, iz0 = g.z - g.d / 2 + g.t, iz1 = g.z + g.d / 2 - g.t;
+    for (let li = 0; li < g.levels.length; li++) {
+      const fy = g.levels[li], ceil = li + 1 < g.levels.length ? g.levels[li + 1] - 0.3 : g.roofY - 0.3;
+      if (ceil - fy < 2.3) continue;
+      // nicht begehbar (noNav über dem Boden)?
+      if (b.navExclude.some((e) => e.minX <= g.x && e.maxX >= g.x && e.minZ <= g.z && e.maxZ >= g.z && e.minY <= fy + 0.6 && e.maxY >= fy + 1.6)) continue;
+      // schon eingerichtet?
+      const inside = (x, z) => x > ix0 && x < ix1 && z > iz0 && z < iz1;
+      const vorh = b.footprints.filter((f) => (f.kind === 'cover' || f.kind === 'prop') && inside(f.x, f.z) && f.y0 > fy - 0.3 && f.y0 < fy + 1.2).length
+        // Bibliotheksmodelle nur, wenn sie unabhängig von der Bibliothek stehen (mit Ersatzform) – sonst hinge die
+        // Einrichtung (und ihre Kollision) davon ab, ob das Gerät die Bibliothek lädt (Mehrspieler!)
+        + b.models.filter((m) => m.o && m.o.fallback && inside(m.x, m.z) && m.y > fy - 0.3 && m.y < fy + 1.2).length;
+      if (vorh >= 2) continue;
+      // Sperrflächen: Türen (innen 1,1 m), Löcher/Treppen, vorhandene Einbauten
+      const doors = [], wins = [];
+      for (const op of g.openings) {
+        if ((op.floor ?? 0) !== li) continue;
+        const ax = op.side === 'n' || op.side === 's', px = ax ? g.x + op.at : (op.side === 'e' ? ix1 : ix0), pz = ax ? (op.side === 'n' ? iz0 : iz1) : g.z + op.at;
+        const kind = op.kind || 'door';
+        (kind === 'window' ? wins : doors).push({ x: px, z: pz, w: op.w, ax });
+      }
+      const holes = g.holes.filter((h) => (h.floor ?? 1) === li || (h.floor ?? 1) === li + 1);
+      const blocks = b.footprints.filter((f) => f.kind !== 'building' && f.kind !== 'roof' && f.kind !== 'floor' && f.y1 > fy + 0.1 && f.y0 < fy + 2 && Math.abs(f.x - g.x) < g.w / 2 + 2 && Math.abs(f.z - g.z) < g.d / 2 + 2);
+      const sorte = RAUM[o.stil === 'buero' ? 'buero' : o.stil === 'lager' ? 'lager' : li === 0 ? 'erdgeschoss' : 'wohn'];
+      let placed = 0, kueche = false;
+      const mine = [];
+      const walls = [['n', ix0, ix1, iz0, 0, 1], ['s', ix0, ix1, iz1, 0, -1], ['w', iz0, iz1, ix0, 1, 0], ['e', iz0, iz1, ix1, -1, 0]];
+      for (const [side, a0, a1, c, nx, nz] of walls) {
+        let cur = a0 + 0.2, k = Math.floor(hash01(g.x + side.charCodeAt(0), g.z + li, 810) * sorte.length);
+        let guard = 0;
+        while (cur < a1 - 0.5 && guard++ < 20 && placed < 6) {
+          const id = sorte[k++ % sorte.length], M = MOEBEL[id];
+          if ((M.kueche && kueche) || (M.stuehle && placed === 0 && hash01(g.x, g.z, 811) < 0.3)) { continue; }
+          const L = M.L, Dp = M.D;
+          if (cur + L > a1 - 0.2) { cur += 0.5; continue; }
+          const u = cur + L / 2;
+          // Rechteck (achsenparallel) in Welt
+          const along = nx === 0; // Wand n/s läuft entlang x
+          const cx = along ? u : c + nx * (Dp / 2 + 0.02), cz = along ? c + nz * (Dp / 2 + 0.02) : u;
+          const hx = along ? L / 2 : Dp / 2, hz = along ? Dp / 2 : L / 2;
+          const hit = (x, z, m) => Math.abs(x - cx) < hx + m && Math.abs(z - cz) < hz + m;
+          let ok = !doors.some((d) => { const dx = d.ax ? d.x : d.x + (d.x === ix0 ? 1 : -1) * 0.6, dz = d.ax ? d.z + (d.z === iz0 ? 1 : -1) * 0.6 : d.z; return Math.abs(dx - cx) < hx + (d.ax ? d.w / 2 + 0.6 : 0.9) && Math.abs(dz - cz) < hz + (d.ax ? 0.9 : d.w / 2 + 0.6); });
+          if (ok && M.H > 0.95) ok = !wins.some((w) => hit(w.x, w.z, w.w / 2 + 0.05));
+          if (ok) ok = !holes.some((h) => cx + hx > h.x0 - 1.2 && cx - hx < h.x1 + 1.2 && cz + hz > h.z0 - 1.2 && cz - hz < h.z1 + 1.2);
+          if (ok) ok = !blocks.some((f) => {
+            // gedrehter Grundriss → achsenparalleler Hüllquader; Wände ohne Rand (Außenwände enden an der Innenkante)
+            const c = Math.abs(Math.cos(f.ry || 0)), sn = Math.abs(Math.sin(f.ry || 0)), ex = c * f.hw + sn * f.hd, ez = sn * f.hw + c * f.hd, m = f.kind === 'wall' ? 0 : 0.3;
+            return Math.abs(f.x - cx) < hx + ex + m && Math.abs(f.z - cz) < hz + ez + m;
+          });
+          if (ok) ok = !mine.some((r) => Math.abs(r[0] - cx) < hx + r[2] + 0.2 && Math.abs(r[1] - cz) < hz + r[3] + 0.2);
+          if (ok) ok = !sperr.some(([sx, sz, r]) => Math.abs(sx - cx) < hx + Math.min(r, 1.6) && Math.abs(sz - cz) < hz + Math.min(r, 1.6));
+          // Gegenwand muss weit genug weg sein (Durchgang ≥ 1,6 m)
+          if (ok) ok = (along ? (iz1 - iz0) : (ix1 - ix0)) - Dp >= 1.6;
+          if (!ok) { cur += 0.45; continue; }
+          const ry = Math.atan2(nx, nz);
+          const [wx, wz] = along ? [u, c] : [c, u];
+          M.fn(b, wx, fy, wz, ry);
+          if (M.H > 0.6) b.box(cx, fy, cz, hx * 2 - 0.04, Math.min(M.H, 1.9), hz * 2 - 0.04, 'black', { visual: false, minimap: false });
+          if (M.kueche) kueche = true;
+          mine.push([cx, cz, hx, hz]);
+          placed++; stuecke++;
+          cur += L + 0.25 + hash01(cx, cz, 812) * 0.6;
+        }
+      }
+      if (placed) raeume++;
+    }
+  }
+  return { raeume, stuecke };
+}
+
+/**
  * Alles zusammen am Ende eines Kartenaufbaus: wandkram, tuerdetails, fensterleben, gassenkabel (Stil stadt/dorf),
  * dachleben. o wie die Einzelfunktionen. Liefert die Zählung (für das Debug-Log).
  */
 export function belebe(b, o = {}) {
   const t0 = performance.now();
-  const res = { wand: wandkram(b, o), tuer: tuerdetails(b, o), fenster: fensterleben(b, o) };
+  // Einrichtung zuerst: sie zählt vorhandene Möbel – Kleinkram dieses Moduls (je Stufe verschieden) darf das nicht beeinflussen
+  const res = { innen: o.einrichten !== false ? einrichten(b, { ...o, stil: o.raum || (o.stil === 'industrie' || o.stil === 'hafen' ? 'buero' : o.stil === 'militaer' ? 'lager' : 'wohn') }) : null };
+  Object.assign(res, { wand: wandkram(b, o), tuer: tuerdetails(b, o), fenster: fensterleben(b, o) });
   if (o.kabel !== false && (o.stil === 'stadt' || o.stil === 'dorf' || o.kabel)) res.kabel = gassenkabel(b, o);
   if (o.dach !== false) res.dach = dachleben(b, o);
+  if (o.boden) res.boden = bodenmarken(b, { ...o, ...(typeof o.boden === 'object' ? o.boden : {}) });
   res.ms = Math.round(performance.now() - t0);
   b.kleinkram = res;
   return res;

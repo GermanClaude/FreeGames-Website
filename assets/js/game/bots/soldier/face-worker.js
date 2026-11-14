@@ -1,14 +1,20 @@
-// NULLPUNKT — Hintergrund-Rechner für Soldatenköpfe (face-sdf.js): baut Kopfnetz + Morph-Ziele abseits des Hauptfadens
-// (≈ 0,2–2 s je Kopfform) und schickt die Puffer übertragen (ohne Kopie) zurück. Nachricht: { id, res, shape }.
-import { buildFaceData } from './face-sdf.js?v=20261114060746';
+// NULLPUNKT — Hintergrund-Rechner für Soldatenköpfe: lädt das Kopf-Asset (face-mesh.js), baut Kopfnetz + Morph-Ziele je Profil
+// und backt die Hautkarten (face-skin.js) abseits des Hauptfadens; Puffer werden übertragen (ohne Kopie).
+// Nachrichten: { id, kind: 'mesh', res, profile } → { id, D } · { id, kind: 'tex', look, w, h } → { id, T }
+import { loadHeadAsset, buildHeadData, transferList } from './face-mesh.js?v=20261114060746';
+import { bakeFaceMaps } from './face-skin.js?v=20261114060746';
 
-self.onmessage = (e) => {
-  const { id, res, shape } = e.data || {};
+self.onmessage = async (e) => {
+  const { id, kind, res, profile, look, w, h } = e.data || {};
   try {
-    const D = buildFaceData(res, shape);
-    const tr = [D.pos.buffer, D.nrm.buffer, D.col.buffer, D.rest.buffer, D.idx.buffer, D.ski.buffer, D.skw.buffer];
-    for (const m of D.morphs) tr.push(m.pos.buffer, m.nrm.buffer, m.col.buffer);
-    self.postMessage({ id, D }, tr);
+    const A = await loadHeadAsset();
+    if (kind === 'tex') {
+      const T = bakeFaceMaps(A, look, w, h);
+      self.postMessage({ id, T }, [T.a.buffer, T.b.buffer]);
+    } else {
+      const D = buildHeadData(A, res, profile);
+      self.postMessage({ id, D }, transferList(D));
+    }
   } catch (err) {
     self.postMessage({ id, error: String((err && err.message) || err) });
   }

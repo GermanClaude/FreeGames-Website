@@ -12,6 +12,10 @@ import { MISSION_5 } from './m5-archiv.js?v=20261114060746';
 import { MISSION_6 } from './m6-feuerlinie.js?v=20261114060746';
 // --- kampagne-b: Importe M7–M11 hier (je eine Zeile) ---
 import { MISSION_7 } from './m7-niemandsland.js?v=20261114060746';
+import { MISSION_8 } from './m8-geleit.js?v=20261114060746';
+import { MISSION_9 } from './m9-glockenschlag.js?v=20261114060746';
+import { MISSION_10 } from './m10-rollfeld.js?v=20261114060746';
+import { MISSION_11 } from './m11-stadtkern.js?v=20261114060746';
 
 const LIST = [
   MISSION_0, MISSION_1, MISSION_2, MISSION_3, MISSION_4, MISSION_5, MISSION_6,
@@ -19,6 +23,10 @@ const LIST = [
 // --- kampagne-b: Missionen M7–M11 hier in EXTRA eintragen (je eine Zeile, z. B. MISSION_7,) ---
 const EXTRA = [
   MISSION_7,
+  MISSION_8,
+  MISSION_9,
+  MISSION_10,
+  MISSION_11,
 ];
 
 export const MISSIONS = {};

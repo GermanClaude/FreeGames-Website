@@ -6,6 +6,7 @@
 // Holzgriffschalen (Walnuss) mit Fingermulden, Fischhaut und Medaillon. Edelstahl hochglanz (wie die „Stainless“-Ausführung).
 // Teile/Anker wie das Vormodell (crane, cylinder, ejector, loader, hammer, Griffpunkte) – Nachladen und Haltung bleiben.
 import { triggerGuard } from './parts.js?v=20261114060746';
+import { notchSight } from './pistol-parts.js?v=20261114060746';   // Kimme mit echter Kerbe (visier, 14.11.)
 import { magRounds } from './magfill.js?v=20261114060746';
 import { checkering } from './guns-flinten.js?v=20261114060746';
 import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., gfx-waffen)
@@ -53,9 +54,9 @@ export function kobra(b) {
   b.side('stainless', [[0.204, 0.1035], [0.226, 0.1035], [0.226, 0.1115], [0.221, 0.112]], 0.004, 0, { bevel: 0.0005 });
   if (b.hi) b.box('paintSignal', 0.0042, 0.0048, 0.0022, 0, 0.1098, 0.2225, { rx: 0.4, c: 0 });
   b.box('steelDark', 0.018, 0.008, 0.026, 0, 0.103, -0.016, { c: 0.002 });
-  b.box('steelDark', 0.02, 0.009, 0.005, 0, 0.1075, -0.026, { c: 0.001 });
+  // Kimmenblatt mit ausgeschnittener Kerbe 3 × 3,5 mm (visier, 14.11.: vorher Vollblatt mit schwarzem Kästchen – Korn unsichtbar)
+  notchSight(b, 'steelDark', [[-0.0285, 0.103], [-0.0235, 0.103], [-0.0235, 0.112], [-0.0285, 0.112]], 0.01, { nw: 0.003, vN: 0.1085, bevel: 0.0005 });
   if (b.hi) {
-    b.box('cavity', 0.003, 0.004, 0.0052, 0, 0.1105, -0.026, { c: 0 });                                    // Kimmenkerbe
     b.screw('steel', 0.0102, 0.106, -0.022, 'x', 0.0016);
     b.screw('steel', 0, 0.1075, -0.004, 'v', 0.0016);
   }

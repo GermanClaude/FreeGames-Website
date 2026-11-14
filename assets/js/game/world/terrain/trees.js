@@ -45,6 +45,8 @@ export const TREE_SPECIES = {
   kiefer: { conifer: true, pine: true, H: 13.5, R0: 0.22, flare: 0.25, leader: 0.93, base: 0.55, limbs: 9, ang: [35, 62], limb: 0.24, up: 0.3, sub: 0.6, card: 1.3, step: 0.35, cells: [11, 11], bark: 'bark_kiefer', strip: 6, vScale: 1, tint: ['#eef2e2', '#e4e8d6', '#f6f4e4'], tile: 2, mossK: 0.3, bend: 0.24, crownR: 3.4 },
   tot:    { dead: true, H: 11.5, R0: 0.25, flare: 0.5, leader: 0.6, base: 0.3, limbs: 6, ang: [40, 78], limb: 0.42, up: 0.18, sub: 0.9, card: 1.4, step: 0.9, cells: [12, 12], bark: 'bark', barkTint: '#8c8378', strip: 7, vScale: 1, tint: ['#ffffff', '#ece6e0'], tile: 1, mossK: 1.2, bend: 0.12, crownR: 4.4 },
 };
+/** Spielmaterialien der Rinden (bigworld lädt ihre Bibliothekssätze vor dem Aufbau). */
+export const TREE_BARKS = ['bark_eiche', 'bark_buche', 'bark_birke', 'bark_pappel', 'bark_kiefer', 'bark_fichte'];
 /** Arten der Altkategorien (vegetation.js platziert 'laub'/'fichte'; welche Art es wird, entscheidet ein Hash). */
 export const DEFAULT_MIX = {
   laub: [['buche', 0.3], ['eiche', 0.24], ['linde', 0.16], ['birke', 0.16], ['pappel', 0.08], ['tot', 0.06]],
@@ -334,7 +336,7 @@ function leafCards(B, sk, sp, lod, r) {
       const t = Math.min(1, t0 + (1 - t0) * (i + (i < n ? r() * 0.5 : 0)) / Math.max(1, n));
       pointAt(b, t, P); dirAt(b, t, D);
       const out = A.subVectors(P, cc); out.y *= 0.6; out.normalize();
-      const reps = sp.dead ? (r() < 0.5 ? 1 : 0) : conLimb ? 2 : lod ? 1 : (t > 0.85 ? 2 : 1 + (r() < 0.35 ? 1 : 0));
+      const reps = sp.dead ? (r() < 0.5 ? 1 : 0) : conLimb ? (lod ? 1 : 2) : lod ? 1 : (t > 0.85 ? 2 : 1 + (r() < 0.35 ? 1 : 0));
       for (let k = 0; k < reps; k++) {
         const axis = D.clone().multiplyScalar(conLimb ? 0.85 : 0.45).addScaledVector(out, conLimb ? 0.15 : 0.45);
         axis.y += conLimb ? -0.08 : sp.droop ? -sp.droop * 0.9 : 0.15;
@@ -369,7 +371,7 @@ export function buildTreeVariant(kind, seed, lod = 0) {
   if (lod === 0) {
     const W = new Builder(), L = new Builder();
     for (const b of sk.branches) {
-      const segs = b.lvl === 0 ? 14 : b.lvl === 1 ? (b.R[0] > 0.07 ? 8 : 5) : 4;
+      const segs = b.lvl === 0 ? 14 : sp.conifer && !sp.pine ? 3 : b.lvl === 1 ? (b.R[0] > 0.07 ? 8 : 5) : 4;
       if (b.lvl === 2 && b.R[0] < 0.008) continue;
       tube(W, b, segs, sp, sk.H, { flare: b.lvl === 0 ? sp.flare : 0, rootPh });
     }
@@ -379,7 +381,7 @@ export function buildTreeVariant(kind, seed, lod = 0) {
   const M = new Builder();
   for (const b of sk.branches) {
     if (b.lvl === 2 && !sp.dead) continue; // Seitenäste verschwinden in der Mittelstufe im Laub
-    if (b.lvl > 0 && b.R[0] < 0.035 && !sp.dead) continue;
+    if (b.lvl > 0 && (b.R[0] < 0.035 || (sp.conifer && !sp.pine && b.R[0] < 0.05)) && !sp.dead) continue;
     tube(M, b, b.lvl === 0 ? 7 : 3, sp, sk.H, { strip: sp.strip, flare: b.lvl === 0 ? sp.flare * 0.8 : 0, rootPh });
   }
   leafCards(M, sk, sp, 1, r);
@@ -414,6 +416,34 @@ export function buildBush(seed = 3, lod = 0) {
       card(B, P, axis, F, sz, sz * 0.9, cells[(r() * cells.length) | 0], sk, sp, 0.15, 1.05);
     }
   }
+  return B.geometry();
+}
+
+/**
+ * Krone ohne Stamm für die Arenakarten (atlas.js createFoliage 'olive'/'tree'; den Stamm baut props.js): Äste vom
+ * Kronenansatz nach außen, Zweigkarten wie bei den Großkarten-Bäumen. olive: schmale Blätter (Birkenzellen), lichter.
+ */
+export function buildCrown(kind = 'tree', seed = 11) {
+  const r = rng(seed), B = new Builder();
+  const olive = kind === 'olive';
+  const yS = olive ? 1.5 : 2.0, yC = olive ? 3.5 : 4.6, R = olive ? 2.3 : 2.9;
+  const sp = { cells: olive ? [4, 5] : [2, 3, 6, 7], card: olive ? 0.85 : 1.05, step: olive ? 0.34 : 0.36, bend: 0.12, conifer: false };
+  const sk = { cc: new THREE.Vector3(0, yC, 0), crownR: R, H: yC + R, branches: [] };
+  const n = olive ? 9 : 11;
+  for (let i = 0; i < n; i++) {
+    const az = i * 2.39996 + r() * 0.5, u = i / (n - 1);
+    const tgt = new THREE.Vector3(Math.cos(az) * R * (0.75 + r() * 0.3) * (1 - u * 0.45), yC - R * 0.35 + u * R * 1.25, Math.sin(az) * R * (0.75 + r() * 0.3) * (1 - u * 0.45));
+    const o = new THREE.Vector3(0, yS + u * (yC - yS) * 0.8, 0), d = tgt.clone().sub(o);
+    const L = d.length();
+    const limb = makeBranch(curve(r, o, d, L, 5, 0.1, 0.25), 0.06, 0.012, 1);
+    sk.branches.push(limb);
+    for (let j = 0; j < 3; j++) {
+      const t = 0.35 + j * 0.22, so = pointAt(limb, t), ld = dirAt(limb, t), sd = perp(ld, r() * TAU, new THREE.Vector3());
+      const dd = ld.clone().multiplyScalar(0.6).addScaledVector(sd, 0.8).normalize();
+      sk.branches.push(makeBranch(curve(r, so, dd, L * 0.45 * (0.8 + r() * 0.4), 3, 0.1, 0.3), 0.02, 0.008, 2));
+    }
+  }
+  leafCards(B, sk, sp, 0, r);
   return B.geometry();
 }
 

@@ -8,6 +8,7 @@
 // Laufbündel 'rotor' (Drehpunkt auf der Bündelachse) – das Viewmodel dreht es mit der Hochdrehzahl (controller.js spin).
 import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114060746';
 import { magRounds } from './magfill.js?v=20261114060746';
+import { notchSight } from './pistol-parts.js?v=20261114060746';   // Kimme mit echter Kerbe (visier, 14.11.)
 import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., gfx-waffen)
 const MARK_ORKAN = schrift('orkan').mark;
 
@@ -60,8 +61,8 @@ export function orkan(b) {
     cut: (x, v, u, d) => Math.max(d, Math.hypot(x, v - AXIS) - 0.058) });
   const sv = AXIS + 0.075;
   b.box('gbSteel', 0.03, 0.016, 0.03, 0, AXIS + 0.064, -0.105, { c: 0.002 });
-  b.side('gbSteel', [[-0.12, AXIS + 0.07], [-0.095, AXIS + 0.07], [-0.098, sv + 0.006], [-0.117, sv + 0.006]], 0.022, 0, { bevel: 0.001 });
-  b.box('cavity', 0.004, 0.006, 0.026, 0, sv + 0.004, -0.106, { c: 0 });
+  // Kimme mit ausgeschnittener Kerbe 4 × 4 mm (visier, 14.11.: vorher Vollblock mit schwarzem Kästchen, Korn unsichtbar)
+  notchSight(b, 'gbSteel', [[-0.12, AXIS + 0.07], [-0.095, AXIS + 0.07], [-0.098, sv + 0.007], [-0.117, sv + 0.007]], 0.011, { nw: 0.004, vN: sv + 0.001, bevel: 0.0008 });
   b.box('gbSteel', 0.005, sv - AXIS - 0.05, 0.008, 0, (sv + AXIS) / 2 + 0.03, 0.163, { c: 0.001 });
   b.box('gbSteel', 0.016, 0.012, 0.016, 0, AXIS + 0.058, 0.163, { c: 0.002 });
 
@@ -141,7 +142,7 @@ export function orkan(b) {
   b.anchor('muzzle', 0, AXIS, U1 + 0.004);
   b.anchor('ejection', 0.04, 0.03, 0.02);
   b.anchor('rightHandGrip', 0, 0, 0, { data: { rake: 0.32, gw: 0.016, gd: 0.02, gu: 0.006, ho: 0.039, tu: 0.03 } });
-  b.anchor('sight', 0, sv + 0.004, -0.106, { data: { type: 'iron', eyeRelief: 0.3 } });
+  b.anchor('sight', 0, sv + 0.005, -0.106, { data: { type: 'iron', eyeRelief: 0.3 } });
   b.anchor('leftHandGrip', 0, AXIS - 0.1, 0.2, { data: { style: 'under', w: 0.017, h: 0.017 } });
   b.meta = { sight: 'iron', axis: AXIS, kind: 'lmg' };
 }

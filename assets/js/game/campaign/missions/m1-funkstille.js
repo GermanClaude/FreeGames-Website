@@ -61,6 +61,7 @@ const CUT_OUTRO = {
 export const MISSION_1 = {
   id: 'm1',
   number: 1,
+  act: 1,
   title: 'Funkstille',
   short: 'Funkstille',
   map: 'altstadt',

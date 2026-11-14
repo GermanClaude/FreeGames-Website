@@ -217,7 +217,7 @@ export const MISSION_0 = {
         // 9 Lehnen
         yield* lesson(m, {
           title: 'Um die Ecke lehnen',
-          text: (mm) => DEV(mm, { kb: `Lehne dich mit ${K(mm, 'lean_left')} nach links und ${K(mm, 'lean_right')} nach rechts.`, pad: 'Halte <b>LT</b> und drücke einen Stick, um dich zu lehnen.', touch: 'Lehnen kannst du in den Touch-Einstellungen als Knopf einblenden. Tippe auf <b>Zielen</b>, um weiterzumachen.' }),
+          text: (mm) => DEV(mm, { kb: `Lehne dich mit ${K(mm, 'lean_left')} nach links und ${K(mm, 'lean_right')} nach rechts.`, pad: `Lehne dich mit ${K(mm, 'lean_left')} nach links und ${K(mm, 'lean_right')} nach rechts.`, touch: 'Lehnen kannst du in den Touch-Einstellungen als Knopf einblenden. Tippe auf <b>Zielen</b>, um weiterzumachen.' }),
           tick: (mm, st) => { if (Math.abs(P(mm).lean || 0) > 0.3) st.lean = true; },
           done: (mm, st) => st.lean || (mm.device === 'touch' && mm.didPress('ads')),
         });
@@ -403,7 +403,7 @@ export const MISSION_0 = {
           const r = m.reach(`fahrt${i}`, `Fahre zum Wegpunkt ${i + 1} von ${ROUTE.length}`, { at: ROUTE[i], r: 7, label: `Fahrt ${i + 1}` });
           yield* lesson(m, {
             title: `Fahren (${i + 1}/${ROUTE.length})`,
-            text: (mm) => DEV(mm, { kb: `Gas und Lenkung mit ${K(mm, 'move_forward')} ${K(mm, 'move_left')} ${K(mm, 'move_back')} ${K(mm, 'move_right')}, umsehen mit der Maus. Fahre zum Wegpunkt.`, pad: 'Gas mit <b>RT</b>, Bremse/Rückwärts mit <b>LT</b>, Lenken mit dem <b>linken Stick</b>. Fahre zum Wegpunkt.', touch: 'Lenke mit dem <b>Stick</b>, Gas und Bremse mit den Pedal-Knöpfen. Fahre zum Wegpunkt.' }),
+            text: (mm) => DEV(mm, { kb: `Gas und Lenkung mit ${K(mm, 'move_forward')} ${K(mm, 'move_left')} ${K(mm, 'move_back')} ${K(mm, 'move_right')}, umsehen mit der Maus. Fahre zum Wegpunkt.`, pad: 'Gas, Rückwärts und Lenken mit dem <b>linken Stick</b>, umsehen mit dem rechten. Fahre zum Wegpunkt.', touch: 'Fahre mit dem <b>Stick</b> (vor = Gas, zurück = rückwärts); der Knopf <b>Bremse</b> hält an. Fahre zum Wegpunkt.' }),
             done: () => r.done || P(m).vehicle !== jeep && m.inZone(`fahrt${i}`),
           });
           if (P(m).vehicle !== jeep) {

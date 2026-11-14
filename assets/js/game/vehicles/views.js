@@ -169,6 +169,9 @@ export const VIEW_CSS = `
 .vo-optic::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(40,70,40,.0) 0,rgba(30,45,30,.18) 41vmin,transparent 42vmin)}
 .vo-ret{position:absolute;left:50%;top:50%;width:0;height:0}
 .vo-ret svg{position:absolute;left:-200px;top:-200px;width:400px;height:400px;overflow:visible;filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9))}
+.vo-ret svg.vo-cal{transform:none!important}
+.vo-optic.is-wk{background:radial-gradient(circle at 50% 50%,transparent 0,transparent 40vmin,rgba(12,8,2,.95) 42vmin,#000 70vmin)}
+.vo-optic.is-wk::after{background:radial-gradient(circle at 50% 50%,rgba(90,70,30,.06) 0,rgba(60,45,20,.22) 40vmin,transparent 41vmin)}
 .vo-marks{position:absolute;inset:0}
 .vo-mark{position:absolute;left:0;top:0;width:34px;height:0;margin-left:-17px;border-top:1.6px solid #f2efe6;box-shadow:0 0 2px #000;will-change:transform}
 .vo-mark b{position:absolute;left:40px;top:-8px;font:600 12px var(--font-hud,system-ui);color:#f2efe6;text-shadow:0 1px 2px #000}
@@ -221,6 +224,57 @@ const RING_SVG = `<svg viewBox="-50 -50 100 100" fill="none" stroke="#f2efe6" st
 <circle r="44" stroke-opacity=".6"/><path d="M0 -48V-38" stroke="#ffc23d" stroke-width="3"/>
 <g class="vo-hull"><rect x="-13" y="-22" width="26" height="44" rx="3" stroke-opacity=".8"/><path d="M-6 -22L0 -30L6 -22" stroke-opacity=".8"/></g>
 <g class="vo-tur"><circle r="9"/><path d="M0 -9V-40" stroke-width="3"/></g></svg>`;
+
+/**
+ * Geeichte Strichplatte der Hauptzieloptik (Nutzer 14.11.: „echte Strichplatte“): alle Maße in Strich (6400 je Vollkreis),
+ * px je Strich aus der tatsächlichen Abbildung (Zoom/Objektiv) – Striche, Vorhaltemarken und die Entfernungsschätz-
+ * Treppe (Zielhöhe 2,3 m) stimmen also mit der Welt überein. Je Generation eigenes Bild: modern Winkel + Strichskalen,
+ * 2. WK Spitzen (Dreiecke) mit Strichteilung, 1. WK Fadenkreuz mit Kreis.
+ */
+const MIL = (2 * Math.PI) / 6400;
+function opticSvg(era, ppm) {
+  const P = (m) => (m * ppm).toFixed(1);
+  const step = ppm * 2 >= 5 ? 2 : ppm * 5 >= 5 ? 5 : 10;
+  const o = [];
+  const txt = (x, y, t, anchor = 'middle', size = 11) => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${size}" fill="#f2efe6" stroke="none" font-family="var(--font-hud,system-ui)" font-weight="600">${t}</text>`;
+  if (era === 'wk2') {
+    // Spitzen: Hauptspitze (Höhe 4 Strich) in der Mitte, Nebenspitzen alle 8 Strich, dazwischen Teilstriche
+    const tri = (cx, h, b) => `M${P(cx - b / 2)} ${P(h)}L${P(cx)} 0L${P(cx + b / 2)} ${P(h)}`;
+    o.push(`<path d="${tri(0, 4, 4)}" stroke-width="2"/>`);
+    for (const k of [1, 2, 3]) for (const sx of [-1, 1]) o.push(`<path d="${tri(sx * k * 8, 2.2, 2.2)}" stroke-width="1.5"/>`);
+    o.push(`<path d="M${P(-30)} ${P(4)}H${P(30)}" stroke-width="1.2"/>`);
+    for (let m = -28; m <= 28; m += 4) if (m) o.push(`<path d="M${P(m)} ${P(4)}v${P(m % 8 ? 0.8 : 1.4)}" stroke-width="1"/>`);
+    for (const k of [1, 2, 3]) o.push(txt(P(k * 8), (+P(4) + 16).toFixed(1), String(k * 8)), txt(P(-k * 8), (+P(4) + 16).toFixed(1), String(k * 8)));
+    // Entfernungstrommel (oben, Hektometer)
+    o.push(`<path d="M${P(-26)} ${P(-24)}H${P(26)}" stroke-width="1" stroke-opacity=".8"/>`);
+    for (let i = 0; i <= 12; i++) { const x = -24 + i * 4; o.push(`<path d="M${P(x)} ${P(-24)}v${P(i % 2 ? 0.8 : 1.6)}" stroke-width="1"/>`); if (i % 2 === 0) o.push(txt(P(x), (+P(-24) - 5).toFixed(1), String(i * 2), 'middle', 10)); }
+  } else if (era === 'wk1') {
+    o.push(`<circle r="${P(20)}" stroke-width="1.2" stroke-opacity=".85"/>`);
+    o.push(`<path d="M${P(-40)} 0H${P(-1.5)}M${P(1.5)} 0H${P(40)}M0 ${P(-40)}V${P(-1.5)}M0 ${P(1.5)}V${P(40)}" stroke-width="1.3"/>`);
+    for (let m = 5; m <= 35; m += 5) for (const sx of [-1, 1]) { o.push(`<path d="M${P(sx * m)} ${P(-0.8)}v${P(1.6)}" stroke-width="1"/>`); o.push(`<path d="M${P(-0.8)} ${P(sx * m)}h${P(1.6)}" stroke-width="1"/>`); }
+  } else {
+    // modern: Winkel mit Lücke, Punkt, waagrechte Strichskala (Vorhalt), senkrechte Skala nach unten, Pfosten oben
+    o.push(`<path d="M${P(-1.6)} ${P(1.6)}L0 ${P(0.25)}L${P(1.6)} ${P(1.6)}" stroke-width="2"/><circle r="1.4" fill="#f2efe6" stroke="none"/>`);
+    o.push(`<path d="M${P(-44)} 0H${P(-4)}M${P(4)} 0H${P(44)}M0 ${P(4)}V${P(24)}" stroke-width="1.4"/>`);
+    o.push(`<path d="M0 ${P(-46)}V${P(-6)}" stroke-width="3.2"/>`);
+    for (let m = step; m <= 40; m += step) {
+      const big = m % 10 === 0;
+      for (const sx of [-1, 1]) o.push(`<path d="M${P(sx * m)} ${P(big ? -1.4 : -0.6)}V${P(big ? 1.4 : 0.6)}" stroke-width="${big ? 1.4 : 1}"/>`);
+      if (big) { o.push(txt(P(m), (+P(1.4) + 13).toFixed(1), String(m))); o.push(txt(P(-m), (+P(1.4) + 13).toFixed(1), String(m))); }
+      if (m <= 20) o.push(`<path d="M${P(big ? -1.4 : -0.6)} ${P(m)}H${P(big ? 1.4 : 0.6)}" stroke-width="1"/>`);
+    }
+    // Entfernungsschätzung: Treppe für 2,3 m Zielhöhe (Säulen = Zielhöhe in Strich bei 400 … 2000 m)
+    const bx = -34, by = 14;
+    o.push(`<path d="M${P(bx - 2)} ${P(by)}H${P(bx + 20)}" stroke-width="1.2"/>`);
+    [400, 800, 1200, 1600, 2000].forEach((d, i) => {
+      const h = (2.3 / d) * 1000 / 0.982, x = bx + i * 4.5;
+      o.push(`<path d="M${P(x)} ${P(by)}V${P(by - h)}" stroke-width="1.3"/>`);
+      o.push(txt(P(x), (+P(by) + 12).toFixed(1), String(d / 100), 'middle', 10));
+    });
+    o.push(txt(P(bx - 3), (+P(by) + 26).toFixed(1), 'ZIEL 2,3 m · ×100 m', 'start', 10));
+  }
+  return `<svg class="vo-cal" viewBox="-200 -200 400 400" fill="none" stroke="#f2efe6" stroke-linecap="round">${o.join('')}</svg>`;
+}
 
 const MARK_D = [200, 400, 600, 800, 1000];
 const fmtKm = (d) => String(d / 100);
@@ -275,6 +329,7 @@ export class ViewOverlay {
     else if (prop === 'opacity') el.style.opacity = val;
     else if (prop === 'width') el.style.transform = `scaleX(${val})`;
     else if (prop === 'rotate') el.setAttribute('transform', `rotate(${val})`);
+    else if (prop === 'class') el.className = val;
   }
 
   hideAll() {
@@ -291,7 +346,22 @@ export class ViewOverlay {
     this._set('slitH', el.slit, 'hidden', ov !== 'slit');
     this._set('opticH', el.optic, 'hidden', ov !== 'optic');
     this._set('retH', el.ret, 'hidden', ov !== 'optic' && ov !== 'peri');
-    this._set('retK', el.ret, 'html', ov === 'peri' ? PERI_RET : OPTIC_RET);
+    let retHtml = ov === 'peri' ? PERI_RET : OPTIC_RET;
+    if (ov === 'optic' && s.project && s.camPos && s.lookYaw != null) {
+      // px je Strich aus der Abbildung (10 Strich seitlich der Blickrichtung)
+      dirFromYawPitch(s.lookYaw, s.lookPitch, _d); _v.copy(s.camPos).addScaledVector(_d, 1000);
+      const a = s.project(_v), ax = a.x, ay = a.y;
+      dirFromYawPitch(s.lookYaw + MIL * 10, s.lookPitch, _d); _v.copy(s.camPos).addScaledVector(_d, 1000);
+      const b = s.project(_v), ppm = Math.hypot(b.x - ax, b.y - ay) / 10;
+      const era = (s.vehicle && s.vehicle.def && s.vehicle.def.era) || 'modern';
+      if (ppm > 0.3 && ppm < 60) {
+        const key = `${era}|${Math.round(ppm * 8)}`;
+        if (key !== this._calKey) { this._calKey = key; this._calHtml = opticSvg(era, Math.round(ppm * 8) / 8); }
+        retHtml = this._calHtml;
+      }
+      this._set('opticC', el.optic, 'class', era === 'modern' ? 'vo-optic' : 'vo-optic is-wk');
+    }
+    this._set('retK', el.ret, 'html', retHtml);
     this._set('wideH', el.wide, 'hidden', ov !== 'wide');
     this._set('periH', el.peri, 'hidden', ov !== 'peri');
     this._set('ringH', el.ring, 'hidden', ov !== 'peri');

@@ -7,6 +7,7 @@
 // Spannhebel am Verschlussträger, Trommelmagazin mit Hals, Sicken und Aufziehknopf.
 import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114060746';
 import { magRounds } from './magfill.js?v=20261114060746';
+import { notchSight } from './pistol-parts.js?v=20261114060746';   // Kimme mit echter Kerbe (visier, 14.11.)
 import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., gfx-waffen)
 const MARK_LM8 = schrift('lm8').mark;
 
@@ -46,9 +47,10 @@ export function lm8(b) {
   slab(b, RSBLOCK, 0.0165, 0.003, 'gbBlued', { id: 'rs', cav: STEEL });
   if (b.hi) {
     b.side('gbSteel', mm([[156, 74], [222, 82], [222, 90], [156, 86]]), 0.016, 0, { bevel: 0.0008 });
-    b.box('gbSteel', 0.02, 0.01, 0.012, 0, 0.087, 0.186, { c: 0.0015 });
-    b.box('cavity', 0.0024, 0.004, 0.009, 0, SV - 0.0005, 0.156, { c: 0 });
-    b.side('gbSteel', mm([[152, 84], [160, 84], [160, 93], [152, 93]]), 0.014, 0, { bevel: 0.0006 });
+    // Schieber auf der Klappe unter der Kerbe (visier, 14.11.: ragte bis 0,5 mm unter die Visierlinie und füllte die Kerbe)
+    b.box('gbSteel', 0.02, 0.006, 0.012, 0, 0.0865, 0.186, { c: 0.0015 });
+    // Kimmenblatt mit ausgeschnittener Kerbe 2,6 × 2,5 mm (vorher Vollblatt mit schwarzem Kästchen: Korn unsichtbar)
+    notchSight(b, 'gbSteel', mm([[152, 84], [160, 84], [160, 93.5], [152, 93.5]]), 0.007, { nw: 0.0026, vN: SV - 0.0025, bevel: 0.0005 });
   } else b.box('gbBlued', 0.016, 0.014, 0.07, 0, 0.082, 0.19);
 
   // --- Gasrohr mit Holzauflage, Holzhandschutz unten, Lauf, Gasblock

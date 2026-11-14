@@ -227,5 +227,99 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
     const f = createFoliage(tufts, quality);
     for (const m of f.meshes) { m.name = 'bodenauflage-gras'; m.castShadow = false; group.add(m); meshes++; }
   }
-  return { count: items.length, wall, tufts: tufts.length, meshes, ms: Math.round(performance.now() - t0) };
+  // karten-voll (14.11.): Kleinmüll in 3D (Dosen, Flaschen, Papier, Karton, Tüten, Schachteln, Brocken)
+  let litter = { count: 0, meshes: 0 };
+  try { litter = placeLitter3D(world, group, { quality, seed, def }); } catch (err) { console.warn('[world] Kleinmüll', err); }
+  return { count: items.length, wall, tufts: tufts.length, meshes: meshes + litter.meshes, litter: litter.count, ms: Math.round(performance.now() - t0) };
+}
+
+// ---------------------------------------------------------------------------
+// karten-voll (14.11.): Kleinmüll in 3D. Nutzer: „Die Maps sind generell noch viel zu leer.“ Liegt bevorzugt an
+// Wandfüßen und in Ecken (wie echter Müll, den der Wind zusammentreibt), sonst vereinzelt auf freier Fläche; je Art
+// ein InstancedMesh (≈ 8 Draw Calls, keine Schatten), Farbe je Instanz. Nur Optik (keine Kollision/Kugeln), gesät
+// über die Kartenkennung. medium 260 · high 520 · ultra 820 Stück; low lädt das Modul nicht.
+// ---------------------------------------------------------------------------
+const LITTER_CAP = { medium: 260, high: 520, ultra: 820 };
+/** Arten: Geometrie-Bauer, Farben, Rauheit/Metall, Gewicht je Kartenstil. */
+const LITTER = [
+  { id: 'dose', geo: () => new THREE.CylinderGeometry(0.033, 0.033, 0.12, 8).rotateZ(Math.PI / 2).translate(0, 0.033, 0), cols: ['#b8261e', '#c8c8c4', '#2c4f9a', '#2f7a3a', '#d8b02a', '#1c1c1c'], r: 0.35, m: 0.6 },
+  { id: 'flasche', geo: () => mergeGeos([new THREE.CylinderGeometry(0.035, 0.035, 0.19, 8).translate(0, 0.095, 0), new THREE.CylinderGeometry(0.012, 0.03, 0.08, 6).translate(0, 0.23, 0)]).rotateZ(Math.PI / 2).translate(0, 0.035, 0), cols: ['#2f5a2a', '#5a3a1a', '#cfd8d2', '#3a4a2a'], r: 0.12, m: 0 },
+  { id: 'knuell', geo: () => new THREE.IcosahedronGeometry(0.05, 0).scale(1, 0.65, 1).translate(0, 0.03, 0), cols: ['#e8e4da', '#d8d2c4', '#c8c0ae', '#f0ece2'], r: 0.9, m: 0 },
+  { id: 'blatt', geo: () => { const g = new THREE.PlaneGeometry(0.21, 0.29, 2, 2).rotateX(-Math.PI / 2); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, 0.004 + Math.abs(Math.sin(i * 2.1)) * 0.012); g.computeVertexNormals(); return g; }, cols: ['#ece8de', '#e2dccc', '#d8d0bc', '#f2eee6'], r: 0.92, m: 0, side: THREE.DoubleSide },
+  { id: 'karton', geo: () => new THREE.BoxGeometry(0.46, 0.012, 0.34).translate(0, 0.006, 0), cols: ['#a88a62', '#9a7c56', '#b89870'], r: 0.95, m: 0 },
+  { id: 'tuete', geo: () => new THREE.SphereGeometry(0.12, 7, 4).scale(1, 0.28, 0.8).translate(0, 0.025, 0), cols: ['#e8e8e4', '#2c4f9a', '#1c1c1c', '#c8302a'], r: 0.45, m: 0 },
+  { id: 'schachtel', geo: () => new THREE.BoxGeometry(0.09, 0.022, 0.056).translate(0, 0.011, 0), cols: ['#c82a22', '#f0ece2', '#2c3a6a', '#d8b02a'], r: 0.7, m: 0 },
+  { id: 'brocken', geo: () => new THREE.DodecahedronGeometry(0.07, 0).scale(1.3, 0.7, 1).translate(0, 0.03, 0), cols: ['#9a8a7a', '#8a6a5a', '#a8a49a', '#b06a4a'], r: 0.95, m: 0 },
+];
+const LITTER_MIX = {
+  hafen: [1.2, 0.8, 0.9, 0.6, 1.4, 1.0, 0.6, 0.8], werk: [1.0, 0.7, 0.8, 0.5, 1.2, 0.6, 0.5, 1.6],
+  altstadt: [1.0, 1.2, 1.2, 1.2, 0.7, 0.9, 1.0, 0.8], default: [1, 1, 1, 1, 1, 1, 1, 1],
+};
+function mergeGeos(list) {
+  const P = [], N = [];
+  for (const g0 of list) { const g = g0.index ? g0.toNonIndexed() : g0; P.push(...g.attributes.position.array); N.push(...g.attributes.normal.array); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  return g;
+}
+
+export function placeLitter3D(world, group, { quality = 'high', seed = 1, def = {} } = {}) {
+  const cap = LITTER_CAP[quality] || 0;
+  if (!cap || !world?.raycast || !world.bounds || def.litter3d === false) return { count: 0, meshes: 0 };
+  const r = rng(seed ^ 0x2c1b3c6d), b = world.bounds;
+  const mix = LITTER_MIX[def.id] || LITTER_MIX.default, mixSum = mix.reduce((a, c) => a + c, 0);
+  const pick = () => { let k = r() * mixSum; for (let i = 0; i < mix.length; i++) { k -= mix[i]; if (k <= 0) return i; } return 0; };
+  const per = LITTER.map(() => []);
+  let n = 0, tries = 0;
+  while (n < cap && tries++ < cap * 6) {
+    let x = b.min.x + r() * (b.max.x - b.min.x), z = b.min.z + r() * (b.max.z - b.min.z);
+    const gy0 = world.groundHeight ? world.groundHeight(x, z, 3.2) : 0;
+    if (gy0 == null || gy0 > 3) continue;
+    let g = groundAt(world, x, z, gy0 + 0.4);
+    if (!g || g.surface === 'water' || /water/.test(g.name)) continue;
+    // 65 %: an den nächsten Wandfuß rücken (waagerechter Strahl knapp über dem Boden)
+    if (r() < 0.65) {
+      const a = r() * Math.PI * 2;
+      _o.set(x, g.y + 0.12, z); _d.set(Math.cos(a), 0, Math.sin(a));
+      const h = world.raycast(_o, _d, 6);
+      if (h && Math.abs(h.normal.y) < 0.2 && h.distance > 0.25) {
+        const off = 0.08 + r() * 0.35;
+        x = h.point.x - _d.x * off; z = h.point.z - _d.z * off;
+        g = groundAt(world, x, z, g.y + 0.4);
+        if (!g || g.surface === 'water') continue;
+      }
+    }
+    // kleines Nest aus 1–4 Teilen
+    const k = 1 + Math.floor(r() * r() * 4);
+    for (let i = 0; i < k && n < cap; i++) {
+      const px = x + (r() - 0.5) * 0.8 * (i ? 1 : 0), pz = z + (r() - 0.5) * 0.8 * (i ? 1 : 0);
+      const gg = i ? groundAt(world, px, pz, g.y + 0.3) : g;
+      if (!gg || Math.abs(gg.y - g.y) > 0.04) continue;
+      const t = pick(), L = LITTER[t];
+      per[t].push({ x: px, y: gg.y, z: pz, a: r() * Math.PI * 2, s: 0.8 + r() * 0.45, c: L.cols[Math.floor(r() * L.cols.length)], tilt: (r() - 0.5) * 0.25 });
+      n++;
+    }
+  }
+  let meshes = 0;
+  const _e = new THREE.Euler();
+  LITTER.forEach((L, t) => {
+    const list = per[t];
+    if (!list.length) return;
+    const mat = new THREE.MeshStandardMaterial({ roughness: L.r, metalness: L.m, side: L.side || THREE.FrontSide });
+    mat.name = 'kleinmuell-' + L.id; mat.userData.disposable = true;
+    const mesh = new THREE.InstancedMesh(L.geo(), mat, list.length);
+    list.forEach((it, i) => {
+      _q.setFromEuler(_e.set(it.tilt, it.a, it.tilt * 0.5, 'YXZ'));
+      _m.compose(_p.set(it.x, it.y, it.z), _q, _s.setScalar(it.s));
+      mesh.setMatrixAt(i, _m);
+      mesh.setColorAt(i, _col.set(it.c));
+    });
+    mesh.computeBoundingSphere();
+    mesh.castShadow = false; mesh.receiveShadow = true; mesh.matrixAutoUpdate = false;
+    mesh.name = 'kleinmuell';
+    group.add(mesh);
+    meshes++;
+  });
+  return { count: n, meshes };
 }

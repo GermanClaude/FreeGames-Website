@@ -407,6 +407,8 @@ export function building(b, o) {
       b.cyl(px, y0 + 0.32, pz, r, top - y0 - 0.5, pm, { tint: pt, seg: 8, caps: false, collide: false, minimap: false, grad: false, ao: false, cast: false });
       // Knie unten (Auslauf nach außen) und Kasten oben
       b.box(px + ox * 0.06, y0 + 0.2, pz + oz * 0.06, ox ? 0.24 : 0.12, 0.12, oz ? 0.24 : 0.12, pm, { tint: pt, collide: false, minimap: false, grad: false, ao: false });
+      // karten-voll: Spritzstein unter dem Auslauf
+      if (y0 < 0.6) b.box(px + ox * 0.28, y0, pz + oz * 0.28, ox ? 0.42 : 0.24, 0.05, oz ? 0.42 : 0.24, 'concrete', { tint: '#9a968c', collide: false, minimap: false, grad: false, ao: false, bullet: false });
       b.box(px, top - 0.12, pz, 0.24, 0.3, 0.24, pm, { tint: pt, collide: false, minimap: false, grad: false, ao: false });
       // Schellen alle ≈ 1,6 m
       for (let yy = y0 + 1.4; yy < top - 0.6; yy += 1.6) b.box(px - ox * 0.05, yy, pz - oz * 0.05, ox ? 0.1 : 0.14, 0.04, oz ? 0.1 : 0.14, pm, { tint: '#6a6e72', collide: false, minimap: false, grad: false, ao: false });
@@ -415,6 +417,8 @@ export function building(b, o) {
   // karten-voll (14.11.): Flachdächer mit Brüstung/Attika vormerken – world/kleinkram.js dachleben() setzt dort
   // Antennen, Lüfterrohre, Klimageräte (nur Optik)
   if (o.roof && (o.roof.parapet || o.roof.edge !== false) && o.roofDeko !== false) (b._flachdaecher || (b._flachdaecher = [])).push({ x, z, x0, x1, z0, z1, y: roofY, inset: o.roof.parapet ? (o.roof.parapetT ?? 0.22) : 0.15 });
+  // karten-voll: Gebäude für die automatische Einrichtung leerer Räume merken (world/kleinkram.js einrichten())
+  (b._gebaeude || (b._gebaeude = [])).push({ x, z, w, d, t, fh, y0, levels, roofY, openings: o.openings || [], holes: o.holes || [], interior: o.interior !== false, mat, skip: o.skipWalls || [] });
   // Footprint für die Minikarte (Gebäude als Block)
   b.footprints.push({ x, z, hw: w / 2, hd: d / 2, ry: 0, y0, y1: roofY, kind: 'building' });
   return { x0, x1, z0, z1, levels, roofY, fh, t };

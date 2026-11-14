@@ -7,6 +7,7 @@
 // Munitionskasten links mit Deckel (hüpft beim Rückstoß, viewmodel.js _animLid) und Gurt (magfill.js, Glied je Patrone).
 import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114060746';
 import { magRounds } from './magfill.js?v=20261114060746';
+import { apertureSight } from './pistol-parts.js?v=20261114060746';   // Lochkimme mit Durchblick (visier, 14.11.)
 import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., gfx-waffen)
 const MARK_HM60 = schrift('hm60').mark;
 
@@ -58,7 +59,10 @@ export function hm60(b) {
 
   // --- Leitervisier hinten (Fuß, Klappleiter, Seitentrieb)
   b.box('gbBlued', 0.03, 0.014, 0.034, 0, 0.115, -0.08, { c: 0.002 });
-  b.side('gbSteel', mm([[-88, 122], [-72, 122], [-74, 144], [-86, 144]]), 0.02, 0, { bevel: 0.001, holes: [mm([[-84, 136], [-76, 136], [-76, 140], [-84, 140]])], keepHoles: true });
+  // Leiter (visier, 14.11.): zwei Holme + Blatt mit runder Lochblende Ø 5,6 mm auf der Visierlinie – vorher eine 20 mm breite Vollplatte
+  // (das Loch ging quer statt längs), im Anschlag ein Balken vor dem Ziel
+  for (const s of [-1, 1]) b.side('gbSteel', mm([[-88, 122], [-72, 122], [-74, 146], [-86, 146]]), 0.004, s * 0.008, { bevel: 0.0008 });
+  apertureSight(b, 'gbSteel', { x0: -0.01, x1: 0.01, v0: 0.13, v1: SV + 0.0065, cv: SV, r: 0.0028, u: -0.083, l: 0.005 });
   if (b.hi) for (const s of [-1, 1]) b.cyl('knurl', 0.006, 0.006, 0.006, s * 0.019, 0.116, -0.08, { axis: 'x', seg: 14 });
 
   // --- Schaft (Polymer) mit Kolbenkappe, Schulterstütze (geklappt), Riemenbügel

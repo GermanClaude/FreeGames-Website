@@ -65,7 +65,7 @@ const CUT_OUTRO = {
       say: { who: 'daren', text: 'Weil ich meine Leute nach Hause bringen will. Genau wie Sie.', expr: 'traurig' } },
     { cam: { from: [26, 3, -2], to: [24, 6, 2], look: [33.5, 1.5, -10] },
       say: { who: 'brandt', text: 'Dann fangen wir damit an. Gemeinsam.', expr: 'entschlossen' }, dur: 4.5, fadeOut: 1.4 },
-    { cam: { from: [24, 6, 2], look: [33.5, 1.5, -10] }, card: ['Kampagne · Stille Grenze', 'Fortsetzung folgt', 'Mission 4 „Hafennacht“ ist in Vorbereitung'], dur: 4.5 },
+    { cam: { from: [24, 6, 2], look: [33.5, 1.5, -10] }, card: ['Kampagne · Stille Grenze', 'Als Nächstes', 'Mission 4 · Hafennacht'], dur: 4.5 },
   ],
 };
 
@@ -80,6 +80,8 @@ export const MISSION_3 = {
   type: 'Fahrzeug · Feuerunterstützung',
   summary: 'Kessar will die Brücke am Grenzfluss sprengen. Fahr den Kampfpanzer „Eisen 2“, decke die Infanterie im Dorf und halte die Brücke für die Pioniere.',
   loadoutHint: 'Einsteigen: F (Gamepad X, Touch: Knopf am Fahrzeug).',
+  mapVehicles: false, // Runde 2: Kartenfahrzeuge (u. a. Hubschrauber mit KI-Pilot) räumen – die Mission stellt ihre eigenen
+  act: 1,
   cutscenes: { intro: CUT_INTRO, outro: CUT_OUTRO },
 
   prepare(m, { resumed }) {

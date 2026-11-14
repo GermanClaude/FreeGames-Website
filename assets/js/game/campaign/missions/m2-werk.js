@@ -90,6 +90,7 @@ function trucks(m, n) {
 export const MISSION_2 = {
   id: 'm2',
   number: 2,
+  act: 1,
   title: 'Werk Sieben',
   short: 'Werk Sieben',
   map: 'werk',

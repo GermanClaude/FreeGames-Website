@@ -884,6 +884,7 @@ export class VehicleSystem {
         const h = this.world.raycast(G.camera.position, viewLookDir(v, seat, eff, _d), 4000);
         this._ignore = null;
         this._range = { text: h ? `E ${Math.round(h.distance)} m` : 'E ––– m', until: now + 4 };
+        v._laserRange = h ? h.distance : NaN; // Feuerleitrechner-Bildschirm im Turm (cabin.js)
       }
     }
     // Sitzwechsel (Sperre 0,4 s): Taste 1–4, Pad ◀/▶, Touch „Sitz“, VR

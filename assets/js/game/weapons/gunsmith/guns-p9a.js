@@ -81,9 +81,8 @@ function rearNotch(b) {
   const [, , [rx0, ry0], [rx1, ry1]] = R.REAR_SIGHT;   // [2018,85] → [1997,37]
   const rv = V(ry1), slope = Math.atan2((rx0 - rx1) / R.PPM, (ry0 - ry1) / R.PPM);   // Neigung der Rückfläche gegen die Senkrechte
   const ruAt = (v) => U(rx1 + (rx0 - rx1) * ((rv - v) * R.PPM) / (ry0 - ry1));
-  const uf = U(1936), o = { part: 'slide', c: 0, rx: -slope };
-  const ru = ruAt(rv - 0.0013);
-  b.box('cavity', 0.0034, 0.0026, uf - ru + 0.0008, 0, rv - 0.0011, (uf + ru) / 2, { part: 'slide', c: 0 });
+  const o = { part: 'slide', c: 0, rx: -slope };
+  // Kerbe selbst schneidet guns-pistol.js (notchSight) aus – hier nur die weiße U-Markierung (visier, 14.11.)
   for (const s of [-1, 1]) b.box('paintWhite', 0.0008, 0.0031, 0.0003, s * 0.0025, rv - 0.0016, ruAt(rv - 0.0016) - 0.00018, o);
   b.box('paintWhite', 0.0058, 0.0008, 0.0003, 0, rv - 0.0034, ruAt(rv - 0.0034) - 0.00018, o);
 }

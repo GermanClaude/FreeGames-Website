@@ -10797,6 +10797,582 @@
      }
     }
    }
+  },
+  "bark_eiche": {
+   "type": "texture",
+   "name": "bark_eiche",
+   "category": "wood",
+   "surface": "wood",
+   "replaces": [],
+   "sizeM": [
+    1.0,
+    1.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#584c37",
+    "avgRoughness": 0.9,
+    "avgMetalness": 0,
+    "avgAO": 0.6,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "jolcham_oak_bark_01",
+   "maps": [
+    "grenzland"
+   ],
+   "scan": "albedo+normal+orm",
+   "tiers": {
+    "512": {
+     "albedo": "textures/bark_eiche/bark_eiche_512_albedo.ktx2",
+     "normal": "textures/bark_eiche/bark_eiche_512_normal.ktx2",
+     "orm": "textures/bark_eiche/bark_eiche_512_orm.ktx2",
+     "sizes": {
+      "albedo": 65653,
+      "normal": 87388,
+      "orm": 61310
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 214351,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/bark_eiche/bark_eiche_1024_albedo.ktx2",
+     "normal": "textures/bark_eiche/bark_eiche_1024_normal.ktx2",
+     "orm": "textures/bark_eiche/bark_eiche_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 218449,
+      "normal": 284669,
+      "orm": 204702
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 707820,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
+    }
+   }
+  },
+  "bark_buche": {
+   "type": "texture",
+   "name": "bark_buche",
+   "category": "wood",
+   "surface": "wood",
+   "replaces": [],
+   "sizeM": [
+    1.7,
+    1.7
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#484642",
+    "avgRoughness": 0.9,
+    "avgMetalness": 0,
+    "avgAO": 0.6,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "knotted_pine_bark",
+   "maps": [
+    "grenzland"
+   ],
+   "scan": "albedo+normal+orm",
+   "tiers": {
+    "512": {
+     "albedo": "textures/bark_buche/bark_buche_512_albedo.ktx2",
+     "normal": "textures/bark_buche/bark_buche_512_normal.ktx2",
+     "orm": "textures/bark_buche/bark_buche_512_orm.ktx2",
+     "sizes": {
+      "albedo": 58378,
+      "normal": 89803,
+      "orm": 56879
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 205060,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/bark_buche/bark_buche_1024_albedo.ktx2",
+     "normal": "textures/bark_buche/bark_buche_1024_normal.ktx2",
+     "orm": "textures/bark_buche/bark_buche_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 191443,
+      "normal": 292890,
+      "orm": 194009
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 678342,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
+    }
+   }
+  },
+  "bark_birke": {
+   "type": "texture",
+   "name": "bark_birke",
+   "category": "wood",
+   "surface": "wood",
+   "replaces": [],
+   "sizeM": [
+    1.7,
+    1.7
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#d0cdc4",
+    "avgRoughness": 0.9,
+    "avgMetalness": 0,
+    "avgAO": 0.6,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "knotted_pine_bark",
+   "maps": [
+    "grenzland"
+   ],
+   "scan": "albedo+normal+orm",
+   "tiers": {
+    "512": {
+     "albedo": "textures/bark_birke/bark_birke_512_albedo.ktx2",
+     "normal": "textures/bark_birke/bark_birke_512_normal.ktx2",
+     "orm": "textures/bark_birke/bark_birke_512_orm.ktx2",
+     "sizes": {
+      "albedo": 57136,
+      "normal": 79488,
+      "orm": 58216
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 194840,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/bark_birke/bark_birke_1024_albedo.ktx2",
+     "normal": "textures/bark_birke/bark_birke_1024_normal.ktx2",
+     "orm": "textures/bark_birke/bark_birke_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 178932,
+      "normal": 256993,
+      "orm": 194506
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 630431,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
+    }
+   }
+  },
+  "bark_pappel": {
+   "type": "texture",
+   "name": "bark_pappel",
+   "category": "wood",
+   "surface": "wood",
+   "replaces": [],
+   "sizeM": [
+    1.0,
+    1.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#725d36",
+    "avgRoughness": 0.9,
+    "avgMetalness": 0,
+    "avgAO": 0.6,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "bark_brown_01",
+   "maps": [
+    "grenzland"
+   ],
+   "scan": "albedo+normal+orm",
+   "tiers": {
+    "512": {
+     "albedo": "textures/bark_pappel/bark_pappel_512_albedo.ktx2",
+     "normal": "textures/bark_pappel/bark_pappel_512_normal.ktx2",
+     "orm": "textures/bark_pappel/bark_pappel_512_orm.ktx2",
+     "sizes": {
+      "albedo": 65200,
+      "normal": 87721,
+      "orm": 61051
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 213972,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/bark_pappel/bark_pappel_1024_albedo.ktx2",
+     "normal": "textures/bark_pappel/bark_pappel_1024_normal.ktx2",
+     "orm": "textures/bark_pappel/bark_pappel_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 218581,
+      "normal": 290020,
+      "orm": 211457
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 720058,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
+    }
+   }
+  },
+  "bark_kiefer": {
+   "type": "texture",
+   "name": "bark_kiefer",
+   "category": "wood",
+   "surface": "wood",
+   "replaces": [],
+   "sizeM": [
+    2.0,
+    2.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#675340",
+    "avgRoughness": 0.9,
+    "avgMetalness": 0,
+    "avgAO": 0.6,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "pine_bark",
+   "maps": [
+    "grenzland"
+   ],
+   "scan": "albedo+normal+orm",
+   "tiers": {
+    "512": {
+     "albedo": "textures/bark_kiefer/bark_kiefer_512_albedo.ktx2",
+     "normal": "textures/bark_kiefer/bark_kiefer_512_normal.ktx2",
+     "orm": "textures/bark_kiefer/bark_kiefer_512_orm.ktx2",
+     "sizes": {
+      "albedo": 62966,
+      "normal": 86461,
+      "orm": 57492
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 206919,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/bark_kiefer/bark_kiefer_1024_albedo.ktx2",
+     "normal": "textures/bark_kiefer/bark_kiefer_1024_normal.ktx2",
+     "orm": "textures/bark_kiefer/bark_kiefer_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 207333,
+      "normal": 277396,
+      "orm": 189586
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 674315,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
+    }
+   }
+  },
+  "bark_fichte": {
+   "type": "texture",
+   "name": "bark_fichte",
+   "category": "wood",
+   "surface": "wood",
+   "replaces": [],
+   "sizeM": [
+    1.0,
+    1.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#42362a",
+    "avgRoughness": 0.9,
+    "avgMetalness": 0,
+    "avgAO": 0.6,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "bark_willow",
+   "maps": [
+    "grenzland"
+   ],
+   "scan": "albedo+normal+orm",
+   "tiers": {
+    "512": {
+     "albedo": "textures/bark_fichte/bark_fichte_512_albedo.ktx2",
+     "normal": "textures/bark_fichte/bark_fichte_512_normal.ktx2",
+     "orm": "textures/bark_fichte/bark_fichte_512_orm.ktx2",
+     "sizes": {
+      "albedo": 58466,
+      "normal": 92849,
+      "orm": 59894
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 211209,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/bark_fichte/bark_fichte_1024_albedo.ktx2",
+     "normal": "textures/bark_fichte/bark_fichte_1024_normal.ktx2",
+     "orm": "textures/bark_fichte/bark_fichte_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 193391,
+      "normal": 300930,
+      "orm": 205171
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 699492,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
+    }
+   }
   }
  },
  "hdris": {
@@ -17447,8 +18023,8 @@
  },
  "totals": {
   "textures": {
-   "files": 661,
-   "bytes": 116406585
+   "files": 697,
+   "bytes": 121763394
   },
   "hdri": {
    "files": 80,
@@ -17459,16 +18035,16 @@
    "bytes": 30929416
   },
   "all": {
-   "files": 805,
-   "bytes": 162606580
+   "files": 841,
+   "bytes": 167963389
   },
   "byTier": {
-   "512": 17357528,
-   "1024": 54559355,
+   "512": 18603879,
+   "1024": 58669813,
    "2048": 70322381
   },
   "counts": {
-   "textures": 94,
+   "textures": 100,
    "hdris": 20,
    "models": 53
   }

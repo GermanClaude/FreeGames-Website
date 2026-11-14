@@ -10,6 +10,16 @@
 // des Kreises, Mittelpunkt frei und über den Navigationsgraph erreichbar (Prüfstand dev/world.html → „Modus-Ziele“).
 
 export const MODUS_ZIELE = Object.freeze({
+  // karten-neu (14.11.): Stadtkern – Mittellinie der Lindenallee, U-Bahn-Ebene darunter, Querstraßen
+  stadtkern: {
+    hp: [
+      { id: '1', name: 'Lindenplatz', x: 0, z: 0, radius: 5 },
+      { id: '2', name: 'U-Bahn', x: -10, z: 0, y: -4.0, radius: 4.5, band: [-1, 3] },
+      { id: '3', name: 'Allee West', x: -40, z: 0, radius: 5 },
+      { id: '4', name: 'Allee Ost', x: 40, z: 0, radius: 5 },
+      { id: '5', name: 'Querstraße Ost', x: 52, z: 0, radius: 3.5 },
+    ],
+  },
   werk: {
     hp: [
       { id: '1', name: 'Walzhalle', x: -9, z: 0, radius: 6, band: [-1, 2.4] },

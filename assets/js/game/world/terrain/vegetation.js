@@ -17,6 +17,7 @@ import * as THREE from 'three';
 import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM, spruceMaterial } from '../atlas.js?v=20261114060746';
 import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261114060746';
 import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261114060746';
+import { TREE_SPECIES, DEFAULT_MIX, TREE_LOD, buildTreeVariant, buildBush, buildFern, createLeafMaterial, createBarkMaterial, renderImpostors, impostorGeometry, createImpostorMaterial } from './trees.js?v=20261114060746';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 const _c = new THREE.Color();
@@ -593,9 +594,26 @@ export class Vegetation {
         }
       }
     }
+    // baeume 14.11.: Farne im Unterholz der Wälder (medium+, nur Optik, Positions-Hash – kein Zufallsstrom): je Baum
+    // mit Nachbarn (Wald, nicht Einzelbaum) bis zu zwei Farne im Halbschatten 1,5–4 m vom Stamm
+    if (this.quality !== 'low' && (spec.ferns ?? true)) {
+      const trees = [...(this.species.laub?.list || []), ...(this.species.fichte?.list || [])];
+      const n = trees.length / 5;
+      for (let i = 0; i < n; i++) {
+        const tx = trees[i * 5], tz = trees[i * 5 + 2], ix = Math.round(tx * 10), iz = Math.round(tz * 10);
+        if (!(spec.forests || []).some((f) => Math.hypot(tx - f.x, tz - f.z) < f.r)) continue;
+        for (let k = 0; k < 2; k++) {
+          if (hash2(ix, iz, 61 + k) > 0.6) continue;
+          const a = hash2(ix, iz, 71 + k) * 6.283, d = 1.5 + hash2(ix, iz, 81 + k) * 2.5;
+          const x = tx + Math.cos(a) * d, z = tz + Math.sin(a) * d;
+          if (!hf.contains(x, z) || this.blocked(x, z) || hf.heightAt(x, z) < hf.waterY + 0.4 || hf.normalAt(x, z, n3).y < 0.8) continue;
+          this._add('farn', x, z, 0.75 + hash2(ix, iz, 91 + k) * 0.6, hash2(ix, iz, 95 + k) * 6.283);
+        }
+      }
+    }
     // Kollisionslose Arten je Stufe ausdünnen (Positions-Hash: dieselben Büsche fallen auf jedem Rechner weg)
     if (thin < 1) {
-      for (const kind of ['busch', 'schilf']) {
+      for (const kind of ['busch', 'schilf', 'farn']) {
         const sp = this.species[kind];
         if (!sp) continue;
         const L = sp.list, keep = [];
@@ -660,7 +678,7 @@ export class Vegetation {
   }
 
   /** Meshes anlegen (Laub-Material aus atlas.js, Stämme/Felsen aus engine/textures.js). */
-  build(getMaterial) {
+  build(getMaterial, renderer = null) {
     const q = this.quality, t = this.tier;
     setFoliageQuality(q);
     const proto = (kind) => createFoliage([{ kind, x: 0, y: 0, z: 0, s: 1, ry: 0 }], q).meshes[0];
@@ -673,38 +691,19 @@ export class Vegetation {
       this.group.add(m);
       return m;
     };
-    // Laubbaum (Grafik-Vorlage 15.10.): Krone aus Blattbüscheln mit eigenem Atlas + Stamm mit Hauptästen
-    const tp = proto('laubbaum'), bp = proto('bush'), rp = proto('reeds'), gp = proto('grass');
-    this._protos = [tp, bp, rp, gp];
-    const foliageMat = bp.material, foliageMatN = gp.material;
-    const farMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0 });
-    farMat.name = 'vegetation-far'; farMat.userData.disposable = true; farMat.userData.surface = 'wood';
-    // Instanzfarben sind für das Laub-Atlas gedacht → einfarbige Ferne dunkler (15.10.: wie die nahe Krone gemessen –
-    // Atlas-Mittel × Tönung × Selbstverschattung; vorher ≈ 2,5× zu hell, ferne Bäume leuchteten hellgrün)
-    farMat.color.setRGB(0.2, 0.25, 0.17);
-    const bark = getMaterial('bark');
-    this._own = [farMat];
-    const trunkGeo = new THREE.CylinderGeometry(0.16, 0.24, 3.4, 7, 1, true); meterUV(trunkGeo, 1.3, 3.4); trunkGeo.translate(0, 1.7, 0);
-    const spruceGeo = spruceGeometry();
-    this._geoms = [trunkGeo, spruceGeo];
+    this._own = [];
+    this._geoms = [];
     const sp = this.species;
-    const nearCap = (kind) => Math.min(sp[kind]?.count || 0, kind === 'busch' ? 3000 : 2400);
-    if (sp.fichte) {
-      sp.fichte.near = make(spruceGeo, spruceMaterial(q), nearCap('fichte'), 'veg-fichte', t.treeShadow); // gfx-welt: eigene Zweigtextur
-      const fg = farSpruce(q === 'low'); this._geoms.push(fg);
-      sp.fichte.far = make(fg, farMat, sp.fichte.count, 'veg-fichte-fern', false);
+    // baeume 14.11.: prozedurale Bäume mit Astgerüst, LOD-Kette und Impostoren (trees.js); ohne Renderer (Impostor-
+    // Aufnahme) oder bei einem Fehler der bisherige Aufbau (Laubkarten-Kronen + Fernmodelle)
+    let ok = false;
+    if (renderer && !this.spec.legacyTrees) {
+      try { ok = this._buildTrees(getMaterial, renderer, make); } catch (err) { console.warn('[baeume] Rückfall auf einfache Bäume', err); ok = false; }
     }
-    if (sp.laub) {
-      sp.laub.near = make(tp.geometry, tp.material, nearCap('laub'), 'veg-laub', t.treeShadow);
-      const fg = farBroadleaf(q === 'low'); this._geoms.push(fg);
-      sp.laub.far = make(fg, farMat, sp.laub.count, 'veg-laub-fern', false);
-      const wg = broadleafWood(); this._geoms.push(wg);
-      this.woods = nearCap('laub') ? make(wg, bark, nearCap('laub'), 'veg-aeste', t.treeShadow) : null;
-    }
-    const trunkCap = nearCap('fichte');
-    this.trunks = trunkCap ? make(trunkGeo, bark, trunkCap, 'veg-staemme', t.treeShadow) : null;
-    if (sp.busch) sp.busch.near = make(bp.geometry, foliageMat, nearCap('busch'), 'veg-busch', false);
-    if (sp.schilf) sp.schilf.near = make(rp.geometry, foliageMatN, sp.schilf.count, 'veg-schilf', false);
+    if (!ok) this._buildLegacy(getMaterial, make, proto);
+    const rp = proto('reeds'), gp = proto('grass');
+    this._protos = [...(this._protos || []), rp, gp];
+    if (sp.schilf) sp.schilf.near = make(rp.geometry, gp.material, sp.schilf.count, 'veg-schilf', false);
     // Felsen: statisch, ein InstancedMesh je Variante
     if (this.rocks.length) {
       // gfx-welt: Fotoscan-Fels auf feiner Sichtgeometrie (Kollision bleibt rockGeometry, siehe colliders)
@@ -748,10 +747,186 @@ export class Vegetation {
     return this.group;
   }
 
+  /**
+   * baeume 14.11.: Bäume aus trees.js. Jeder platzierte Baum ('laub'/'fichte', Kollision unverändert) bekommt per
+   * Positions-Hash eine Art (spec.mix oder DEFAULT_MIX) und eine Variante; je Art/Variante drei InstancedMeshes (nah
+   * Holz + Laub, mittel), alle fernen Bäume ein Impostor-Mesh. Büsche/Farne aus Zweigkarten desselben Atlas.
+   * → true (fertig) | wirft (dann Rückfall)
+   */
+  _buildTrees(getMaterial, renderer, make) {
+    const q = this.quality, t = this.tier, L = TREE_LOD[q] || TREE_LOD.high, sp = this.species;
+    const N = L.near, M = L.mid, F = t.treeFar;
+    const mix = { laub: this.spec.mix?.laub || DEFAULT_MIX.laub, fichte: this.spec.mix?.fichte || DEFAULT_MIX.fichte };
+    const order = [], byKey = new Map();
+    for (const cat of ['laub', 'fichte']) {
+      const s = sp[cat];
+      if (!s) continue;
+      const m = mix[cat], tot = m.reduce((a, e) => a + e[1], 0);
+      s.grp = new Int16Array(s.count);
+      for (let i = 0; i < s.count; i++) {
+        const ix = Math.round(s.list[i * 5] * 10), iz = Math.round(s.list[i * 5 + 2] * 10), h = hash2(ix, iz, 41);
+        let kind = m[m.length - 1][0], acc = 0;
+        for (const [k, w] of m) { acc += w / tot; if (h < acc) { kind = k; break; } }
+        const S = TREE_SPECIES[kind];
+        const v = S.dead ? 0 : Math.min(L.variants - 1, (hash2(ix, iz, 43) * L.variants) | 0);
+        const key = kind + ':' + v;
+        let g = byKey.get(key);
+        if (!g) { g = { kind, v, idx: order.length, n: 0 }; byKey.set(key, g); order.push(g); }
+        g.n++; s.grp[i] = g.idx;
+        _c.set(S.tint[(hash2(ix, iz, 3) * S.tint.length) | 0]).multiplyScalar(0.9 + hash2(ix, iz, 7) * 0.2).toArray(s.cols, i * 3);
+      }
+    }
+    const tr = this._tr = { order, N, M, F, bandN: L.bandN, bandM: L.bandM, imp: null, impMesh: null, dims: [] };
+    this._tex = [];
+    if (order.length) {
+      const leafNear = createLeafMaterial({ lod: [0, 0, N - L.bandN, N], name: 'baum-laub' });
+      const midMat = createLeafMaterial({ lod: [N - L.bandN, N, M - L.bandM, M], strip: true, name: 'baum-mittel' });
+      this._own.push(leafNear, midMat);
+      const barkMats = new Map(), variants = [];
+      for (const g of order) {
+        const S = TREE_SPECIES[g.kind], seed = 1009 + g.v * 97 + g.kind.length * 13;
+        const near = buildTreeVariant(g.kind, seed, 0), mid = buildTreeVariant(g.kind, seed, 1);
+        this._geoms.push(near.wood, mid.mid); if (near.leaves) this._geoms.push(near.leaves);
+        let bm = barkMats.get(g.kind);
+        if (!bm) {
+          bm = createBarkMaterial(getMaterial(S.bark), { lod: [0, 0, N - L.bandN, N], moss: S.mossK, tint: S.barkTint || null });
+          barkMats.set(g.kind, bm); this._own.push(bm);
+        }
+        g.wood = make(near.wood, bm, g.n, `baum-${g.kind}-${g.v}-holz`, t.treeShadow);
+        g.leaf = near.leaves ? make(near.leaves, leafNear, g.n, `baum-${g.kind}-${g.v}-laub`, t.treeShadow) : null;
+        g.mid = make(mid.mid, midMat, g.n, `baum-${g.kind}-${g.v}-mittel`, t.treeShadow);
+        g.tris = [(near.wood.index.count + (near.leaves ? near.leaves.index.count : 0)) / 3, mid.mid.index.count / 3];
+        variants.push({ geo: mid.mid, box: mid.box });
+      }
+      const t0 = performance.now();
+      const imp = renderImpostors(renderer, variants, L.imp, variants.map(() => ({ r: 1, g: 1, b: 1 })));
+      this.stats.impostorMs = Math.round(performance.now() - t0);
+      this.stats.impostorPx = imp.size;
+      this._tex.push(imp.albedo, imp.normal);
+      const total = order.reduce((a, g) => a + g.n, 0);
+      const ig = impostorGeometry(); this._geoms.push(ig);
+      tr.impAttr = new THREE.InstancedBufferAttribute(new Float32Array(total * 4), 4); tr.impAttr.setUsage(THREE.DynamicDrawUsage);
+      ig.setAttribute('aImp', tr.impAttr);
+      const im = createImpostorMaterial(imp, [M - L.bandM, M, F - 30, F]); this._own.push(im);
+      tr.impMesh = make(ig, im, total, 'baum-impostor', false);
+      tr.imp = imp; tr.dims = imp.dims;
+      this.stats.treeKinds = order.map((g) => `${g.kind}${g.v}:${g.n}`).join(' ');
+      this.stats.treeTris = order.map((g) => g.tris.join('/')).join(' ');
+    }
+    // Büsche (Zweigkarten, kugelig) und Farne im Wald; eigene Laubmaterialien mit Ausblenden am Rand
+    const B = t.treeNear * 0.6, R = t.treeNear * 0.3;
+    if (sp.busch) {
+      const bg = buildBush(17, 0); this._geoms.push(bg);
+      const bm = createLeafMaterial({ lod: [0, 0, B - 6, B], name: 'busch-laub' }); this._own.push(bm);
+      for (let i = 0; i < sp.busch.count; i++) _c.set(BUSH_TINT[(hash2(i, 5) * BUSH_TINT.length) | 0]).multiplyScalar(0.88 + hash2(i, 9) * 0.22).toArray(sp.busch.cols, i * 3);
+      sp.busch.near = make(bg, bm, sp.busch.count, 'veg-busch', false);
+      sp.busch.lim = B;
+    }
+    if (sp.farn) {
+      const fg = buildFern(23); this._geoms.push(fg);
+      const fm = createLeafMaterial({ lod: [0, 0, R - 4, R], name: 'farn' }); this._own.push(fm);
+      sp.farn.near = make(fg, fm, sp.farn.count, 'veg-farn', false);
+      sp.farn.lim = R;
+    }
+    return true;
+  }
+
+  /** Stufen der Bäume neu zuordnen (nach ≥ 4 m Kamerabewegung): nah / mittel / Impostor mit 4 m Rand um die Bänder. */
+  _updateTrees(p) {
+    const T = this._tr, mg = 4;
+    const nHi = T.N + mg, mLo = T.N - T.bandN - mg, mHi = T.M + mg, iLo = T.M - T.bandM - mg, F2 = T.F * T.F;
+    for (const g of T.order) { g.cn = 0; g.cm = 0; }
+    let ci = 0, nn = 0, nm = 0;
+    const im = T.impMesh, ia = T.impAttr ? T.impAttr.array : null;
+    const put = (mesh, k, s, i) => {
+      mesh.instanceMatrix.array.set(s.mats.subarray(i * 16, i * 16 + 16), k * 16);
+      mesh.instanceColor.array.set(s.cols.subarray(i * 3, i * 3 + 3), k * 3);
+    };
+    for (const cat of ['laub', 'fichte']) {
+      const s = this.species[cat];
+      if (!s || !s.grp) continue;
+      const Ls = s.list;
+      for (let i = 0; i < s.count; i++) {
+        const dx = Ls[i * 5] - p.x, dz = Ls[i * 5 + 2] - p.z, d2 = dx * dx + dz * dz;
+        if (d2 > F2) continue;
+        const d = Math.sqrt(d2), g = T.order[s.grp[i]];
+        if (d < nHi) { put(g.wood, g.cn, s, i); if (g.leaf) put(g.leaf, g.cn, s, i); g.cn++; nn++; }
+        if (d > mLo && d < mHi) { put(g.mid, g.cm++, s, i); nm++; }
+        if (d > iLo && im) {
+          put(im, ci, s, i);
+          const dm = T.dims[g.idx]; ia[ci * 4] = g.idx; ia[ci * 4 + 1] = dm.hw; ia[ci * 4 + 2] = dm.y0; ia[ci * 4 + 3] = dm.y1;
+          ci++;
+        }
+      }
+    }
+    const fin = (mesh, n) => {
+      if (!mesh) return;
+      mesh.count = n; mesh.visible = n > 0;
+      if (n) { mesh.instanceMatrix.clearUpdateRanges(); mesh.instanceMatrix.addUpdateRange(0, n * 16); mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.clearUpdateRanges(); mesh.instanceColor.addUpdateRange(0, n * 3); mesh.instanceColor.needsUpdate = true; }
+    };
+    for (const g of T.order) { fin(g.wood, g.cn); fin(g.leaf, g.cn); fin(g.mid, g.cm); }
+    fin(im, ci);
+    if (ci && T.impAttr) { T.impAttr.clearUpdateRanges(); T.impAttr.addUpdateRange(0, ci * 4); T.impAttr.needsUpdate = true; }
+    // Kollisionslose Arten: nur nah (Büsche, Schilf, Farne)
+    const reed = this.tier.treeNear * 0.5;
+    for (const kind of ['busch', 'schilf', 'farn']) {
+      const s = this.species[kind];
+      if (!s || !s.near) continue;
+      const lim = s.lim || reed, l2 = (lim + mg) * (lim + mg), Ls = s.list, cap = s.near.instanceMatrix.count;
+      let k = 0;
+      for (let i = 0; i < s.count && k < cap; i++) {
+        const dx = Ls[i * 5] - p.x, dz = Ls[i * 5 + 2] - p.z;
+        if (dx * dx + dz * dz < l2) put(s.near, k++, s, i);
+      }
+      fin(s.near, k);
+    }
+    this.stats.near = nn; this.stats.mid = nm; this.stats.far = ci;
+  }
+
+  /** Bisheriger Baumaufbau (Laubkarten-Kronen, Kegel/Ikosaeder-Fernmodelle) – Rückfall ohne Impostor-Aufnahme. */
+  _buildLegacy(getMaterial, make, proto) {
+    const q = this.quality, t = this.tier;
+    this._legacy = true;
+    // Laubbaum (Grafik-Vorlage 15.10.): Krone aus Blattbüscheln mit eigenem Atlas + Stamm mit Hauptästen
+    const tp = proto('laubbaum'), bp = proto('bush');
+    this._protos = [tp, bp];
+    const foliageMat = bp.material;
+    const farMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0 });
+    farMat.name = 'vegetation-far'; farMat.userData.disposable = true; farMat.userData.surface = 'wood';
+    // Instanzfarben sind für das Laub-Atlas gedacht → einfarbige Ferne dunkler (15.10.: wie die nahe Krone gemessen –
+    // Atlas-Mittel × Tönung × Selbstverschattung; vorher ≈ 2,5× zu hell, ferne Bäume leuchteten hellgrün)
+    farMat.color.setRGB(0.2, 0.25, 0.17);
+    const bark = getMaterial('bark');
+    this._own.push(farMat);
+    const trunkGeo = new THREE.CylinderGeometry(0.16, 0.24, 3.4, 7, 1, true); meterUV(trunkGeo, 1.3, 3.4); trunkGeo.translate(0, 1.7, 0);
+    const spruceGeo = spruceGeometry();
+    this._geoms.push(trunkGeo, spruceGeo);
+    const sp = this.species;
+    const nearCap = (kind) => Math.min(sp[kind]?.count || 0, kind === 'busch' ? 3000 : 2400);
+    if (sp.fichte) {
+      sp.fichte.near = make(spruceGeo, spruceMaterial(q), nearCap('fichte'), 'veg-fichte', t.treeShadow); // gfx-welt: eigene Zweigtextur
+      const fg = farSpruce(q === 'low'); this._geoms.push(fg);
+      sp.fichte.far = make(fg, farMat, sp.fichte.count, 'veg-fichte-fern', false);
+    }
+    if (sp.laub) {
+      sp.laub.near = make(tp.geometry, tp.material, nearCap('laub'), 'veg-laub', t.treeShadow);
+      const fg = farBroadleaf(q === 'low'); this._geoms.push(fg);
+      sp.laub.far = make(fg, farMat, sp.laub.count, 'veg-laub-fern', false);
+      const wg = broadleafWood(); this._geoms.push(wg);
+      this.woods = nearCap('laub') ? make(wg, bark, nearCap('laub'), 'veg-aeste', t.treeShadow) : null;
+    }
+    const trunkCap = nearCap('fichte');
+    this.trunks = trunkCap ? make(trunkGeo, bark, trunkCap, 'veg-staemme', t.treeShadow) : null;
+    if (sp.busch) sp.busch.near = make(bp.geometry, foliageMat, nearCap('busch'), 'veg-busch', false);
+  }
+
   /** Nah/Fern-Zuordnung neu schreiben, wenn sich die Kamera ≥ 4 m bewegt hat; Grasring ab 1,5 m. */
   update(camera, force = false) {
     const p = camera.position, t = this.tier;
-    if (force || this._last.distanceToSquared(p) > 16) {
+    if (this._tr && (force || this._last.distanceToSquared(p) > 16)) {
+      this._last.copy(p);
+      this._updateTrees(p);
+    } else if (!this._tr && (force || this._last.distanceToSquared(p) > 16)) {
       this._last.copy(p);
       const near2 = t.treeNear * t.treeNear, far2 = t.treeFar * t.treeFar, bush2 = (t.treeNear * 0.6) ** 2, reed2 = (t.treeNear * 0.5) ** 2;
       let trunkN = 0, woodN = 0, nearAll = 0, farAll = 0;
@@ -911,7 +1086,8 @@ export class Vegetation {
     for (const g of this._geoms || []) g.dispose();
     for (const g of this._rockGeoms || []) g.dispose();
     for (const g of this._rockVis || []) g.dispose();
-    for (const m of this._own || []) m.dispose();
+    for (const m of this._own || []) { m.customDepthMaterial?.dispose(); m.dispose(); }
+    for (const tx of this._tex || []) tx.dispose();
     for (const p of this._protos || []) p.geometry.dispose();
     this.group.traverse(o => { if (o.isInstancedMesh) o.dispose(); });
   }
@@ -922,5 +1098,8 @@ const TINTS = {
   laub: ['#8ea866', '#7f9c5c', '#a0b070', '#93a35e'],
   busch: ['#87a06a', '#9fb27a', '#7c955f'],
   schilf: ['#c2bc88', '#aab07a', '#b8b880'],
+  farn: ['#e8eedc', '#dfe8d0', '#f0f0dc'],
 };
+/** Busch-Tönung (× Atlas, nahe Weiß; baeume 14.11.). */
+const BUSH_TINT = ['#eef2e0', '#f6f6e6', '#e0e8d0', '#f2ecd8'];
 const TRUNK_COL = { fichte: new Float32Array([0.62, 0.55, 0.5]), laub: new Float32Array([0.85, 0.8, 0.72]) };

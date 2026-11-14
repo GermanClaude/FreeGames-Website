@@ -7,6 +7,9 @@
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
 import { sampleSpline } from '../terrain/generate.js?v=20261114060746';
 import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261114060746';
+// karten-voll (14.11.): Trümmer im Niemandsland (Wagenreste, Blech, Hülsen, Kisten, Drahtreste)
+import { truemmerfeld } from './niemandsland-leben.js?v=20261114060746';
+import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -59,7 +62,7 @@ const NEST_TINTS = ['#6f685a', '#645e52', '#787060', '#5c564b'];
 // Stromtrasse (Masten alle ≈ 70 m, quer durch das Niemandsland)
 export const POWER_LINE = [[-300, -70], [-215, -48], [-140, -28], [-70, -8], [0, 10], [72, 30], [145, 50], [220, 70], [300, 92]];
 
-export default {
+const BRANDWALD = {
   id: 'brandwald',
   name: 'Brandwald',
   scale: 'gross',
@@ -139,6 +142,7 @@ export default {
     { id: 'front', name: 'Gräben', bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180 }, chunkSize: 60, build: (b, ctx) => trenchWorks(b, ctx, TRENCHES, { front: FRONT }) },
     { id: 'boden', name: 'Pfützen und Draht', bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180 }, chunkSize: 60, build: (b, ctx) => groundDetails(b, ctx, { area: { minX: -176, maxX: 176, minZ: -176, maxZ: 176 }, avoid: TRENCHES.map((t) => [t.pts, (t.width ?? 2) / 2 + (t.revet || 0) + 3]), wire: [{ z: FRONT - 13, x0: -165, x1: 165 }, { z: -FRONT + 13, x0: -165, x1: 165 }], wrecks: WRECKS, nests: NESTS, nestTints: NEST_TINTS }) },
     { id: 'leitung', name: 'Stromtrasse', bounds: { minX: -320, maxX: 320, minZ: -200, maxZ: 200 }, chunkSize: 80, build: (b, ctx) => pylonLine(b, ctx, POWER_LINE, { fallen: 4 }) },
+    { id: 'truemmer', name: 'Trümmer', bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180 }, chunkSize: 60, build: (b, ctx) => { b.kleinkram = { truemmer: truemmerfeld(b, ctx, { area: { minX: -165, maxX: 165, minZ: -FRONT + 8, maxZ: FRONT - 8 }, trenches: TRENCHES, count: 150, sperr: sperrpunkte(BRANDWALD, [...(KAMPAGNE.brandwald || []), ...BRANDWALD.flags.cq.map((f) => [f.x, f.z, 8]), ...WRECKS.map((w) => [w[0], w[1], 6]), ...NESTS.map((n) => [n[0], n[1], 5])], 4) }) }; return {}; } },
   ],
 
   flags: {
@@ -171,3 +175,4 @@ export default {
   ],
   secrets: [],
 };
+export default BRANDWALD;

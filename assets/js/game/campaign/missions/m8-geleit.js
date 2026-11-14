@@ -159,7 +159,8 @@ export const MISSION_8 = {
         m.wave('f1', { count: 5, at: [[-30, 16], [-36, 28], [-24, 6], [-40, 20], [-28, 34]], attack: 'player', radius: 10 });
         m.say('roth', 'Bewegung in den Feldern links! Falke, halt drauf!', { expr: 'angespannt', radio: true });
         const f1 = m.killObjective('f1', 'Wehre den Angriff aus den Feldern ab', 'f1');
-        yield [f1, () => col.near([14, 36], 14)];
+        const tA = m.elapsed;
+        yield [f1, () => col.near([14, 36], 14) || m.elapsed - tA > 60];
         m.wave('f2', { count: 5, at: [[35, 40], [40, 46], [30, 36], [44, 34], [38, 52]], attack: 'player', radius: 8 });
         m.say('weber', 'Rechts, bei den Häusern! Sie haben einen Werfer!', { expr: 'angespannt' });
         yield m.killObjective('f2', 'Halte die Häuser rechts nieder', 'f2');
