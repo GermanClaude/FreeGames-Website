@@ -113,7 +113,7 @@ export const AIR_VEHICLES = {
         id: 'gunner', label: 'Bordschütze', cabin: true, weapons: ['khs_kan'], mount: 'mg',
         pos: [0, 0.95, -5.65], exit: [[-2.4, 0, -5.4], [2.4, 0, -5.4], [-2.6, 0, -1.2]],
         views: [
-          { id: 'optik', label: 'Zieloptik', space: 'mg', pos: [0, -0.05, -0.15], look: 'mount', zoom: [2.2, 5, 10], overlay: 'airgun' },
+          { id: 'optik', label: 'Zieloptik', space: 'mg', pos: [0.24, 0.14, -0.3], look: 'mount', zoom: [2.2, 5, 10], overlay: 'airgun' },
           { id: 'cockpit', label: 'Vorderes Cockpit', space: 'hull', pos: [0, 2.28, -5.55], look: 'mount', zoom: [1, 1.8], air: true, interior: true },
           { id: 'aussen', label: 'Außenansicht', look: 'mount', zoom: [1], tp: tpHeli },
         ],
