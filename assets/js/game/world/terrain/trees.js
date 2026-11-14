@@ -431,7 +431,7 @@ export function buildCrown(kind = 'tree', seed = 11) {
   const r = rng(seed), B = new Builder();
   const olive = kind === 'olive';
   const yS = olive ? 1.5 : 2.0, yC = olive ? 3.5 : 4.6, R = olive ? 2.3 : 2.9;
-  const sp = { cells: olive ? [4, 5] : [2, 3, 6, 7], card: olive ? 1.0 : 1.3, step: olive ? 0.3 : 0.32, bend: 0.12, conifer: false };
+  const sp = { cells: olive ? [4, 5] : [2, 3, 6, 7], card: olive ? 1.3 : 1.5, step: olive ? 0.24 : 0.28, bend: 0.12, conifer: false };
   const sk = { cc: new THREE.Vector3(0, yC, 0), crownR: R, H: yC + R, branches: [] };
   const n = olive ? 14 : 16;
   for (let i = 0; i < n; i++) {
