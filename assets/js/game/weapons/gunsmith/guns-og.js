@@ -1,9 +1,7 @@
 // Waffen der ersten Stunde (Nutzer 13.10.2026: „eine eigene Waffe, die es nur für sie gibt – einzigartig, nicht
-// überstark“): UR-1 Ursprung (Karabiner), P-0 Funke (Pistole), Erstlicht (Dolch). Schwarz mit polierten Goldakzenten
+// überstark“): P-0 Funke (Pistole), Erstlicht (Dolch); UR-1 Ursprung (Karabiner) seit 13.11. in guns-ursprung.js. Schwarz mit polierten Goldakzenten
 // und dem Nullpunkt-Zeichen (Goldscheibe mit dunklem Ring). Griffpunkte/Teile wie bei den bewährten Bauarten, damit
 // Hände, Nachladen und Animationen passen.
-import { redDot, brake } from './parts.js?v=20261113221339';
-import { arLower, arMag } from './guns-ar.js?v=20261113221339';
 import { p9, P9 } from './guns-pistol.js?v=20261113221339';
 
 /** Nullpunkt-Zeichen seitlich (x = Außenfläche, beide Seiten): Goldscheibe mit dunklem Ring. */
@@ -13,35 +11,6 @@ function emblem(b, x, v, u, r = 0.009, part) {
     b.cyl('goldTrim', r, r, 0.0012, s * (x + 0.0006), v, u, { axis: 'x', seg: 20, part });
     b.torus('polymer', r * 0.56, r * 0.13, s * (x + 0.0013), v, u, { ry: Math.PI / 2, tseg: 20, part });
   }
-}
-
-export function ursprung(b) {
-  const axis = 0.093;
-  arLower(b, { lowerMat: 'polymer', upperMat: 'alu', gripMat: 'grip', axis });
-  // Schlanker runder Handschutz mit Fenstern und drei Goldringen
-  b.lathe('alu', [[0, 0.0238], [0.196, 0.0238], [0.202, 0.021], [0.202, 0.011]], 0, axis, 0.118, { seg: b.seg(18, 8) });
-  b.rail('alu', 0, axis + 0.0236, 0.12, 0.3);
-  if (b.hi) {
-    for (let i = 0; i < 4; i++) for (const s of [-1, 1]) b.box('cavity', 0.0012, 0.009, 0.026, s * 0.0234, axis - 0.002, 0.15 + i * 0.04, { c: 0 });
-    for (const u of [0.122, 0.21, 0.317]) b.torus('goldTrim', 0.0242, 0.0017, 0, axis, u, { tseg: 24 });
-  }
-  // Lauf, goldener Ring, Mündungsbremse
-  b.cyl('steelDark', 0.0094, 0.0094, 0.05, 0, axis, 0.338, { seg: b.seg(14, 6) });
-  if (b.hi) b.torus('goldTrim', 0.0123, 0.0018, 0, axis, 0.362, { tseg: 20 });
-  const end = brake(b, 0.362, axis, 0.0122, 0.05);
-  b.anchor('muzzle', 0, axis, end + 0.002);
-  // Fester Schaft mit Wangenauflage und Daumenaussparung, goldene Linie an der Schaftkappe
-  b.side('polymer', [
-    [-0.165, 0.112], [-0.205, 0.124], [-0.27, 0.126], [-0.282, 0.118], [-0.282, 0.0], [-0.27, -0.01], [-0.248, -0.006],
-    [-0.215, 0.038], [-0.182, 0.068], [-0.165, 0.08],
-  ], 0.032, 0, { bevel: 0.004, bevelSeg: 2, holes: [[[-0.256, 0.032], [-0.214, 0.064], [-0.206, 0.1], [-0.262, 0.106]]] });
-  b.box('rubber', 0.034, 0.128, 0.012, 0, 0.058, -0.288, { c: 0.004 });
-  if (b.hi) b.box('goldTrim', 0.035, 0.128, 0.0018, 0, 0.058, -0.2815, { c: 0 });
-  emblem(b, 0.0135, 0.026, 0.087);
-  redDot(b, 0.0, 0.124);
-  arMag(b, 'smoke');
-  b.anchor('leftHandGrip', 0, axis - 0.024, 0.232, { data: { style: 'under', r: 0.024 } });
-  b.meta = { sight: 'reddot', axis, kind: 'rifle' };
 }
 
 export function funke(b) {

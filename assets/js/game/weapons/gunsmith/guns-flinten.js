@@ -156,10 +156,11 @@ export function hagel(b) {
   const sv = 0.115, su = 0.235;
   b.side('steel', [[0.2, 0.084], [0.28, 0.084], [0.28, 0.096], [0.25, 0.1], [0.2, 0.098]], 0.03, 0, { bevel: 0.002 });
   b.side('steel', [[0.205, 0.098], [0.275, 0.101], [0.275, 0.106], [0.205, 0.106]], 0.022, 0, { bevel: 0.001 });
-  b.box('steel', 0.022, 0.008, 0.012, 0, sv - 0.004, su, { c: 0.001 });
+  // Kimmenblatt: unten durchgehend bis knapp unter die Visierlinie, oben zwei Ohren mit offener Kerbe (Korn bleibt sichtbar)
+  b.box('steel', 0.022, 0.0065, 0.008, 0, sv - 0.0057, su, { c: 0.001 });
+  for (const s of [-1, 1]) b.box('steel', 0.009, 0.0045, 0.008, s * 0.0065, sv - 0.0003, su, { c: 0.0006 });
   if (b.hi) {
-    b.box('cavity', 0.0024, 0.003, 0.013, 0, sv - 0.0003, su, { c: 0 });                                  // Kimme
-    b.box('steel', 0.026, 0.006, 0.008, 0, 0.108, 0.25, { c: 0.001 });                                     // Schieber
+    b.box('steel', 0.026, 0.006, 0.008, 0, 0.104, 0.25, { c: 0.001 });                                     // Schieber
     for (let i = 0; i < 6; i++) b.box('paintWhite', 0.0004, 0.0008, 0.002, 0.0112, 0.104, 0.215 + i * 0.008, { c: 0 });
   }
   // Lauf, Gasblock mit Regler, Gasrohr, Handschutz oben/unten (Polymer), Kornfuß mit Schutz, Würgehülse
@@ -179,7 +180,7 @@ export function hagel(b) {
   }
   b.box('steel', 0.014, 0.024, 0.024, 0, axis + 0.006, 0.66, { c: 0.002 });
   b.box('steel', 0.012, sv - axis - 0.018, 0.012, 0, (sv + axis + 0.018) / 2 - 0.002, 0.67, { c: 0.0015 });
-  b.box('steel', 0.0028, 0.01, 0.003, 0, sv - 0.005, 0.672, { c: 0 });
+  b.box('steel', 0.0024, 0.01, 0.003, 0, sv - 0.005, 0.672, { c: 0 });
   b.box('glowAmber', 0.003, 0.003, 0.003, 0, sv - 0.0015, 0.672, { c: 0 });
   if (b.hi) for (const s of [-1, 1]) b.side('steel', [[0.664, axis + 0.018], [0.68, axis + 0.018], [0.68, sv + 0.002], [0.672, sv + 0.006], [0.664, sv + 0.002]], 0.0022, s * 0.0085, { bevel: 0.0004 });
   b.cyl('steelDark', 0.0148, 0.0148, 0.05, 0, axis, 0.7, { seg: b.seg(24, 6) });

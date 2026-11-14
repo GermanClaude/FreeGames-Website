@@ -44,7 +44,9 @@ export function slab(b, mat, pts, hw, o = {}) {
   const holes = holes0.map(dedupe);
   if (!b.hi) {
     if (o.noLow) return;
-    b.side(mat, simplifyRing(pts, lowTol), hw * 2, x0, { part });
+    // Durchbrüche (Bügel, Skelettschaft) auch in der Bot-Stufe offen – nur große Löcher (> 2 cm), vereinfacht
+    const big = holes.filter((h) => { const [a0, a1, c0, c1] = box2(h, 0); return a1 - a0 > 0.02 && c1 - c0 > 0.012; }).map((h) => simplifyRing(h, lowTol));
+    b.side(mat, simplifyRing(pts, lowTol), hw * 2, x0, { part, holes: big, keepHoles: big.length > 0 });
     return;
   }
   const make = () => {
@@ -61,9 +63,7 @@ export function slab(b, mat, pts, hw, o = {}) {
     };
     sdfMesh(b, f, [x0 - W - 0.002, v0, u0], [x0 + W + 0.002, v1, u1], step, mat, { cav, part });
   };
-  const t0 = performance.now();
   if (id) b.shared(id, make); else make();
-  (globalThis.__pk ||= []).push([id || mat, Math.round(performance.now() - t0)]);
 }
 
 /** Vertieftes Feld (Tasche) in den Seitenflächen einer Platte: Rechteck (Mitte cu, cv, Halbmaße hu, hv, Ecke rr), Tiefe t. */

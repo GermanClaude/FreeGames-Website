@@ -2,7 +2,7 @@
 // wie möglich“): gleiches Vorbild wie bisher – AR-Karabiner der ersten Stunde, schwarz mit polierten Goldakzenten und dem
 // Nullpunkt-Zeichen. Statt des alten Baukastens (arLower) baut er jetzt auf dem fotogenauen M4-Modell der M-17 auf
 // (guns-m17.js: Gehäuse, Schienen-Handschutz, Schaft, Griff, Korn, Magazin nach Referenzfoto) und setzt die Goldteile darauf:
-// Ring an der Laufmutter-Hülse, Laufring, Mündungsring, Abzug, Ladehebelgriff, Zeichen beidseitig am Magazinschacht.
+// Ring an der Laufmutter-Hülse, Laufring, Mündungsring, Abzug, Zeichen beidseitig am Magazinschacht.
 // Werksoptik: Rotpunkt (wie bisher).
 import * as R from './m17-ref.js?v=20261113221339';
 import { m17 } from './guns-m17.js?v=20261113221339';
@@ -29,9 +29,8 @@ export function ursprung(b) {
   b.torus('goldTrim', R.DELTA_R + 0.0006, 0.0018, 0, AX, (U(d0) + U(d1)) / 2, { tseg: 40, seg: 10 });
   b.torus('goldTrim', 0.0098, 0.0014, 0, AX, U(R.RAS[1]) + 0.012, { tseg: 28 });
   b.torus('goldTrim', R.FH_R + 0.0012, 0.0015, 0, AX, U(R.FH[0]) - 0.002, { tseg: 28 });
-  // Goldener Abzug (dünne Schicht über dem Stahlabzug), Goldkappe am Ladehebel
+  // Goldener Abzug (dünne Schicht über dem Stahlabzug)
   b.side('goldTrim', R.M(R.TRIGGER), 0.0066, 0, { bevel: 0.0008, bevelSeg: 2 });
-  b.box('goldTrim', 0.044, 0.0026, 0.007, 0, V(950) + 0.0034, U(1062), { part: 'charge', c: 0.0008 });
   // Zeichen am Magazinschacht (beidseitig)
   emblem(b, 0.0129, V(1245), U(1700), 0.0082);
 }
