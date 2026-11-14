@@ -14,7 +14,22 @@
 //  • crowdScale(n) – Skalierung des Simulationstakts: ab ~64 lebenden Bots werden die Abstandsschwellen der
 //    Simulations-Detailstufen (manager SIM_LOD) enger und die volle Rate auf die nächsten Bots begrenzt.
 //
-// Prüfhilfe: G.bots.crowd.stats() → { impostors, full, budget }.
+// Weitere Hooks: Hören (manager._hear/_onImpact) und Ausweichen (bot._separation) über ActorGrid, weiche Trennung
+// (engine/physics.separateActors) als Sweep nach x, Spawns verteilt (spreadSpawn), Namensschilder ohne Kopfposition, wenn
+// unsichtbar. Grenzen der Teamgröße: shared/modes.data.js (limitsFor, MASS_SIDE).
+//
+// Prüfhilfe: G.bots.crowd.stats() → { impostors, full, capacity, drawCalls }; G.bots.massOpt = false schaltet alles hier
+// ab (A/B-Messung im selben Match); G.prof = {} bzw. G.bots._botProf = {} sammeln CPU-Zeiten (main.step, Bot-Abschnitte).
+//
+// Messung (14.11., Grenzland, Prüfstand A/B im selben Match, Bot-Stufe „hoch“, Median der Simulations-CPU-Zeit je Bild ohne
+// Rendern, 4-Kern-VM unter starker Fremdlast → absolute Zahlen ≈ 3× zu hoch, Verhältnisse belastbar):
+//   Akteure   vorher → nachher   Bot-Schritte/Bild   Animationen/Bild   Sichtstrahlen/Bild
+//     24        2,4 →  2,5 ms        –                  –                  –        (bis 64 Bots unverändert)
+//    100       15,1 → 18,1 ms*     79 → 64            27 → 19            101 → 98
+//    250       45,9 → 22,3 ms     211 → 115           81 → 27            144 → 96
+//    500       90,3 → 53,4 ms     376 → 210          121 → 42            144 → 96
+//   1000       Absturz (Speicher, ≈ 2 MB je Bot) bzw. vorher 314 ms/Bild → nicht freigegeben
+//   (* Rauschen; bei 100 greift nur die leichte Skalierung.) Draw Calls: Silhouetten 1–5 statt ≈ 4 je ferner Soldat.
 import * as THREE from 'three';
 import { SCHEMES } from './soldier/materials.js?v=20261114004313';
 

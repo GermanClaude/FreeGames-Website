@@ -397,9 +397,9 @@ function heliFuselage(B, M, P, det) {
     { z: -7.85, w: 0.42, h: 0.42, y: 1.2, n: 2.2 },
     { z: -7.3, w: 0.66, ht: 0.66, hb: 0.58, y: 1.3, n: 2.4 },
     { z: -6.5, w: 0.78, ht: 0.62, hb: 0.72, y: 1.42, n: 2.6 },
-    { z: -5.2, w: 0.84, ht: 0.44, hb: 0.86, y: 1.56, n: 2.8 },
-    { z: -4.4, w: 0.9, ht: 0.66, hb: 0.98, y: 1.66, n: 3 },
-    { z: -3.2, w: 1.02, ht: 0.66, hb: 1.06, y: 1.78, n: 3.2 },
+    { z: -5.2, w: 0.84, ht: 0.3, hb: 0.86, y: 1.56, n: 2.8 },
+    { z: -4.4, w: 0.9, ht: 0.4, hb: 0.98, y: 1.66, n: 3 },
+    { z: -3.2, w: 1.02, ht: 0.38, hb: 1.06, y: 1.78, n: 3.2 },
     { z: -2.6, w: 1.18, ht: 1.2, hb: 1.12, y: 1.8, n: 3.8 },
     { z: 0.9, w: 1.18, ht: 1.2, hb: 1.1, y: 1.82, n: 3.8 },
     { z: 1.8, w: 0.98, ht: 1.04, hb: 0.86, y: 2.02, n: 3 },
@@ -412,26 +412,24 @@ function heliFuselage(B, M, P, det) {
   // Hauben (Tandem, Schütze vorn tiefer): Glas + Rahmen
   const cg = [
     { z: -6.55, w: 0.7, h: 0.08, y: 1.95, n: 2.5 },
-    { z: -6.1, w: 0.78, h: 0.52, y: 1.98, n: 2.6 },
-    { z: -5.2, w: 0.8, h: 0.62, y: 2.02, n: 2.8 },
-    { z: -4.75, w: 0.78, h: 0.55, y: 2.08, n: 2.8 },
+    { z: -6.1, w: 0.78, h: 0.56, y: 1.94, n: 2.6 },
+    { z: -5.2, w: 0.82, h: 0.78, y: 1.86, n: 2.8 },
+    { z: -4.75, w: 0.84, h: 0.68, y: 1.95, n: 2.8 },
   ];
   const cp = [
-    { z: -4.75, w: 0.82, h: 0.32, y: 2.32, n: 2.6 },
-    { z: -4.35, w: 0.88, h: 0.64, y: 2.36, n: 2.8 },
-    { z: -3.4, w: 0.9, h: 0.6, y: 2.42, n: 3 },
-    { z: -2.75, w: 0.86, h: 0.35, y: 2.55, n: 3 },
+    { z: -4.75, w: 0.86, h: 0.6, y: 2.04, n: 2.6 },
+    { z: -4.35, w: 0.9, h: 0.94, y: 2.06, n: 2.8 },
+    { z: -3.4, w: 0.98, h: 0.88, y: 2.14, n: 3 },
+    { z: -2.75, w: 0.98, h: 0.62, y: 2.3, n: 3 },
   ];
   B.add(loft(cg, seg, { half: true }), M.glass, null, null, null, true);
   B.add(loft(cp, seg, { half: true }), M.glass, null, null, null, true);
   for (const s of [...cg.slice(1), ...cp.slice(1)]) B.add(frameArch(s, 0.022), M.frame);
   // Längsrahmen der Hauben (Seiten + Mitte)
   for (const sx of [-1, 1]) {
-    B.add(tube([[sx * 0.78, 1.98, -6.5], [sx * 0.8, 2.02, -5.2], [sx * 0.79, 2.1, -4.75], [sx * 0.88, 2.38, -4.3], [sx * 0.9, 2.44, -3.4], [sx * 0.86, 2.56, -2.75]], 0.03, 5), M.frame);
+    B.add(tube([[sx * 0.78, 1.95, -6.5], [sx * 0.82, 1.88, -5.2], [sx * 0.85, 1.97, -4.75], [sx * 0.9, 2.07, -4.3], [sx * 0.98, 2.15, -3.4], [sx * 0.98, 2.31, -2.75]], 0.03, 5), M.frame);
     B.add(tube([[sx * 0.55, 2.35, -6.0], [sx * 0.58, 2.48, -5.2], [sx * 0.55, 2.5, -4.75]], 0.022, 4), M.frame);
   }
-  // Panzerglas-Frontscheibe Pilot (Rahmen)
-  B.add(box(1.5, 0.05, 0.05), M.frame, [0, 2.36, -4.72]);
   // Truppenraum: Schiebetüren mit Fenstern, Laufschiene
   for (const sx of [-1, 1]) {
     const x = sx * 1.2;
@@ -565,7 +563,7 @@ function buildHeliRotor(M, det, R) {
       const r0 = 0.5 + (k / seg) * (R - 0.8), r1 = 0.5 + ((k + 1) / seg) * (R - 0.8);
       const mid = (r0 + r1) / 2, len = r1 - r0;
       const tw = 0.12 - k * 0.05;
-      B.add(box(len, 0.055, 0.56), M.blade, [c * mid, 0.05, -s * mid], [0, a, tw]);
+      B.add(box(len + 0.02, 0.055, 0.56), M.blade, [c * mid, 0.05 + (mid / R) * 0.12, -s * mid], [tw, a, 0]);
     }
     B.add(box(0.3, 0.05, 0.56), M.tip, [c * (R - 0.45), 0.05, -s * (R - 0.45)], [0, a, 0]);
     B.add(box(0.6, 0.12, 0.2), M.steel, [c * 0.55, 0.02, -s * 0.55], [0, a, 0]);   // Blattanschluss

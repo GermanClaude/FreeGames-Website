@@ -566,7 +566,7 @@ export class Director {
 
   _speaker(id) {
     const s = (this.mission.speakers || {})[id] || {};
-    return { name: s.name || id, color: s.color || '#ffc23d' };
+    return { name: s.name || id, color: s.color || '#ffc23d', radioOnly: !!s.radioOnly };
   }
 
   _updateLines(dt) {
@@ -591,7 +591,7 @@ export class Director {
         }
         f.driver.say(track, l.expr);
       }
-      if (ui) ui.subtitle({ name: near ? sp.name : `${sp.name} · Funk`, color: sp.color }, l.text, { track, radio: true });
+      if (ui) ui.subtitle({ name: near || sp.radioOnly ? sp.name : `${sp.name} · Funk`, color: sp.color }, l.text, { track, radio: true });
       this.line = l;
     }
     const l = this.line;
@@ -684,6 +684,9 @@ export class Director {
     this.co = null;
     this.stopTimer();
     this.failReason = reason;
+    this.lines = [];
+    if (this.line) { this.line.h.finish(); this.line = null; }
+    if (this.ui) this.ui.subtitle(null, '');
     this.mode.missionFail(reason);
   }
 }

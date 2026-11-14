@@ -15,7 +15,7 @@ const CUT_INTRO = {
   beats: [
     { cam: { from: [-46, 24, 68], to: [-18, 15, 58], look: [4, 6, 2], lookTo: [17.5, 9, -10.5], ease: 'inOut' }, dur: 7, fadeIn: 1.4,
       say: { who: 'funk', text: 'Anker an alle Einheiten: Das Funkrelais Sant Aurel sendet seit drei Stunden nicht mehr. Keine Verbindung ins Tal.' } },
-    { cam: { from: [-7.5, 2.4, 36.5], to: [-8.6, 2.0, 37.6], look: [-14, 1.1, 43.4] },
+    { cam: { from: [-4.5, 2.4, 47.5], to: [-6.0, 2.0, 47.0], look: [-14, 1.1, 43.4] },
       say: { who: 'brandt', text: 'Falke, Lenz – das Relais im Glockenturm ist unsere einzige Leitung zu den Dörfern. Ich brauche es zurück.' } },
     { cam: { over: ['falk', 'lenz'] },
       say: { who: 'lenz', text: 'Drei Wochen Waffenruhe, und jetzt das. Jemand will, dass wir blind und taub sind.', expr: 'ernst' } },
@@ -27,8 +27,8 @@ const CUT_INTRO = {
       say: { who: 'lenz', text: 'Regeln wie besprochen: Wer die Waffe niederlegt, wird nicht angerührt. Die Leute sitzen in ihren Kellern. Wir schießen nur, wenn wir müssen.', expr: 'entschlossen' } },
     { cam: { close: 'falk', side: 0.35, dist: 0.9 },
       say: { who: 'falk', text: 'Verstanden. Ich übernehme die Spitze.', expr: 'entschlossen' } },
-    { cam: { from: [-12.5, 1.9, 39.0], to: [-11.5, 3.2, 35.5], look: [-14.2, 1.2, 43.5], lookTo: [-24, 1.5, 28] },
-      act: [{ who: 'falk', walk: [[-17, 40], [-22, 36]], speed: 1.6, at: 0.6 }, { who: 'lenz', walk: [[-16, 41], [-20, 37.5]], speed: 1.5, at: 1.2 }, { who: 'weber', crouch: false, at: 0.4 }, { who: 'weber', walk: [[-18, 42], [-22, 39]], speed: 1.5, at: 1.6 }],
+    { cam: { from: [-6.0, 2.0, 47.6], to: [-7.0, 3.0, 49.0], look: [-14.2, 1.2, 43.8], lookTo: [-26, 1.5, 44] },
+      act: [{ who: 'falk', walk: [[-19, 44.5], [-27, 44.5]], speed: 1.6, at: 0.6 }, { who: 'lenz', walk: [[-17, 43.5], [-25, 43.5]], speed: 1.5, at: 1.2 }, { who: 'weber', crouch: false, at: 0.4 }, { who: 'weber', walk: [[-19, 43.2], [-26, 43.2]], speed: 1.5, at: 1.6 }],
       say: { who: 'lenz', text: 'Dann los. Gott behüte uns – und die Menschen hier.', expr: 'ernst' }, fadeOut: 0.9 },
   ],
 };
@@ -41,7 +41,7 @@ const CUT_OUTRO = {
     weber: actor('weber', { pos: [14.0, -6.2], yaw: 0.3, crouch: true, aim: -0.7 }),
   },
   beats: [
-    { cam: { orbit: [17.5, 6, -10.5], radius: 15, height: 2, from: 0.9, to: 0.5 }, dur: 5, fadeIn: 1,
+    { cam: { orbit: [17.5, 6, -10.5], radius: 14, height: -3, from: -1.45, to: -0.95 }, dur: 5, fadeIn: 1,
       say: { who: 'weber', text: 'Relais läuft wieder. Und ich habe ihren Funkverkehr der letzten Nacht entschlüsselt.' } },
     { cam: { close: 'weber', side: 0.5, dist: 0.85, push: 0.12 },
       say: { who: 'weber', text: 'Befehl an die Brigade Kessar: Morgen, sechs Uhr, Angriff auf Werk Sieben. In Uniformen des Nordkorps.', expr: 'angespannt' } },

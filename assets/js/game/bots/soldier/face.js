@@ -510,6 +510,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
 // Shaderprogramm des Kopfes einmal je Stufe vorab übersetzen (sonst ruckelt das erste Erscheinen eines nahen Soldaten):
 // läuft über den Spiel-Renderer (window.__game), parallel, wenn KHR_parallel_shader_compile vorhanden ist
 const warmed = new Set();
+let liveFaces = 0; // ohne lebende Köpfe gibt three.js das Programm frei → beim nächsten Match neu vorwärmen
 function warmProgram(mesh, low) {
   const key = low ? 'l' : 'h';
   if (warmed.has(key)) return;
@@ -549,6 +550,7 @@ export class SoldierFace {
     this.res = opts.res || 'near';
     const shared = soldier.material && soldier.material.userData.npU;
     const mat = (this.material = faceMaterial({ low: !!opts.low, shared }));
+    liveFaces++;
     const U = (this.u = mat.userData.faceU);
     const skin = typeof opts.skin === 'string' ? opts.skin : SKIN_TONES[(typeof opts.skin === 'number' ? opts.skin : V.skin) % SKIN_TONES.length];
     U.uSkin.value.set(skin);
@@ -786,7 +788,9 @@ export class SoldierFace {
   setShadows(on) { this.castShadow = !!on; if (this.mesh) this.mesh.castShadow = this.castShadow; }
 
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
+    if (--liveFaces <= 0) { liveFaces = 0; warmed.clear(); }
     if (this.mesh) this.mesh.removeFromParent();
     this.material.dispose();
     // Geometrie bleibt im Cache (geteilt)

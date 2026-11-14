@@ -353,7 +353,7 @@ export class Cutscene {
         this.track = textToVisemes(b.say.text, { cps });
       }
       sayDur = subtitleDuration(this.track, b.say.linger ?? 0.85);
-      if (ui) ui.subtitle({ name: sp.radio ? `${sp.name} · Funk` : sp.name, color: sp.color }, b.say.text, { track: this.track, radio: false });
+      if (ui) ui.subtitle({ name: sp.radio && !((this.hooks.speakers || {})[b.say.who] || {}).radioOnly ? `${sp.name} · Funk` : sp.name, color: sp.color }, b.say.text, { track: this.track, radio: false });
     } else if (ui) ui.subtitle(null, '');
     this.beatDur = Math.max(b.dur || 0, sayDur, b.say ? 0 : (b.cam && b.cam.dur) || 2.5);
     if (b.cam) this.cam.start(b.cam, this.beatDur);
