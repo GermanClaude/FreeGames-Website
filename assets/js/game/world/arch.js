@@ -472,8 +472,8 @@ export function pitchedRoof(b, o) {
       b.cyl(x + e + s * 0.08, eaveY - 0.12, z, 0.065, len - 0.04, 'metal_galvanized', { ...D, axis: 'z', tint: gt2, seg: 8, ao: false, bullet: false });
     }
   }
-  // Ortgang: schräge Windbretter an beiden Giebeln
-  for (const g of [-1, 1]) for (const s of [-1, 1]) {
+  // Ortgang: schräge Windbretter an beiden Giebeln (nicht auf „niedrig“)
+  if (b.lookQuality !== 'low') for (const g of [-1, 1]) for (const s of [-1, 1]) {
     const L2 = Math.hypot(half, rise * (half / (span / 2))), cy = y + rise / 2 - ov * Math.tan(ang) / 2 + 0.02;
     if (along === 'x') b.box(x + g * (len / 2 - 0.02), cy - 0.1, z + s * half / 2, 0.04, 0.2, L2, 'wood_painted', { ...D, rx: ang * s, tint: o.fasciaTint || '#5a4636', uv: 'local' });
     else b.box(x + s * half / 2, cy - 0.1, z + g * (len / 2 - 0.02), L2, 0.2, 0.04, 'wood_painted', { ...D, rz: -ang * s, tint: o.fasciaTint || '#5a4636', uv: 'local' });

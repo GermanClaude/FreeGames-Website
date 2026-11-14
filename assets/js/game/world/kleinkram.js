@@ -645,7 +645,7 @@ export function fensterleben(b, o = {}) {
     const sg = inA ? -1 : 1, ox = nx * sg, oz = nz * sg, ry = Math.atan2(ox, oz), rw = Math.atan2(-p.uz, p.ux);
     const top = p.y + p.h / 2, bot = p.y - p.h / 2, h1 = hash01(p.x, p.z + p.y, 410), h2 = hash01(p.x, p.z + p.y, 411);
     // Vorhänge (innen) – Fenster mit Glas oder Wohnhaus-Stil
-    if ((p.glass || o.stil === 'stadt' || o.stil === 'dorf') && h1 < P.vorhang * Math.min(1, q + 0.3) && !p.bars) {
+    if (fein(b) && (p.glass || o.stil === 'stadt' || o.stil === 'dorf') && h1 < P.vorhang * Math.min(1, q + 0.3) && !p.bars) { // Telefon: keine Vorhänge
       const t = VORHANG[Math.floor(h2 * VORHANG.length)], ix = -ox * (p.t / 2 + 0.07), iz = -oz * (p.t / 2 + 0.07);
       const ch = p.h + 0.25, cw = 0.26 + h2 * 0.12;
       for (const s of [-1, 1]) {
@@ -657,7 +657,7 @@ export function fensterleben(b, o = {}) {
     }
     const ex = ox * (p.t / 2), ez = oz * (p.t / 2);
     // Rollladenkasten (außen, über dem Fenster) – nicht bei Industriefenstern
-    if ((o.stil === 'stadt' || o.stil === 'dorf') && h2 < P.rollladen) {
+    if (fein(b) && (o.stil === 'stadt' || o.stil === 'dorf') && h2 < P.rollladen) {
       b.box(p.x + ex + ox * 0.07, top + 0.02, p.z + ez + oz * 0.07, p.w + 0.12, 0.2, 0.14, 'plaster_white', { ...DN, ry: rw, tint: '#d8d4ca' });
       if (h1 > 0.6) b.box(p.x + ex + ox * 0.03, top - 0.35, p.z + ez + oz * 0.03, p.w - 0.04, 0.36, 0.03, 'metal_shutter', { ...DN, ry: rw, tint: '#c8c4b8' });
     }

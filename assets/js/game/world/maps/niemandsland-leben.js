@@ -68,7 +68,9 @@ export function grabenLeben(b, ctx, trenches, o = {}) {
       if (!low && acc % 3 < L) {
         const hx = bx + nx * back * (hw - 0.07), hz = bz + nz * back * (hw - 0.07), hy = fl + 1.45;
         b.box(hx, hy - 0.04, hz, 0.03, 0.06, 0.03, 'metal_rust', DN);
-        if (hook && Math.hypot(hx - hook[0], hz - hook[2]) < 4.5) {
+        // nur auf geraden Stücken verbinden (an Knicken der Zickzacklinie liefe das Kabel sonst durch die Grabenwand)
+        const hd = hook ? Math.hypot(hx - hook[0], hz - hook[2]) : 0;
+        if (hook && hd < 4.5 && hd > 0.5 && Math.abs(((hx - hook[0]) * ux + (hz - hook[2]) * uz) / hd) > 0.985) {
           const dx = hx - hook[0], dz = hz - hook[2], LL = Math.hypot(dx, dz), m = 4;
           for (let i = 0; i < m; i++) {
             const t0 = i / m, t1 = (i + 1) / m, s0 = Math.sin(Math.PI * t0) * 0.18, s1 = Math.sin(Math.PI * t1) * 0.18;
