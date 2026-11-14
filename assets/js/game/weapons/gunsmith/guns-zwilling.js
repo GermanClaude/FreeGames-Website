@@ -58,7 +58,9 @@ export function zwilling(b) {
   b.anchor('muzzle', R.BX1, AX, uM + 0.002, { part: 'barrels' });     // rechter Lauf (vorderer Abzug) zuerst
   b.anchor('muzzle2', -R.BX1, AX, uM + 0.002, { part: 'barrels' });
   // Griff aus dem Foto: Vorderkante 33° geneigt, Hals 33 mm breit; Anker 23 mm hinter der Vorderkante unter der Handwurzel
-  const grip = { rake: 0.57, gw: 0.0165, gd: 0.021, gu: 0.0, ho: 0.004, tu: 0.05 };
+  // ho/tu (14.11.): Hand 30 mm tiefer am Hals, Daumen flacher – mit dem Auge knapp über der Schiene ragten Knöchel und
+  // Daumenwurzel sonst über das Perlkorn
+  const grip = { rake: 0.57, gw: 0.0165, gd: 0.021, gu: 0.0, ho: 0.03, tu: 0.03 };
   b.anchor('rightHandGrip', 0, 0, 0, { data: grip });
   b.anchor('trigger', 0, V(588), U(2618));
   // Stützhand unter dem Vorderschaft (Anker im Teil – die Hand folgt den Läufen beim Öffnen)
@@ -66,9 +68,9 @@ export function zwilling(b) {
   // mit Mitte auf der Laufachse griffen sie über die Läufe und verdeckten im Anschlag das Perlkorn)
   b.anchor('leftHandGrip', 0, V(508), U(2020), { part: 'barrels', data: { style: 'under', w: 0.024, h: 0.0165 } });
   b.anchor('barrelGrab', -0.0255, V(462), U(2140), { part: 'barrels' });   // Daumen/Finger links am Vorderschaft (Bots, Kippen)
-  // Auge 30 mm über der Schiene: man blickt die Schiene entlang aufs Perlkorn (2,4° unter der Bildmitte); tiefer verdeckte die
-  // Schusshand auf dem Kolbenhals im Anschlag die halbe Sicht (Prüfbilder 26.10.). Abstand wie am Original (Abzug → Auge ≈ 27 cm)
-  b.anchor('sight', 0, AX + R.RIB_H(0) + 0.03, UB - 0.004, { data: { type: 'iron', eyeRelief: 0.3 } });
+  // Auge knapp über der Schiene auf Höhe der Perlkornmitte (Treffpunkt = Bildmitte = Korn, 14.11.); die Linie Auge → Korn
+  // streift die Schiene am Stoßboden mit ≈ 1,7 mm Luft. Abstand wie am Original (Abzug → Auge ≈ 27 cm)
+  b.anchor('sight', 0, AX + R.RIB_H(R.BEAD_D) + R.BEAD_POST + 0.0011, UB - 0.004, { data: { type: 'iron', eyeRelief: 0.3 } });
   b.anchor('chamberR', R.BX0, AX, UB, { part: 'barrels' });
   b.anchor('chamberL', -R.BX0, AX, UB, { part: 'barrels' });
   b.anchor('shellPort', 0, AX, UB - 0.01, { part: 'barrels' });
@@ -105,8 +107,11 @@ function barrels(b) {
   // untere Schiene (vom Vorderschaft bis zur Mündung)
   const dF = (R.BREECH_X - 1700) / R.PPM;
   b.front('zwBarrel', [[-0.0031, -R.RIB_LOW], [0.0031, -R.RIB_LOW], [0.004, -0.0075], [-0.004, -0.0075]], LEN - dF - 0.0015, UB + dF, { ...P, v: AX, bevel: 0.0004 });
-  // Perlkorn (Messing) auf der Schiene
-  b.sphere('brass', 0.00185, 0, AX + R.RIB_H(R.BEAD_D) + 0.0011, UB + R.BEAD_D, { ...P, seg: 16, hseg: 10 });
+  // Perlkorn (Messing) auf einem 4 mm hohen Kornsockel (brüniert, vorn/hinten angeschrägt): hebt das Korn in die Augenlinie knapp
+  // über der Schiene – im Anschlag sitzt es in der Bildmitte statt 2,4° darunter
+  const vR = AX + R.RIB_H(R.BEAD_D), uB = UB + R.BEAD_D;
+  b.front('zwBarrel', [[-0.0016, -0.0004], [0.0016, -0.0004], [0.0012, R.BEAD_POST], [-0.0012, R.BEAD_POST]], 0.0044, uB - 0.0022, { ...P, v: vR, bevel: 0.0003 });
+  b.sphere('brass', 0.00185, 0, vR + R.BEAD_POST + 0.0011, uB, { ...P, seg: 16, hseg: 10 });
   // Kopfstück unter den Läufen (sitzt auf der Bahn) mit Laufhaken – bei offener Waffe sichtbar
   b.side('zwBlued', M([[2530, R.AXIS_Y], [2366, R.AXIS_Y], [2366, R.BAR_TOP_Y], [2530, R.BAR_TOP_Y]]), 0.0466, 0, { ...P, bevel: 0.0012 });
   b.side('zwBarrel', M(R.LUMPS), 0.0128, 0, { ...P, bevel: 0.0008 });

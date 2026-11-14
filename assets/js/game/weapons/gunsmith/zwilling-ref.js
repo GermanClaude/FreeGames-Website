@@ -36,6 +36,7 @@ export const CHAMBER = 0.0103, RIM = 0.0112;                      // Patronenlag
 export const RIB_H = (d) => 0.01545 - 0.00545 * Math.min(1, d / 0.415);
 export const RIB_LOW = 0.01708;                                   // Unterkante der unteren Schiene unter der Achse (465 px)
 export const BEAD_D = LEN - 0.011;                                // Perlkorn 11 mm hinter der Mündung
+export const BEAD_POST = 0.0057;                                   // Kornsockel: Perlkorn-Mitte 5,7 mm über der Schiene (≈ 1,6 mm über der Schiene am Stoßboden)
 // Scharnierstift (Kopfstück der Basküle), Öffnungswinkel der Läufe
 export const PIVOT = [2362, 502];
 export const OPEN = -0.62;
