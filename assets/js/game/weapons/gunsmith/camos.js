@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { CAMOS } from '../../../shared/weapons.data.js?v=20261114004313';
 import { getMat } from './materials.js?v=20261114004313';
 import { onCustomChange } from '../../../shared/customcamo.js?v=20261114004313';
+import { copyShaderPatches } from '../../world/shading.js?v=20261114004313';
 
 const SIZE = 256;
 /** Materialschlüssel (gs:<key>), die ein Tarnmuster erhalten. */
@@ -313,7 +314,8 @@ export function camoMaterial(baseKey, id) {
   if (f.env) m.envMapIntensity = f.env;
   // Gebrauchsspuren/Oberflächen-Baukasten (materials.js wearPatch) gelten auch unter der Tarnung – clone() übernimmt
   // onBeforeCompile nicht (14.11.: Tarnungen wirkten dadurch glatt wie neu)
-  if (base.onBeforeCompile && base.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) {
+  if (copyShaderPatches(base, m, ':camo')) { /* Verteiler-Haken sauber übertragen (sonst npProbe doppelt) */ }
+  else if (base.onBeforeCompile && base.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) {
     const ck = base.customProgramCacheKey();
     m.onBeforeCompile = base.onBeforeCompile;
     m.customProgramCacheKey = () => ck + ':camo';

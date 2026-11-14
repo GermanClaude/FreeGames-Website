@@ -47,6 +47,20 @@ export function addShaderPatch(material, key, fn) {
   return material;
 }
 
+/**
+ * Haken eines Materials auf einen Klon übertragen (clone() übernimmt den Verteiler sonst als „eigenen“ Haken, und
+ * ein späteres addShaderPatch am Klon hängt dieselben Haken ein zweites Mal ein → GLSL-Neudefinition). → true wenn übertragen
+ */
+export function copyShaderPatches(src, dst, keySuffix = '') {
+  const r = REG.get(src);
+  if (!r) return false;
+  dst.onBeforeCompile = r.ownObc || BASE_OBC;
+  dst.customProgramCacheKey = r.ownKey ? function () { return r.ownKey.call(this) + keySuffix; } : BASE_KEY;
+  REG.delete(dst);
+  for (const [k, fn] of r.patches) addShaderPatch(dst, k, fn);
+  return true;
+}
+
 /** Haken `key` wieder entfernen (neues Programm beim nächsten Rendern; z. B. Qualitätswechsel zwischen Matches). */
 export function removeShaderPatch(material, key) {
   const r = REG.get(material);
