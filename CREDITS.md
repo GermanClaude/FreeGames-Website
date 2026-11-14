@@ -11,7 +11,7 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
 ## Texturen (69)
 
-52 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
+45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
@@ -30,7 +30,7 @@ verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmi
 | Worn Plaster Wall | `plaster_worn_patched` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/worn_plaster_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Blue Plaster Weathered | `plaster_blue_weathered` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/blue_plaster_weathered) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Painted Plaster Wall | `plaster_painted` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/painted_plaster_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Decrepit Wallpaper | `wallpaper_stained` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/decrepit_wallpaper) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wallpaper 002 C | `wallpaper_stained` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Wallpaper002C) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Sandstone Blocks 05 | `sandstone_blocks` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/sandstone_blocks_05) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Factory Brick | `brick_factory` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/factory_brick) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Brick Wall 10 | `brick_dark` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/brick_wall_10) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -43,7 +43,7 @@ verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmi
 | Long White Tiles | `tiles_white_wall` | Jenelle van Heerden, Sergej Majboroda | [Poly Haven](https://polyhaven.com/a/long_white_tiles) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Linoleum Brown | `linoleum` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/linoleum_brown) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirty Carpet | `carpet_dirty` | Rohit Seervi | [Poly Haven](https://polyhaven.com/a/dirty_carpet) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Ceiling Interior | `ceiling_office` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/ceiling_interior) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Office Ceiling 001 | `ceiling_office` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=OfficeCeiling001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rubber Tiles | `rubber_floor` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rubber_tiles) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Asphalt 02 | `asphalt_cracked` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/asphalt_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Gravel Floor 02 | `gravel` | Jenelle van Heerden, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/gravel_floor_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |

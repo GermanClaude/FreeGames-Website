@@ -35,7 +35,7 @@ const LOCAL_HINTS = {
   gfxAA: 'FXAA ist billig, SMAA schärfer und ruhiger.',
   gfxBloom: 'Leuchten heller Lichter, mit Linsenschmutz im Bodycam-Stil.',
   colorLook: 'Natürlich: kräftigere Farben. Video-Look: grau-grün und entsättigt wie die Video-Vorlage. Ab Stufe „Mittel“.',
-  gfxTextures: 'Auflösung der Fotoscan-Texturen (Böden, Wände, Holz, Metall). Ultra lädt 2048er-Scans: deutlich schärfer aus der Nähe, braucht mehr Grafikspeicher und Ladezeit. Gilt ab dem nächsten Match.',
+  gfxTextures: 'Auflösung der Fotoscan-Texturen (Böden, Wände, Holz, Metall). Ultra lädt 2048er-Scans: deutlich schärfer aus der Nähe, braucht mehr Grafikspeicher und Ladezeit. Nur auf Qualitätsstufe Hoch/Ultra und nicht auf Telefonen. Gilt ab dem nächsten Match.',
   gfxEffects: 'Partikelmenge, Rauch, Funken, Hülsen und Zahl der Einschusslöcher.',
 };
 const SEGS = [

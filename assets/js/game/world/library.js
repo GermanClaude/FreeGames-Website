@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261113221339';
+import { deviceInfo } from '../engine/device.js?v=20261113221339';
 import { textureAnisotropy } from '../engine/textures.js?v=20261113221339';
 
 // ---------------------------------------------------------------------------
@@ -168,7 +169,14 @@ const TEX_SETTING_TIER = { niedrig: 512, mittel: 1024, ultra: 2048 };
 function textureTier(G, q) {
   let v = 'auto';
   try { v = G.settings && typeof G.settings.get === 'function' ? G.settings.get('gfxTextures') : 'auto'; } catch { v = 'auto'; }
-  return TEX_SETTING_TIER[v] || tierFor(q, 'texture');
+  let t = TEX_SETTING_TIER[v] || tierFor(q, 'texture');
+  // 2048er-Scans nur auf Hoch/Ultra und nie auf Telefonen (Touch + kurze Bildschirmkante < 900 px): Grafikspeicher/Ladezeit
+  if (t > 1024) {
+    let phone = false;
+    try { const d = deviceInfo(); phone = !!d.touch && d.short > 0 && d.short < 900; } catch { phone = false; }
+    if (phone || q === 'low' || q === 'medium') t = 1024;
+  }
+  return t;
 }
 
 /**
