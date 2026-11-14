@@ -1,4 +1,7 @@
 // NULLPUNKT — Vegetation für Großkarten (Owner: world): Fichten, Laubbäume, Büsche, Schilf, Felsen und ein Grasring
+// baeume 14.11.: Bäume/Büsche/Farne kommen jetzt aus trees.js (Astgerüste, Zweigkarten-Atlas, LOD nah/mittel/Impostor,
+// Art je Baum per Positions-Hash aus spec.mix) – der Abschnitt unten über Laubkarten/Fernmodelle beschreibt den Rückfall
+// (_buildLegacy, ohne Renderer). Dazu Laubstreu unter Laubbäumen und Farne im Wald. Kollision/Platzierung unverändert.
 // um die Kamera. Je Art ein InstancedMesh für die Nähe (Karten mit Laub-Atlas, Wind) und eines für die Ferne
 // (Einfachmodell bis zur Nebelkante); Instanzen werden nach Kamerabewegung kompakt umsortiert (wenige Draw Calls).
 // Stämme und Felsen liefern Kollisions-/Kugel-Dreiecke; Laub blockiert keine Kugeln.
