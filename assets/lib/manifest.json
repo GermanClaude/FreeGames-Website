@@ -15509,6 +15509,1497 @@
    "maps": [
     "altstadt"
    ]
+  },
+  "can_rusted": {
+   "type": "model",
+   "name": "can_rusted",
+   "category": "urban",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.125,
+    0.151,
+    0.125
+   ],
+   "radius": 0.116,
+   "lodDistances": [
+    0,
+    6,
+    18
+   ],
+   "parts": [
+    "can_rusted"
+   ],
+   "sourceTris": 3520,
+   "materials": [
+    {
+     "name": "can_rusted",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/can_rusted/can_rusted_512.glb",
+     "bytes": 157576,
+     "gpu": {
+      "desktop": 403392,
+      "mobile": 403392,
+      "rgba8": 3155904
+     },
+     "tris": [
+      160,
+      52
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/can_rusted/can_rusted_1024.glb",
+     "bytes": 478544,
+     "gpu": {
+      "desktop": 1602240,
+      "mobile": 1602240,
+      "rgba8": 12612288
+     },
+     "tris": [
+      400,
+      160,
+      52
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6,
+      18
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "can_rusted",
+   "maps": [
+    "hafen",
+    "werk",
+    "altstadt",
+    "grenzland",
+    "brandwald",
+    "niemandsland"
+   ]
+  },
+  "covered_car": {
+   "type": "model",
+   "name": "covered_car",
+   "category": "urban",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    1.789,
+    1.411,
+    4.38
+   ],
+   "radius": 2.469,
+   "lodDistances": [
+    0,
+    34.6,
+    98.7
+   ],
+   "parts": [
+    "covered_car"
+   ],
+   "sourceTris": 12592,
+   "materials": [
+    {
+     "name": "covered_car",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/covered_car/covered_car_512.glb",
+     "bytes": 201660,
+     "gpu": {
+      "desktop": 558528,
+      "mobile": 558528,
+      "rgba8": 3311040
+     },
+     "tris": [
+      1980,
+      1464
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      34.6
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/covered_car/covered_car_1024.glb",
+     "bytes": 563048,
+     "gpu": {
+      "desktop": 1978176,
+      "mobile": 1978176,
+      "rgba8": 12988224
+     },
+     "tris": [
+      5000,
+      1980,
+      1464
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      34.6,
+      98.7
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "covered_car",
+   "maps": [
+    "altstadt",
+    "grenzland",
+    "hafen"
+   ]
+  },
+  "electric_stove": {
+   "type": "model",
+   "name": "electric_stove",
+   "category": "furniture",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.503,
+    0.859,
+    0.648
+   ],
+   "radius": 0.594,
+   "lodDistances": [
+    0,
+    8.3,
+    23.7
+   ],
+   "parts": [
+    "electric_stove"
+   ],
+   "sourceTris": 13914,
+   "materials": [
+    {
+     "name": "electric_stove",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    {
+     "name": "electric_stove_glass",
+     "alphaMode": "BLEND",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/electric_stove/electric_stove_512.glb",
+     "bytes": 194312,
+     "gpu": {
+      "desktop": 639072,
+      "mobile": 639072,
+      "rgba8": 3391584
+     },
+     "tris": [
+      2559,
+      2563
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      8.3
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/electric_stove/electric_stove_1024.glb",
+     "bytes": 468464,
+     "gpu": {
+      "desktop": 1962624,
+      "mobile": 1962624,
+      "rgba8": 12972672
+     },
+     "tris": [
+      2998,
+      2559,
+      2563
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      8.3,
+      23.7
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "electric_stove",
+   "maps": [
+    "grenzland",
+    "altstadt"
+   ]
+  },
+  "garden_hose_wall_mounted_01": {
+   "type": "model",
+   "name": "garden_hose_wall_mounted_01",
+   "category": "tools",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.467,
+    0.557,
+    0.25
+   ],
+   "radius": 0.384,
+   "lodDistances": [
+    0,
+    6,
+    18
+   ],
+   "parts": [
+    "garden_hose_wall_mounted_01"
+   ],
+   "sourceTris": 11684,
+   "materials": [
+    {
+     "name": "garden_hose_wall_mounted_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01_512.glb",
+     "bytes": 133068,
+     "gpu": {
+      "desktop": 430464,
+      "mobile": 430464,
+      "rgba8": 3182976
+     },
+     "tris": [
+      580,
+      196
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01_1024.glb",
+     "bytes": 445080,
+     "gpu": {
+      "desktop": 1681728,
+      "mobile": 1681728,
+      "rgba8": 12691776
+     },
+     "tris": [
+      1492,
+      580,
+      196
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6,
+      18
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "garden_hose_wall_mounted_01",
+   "maps": [
+    "grenzland",
+    "altstadt"
+   ]
+  },
+  "old_bed_frame": {
+   "type": "model",
+   "name": "old_bed_frame",
+   "category": "furniture",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.905,
+    1.201,
+    2.002
+   ],
+   "radius": 1.252,
+   "lodDistances": [
+    0,
+    17.5,
+    50.1
+   ],
+   "parts": [
+    "old_bed_frame"
+   ],
+   "sourceTris": 49990,
+   "materials": [
+    {
+     "name": "old_bed_frame",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/old_bed_frame/old_bed_frame_512.glb",
+     "bytes": 194528,
+     "gpu": {
+      "desktop": 507168,
+      "mobile": 507168,
+      "rgba8": 3259680
+     },
+     "tris": [
+      1182,
+      1192
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      17.5
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/old_bed_frame/old_bed_frame_1024.glb",
+     "bytes": 544240,
+     "gpu": {
+      "desktop": 1827360,
+      "mobile": 1827360,
+      "rgba8": 12837408
+     },
+     "tris": [
+      2928,
+      1182,
+      1192
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      17.5,
+      50.1
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "old_bed_frame",
+   "maps": [
+    "grenzland",
+    "altstadt"
+   ]
+  },
+  "painted_wooden_cabinet": {
+   "type": "model",
+   "name": "painted_wooden_cabinet",
+   "category": "furniture",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    1.195,
+    1.182,
+    0.617
+   ],
+   "radius": 0.895,
+   "lodDistances": [
+    0,
+    12.5,
+    35.8
+   ],
+   "parts": [
+    "painted_wooden_cabinet"
+   ],
+   "sourceTris": 2227,
+   "materials": [
+    {
+     "name": "painted_wooden_cabinet",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/painted_wooden_cabinet/painted_wooden_cabinet_512.glb",
+     "bytes": 142480,
+     "gpu": {
+      "desktop": 452976,
+      "mobile": 452976,
+      "rgba8": 3205488
+     },
+     "tris": [
+      890,
+      355
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      12.5
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/painted_wooden_cabinet/painted_wooden_cabinet_1024.glb",
+     "bytes": 422652,
+     "gpu": {
+      "desktop": 1739520,
+      "mobile": 1739520,
+      "rgba8": 12749568
+     },
+     "tris": [
+      2227,
+      890,
+      355
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      12.5,
+      35.8
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_wooden_cabinet",
+   "maps": [
+    "grenzland",
+    "altstadt"
+   ]
+  },
+  "painted_wooden_chair_01": {
+   "type": "model",
+   "name": "painted_wooden_chair_01",
+   "category": "furniture",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.432,
+    0.956,
+    0.54
+   ],
+   "radius": 0.59,
+   "lodDistances": [
+    0,
+    8.3,
+    23.6
+   ],
+   "parts": [
+    "painted_wooden_chair_01"
+   ],
+   "sourceTris": 724,
+   "materials": [
+    {
+     "name": "painted_wooden_chair_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/painted_wooden_chair_01/painted_wooden_chair_01_512.glb",
+     "bytes": 129136,
+     "gpu": {
+      "desktop": 426528,
+      "mobile": 426528,
+      "rgba8": 3179040
+     },
+     "tris": [
+      352,
+      342
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      8.3
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/painted_wooden_chair_01/painted_wooden_chair_01_1024.glb",
+     "bytes": 373852,
+     "gpu": {
+      "desktop": 1640928,
+      "mobile": 1640928,
+      "rgba8": 12650976
+     },
+     "tris": [
+      724,
+      352,
+      342
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      8.3,
+      23.6
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_wooden_chair_01",
+   "maps": [
+    "grenzland",
+    "altstadt"
+   ]
+  },
+  "painted_wooden_shelves": {
+   "type": "model",
+   "name": "painted_wooden_shelves",
+   "category": "furniture",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.511,
+    1.125,
+    0.367
+   ],
+   "radius": 0.645,
+   "lodDistances": [
+    0,
+    9.0,
+    25.8
+   ],
+   "parts": [
+    "painted_wooden_shelves"
+   ],
+   "sourceTris": 524,
+   "materials": [
+    {
+     "name": "painted_wooden_shelves",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/painted_wooden_shelves/painted_wooden_shelves_512.glb",
+     "bytes": 149076,
+     "gpu": {
+      "desktop": 407904,
+      "mobile": 407904,
+      "rgba8": 3160416
+     },
+     "tris": [
+      208,
+      98
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      9.0
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/painted_wooden_shelves/painted_wooden_shelves_1024.glb",
+     "bytes": 467076,
+     "gpu": {
+      "desktop": 1612704,
+      "mobile": 1612704,
+      "rgba8": 12622752
+     },
+     "tris": [
+      524,
+      208,
+      98
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      9.0,
+      25.8
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_wooden_shelves",
+   "maps": [
+    "grenzland",
+    "altstadt"
+   ]
+  },
+  "painted_wooden_table": {
+   "type": "model",
+   "name": "painted_wooden_table",
+   "category": "furniture",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    2.406,
+    0.959,
+    1.137
+   ],
+   "radius": 1.414,
+   "lodDistances": [
+    0,
+    19.8,
+    56.6
+   ],
+   "parts": [
+    "painted_wooden_table"
+   ],
+   "sourceTris": 600,
+   "materials": [
+    {
+     "name": "painted_wooden_table",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/painted_wooden_table/painted_wooden_table_512.glb",
+     "bytes": 116596,
+     "gpu": {
+      "desktop": 409056,
+      "mobile": 409056,
+      "rgba8": 3161568
+     },
+     "tris": [
+      240,
+      90
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      19.8
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/painted_wooden_table/painted_wooden_table_1024.glb",
+     "bytes": 399244,
+     "gpu": {
+      "desktop": 1617504,
+      "mobile": 1617504,
+      "rgba8": 12627552
+     },
+     "tris": [
+      600,
+      240,
+      90
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      19.8,
+      56.6
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "painted_wooden_table",
+   "maps": [
+    "grenzland",
+    "altstadt"
+   ]
+  },
+  "planter_box_01": {
+   "type": "model",
+   "name": "planter_box_01",
+   "category": "urban",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.913,
+    0.425,
+    0.414
+   ],
+   "radius": 0.544,
+   "lodDistances": [
+    0,
+    7.6,
+    21.8
+   ],
+   "parts": [
+    "planter_box_01"
+   ],
+   "sourceTris": 8094,
+   "materials": [
+    {
+     "name": "planter_box_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/planter_box_01/planter_box_01_512.glb",
+     "bytes": 174980,
+     "gpu": {
+      "desktop": 446112,
+      "mobile": 446112,
+      "rgba8": 3198624
+     },
+     "tris": [
+      800,
+      302
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      7.6
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/planter_box_01/planter_box_01_1024.glb",
+     "bytes": 529152,
+     "gpu": {
+      "desktop": 1721760,
+      "mobile": 1721760,
+      "rgba8": 12731808
+     },
+     "tris": [
+      2000,
+      800,
+      302
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      7.6,
+      21.8
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "planter_box_01",
+   "maps": [
+    "altstadt",
+    "grenzland"
+   ]
+  },
+  "rusted_spade_01": {
+   "type": "model",
+   "name": "rusted_spade_01",
+   "category": "tools",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.168,
+    1.101,
+    0.046
+   ],
+   "radius": 0.557,
+   "lodDistances": [
+    0,
+    7.8,
+    22.3
+   ],
+   "parts": [
+    "rusted_spade_01"
+   ],
+   "sourceTris": 11436,
+   "materials": [
+    {
+     "name": "rusted_spade_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/rusted_spade_01/rusted_spade_01_512.glb",
+     "bytes": 156460,
+     "gpu": {
+      "desktop": 420096,
+      "mobile": 420096,
+      "rgba8": 3172608
+     },
+     "tris": [
+      320,
+      240
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      7.8
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/rusted_spade_01/rusted_spade_01_1024.glb",
+     "bytes": 470676,
+     "gpu": {
+      "desktop": 1638144,
+      "mobile": 1638144,
+      "rgba8": 12648192
+     },
+     "tris": [
+      800,
+      320,
+      240
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      7.8,
+      22.3
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rusted_spade_01",
+   "maps": [
+    "grenzland",
+    "niemandsland",
+    "brandwald"
+   ]
+  },
+  "security_light": {
+   "type": "model",
+   "name": "security_light",
+   "category": "urban",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.323,
+    0.531,
+    0.417
+   ],
+   "radius": 0.374,
+   "lodDistances": [
+    0,
+    6,
+    18
+   ],
+   "parts": [
+    "security_light"
+   ],
+   "sourceTris": 4668,
+   "materials": [
+    {
+     "name": "security_light",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    {
+     "name": "security_light_glass",
+     "alphaMode": "BLEND",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/security_light/security_light_512.glb",
+     "bytes": 189656,
+     "gpu": {
+      "desktop": 434304,
+      "mobile": 434304,
+      "rgba8": 3186816
+     },
+     "tris": [
+      477,
+      379
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/security_light/security_light_1024.glb",
+     "bytes": 555764,
+     "gpu": {
+      "desktop": 1671408,
+      "mobile": 1671408,
+      "rgba8": 12681456
+     },
+     "tris": [
+      1197,
+      477,
+      379
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6,
+      18
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "security_light",
+   "maps": [
+    "hafen",
+    "werk",
+    "altstadt",
+    "grenzland"
+   ]
+  },
+  "sledgehammer_01": {
+   "type": "model",
+   "name": "sledgehammer_01",
+   "category": "tools",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.208,
+    1.006,
+    0.09
+   ],
+   "radius": 0.515,
+   "lodDistances": [
+    0,
+    7.2,
+    20.6
+   ],
+   "parts": [
+    "sledgehammer_01"
+   ],
+   "sourceTris": 2596,
+   "materials": [
+    {
+     "name": "sledgehammer_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/sledgehammer_01/sledgehammer_01_512.glb",
+     "bytes": 126496,
+     "gpu": {
+      "desktop": 413472,
+      "mobile": 413472,
+      "rgba8": 3165984
+     },
+     "tris": [
+      319,
+      103
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      7.2
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/sledgehammer_01/sledgehammer_01_1024.glb",
+     "bytes": 379000,
+     "gpu": {
+      "desktop": 1631520,
+      "mobile": 1631520,
+      "rgba8": 12641568
+     },
+     "tris": [
+      800,
+      319,
+      103
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      7.2,
+      20.6
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "sledgehammer_01",
+   "maps": [
+    "werk",
+    "grenzland"
+   ]
+  },
+  "street_lamp_01": {
+   "type": "model",
+   "name": "street_lamp_01",
+   "category": "urban",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.704,
+    3.871,
+    0.386
+   ],
+   "radius": 1.977,
+   "lodDistances": [
+    0,
+    27.7,
+    79.1
+   ],
+   "parts": [
+    "street_lamp_01"
+   ],
+   "sourceTris": 30610,
+   "materials": [
+    {
+     "name": "street_lamp_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    {
+     "name": "street_lamp_01_glass",
+     "alphaMode": "BLEND",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/street_lamp_01/street_lamp_01_512.glb",
+     "bytes": 123528,
+     "gpu": {
+      "desktop": 470160,
+      "mobile": 470160,
+      "rgba8": 3222672
+     },
+     "tris": [
+      1202,
+      401
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      27.7
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/street_lamp_01/street_lamp_01_1024.glb",
+     "bytes": 356420,
+     "gpu": {
+      "desktop": 1793760,
+      "mobile": 1793760,
+      "rgba8": 12803808
+     },
+     "tris": [
+      2999,
+      1202,
+      401
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      27.7,
+      79.1
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "street_lamp_01",
+   "maps": [
+    "altstadt",
+    "grenzland"
+   ]
+  },
+  "water_manhole_cover": {
+   "type": "model",
+   "name": "water_manhole_cover",
+   "category": "urban",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.691,
+    0.068,
+    0.691
+   ],
+   "radius": 0.49,
+   "lodDistances": [
+    0,
+    6.9,
+    19.6
+   ],
+   "parts": [
+    "water_manhole_cover"
+   ],
+   "sourceTris": 6301,
+   "materials": [
+    {
+     "name": "water_manhole_cover",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/water_manhole_cover/water_manhole_cover_512.glb",
+     "bytes": 200548,
+     "gpu": {
+      "desktop": 470880,
+      "mobile": 470880,
+      "rgba8": 3223392
+     },
+     "tris": [
+      809,
+      809
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6.9
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/water_manhole_cover/water_manhole_cover_1024.glb",
+     "bytes": 567784,
+     "gpu": {
+      "desktop": 1689264,
+      "mobile": 1689264,
+      "rgba8": 12699312
+     },
+     "tris": [
+      807,
+      809,
+      809
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6.9,
+      19.6
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "water_manhole_cover",
+   "maps": [
+    "hafen",
+    "werk",
+    "altstadt",
+    "grenzland"
+   ]
+  },
+  "wooden_axe": {
+   "type": "model",
+   "name": "wooden_axe",
+   "category": "tools",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.047,
+    0.63,
+    0.214
+   ],
+   "radius": 0.334,
+   "lodDistances": [
+    0,
+    6,
+    18
+   ],
+   "parts": [
+    "wooden_axe"
+   ],
+   "sourceTris": 3348,
+   "materials": [
+    {
+     "name": "wooden_axe",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/wooden_axe/wooden_axe_512.glb",
+     "bytes": 145332,
+     "gpu": {
+      "desktop": 413568,
+      "mobile": 413568,
+      "rgba8": 3166080
+     },
+     "tris": [
+      320,
+      104
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/wooden_axe/wooden_axe_1024.glb",
+     "bytes": 440736,
+     "gpu": {
+      "desktop": 1631616,
+      "mobile": 1631616,
+      "rgba8": 12641664
+     },
+     "tris": [
+      800,
+      320,
+      104
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6,
+      18
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "wooden_axe",
+   "maps": [
+    "grenzland"
+   ]
+  },
+  "wooden_bucket_01": {
+   "type": "model",
+   "name": "wooden_bucket_01",
+   "category": "tools",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.367,
+    0.55,
+    0.342
+   ],
+   "radius": 0.372,
+   "lodDistances": [
+    0,
+    6,
+    18
+   ],
+   "parts": [
+    "wooden_bucket_01"
+   ],
+   "sourceTris": 5116,
+   "materials": [
+    {
+     "name": "wooden_bucket_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/wooden_bucket_01/wooden_bucket_01_512.glb",
+     "bytes": 161012,
+     "gpu": {
+      "desktop": 429888,
+      "mobile": 429888,
+      "rgba8": 3182400
+     },
+     "tris": [
+      379,
+      385
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/wooden_bucket_01/wooden_bucket_01_1024.glb",
+     "bytes": 493192,
+     "gpu": {
+      "desktop": 1647936,
+      "mobile": 1647936,
+      "rgba8": 12657984
+     },
+     "tris": [
+      800,
+      379,
+      385
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6,
+      18
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "wooden_bucket_01",
+   "maps": [
+    "grenzland"
+   ]
+  },
+  "wooden_crate_01": {
+   "type": "model",
+   "name": "wooden_crate_01",
+   "category": "industrial",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    0.825,
+    0.35,
+    0.409
+   ],
+   "radius": 0.493,
+   "lodDistances": [
+    0,
+    6.9,
+    19.7
+   ],
+   "parts": [
+    "wooden_crate_01"
+   ],
+   "sourceTris": 6576,
+   "materials": [
+    {
+     "name": "wooden_crate_01",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/wooden_crate_01/wooden_crate_01_512.glb",
+     "bytes": 154680,
+     "gpu": {
+      "desktop": 439872,
+      "mobile": 439872,
+      "rgba8": 3192384
+     },
+     "tris": [
+      600,
+      372
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6.9
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/wooden_crate_01/wooden_crate_01_1024.glb",
+     "bytes": 471068,
+     "gpu": {
+      "desktop": 1691520,
+      "mobile": 1691520,
+      "rgba8": 12701568
+     },
+     "tris": [
+      1500,
+      600,
+      372
+     ],
+     "textures": 3,
+     "lodDistances": [
+      0,
+      6.9,
+      19.7
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "wooden_crate_01",
+   "maps": [
+    "hafen",
+    "grenzland",
+    "niemandsland"
+   ]
+  },
+  "wooden_picnic_table": {
+   "type": "model",
+   "name": "wooden_picnic_table",
+   "category": "furniture",
+   "kit": false,
+   "weapon": false,
+   "size": [
+    2.241,
+    0.746,
+    3.022
+   ],
+   "radius": 1.918,
+   "lodDistances": [
+    0,
+    26.9,
+    76.7
+   ],
+   "parts": [
+    "wooden_picnic_table"
+   ],
+   "sourceTris": 10210,
+   "materials": [
+    {
+     "name": "wooden_picnic_table_bottom",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    },
+    {
+     "name": "wooden_picnic_table_table",
+     "alphaMode": "OPAQUE",
+     "doubleSided": true
+    }
+   ],
+   "tiers": {
+    "512": {
+     "glb": "models/wooden_picnic_table/wooden_picnic_table_512.glb",
+     "bytes": 261008,
+     "gpu": {
+      "desktop": 1007024,
+      "mobile": 1007024,
+      "rgba8": 7429552
+     },
+     "tris": [
+      1183,
+      682
+     ],
+     "textures": 6,
+     "lodDistances": [
+      0,
+      26.9
+     ],
+     "lodShift": true
+    },
+    "1024": {
+     "glb": "models/wooden_picnic_table/wooden_picnic_table_1024.glb",
+     "bytes": 881512,
+     "gpu": {
+      "desktop": 3879488,
+      "mobile": 3879488,
+      "rgba8": 29569600
+     },
+     "tris": [
+      2499,
+      1183,
+      682
+     ],
+     "textures": 6,
+     "lodDistances": [
+      0,
+      26.9,
+      76.7
+     ]
+    }
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "wooden_picnic_table",
+   "maps": [
+    "grenzland"
+   ]
   }
  },
  "maps": {
@@ -15554,7 +17045,12 @@
     "utility_box_01",
     "cardboard_box_01",
     "propane_tank",
-    "fire_hydrant"
+    "fire_hydrant",
+    "can_rusted",
+    "covered_car",
+    "security_light",
+    "water_manhole_cover",
+    "wooden_crate_01"
    ],
    "budget": {
     "low": {
@@ -15629,7 +17125,20 @@
     "exterior_aircon_unit",
     "metal_trash_can",
     "rock_07",
-    "fire_hydrant"
+    "fire_hydrant",
+    "can_rusted",
+    "covered_car",
+    "electric_stove",
+    "garden_hose_wall_mounted_01",
+    "old_bed_frame",
+    "painted_wooden_cabinet",
+    "painted_wooden_chair_01",
+    "painted_wooden_shelves",
+    "painted_wooden_table",
+    "planter_box_01",
+    "security_light",
+    "street_lamp_01",
+    "water_manhole_cover"
    ],
    "budget": {
     "low": {
@@ -15708,7 +17217,11 @@
     "schoolchair_01",
     "old_tyre",
     "power_box_01",
-    "wetfloorsign_01"
+    "wetfloorsign_01",
+    "can_rusted",
+    "security_light",
+    "sledgehammer_01",
+    "water_manhole_cover"
    ],
    "budget": {
     "low": {
@@ -15942,12 +17455,12 @@
    "bytes": 15270579
   },
   "models": {
-   "files": 64,
-   "bytes": 18509780
+   "files": 102,
+   "bytes": 30929416
   },
   "all": {
    "files": 805,
-   "bytes": 150186944
+   "bytes": 162606580
   },
   "byTier": {
    "512": 17357528,
@@ -15957,7 +17470,7 @@
   "counts": {
    "textures": 94,
    "hdris": 20,
-   "models": 34
+   "models": 53
   }
  }
 }

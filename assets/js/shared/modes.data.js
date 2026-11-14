@@ -265,7 +265,8 @@ export const MODES = {
     streaks: false,
     lethals: true,
     campaign: true,
-    missionMaps: { m1: 'altstadt', m2: 'werk', m3: 'grenzland' }, // Karte je Mission (main.js normalizeConfig; Quelle: game/campaign/missions)
+    // Karte je Mission (main.js normalizeConfig; Quelle: game/campaign/outline.js); Liste = Karte und Rückfall, falls sie fehlt
+    missionMaps: { m0: 'range', m1: 'altstadt', m2: 'werk', m3: 'grenzland', m4: 'hafen', m5: 'bibliothek', m6: 'brandwald', m7: 'niemandsland', m8: 'grenzland', m9: 'altstadt', m10: ['flugplatz', 'grenzland'], m11: ['stadtkern', 'altstadt'] },
   },
   cq: {
     id: 'cq',
@@ -896,7 +897,9 @@ export function mapScaleOf(map) {
  * 1000 nicht: im Test Absturz wegen Speicher, und die Simulation allein bräuchte auch auf einem Spiele-PC > 30 ms je Bild.
  */
 export const BIG_SIDE = 50;
-export const MASS_SIDE = Object.freeze({ low: 50, medium: 100, high: 150, ultra: 250 });
+// desktop (14.11.): „extrem“ = Grafikstufe Extrem der Desktop-App (JS-Heap bis 8 GB statt ≈ 4 GB im Tab) → 400 je Seite
+// (800 Akteure, ≈ 1,6 GB für die Bots; 1000 bleiben gesperrt, siehe oben)
+export const MASS_SIDE = Object.freeze({ low: 50, medium: 100, high: 150, ultra: 250, extrem: 400 });
 
 /**
  * limitsFor(modeId, map (MAPS-Eintrag oder Id), { tier: 'low'|'medium'|'high'|'ultra', touch, deviceMemory, mass })

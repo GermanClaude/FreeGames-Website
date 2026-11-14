@@ -14,7 +14,7 @@ import { BaseMode } from '../modes/base.js?v=20261114060746';
 import { Director } from './director.js?v=20261114060746';
 import { CampaignUI } from './ui.js?v=20261114060746';
 import { CampaignProgress } from './progress.js?v=20261114060746';
-import { MISSIONS, MISSION_ORDER, missionById } from './missions/index.js?v=20261114060746';
+import { MISSIONS, MISSION_ORDER, STORY_ORDER, missionById } from './missions/index.js?v=20261114060746';
 
 export class CampaignMode extends BaseMode {
   constructor(G, modeId, opts = {}) {
@@ -28,7 +28,7 @@ export class CampaignMode extends BaseMode {
     const c = opts.campaign || (G.match && G.match.campaign) || {};
     this.mission = missionById(c.mission) || MISSIONS[MISSION_ORDER[0]];
     this.checkpointId = c.checkpoint || null;
-    this.store = new CampaignProgress(MISSION_ORDER);
+    this.store = new CampaignProgress(MISSION_ORDER, STORY_ORDER);
     this.ui = null;
     this.director = null;
     this.success = null;
@@ -186,7 +186,8 @@ export class CampaignMode extends BaseMode {
     this.end(success ? 'mission' : 'failed');
     if (this.result) {
       this.result.campaign = { mission: this.mission.id, title: this.mission.title, number: this.mission.number, success: !!success, next, seconds: Math.round(secs), deaths: this.director ? this.director.deaths : 0, difficulty: G.match.difficulty };
-      this.result.modeName = `Kampagne · Mission ${this.mission.number}: ${this.mission.title}`;
+      this.result.modeName = this.mission.tutorial ? `Kampagne · ${this.mission.title}` : `Kampagne · Mission ${this.mission.number}: ${this.mission.title}`;
+      this.result.campaign.tutorial = !!this.mission.tutorial;
     }
   }
 
@@ -279,8 +280,8 @@ export function decorateCampaignEnd(G, screen, result) {
       .kc-end .kc-end-btns { display: flex; flex-wrap: wrap; gap: 8px; }
       .kc-end button { min-height: 44px; padding: 0 16px; }
     </style>
-    <small>Kampagne · Mission ${c.number}</small>
-    <h3>${c.success ? 'Mission erfüllt' : 'Mission gescheitert'} – ${esc(c.title)}</h3>
+    <small>Kampagne · ${c.tutorial ? 'Ausbildung' : `Mission ${c.number}`}</small>
+    <h3>${c.success ? (c.tutorial ? 'Ausbildung abgeschlossen' : 'Mission erfüllt') : 'Mission gescheitert'} – ${esc(c.title)}</h3>
     <p>Dauer ${Math.floor(c.seconds / 60)}:${String(c.seconds % 60).padStart(2, '0')} · Ausfälle ${c.deaths} · ${esc(({ rekrut: 'Rekrut', regulaer: 'Regulär', veteran: 'Veteran', elite: 'Elite' })[c.difficulty] || '')}${next ? ` · Als Nächstes: Mission ${next.number} „${esc(next.title)}“` : c.success && !next ? ' · Weitere Missionen folgen.' : ''}</p>
     <div class="kc-end-btns">
       ${next && c.success ? '<button type="button" class="m-btn m-primary" data-kc-end="next">Nächste Mission</button>' : ''}
@@ -308,10 +309,13 @@ export function decorateCampaignEnd(G, screen, result) {
 }
 
 /** Startkonfiguration einer Mission (Lobby/Endbildschirm). */
-export function missionConfig(mission, base = {}, { checkpoint = null, difficulty = null } = {}) {
+export function missionConfig(mission, base = {}, { checkpoint = null, difficulty = null, maps = null } = {}) {
+  // Karte fehlt im Build (z. B. neue Karte eines anderen Strangs noch nicht da) → Rückfallkarte der Mission
+  const M = maps || (typeof window !== 'undefined' && window.__game && window.__game.data && window.__game.data.MAPS) || null;
+  const mapId = M && !M[mission.map] && mission.mapFallback ? mission.mapFallback : mission.map;
   return {
     ...base,
-    modeId: 'kampagne', mapId: mission.map, allies: 1, enemies: 1, mass: false,
+    modeId: 'kampagne', mapId, allies: 1, enemies: 1, mass: false,
     difficulty: difficulty || base.difficulty || 'regulaer',
     timeOfDay: mission.time || null, weather: mission.weather || null,
     timeLimit: null, scoreLimit: null, style: base.style || 'arcade',

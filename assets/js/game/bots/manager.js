@@ -807,7 +807,7 @@ export class BotManager {
     }
     this._aliveAi = aliveAi;
     // masse: ferne sichtbare Soldaten → instanzierte Silhouetten (Budget je Grafikstufe; Puppen nie)
-    if (this.massOpt) this.crowd.update(bots, this.scene, this.tier, cam ? cam.fov / 60 : 1, now);
+    if (this.massOpt) this.crowd.update(bots, this.scene, this.G && this.G.renderer && this.G.renderer.preset && this.G.renderer.preset.extreme ? 'extrem' : this.tier, cam ? cam.fov / 60 : 1, now); // desktop: Extrem
     else if (this.crowd.root) { for (const b of bots) b.impostor = false; this.crowd.dispose(false); }
     if (lap) lap('m:lod');
     // Trupptaktik (gestaffelt je Trupp); lernende Bots nur offline

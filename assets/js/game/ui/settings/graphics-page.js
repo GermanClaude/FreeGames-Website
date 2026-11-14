@@ -7,7 +7,7 @@
 
 import { esc, num } from '../dom.js?v=20261114060746';
 import { ICON } from '../icons.js?v=20261114060746';
-import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261114060746';
+import { QUALITY_PRESETS, EXTREME_PRESET } from '../../engine/renderer.js?v=20261114060746';
 import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261114060746';
 import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261114060746';
 import { HINTS } from './schema-page.js?v=20261114060746';
@@ -63,7 +63,7 @@ export function graphicsPage(P) {
   const KEYS = SECTIONS.flatMap(([, k]) => k);
 
   const R = () => G.renderer;
-  const basePreset = () => QUALITY_PRESETS[(R() && R().quality) || 'high'] || QUALITY_PRESETS.high;
+  const basePreset = () => (R() && R().preset && R().preset.extreme ? EXTREME_PRESET : QUALITY_PRESETS[(R() && R().quality) || 'high'] || QUALITY_PRESETS.high); // desktop: Extrem
   const effPreset = () => (R() && R().preset) || applyGraphics(basePreset(), S);
 
   /** „Automatisch (Hoch)“ – Wert, den die Stufe ohne Abweichung hätte. */

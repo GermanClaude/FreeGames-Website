@@ -127,7 +127,7 @@ export class Lobby {
     const c = this.cfg;
     const G = this.G;
     return limitsFor(c.modeId, d.MAPS[c.mapId] || c.mapId, {
-      tier: (G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
+      tier: (G.renderer && G.renderer.preset && G.renderer.preset.extreme ? 'extrem' : G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
       mass: !!c.mass,
     });
   }
@@ -286,6 +286,7 @@ export class Lobby {
     this._renderKit();
     this._renderSummary();
     this._syncTab();
+    try { this.campaign.announce(screen); } catch (err) { console.warn('[Kampagne] Hinweis', err); } // neue Kampagnenkapitel nach einem Update
   }
 
   _renderProfile() {
@@ -475,7 +476,7 @@ export class Lobby {
       ${teams ? stepper('allies', 'Verbündete', c.allies, lim.allies[0], lim.allies[1]) : ''}
       ${stepper('enemies', teams ? 'Gegner' : 'Gegner (Bots)', c.enemies, lim.enemies[0], lim.enemies[1])}
       ${teams && c.modeId !== 'inf' ? `<button type="button" class="lb-bal" data-balance aria-pressed="${!!c.balance}"><i class="m-check">${ICON.check}</i>Teams ausgleichen</button>` : ''}
-      ${L.massOk ? `<button type="button" class="lb-bal" data-mass aria-pressed="${!!L.mass}"><i class="m-check">${ICON.check}</i>Massenschlacht (bis ${L.mass ? L.enemies[1] : limitsFor(c.modeId, d.MAPS[c.mapId] || c.mapId, { tier: (this.G.renderer && this.G.renderer.quality) || 'high', touch: !!(this.G.input && this.G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null, mass: true }).enemies[1]} je Seite)</button>` : ''}
+      ${L.massOk ? `<button type="button" class="lb-bal" data-mass aria-pressed="${!!L.mass}"><i class="m-check">${ICON.check}</i>Massenschlacht (bis ${L.mass ? L.enemies[1] : limitsFor(c.modeId, d.MAPS[c.mapId] || c.mapId, { tier: (this.G.renderer && this.G.renderer.preset && this.G.renderer.preset.extreme ? 'extrem' : this.G.renderer && this.G.renderer.quality) || 'high', touch: !!(this.G.input && this.G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null, mass: true }).enemies[1]} je Seite)</button>` : ''}
       <p class="lb-note">${c.modeId === 'inf' ? `${c.allies + 1} Überlebende gegen ${c.enemies} Infizierte${c.enemies === 1 ? 'n' : ''}.` : teams ? `${c.allies + 1} gegen ${c.enemies}${c.allies + 1 !== c.enemies ? ' – das kleinere Team kommt schneller zurück.' : '.'}` : `${c.enemies + 1} Spieler, jeder für sich.`}</p>
       ${(() => { const w = teamWarning(L, c.allies, c.enemies, teams && c.modeId !== 'inf'); return w.level ? `<p class="lb-warn is-${w.level}">${ICON.warn}<span>${esc(w.text)}</span></p>` : ''; })()}`;
   }

@@ -15,7 +15,8 @@
 // Wiedereinstieg am Checkpoint k: mission.prepare(m) (gemeinsam, z. B. Verbündete), stages[k].setup(m), dann ab k.
 
 import * as THREE from 'three';
-import { Cutscene, toVec, groundY, yawTo } from './stage.js?v=20261114060746';
+import { Cutscene, StageActor, toVec, groundY, snapY, floorY, yawTo } from './stage.js?v=20261114060746';
+import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261114060746';
 import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261114060746';
 import { createFaceRig, FaceDriver } from './face.js?v=20261114060746';
 import { issueCommand } from '../bots/ai/orders.js?v=20261114060746';
@@ -76,8 +77,12 @@ export class Director {
     this.holdState = null;
     this.tickers = [];
     this.elapsed = 0;
+    this.extras = new Map(); // Figuren ohne KI (Zivilisten, Geiseln, Verwundete)
+    this.presses = new Set(); // seit clearPresses gedrückte Aktionen (Ausbildung)
+    this.groundFixes = 0; // Bodenprüfung: wie oft ein Akteur auf den Boden gesetzt wurde (Tests)
+    this._groundT = 0;
     this._subs = this.G.events.scope();
-    for (const ev of ['kill', 'vehicle:destroyed', 'actor:spawn', 'vehicle:enter', 'vehicle:exit']) {
+    for (const ev of ['kill', 'vehicle:destroyed', 'actor:spawn', 'vehicle:enter', 'vehicle:exit', 'weapon:fire', 'weapon:reload', 'weapon:switch', 'weapon:firemode', 'weapon:ads']) {
       this._subs.on(ev, (e) => this._event(ev, e));
     }
   }
@@ -87,6 +92,9 @@ export class Director {
   start() {
     const st = this.mission.stages[this.startIndex];
     if (st && st.checkpoint) this._setSpawn(st.checkpoint);
+    // Startausrüstung der Mission (mission.loadout = { primary, secondary }) – gilt auch nach dem Wiedereinstieg
+    const lo = this.mission.loadout;
+    if (lo) for (const id of [lo.primary, lo.secondary]) if (id) this.giveWeapon(id, { att: lo.att && lo.att[id] ? lo.att[id] : null });
     try { if (this.mission.prepare) this.mission.prepare(this, { resumed: this.resumed }); } catch (err) { console.error('[Kampagne] prepare', err); }
     this._enterStage(this.startIndex, true);
   }
@@ -110,6 +118,8 @@ export class Director {
 
   dispose() {
     this._subs.dispose();
+    for (const x of this.extras.values()) x.remove();
+    this.extras.clear();
     if (this.cutscene) { this.cutscene.finish(true); this.cutscene = null; }
     for (const f of this.faces.values()) { try { f.rig.dispose(); } catch { /* */ } }
     this.faces.clear();
@@ -122,6 +132,13 @@ export class Director {
     if (this.finished) return;
     this.elapsed += dt;
     const ui = this.ui;
+    // Eingaben merken (Ausbildung: jeder Schritt wartet auf die echte Aktion)
+    const I = this.G.input;
+    if (I && typeof I.pressed === 'function' && !this.cutscene) for (const a of ACTION_IDS) if (I.pressed(a)) this.presses.add(a);
+    // Figuren ohne KI
+    if (this.extras.size) { const cam = this.G.camera ? this.G.camera.position : null; for (const x of this.extras.values()) x.update(dt, cam); }
+    // Bodenprüfung der Kampagnen-Akteure (nach dem Laden und laufend, 2×/s)
+    if ((this._groundT -= dt) <= 0) { this._groundT = 0.5; this._groundCheck(); }
     // Zwischensequenz
     if (this.cutscene) {
       if (this.cutscene.update(dt)) this._endCutscene();
@@ -198,6 +215,7 @@ export class Director {
 
   _event(name, e) {
     if (name === 'kill' && e && e.victim) this._onKill(e);
+    if (name === 'weapon:fire' && e && this.extras.size) this._shotAtExtras(e);
     // Befehle enden mit dem Tod eines Bots: wiederkehrende Verbündete bekommen den letzten Befehl erneut
     if (name === 'actor:spawn' && e && e.actor && e.actor._kc && e.actor._kc.ally && this.lastOrder) {
       const b = e.actor, o = this.lastOrder;
@@ -210,7 +228,12 @@ export class Director {
   }
 
   /** Ereignis abonnieren (kill, vehicle:destroyed, actor:spawn, vehicle:enter, vehicle:exit). */
-  on(name, fn) { this.handlers.push({ name, fn }); }
+  on(name, fn) {
+    // weitere Spielereignisse (target:hit, grenade:throw, vehicle:seat …) bei Bedarf abonnieren
+    if (!this._evNames) this._evNames = new Set(['kill', 'vehicle:destroyed', 'actor:spawn', 'vehicle:enter', 'vehicle:exit', 'weapon:fire', 'weapon:reload', 'weapon:switch', 'weapon:firemode', 'weapon:ads']);
+    if (!this._evNames.has(name) && !name.startsWith('extra:')) { this._evNames.add(name); this._subs.on(name, (e) => this._event(name, e)); }
+    this.handlers.push({ name, fn });
+  }
 
   /* ------------------------------------------------------------ Bequemlichkeit */
 
@@ -224,6 +247,201 @@ export class Director {
 
   tip(text, seconds = 4) { if (this.ui) this.ui.toast(text, 'tip', seconds); }
   toast(text, kind = 'ok', seconds = 2.6) { if (this.ui) this.ui.toast(text, kind, seconds); }
+
+  /* ------------------------------------------------------------ Karte, Eingaben, Showcase (Runde 2) */
+
+  /** Geladene Karte (bei Rückfall die Ersatzkarte). */
+  get mapId() { return (this.G.match && this.G.match.mapId) || this.mission.map; }
+  /** Wert je Karte: m.pick({ flugplatz: A, grenzland: B }) → Eintrag der geladenen Karte (sonst der erste). */
+  pick(byMap) { if (!byMap) return null; return byMap[this.mapId] !== undefined ? byMap[this.mapId] : Object.values(byMap)[0]; }
+
+  /** Wurde die Aktion seit clearPresses() gedrückt? (Belegung egal: Tastatur, Gamepad, Touch) */
+  didPress(...actions) { return actions.some((a) => this.presses.has(a)); }
+  clearPresses() { this.presses.clear(); }
+
+  /** Eingabegerät für Hinweise: 'touch' | 'pad' | 'kb'. */
+  get device() {
+    const I = this.G.input;
+    if (!I) return 'kb';
+    return I.mode === 'touch' ? 'touch' : I.lastDevice === 'gamepad' ? 'pad' : 'kb';
+  }
+
+  /**
+   * Taste einer Aktion für Hinweise, passend zum Gerät: Tastatur „[C]“, Gamepad „(B)“, Touch „Knopf »Ducken«“ (touch = Name
+   * des Touch-Knopfs). Leer belegt → „(nicht belegt – Einstellungen › Steuerung)“.
+   */
+  key(action, touch = null) {
+    const dev = this.device;
+    if (dev === 'touch') return touch ? `Knopf „${touch}“` : '';
+    let l = '';
+    try { l = this.G.input.label(action, dev); } catch { l = ''; }
+    if (!l) return '(nicht belegt – Einstellungen › Steuerung)';
+    return dev === 'pad' ? `(${l})` : `[${l}]`;
+  }
+
+  /** Einblendung „Neu im Einsatz“ (Showcase einer Karte, Waffe, eines Fahrzeugs). kind: 'karte'|'waffe'|'fahrzeug'. */
+  introduce(kind, id, text = '') {
+    const G = this.G;
+    const KIND = { karte: 'Neue Karte', waffe: 'Neue Waffe', fahrzeug: 'Neues Fahrzeug' };
+    const VEH = { heli: 'Hubschrauber', jet: 'Kampfjet', mbt: 'Kampfpanzer', jeep: 'Geländewagen' };
+    let name = id;
+    if (kind === 'waffe' && G.data.WEAPONS[id]) name = G.data.WEAPONS[id].name;
+    else if (kind === 'karte' && G.data.MAPS && G.data.MAPS[id]) name = G.data.MAPS[id].name;
+    else if (kind === 'fahrzeug') name = VEH[id] || id;
+    if (this.ui && typeof this.ui.showcase === 'function') this.ui.showcase(KIND[kind] || 'Neu im Einsatz', name, text);
+    G.events.emit('campaign:showcase', { kind, id });
+  }
+
+  /** Waffe geben (Primär- oder Sekundärplatz nach Waffenart) und gleich in die Hand nehmen. */
+  giveWeapon(id, { att = null } = {}) {
+    const G = this.G, P = G.player;
+    const def = G.data.WEAPONS && G.data.WEAPONS[id];
+    const w = P && P.weapon;
+    if (!def || !w) return false;
+    const lo = { ...(P.loadout || {}) };
+    if (def.slot === 'secondary') lo.secondary = id; else lo.primary = id;
+    // Aufsätze der Mission (z. B. { muendung: 'daempfer' }) wie eine aufgehobene Waffe – bleiben auch nach dem Wiedereinstieg
+    if (att) { lo.pickup = { id, att }; lo.keepPickups = true; }
+    P.loadout = lo;
+    try { w.setLoadout(lo); } catch (err) { console.warn('[Kampagne] Waffe', err); return false; }
+    return true;
+  }
+
+  /** Hubschrauber (G.vehicles.air): at [x,z] bzw. [x,y,z]; airborne: in der Luft (alt über dem Boden). */
+  heli(at, { yaw = 0, team = 'A', airborne = false, alt = 40 } = {}) {
+    const air = this.G.vehicles && this.G.vehicles.air;
+    if (!air || typeof air.spawn !== 'function') return null;
+    const p = this.vec(at, airborne && !(Array.isArray(at) && at.length === 3) ? alt : 0);
+    if (!airborne) p.y += 0.2;
+    let v = null;
+    try { v = air.spawn('heli', p, { yaw, team, airborne }); } catch (err) { console.warn('[Kampagne] Hubschrauber', err); }
+    if (v) this.vehicles.push(v);
+    return v;
+  }
+
+  /** Spieler/Bot in ein Luftfahrzeug setzen (Sitz 0 Pilot, 1 Schütze, 2… Truppenraum) → Sitz | −1. */
+  boardAir(v, seat = 1, actor = this.G.player) {
+    const air = this.G.vehicles && this.G.vehicles.air;
+    if (!air || !v) return -1;
+    try { return air.board(actor, v, seat); } catch (err) { console.warn('[Kampagne] Einsteigen', err); return -1; }
+  }
+
+  /* ------------------------------------------------------------ Schleichen (Entdeckung, Alarm) */
+
+  /**
+   * Entdeckungsanzeige für Wachen (Wellen waveIds): nutzt die Wahrnehmung der Bots (Entdeckungsgrad spot 0–1 je Ziel,
+   * bots/ai/perception.js – Abstand, Blickkegel, Haltung, Bewegung, Licht/Rauch). Alarm, wenn eine Wache den Spieler voll
+   * erkennt, eine Wache getroffen wird und überlebt oder ein ungedämpfter Schuss in Hörweite (40 m) fällt.
+   * onAlarm(reason) einmal. → { alarmed, level, stop() }
+   */
+  stealth(waveIds, { onAlarm = null, label = 'Unentdeckt' } = {}) {
+    const ids = [].concat(waveIds);
+    const st = { alarmed: false, level: 0, stopped: false, reason: null };
+    const guards = () => ids.flatMap((w) => (this.waves.get(w) ? this.waves.get(w).bots : []));
+    const raise = (reason) => {
+      if (st.alarmed || st.stopped) return;
+      st.alarmed = true;
+      st.reason = reason;
+      for (const w of ids) { const wv = this.waves.get(w); if (wv) { wv.alarmed = true; wv.hold = false; wv.attack = 'player'; } }
+      if (this.ui) this.ui.meter('Alarm', 1, 'alarm');
+      setTimeout(() => { if (this.ui && st.alarmed) this.ui.meter(null); }, 2500);
+      if (onAlarm) { try { onAlarm(reason); } catch (err) { console.error(err); } }
+    };
+    st.raise = raise;
+    st.stop = () => { st.stopped = true; if (this.ui && !st.alarmed) this.ui.meter(null); };
+    const hp = new Map();
+    this.on('weapon:fire', (e) => {
+      if (st.alarmed || st.stopped || !e || e.actor !== this.G.player || e.suppressed) return;
+      if (guards().some((b) => b.alive && b.position.distanceTo(this.G.player.position) < 40)) raise('schuss');
+    });
+    this.every(() => {
+      if (st.stopped || st.alarmed) return true;
+      const P = this.G.player;
+      let lvl = 0;
+      for (const b of guards()) {
+        if (!b.alive) continue;
+        const r = b.memory && b.memory.get ? b.memory.get(P) : null;
+        if (r && r.spot > lvl) lvl = r.spot;
+        const h0 = hp.get(b);
+        if (h0 == null) hp.set(b, b.health);
+        else if (b.health < h0 - 1) { raise('getroffen'); return true; }
+      }
+      st.level = Math.max(lvl, st.level - 0.02);
+      if (this.ui) this.ui.meter(st.level > 0.6 ? 'Verdacht!' : st.level > 0.05 ? 'Beobachtet' : label, st.level, st.level > 0.6 ? 'warn' : '');
+      if (lvl >= 0.999) { raise('gesehen'); return true; }
+      return false;
+    });
+    return st;
+  }
+
+  /* ------------------------------------------------------------ Figuren ohne KI (Zivilisten, Geiseln) */
+
+  /**
+   * Figur ohne KI: { pos, yaw, variant, team, weapon (null), crouch, protect, name, color }. protect: Treffer durch den
+   * Spieler oder Verbündete → Fehlschlag. → Extra (follow, walk, place, crouch, remove, position)
+   */
+  extra(id, def = {}) {
+    if (this.extras.has(id)) this.extras.get(id).remove();
+    const x = new Extra(this, id, def);
+    this.extras.set(id, x);
+    return x;
+  }
+
+  extraNear(id, r = 2.5, actor = this.G.player) {
+    const x = this.extras.get(id);
+    if (!x || !actor) return false;
+    const p = actor.vehicle ? actor.vehicle.position : actor.position;
+    return x.a.pos.distanceToSquared(p) <= r * r;
+  }
+
+  _shotAtExtras(e) {
+    const shooter = e.actor;
+    if (!shooter || shooter.team !== 'A' || !e.origin || !e.dir) return;
+    const W = this.G.world;
+    let wall = Infinity;
+    try { const h = W && W.raycast ? W.raycast(e.origin, e.dir, 200) : null; if (h) wall = h.distance; } catch { /* */ }
+    for (const x of this.extras.values()) {
+      if (!x.protect || x.removed || x.a.hidden) continue;
+      // Strahl gegen eine senkrechte Kapsel (Füße bis Kopf, r 0,32 m; geduckt niedriger)
+      const p = x.a.pos, top = x.a.crouch ? 1.15 : 1.75;
+      const ox = e.origin.x - p.x, oz = e.origin.z - p.z, dx = e.dir.x, dz = e.dir.z;
+      const a = dx * dx + dz * dz;
+      if (a < 1e-6) continue;
+      const t = Math.max(0, -(ox * dx + oz * dz) / a);
+      const cx = ox + dx * t, cz = oz + dz * t;
+      if (cx * cx + cz * cz > 0.32 * 0.32) continue;
+      const len = t * Math.sqrt(a + e.dir.y * e.dir.y);
+      if (len > wall || len > 200) continue;
+      const y = e.origin.y + e.dir.y * t - p.y;
+      if (y < 0 || y > top) continue;
+      x.hit(shooter);
+    }
+  }
+
+  /* ------------------------------------------------------------ Bodenprüfung */
+
+  /**
+   * Boden-Fix: Kampagnen-Bots (Verbündete, Wellen), Figuren und Darsteller nie im Boden. Bots ohne Fahrzeug, die mehr als
+   * 0,25 m unter der Standfläche stecken (alte Stellpunkte, Spawn in der Bodenplatte, Gelände höher als der Suchstrahl),
+   * werden auf die Fläche gesetzt; Schweben über 2 m (Spawn auf Dachkante) ebenso.
+   */
+  _groundCheck() {
+    const G = this.G;
+    for (const b of G.actors) {
+      if (!b || !b.alive || !b._kc || b.vehicle || !b.body || b === G.player) continue;
+      const p = b.position;
+      const fy = snapY(G, p.x, p.z, p.y + 0.4);
+      if (!Number.isFinite(fy)) continue;
+      if (p.y < fy - 0.25 || (b.body.onGround && p.y > fy + 2)) {
+        try { b.body.teleport(_v.set(p.x, fy + 0.02, p.z)); if (b.body.velocity) b.body.velocity.set(0, 0, 0); this.groundFixes++; } catch { /* */ }
+      }
+    }
+    const P = G.player;
+    if (P && P.alive && !P.vehicle && P.body) {
+      const p = P.position, fy = snapY(G, p.x, p.z, p.y + 0.4);
+      if (Number.isFinite(fy) && p.y < fy - 0.35) { try { P.body.teleport(_v.set(p.x, fy + 0.02, p.z)); this.groundFixes++; } catch { /* */ } }
+    }
+  }
 
   /* ------------------------------------------------------------ Ziele */
 
@@ -360,6 +578,9 @@ export class Director {
       p.y = groundY(this.G, p.x, p.z, p.y + 2);
       const target = this._attackPos(wave, b) || this.G.player.position;
       b._kc = { wave: id, enemy: true, post: p.clone() };
+      // Streife: Route [[x,z], …] (eine für alle oder je Bot w.patrol[i]) – Wache geht sie ab, solange kein Alarm ist
+      const route = w.patrol ? (Array.isArray(w.patrol[0]) && Array.isArray(w.patrol[0][0]) ? w.patrol[i % w.patrol.length] : w.patrol) : null;
+      if (route && route.length) { b._kc.patrol = route.map((q) => this.vec(q)); b._kc.pi = i % route.length; }
       if (w.cls && typeof b.setClass === 'function') { try { b.setClass(w.cls); } catch { /* */ } }
       this._place(b, { position: p, yaw: yawTo(p, target) });
     });
@@ -383,6 +604,12 @@ export class Director {
     if (k.enemy) {
       const wave = this.waves.get(k.wave);
       if (!wave) return null;
+      if (k.patrol && !wave.alarmed) {
+        let q = k.patrol[k.pi % k.patrol.length];
+        const dx = bot.position.x - q.x, dz = bot.position.z - q.z;
+        if (dx * dx + dz * dz < 4) { k.pi = (k.pi + 1) % k.patrol.length; q = k.patrol[k.pi]; }
+        return { id: `kc:${wave.id}:p${k.pi}`, position: q, radius: 1.2, kind: 'capture' };
+      }
       const pos = this._attackPos(wave, bot);
       return pos ? { id: `kc:${wave.id}`, position: pos, radius: wave.hold ? 3 : wave.radius, kind: wave.hold ? 'capture' : 'capture' } : null;
     }
@@ -688,5 +915,68 @@ export class Director {
     if (this.line) { this.line.h.finish(); this.line = null; }
     if (this.ui) this.ui.subtitle(null, '');
     this.mode.missionFail(reason);
+  }
+}
+
+/* ======================================================================== Figur ohne KI */
+
+/**
+ * Zivilist/Geisel/Verwundeter: Darsteller (stage.js StageActor) mitten im Spiel. follow(actor) läuft der Spur des
+ * Spielers nach (Brotkrumen alle 0,8 m – so geht die Figur dieselben Wege, nie durch Wände). Höhe immer vom Boden.
+ */
+class Extra {
+  constructor(m, id, def) {
+    this.m = m;
+    this.id = id;
+    this.protect = !!def.protect;
+    this.removed = false;
+    this.target = null;
+    this.trail = [];
+    this.hits = 0;
+    this.a = new StageActor(m.G, { id, name: def.name || id, team: def.team || 'A', variant: def.variant ?? 'sanitaeter', weapon: def.weapon ?? null, pos: def.pos || [0, 0], yaw: def.yaw || 0, crouch: !!def.crouch, aim: def.aim ?? -0.9, top: !!def.top, face: def.face ?? false, camo: def.camo || null });
+    this.a.update(0, null);
+  }
+
+  get position() { return this.a.pos; }
+  get crouch() { return this.a.crouch; }
+  set crouch(v) { this.a.crouch = !!v; }
+
+  place(p, yaw) { this.a.place(p, yaw ?? this.a.yaw); this.trail = []; }
+  walk(points, speed = 1.6) { this.target = null; this.a.walk(points, speed); }
+  face(t) { this.a.face(t); }
+  /** Dem Akteur folgen (null = stehen bleiben). */
+  follow(actor) { this.target = actor || null; this.trail = []; if (actor) this.a.crouch = false; }
+
+  hit(by) {
+    this.hits += 1;
+    this.m.G.events.emit('campaign:extraHit', { id: this.id, by });
+    for (const h of this.m.handlers) if (h.name === 'extra:hit') { try { h.fn({ id: this.id, by, extra: this }); } catch (err) { console.error(err); } }
+    if (this.protect && by === this.m.G.player) this.m.fail('Ein Zivilist wurde getroffen. Wir schießen nur, wenn wir sicher sind.');
+  }
+
+  update(dt, cam) {
+    if (this.removed) return;
+    const t = this.target;
+    if (t && t.alive !== false) {
+      const tp = t.vehicle ? t.vehicle.position : t.position;
+      const last = this.trail[this.trail.length - 1];
+      if (!last || last.distanceToSquared(tp) > 0.64) this.trail.push(tp.clone());
+      if (this.trail.length > 400) this.trail.shift();
+      const d = this.a.pos.distanceTo(tp);
+      if (d > 2.6 && this.trail.length) {
+        // nächster Krumen, der noch vor uns liegt (Abkürzungen nur bei freier Sicht)
+        while (this.trail.length > 1 && this.trail[0].distanceToSquared(this.a.pos) < 0.5) this.trail.shift();
+        if (d > 30) { this.a.place([tp.x, tp.y, tp.z], this.a.yaw); this.trail = []; } // abgehängt (Teleport/Wiedereinstieg)
+        else this.a.walk([[this.trail[0].x, this.trail[0].z]], d > 8 ? 3.6 : d > 4 ? 2.4 : 1.5);
+      } else if (this.a.path) { this.a.path = null; this.a.face(t); }
+    }
+    this.a.update(dt, cam);
+  }
+
+  remove() {
+    if (this.removed) return;
+    this.removed = true;
+    try { this.m.G.scene.remove(this.a.soldier.root); } catch { /* */ }
+    this.a.dispose();
   }
 }

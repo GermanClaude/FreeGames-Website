@@ -88,6 +88,15 @@ function openingDetails(b, o, op, g) {
     if (kind === 'window') {
       // Fensterbank außen + innen
       at(op.at, y + sill - 0.05, op.w + 0.16, 0.06, t + 0.2, o.sillMat || 'concrete', { tint: o.sillTint, collide: false });
+      // karten-voll (14.11.): Faschen – glatte, hellere Putzumrahmung außen an Putzfassaden (Sturz + Seiten), bricht die
+      // flachen Wände auf wie an echten Häusern. Nur Außenwände mit bekannter Außenseite (building()), rein optisch.
+      if (o.outside && /^plaster/.test(o.mat || 'plaster_white') && o.surrounds !== false && op.surround !== false && op.w <= 2.6) {
+        const sg = o.outside === 'right' ? -1 : 1, ox = uz * sg, oz = -ux * sg, off = t / 2 + 0.012, bw = 0.13;
+        const band = (s, yy, w, hh) => b.box(x0 + ux * s + ox * off, yy, z0 + uz * s + oz * off, w, hh, 0.025, o.mat || 'plaster_white', { ry, tint: o.surroundTint || '#f1eee6', collide: false, minimap: false, grad: false, damage: false, bullet: false });
+        band(op.at, y + top, op.w + bw * 2, bw + 0.03);
+        band(a - bw / 2, y + sill - 0.02, bw, top - sill + 0.02);
+        band(e + bw / 2, y + sill - 0.02, bw, top - sill + 0.02);
+      }
     }
   }
   if (op.glass && kind === 'window' && b.dynamicDoors !== false) {
@@ -403,6 +412,9 @@ export function building(b, o) {
       for (let yy = y0 + 1.4; yy < top - 0.6; yy += 1.6) b.box(px - ox * 0.05, yy, pz - oz * 0.05, ox ? 0.1 : 0.14, 0.04, oz ? 0.1 : 0.14, pm, { tint: '#6a6e72', collide: false, minimap: false, grad: false, ao: false });
     }
   }
+  // karten-voll (14.11.): Flachdächer mit Brüstung/Attika vormerken – world/kleinkram.js dachleben() setzt dort
+  // Antennen, Lüfterrohre, Klimageräte (nur Optik)
+  if (o.roof && (o.roof.parapet || o.roof.edge !== false) && o.roofDeko !== false) (b._flachdaecher || (b._flachdaecher = [])).push({ x, z, x0, x1, z0, z1, y: roofY, inset: o.roof.parapet ? (o.roof.parapetT ?? 0.22) : 0.15 });
   // Footprint für die Minikarte (Gebäude als Block)
   b.footprints.push({ x, z, hw: w / 2, hd: d / 2, ry: 0, y0, y1: roofY, kind: 'building' });
   return { x0, x1, z0, z1, levels, roofY, fh, t };
@@ -440,4 +452,35 @@ export function pitchedRoof(b, o) {
   // First
   if (along === 'x') b.cyl(x, y + rise + 0.02, z, 0.11, len, mat, { axis: 'x', tint: o.tint, collide: false, minimap: false });
   else b.cyl(x, y + rise + 0.02, z, 0.11, len, mat, { axis: 'z', tint: o.tint, collide: false, minimap: false });
+  if (o.details === false) return;
+  // karten-voll (14.11.): Traufe mit Stirnbrett und Dachrinne (halbrund, Zink) an beiden Längsseiten, Ortgangbretter an
+  // den Giebeln, Schornstein (Lage aus der Position gehasht) – rein optisch, ohne Kollision/Kugeltreffer an den Rinnen.
+  const D = { collide: false, minimap: false, grad: false };
+  const eaveY = y - ov * (rise / (span / 2)) - 0.08, gt2 = o.gutterTint || '#8d9296';
+  for (const s of [-1, 1]) {
+    const e = s * (span / 2 + ov - 0.03);
+    if (along === 'x') {
+      b.box(x, eaveY - 0.16, z + e, len, 0.2, 0.03, 'wood_painted', { ...D, tint: o.fasciaTint || '#5a4636' });
+      b.cyl(x, eaveY - 0.12, z + e + s * 0.08, 0.065, len - 0.04, 'metal_galvanized', { ...D, axis: 'x', tint: gt2, seg: 8, ao: false, bullet: false });
+    } else {
+      b.box(x + e, eaveY - 0.16, z, 0.03, 0.2, len, 'wood_painted', { ...D, tint: o.fasciaTint || '#5a4636' });
+      b.cyl(x + e + s * 0.08, eaveY - 0.12, z, 0.065, len - 0.04, 'metal_galvanized', { ...D, axis: 'z', tint: gt2, seg: 8, ao: false, bullet: false });
+    }
+  }
+  // Ortgang: schräge Windbretter an beiden Giebeln
+  for (const g of [-1, 1]) for (const s of [-1, 1]) {
+    const L2 = Math.hypot(half, rise * (half / (span / 2))), cy = y + rise / 2 - ov * Math.tan(ang) / 2 + 0.02;
+    if (along === 'x') b.box(x + g * (len / 2 - 0.02), cy - 0.1, z + s * half / 2, 0.04, 0.2, L2, 'wood_painted', { ...D, rx: ang * s, tint: o.fasciaTint || '#5a4636', uv: 'local' });
+    else b.box(x + s * half / 2, cy - 0.1, z + g * (len / 2 - 0.02), L2, 0.2, 0.04, 'wood_painted', { ...D, rz: -ang * s, tint: o.fasciaTint || '#5a4636', uv: 'local' });
+  }
+  // Schornstein auf einer Dachseite nahe am First
+  const hs = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
+  if (o.chimney !== false && span >= 4.5 && hs < 0.8) {
+    const t1 = (hs - 0.4) * 1.1 * ((along === 'x' ? w : d) / 2 - 1), s = hs < 0.4 ? -1 : 1, q = 0.9;
+    const cx = along === 'x' ? x + t1 : x + s * q, cz = along === 'x' ? z + s * q : z + t1;
+    const yB = y + rise - q * (rise / (span / 2)) - 0.3, top = y + rise + 0.75;
+    b.box(cx, yB, cz, 0.52, top - yB, 0.52, o.chimneyMat || 'brick', { ...D, tint: o.chimneyTint || '#a8705a', collide: false });
+    b.box(cx, top, cz, 0.62, 0.08, 0.62, 'concrete', { ...D, tint: '#8a8680' });
+    b.box(cx, top + 0.08, cz, 0.3, 0.12, 0.3, 'metal_galvanized', { ...D, tint: '#5a5a58', ao: false });
+  }
 }

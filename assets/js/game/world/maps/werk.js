@@ -16,6 +16,8 @@ import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
 } from './werk-ausstattung.js?v=20261114060746';
+// karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
@@ -125,6 +127,8 @@ export default {
       [26, 18], [25.7, -15], [36, 16], [35, 0], [48, 12], [47.5, -30], [24, -38],
       [-68, 1.5], [-57, 14], [-57, -14], [-72, 26], [-72, -24], [-64, 38], [-64, -37],
     ]) spawns.ffa.push({ x, z });
+    // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
+    belebe(b, { stil: 'industrie', bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -36, z: 27, radius: 5 }, { id: 'B', x: 0, z: 0, radius: 5.5 }, { id: 'C', x: -36, z: -27, radius: 5 }] },

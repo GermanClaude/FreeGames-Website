@@ -190,17 +190,17 @@ function dorf(b) {
   const h35 = haus(b, { x: 35, z: 40, w: 8, d: 8, floors: 1, doors: [{ side: 'w', at: 0 }, { side: 'e', at: 0 }] });
   // Schuppen (Holz; Bretter heller getönt – die Schattenseite war mit #8a6a4a fast schwarz)
   const schuppen = building(b, { x: -48, z: 72, w: 7, d: 9, floors: 1, fh: 3.2, mat: 'wood_planks', tint: '#a8845e', openings: [{ side: 'e', at: 0, w: 2.6, h: 2.6, kind: 'gap', frame: false }, { side: 'w', at: 1, w: 1, h: 1, sill: 1.2, kind: 'window' }], roof: { edge: false, mat: 'wood_planks', tint: '#6a5038' }, floorMat: 'wood_planks' });
-  pitchedRoof(b, { x: -48, z: 72, w: 7.02, d: 9.02, y: 3.18, ridge: 'z', pitch: 0.55, over: 0.4, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#5d5a52' });
+  pitchedRoof(b, { chimney: false, x: -48, z: 72, w: 7.02, d: 9.02, y: 3.18, ridge: 'z', pitch: 0.55, over: 0.4, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#5d5a52' });
   b.noNav(-52, 67, -44, 77, 2.6, 40);
   palletStack(b, -46, 70, { n: 5 }); crateStack(b, -49.5, 75.5, { ry: 0.3 });
   // Traktor im Schuppen (rot, Blick zum Tor im Osten; auf dem Hallenboden y 0,12; ohne b.rand → Dorf-Zufall unverändert)
   traktor(b, -48.6, 72.2, { ry: Math.PI / 2, y: 0.12, color: '#a8322a', rim: '#d8d4c8' });
   // Kapelle mit Turm (Wahrzeichen)
   const kapelle = building(b, { x: -8, z: 100, w: 7, d: 13, floors: 1, fh: 5.2, mat: 'plaster_white', tint: '#f3eee4', openings: [{ side: 's', at: 0, w: 1.6, h: 2.8, kind: 'door', leaf: 'open' }, { side: 'e', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'e', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }], roof: { edge: false, mat: 'concrete', tint: '#b9ab94' }, floorMat: 'paving', interiorFactor: 0.5 });
-  pitchedRoof(b, { x: -8, z: 100, w: 7.02, d: 13.02, y: 5.18, ridge: 'z', pitch: 1.0, over: 0.45, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#5f5e5a' });
+  pitchedRoof(b, { chimney: false, x: -8, z: 100, w: 7.02, d: 13.02, y: 5.18, ridge: 'z', pitch: 1.0, over: 0.45, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#5f5e5a' });
   b.box(-8, 0, 91.6, 4.2, 15, 4.2, 'plaster_white', { tint: '#f3eee4', minimap: 'building' });
   b.box(-8, 15, 91.6, 4.4, 0.25, 4.4, 'stone_wall', { tint: '#cfc6b6', collide: false, minimap: false });
-  pitchedRoof(b, { x: -8, z: 91.6, w: 4.4, d: 4.4, y: 15.2, ridge: 'x', pitch: 2.2, over: 0.15, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#4a5048' });
+  pitchedRoof(b, { chimney: false, x: -8, z: 91.6, w: 4.4, d: 4.4, y: 15.2, ridge: 'x', pitch: 2.2, over: 0.15, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#4a5048' });
   for (const [ox, oz] of [[0, -2.12], [2.12, 0], [-2.12, 0]]) b.box(-8 + ox, 11.2, 91.6 + oz, ox ? 0.06 : 1.2, 2.0, ox ? 1.2 : 0.06, 'black', { tint: '#151515', collide: false, minimap: false, grad: false });
   b.noNav(-12, 84, -4, 108, 4.5, 60);
   // (Parkbänke in der Kapelle → Kirchenbänke mit Mittelgang, Altar: Innen.kapelleInnen)
@@ -293,7 +293,7 @@ function gehoeft(b) {
   // Scheune mit Heuboden und Geheimkammer
   const sx = -136, sz = 118, w = 16, d = 11, x0 = sx - w / 2, x1 = sx + w / 2, z0 = sz - d / 2, z1 = sz + d / 2;
   const scheune = building(b, { x: sx, z: sz, w, d, floors: 1, fh: 5.6, mat: 'wood_planks', tint: '#a8845e', openings: [{ side: 's', at: 1.5, w: 4.8, h: 4.2, kind: 'gap', frame: false }, { side: 'n', at: -5, w: 1.2, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'e', at: 2.5, w: 1.0, h: 0.9, sill: 1.6, kind: 'window' }, { side: 'w', at: 0, w: 1.0, h: 0.9, sill: 1.6, kind: 'window' }], roof: { edge: false, mat: 'wood_planks', tint: '#6a5038' }, floorMat: 'wood_planks', floorTint: '#9a8064', interiorFactor: 0.5 });
-  pitchedRoof(b, { x: sx, z: sz, w: w + 0.02, d: d + 0.02, y: 5.58, ridge: 'x', pitch: 0.7, over: 0.5, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#6c4a3a' });
+  pitchedRoof(b, { chimney: false, x: sx, z: sz, w: w + 0.02, d: d + 0.02, y: 5.58, ridge: 'x', pitch: 0.7, over: 0.5, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#6c4a3a' });
   b.noNav(x0 - 0.6, z0 - 0.6, x1 + 0.6, z1 + 0.6, 5.0, 40);
   // Heuboden (hintere Hälfte, y 3,2) + Treppe
   slab(b, x0 + 0.3, z0 + 0.3, x1 - 0.3, z0 + 4.8, 3.0, 0.2, 'wood_planks', [], { tint: '#9a8064' });

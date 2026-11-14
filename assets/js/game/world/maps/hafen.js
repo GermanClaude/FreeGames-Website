@@ -18,6 +18,8 @@ import {
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
 } from './hafen-ausstattung.js?v=20261114060746';
+// karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
 
 const H = CONTAINER_H;
 const QUAY_X = -44;
@@ -293,6 +295,8 @@ export default {
     const sA = [[-38, 47], [-31, 43], [-19, 47.5], [-9, 48], [0, 47], [10.5, 47.5], [15.5, 44.5], [34, 49.5], [-21, 41.5], [1.5, 43.5], [55.5, 48.5], [64, 49.5], [72.5, 49.5]];
     for (const [x, z] of sA) { spawns.A.push({ x, z, yaw: 0 }); spawns.B.push({ x, z: -z, yaw: Math.PI }); }
     for (const [x, z] of [[-40, 20], [-38, -8], [-34, -40], [-20, -26], [-20, 26], [-10, 18], [-11, -18], [0, -1], [10.2, -24.4], [10.2, 24.4], [20, -10], [38.5, 8], [24, 14], [38, -14], [30, -40], [-26, -48], [61, -15], [61, 15], [71.5, 0], [52.5, -32], [52.5, 32], [64.5, -44], [64.5, 44]]) spawns.ffa.push({ x, z });
+    // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
+    belebe(b, { stil: 'hafen', bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, []) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 30.6, radius: 5 }, { id: 'B', x: -14.2, z: -0.8, radius: 6 }, { id: 'C', x: -13.6, z: -30.6, radius: 5 }] },

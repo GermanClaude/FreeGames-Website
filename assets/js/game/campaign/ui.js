@@ -101,6 +101,31 @@ body[data-input-mode="touch"] #np-campaign .kc-obj li { font-size: 12px; padding
 body[data-input-mode="touch"] #np-campaign .kc-obj li::before { top: 6px; left: 6px; width: 7px; height: 7px; }
 body[data-input-mode="touch"] #np-campaign .kc-sub.radio { bottom: auto; top: 8px; left: calc(50% + 86px); width: min(31vw, 520px); }
 body[data-input-mode="touch"] #np-campaign .kc-sub.radio .kc-txt { font-size: 15px; }
+/* Runde 2: Ausbildungs-Tafel, „Neu im Einsatz“, Entdeckungsanzeige */
+#np-campaign .kc-lesson { position: absolute; left: 50%; top: 13%; transform: translateX(-50%); width: min(560px, 86vw); padding: 10px 16px 12px; background: rgba(8,9,11,.78);
+  border-top: 2px solid var(--np-gold, #ffc23d); text-align: center; opacity: 0; transition: opacity .3s; text-shadow: 0 1px 2px #000; }
+#np-campaign.is-play .kc-lesson.on { opacity: 1; }
+#np-campaign .kc-lesson small { display: block; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--np-gold, #ffc23d); }
+#np-campaign .kc-lesson b { display: block; font-size: clamp(16px, 1.9vw, 21px); margin: 3px 0 2px; }
+#np-campaign .kc-lesson span { display: block; font-size: clamp(13px, 1.5vw, 16px); color: #dcd8cf; line-height: 1.35; }
+#np-campaign .kc-lesson span kbd { font: 700 .95em/1 inherit; padding: 2px 6px; margin: 0 2px; border: 1px solid rgba(255,255,255,.4); border-radius: 3px; background: rgba(255,255,255,.08); color: #fff; }
+#np-campaign .kc-lesson i { display: block; height: 3px; margin-top: 7px; background: rgba(255,255,255,.12); }
+#np-campaign .kc-lesson i u { display: block; height: 100%; background: var(--np-gold, #ffc23d); transform-origin: left; transition: transform .3s; }
+#np-campaign .kc-show { position: absolute; right: 3vw; top: 22%; width: min(320px, 70vw); padding: 10px 14px; background: linear-gradient(90deg, rgba(8,9,11,.85), rgba(8,9,11,.6));
+  border-left: 3px solid var(--np-gold, #ffc23d); opacity: 0; transform: translateX(16px); transition: opacity .4s, transform .4s; text-shadow: 0 1px 2px #000; }
+#np-campaign .kc-show.on { opacity: 1; transform: none; }
+#np-campaign .kc-show small { display: block; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--np-gold, #ffc23d); }
+#np-campaign .kc-show b { display: block; font-size: 19px; letter-spacing: .05em; text-transform: uppercase; margin-top: 2px; }
+#np-campaign .kc-show span { display: block; font-size: 13px; color: #d5d0c4; margin-top: 3px; line-height: 1.35; }
+#np-campaign .kc-meter { position: absolute; left: 50%; top: 7%; transform: translateX(-50%); width: min(260px, 50vw); text-align: center; display: none; text-shadow: 0 1px 2px #000; }
+#np-campaign.is-play .kc-meter.on { display: block; }
+#np-campaign .kc-meter small { display: block; font: 700 11px/1.2 inherit; letter-spacing: .16em; text-transform: uppercase; color: #dcd8cf; margin-bottom: 4px; }
+#np-campaign .kc-meter i { display: block; height: 6px; background: rgba(255,255,255,.14); border-radius: 3px; overflow: hidden; }
+#np-campaign .kc-meter i u { display: block; height: 100%; background: #e9d27a; transform-origin: left; }
+#np-campaign .kc-meter.warn i u { background: #ff9a3d; } #np-campaign .kc-meter.alarm i u { background: var(--np-enemy, #ff3b3b); }
+#np-campaign .kc-meter.alarm small { color: var(--np-enemy, #ff3b3b); }
+body[data-input-mode="touch"] #np-campaign .kc-lesson { top: auto; bottom: 38%; width: min(440px, 52vw); padding: 7px 10px 9px; }
+body[data-input-mode="touch"] #np-campaign .kc-show { top: auto; bottom: 46%; right: 50%; transform: translateX(50%); }
 `;
 
 let styled = false;
@@ -133,6 +158,9 @@ export class CampaignUI {
       <div class="kc-sub" aria-live="polite"><span class="kc-who"></span><span class="kc-txt"></span></div>
       <button type="button" class="kc-skip" aria-label="Zwischensequenz überspringen"><svg class="kc-ring" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5l9 7-9 7zM13 5l9 7-9 7z"/></svg><span>Überspringen</span><kbd>Leertaste</kbd></button>
       <div class="kc-fail"><div><b>Mission gescheitert</b><p></p><button type="button" class="pri" data-kc="retry">Ab Checkpoint</button><button type="button" data-kc="restart">Mission neu starten</button><button type="button" data-kc="quit">Kampagne</button></div></div>
+      <div class="kc-lesson"><small></small><b></b><span></span><i><u></u></i></div>
+      <div class="kc-show"><small></small><b></b><span></span></div>
+      <div class="kc-meter"><small></small><i><u></u></i></div>
       <div class="kc-fade"></div>`;
     const host = document.getElementById('game-root') || document.body;
     host.appendChild(root);
@@ -141,7 +169,9 @@ export class CampaignUI {
       fade: q('.kc-fade'), obj: q('.kc-obj'), list: q('.kc-obj ul'), timer: q('.kc-timer'), wp: q('.kc-wp'), wpDist: q('.kc-wp b'), wpLabel: q('.kc-wp span'),
       loc: q('.kc-loc'), card: q('.kc-card'), toast: q('.kc-toast'), hold: q('.kc-hold'), sub: q('.kc-sub'), who: q('.kc-who'), txt: q('.kc-txt'),
       skip: q('.kc-skip'), fail: q('.kc-fail'), failText: q('.kc-fail p'),
+      lesson: q('.kc-lesson'), show: q('.kc-show'), meter: q('.kc-meter'),
     };
+    this._showT = 0;
     this.onSkip = null;
     this.onFail = null;
     this.el.skip.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (this.onSkip) this.onSkip(); });
@@ -283,7 +313,42 @@ export class CampaignUI {
     w.classList.add('on');
   }
 
+  /**
+   * Ausbildungs-Tafel: kicker (z. B. „Ausbildung · 3/18“), title, html (Text mit <kbd>…</kbd>), p (Fortschritt 0–1).
+   * null → ausblenden.
+   */
+  lesson(kicker, title = '', html = '', p = null) {
+    const e = this.el.lesson;
+    if (kicker == null) { e.classList.remove('on'); return; }
+    e.querySelector('small').textContent = kicker;
+    e.querySelector('b').textContent = title;
+    e.querySelector('span').innerHTML = html;
+    e.querySelector('i').style.display = p == null ? 'none' : '';
+    if (p != null) e.querySelector('u').style.transform = `scaleX(${Math.max(0, Math.min(1, p)).toFixed(3)})`;
+    e.classList.add('on');
+  }
+
+  /** Einblendung „Neu im Einsatz“ (Showcase). */
+  showcase(kicker, title, text = '', seconds = 7) {
+    const e = this.el.show;
+    e.querySelector('small').textContent = kicker;
+    e.querySelector('b').textContent = title;
+    e.querySelector('span').textContent = text;
+    e.classList.add('on');
+    this._showT = seconds;
+  }
+
+  /** Anzeige oben (Entdeckung): label, p 0–1, kind '' | 'warn' | 'alarm'; null → aus. */
+  meter(label, p = 0, kind = '') {
+    const e = this.el.meter;
+    if (label == null) { e.classList.remove('on'); return; }
+    e.className = `kc-meter on ${kind}`;
+    e.querySelector('small').textContent = label;
+    e.querySelector('u').style.transform = `scaleX(${Math.max(0, Math.min(1, p)).toFixed(3)})`;
+  }
+
   update(dt) {
+    if (this._showT > 0) { this._showT -= dt; if (this._showT <= 0) this.el.show.classList.remove('on'); }
     if (this._toastT > 0) {
       this._toastT -= dt;
       if (this._toastT <= 0) this.el.toast.classList.remove('on');

@@ -1,3 +1,7 @@
 node_modules/
 .DS_Store
 *.log
+
+# Desktop-App (desktop/): Abhängigkeiten und Build-Ergebnisse nicht ins Repo
+desktop/node_modules/
+desktop/dist/

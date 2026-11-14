@@ -1,0 +1,65 @@
+{
+  "name": "nullpunkt-desktop",
+  "productName": "NULLPUNKT",
+  "version": "1.0.0",
+  "description": "NULLPUNKT als Desktop-Spiel (Electron-Hülle um den Spielcode aus dem Repo)",
+  "main": "main.js",
+  "private": true,
+  "license": "SEE LICENSE IN ../LICENSE",
+  "author": "NULLPUNKT",
+  "homepage": "https://germanclaude.github.io/FreeGames-Website/",
+  "scripts": {
+    "start": "electron .",
+    "start:dev": "electron . --dev",
+    "dist:win": "electron-builder --win portable nsis --x64",
+    "dist:win-zip": "electron-builder --win zip --x64",
+    "dist:linux": "electron-builder --linux AppImage --x64",
+    "dist:dir": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "45.3.2",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "io.github.germanclaude.nullpunkt",
+    "productName": "NULLPUNKT",
+    "copyright": "NULLPUNKT",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "package.json"],
+    "extraResources": [
+      {
+        "from": "..",
+        "to": "game",
+        "filter": [
+          "spielen.html", "index.html", "404.html", "version.json", "manifest.webmanifest", "CREDITS.md", "LICENSE",
+          "assets/**/*",
+          "!**/.DS_Store", "!**/*.map", "!**/node_modules/**"
+        ]
+      }
+    ],
+    "asar": true,
+    "compression": "normal",
+    "icon": "../assets/img/icon-512.png",
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }],
+      "icon": "../assets/img/icon-512.png",
+      "artifactName": "NULLPUNKT-${version}-${arch}-${target}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NULLPUNKT",
+      "artifactName": "NULLPUNKT-Setup-${version}.${ext}"
+    },
+    "portable": { "artifactName": "NULLPUNKT-${version}-portable.${ext}" },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Game",
+      "icon": "../assets/img/icon-512.png",
+      "artifactName": "NULLPUNKT-${version}-${arch}.${ext}"
+    }
+  }
+}

@@ -33,36 +33,93 @@ const EASE = {
 
 export const yawTo = (from, to) => Math.atan2(-(to.x - from.x), -(to.z - from.z));
 
-/** [x, z] | [x, y, z] | Vector3 → Vector3 (y aus dem Boden, wenn fehlt). */
+/** [x, z] | [x, y, z] | Vector3 → Vector3 (y aus dem Boden, wenn fehlt; top: oberste Standfläche, z. B. Dach). */
 export function toVec(G, p, out = new THREE.Vector3(), lift = 0, top = false) {
   if (!p) return null;
   if (p.isVector3) return out.copy(p);
   if (p.length === 3) return out.set(p[0], p[1], p[2]);
-  const y = top ? groundY(G, p[0], p[1], 60) : floorY(G, p[0], p[1]);
+  const y = top ? topY(G, p[0], p[1]) : floorY(G, p[0], p[1]);
   return out.set(p[0], y + lift, p[1]);
 }
 
-/** Unterste begehbare Fläche (Straße statt Dach/Obergeschoss): von oben nach unten durch alle Flächen. */
-export function floorY(G, x, z) {
+/*
+ * Böden unter (x, z) – Boden-Fix Runde 2. Früher lief floorY mit world.groundHeight von oben nach unten und nahm die
+ * unterste Fläche; die Strahltests sind beidseitig, also war die „unterste Fläche“ auf den Arena-Karten die UNTERSEITE
+ * der 0,5 m dicken Bodenplatte (Altstadt, Werk, Hafen …: y = −0,5) – Darsteller, Verbündete und Checkpoints steckten
+ * einen halben Meter im Boden. Jetzt: Strahl gegen die Kollisions-BVH mit Vorder-/Rückseiten-Erkennung (out.back);
+ * Standflächen sind Oberseiten fester Körper, Unterseiten werden übersprungen, und eine Fläche zählt nur mit genug
+ * Kopffreiheit bis zum nächsten Körper darüber (keine Böden „in“ Kisten oder unter Platten). Großkarten: Gelände (Höhenfeld)
+ * ist Teil der zusammengesetzten BVH; fehlt sie, Rückfall auf world.groundHeight von weit oben (Gelände > 60 m).
+ */
+const TOP = 400;
+const CLEAR = 1.5; // m Kopffreiheit (Hocken passt)
+const _fh = {};
+
+/** Alle Standflächen unter (x, z) von oben nach unten: [{ y, clear }] (clear = Abstand zum festen Körper darüber). */
+export function floorsAt(G, x, z) {
   const W = G.world;
-  const gh = (from) => { try { const v = W && W.groundHeight ? W.groundHeight(x, z, from) : null; return Number.isFinite(v) ? v : null; } catch { return null; } };
-  let y = gh(60);
-  if (y == null) return 0;
-  for (let i = 0; i < 8; i++) {
-    const y2 = gh(y - 0.4);
-    if (y2 == null) break;
-    if (y2 >= y - 0.3) break;
-    y = y2;
+  const B = W && W.collisionBVH;
+  const out = [];
+  if (B && typeof B.raycast === 'function') {
+    let y = TOP, inside = false, ceil = Infinity, prev = null;
+    for (let i = 0; i < 24; i++) {
+      let hit = false;
+      try { hit = B.raycast(x, y, z, 0, -1, 0, TOP * 2, _fh); } catch { hit = false; }
+      if (!hit) break;
+      const hy = y - _fh.t;
+      if (_fh.back) {
+        // Rückseite: wir verlassen einen Körper nach unten. War kein Eintritt gesehen (zusammenfallende Flächen), liegt
+        // die Oberseite dieses Körpers auf Höhe des vorigen Treffers – dort ist eine Standfläche ohne Kopffreiheit.
+        if (!inside && prev != null) out.push({ y: prev, clear: 0 });
+        inside = false;
+        ceil = hy;
+      } else {
+        out.push({ y: hy, clear: ceil - hy });
+        inside = true;
+      }
+      prev = hy;
+      y = hy - 0.01;
+    }
   }
-  return y;
+  if (!out.length) {
+    const gh = (from) => { try { const v = W && W.groundHeight ? W.groundHeight(x, z, from) : null; return Number.isFinite(v) ? v : null; } catch { return null; } };
+    const g = gh(TOP);
+    if (g != null) out.push({ y: g, clear: Infinity });
+  }
+  return out;
 }
 
+/** Unterste begehbare Fläche (Straße statt Dach/Obergeschoss, aber nie die Unterseite einer Platte). */
+export function floorY(G, x, z) {
+  const f = floorsAt(G, x, z);
+  if (!f.length) return 0;
+  for (let i = f.length - 1; i >= 0; i--) if (f[i].clear >= CLEAR) return f[i].y;
+  return f[0].y;
+}
+
+/** Oberste Standfläche (Dach, Brücke, Steg). */
+export function topY(G, x, z) {
+  const f = floorsAt(G, x, z);
+  return f.length ? f[0].y : 0;
+}
+
+/** Standfläche nahe der Höhe hint (Treppe, Obergeschoss, Gelände): bevorzugt die höchste Fläche ≤ hint + up. */
+export function snapY(G, x, z, hint, up = 0.9) {
+  const f = floorsAt(G, x, z).filter((e) => e.clear >= CLEAR);
+  if (!f.length) return floorY(G, x, z);
+  let best = null;
+  for (const e of f) if (e.y <= hint + up && (best == null || e.y > best)) best = e.y;
+  if (best == null) best = f[f.length - 1].y; // alles über uns (Geländeanstieg): unterste
+  return best;
+}
+
+/** Boden unter (x, z) ab Höhe from (Laufen); fehlt er (Gelände höher als from), die passende Standfläche. */
 export function groundY(G, x, z, from = 30) {
   const W = G.world;
   if (W && typeof W.groundHeight === 'function') {
-    try { const y = W.groundHeight(x, z, from); if (Number.isFinite(y)) return y; } catch { /* */ }
+    try { const y = W.groundHeight(x, z, from); if (Number.isFinite(y) && from - y < 6) return y; } catch { /* */ }
   }
-  return 0;
+  return snapY(G, x, z, from - 1.2);
 }
 
 /* ======================================================================== Darsteller */

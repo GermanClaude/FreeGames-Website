@@ -26,9 +26,11 @@ const FOCUS_FRAG = /* glsl */ `
     z = min(z, lin(vec2(0.5) - vec2(0.006, 0.0)));
     z = min(z, lin(vec2(0.5) + vec2(0.0, 0.01)));
     z = min(z, lin(vec2(0.5) - vec2(0.0, 0.01)));
+    if (!(z == z) || z > 1e6) z = 400.0; // Himmel/NaN (echte GPUs: Division durch 0) → fern
     z = clamp(z, 0.5, 400.0);
     float prev = texelFetch(tPrev, ivec2(0), 0).r;
-    float f = uReset > 0.5 || prev <= 0.0 ? z : exp(mix(log(prev), log(z), uRate));
+    float f = uReset > 0.5 || !(prev > 0.0) || prev > 1e6 ? z : exp(mix(log(prev), log(z), uRate));
+    if (!(f == f)) f = z;
     gl_FragColor = vec4(f, 0.0, 0.0, 1.0);
   }
 `;
@@ -51,9 +53,10 @@ const DOF_FRAG = /* glsl */ `
   }
   void main() {
     float f = texelFetch(tFocus, ivec2(0), 0).r;
+    if (!(f > 0.0) || f > 1e6) f = 400.0;
     vec3 c0 = texture2D(tColor, vUv).rgb;
     float r0 = cocOf(lin(vUv), f);
-    if (r0 < 0.5) { gl_FragColor = vec4(c0, 1.0); return; }
+    if (!(r0 >= 0.5) || uAmount <= 0.001) { gl_FragColor = vec4(c0, 1.0); return; }
     vec3 acc = c0;
     float wsum = 1.0;
     const int N = 16;
@@ -69,7 +72,8 @@ const DOF_FRAG = /* glsl */ `
       acc += texture2D(tColor, uv).rgb * w;
       wsum += w;
     }
-    gl_FragColor = vec4(acc / wsum, 1.0);
+    vec3 o = acc / wsum;
+    gl_FragColor = vec4(all(equal(o, o)) ? o : c0, 1.0);
   }
 `;
 

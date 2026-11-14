@@ -238,6 +238,11 @@ function cleanCampaign(c) {
   out.current = typeof c.current === 'string' && ID_RE.test(c.current) ? c.current : null;
   out.speed = ['langsam', 'normal', 'schnell'].includes(c.speed) ? c.speed : 'normal';
   out.diff = DIFF.includes(c.diff) ? c.diff : 'regulaer';
+  // Neu im Update (campaign/progress.js syncNew): bekannte Kapitel (ack) und noch nicht gespielte neue Kapitel (fresh)
+  const ids = (v) => (Array.isArray(v) ? [...new Set(v.filter((x) => typeof x === 'string' && ID_RE.test(x)))].slice(0, 64) : null);
+  const ack = ids(c.ack), fresh = ids(c.fresh);
+  if (ack) out.ack = ack;
+  if (fresh) out.fresh = fresh;
   return out;
 }
 

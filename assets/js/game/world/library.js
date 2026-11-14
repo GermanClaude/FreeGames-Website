@@ -173,6 +173,7 @@ function textureTier(G, q) {
   let v = 'auto';
   try { v = G.settings && typeof G.settings.get === 'function' ? G.settings.get('gfxTextures') : 'auto'; } catch { v = 'auto'; }
   let t = TEX_SETTING_TIER[v] || tierFor(q, 'texture');
+  if (!TEX_SETTING_TIER[v] && G.renderer?.preset?.extreme) return 4096; // desktop „Extrem“: größte vorhandene Stufe (2K/4K)
   // 2048er-Scans nur auf Hoch/Ultra und nie auf Telefonen (Touch + kurze Bildschirmkante < 900 px): Grafikspeicher/Ladezeit
   if (t > 1024) {
     let phone = false;
@@ -194,7 +195,7 @@ export function createWorldAssets(G, def, quality) {
   const q = ['low', 'medium', 'high', 'ultra'].includes(quality) ? quality : 'high';
   const t0 = performance.now();
   const stats = {
-    tier: { texture: textureTier(G, q), model: tierFor(q, 'model'), hdri: tierFor(q, 'hdri') },
+    tier: { texture: textureTier(G, q), model: G.renderer?.preset?.extreme ? 4096 : tierFor(q, 'model'), hdri: G.renderer?.preset?.extreme ? 2048 : tierFor(q, 'hdri') }, // desktop: Extrem
     download: 0, gpu: { desktop: 0, mobile: 0 }, sets: 0, models: 0, modelsSkipped: [], hdri: null, ms: 0, failed: [], formats: [],
     available: false, reason: '',
   };
@@ -348,7 +349,7 @@ export function createWorldAssets(G, def, quality) {
         const tier = pickTier(e.tiers, stats.tier.hdri);
         // Drehung: Sonnenazimut des HDRIs auf den der Karte (Schattenrichtung) legen
         const rotation = THREE.MathUtils.degToRad((e.sun?.azimuthDeg ?? 0) - (sun?.azimuth ?? e.sun?.azimuthDeg ?? 0));
-        const skyTier = pickTier(e.tiers, SKY_TIER[q] || 1024);
+        const skyTier = pickTier(e.tiers, G.renderer?.preset?.extreme ? 4096 : SKY_TIER[q] || 1024); // desktop: Extrem
         // reine Himmel (eigene np_sky_…, früher Fotos …_puresky) → Bodenfarbe der Karte einsetzen (buildEnvironment)
         const envGround = def.lighting?.env?.hdriGround ?? (/puresky|^np_sky_/.test(cfg.hdri) ? { color: def.lighting?.env?.ground || def.lighting?.hemi?.ground } : null);
         const wantSky = def.lighting?.sky?.hdri !== false;

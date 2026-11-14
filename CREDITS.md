@@ -120,7 +120,7 @@ Blättern/Halmen bzw. maskierten Ausschnitten dieser CC0-Scans zusammengesetzt (
 | Industrial Pipe & Valve 01 | `industrial_pipe_and_valve_01` | Philip Modin | [Poly Haven](https://polyhaven.com/a/industrial_pipe_and_valve_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Debris Basement Corridor | `debris_basement_corridor` | Elvis Posa | [Poly Haven](https://polyhaven.com/a/debris_basement_corridor) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
-## Modelle (57)
+## Modelle (72)
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
 |---|---|---|---|---|
@@ -173,6 +173,21 @@ Blättern/Halmen bzw. maskierten Ausschnitten dieser CC0-Scans zusammengesetzt (
 | Television 01 | `television_01` | Gabriel Radić | [Poly Haven](https://polyhaven.com/a/Television_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Wooden Bookshelf Worn | `wooden_bookshelf_worn` | Ulan Cabanilla | [Poly Haven](https://polyhaven.com/a/wooden_bookshelf_worn) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Plastic Monobloc Chair 01 | `plastic_monobloc_chair_01` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/plastic_monobloc_chair_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Can Rusted | `can_rusted` | Rahul Chaudhary | [Poly Haven](https://polyhaven.com/a/can_rusted) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Electric Stove | `electric_stove` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/electric_stove) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Garden Hose Wall Mounted 01 | `garden_hose_wall_mounted_01` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/garden_hose_wall_mounted_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Cabinet | `painted_wooden_cabinet` | Kirill Sannikov | [Poly Haven](https://polyhaven.com/a/painted_wooden_cabinet) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Chair 01 | `painted_wooden_chair_01` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/painted_wooden_chair_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Shelves | `painted_wooden_shelves` | Kirill Sannikov | [Poly Haven](https://polyhaven.com/a/painted_wooden_shelves) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Table | `painted_wooden_table` | Kirill Sannikov | [Poly Haven](https://polyhaven.com/a/painted_wooden_table) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Planter Box 01 | `planter_box_01` | James Ray Cock | [Poly Haven](https://polyhaven.com/a/planter_box_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rusted Spade 01 | `rusted_spade_01` | Blemonade | [Poly Haven](https://polyhaven.com/a/rusted_spade_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Security Light | `security_light` | Maximilian Schuster | [Poly Haven](https://polyhaven.com/a/security_light) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Sledgehammer 01 | `sledgehammer_01` | Dylan Guzman | [Poly Haven](https://polyhaven.com/a/sledgehammer_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Axe | `wooden_axe` | Ulan Cabanilla | [Poly Haven](https://polyhaven.com/a/wooden_axe) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Bucket 01 | `wooden_bucket_01` | James Ray Cock | [Poly Haven](https://polyhaven.com/a/wooden_bucket_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Crate 01 | `wooden_crate_01` | James Ray Cock | [Poly Haven](https://polyhaven.com/a/wooden_crate_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Picnic Table | `wooden_picnic_table` | Ulan Cabanilla | [Poly Haven](https://polyhaven.com/a/wooden_picnic_table) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Old Bed Frame | `old_bed_frame` | Luca B | [Poly Haven](https://polyhaven.com/a/old_bed_frame) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Wet Floor Sign 01 | `wetfloorsign_01` | Fran Calvente | [Poly Haven](https://polyhaven.com/a/WetFloorSign_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dead Tree Trunk 02 | `dead_tree_trunk_02` | Jenelle van Heerden, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/dead_tree_trunk_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |

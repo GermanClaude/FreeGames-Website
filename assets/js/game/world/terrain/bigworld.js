@@ -42,6 +42,8 @@ export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
 /** Budgets je Qualitätsstufe (GROSSKAMPF_PLAN §3.4; Handy = low). density: Anteil der kollisionslosen Büsche/Schilf –
  * Bäume und Felsen (Kollision) stehen auf jeder Stufe vollständig (Mehrspieler, terrain/vegetation.js). */
+/** desktop: Zusätze der Stufe „Extrem“ auf Ultra (mehr Speicher/GPU in der Desktop-App). */
+export const BIG_EXTREME = Object.freeze({ view: 1400, dists: [120, 300, 560], treeNear: 260, treeFar: 1300, grass: 70, grassCap: 11000, grassNear: 20, far: 1600, mapPx: 2048, siteCull: 1250, shadow: 90 });
 export const BIG_TIERS = {
   low: { view: 340, steps: [2, 4, 8, 16], dists: [56, 150, 260], treeNear: 55, treeFar: 330, grass: 12, grassStep: 1.7, grassCap: 220, treeShadow: false, density: 0.55, far: 700, mapPx: 512, siteCull: 210, shadow: 24 },
   medium: { view: 600, steps: [1, 2, 4, 8], dists: [48, 150, 330], treeNear: 90, treeFar: 580, grass: 25, grassStep: 1.4, grassCap: 1600, grassBlades: 10, treeShadow: false, density: 0.8, far: 900, mapPx: 1024, siteCull: 520, shadow: 40 },
@@ -137,7 +139,8 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const renderer = G.renderer?.renderer || G.renderer;
   attachFoliageClock(G); // Wind (Gras/Laub) an der gemeinsamen Uhr (online Host-Zeit)
   const quality = ['low', 'medium', 'high', 'ultra'].includes(G.renderer?.quality) ? G.renderer.quality : (['low', 'medium', 'high', 'ultra'].includes(G.settings?.get?.('quality')) ? G.settings.get('quality') : 'high');
-  const tier = BIG_TIERS[quality];
+  // desktop „Extrem“ (nur Desktop-App, renderer.js EXTREME_PRESET): Ultra mit weiterer Sicht, Bäumen/Gras weiter draußen
+  const tier = G.renderer?.preset?.extreme && quality === 'ultra' ? { ...BIG_TIERS.ultra, ...BIG_EXTREME } : BIG_TIERS[quality];
   const debug = !!(G.debug || G.params?.get?.('debug') === '1');
   const lowTex = quality === 'low';
   const maxAniso = renderer?.capabilities?.getMaxAnisotropy?.() || 4;

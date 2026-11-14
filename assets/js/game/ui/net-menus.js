@@ -101,7 +101,9 @@ export function parseRoomCode(text) {
 /** Einladungslink (absolut). Ein Test-Relay (?relays=…) wird mitgegeben, sonst fände der Link den Raum nicht. */
 export function roomLink(code) {
   let url;
-  try { url = new URL('spielen.html', location.href); } catch { return `spielen.html?raum=${code}`; }
+  // desktop: die App läuft unter app://nullpunkt – Einladungen zeigen auf die öffentliche Seite (Browser-Spieler, andere Apps)
+  const base = (typeof window !== 'undefined' && window.nullpunktDesktop && window.nullpunktDesktop.webUrl) || location.href;
+  try { url = new URL('spielen.html', base); } catch { return `spielen.html?raum=${code}`; }
   const q = new URLSearchParams();
   q.set('raum', code);
   try { const r = new URLSearchParams(location.search).get('relays'); if (r) q.set('relays', r); } catch { /* */ }

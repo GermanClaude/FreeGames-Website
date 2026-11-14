@@ -81,7 +81,7 @@ export function applyGraphics(base, src) {
 }
 
 const COMPARE = ['post', 'grade', 'shadows', 'shadowMapSize', 'shadowExtent', 'shadowInterval', 'maxBotsVisibleShadows', 'smaa', 'fxaa',
-  'ssao', 'aoScale', 'taa', 'ssr', 'contactShadows', 'dof', 'shadowTaps', 'shadowSoft', 'bloom', 'particleScale', 'decals', 'pixelRatio', 'id'];
+  'ssao', 'aoScale', 'taa', 'ssr', 'contactShadows', 'dof', 'shadowTaps', 'shadowSoft', 'bloom', 'particleScale', 'decals', 'pixelRatio', 'id', 'extreme' /* desktop: Stufe Extrem */];
 /** Gleiche wirksame Vorgabe? (Renderer: Neuaufbau nur bei echter Änderung) */
 export function samePreset(a, b) {
   if (a === b) return true;

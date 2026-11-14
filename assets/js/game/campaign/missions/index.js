@@ -1,14 +1,36 @@
-// NULLPUNKT — Kampagne: Verzeichnis der spielbaren Missionen (Reihenfolge = Kampagne). Neue Missionen hier eintragen
-// (und in ../outline.js den Status auf 'spielbar' setzen).
+// NULLPUNKT — Kampagne: Verzeichnis der spielbaren Missionen. Die Reihenfolge der Kampagne kommt aus ../outline.js
+// (OUTLINE); hier stehen nur die vorhandenen Missionsdateien. Neue Mission: EINE Import-Zeile und EINE Zeile in EXTRA.
 
 import { SPEAKERS } from './cast.js?v=20261114060746';
+import { OUTLINE } from '../outline.js?v=20261114060746';
+import { MISSION_0 } from './m0-ausbildung.js?v=20261114060746';
 import { MISSION_1 } from './m1-funkstille.js?v=20261114060746';
 import { MISSION_2 } from './m2-werk.js?v=20261114060746';
 import { MISSION_3 } from './m3-fluss.js?v=20261114060746';
+import { MISSION_4 } from './m4-hafennacht.js?v=20261114060746';
+import { MISSION_5 } from './m5-archiv.js?v=20261114060746';
+import { MISSION_6 } from './m6-feuerlinie.js?v=20261114060746';
+// --- kampagne-b: Importe M7–M11 hier (je eine Zeile) ---
+import { MISSION_7 } from './m7-niemandsland.js?v=20261114060746';
 
-export const MISSION_ORDER = ['m1', 'm2', 'm3'];
-export const MISSIONS = { m1: MISSION_1, m2: MISSION_2, m3: MISSION_3 };
-for (const m of Object.values(MISSIONS)) m.speakers = SPEAKERS;
+const LIST = [
+  MISSION_0, MISSION_1, MISSION_2, MISSION_3, MISSION_4, MISSION_5, MISSION_6,
+];
+// --- kampagne-b: Missionen M7–M11 hier in EXTRA eintragen (je eine Zeile, z. B. MISSION_7,) ---
+const EXTRA = [
+  MISSION_7,
+];
+
+export const MISSIONS = {};
+for (const m of [...LIST, ...EXTRA]) if (m && m.id) { MISSIONS[m.id] = m; m.speakers = SPEAKERS; }
+
+/** Spielbare Missionen in Kampagnenreihenfolge (outline.js; danach Missionen ohne Gliederungseintrag nach Nummer). */
+export const MISSION_ORDER = [
+  ...OUTLINE.map((o) => o.id).filter((id) => MISSIONS[id]),
+  ...Object.values(MISSIONS).filter((m) => !OUTLINE.some((o) => o.id === m.id)).sort((a, b) => a.number - b.number).map((m) => m.id),
+];
+/** Missionen der Geschichte (ohne Ausbildung) – Freischaltung der Reihe nach. */
+export const STORY_ORDER = MISSION_ORDER.filter((id) => !MISSIONS[id].tutorial);
 
 export function missionById(id) { return (id && MISSIONS[id]) || null; }
 export { SPEAKERS };

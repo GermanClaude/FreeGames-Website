@@ -104,11 +104,11 @@ export class ActorGrid {
 /* ============================================================== Skalierung */
 
 /** Volle Soldaten (nächste sichtbare) je Grafikstufe; der Rest ab IMP_MIN m als Silhouette. */
-export const FULL_BUDGET = Object.freeze({ low: 14, medium: 28, high: 44, ultra: 60 });
+export const FULL_BUDGET = Object.freeze({ low: 14, medium: 28, high: 44, ultra: 60, extrem: 96 }); // extrem: Desktop-App
 /** Ab hier (m × FOV/60) darf ein Soldat Silhouette werden (low früher: kleiner Bildschirm, schwache GPU). */
-export const IMP_MIN = Object.freeze({ low: 34, medium: 50, high: 60, ultra: 70 });
+export const IMP_MIN = Object.freeze({ low: 34, medium: 50, high: 60, ultra: 70, extrem: 90 });
 /** Jenseits davon immer Silhouette (≈ 8–10 Pixel hoch in 1080p) – auch in kleinen Matches. */
-export const IMP_FAR = Object.freeze({ low: 110, medium: 150, high: 180, ultra: 220 });
+export const IMP_FAR = Object.freeze({ low: 110, medium: 150, high: 180, ultra: 220, extrem: 300 });
 
 /**
  * Simulations-Skalierung nach Anzahl lebender KI-Bots: `dist` < 1 zieht die Abstandsschwellen der Simulations-Detailstufen

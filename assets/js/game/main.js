@@ -110,7 +110,7 @@ const TIPS = [
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
 const AUTOSTART = params.get('autostart') === '1';
-const QUALITY_OVERRIDE = QUALITY_LEVELS.includes(params.get('quality')) ? params.get('quality') : null;
+const QUALITY_OVERRIDE = QUALITY_LEVELS.includes(params.get('quality')) || (params.get('quality') === 'extrem' && window.nullpunktDesktop) ? params.get('quality') : null; // desktop: auch „extrem“
 const clampTimeScale = (v) => Math.min(4, Math.max(0.05, Number(v) || 1));
 // Test-/Entwicklerparameter wirken nur zusammen mit debug=1 (und machen das Match „ungewertet“)
 const DEV_GOD = DEBUG && params.get('god') === '1';
@@ -414,6 +414,7 @@ function mapsForMode(modeId) {
   const ids = (G.data.MAP_ORDER || Object.keys(MAPS)).filter((id) => MAPS[id]);
   const list = ids.filter((id) => Array.isArray(MAPS[id].modes) && MAPS[id].modes.includes(modeId));
   if (list.length) return list;
+  if (modeId === 'kampagne') return ids; // Kampagne: alle Karten (Ausbildung M0 auf dem Schießstand)
   return modeId === 'training' ? ids.filter((id) => id === 'range') : ids.filter((id) => id !== 'range');
 }
 
@@ -427,14 +428,14 @@ function normalizeConfig(cfg = {}) {
   const rec = (MODES[modeId] && MODES[modeId].recommendedMaps) || [];
   // Kampagne: die Mission bestimmt die Karte (MODES.kampagne.missionMaps)
   const missionMap = modeId === 'kampagne' && cfg.campaign && MODES.kampagne && MODES.kampagne.missionMaps ? MODES.kampagne.missionMaps[cfg.campaign.mission] : null;
-  const mapId = [missionMap, cfg.mapId, settings.get('lastMap'), ...rec, maps[0]].find((id) => id && maps.includes(id)) || 'hafen';
+  const mapId = [...[].concat(missionMap || []), cfg.mapId, settings.get('lastMap'), ...rec, maps[0]].find((id) => id && maps.includes(id)) || 'hafen';
   const difficulty = DIFFS.includes(cfg.difficulty) ? cfg.difficulty : DIFFS.includes(settings.get('difficulty')) ? settings.get('difficulty') : 'regulaer';
   const counts = modeCounts(modeId);
   // modes-ui: Teamgrößen je Karte und Gerät (limitsFor, GROSSKAMPF §3.2: Arena 12 v 12, Großkarte 50 v 50; masse: Massenschlacht)
   let mass = false;
   if (typeof G.data.limitsFor === 'function') {
     const L = safe('limitsFor', () => G.data.limitsFor(modeId, (G.data.MAPS || {})[mapId] || mapId, {
-      tier: (G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
+      tier: (G.renderer && G.renderer.preset && G.renderer.preset.extreme ? 'extrem' : G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null, // desktop: extrem
       mass: cfg.mass === true || cfg.mass === '1' || cfg.mass === 'an',
     }));
     if (L) { Object.assign(counts, { alliesRange: L.allies, enemiesRange: L.enemies, allies: L.recommended.allies, enemies: L.recommended.enemies }); mass = !!L.mass; }

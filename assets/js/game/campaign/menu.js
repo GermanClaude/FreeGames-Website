@@ -4,8 +4,8 @@
 // Mission (Einsatzart, Karte, Ziele, Bestwert) und Start ab Beginn oder ab Checkpoint. Der Fußknopf der Lobby wird in
 // diesem Reiter zu „Mission starten“ (data-act camp-start → start()).
 
-import { CAMPAIGN, OUTLINE } from './outline.js?v=20261114060746';
-import { MISSIONS, MISSION_ORDER } from './missions/index.js?v=20261114060746';
+import { CAMPAIGN, OUTLINE, ACTS, TO_BE_CONTINUED, TOTAL_MINUTES } from './outline.js?v=20261114060746';
+import { MISSIONS, MISSION_ORDER, STORY_ORDER } from './missions/index.js?v=20261114060746';
 import { CampaignProgress } from './progress.js?v=20261114060746';
 import { CAMPAIGN_DIFF } from './director.js?v=20261114060746';
 import { missionConfig } from './mode.js?v=20261114060746';
@@ -54,6 +54,16 @@ const CSS = `
 .kc-pane .kc-btns .m-btn { min-height: 44px; }
 .kc-pane .kc-mouth { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--np-ink-2, #b9b5ac); }
 .kc-pane .kc-mouth svg { width: 46px; height: 26px; }
+.kc-pane .kc-act { list-style: none; margin: 10px 0 2px; padding: 0 2px; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--np-signal, #ff5b1f); }
+.kc-pane .kc-act:first-child { margin-top: 0; }
+.kc-pane .kc-act small { display: block; letter-spacing: .02em; text-transform: none; color: var(--np-ink-2, #b9b5ac); font-size: 12px; margin-top: 2px; }
+.kc-pane .kc-new { display: inline-block; margin-left: 6px; padding: 1px 6px 2px; font-size: 10px; font-weight: 700; letter-spacing: .12em; vertical-align: 2px; color: #111; background: var(--np-gold, #ffc23d); border-radius: 2px; }
+.kc-pane .kc-item.tbc { cursor: default; border-style: dashed; opacity: .75; }
+.kc-pane .kc-item.tbc .kc-n { font-size: 16px; }
+.kc-pane .kc-show { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.kc-pane .kc-show span { font-size: 12px; padding: 3px 8px; border: 1px solid var(--np-line, rgba(233,230,223,.12)); background: rgba(10,11,13,.5); color: #dcd8cf; }
+.kc-pane .kc-show span b { color: var(--np-gold, #ffc23d); font-weight: 600; margin-right: 4px; }
+.kc-pane .kc-hero .kc-train { margin-left: 4px; }
 @media (max-width: 760px), (max-height: 520px) {
   .kc-pane { grid-template-columns: 1fr; gap: 12px; }
   .kc-pane .kc-hero .kc-prog { margin-left: 0; text-align: left; }
@@ -77,7 +87,7 @@ export class CampaignPane {
     this.lobby = lobby;
     this.menus = lobby.menus;
     this.G = lobby.G;
-    this.store = new CampaignProgress(MISSION_ORDER);
+    this.store = new CampaignProgress(MISSION_ORDER, STORY_ORDER);
     this.sel = null;
     this.el = null;
     this._off = null;
@@ -89,7 +99,14 @@ export class CampaignPane {
   mount(el) {
     ensureStyles();
     this.el = el;
-    if (!this.sel) { const r = this.store.resumeTarget(); this.sel = r ? r.id : MISSION_ORDER[0]; }
+    if (!this.sel) {
+      // Neue Spieler beginnen mit der Ausbildung, sonst „Fortsetzen“-Ziel
+      const c = this.store.get();
+      const played = Object.values(c.missions || {}).some((m) => m && m.plays > 0);
+      const r = this.store.resumeTarget();
+      const tut = MISSION_ORDER.find((id) => MISSIONS[id].tutorial);
+      this.sel = !played && tut ? tut : r ? r.id : MISSION_ORDER[0];
+    }
     if (!el._kcBound) {
       el._kcBound = true;
       el.addEventListener('click', (e) => this._click(e));
@@ -111,6 +128,7 @@ export class CampaignPane {
     if (ds.kcDiff) { this.store.setDiff(ds.kcDiff); this.menus.sound('click'); this.render(); return; }
     if (ds.kcSpeed) { this.store.setSpeed(ds.kcSpeed); this.menus.sound('click'); this.render(); this._previewMouth(); return; }
     if (ds.kcGo) { this.start(ds.kcGo === 'cp'); return; }
+    if (ds.kcTrain) { this.sel = ds.kcTrain; this.start(false); return; }
     if (ds.kcResume != null) { const r = this.store.resumeTarget(); if (r) { this.sel = r.id; this.start(!!r.checkpoint); } }
   }
 
@@ -130,7 +148,44 @@ export class CampaignPane {
   /** Fußknopf-Beschriftung (lobby._renderStart). */
   footLabel() {
     const m = MISSIONS[this.sel];
-    return m ? `Mission ${m.number} starten` : 'Mission starten';
+    if (!m) return 'Mission starten';
+    return m.tutorial ? 'Ausbildung starten' : `Mission ${m.number} starten`;
+  }
+
+  /**
+   * Lobby (ui/lobby.js mount): neue Kampagnenkapitel nach einem Update dezent melden (einmal) und den Reiter markieren.
+   */
+  announce(screen) {
+    ensureStyles();
+    if (typeof document !== 'undefined' && !document.getElementById('np-campaign-news-css')) {
+      const st = document.createElement('style');
+      st.id = 'np-campaign-news-css';
+      st.textContent = NEWS_CSS;
+      document.head.appendChild(st);
+    }
+    const added = this.store.syncNew();
+    const tab = screen && screen.querySelector('.m-tab[data-tab="kampagne"]');
+    if (tab) tab.classList.toggle('kc-dot', this.store.fresh().length > 0);
+    if (!added.length || !screen) return;
+    const ms = added.map((id) => MISSIONS[id]).filter(Boolean);
+    if (!ms.length) return;
+    const first = ms[0];
+    const names = ms.slice(0, 3).map((m) => `${m.tutorial ? '' : `M${m.number} `}„${esc(m.title)}“`).join(', ') + (ms.length > 3 ? ` und ${ms.length - 3} weitere` : '');
+    const box = document.createElement('div');
+    box.className = 'kc-news';
+    box.setAttribute('role', 'status');
+    box.innerHTML = `<div><small>${ms.length > 1 ? 'Neue Kampagnenkapitel' : 'Neues Kampagnenkapitel'}</small><b>${names}</b></div>
+      <button type="button" class="m-btn m-primary" data-tab="kampagne" data-kc-news="${first.id}">Ansehen</button><button type="button" class="kc-x" aria-label="Hinweis schließen" data-kc-x>×</button>`;
+    const host = screen.querySelector('.lb') || screen;
+    host.appendChild(box);
+    const close = () => { box.remove(); };
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.kcNews) this.sel = b.dataset.kcNews;
+      close();
+    });
+    setTimeout(close, 14000);
   }
 
   render() {
@@ -138,14 +193,14 @@ export class CampaignPane {
     if (!el) return;
     const c = this.store.get();
     const done = this.store.doneCount();
-    const total = OUTLINE.length;
     const resume = this.store.resumeTarget();
     const rm = resume ? MISSIONS[resume.id] : null;
     const diff = CAMPAIGN_DIFF[c.diff] ? c.diff : 'regulaer';
     const sel = MISSIONS[this.sel] || null;
     const outSel = OUTLINE.find((o) => o.id === this.sel) || OUTLINE[0];
     const st = sel ? this.store.mission(sel.id) : null;
-    const items = OUTLINE.map((o) => {
+    const fresh = this.store.fresh();
+    const item = (o) => {
       const m = MISSIONS[o.id];
       const playable = !!m;
       const unlocked = playable && this._unlocked(o.id);
@@ -154,24 +209,39 @@ export class CampaignPane {
         : ms.done ? `<span class="kc-st ok">✓ ${esc(CAMPAIGN_DIFF[ms.best] ? CAMPAIGN_DIFF[ms.best].name : 'Erledigt')}</span>`
           : ms.checkpoint ? '<span class="kc-st cp">Checkpoint</span>'
             : unlocked ? '<span class="kc-st">Offen</span>' : '<span class="kc-st">Gesperrt</span>';
+      const isNew = playable && fresh.includes(o.id) ? '<i class="kc-new">NEU</i>' : '';
+      const n = o.tutorial ? 'A' : o.n;
       return `<li><button type="button" class="kc-item" data-kc-sel="${o.id}" aria-pressed="${o.id === this.sel}"${playable ? '' : ' disabled'}>
-        <span class="kc-n">${o.n}</span><span><b>${esc(o.title)}</b><small>${esc(o.type)} · ${esc(this._mapName(o.map))}</small></span>${status}</button></li>`;
+        <span class="kc-n">${n}</span><span><b>${esc(o.title)}${isNew}</b><small>${esc(o.type)} · ${esc(this._mapName(o.map, o.mapFallback))}${o.minutes ? ` · ca. ${o.minutes} min` : ''}</small></span>${status}</button></li>`;
+    };
+    const acts = ACTS.map((a) => {
+      const list = OUTLINE.filter((o) => (o.act || 1) === a.n);
+      if (!list.length) return '';
+      return `<li class="kc-act">${esc(a.title)}<small>${esc(a.summary)}</small></li>${list.map(item).join('')}`;
     }).join('');
+    const tbc = `<li><div class="kc-item tbc"><span class="kc-n">…</span><span><b>${esc(TO_BE_CONTINUED.title)}</b><small>${esc(TO_BE_CONTINUED.text)}</small></span><span class="kc-st">Mit Updates</span></div></li>`;
     const unlocked = sel && this._unlocked(sel.id);
     const hasCp = !!(st && st.checkpoint && !st.done && sel.stages.some((s) => s.id === st.checkpoint) && st.checkpoint !== sel.stages[0].id);
     const cpName = hasCp ? this._cpName(sel, st.checkpoint) : '';
+    const storyTotal = OUTLINE.filter((o) => !o.tutorial).length;
+    const storyDone = STORY_ORDER.filter((id) => this.store.mission(id).done).length;
+    const hours = (TOTAL_MINUTES / 60).toFixed(1).replace('.', ',');
+    const show = this._showcase(outSel);
+    const tut = MISSION_ORDER.find((id) => MISSIONS[id].tutorial);
     el.innerHTML = `<div class="kc-pane">
       <section class="kc-hero">
         <div><small>Kampagne</small><h2>${esc(CAMPAIGN.title)}</h2><p>${esc(CAMPAIGN.summary)}</p></div>
-        <div class="kc-prog"><small>Fortschritt</small><b>${done} von ${MISSION_ORDER.length} erledigt · ${total} geplant</b><i><u style="transform:scaleX(${(done / total).toFixed(3)})"></u></i></div>
-        ${rm ? `<div class="kc-resume"><button type="button" class="m-btn m-primary" data-kc-resume>Fortsetzen: Mission ${rm.number} „${esc(rm.title)}“${resume.checkpoint ? ` · ab ${esc(this._cpName(rm, resume.checkpoint))}` : ''}</button></div>` : '<div class="kc-resume"><span class="kc-hint">Alle verfügbaren Missionen erledigt – weitere folgen.</span></div>'}
+        <div class="kc-prog"><small>Fortschritt</small><b>${storyDone} von ${storyTotal} Missionen</b><span class="kc-hint">${MISSION_ORDER.length} Kapitel spielbar · ca. ${hours} h Spielzeit</span><i><u style="transform:scaleX(${(storyDone / Math.max(1, storyTotal)).toFixed(3)})"></u></i></div>
+        <div class="kc-resume">${rm ? `<button type="button" class="m-btn m-primary" data-kc-resume>Fortsetzen: Mission ${rm.number} „${esc(rm.title)}“${resume.checkpoint ? ` · ab ${esc(this._cpName(rm, resume.checkpoint))}` : ''}</button>` : '<span class="kc-hint">Alle verfügbaren Missionen erledigt – weitere folgen mit kommenden Updates.</span>'}
+          ${tut ? `<button type="button" class="m-btn kc-train" data-kc-train="${tut}">Ausbildung${this.store.mission(tut).done ? ' ✓' : ''}</button>` : ''}</div>
       </section>
-      <section><ul class="kc-list" role="list">${items}</ul></section>
+      <section><ul class="kc-list" role="list">${acts}${tbc}</ul></section>
       <section class="kc-detail">
-        <small class="k">Mission ${outSel.n} · ${esc(outSel.type)}</small>
-        <h3>${esc(outSel.title)}</h3>
-        <div class="kc-meta"><span>Karte: ${esc(this._mapName(outSel.map))}</span>${sel ? `<span>${sel.stages.length} Abschnitte mit Checkpoint</span>` : ''}${st && st.time ? `<span>Bestzeit ${Math.floor(st.time / 60)}:${String(st.time % 60).padStart(2, '0')}</span>` : ''}</div>
+        <small class="k">${outSel.tutorial ? 'Ausbildung' : `Mission ${outSel.n}`} · ${esc(outSel.type)}</small>
+        <h3>${esc(outSel.title)}${sel && fresh.includes(sel.id) ? '<i class="kc-new">NEU</i>' : ''}</h3>
+        <div class="kc-meta"><span>Karte: ${esc(this._mapName(outSel.map, outSel.mapFallback))}</span>${outSel.minutes ? `<span>ca. ${outSel.minutes} min</span>` : ''}${sel ? `<span>${sel.stages.length} Abschnitte mit Checkpoint</span>` : ''}${st && st.time ? `<span>Bestzeit ${Math.floor(st.time / 60)}:${String(st.time % 60).padStart(2, '0')}</span>` : ''}</div>
         <p>${esc(sel ? sel.summary : outSel.story)}</p>
+        ${show ? `<div class="kc-show">${show}</div>` : ''}
         <ul>${(outSel.goals || []).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
         <div class="kc-opts">
           <div><label>Schwierigkeit</label><div class="kc-seg">${Object.entries(CAMPAIGN_DIFF).map(([id, d]) => `<button type="button" data-kc-diff="${id}" aria-pressed="${id === diff}">${esc(d.name)}</button>`).join('')}</div><div class="kc-hint">${esc(CAMPAIGN_DIFF[diff].hint)}</div></div>
@@ -179,24 +249,43 @@ export class CampaignPane {
             <div class="kc-hint kc-mouth"><svg viewBox="0 0 46 26" aria-hidden="true"><ellipse cx="23" cy="13" rx="15" ry="2" fill="#160807" stroke="#ff9a6b" stroke-width="1.4"/></svg><span>Keine Sprachausgabe: Dialoge als Untertitel, die Figuren bewegen dazu den Mund.</span></div></div>
         </div>
         <div class="kc-btns">
-          ${sel ? `<button type="button" class="m-btn m-primary" data-kc-go="new"${unlocked ? '' : ' disabled'}>${unlocked ? 'Mission starten' : 'Gesperrt – vorige Mission abschließen'}</button>` : '<span class="kc-hint">Diese Mission ist in Vorbereitung.</span>'}
+          ${sel ? `<button type="button" class="m-btn m-primary" data-kc-go="new"${unlocked ? '' : ' disabled'}>${unlocked ? (sel.tutorial ? 'Ausbildung starten' : 'Mission starten') : 'Gesperrt – vorige Mission abschließen'}</button>` : '<span class="kc-hint">Diese Mission ist in Vorbereitung.</span>'}
           ${hasCp && unlocked ? `<button type="button" class="m-btn" data-kc-go="cp">Ab Checkpoint „${esc(cpName)}“</button>` : ''}
         </div>
       </section>
     </div>`;
+    const tab = this.lobby && this.lobby.el && this.lobby.el.screen && this.lobby.el.screen.querySelector('.m-tab[data-tab="kampagne"]');
+    if (tab) tab.classList.toggle('kc-dot', fresh.length > 0);
     if (this.lobby && typeof this.lobby._renderStart === 'function') this.lobby._renderStart();
   }
 
-  _mapName(id) {
+  /** „Stellt vor“-Chips (outline showcase: karten, waffen, fahrzeuge). */
+  _showcase(o) {
+    const s = o && o.showcase;
+    if (!s) return '';
+    const W = (this.G.data && this.G.data.WEAPONS) || {};
+    const VEH = { heli: 'Hubschrauber', jet: 'Kampfjet', mbt: 'Kampfpanzer', jeep: 'Geländewagen', transporter: 'Transporter', pkw: 'Pkw' };
+    const out = [];
+    for (const k of s.karten || []) out.push(`<span><b>Karte</b>${esc(this._mapName(k))}</span>`);
+    for (const k of s.waffen || []) out.push(`<span><b>Waffe</b>${esc(W[k] ? W[k].name : k)}</span>`);
+    for (const k of s.fahrzeuge || []) out.push(`<span><b>Fahrzeug</b>${esc(VEH[k] || k)}</span>`);
+    return out.length ? `<span style="border:0;background:none;padding-left:0;color:var(--np-dim,#77746d)">Stellt vor:</span>${out.join('')}` : '';
+  }
+
+  _mapName(id, fallback = null) {
     const M = (this.G.data && this.G.data.MAPS) || {};
-    return (M[id] && M[id].name) || id;
+    const NAMES = { flugplatz: 'Flugplatz', stadtkern: 'Stadtkern' };
+    if (M[id] && M[id].name) return M[id].name;
+    if (fallback && M[fallback]) return `${NAMES[id] || id} (vorläufig: ${M[fallback].name})`;
+    return NAMES[id] || id;
   }
 
   _cpName(m, id) {
+    const st = m && m.stages ? m.stages.find((s) => s.id === id) : null;
+    if (st && st.name) return st.name;
     const names = { start: 'Beginn', markt: 'Marktgasse', torhaus: 'Torhaus', turm: 'Brunnenplatz', welle1: 'Erste Welle', welle2: 'Zweite Welle', welle3: 'Letzte Welle', dorf: 'Dorf', bruecke: 'Brücke' };
     return names[id] || id;
   }
-
   /** Lesetempo: kleine Mund-Vorschau im Menü (Ellipse folgt einem Beispielsatz). */
   _previewMouth() {
     const svg = this.el && this.el.querySelector('.kc-mouth ellipse');
@@ -214,3 +303,19 @@ export class CampaignPane {
     step();
   }
 }
+
+/* ======================================================================== Lobby-Hinweis „Neues Kampagnenkapitel“ */
+
+const NEWS_CSS = `
+.kc-news { position: absolute; right: 18px; top: 64px; z-index: 30; max-width: min(380px, calc(100vw - 32px)); display: flex; gap: 10px; align-items: center; padding: 10px 12px 10px 14px;
+  background: rgba(14,15,18,.94); border: 1px solid var(--np-line, rgba(233,230,223,.16)); border-left: 3px solid var(--np-gold, #ffc23d); box-shadow: 0 6px 22px rgba(0,0,0,.4);
+  font-size: 13px; line-height: 1.35; color: #e6e2d9; animation: kc-news-in .45s ease-out; }
+.kc-news small { display: block; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--np-gold, #ffc23d); }
+.kc-news b { font-weight: 600; }
+.kc-news .m-btn { min-height: 38px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+.kc-news .kc-x { min-width: 38px; min-height: 38px; border: 0; background: none; color: #b9b5ac; font-size: 18px; cursor: pointer; }
+@keyframes kc-news-in { from { opacity: 0; transform: translateY(-6px); } }
+.m-tab[data-tab="kampagne"].kc-dot { position: relative; }
+.m-tab[data-tab="kampagne"].kc-dot::after { content: ''; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--np-gold, #ffc23d); }
+@media (max-width: 760px), (max-height: 520px) { .kc-news { top: auto; bottom: 74px; right: 12px; } }
+`;

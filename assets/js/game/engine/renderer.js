@@ -57,6 +57,20 @@ export const QUALITY_PRESETS = Object.freeze({
   }),
 });
 
+// desktop (14.11.): Stufe „Extrem“ nur in der Desktop-App (window.nullpunktDesktop, desktop/preload.js). Technisch Ultra
+// (id bleibt 'ultra' – alle Abnehmer wählen ihre Detailstufe wie bisher), dazu extreme: true für die Zusätze:
+// 8K-Sonnenschatten, mehr Schatten von Figuren, mehr Partikel/Einschüsse; world/library.js holt 4K-Sätze (wo vorhanden),
+// bigworld.js weitere Sicht, modes.data.js limitsFor höhere Massenschlacht-Grenze (tier 'extrem').
+export const EXTREME = 'extrem';
+export const isDesktopApp = () => typeof window !== 'undefined' && !!window.nullpunktDesktop;
+export const EXTREME_PRESET = Object.freeze({
+  ...QUALITY_PRESETS.ultra, extreme: true, shadowMapSize: 8192, maxBotsVisibleShadows: 32, particleScale: 1.5, decals: 240,
+});
+/** Vorgabe zu Wunsch q (auch 'extrem') und aufgelöster Stufe. */
+let maxTexSize = 16384; // vom Kontext (createRenderer); 8K-Schatten nur, wenn die GPU so große Texturen kann
+const presetFor = (q, tier) => (q === EXTREME && tier === 'ultra' && isDesktopApp()
+  ? (maxTexSize >= 8192 ? EXTREME_PRESET : Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096 })) : QUALITY_PRESETS[tier]);
+
 /** Standardwerte des Bloom (Schwelle in Bildwerten nach Belichtung, d. h. vor dem Tonemapping). */
 export const BLOOM_DEFAULTS = Object.freeze({ threshold: 3.0, strength: 0.24, radius: 0.4, maxBright: 8 });
 
@@ -75,6 +89,7 @@ export function isLowEndDevice() {
  */
 export function resolveQuality(q) {
   if (QUALITY_LEVELS.includes(q)) return q;
+  if (q === EXTREME && isDesktopApp()) return 'ultra'; // desktop
   if (typeof window === 'undefined') return 'high';
   return provisionalTier();
 }
@@ -137,9 +152,30 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.info.autoReset = false;
   renderer.setClearColor(0x0a0b0d, 1);
+  // Diagnose (14.11., Schwarzbild auf echten GPUs): Shader-Fehler sammeln und sichtbar einblenden, damit Spieler sie melden können
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    const log = (s) => (s && gl.getShaderInfoLog(s)) || '';
+    const msg = (gl.getProgramInfoLog(program) || '') + '\n' + log(vs) + '\n' + log(fs);
+    const list = (window.__npShaderErrors = window.__npShaderErrors || []);
+    if (list.length < 8) list.push(msg.trim().slice(0, 600));
+    console.error('NULLPUNKT Shader-Fehler:', msg);
+    try {
+      let box = document.getElementById('np-shader-err');
+      if (!box) {
+        box = document.createElement('pre');
+        box.id = 'np-shader-err';
+        box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;max-height:40vh;overflow:auto;z-index:99999;background:rgba(80,0,0,.92);color:#fff;font:11px/1.35 monospace;padding:8px;white-space:pre-wrap;pointer-events:auto';
+        box.title = 'Bitte Screenshot an den Entwickler – Klick schließt';
+        box.onclick = () => box.remove();
+        document.body.appendChild(box);
+      }
+      box.textContent = 'Grafikfehler (bitte Screenshot schicken, Klick schließt):\n' + navigator.userAgent + '\n\n' + list.join('\n-----\n');
+    } catch { /* ohne DOM */ }
+  };
   // Max. Anisotropie jetzt abfragen (three.js merkt sie sich): gl.getParameter wartet, bis die GPU alle
   // anstehenden Befehle abgearbeitet hat – beim ersten Kartenladen kostete das einen langen Hänger.
   renderer.capabilities.getMaxAnisotropy();
+  maxTexSize = renderer.capabilities.maxTextureSize || 4096; // desktop: Stufe Extrem
   // 'auto' (21.10.): mit dem echten Kontext entscheiden – GPU-Klasse, GPU-Test beim ersten Start, gelernte Stufe
   // (engine/device.js). Noch ist nichts kompiliert, ein Wechsel der Stufe kostet hier nichts. Auch bei fester Stufe
   // (dann ohne GPU-Test): wer später auf „Automatisch“ zurückstellt, bekommt so die GPU-Klasse statt nur der Gerätewerte
@@ -147,7 +183,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   let auto = null;
   let gpu = { name: '', cls: 'unbekannt' };
   try { const name = gpuName(renderer.getContext()); gpu = { name, cls: classifyGpu(name, deviceInfo()).cls }; } catch { /* ohne Namen */ }
-  const startAuto = !QUALITY_LEVELS.includes(quality);
+  const startAuto = !QUALITY_LEVELS.includes(quality) && !(quality === EXTREME && isDesktopApp());
   try {
     const d = decideAuto(renderer, { bench: benchmark && startAuto });
     if (startAuto) { auto = d; initial = d.tier; }
@@ -201,7 +237,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
     auto,
     /** GPU-Name und -Klasse (engine/device.js); cls 'software' = Browser ohne GPU-Beschleunigung. */
     gpu,
-    preset: applyGraphics(QUALITY_PRESETS[initial], settings),
+    preset: applyGraphics(presetFor(quality, initial), settings),
     /** Entfällt seit der eigenen Kette (bleibt null; Kompatibilität). */
     composer: null,
     /** Nachbearbeitungskette (engine/post/pipeline.js). */
@@ -246,7 +282,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
     get mood() { return pipeline.mood.id; },
 
     setQuality(q) {
-      if (!QUALITY_LEVELS.includes(q)) {
+      if (!QUALITY_LEVELS.includes(q) && !(q === EXTREME && isDesktopApp())) {
         // „Automatisch“ erst in dieser Sitzung gewählt (Start mit fester Stufe): GPU-Test jetzt nachholen (21.10.)
         const a = autoDecision();
         if (!a || a.pending) { try { decideAuto(renderer, { bench: benchmark }); } catch (err) { console.warn('[NULLPUNKT] Geräteprofil:', err); } }
@@ -255,7 +291,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
       const next = resolveQuality(q);
       this.requested = q;
       // Stufe + erweiterte Grafikoptionen (settings gfx*, shared/graphics.data.js) = wirksame Vorgabe
-      const preset = applyGraphics(QUALITY_PRESETS[next], settings);
+      const preset = applyGraphics(presetFor(q, next), settings);
       if (next === this.quality && this._built && samePreset(preset, this.preset)) return;
       const prevShadows = this.preset.shadows;
       this.quality = next;

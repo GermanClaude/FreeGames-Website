@@ -68,6 +68,8 @@ const HOLD_TOGGLE = Object.freeze({ options: ['hold', 'toggle'], labels: { hold:
  * Beschreibung jedes Werts für Einstellungsoberflächen (Website + Spielmenü):
  * type, Grenzen, Schrittweite, deutsche Beschriftung, Optionen mit Beschriftungen.
  */
+/** Desktop-App (desktop/preload.js): zusätzliche Grafikstufe „Extrem“. */
+const DESKTOP_APP = typeof window !== 'undefined' && !!window.nullpunktDesktop;
 export const SETTINGS_SCHEMA = Object.freeze({
   playerName: { type: 'string', maxLength: 16, label: 'Spielername', group: 'profil' },
   sensitivity: { type: 'number', min: 0.1, max: 5, step: 0.05, label: 'Mausempfindlichkeit', group: 'steuerung' },
@@ -77,8 +79,8 @@ export const SETTINGS_SCHEMA = Object.freeze({
   fov: { type: 'number', min: 60, max: 110, step: 1, integer: true, unit: '°', label: 'Sichtfeld', group: 'grafik' },
   quality: {
     type: 'enum', label: 'Grafikqualität', group: 'grafik',
-    options: ['auto', 'low', 'medium', 'high', 'ultra'],
-    labels: { auto: 'Automatisch', low: 'Niedrig', medium: 'Mittel', high: 'Hoch', ultra: 'Ultra' },
+    options: ['auto', 'low', 'medium', 'high', 'ultra', ...(DESKTOP_APP ? ['extrem'] : [])], // desktop: „Extrem“ nur in der App
+    labels: { auto: 'Automatisch', low: 'Niedrig', medium: 'Mittel', high: 'Hoch', ultra: 'Ultra', extrem: 'Extrem' },
   },
   masterVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Gesamtlautstärke', group: 'audio' },
   sfxVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Effekte', group: 'audio' },
