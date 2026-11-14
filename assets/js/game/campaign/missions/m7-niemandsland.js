@@ -153,7 +153,7 @@ export const MISSION_7 = {
     },
     {
       id: 'halten',
-      checkpoint: { at: [125, 6], yaw: 0 },
+      checkpoint: { at: [111, -4], yaw: 0.2 },
       setup(m) { m.order('defend', CHAPEL); },
       *run(m) {
         m.clearObjectives();
@@ -250,7 +250,7 @@ export const MISSION_7 = {
     },
     {
       id: 'bergen',
-      checkpoint: { at: [120, 10], yaw: 0 },
+      checkpoint: { at: [110, 6], yaw: 0.3 },
       setup(m) { m.order('defend', CHAPEL); },
       *run(m) {
         m.clearObjectives();
