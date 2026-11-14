@@ -6,8 +6,8 @@
 // senkrechter Vordergriff, kurze Schulterstütze. Ohne Zeichen/Schilder mit echten Namen.
 // Teile wie beim HM-60: Gurtkasten 'mag' mit Deckel 'lid', Gurt 'belt', Zuführdeckel 'cover', Ladehebel 'charge';
 // Laufbündel 'rotor' (Drehpunkt auf der Bündelachse) – das Viewmodel dreht es mit der Hochdrehzahl (controller.js spin).
-import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
 
 const AXIS = 0.072;          // Achse des Laufbündels
 const R = 0.024;             // Teilkreis der sechs Läufe

@@ -5,9 +5,9 @@
 // Waffen-Trophäen (weapon: RegExp auf die Waffen-Id) erscheinen nur, wenn es eine passende Waffe gibt (z. B. Minigun).
 // Platin „Nullpunkt“ zählt alle übrigen sichtbaren Trophäen.
 
-import { MAP_ORDER } from './maps.data.js?v=20261113221339';
-import { SECRETS } from './modes.data.js?v=20261113221339';
-import { WEAPON_IDS } from './weapons.data.js?v=20261113221339';
+import { MAP_ORDER } from './maps.data.js?v=20261114004313';
+import { SECRETS } from './modes.data.js?v=20261114004313';
+import { WEAPON_IDS } from './weapons.data.js?v=20261114004313';
 
 export const TROPHY_TIERS = {
   bronze: { name: 'Bronze', rank: 1 },

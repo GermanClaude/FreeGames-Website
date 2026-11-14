@@ -10,8 +10,8 @@
 //     vorderen Gehäuseteil, Gasblock mit 3-Stellungs-Regler, Gasrohr mit Handschutz oben, Polymer-Handschutz unten,
 //     Kornfuß mit Schutzbügel, Polymer-Griff und -Schaft mit Schaftkappe, gebogenes 8-Schuss-Kastenmagazin mit Rastnase.
 // Anker und Teile wie bei den Vorgängern (Pump, Ladehebel, Magazin, Patrone) – Hände/Animationen bleiben.
-import { ejectionPort, engrave, triggerGuard, roundRect, qdCup } from './parts.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import { ejectionPort, engrave, triggerGuard, roundRect, qdCup } from './parts.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
 
 /**
  * Fischhaut: zwei Scharen diagonaler Rillen (±45°), auf das Feld u0..u1 × v0..v1 zugeschnitten, auf der Seitenfläche x.

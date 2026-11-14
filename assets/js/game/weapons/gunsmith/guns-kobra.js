@@ -5,9 +5,9 @@
 // (Daumenstück links hinter der Trommel), Trommel mit 6 Kammern und Rastkerben, Hahn mit gerieftem Sporn, glatter Abzug,
 // Holzgriffschalen (Walnuss) mit Fingermulden, Fischhaut und Medaillon. Edelstahl hochglanz (wie die „Stainless“-Ausführung).
 // Teile/Anker wie das Vormodell (crane, cylinder, ejector, loader, hammer, Griffpunkte) – Nachladen und Haltung bleiben.
-import { triggerGuard } from './parts.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
-import { checkering } from './guns-flinten.js?v=20261113221339';
+import { triggerGuard } from './parts.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
+import { checkering } from './guns-flinten.js?v=20261114004313';
 
 export function kobra(b) {
   const axis = 0.074;

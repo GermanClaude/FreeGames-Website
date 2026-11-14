@@ -5,8 +5,8 @@
 // Gurtzuführung links, Leitervisier hinten, Abzugsgruppe mit langem Bügel, Griff, Schaft mit Schulterstütze, gerippter
 // Vorderschaft um den Gaszylinder, Lauf mit Tragegriff, Gaszylinder mit Zweibein (eingeklappt), Korn, Feuerdämpfer;
 // Munitionskasten links mit Deckel (hüpft beim Rückstoß, viewmodel.js _animLid) und Gurt (magfill.js, Glied je Patrone).
-import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
 
 const AXIS = 0.082;
 const SV = 0.1405;

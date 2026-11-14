@@ -5,8 +5,8 @@
 // Tangentenvisier, Gasrohr mit Holzauflage, Holzhandschutz unten, schwerer Lauf, Gasblock, Zweibein (eingeklappt),
 // Korn mit Schutz, Laufschutzkappe, Klumpfußschaft aus Schichtholz mit Kolbenkappe, Pistolengriff, Sicherungshebel,
 // Spannhebel am Verschlussträger, Trommelmagazin mit Hals, Sicken und Aufziehknopf.
-import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
 
 const AXIS = 0.062;
 const SV = 0.0925;  // Visierlinie (Kimmenkerbe/Kornspitze)

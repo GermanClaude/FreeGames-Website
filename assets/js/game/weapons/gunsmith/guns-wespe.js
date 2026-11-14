@@ -5,8 +5,8 @@
 // Kennzeichen der Bauart: hohes, schmales Oberteil mit durchgehender Schiene; Unterteil mit schräger „Nase“ unter dem Lauf
 // (Schlitten-Umlenksystem), Magazinschacht VOR dem Abzugsbügel, Laufmantel facettiert, Klappschaft-Adapter mit Schaftrohr
 // und Teleskopschaft, Klappvisiere, Spannhebel links vorn (klappbarer Knauf).
-import { mm, slab, rrect, pocket, POLY } from './gbkit.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import { mm, slab, rrect, pocket, POLY } from './gbkit.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
 
 const AXIS = 0.046;
 const RAIL = 0.074;                    // Schienenunterkante (Oberteil-Oberkante)

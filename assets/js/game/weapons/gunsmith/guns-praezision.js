@@ -14,8 +14,8 @@
 //     mehrlagiger, vergüteter Linse (dunkle Tiefe + spiegelnde Deckschicht + Fassungsring) und Sonnenblende.
 // Anker, Teile und Maße der Haltung (rightHandGrip, leftHandGrip, magWell, Visier) wie bei den Vorgängern – Hände, Nachladen
 // und Zielen bleiben unverändert.
-import { swapOptic, ejectionPort, roundRect, engrave, qdCup, triggerGuard, arGrip, muzzleDevice } from './parts.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import { swapOptic, ejectionPort, roundRect, engrave, qdCup, triggerGuard, arGrip, muzzleDevice } from './parts.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
 
 /* ------------------------------------------------------------------ Zielfernrohr 5–25 × 56 */
 

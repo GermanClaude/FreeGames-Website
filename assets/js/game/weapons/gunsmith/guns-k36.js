@@ -4,12 +4,12 @@
 // Handschutz mit Kühlschlitzen, vierzinkiger Mündungsfeuerdämpfer, seitlich klappbarer Skelettschaft mit Gummikappe,
 // Griffstück mit Abzugsbügel und Paddel-Magazinhalter, beidseitiger Wahlhebel, durchscheinendes Magazin mit Kuppelzapfen.
 // Umrisse aus dem Foto (photo-kit.js: Distanzfeld-Platten), Rundteile gedreht, Kleinteile von Hand.
-import * as R from './k36-ref.js?v=20261113221339';
-import { calib, slab, pocket, rib, barrel, pins, slottedHider, STEEL, POLY } from './photo-kit.js?v=20261113221339';
-import { sdRoundRect } from './sdfkit.js?v=20261113221339';
-import { redDot } from './parts.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
-import { schrift } from './schrift.js?v=20261113221339';
+import * as R from './k36-ref.js?v=20261114004313';
+import { calib, slab, pocket, rib, barrel, pins, slottedHider, STEEL, POLY } from './photo-kit.js?v=20261114004313';
+import { sdRoundRect } from './sdfkit.js?v=20261114004313';
+import { redDot } from './parts.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';
 
 const C = calib(R.PPM, R.XG, R.YG, R.YA);
 const { U, V, M, AXIS: AX } = C;

@@ -4,12 +4,12 @@
 // mit runder Haube, Spannhebel links vorn („HK-Schlag“), geschlitzter Mündungsfeuerdämpfer, breiter Polymer-Handschutz,
 // fester Schaft mit Fächern und Kappen, Griffstück mit Wahlhebel (S-E-F) und Haltebolzen, gerades Stahlmagazin.
 // Umrisse aus dem Foto (photo-kit.js), Gehäuse und Kleinteile wie beim VP-9 (hk-parts.js).
-import * as R from './g7-ref.js?v=20261113221339';
-import { calib, slab, rib, groove, barrel, pins, slottedHider, STEEL } from './photo-kit.js?v=20261113221339';
-import { field2, box2, sdfMesh, sdRoundRect, roundMax } from './sdfkit.js?v=20261113221339';
-import { hkSection, hkDrum, hkHood, hkCockingHandle, hkSelector } from './hk-parts.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
-import { schrift } from './schrift.js?v=20261113221339';
+import * as R from './g7-ref.js?v=20261114004313';
+import { calib, slab, rib, groove, barrel, pins, slottedHider, STEEL } from './photo-kit.js?v=20261114004313';
+import { field2, box2, sdfMesh, sdRoundRect, roundMax } from './sdfkit.js?v=20261114004313';
+import { hkSection, hkDrum, hkHood, hkCockingHandle, hkSelector } from './hk-parts.js?v=20261114004313';
+import { magRounds } from './magfill.js?v=20261114004313';
+import { schrift } from './schrift.js?v=20261114004313';
 
 const C = calib(R.PPM, R.XG, R.YG, R.YA);
 const { U, V, M, AXIS: AX } = C;
