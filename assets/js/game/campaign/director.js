@@ -17,6 +17,7 @@
 import * as THREE from 'three';
 import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261114060746';
 import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261114060746';
+import { prepareVehicleModels } from '../vehicles/models.js?v=20261114060746';
 import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261114060746';
 import { createFaceRig, FaceDriver } from './face.js?v=20261114060746';
 import { issueCommand } from '../bots/ai/orders.js?v=20261114060746';
@@ -763,7 +764,11 @@ export class Director {
     const V = this.G.vehicles;
     if (!V || !V.attached) return null;
     if (type === 'tank') type = typeof V.tankTypeFor === 'function' ? V.tankTypeFor(team) || 'mbt' : 'mbt';
-    const v = V.spawnVehicle(type, this.vec(at), yaw, team);
+    // Kleine Karten erlauben sonst nur Zivilfahrzeuge – ein Fahrzeug der Mission (Ausbildung am Schießstand) darf trotzdem
+    const lift = V.civilOnly && !V.replica;
+    if (lift) { try { prepareVehicleModels([type], [team], V.quality || 'high'); } catch { /* bei Bedarf */ } V.civilOnly = false; }
+    let v = null;
+    try { v = V.spawnVehicle(type, this.vec(at), yaw, team); } finally { if (lift) V.civilOnly = true; }
     if (v) this.vehicles.push(v);
     return v;
   }

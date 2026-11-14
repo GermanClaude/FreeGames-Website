@@ -359,6 +359,10 @@ export const MISSION_10 = {
   /** Testlauf (run.js): Hubschrauber in die Landezone setzen, Maschine abschießen. */
   _test(d) {
     const G = d.G, heli = d.get('heli');
+    if (d.objs.some((o) => o.id === 'ankunft' && !o.done) && heli && heli.alive) {
+      const p = d.vec(C(d).hit); p.y += C(d).alt;
+      heli.body.setPose(p, heli.body.yaw ? heli.body.yaw() : 0, { airborne: true });
+    }
     if (d.objs.some((o) => o.id === 'landen' && !o.done) && heli && heli.alive) {
       const z = d.zones.get('lz');
       heli.body.setPose(z.c.clone().setY(z.c.y + 0.2), heli.body.yaw ? heli.body.yaw() : 0);

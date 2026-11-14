@@ -89,7 +89,7 @@ const EXPR = {
   neutral: {},
   angry: { browDown: 1, sneer: 0.45, squint: 0.55, press: 0.45, frown: 0.25 },
   worried: { browInnerUp: 1, frown: 0.5, lidOpen: 0.25, wide: 0.1 },
-  smile: { smile: 1, squint: 0.55, wide: 0.3, part: 0.55, browUp: 0.08 },
+  smile: { smile: 1, squint: 0.55, wide: 0.35, part: 0.3, browUp: 0.08 },
   surprised: { browUp: 1, lidOpen: 0.85, jaw: 0.22 },
   pain: { browDown: 0.7, browInnerUp: 0.6, squint: 1, sneer: 0.7, wide: 0.45, jaw: 0.1, part: 0.4 },
   ernst: { browDown: 0.35, press: 0.3, frown: 0.15, squint: 0.15 },

@@ -141,12 +141,12 @@ function allee(b, zones) {
 function rand(b) {
   for (const s of [-1, 1]) {
     // hinter der Hinterstraße
-    kulisse(b, -64, s > 0 ? HZ : -HZ - 8, -18, s > 0 ? HZ + 8 : -HZ, 14, s > 0 ? 'n' : 's', '#c2b8a4');
+    kulisse(b, -64, s > 0 ? HZ : -HZ - 8, -18, s > 0 ? HZ + 8 : -HZ, 14, s > 0 ? 'n' : 's', '#b9b4aa');
     kulisse(b, -18, s > 0 ? HZ : -HZ - 8, 24, s > 0 ? HZ + 8 : -HZ, 11, s > 0 ? 'n' : 's', '#b8ae9a');
-    kulisse(b, 24, s > 0 ? HZ : -HZ - 8, 64, s > 0 ? HZ + 8 : -HZ, 15, s > 0 ? 'n' : 's', '#cbbfa8');
+    kulisse(b, 24, s > 0 ? HZ : -HZ - 8, 64, s > 0 ? HZ + 8 : -HZ, 15, s > 0 ? 'n' : 's', '#c9a98e');
     // jenseits der Querstraßen (die Allee ist mit Bauzaun gesperrt)
     kulisse(b, s > 0 ? HX : -HX - 8, 8, s > 0 ? HX + 8 : -HX, HZ, 14, s > 0 ? 'w' : 'e', '#c6bba6');
-    kulisse(b, s > 0 ? HX : -HX - 8, -HZ, s > 0 ? HX + 8 : -HX, -8, 13, s > 0 ? 'w' : 'e', '#bdb29e');
+    kulisse(b, s > 0 ? HX : -HX - 8, -HZ, s > 0 ? HX + 8 : -HX, -8, 13, s > 0 ? 'w' : 'e', '#aeb3ae');
   }
   // Allee jenseits der Sperre (Optik), Boden außen
   b.groundTiled(HX, -8, 130, 8, 'asphalt', { cell: 4, collide: false, groundAO: false, chunk: 900, tint: '#cfc9bd' });

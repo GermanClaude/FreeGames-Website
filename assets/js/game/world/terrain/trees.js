@@ -55,10 +55,10 @@ export const DEFAULT_MIX = {
 
 /** LOD-Abstände je Stufe (m): nah bis near, mittel bis mid, Impostor bis zur Fernsichtweite; Bänder = Überblendung. */
 export const TREE_LOD = {
-  low: { near: 9, mid: 34, bandN: 4, bandM: 8, variants: 1, imp: [64, 128], midLod: 2 },
+  low: { near: 6, mid: 30, bandN: 3, bandM: 8, variants: 1, imp: [64, 128], midLod: 2 },
   medium: { near: 18, mid: 70, bandN: 5, bandM: 10, variants: 1, imp: [96, 192] },
   high: { near: 28, mid: 105, bandN: 6, bandM: 12, variants: 2, imp: [128, 256] },
-  ultra: { near: 40, mid: 150, bandN: 7, bandM: 14, variants: 2, imp: [128, 256] },
+  ultra: { near: 34, mid: 150, bandN: 7, bandM: 14, variants: 2, imp: [128, 256] },
 };
 
 // ---------------------------------------------------------------------------
@@ -188,10 +188,10 @@ function skeleton(sp, seed) {
         const L = Math.max(0.35, sp.R * Math.pow(1 - u, 0.95) * (0.82 + r() * 0.3));
         const tp = trunkPts.findIndex((p) => p.y >= y); const o = trunkPts[Math.max(0, tp)].clone(); o.y = y;
         const d = new THREE.Vector3(Math.sin(el) * Math.cos(az), Math.cos(el), Math.sin(el) * Math.sin(az));
-        const pts = curve(r, o, d, L, 4, 0.25 * (1 - u) + 0.1, 0.12, 0.45 * (1 - u));
+        const pts = curve(r, o, d, L, 3, 0.25 * (1 - u) + 0.1, 0.12, 0.45 * (1 - u));
         branches.push(makeBranch(pts, Math.min(0.06, 0.012 + L * 0.02), 0.008, 1));
       }
-      y += 0.42 + r() * 0.2; k++;
+      y += 0.5 + r() * 0.2; k++;
     }
   } else {
     // Hauptäste (Phyllotaxis) ab Kronenansatz; Länge nach Kronenform (unten weit, oben kurz)
@@ -337,7 +337,7 @@ function leafCards(B, sk, sp, lod, r) {
       const t = Math.min(1, t0 + (1 - t0) * (i + (i < n ? r() * 0.5 : 0)) / Math.max(1, n));
       pointAt(b, t, P); dirAt(b, t, D);
       const out = A.subVectors(P, cc); out.y *= 0.6; out.normalize();
-      const reps = sp.dead ? (r() < 0.5 ? 1 : 0) : conLimb ? (lod ? 1 : 2) : lod ? 1 : (t > 0.85 ? 2 : 1 + (r() < 0.35 ? 1 : 0));
+      const reps = sp.dead ? (r() < 0.5 ? 1 : 0) : conLimb ? (lod || b.len < 1.3 ? 1 : 2) : lod ? 1 : (t > 0.85 ? 2 : 1 + (r() < 0.35 ? 1 : 0));
       for (let k = 0; k < reps; k++) {
         const axis = D.clone().multiplyScalar(conLimb ? 0.85 : 0.45).addScaledVector(out, conLimb ? 0.15 : 0.45);
         axis.y += conLimb ? -0.08 : sp.droop ? -sp.droop * 0.9 : 0.15;
@@ -406,7 +406,7 @@ export function buildBush(seed = 3, lod = 0) {
   const cells = [2, 3, 6, 7, 0];
   const P = new THREE.Vector3(), D = new THREE.Vector3(), F = new THREE.Vector3();
   for (const b of sk.branches) {
-    const m = lod ? 3 : 7;
+    const m = lod ? 4 : 10;
     for (let i = 0; i < m; i++) {
       const t = 0.3 + 0.7 * (i + r() * 0.6) / m;
       pointAt(b, t, P); dirAt(b, t, D);
@@ -415,7 +415,7 @@ export function buildBush(seed = 3, lod = 0) {
       F.copy(_up).addScaledVector(axis, -axis.y).normalize();
       const S = new THREE.Vector3().crossVectors(axis, F), az = (r() - 0.5) * 2.2;
       F.multiplyScalar(Math.cos(az)).addScaledVector(S, Math.sin(az)).normalize();
-      const sz = (lod ? 1.0 : 0.72) * (0.8 + r() * 0.4);
+      const sz = (lod ? 1.1 : 0.85) * (0.8 + r() * 0.4);
       card(B, P, axis, F, sz, sz * 0.9, cells[(r() * cells.length) | 0], sk, sp, 0.15, 1.05);
     }
   }
@@ -430,9 +430,9 @@ export function buildCrown(kind = 'tree', seed = 11) {
   const r = rng(seed), B = new Builder();
   const olive = kind === 'olive';
   const yS = olive ? 1.5 : 2.0, yC = olive ? 3.5 : 4.6, R = olive ? 2.3 : 2.9;
-  const sp = { cells: olive ? [4, 5] : [2, 3, 6, 7], card: olive ? 0.85 : 1.05, step: olive ? 0.34 : 0.36, bend: 0.12, conifer: false };
+  const sp = { cells: olive ? [4, 5] : [2, 3, 6, 7], card: olive ? 1.0 : 1.3, step: olive ? 0.3 : 0.32, bend: 0.12, conifer: false };
   const sk = { cc: new THREE.Vector3(0, yC, 0), crownR: R, H: yC + R, branches: [] };
-  const n = olive ? 9 : 11;
+  const n = olive ? 14 : 16;
   for (let i = 0; i < n; i++) {
     const az = i * 2.39996 + r() * 0.5, u = i / (n - 1);
     const tgt = new THREE.Vector3(Math.cos(az) * R * (0.75 + r() * 0.3) * (1 - u * 0.45), yC - R * 0.35 + u * R * 1.25, Math.sin(az) * R * (0.75 + r() * 0.3) * (1 - u * 0.45));
@@ -440,8 +440,8 @@ export function buildCrown(kind = 'tree', seed = 11) {
     const L = d.length();
     const limb = makeBranch(curve(r, o, d, L, 5, 0.1, 0.25), 0.06, 0.012, 1);
     sk.branches.push(limb);
-    for (let j = 0; j < 3; j++) {
-      const t = 0.35 + j * 0.22, so = pointAt(limb, t), ld = dirAt(limb, t), sd = perp(ld, r() * TAU, new THREE.Vector3());
+    for (let j = 0; j < 5; j++) {
+      const t = 0.3 + j * 0.15, so = pointAt(limb, t), ld = dirAt(limb, t), sd = perp(ld, r() * TAU, new THREE.Vector3());
       const dd = ld.clone().multiplyScalar(0.6).addScaledVector(sd, 0.8).normalize();
       sk.branches.push(makeBranch(curve(r, so, dd, L * 0.45 * (0.8 + r() * 0.4), 3, 0.1, 0.3), 0.02, 0.008, 2));
     }
@@ -779,14 +779,17 @@ export function createImpostorMaterial(imp, lod) {
       float npF0 = floor(vNpImp.z), npFt = vNpImp.z - npF0;
       float npF = mod(npD2 < npFt ? npF0 + 1.0 : npF0, uImpGrid.w);
       float npRow = floor(vNpVar / uImpGrid.z), npCol = mod(vNpVar, uImpGrid.z) * uImpGrid.w + npF;
-      vec2 npUv = (vec2(npCol, npRow) + clamp(vNpImp.xy, vec2(0.004), vec2(0.996))) / uImpGrid.xy;`)
-      .replace('#include <map_fragment>', `{ vec4 npC = texture2D(map, npUv); diffuseColor *= npC; }`)
-      .replace('#include <alphatest_fragment>', `{ vec2 npDx = dFdx(npUv) * vec2(${imp.size[0]}.0, ${imp.size[1]}.0), npDy = dFdy(npUv) * vec2(${imp.size[0]}.0, ${imp.size[1]}.0);
+      vec2 npUv = (vec2(npCol, npRow) + clamp(vNpImp.xy, vec2(0.004), vec2(0.996))) / uImpGrid.xy;
+      // Ableitungen aus den stetigen Billboard-Koordinaten: die gedithert gewählte Ansicht springt von Pixel zu Pixel
+      // um eine ganze Zelle – dFdx(npUv) wäre dort riesig (grobe Mip-Stufe → Klötzchen)
+      vec2 npGx = dFdx(vNpImp.xy) / uImpGrid.xy, npGy = dFdy(vNpImp.xy) / uImpGrid.xy;`)
+      .replace('#include <map_fragment>', `{ vec4 npC = textureGrad(map, npUv, npGx, npGy); diffuseColor *= npC; }`)
+      .replace('#include <alphatest_fragment>', `{ vec2 npDx = npGx * vec2(${imp.size[0]}.0, ${imp.size[1]}.0), npDy = npGy * vec2(${imp.size[0]}.0, ${imp.size[1]}.0);
         float npLod = max(0.0, 0.5 * log2(max(dot(npDx, npDx), dot(npDy, npDy))));
         diffuseColor.a *= 1.0 + 0.16 * min(npLod, 5.0); }
       #include <alphatest_fragment>`)
       .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
-      { vec3 npLn = texture2D(tImpNor, npUv).xyz * 2.0 - 1.0;
+      { vec3 npLn = textureGrad(tImpNor, npUv, npGx, npGy).xyz * 2.0 - 1.0;
         vec3 npWn = vNpR0 * npLn.x + vec3(0.0, npLn.y, 0.0) + vNpR2 * npLn.z;
         normal = normalize((viewMatrix * vec4(npWn, 0.0)).xyz); }`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>\n${TRANSLUCENT}`)

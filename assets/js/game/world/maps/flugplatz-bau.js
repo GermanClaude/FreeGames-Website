@@ -82,7 +82,7 @@ export function schulflugzeug(b, x, z, ry = 0, o = {}) {
 }
 
 /** Fahrbares Flugzeug-Schleppfahrzeug (Kulisse). */
-function schlepper(b, x, z, ry = 0, y = 0) {
+export function schlepper(b, x, z, ry = 0, y = 0) {
   const f = frame(b, x, y, z, ry);
   f.box(0, 0.3, 0, 1.9, 0.75, 3.6, 'metal_painted', { tint: '#d9a72a', ...KEIN });
   f.box(0, 1.05, -0.9, 1.6, 0.9, 1.1, 'glass', { ...VG });
@@ -93,7 +93,7 @@ function schlepper(b, x, z, ry = 0, y = 0) {
 }
 
 /** Bodenstromaggregat (Anhänger). */
-function bodenstrom(b, x, z, ry = 0, y = 0) {
+export function bodenstrom(b, x, z, ry = 0, y = 0) {
   const f = frame(b, x, y, z, ry);
   f.box(0, 0.45, 0, 1.3, 1.1, 2.2, 'metal_painted', { tint: '#e2c23a', ...KEIN });
   f.box(0, 1.55, 0, 1.36, 0.06, 2.26, 'metal_painted', { tint: '#3a3d40', ...VG });
@@ -104,7 +104,7 @@ function bodenstrom(b, x, z, ry = 0, y = 0) {
 }
 
 /** Munitionsanhänger mit Bomben/Raketen (Kulisse). */
-function munitionswagen(b, x, z, ry = 0, y = 0) {
+export function munitionswagen(b, x, z, ry = 0, y = 0) {
   const f = frame(b, x, y, z, ry);
   f.box(0, 0.42, 0, 1.6, 0.12, 3.0, 'metal_painted', { tint: OLIV_D, ...KEIN });
   for (const sx of [-0.7, 0.7]) for (const sz of [-1.0, 1.0]) f.cyl(sx, 0.22, sz, 0.22, 0.14, 'rubber', { axis: 'x', ...VG, seg: 10 });
@@ -132,7 +132,7 @@ export function armeeLkw(b, x, z, ry = 0, o = {}) {
 }
 
 /** Tankwagen (Flugfeld-Betankung), Kulisse. */
-function tankwagen(b, x, z, ry = 0, y = 0) {
+export function tankwagen(b, x, z, ry = 0, y = 0) {
   const f = frame(b, x, y, z, ry);
   f.box(0, 0.75, 3.0, 2.4, 1.7, 1.8, 'metal_painted', { tint: '#c8402f', ...KEIN });
   f.box(0, 1.6, 3.91, 2.1, 0.7, 0.02, 'glass', { ...VG, ao: false });
@@ -306,7 +306,7 @@ function shadeHex(hex, k) { const c = new THREE.Color(hex); c.multiplyScalar(k);
 function bueroEinbau(b, x, zb, o) {
   const w = 22, dd = 5.2, fh = 3.2, zc = zb + dd / 2;
   const B = building(b, {
-    x, z: zc, w, d: dd, floors: 2, fh, mat: 'concrete_painted', tint: '#d8d4c8', t: 0.25, skipWalls: ['n'],
+    x, z: zc, w, d: dd, floors: 2, fh, mat: 'plaster_white', tint: '#d8d4c8', t: 0.25, skipWalls: ['n'],
     openings: [
       { side: 's', at: -7, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
       { side: 's', at: 6.5, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
@@ -374,7 +374,8 @@ function wartungsbuehne(b, x, z, ry, y = 0) {
 function triebwerk(b, x, z, ry = 0, y = 0) {
   const f = frame(b, x, y, z, ry);
   f.box(0, 0, 0, 1.4, 0.7, 3.6, 'metal_painted', { tint: '#c8402f', ...KEIN });
-  f.cyl(0, 1.35, 0.4, 0.65, 3.4, 'metal_galvanized', { axis: 'z', ...KEIN, seg: 16, r1: 0.55 });
+  f.cyl(0, 1.35, 0.4, 0.65, 3.4, 'metal_painted', { axis: 'z', tint: '#8d9297', ...KEIN, seg: 16, r1: 0.55 });
+  for (const k of [-0.9, 0.2, 1.3]) f.cyl(0, 1.35, k, 0.68, 0.06, 'metal_galvanized', { axis: 'z', ...VG, seg: 16 });
   f.cyl(0, 1.35, 2.15, 0.72, 0.25, 'metal_painted', { axis: 'z', tint: '#5a5f66', ...VG, seg: 16 });
   f.cyl(0, 1.35, -1.45, 0.48, 0.6, 'metal_rust', { axis: 'z', ...VG, seg: 14, r1: 0.4 });
   for (let k = 0; k < 8; k++) { const a = (k / 8) * PI * 2; f.box(Math.cos(a) * 0.5, 1.35 + Math.sin(a) * 0.5, 2.3, 0.05, 0.3, 0.05, 'metal_galvanized', { ...VG, ao: false, rz: a }); }
@@ -463,10 +464,10 @@ export function tower(b, x, z) {
   const slit = (n) => Array.from({ length: n }, (_, i) => ({ at: 0.9 + i * 1.6, w: 0.35, h: 1.1, sill: 1.3, kind: 'window', glass: false, frame: false }));
   for (let k = 0; k < 3; k++) {
     const y0 = yS0 + k * fh;
-    wall(b, { x0: shx0 + st / 2, z0: shz1, x1: shx0 + st / 2, z1: shz0, y: y0, h: fh, t: st, mat: 'concrete_painted', tint: '#e2ded2', openings: k === 0 ? [{ at: shz1 - (cz + L / 2 - core.land / 2), w: 1.0, h: 2.1, kind: 'door', leaf: 'open' }] : slit(3), outside: 'left' });
-    wall(b, { x0: shx1 - st / 2, z0: shz0, x1: shx1 - st / 2, z1: shz1, y: y0, h: fh, t: st, mat: 'concrete_painted', tint: '#e2ded2', openings: slit(3), outside: 'left' });
-    wall(b, { x0: shx0, z0: shz0 + st / 2, x1: shx1, z1: shz0 + st / 2, y: y0, h: fh, t: st, mat: 'concrete_painted', tint: '#e2ded2', outside: 'left' });
-    wall(b, { x0: shx1, z0: shz1 - st / 2, x1: shx0, z1: shz1 - st / 2, y: y0, h: fh, t: st, mat: 'concrete_painted', tint: '#e2ded2', outside: 'left' });
+    wall(b, { x0: shx0 + st / 2, z0: shz1, x1: shx0 + st / 2, z1: shz0, y: y0, h: fh, t: st, mat: 'plaster_white', tint: '#e2ded2', openings: k === 0 ? [{ at: shz1 - (cz + L / 2 - core.land / 2), w: 1.0, h: 2.1, kind: 'door', leaf: 'open' }] : slit(3), outside: 'left' });
+    wall(b, { x0: shx1 - st / 2, z0: shz0, x1: shx1 - st / 2, z1: shz1, y: y0, h: fh, t: st, mat: 'plaster_white', tint: '#e2ded2', openings: slit(3), outside: 'left' });
+    wall(b, { x0: shx0, z0: shz0 + st / 2, x1: shx1, z1: shz0 + st / 2, y: y0, h: fh, t: st, mat: 'plaster_white', tint: '#e2ded2', outside: 'left' });
+    wall(b, { x0: shx1, z0: shz1 - st / 2, x1: shx0, z1: shz1 - st / 2, y: y0, h: fh, t: st, mat: 'plaster_white', tint: '#e2ded2', outside: 'left' });
     if (k > 0) {
       // Antrittspodest (Süd) der Zwischenebene
       b.box(cx, y0 - 0.25, cz + L / 2 - core.land / 2, cw + 0.3, 0.25, core.land, 'concrete', { tint: '#c8c4ba', grad: false, minimap: false });
@@ -483,10 +484,10 @@ export function tower(b, x, z) {
   railing(b, core.rect.x0, core.rect.z0, core.rect.x1, core.rect.z0, ky, { h: 1.0, tint: '#2c2f33' });
   const kOps = (len) => { const n = Math.floor(len / 2.2); return Array.from({ length: n }, (_, i) => ({ at: (len - n * 2.2) / 2 + 1.1 + i * 2.2, w: 2.05, h: 1.75, sill: 0.95, kind: 'window', glass: true, frameMat: 'metal_painted', frameTint: '#2c2f33' })); };
   const kt = 0.22;
-  wall(b, { x0: kx - kw / 2, z0: cz - kd / 2 + kt / 2, x1: kx + kw / 2, z1: cz - kd / 2 + kt / 2, y: ky, h: kh, t: kt, mat: 'concrete_painted', tint: '#d8d4ca', openings: kOps(kw), outside: 'left' });
-  wall(b, { x0: kx + kw / 2, z0: cz + kd / 2 - kt / 2, x1: kx - kw / 2, z1: cz + kd / 2 - kt / 2, y: ky, h: kh, t: kt, mat: 'concrete_painted', tint: '#d8d4ca', openings: kOps(kw), outside: 'left' });
-  wall(b, { x0: kx + kw / 2 - kt / 2, z0: cz - kd / 2 + kt, x1: kx + kw / 2 - kt / 2, z1: cz + kd / 2 - kt, y: ky, h: kh, t: kt, mat: 'concrete_painted', tint: '#d8d4ca', openings: kOps(kd - 2 * kt), outside: 'left' });
-  wall(b, { x0: kx - kw / 2 + kt / 2, z0: cz + kd / 2 - kt, x1: kx - kw / 2 + kt / 2, z1: cz - kd / 2 + kt, y: ky, h: kh, t: kt, mat: 'concrete_painted', tint: '#d8d4ca', openings: kOps(kd - 2 * kt), outside: 'left' });
+  wall(b, { x0: kx - kw / 2, z0: cz - kd / 2 + kt / 2, x1: kx + kw / 2, z1: cz - kd / 2 + kt / 2, y: ky, h: kh, t: kt, mat: 'plaster_white', tint: '#d8d4ca', openings: kOps(kw), outside: 'left' });
+  wall(b, { x0: kx + kw / 2, z0: cz + kd / 2 - kt / 2, x1: kx - kw / 2, z1: cz + kd / 2 - kt / 2, y: ky, h: kh, t: kt, mat: 'plaster_white', tint: '#d8d4ca', openings: kOps(kw), outside: 'left' });
+  wall(b, { x0: kx + kw / 2 - kt / 2, z0: cz - kd / 2 + kt, x1: kx + kw / 2 - kt / 2, z1: cz + kd / 2 - kt, y: ky, h: kh, t: kt, mat: 'plaster_white', tint: '#d8d4ca', openings: kOps(kd - 2 * kt), outside: 'left' });
+  wall(b, { x0: kx - kw / 2 + kt / 2, z0: cz + kd / 2 - kt, x1: kx - kw / 2 + kt / 2, z1: cz - kd / 2 + kt, y: ky, h: kh, t: kt, mat: 'plaster_white', tint: '#d8d4ca', openings: kOps(kd - 2 * kt), outside: 'left' });
   b.box(kx, ky + kh, cz, kw + 1.4, 0.35, kd + 1.4, 'concrete', { tint: '#b8b4aa', minimap: 'roof', grad: false });
   b.box(kx, ky + kh + 0.35, cz, kw + 1.5, 0.12, kd + 1.5, 'metal_painted', { tint: '#3d4247', ...VG });
   b.noNav(kx - kw, cz - kd, kx + kw, cz + kd, ky + kh - 0.2, ky + kh + 20);

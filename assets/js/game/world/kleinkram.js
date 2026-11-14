@@ -473,14 +473,19 @@ export function wandkram(b, o = {}) {
     ...(b.doors || []).map((d) => [d.hx, d.hz, (d.w || 1) + 1.0, d.y + 1])];
   const T = TABELLE[stil] || TABELLE.stadt;
   let n = 0;
+  // Gebäude/Container und freistehende Mauern (≥ 1,8 m hoch, ≥ 3 m lang; bei dünnen Mauern nur die Längsseiten)
   const kinds = o.huellen || ['building'];
-  const buildings = b.footprints.filter((f) => kinds.includes(f.kind) && f.y1 - f.y0 > 2.2 && f.hw > 1.1 && f.hd > 1.1 && f.y0 < 0.5 + (o.y ?? 0) && (o.yMax == null || f.y0 < o.yMax));
+  const buildings = b.footprints.filter((f) => (kinds.includes(f.kind) ? f.y1 - f.y0 > 2.2 && f.hw > 1.1 && f.hd > 1.1 : o.mauern !== false && f.kind === 'wall' && f.y1 - f.y0 > 1.8 && Math.max(f.hw, f.hd) > 1.5) && f.y0 < 0.5 + (o.y ?? 0) && (o.yMax == null || f.y0 < o.yMax));
+  const haeuser = b.footprints.filter((f) => f.kind === 'building');
   for (const f of buildings) {
+    // Mauern, die zu einem Gebäude gehören (Außen-/Innenwände), überspringen – sonst stünde Kleinkram in Räumen
+    if (f.kind === 'wall' && haeuser.some((h) => inRect(h, f.x, f.z, 0.4))) continue;
     if (f.x < bz.minX || f.x > bz.maxX || f.z < bz.minZ || f.z > bz.maxZ) continue;
     const c = Math.cos(f.ry || 0), s = Math.sin(f.ry || 0);
     const W = (lx, lz) => [f.x + lx * c + lz * s, f.z - lx * s + lz * c];
     for (const [side, len, nx, nz] of [['n', f.hw * 2, 0, -1], ['s', f.hw * 2, 0, 1], ['e', f.hd * 2, 1, 0], ['w', f.hd * 2, -1, 0]]) {
-      const step = 3.1 / k;
+      if (len < 2.4) continue; // Stirnseiten dünner Mauern
+      const step = 2.2 / k;
       for (let t = 1.0 + hash01(f.x, f.z, side.charCodeAt(0)) * step; t < len - 1.0; t += step * (0.7 + hash01(f.x + t, f.z, 7) * 0.6)) {
         const u = t - len / 2;
         // lokale Lage an der Wand: Seiten n/s laufen entlang x, e/w entlang z
@@ -514,7 +519,7 @@ const along = (ry) => ry + Math.PI / 2;
 /** Kleinkram-Tabellen je Stil: p = Anteil der Wandabschnitte mit Gegenstand, items = gleich gewichtete Auswahl. */
 const TABELLE = {
   stadt: {
-    p: 0.62, items: [
+    p: 0.72, items: [
       { fn: (b, x, y, z, ry) => muelltonne(b, x, y, z, ry), off: 0.42 },
       { fn: (b, x, y, z, ry) => { muelltonne(b, x, y, z, ry); const f = frame(b, x, y, z, ry); const [px, pz] = f.P(0.66, 0); muelltonne(b, px, y, pz, ry); }, off: 0.42 },
       { fn: (b, x, y, z, ry) => fahrrad(b, x, y, z, along(ry)), off: 0.25 },
@@ -627,7 +632,7 @@ export function tuerdetails(b, o = {}) {
  */
 export function fensterleben(b, o = {}) {
   const bz = o.bereich || b.bounds, near = footGrid(b), q = DICHTE[stufe(b)] ?? 1;
-  const P = { vorhang: 0.55, kasten: 0.16, klima: 0.05, sat: 0.03, rollladen: 0.25, ...o };
+  const P = { vorhang: 0.7, kasten: 0.3, klima: 0.1, sat: 0.06, rollladen: 0.3, ...o };
   const VORHANG = ['#d8cfb8', '#8a3a32', '#e8e4dc', '#4a5a7a', '#b8a888', '#6a7a5a', '#c8b89a'];
   let n = 0;
   for (const p of b.openings || []) {
@@ -781,7 +786,14 @@ export function bodenmarken(b, o = {}) {
       const gx = edge.x + lx * c + lz * s, gz = edge.z - lx * s + lz * c;
       if (!fs.some((f) => f !== edge && f.y1 > y + 0.04 && inRect(f, gx, gz, 0.5))) { gully(b, gx, y, gz, (edge.ry || 0) + (Math.abs(lx) > edge.hw ? Math.PI / 2 : 0)); n++; }
     } else if (h < 0.14 && !sperrt) { kanaldeckel(b, px, y, pz); n++; }
-    else if (o.asphalt && h < 0.38 && fein(b)) {
+    else if (o.asphalt && h < 0.24) {
+      // Fahrbahnfarbe: Pfeil, Sperrfläche oder Haltelinie (vom Verkehr abgefahren)
+      const k2 = hash01(px, pz, 466), ry = Math.round(hash01(px, pz, 467) * 4) * Math.PI / 2;
+      if (k2 < 0.4) b.decal(px, y + 0.011, pz, 1.1, 3.2, 'arrow', { ry, tint: k2 < 0.2 ? '#f0eee6' : '#e8c22c', opacity: 0.75, kind: 'paint' });
+      else if (k2 < 0.7) b.decal(px, y + 0.011, pz, 3.0, 2.2, 'hatch', { ry, tint: '#e8c22c', opacity: 0.7, kind: 'paint' });
+      else b.decal(px, y + 0.011, pz, 4.0, 0.25, 'line', { ry, tint: '#f0eee6', opacity: 0.75, kind: 'paint' });
+      n++;
+    } else if (o.asphalt && h < 0.38 && fein(b)) {
       const w = 1.2 + hash01(px, pz, 463) * 2.5, d = 0.8 + hash01(px, pz, 464) * 1.8;
       b.decal(px, y + 0.011, pz, w, d, 'stain', { ry: Math.round(hash01(px, pz, 465) * 4) * Math.PI / 2 + 0.02, tint: '#2a2a28', opacity: 0.38, kind: 'grime' });
       n++;

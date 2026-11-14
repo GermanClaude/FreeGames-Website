@@ -794,7 +794,9 @@ export class Vegetation {
         }
         g.wood = make(near.wood, bm, g.n, `baum-${g.kind}-${g.v}-holz`, t.treeShadow);
         g.leaf = near.leaves ? make(near.leaves, leafNear, g.n, `baum-${g.kind}-${g.v}-laub`, t.treeShadow) : null;
-        g.mid = make(mid.mid, midMat, g.n, `baum-${g.kind}-${g.v}-mittel`, t.treeShadow);
+        // Mittelstufe ohne Schatten: die Nahkaskade reicht nur ≈ 16–22 m (shadows.js NEAR_CAP), die Vegetation ist nicht
+        // in der Fernkarte – Schattenwurf der Mittelstufe (ab 18–40 m) wäre unsichtbare Vertexarbeit im Schattenpass
+        g.mid = make(mid.mid, midMat, g.n, `baum-${g.kind}-${g.v}-mittel`, false);
         g.tris = [(near.wood.index.count + (near.leaves ? near.leaves.index.count : 0)) / 3, mid.mid.index.count / 3];
         variants.push({ geo: mid.mid, box: mid.box });
       }

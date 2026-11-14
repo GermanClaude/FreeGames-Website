@@ -237,9 +237,9 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
 // karten-voll (14.11.): Kleinmüll in 3D. Nutzer: „Die Maps sind generell noch viel zu leer.“ Liegt bevorzugt an
 // Wandfüßen und in Ecken (wie echter Müll, den der Wind zusammentreibt), sonst vereinzelt auf freier Fläche; je Art
 // ein InstancedMesh (≈ 8 Draw Calls, keine Schatten), Farbe je Instanz. Nur Optik (keine Kollision/Kugeln), gesät
-// über die Kartenkennung. medium 260 · high 520 · ultra 820 Stück; low lädt das Modul nicht.
+// über die Kartenkennung. medium 420 · high 900 · ultra 1300 Stück; low lädt das Modul nicht.
 // ---------------------------------------------------------------------------
-const LITTER_CAP = { medium: 260, high: 520, ultra: 820 };
+const LITTER_CAP = { medium: 420, high: 900, ultra: 1300 };
 /** Arten: Geometrie-Bauer, Farben, Rauheit/Metall, Gewicht je Kartenstil. */
 const LITTER = [
   { id: 'dose', geo: () => new THREE.CylinderGeometry(0.033, 0.033, 0.12, 8).rotateZ(Math.PI / 2).translate(0, 0.033, 0), cols: ['#b8261e', '#c8c8c4', '#2c4f9a', '#2f7a3a', '#d8b02a', '#1c1c1c'], r: 0.35, m: 0.6 },

@@ -6,7 +6,7 @@
 // kein Luftstart, vehicles/air/aircraft.js), Hubschrauber stehen auf Landeplätzen in den Gefechtsständen.
 // Koordinaten: x Osten, z Süden (Norden = −z). Team A (West) / Team B (Ost). Geladen von world/terrain/bigworld.js.
 import * as THREE from 'three';
-import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw } from './flugplatz-bau.js?v=20261114060746';
+import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw, schlepper, bodenstrom, munitionswagen, tankwagen } from './flugplatz-bau.js?v=20261114060746';
 import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261114060746';
 import { mgNest } from './grenzland-stellungen.js?v=20261114060746';
 import { burntWreck } from './brandwald-bau.js?v=20261114060746';
@@ -60,6 +60,15 @@ function vorfeld(b) {
   armeeLkw(b, -95, -70, Q + 0.1);
   armeeLkw(b, 100, -110, -Q - 0.2, { plane: '#6a6a4c' });
   for (const [x, z] of [[-60, -110], [60, -110]]) barrelGroup(b, x, z, { n: 5 });
+  // Bodengeräte auf dem Vorfeld (Deckung zwischen den Hallen und dem Rollweg)
+  schulflugzeug(b, -80, -98, PI + 0.3, { tint: '#8a9472', akzent: '#c8402f' });
+  tankwagen(b, -58, -72, Q + 0.15);
+  schlepper(b, 28, -100, 0.6);
+  bodenstrom(b, -22, -106, -0.4);
+  bodenstrom(b, 96, -86, 0.2);
+  munitionswagen(b, 58, -80, Q - 0.1);
+  munitionswagen(b, 66, -84, Q + 0.05);
+  for (let k = 0; k < 6; k++) cone(b, -40 + k * 3, -64, {});
   crateStack(b, -12, -118, { ry: 0.25 });
   crateStack(b, 22, -114, { ry: -0.3 });
   // Splitterschutzwände (Betonleitwände) um zwei Stellplätze, Sandsack-Deckungen auf dem Vorfeld
@@ -328,24 +337,24 @@ export default {
   ],
 
   sites: [
-    { id: 'vorfeld', name: 'Vorfeld', bounds: { minX: -172, maxX: 207, minZ: -144, maxZ: -43 }, nav: false, build: (b) => vorfeld(b), chunkSize: 64 },
+    { id: 'vorfeld', name: 'Vorfeld', bounds: { minX: -172, maxX: 207, minZ: -144, maxZ: -43 }, nav: false, build: (b) => vorfeld(b), chunkSize: 200 },
     ...[1, 2, 3].map((nr) => {
       const x = [-120, -40, 40][nr - 1];
-      return { id: 'halle' + nr, name: 'Halle ' + nr, bounds: { minX: x - 33, maxX: x + 33, minZ: -170, maxZ: -126 }, navBounds: { minX: x - 24, maxX: x + 24, minZ: -170, maxZ: -127 }, build: (b) => halle(b, nr), seeds: [[x, -140], [x, -158]], height: 16, spacing: 1.6 };
+      return { id: 'halle' + nr, name: 'Halle ' + nr, bounds: { minX: x - 33, maxX: x + 33, minZ: -170, maxZ: -126 }, navBounds: { minX: x - 24, maxX: x + 24, minZ: -170, maxZ: -127 }, chunkSize: 128, build: (b) => halle(b, nr), seeds: [[x, -140], [x, -158]], height: 16, spacing: 1.6 };
     }),
-    { id: 'tower', name: 'Kontrollturm', bounds: { minX: 112, maxX: 192, minZ: -160, maxZ: -136 }, build: (b) => turmbereich(b), seeds: [[118, -140], [175, -140]], height: 24, spacing: 1.5 },
-    { id: 'tanklager', name: 'Tanklager', bounds: { minX: 270, maxX: 336, minZ: -190, maxZ: -140 }, build: (b) => tanklager(b, 300, -165), seeds: [[296, -166], [322, -160]], height: 13, spacing: 1.6 },
-    { id: 'radar', name: 'Radarstellung', y: R_Y, bounds: { minX: -322, maxX: -278, minZ: -192, maxZ: -148 }, build: (b, ctx) => radar(b, ctx), seeds: [[-300, -165, R_Y]], height: 14, spacing: 1.6 },
-    { id: 'kaserne', name: 'Unterkünfte', bounds: { minX: -190, maxX: -70, minZ: 112, maxZ: 196 }, build: (b) => unterkuenfte(b), seeds: [[-130, 150], [-160, 118], [-100, 118]], height: 10, spacing: 1.6 },
-    { id: 'fahrzeughof', name: 'Fahrzeughof', bounds: { minX: 104, maxX: 196, minZ: 118, maxZ: 182 }, build: (b) => fahrzeughof(b, 150, 150), seeds: [[150, 150]], height: 9, spacing: 1.7 },
-    { id: 'tor', name: 'Haupttor', bounds: { minX: -26, maxX: 16, minZ: 228, maxZ: 252 }, build: (b) => torbereich(b), seeds: [[4, 240]], height: 6, spacing: 1.6 },
-    { id: 'hq_a', name: 'Gefechtsstand West', bounds: { minX: HQ.A.x - 40, maxX: HQ.A.x + 40, minZ: HQ.A.z - 38, maxZ: HQ.A.z + 46 }, build: (b) => gefechtsstand(b, 'A'), seeds: [[HQ.A.x, HQ.A.z + 20]], height: 14, spacing: 2.2 },
-    { id: 'hq_b', name: 'Gefechtsstand Ost', bounds: { minX: HQ.B.x - 40, maxX: HQ.B.x + 40, minZ: HQ.B.z - 38, maxZ: HQ.B.z + 46 }, build: (b) => gefechtsstand(b, 'B'), seeds: [[HQ.B.x, HQ.B.z + 20]], height: 14, spacing: 2.2 },
+    { id: 'tower', name: 'Kontrollturm', bounds: { minX: 112, maxX: 192, minZ: -160, maxZ: -136 }, chunkSize: 128, build: (b) => turmbereich(b), seeds: [[118, -140], [175, -140]], height: 24, spacing: 1.5 },
+    { id: 'tanklager', name: 'Tanklager', bounds: { minX: 270, maxX: 336, minZ: -190, maxZ: -140 }, chunkSize: 128, build: (b) => tanklager(b, 300, -165), seeds: [[296, -166], [322, -160]], height: 13, spacing: 1.6 },
+    { id: 'radar', name: 'Radarstellung', y: R_Y, bounds: { minX: -322, maxX: -278, minZ: -192, maxZ: -148 }, chunkSize: 128, build: (b, ctx) => radar(b, ctx), seeds: [[-300, -165, R_Y]], height: 14, spacing: 1.6 },
+    { id: 'kaserne', name: 'Unterkünfte', bounds: { minX: -190, maxX: -70, minZ: 112, maxZ: 196 }, chunkSize: 128, build: (b) => unterkuenfte(b), seeds: [[-130, 150], [-160, 118], [-100, 118]], height: 10, spacing: 1.6 },
+    { id: 'fahrzeughof', name: 'Fahrzeughof', bounds: { minX: 104, maxX: 196, minZ: 118, maxZ: 182 }, chunkSize: 128, build: (b) => fahrzeughof(b, 150, 150), seeds: [[150, 150]], height: 9, spacing: 1.7 },
+    { id: 'tor', name: 'Haupttor', bounds: { minX: -26, maxX: 16, minZ: 228, maxZ: 252 }, chunkSize: 128, build: (b) => torbereich(b), seeds: [[4, 240]], height: 6, spacing: 1.6 },
+    { id: 'hq_a', name: 'Gefechtsstand West', bounds: { minX: HQ.A.x - 40, maxX: HQ.A.x + 40, minZ: HQ.A.z - 38, maxZ: HQ.A.z + 46 }, chunkSize: 128, build: (b) => gefechtsstand(b, 'A'), seeds: [[HQ.A.x, HQ.A.z + 20]], height: 14, spacing: 2.2 },
+    { id: 'hq_b', name: 'Gefechtsstand Ost', bounds: { minX: HQ.B.x - 40, maxX: HQ.B.x + 40, minZ: HQ.B.z - 38, maxZ: HQ.B.z + 46 }, chunkSize: 128, build: (b) => gefechtsstand(b, 'B'), seeds: [[HQ.B.x, HQ.B.z + 20]], height: 14, spacing: 2.2 },
   ],
   lateSites: [
-    { id: 'piste', name: 'Startbahn', bounds: { minX: -520, maxX: 520, minZ: -60, maxZ: 90 }, chunkSize: 120, build: (b, ctx) => piste(b, ctx) },
-    { id: 'zaun', name: 'Zaun', bounds: { minX: -470, maxX: 470, minZ: -265, maxZ: 265 }, chunkSize: 120, build: (b, ctx) => zaun(b, ctx) },
-    { id: 'flak', name: 'Flakstellungen', bounds: { minX: -280, maxX: 280, minZ: -215, maxZ: 215 }, chunkSize: 120, build: (b, ctx) => flakstellungen(b, ctx) },
+    { id: 'piste', name: 'Startbahn', bounds: { minX: -520, maxX: 520, minZ: -60, maxZ: 90 }, chunkSize: 360, build: (b, ctx) => piste(b, ctx) },
+    { id: 'zaun', name: 'Zaun', bounds: { minX: -470, maxX: 470, minZ: -265, maxZ: 265 }, chunkSize: 480, build: (b, ctx) => zaun(b, ctx) },
+    { id: 'flak', name: 'Flakstellungen', bounds: { minX: -280, maxX: 280, minZ: -215, maxZ: 215 }, chunkSize: 600, build: (b, ctx) => flakstellungen(b, ctx) },
   ],
 
   flags: {

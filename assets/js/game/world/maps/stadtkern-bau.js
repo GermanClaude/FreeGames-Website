@@ -14,7 +14,8 @@ import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde,
 
 const PI = Math.PI, Q = PI / 2;
 export const FH = 3.4;
-const PUTZ = ['#d9cdb4', '#c9bba0', '#d6c8ae', '#bfb3a0', '#cdb69a', '#d4cbbb', '#b8a88f', '#cfc2a8'];
+// Fassadenfarben: Ocker, Grau, Altweiß, Lachs, blasses Grün, Sandstein – damit die Zeile nicht einfarbig wirkt
+const PUTZ = ['#d9cdb4', '#b9b6ae', '#e2dccd', '#d4b39a', '#c2c9b4', '#cfb98e', '#a9a49a', '#d8c2b0', '#c8bba0', '#bcc3c4'];
 
 /** Seitenname der Straßen- bzw. Hofseite einer Hälfte (s = +1: Süden, Straße im Norden). */
 export const streetSide = (s) => (s > 0 ? 'n' : 's');
@@ -283,11 +284,12 @@ export function altbau(b, o) {
   // Abplatzungen (Ziegel sichtbar) und Brandspuren an der Straßenfassade; Schutt unter dem Granatloch
   if (mittel(b)) {
     const nrm = [0, 0, -s];
-    for (let k = 0; k < 7; k++) chip(b, x + (H(150 + k) - 0.5) * (w - 1.2), 1.2 + H(160 + k) * (floors * fh - 2.2), zf - s * 0.015, nrm, 0.5 + H(170 + k) * 0.9, H(180 + k) < 0.7 ? 'chip_brick' : 'chip_stone');
+    // wenige, kleine Abplatzungen – große Ziegelflecken wirkten wie aufgeklebt
+    for (let k = 0; k < 3; k++) chip(b, x + (H(150 + k) - 0.5) * (w - 1.2), 1.2 + H(160 + k) * (floors * fh - 2.2), zf - s * 0.015, nrm, 0.35 + H(170 + k) * 0.35, H(180 + k) < 0.4 ? 'chip_brick' : H(180 + k) < 0.75 ? 'chip_stone' : 'plaster_patch');
   }
   if (shell) {
     const hx = x + ax0 + shell.k * 2.6 + 1.3, hy = shell.f * fh + 0.55 + 0.75;
-    chip(b, hx, hy, zf - s * 0.016, [0, 0, -s], 2.4, 'chip_brick');
+    chip(b, hx, hy, zf - s * 0.016, [0, 0, -s], 1.9, 'chip_brick');
     soot(b, hx, hy + 1.1, zf - s * 0.017, [0, 0, -s], 1.8);
     rubble(b, hx, zf - s * 1.4, 1.1, { mat: 'plaster_damaged', brick: true });
   }

@@ -62,7 +62,7 @@ export const LIB_MATERIALS = {
   bark: { id: 'bark_brown', color: [1.75, 1.8, 1.95], macro: false },
   // baeume 14.11.: Rinde je Baumart (Poly Haven CC0: jolcham_oak_bark_01, knotted_pine_bark (Buche; Birke daraus
   // aufgehellt mit Korkporen), bark_brown_01, pine_bark, bark_willow); Farbe auf ≈ Rindenhelligkeit kalibriert
-  bark_eiche: { id: 'bark_eiche', color: [1.35, 1.45, 1.7], macro: false },
+  bark_eiche: { id: 'bark_eiche', color: [1.05, 1.1, 1.25], normalScale: 1.4, macro: false },
   bark_buche: { id: 'bark_buche', color: [2.3, 2.3, 2.4], macro: false },
   bark_birke: { id: 'bark_birke', color: 0.9, macro: false },
   bark_pappel: { id: 'bark_pappel', color: [1.0, 1.35, 3.0], macro: false },
