@@ -11,7 +11,7 @@ import { StreakManager } from './streaks.js?v=20261114060746';
 import { CheatSystem } from '../cheats.js?v=20261114060746';
 
 /** Karten mit Einsatzkarte nach dem Tod (Draufsicht, Einstieg bei Kameraden). */
-const DEPLOY_MAPS = new Set(['grenzland', 'bibliothek', 'niemandsland', 'brandwald']);
+const DEPLOY_MAPS = new Set(['grenzland', 'bibliothek', 'niemandsland', 'brandwald', 'flugplatz']);
 
 const STREAK_WEAPONS = new Set(['strike', 'sentry', 'uav', 'drohne']);
 export const OVERTIME_SECONDS = 60;

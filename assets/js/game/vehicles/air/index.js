@@ -102,6 +102,9 @@ export class AirSupport {
     if (!w || !this.enabled()) return;
     const p = G.params && typeof G.params.get === 'function' ? G.params.get('air') : null;
     if (!force && p !== '1' && !(Array.isArray(w.vehicleSpawns) && w.vehicleSpawns.length) && !(G.match && G.match.vehicles)) return;
+    // Karte mit eigenen Luftfahrzeug-Stellplätzen (Flugplatz: Jets auf der Bahn, Hubschrauber auf Landeplätzen) → keine
+    // zusätzlichen automatischen Plätze (die Karteneinträge meldet VehicleSystem._setupSpawns an)
+    if (!force && Array.isArray(w.vehicleSpawns) && w.vehicleSpawns.some((e) => e && VEHICLES[e.type] && VEHICLES[e.type].air)) return;
     const ffa = !!(G.match && G.match.ffa);
     const teams = ffa ? [null] : ['A', 'B'];
     const center = w.bounds ? w.bounds.getCenter(new THREE.Vector3()) : new THREE.Vector3();

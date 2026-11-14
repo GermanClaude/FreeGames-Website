@@ -25,10 +25,11 @@ const MAP_MODULES = {
   werk: () => import('./maps/werk.js?v=20261114060746'),
   bibliothek: () => import('./maps/bibliothek.js?v=20261114060746'),
   range: () => import('./maps/range.js?v=20261114060746'),
+  stadtkern: () => import('./maps/stadtkern.js?v=20261114060746'), // karten-neu: Stadtviertel mit Innenräumen
 };
 
 /** Großkarten (MAPS[id].scale === 'gross'): eigener Lader, nur per import() (GROSSKAMPF_PLAN §12.5). */
-const BIG_MAPS = new Set(['grenzland', 'niemandsland', 'brandwald']);
+const BIG_MAPS = new Set(['grenzland', 'niemandsland', 'brandwald', 'flugplatz']);
 
 export const MAP_IDS = [...Object.keys(MAP_MODULES), ...BIG_MAPS];
 

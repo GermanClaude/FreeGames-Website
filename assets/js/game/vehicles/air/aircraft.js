@@ -168,8 +168,8 @@ export class Aircraft extends Vehicle {
       else this.steerToward(I, ap.to.x, ap.to.z, ap.alt ?? (this.air === 'jet' ? 200 : 60), ap.speed ?? null);
     }
     this._airspace(dt, world);
-    // Jet: Luftstart nach dem Einsteigen (Karten ohne Startbahn)
-    if (this.air === 'jet' && this.alive && pilot && b.onGround && live && F.airStart) {
+    // Jet: Luftstart nach dem Einsteigen (Karten ohne Startbahn; world.runway → Start vom Boden, Flugplatz)
+    if (this.air === 'jet' && this.alive && pilot && b.onGround && live && F.airStart && !(world && world.runway)) {
       if (this.launchAt == null) { this.launchAt = now + 1.4; G.events.emit('vehicle:airstart', { vehicle: this, phase: 'bereit', at: this.launchAt }); }
       else if (now >= this.launchAt) this.airStart(world);
     } else if (!pilot || !b.onGround) this.launchAt = null;

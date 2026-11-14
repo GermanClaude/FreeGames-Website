@@ -10,6 +10,9 @@ import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-aussta
 import * as Innen from './grenzland-innen.js?v=20261114060746';
 import { mgNest } from './grenzland-stellungen.js?v=20261114060746';
 import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261114060746';
+// karten-voll (14.11.): Kleinkram an Häusern/Höfen, Freileitungen, Fahrspuren, Hochsitze, Feldstellungen
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261114060746';
+import { landschaft } from './grenzland-land.js?v=20261114060746';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 // Grafik-Vorlage (Video-Dorfplatz bild-7_8s): hellgrau-weißer Putz, Tonziegel rot-orange (Farbe aus der Textur v_roof,
@@ -533,7 +536,13 @@ const H_Y = 15; // Plateauhöhe Funkhügel
 // ---------------------------------------------------------------------------
 // Kartenbeschreibung
 // ---------------------------------------------------------------------------
-export default {
+/** karten-voll: Ortschaft aufbauen, dann Leben an Fassaden/Fenstern (nur Optik; Starts, Flaggen, Kampagne frei). */
+function leben(b, res, stil) {
+  belebe(b, { stil, sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
+  return res;
+}
+
+const GRENZLAND = {
   id: 'grenzland',
   name: 'Grenzland',
   scale: 'gross',
@@ -661,14 +670,14 @@ export default {
 
   // Ortschaften (je ein MapBuilder; Boden y = 0 bzw. Plateau)
   sites: [
-    { id: 'dorf', name: 'Dorf', bounds: { minX: -62, maxX: 52, minZ: 28, maxZ: 116 }, build: (b) => dorf(b), seeds: [[-6, 74], [-26, 58]], height: 20 },
-    { id: 'gehoeft', name: 'Gehöft', bounds: { minX: -188, maxX: -112, minZ: 78, maxZ: 140 }, build: (b) => gehoeft(b), seeds: [[-148, 106]] },
+    { id: 'dorf', name: 'Dorf', bounds: { minX: -62, maxX: 52, minZ: 28, maxZ: 116 }, build: (b) => leben(b, dorf(b), 'dorf'), seeds: [[-6, 74], [-26, 58]], height: 20 },
+    { id: 'gehoeft', name: 'Gehöft', bounds: { minX: -188, maxX: -112, minZ: 78, maxZ: 140 }, build: (b) => leben(b, gehoeft(b), 'hof'), seeds: [[-148, 106]] },
     { id: 'bruecke', name: 'Brücke', bounds: { minX: 22, maxX: 58, minZ: -58, maxZ: -4 }, clear: { minX: 26, maxX: 54, minZ: -54, maxZ: -6 }, build: (b) => bruecke(b), seeds: [[40, -30, 0.6]], height: 10, spacing: 1.8 },
-    { id: 'kieswerk', name: 'Kieswerk', bounds: { minX: 114, maxX: 192, minZ: -152, maxZ: -74 }, build: (b) => kieswerk(b), seeds: [[152, -112]], height: 18, spacing: 1.7 },
-    { id: 'muehle', name: 'Mühle', bounds: { minX: -76, maxX: -48, minZ: 4, maxZ: 26 }, build: (b) => muehle(b), seeds: [[-62, 14]], spacing: 1.6 },
-    { id: 'funkhuegel', name: 'Funkhügel', y: H_Y, bounds: { minX: -136, maxX: -104, minZ: -156, maxZ: -124 }, build: (b) => funkhuegel(b, H_Y), seeds: [[-121, -142, H_Y]], height: 12, spacing: 1.7 },
-    { id: 'hq_a', name: 'Hauptquartier A', bounds: { minX: 24, maxX: 96, minZ: 196, maxZ: 242 }, nav: true, build: (b) => hq(b, { x: 60, z: 219, side: 'A', pads: [[78, 228, 'tank'], [78, 212, 'tank'], [40, 230, 'jeep'], [40, 220, 'jeep'], [40, 210, 'jeep']] }), seeds: [[60, 212]], spacing: 2.2 },
-    { id: 'hq_b', name: 'Hauptquartier B', bounds: { minX: -56, maxX: 16, minZ: -246, maxZ: -198 }, nav: true, build: (b) => hq(b, { x: -20, z: -222, side: 'B', pads: [[-38, -213, 'tank'], [-38, -229, 'tank'], [2, -212, 'jeep'], [2, -222, 'jeep'], [2, -232, 'jeep']] }), seeds: [[-20, -215]], spacing: 2.2 },
+    { id: 'kieswerk', name: 'Kieswerk', bounds: { minX: 114, maxX: 192, minZ: -152, maxZ: -74 }, build: (b) => leben(b, kieswerk(b), 'industrie'), seeds: [[152, -112]], height: 18, spacing: 1.7 },
+    { id: 'muehle', name: 'Mühle', bounds: { minX: -76, maxX: -48, minZ: 4, maxZ: 26 }, build: (b) => leben(b, muehle(b), 'ruine'), seeds: [[-62, 14]], spacing: 1.6 },
+    { id: 'funkhuegel', name: 'Funkhügel', y: H_Y, bounds: { minX: -136, maxX: -104, minZ: -156, maxZ: -124 }, build: (b) => leben(b, funkhuegel(b, H_Y), 'militaer'), seeds: [[-121, -142, H_Y]], height: 12, spacing: 1.7 },
+    { id: 'hq_a', name: 'Hauptquartier A', bounds: { minX: 24, maxX: 96, minZ: 196, maxZ: 242 }, nav: true, build: (b) => leben(b, hq(b, { x: 60, z: 219, side: 'A', pads: [[78, 228, 'tank'], [78, 212, 'tank'], [40, 230, 'jeep'], [40, 220, 'jeep'], [40, 210, 'jeep']] }), 'militaer'), seeds: [[60, 212]], spacing: 2.2 },
+    { id: 'hq_b', name: 'Hauptquartier B', bounds: { minX: -56, maxX: 16, minZ: -246, maxZ: -198 }, nav: true, build: (b) => leben(b, hq(b, { x: -20, z: -222, side: 'B', pads: [[-38, -213, 'tank'], [-38, -229, 'tank'], [2, -212, 'jeep'], [2, -222, 'jeep'], [2, -232, 'jeep']] }), 'militaer'), seeds: [[-20, -215]], spacing: 2.2 },
     // zuletzt angehängt: Builder-Zufall der übrigen Ortschaften bleibt gleich (seed + k·101)
     { id: 'damm', name: 'Erdbrücke', bounds: { minX: -30, maxX: -6, minZ: -34, maxZ: -2 }, clear: { minX: -28, maxX: -8, minZ: -31, maxZ: -12.5 }, build: (b) => damm(b), seeds: [[-18, -9, 0.8], [-18, -27, 1.2]], height: 8, spacing: 1.5 },
   ],
@@ -676,6 +685,9 @@ export default {
   // Spielfläche (statt unsichtbarer Wand; die alte Wand bei wallMargin bleibt als Sicherheitsnetz dahinter)
   lateSites: [
     { id: 'grenze', name: 'Grenzanlage', bounds: { minX: -280, maxX: 280, minZ: -280, maxZ: 280 }, chunkSize: 80, build: (b, ctx) => grenzanlage(b, { hf: ctx.hf, roads: ctx.roads, line: grenzLinie(268, 24) }) },
+    // karten-voll (14.11.): Kulturlandschaft – Freileitungen entlang der Straßen, Fahrspuren/Pfützen auf Feldwegen,
+    // Rundballen auf Stoppelfeldern, Hochsitze an Waldrändern, Feldstellungen an Hecken (grenzland-land.js)
+    { id: 'land', name: 'Kulturlandschaft', bounds: { minX: -250, maxX: 250, minZ: -250, maxZ: 250 }, chunkSize: 80, build: (b, ctx) => landschaft(b, ctx, GRENZLAND) },
   ],
 
   // Flaggen: Eroberung A–E, Herrschaft A–C (Dorf, Mühle, Brücke)
@@ -716,3 +728,4 @@ export default {
     { id: 'grenzland-gertrud', name: 'Gertrud', hint: 'Die Scheune hat einen Stammgast.', x: -134.5, y: 0.2, z: 119.5, trigger: { type: 'proximity', radius: 3.2 } },
   ],
 };
+export default GRENZLAND;

@@ -329,7 +329,16 @@ export class AirBody {
       const k = this.stall * 1.3;
       wp += _w.x * k; wy += _w.y * k * 0.5; wr += _w.z * k * 0.3 + (Math.random() - 0.5) * this.stall * 0.6;
     }
-    if (this.onGround) { wr = 0; if (V < 40) wp = Math.min(wp, 0.15); }
+    if (this.onGround) {
+      wr = 0; if (V < 40) wp = Math.min(wp, 0.15);
+      // Bugradlenkung (F.steer, rad/s bei voller Auslenkung): Rollen auf Rollweg/Bahn (Flugplatz) – wirkt bis ≈ 25 m/s
+      // voll, darüber übernimmt das Seitenruder (Ratensteuerung oben)
+      if (F.steer) {
+        const vf = Math.abs(this.vel.dot(_f));
+        const k = clamp(vf / 4, 0, 1) * (1 - smooth(25, 55, vf));
+        wy = wy * (1 - k) + (-clamp(I.yaw, -1, 1) * F.steer) * k;
+      }
+    }
     if (I.dead) { wp = -0.25; wr = 1.6; wy = 0.2; }
     if (this.mult.yawSpin) { wy += this.mult.yawSpin * 0.15; wr += this.mult.yawSpin * 0.25; }
     const k = Math.min(1, h * 7);

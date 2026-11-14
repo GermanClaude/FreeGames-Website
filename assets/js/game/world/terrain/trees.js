@@ -36,14 +36,14 @@ const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _up = new THREE.Vector
 // (m), step Kartenabstand (m), cells Atlaszellen, bark Spielmaterial (engine/textures.js), strip Rindenstreifen im
 // Atlas, vScale Rinden-UV längs (Satz nicht quadratisch), tint Instanzfarben (× Atlas), mossK Moos.
 export const TREE_SPECIES = {
-  eiche:  { H: 12.5, R0: 0.27, flare: 0.55, leader: 0.55, base: 0.26, limbs: 7, ang: [48, 82], limb: 0.5, up: 0.22, sub: 0.75, card: 1.25, step: 0.42, cells: [0, 1], bark: 'bark_eiche', strip: 0, vScale: 0.5, tint: ['#9aa070', '#8f9a66', '#a3a676'], mossK: 1.0, bend: 0.2, crownR: 5.2 },
-  buche:  { H: 13.5, R0: 0.25, flare: 0.35, leader: 0.82, base: 0.3, limbs: 8, ang: [32, 62], limb: 0.42, up: 0.35, sub: 0.7, card: 1.2, step: 0.4, cells: [2, 3], bark: 'bark_buche', strip: 1, vScale: 1, tint: ['#a8b47a', '#9fae72', '#b2b882'], mossK: 0.6, bend: 0.22, crownR: 4.6 },
-  birke:  { H: 13.0, R0: 0.19, flare: 0.25, leader: 0.94, base: 0.32, limbs: 9, ang: [28, 55], limb: 0.3, up: -0.25, sub: 0.6, card: 1.0, step: 0.36, cells: [4, 5], bark: 'bark_birke', strip: 2, vScale: 1, tint: ['#b8c07a', '#adb872', '#c2c486'], mossK: 0.25, bend: 0.3, crownR: 3.4, droop: 0.55 },
-  linde:  { H: 12.5, R0: 0.26, flare: 0.4, leader: 0.72, base: 0.24, limbs: 8, ang: [38, 70], limb: 0.44, up: 0.3, sub: 0.68, card: 1.3, step: 0.4, cells: [6, 7], bark: 'bark', strip: 3, vScale: 1, tint: ['#9fae70', '#96a868', '#a8b278'], mossK: 0.8, bend: 0.22, crownR: 4.8 },
-  pappel: { H: 16.0, R0: 0.25, flare: 0.3, leader: 0.97, base: 0.18, limbs: 11, ang: [14, 32], limb: 0.22, up: 0.5, sub: 0.55, card: 1.15, step: 0.38, cells: [8, 9], bark: 'bark_pappel', strip: 4, vScale: 1, tint: ['#98a874', '#8ea06c', '#a2ae7c'], mossK: 0.5, bend: 0.32, crownR: 2.6 },
-  fichte: { conifer: true, H: 12.5, R0: 0.22, flare: 0.3, leader: 1, base: 0.07, R: 2.7, card: 1.05, step: 0.32, cells: [10, 10], bark: 'bark_fichte', strip: 5, vScale: 1, tint: ['#7d9078', '#768a72', '#86977e'], mossK: 0.6, bend: 0.26, crownR: 2.8 },
-  kiefer: { conifer: true, pine: true, H: 13.5, R0: 0.22, flare: 0.25, leader: 0.93, base: 0.55, limbs: 9, ang: [35, 62], limb: 0.24, up: 0.3, sub: 0.6, card: 1.3, step: 0.35, cells: [11, 11], bark: 'bark_kiefer', strip: 6, vScale: 1, tint: ['#8a9a76', '#83946e', '#92a07c'], mossK: 0.3, bend: 0.24, crownR: 3.4 },
-  tot:    { dead: true, H: 11.5, R0: 0.25, flare: 0.5, leader: 0.6, base: 0.3, limbs: 6, ang: [40, 78], limb: 0.42, up: 0.18, sub: 0.9, card: 1.4, step: 0.9, cells: [12, 12], bark: 'bark', barkTint: '#8c8378', strip: 7, vScale: 1, tint: ['#8a8278', '#7f776e'], mossK: 1.2, bend: 0.12, crownR: 4.4 },
+  eiche:  { H: 12.5, R0: 0.27, flare: 0.55, leader: 0.55, base: 0.26, limbs: 7, ang: [48, 82], limb: 0.5, up: 0.22, sub: 0.75, card: 1.25, step: 0.42, cells: [0, 1], bark: 'bark_eiche', strip: 0, vScale: 0.5, tint: ['#f2f2e6', '#e2e8d6', '#fff8e4'], tile: 1, mossK: 1.0, bend: 0.2, crownR: 5.2 },
+  buche:  { H: 13.5, R0: 0.25, flare: 0.35, leader: 0.82, base: 0.3, limbs: 8, ang: [32, 62], limb: 0.42, up: 0.35, sub: 0.7, card: 1.2, step: 0.4, cells: [2, 3], bark: 'bark_buche', strip: 1, vScale: 1, tint: ['#f6faea', '#e8f0dc', '#fffbe8'], tile: 1.7, mossK: 0.6, bend: 0.22, crownR: 4.6 },
+  birke:  { H: 13.0, R0: 0.19, flare: 0.25, leader: 0.94, base: 0.32, limbs: 9, ang: [28, 55], limb: 0.3, up: -0.25, sub: 0.6, card: 1.0, step: 0.36, cells: [4, 5], bark: 'bark_birke', strip: 2, vScale: 1, tint: ['#fafae8', '#eef2dc', '#fff6dc'], tile: 1.7, mossK: 0.25, bend: 0.3, crownR: 3.4, droop: 0.55 },
+  linde:  { H: 12.5, R0: 0.26, flare: 0.4, leader: 0.72, base: 0.24, limbs: 8, ang: [38, 70], limb: 0.44, up: 0.3, sub: 0.68, card: 1.3, step: 0.4, cells: [6, 7], bark: 'bark', strip: 3, vScale: 1, tint: ['#f0f4e4', '#e4ecd8', '#fbfae6'], tile: 1, mossK: 0.8, bend: 0.22, crownR: 4.8 },
+  pappel: { H: 16.0, R0: 0.25, flare: 0.3, leader: 0.97, base: 0.18, limbs: 11, ang: [14, 32], limb: 0.22, up: 0.5, sub: 0.55, card: 1.15, step: 0.38, cells: [8, 9], bark: 'bark_pappel', strip: 4, vScale: 1, tint: ['#eef2e6', '#e0e8dc', '#f6f6ea'], tile: 1, mossK: 0.5, bend: 0.32, crownR: 2.6 },
+  fichte: { conifer: true, H: 12.5, R0: 0.22, flare: 0.3, leader: 1, base: 0.07, R: 2.7, card: 1.05, step: 0.32, cells: [10, 10], bark: 'bark_fichte', strip: 5, vScale: 1, tint: ['#e8eee6', '#dce4da', '#f0f2ea'], tile: 1, mossK: 0.6, bend: 0.26, crownR: 2.8 },
+  kiefer: { conifer: true, pine: true, H: 13.5, R0: 0.22, flare: 0.25, leader: 0.93, base: 0.55, limbs: 9, ang: [35, 62], limb: 0.24, up: 0.3, sub: 0.6, card: 1.3, step: 0.35, cells: [11, 11], bark: 'bark_kiefer', strip: 6, vScale: 1, tint: ['#eef2e2', '#e4e8d6', '#f6f4e4'], tile: 2, mossK: 0.3, bend: 0.24, crownR: 3.4 },
+  tot:    { dead: true, H: 11.5, R0: 0.25, flare: 0.5, leader: 0.6, base: 0.3, limbs: 6, ang: [40, 78], limb: 0.42, up: 0.18, sub: 0.9, card: 1.4, step: 0.9, cells: [12, 12], bark: 'bark', barkTint: '#8c8378', strip: 7, vScale: 1, tint: ['#ffffff', '#ece6e0'], tile: 1, mossK: 1.2, bend: 0.12, crownR: 4.4 },
 };
 /** Arten der Altkategorien (vegetation.js platziert 'laub'/'fichte'; welche Art es wird, entscheidet ein Hash). */
 export const DEFAULT_MIX = {
@@ -243,7 +243,7 @@ function skeleton(sp, seed) {
 function tube(B, br, segs, sp, H, opts) {
   const { strip = -1, flare = 0, rootPh = 0 } = opts;
   const n = br.pts.length, rings = [];
-  const C0 = TAU * br.R[0], size = 1; // Rinde: UV in Kacheln (Material skaliert auf Meter)
+  const C0 = TAU * br.R[0], size = sp.tile || 1; // Rinde: UV in Metern (Bibliothekssatz kachelt je sizeM = tile)
   // Umfangskacheln: Stamm ganzzahlig (nahtlos), dünne Äste anteilig (Naht unsichtbar klein)
   const tiles = strip >= 0 ? 1 : C0 > 0.6 ? Math.max(1, Math.round(C0 / size)) : Math.max(0.25, C0 / size);
   const T = new THREE.Vector3(), X = new THREE.Vector3(), Y = new THREE.Vector3(), P = new THREE.Vector3(), N = new THREE.Vector3();
@@ -266,8 +266,8 @@ function tube(B, br, segs, sp, H, opts) {
       P.copy(p).addScaledVector(N, rr);
       // Normale am Wurzelanlauf etwas nach oben gekippt
       const nn = N.clone(); if (f > 0.01) nn.y += f * 0.6; nn.normalize();
-      const u = strip >= 0 ? k / segs : (k / segs) * tiles;
-      const v = strip >= 0 ? br.acc[i] / 1.2 : br.acc[i] * (sp.vScale || 1) / size;
+      const u = strip >= 0 ? k / segs : (k / segs) * tiles * size;
+      const v = strip >= 0 ? br.acc[i] / 1.2 : br.acc[i] * (sp.vScale || 1);
       // Wind: Stamm biegt sich mit der Höhe; Äste flattern leicht an den Spitzen
       const hb = Math.max(0, P.y) / H, w0 = sp.bend * hb * hb, w1 = br.lvl === 0 ? 0 : 0.012 * br.lvl * (i / (n - 1));
       // AO: Holz im Kronendach dunkler, Stammfuß leicht

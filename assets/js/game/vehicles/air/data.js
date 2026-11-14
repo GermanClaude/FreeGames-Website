@@ -151,6 +151,7 @@ export const AIR_VEHICLES = {
       thrust: 62000, afterburner: 108000, spool: 2.2,
       rates: { pitch: 1.15, roll: 3.1, yaw: 0.32 }, gLimit: 8.5, minSpeed: 48, stallSpeed: 56,
       airStart: { alt: 230, speed: 125, edge: 140 }, // Luftstart: Höhe über Grund (m), Fahrt (m/s), Abstand vom Kartenrand
+      steer: 0.55, // Bugradlenkung am Boden (rad/s) – Rollen/Start auf Karten mit Startbahn (world.runway, Flugplatz)
       zoneMargin: 650, ceiling: 900,
     },
     zones: {

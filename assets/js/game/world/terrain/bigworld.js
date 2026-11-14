@@ -37,6 +37,7 @@ const BIG_MAPS = {
   grenzland: () => import('../maps/grenzland.js?v=20261114060746'),
   niemandsland: () => import('../maps/niemandsland.js?v=20261114060746'),
   brandwald: () => import('../maps/brandwald.js?v=20261114060746'),
+  flugplatz: () => import('../maps/flugplatz.js?v=20261114060746'), // karten-neu: Fliegerhorst mit Startbahn
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -483,6 +484,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     targets: [],
     terrain: { heightfield: hf, chunks, size: hf.size, waterY: hf.waterY, material: tmat.material, source: tmat.source },
     roads, vehicleSpawns, vehicleSpots, secrets, secretsAuto: true,
+    runway: def.runway || null, // Startbahn (Flugplatz): Jets starten vom Boden statt per Luftstart (vehicles/air/aircraft.js)
     vegetation: veg, // Baumstandorte (vehicles/air: Stellplätze der Luftfahrzeuge frei von Kronen)
     civilVehicles: civilList(sites.flatMap((st) => st.b.civilSpots || [])), // fahrbare Zivilautos der Ortschaften
     emplacements: sites.flatMap((st) => st.b.emplacements || []), // benutzbare MG-Stellungen (game/mappoints.js)
