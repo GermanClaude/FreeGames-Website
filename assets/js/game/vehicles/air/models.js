@@ -12,9 +12,9 @@
 //   setJet({thr, ab, gear, pitch, roll, yaw}), setStores(n), setLights(on), setWreck(on), setInterior(on), setOccupant(i, on), dispose() }
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boxUV } from '../../engine/textures.js?v=20261114004313';
-import { VEHICLES } from '../data.js?v=20261114004313';
-import { vehicleMaterials, markingMaterial } from '../materials.js?v=20261114004313';
+import { boxUV } from '../../engine/textures.js?v=20261114060746';
+import { VEHICLES } from '../data.js?v=20261114060746';
+import { vehicleMaterials, markingMaterial } from '../materials.js?v=20261114060746';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();

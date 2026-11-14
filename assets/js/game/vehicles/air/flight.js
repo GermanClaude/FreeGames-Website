@@ -16,8 +16,8 @@
 //   Ratensteuerung (Rollen/Nicken/Gieren) mit Wirksamkeit nach Staudruck, Lagehaltung bei losgelassenem Steuer.
 // Boden: Fahrwerkspunkte (def.gear) gegen Gelände/Kollision, Reibung, harte Landung → impact (Schaden in aircraft.js).
 import * as THREE from 'three';
-import { collisionRay } from '../../engine/physics.js?v=20261114004313';
-import { groundRay } from '../sim.js?v=20261114004313';
+import { collisionRay } from '../../engine/physics.js?v=20261114060746';
+import { groundRay } from '../sim.js?v=20261114060746';
 
 export const STEP = 1 / 60;
 export const G_AIR = 9.81;

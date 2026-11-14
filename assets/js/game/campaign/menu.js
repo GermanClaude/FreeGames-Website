@@ -4,13 +4,13 @@
 // Mission (Einsatzart, Karte, Ziele, Bestwert) und Start ab Beginn oder ab Checkpoint. Der Fußknopf der Lobby wird in
 // diesem Reiter zu „Mission starten“ (data-act camp-start → start()).
 
-import { CAMPAIGN, OUTLINE } from './outline.js?v=20261114004313';
-import { MISSIONS, MISSION_ORDER } from './missions/index.js?v=20261114004313';
-import { CampaignProgress } from './progress.js?v=20261114004313';
-import { CAMPAIGN_DIFF } from './director.js?v=20261114004313';
-import { missionConfig } from './mode.js?v=20261114004313';
-import { ensureCampaignStyles } from './ui.js?v=20261114004313';
-import { textToVisemes, sampleMouth } from './lipsync.js?v=20261114004313';
+import { CAMPAIGN, OUTLINE } from './outline.js?v=20261114060746';
+import { MISSIONS, MISSION_ORDER } from './missions/index.js?v=20261114060746';
+import { CampaignProgress } from './progress.js?v=20261114060746';
+import { CAMPAIGN_DIFF } from './director.js?v=20261114060746';
+import { missionConfig } from './mode.js?v=20261114060746';
+import { ensureCampaignStyles } from './ui.js?v=20261114060746';
+import { textToVisemes, sampleMouth } from './lipsync.js?v=20261114060746';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SPEEDS = [['langsam', 'Langsam'], ['normal', 'Normal'], ['schnell', 'Schnell']];

@@ -14,9 +14,9 @@
 //     mehrlagiger, vergüteter Linse (dunkle Tiefe + spiegelnde Deckschicht + Fassungsring) und Sonnenblende.
 // Anker, Teile und Maße der Haltung (rightHandGrip, leftHandGrip, magWell, Visier) wie bei den Vorgängern – Hände, Nachladen
 // und Zielen bleiben unverändert.
-import { swapOptic, ejectionPort, roundRect, engrave, qdCup, triggerGuard, arGrip, muzzleDevice } from './parts.js?v=20261114004313';
-import { magRounds } from './magfill.js?v=20261114004313';
-import { schrift } from './schrift.js?v=20261114004313';   // Gravuren (14.11., gfx-waffen)
+import { swapOptic, ejectionPort, roundRect, engrave, qdCup, triggerGuard, arGrip, muzzleDevice } from './parts.js?v=20261114060746';
+import { magRounds } from './magfill.js?v=20261114060746';
+import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., gfx-waffen)
 const MARK_BRECHER = schrift('brecher').mark;
 const MARK_TITAN = schrift('titan').mark;
 

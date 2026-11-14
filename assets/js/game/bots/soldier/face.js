@@ -43,10 +43,10 @@
 // Hintergrund-Rechner (face-worker.js, kein Ruckeln; 4 Bot-Formen je Sitzung). Zeichnen: +1 Draw Call je Soldat auf
 // Detailstufe 0; der Körper zeichnet dann seinen Kopf nicht (gleiche Puffer, kürzerer drawRange).
 import * as THREE from 'three';
-import { buildFaceData, FACE_MORPHS, SHAPE_PRESETS, SHAPE_DEFAULT, EYE, HEAD_C } from './face-sdf.js?v=20261114004313';
-import { BONE, BIND } from './rig.js?v=20261114004313';
-import { VARIANTS } from './gear.js?v=20261114004313';
-import { SKIN_TONES, SCHEMES } from './materials.js?v=20261114004313';
+import { buildFaceData, FACE_MORPHS, SHAPE_PRESETS, SHAPE_DEFAULT, EYE, HEAD_C } from './face-sdf.js?v=20261114060746';
+import { BONE, BIND } from './rig.js?v=20261114060746';
+import { VARIANTS } from './gear.js?v=20261114060746';
+import { SKIN_TONES, SCHEMES } from './materials.js?v=20261114060746';
 
 export { FACE_MORPHS, SHAPE_PRESETS };
 
@@ -144,7 +144,7 @@ const jobs = new Map(), pending = new Map();
 function getWorker() {
   if (worker || workerBroken || typeof Worker === 'undefined') return worker;
   try {
-    worker = new Worker(new URL('./face-worker.js?v=20261114004313', import.meta.url), { type: 'module', name: 'gesichter' });
+    worker = new Worker(new URL('./face-worker.js?v=20261114060746', import.meta.url), { type: 'module', name: 'gesichter' });
     worker.onmessage = (e) => {
       const { id, D, error } = e.data || {};
       const j = jobs.get(id);

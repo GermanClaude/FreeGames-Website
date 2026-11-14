@@ -3,21 +3,21 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261114004313';
-import { modeOptionsHtml } from './mode-options.js?v=20261114004313'; // Modus-Einstellungen (B6, 26.10.)
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261114004313';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261114004313'; // atmosphere-weather; Fahrzeuge je Kartengröße
-import { realTimePreset } from '../world/weather.js?v=20261114004313'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261114004313';
-import { esc, num, secs, meters } from './dom.js?v=20261114004313';
-import { ICON } from './icons.js?v=20261114004313';
-import { drawMapArt } from './mapart.js?v=20261114004313';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261114004313';
-import { openCamoEditor } from './camo-editor.js?v=20261114004313';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261114004313';
-import { ProgressView } from './progress.js?v=20261114004313';
-import { CampaignPane } from '../campaign/menu.js?v=20261114004313'; // Reiter „Kampagne“ (game/campaign)
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261114004313';
+import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261114060746';
+import { modeOptionsHtml } from './mode-options.js?v=20261114060746'; // Modus-Einstellungen (B6, 26.10.)
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261114060746';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261114060746'; // atmosphere-weather; Fahrzeuge je Kartengröße
+import { realTimePreset } from '../world/weather.js?v=20261114060746'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261114060746';
+import { esc, num, secs, meters } from './dom.js?v=20261114060746';
+import { ICON } from './icons.js?v=20261114060746';
+import { drawMapArt } from './mapart.js?v=20261114060746';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261114060746';
+import { openCamoEditor } from './camo-editor.js?v=20261114060746';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261114060746';
+import { ProgressView } from './progress.js?v=20261114060746';
+import { CampaignPane } from '../campaign/menu.js?v=20261114060746'; // Reiter „Kampagne“ (game/campaign)
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261114060746';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];

@@ -1,6 +1,6 @@
 // NULLPUNKT — Hintergrund-Rechner für Soldatenköpfe (face-sdf.js): baut Kopfnetz + Morph-Ziele abseits des Hauptfadens
 // (≈ 0,2–2 s je Kopfform) und schickt die Puffer übertragen (ohne Kopie) zurück. Nachricht: { id, res, shape }.
-import { buildFaceData } from './face-sdf.js?v=20261114004313';
+import { buildFaceData } from './face-sdf.js?v=20261114060746';
 
 self.onmessage = (e) => {
   const { id, res, shape } = e.data || {};

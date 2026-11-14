@@ -21,15 +21,15 @@
 // URL: ?air=0 (keine Luftfahrzeuge) | ?air=1 (auch ohne Fahrzeug-Stellplätze) · ?airbots=0|1|2 (KI-Piloten: aus |
 // nur Gegnerteam, Standard | beide Teams).
 import * as THREE from 'three';
-import { VEHICLES } from '../data.js?v=20261114004313';
-import { collisionRay } from '../../engine/physics.js?v=20261114004313';
-import { groundBelow } from './flight.js?v=20261114004313';
-import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261114004313';
-import { readAirControls } from './controls.js?v=20261114004313';
-import { updateAirCamera } from './camera.js?v=20261114004313';
-import { AirHUD } from './hud.js?v=20261114004313';
-import { AirVoice, AIR_RANGE } from './audio.js?v=20261114004313';
-import { HeliPilotAI } from './pilot-ai.js?v=20261114004313';
+import { VEHICLES } from '../data.js?v=20261114060746';
+import { collisionRay } from '../../engine/physics.js?v=20261114060746';
+import { groundBelow } from './flight.js?v=20261114060746';
+import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261114060746';
+import { readAirControls } from './controls.js?v=20261114060746';
+import { updateAirCamera } from './camera.js?v=20261114060746';
+import { AirHUD } from './hud.js?v=20261114060746';
+import { AirVoice, AIR_RANGE } from './audio.js?v=20261114060746';
+import { HeliPilotAI } from './pilot-ai.js?v=20261114060746';
 
 export { AirVoice, AIR_RANGE, airWarmMaterials };
 

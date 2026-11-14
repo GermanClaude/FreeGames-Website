@@ -21,7 +21,7 @@
 // besetzen seine Erfolgs-Positionen (Platz-Karte: wo er Gegner ausschaltet, mit seiner Schussrichtung). Online aus
 // (wie das Gegner-Lernen).
 import * as THREE from 'three';
-import { analyze, perchNear } from './tactics.js?v=20261114004313';
+import { analyze, perchNear } from './tactics.js?v=20261114060746';
 
 export const STORE_KEY = 'nullpunkt:botAdapt';
 const VERSION = 1;

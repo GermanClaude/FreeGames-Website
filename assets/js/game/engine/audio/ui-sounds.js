@@ -1,7 +1,7 @@
 // Leichtgewichtige UI-Klänge für die Website (hover/click/confirm/back/toggle).
 // Erzeugt den AudioContext erst bei der ersten Nutzergeste → keine Autoplay-Warnungen.
-import { makeRng, hashString } from './dsp.js?v=20261114004313';
-import { UI_RECIPES } from './sfx-ui.js?v=20261114004313';
+import { makeRng, hashString } from './dsp.js?v=20261114060746';
+import { UI_RECIPES } from './sfx-ui.js?v=20261114060746';
 
 const NAMES = ['hover', 'click', 'confirm', 'back', 'toggle'];
 const GAIN = { hover: 0.32, click: 0.5, confirm: 0.38, back: 0.36, toggle: 0.42 };

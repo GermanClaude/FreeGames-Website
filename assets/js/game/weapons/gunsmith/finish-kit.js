@@ -15,7 +15,7 @@
 // nur Familien, die eine gebaute Waffe benutzt. Die Bot-Stufe (lodMetal/lodMatte) bekommt keine Karten.
 // Gezeichnet wird zeitgeteilt im Hintergrund (textures.js scheduleAtlas): erst ein neutraler Platzhalter, dann die volle Karte.
 import * as THREE from 'three';
-import { canvas, toTexture, scheduleAtlas, rng, fbm } from './textures.js?v=20261114004313';
+import { canvas, toTexture, scheduleAtlas, rng, fbm } from './textures.js?v=20261114060746';
 
 const PC = !(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
 export const KIT_SIZE = { max: 1024, std: 512, lite: 256 };

@@ -3,8 +3,8 @@
 // zuletzt gespielte Mission, Lesetempo der Untertitel und die gewählte Schwierigkeit. Freischaltung: Mission n ist
 // spielbar, wenn Mission n−1 erledigt ist (die erste immer). Ohne Speicher (privates Fenster) läuft alles im Speicher.
 
-import { profile } from '../../shared/profile.js?v=20261114004313';
-import { READING_SPEEDS } from './lipsync.js?v=20261114004313';
+import { profile } from '../../shared/profile.js?v=20261114060746';
+import { READING_SPEEDS } from './lipsync.js?v=20261114060746';
 
 const DIFF_RANK = { rekrut: 0, regulaer: 1, veteran: 2, elite: 3 };
 
