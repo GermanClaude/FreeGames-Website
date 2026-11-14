@@ -13,6 +13,7 @@
 // Fahrzeugstellplätze und Kampagnenpunkte (m3). Optik (Spuren, Pfosten, Zaun) je Stufe gedünnt.
 import { frame, hash01, sandbags } from '../props.js?v=20261114060746';
 import { wireFence } from '../barbed-wire.js?v=20261114060746';
+import { burntWreck } from './brandwald-bau.js?v=20261114060746';
 import { freileitung, sperrpunkte, KAMPAGNE, stufe } from '../kleinkram.js?v=20261114060746';
 
 const D = { collide: false, minimap: false, grad: false };
@@ -161,6 +162,22 @@ export function landschaft(b, ctx, def) {
         if (prev) for (const h of [0.55, 1.05]) b.cyl((prev[0] + x) / 2, (prev[1] + y) / 2 + h, (prev[2] + z) / 2, 0.006, Math.hypot(x - prev[0], z - prev[2]), 'metal_galvanized', { ...D, axis: 'x', ry: Math.atan2(-(z - prev[2]), x - prev[0]), rz: Math.atan2(y - prev[1], Math.hypot(x - prev[0], z - prev[2])), seg: 3, caps: false, ao: false, bullet: false, cast: false });
         prev = [x, y, z];
       }
+    }
+  }
+  // 8) Ausgebrannte Autos am Straßenrand (Kriegsspur, Deckung mit Kollision): je Straße an zwei festen Anteilen
+  stats.wracks = 0;
+  for (const r of roads) {
+    if (!['hauptstrasse', 'werkstrasse', 'furtweg'].includes(r.id)) continue;
+    for (const t of [0.31, 0.68]) {
+      const k = Math.floor(r.samples.length / 3 * t) * 3, x0 = r.samples[k], z0 = r.samples[k + 2], x1 = r.samples[k + 3], z1 = r.samples[k + 5];
+      if (x1 === undefined) continue;
+      const L = Math.hypot(x1 - x0, z1 - z0) || 1, ux = (x1 - x0) / L, uz = (z1 - z0) / L, s = hash01(x0, z0, 610) < 0.5 ? -1 : 1;
+      const x = x0 - uz * s * (r.width / 2 + 2.6), z = z0 + ux * s * (r.width / 2 + 2.6);
+      if (!free(x, z, 3) || roadDist(x, z) < 1.2) continue;
+      hf.normalAt(x, z, n);
+      if (n.y < 0.96) continue;
+      burntWreck(b, x, gy(x, z) - 0.08, z, Math.atan2(ux, uz) + (hash01(x, z, 611) - 0.5) * 0.8, 'pkw', Math.round(x * 3 + z));
+      stats.wracks++;
     }
   }
   if (ctx.debug) console.info('[grenzland] Kulturlandschaft', JSON.stringify(stats));

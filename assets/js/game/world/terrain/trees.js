@@ -42,7 +42,7 @@ export const TREE_SPECIES = {
   linde:  { H: 12.5, R0: 0.26, flare: 0.4, leader: 0.72, base: 0.24, limbs: 8, ang: [38, 70], limb: 0.44, up: 0.3, sub: 0.68, card: 1.3, step: 0.4, cells: [6, 7], bark: 'bark', strip: 3, vScale: 1, tint: ['#f0f4e4', '#e4ecd8', '#fbfae6'], tile: 1, mossK: 0.8, bend: 0.22, crownR: 4.8 },
   pappel: { H: 16.0, R0: 0.25, flare: 0.3, leader: 0.97, base: 0.18, limbs: 11, ang: [14, 32], limb: 0.22, up: 0.5, sub: 0.55, card: 1.15, step: 0.38, cells: [8, 9], bark: 'bark_pappel', strip: 4, vScale: 1, tint: ['#eef2e6', '#e0e8dc', '#f6f6ea'], tile: 1, mossK: 0.5, bend: 0.32, crownR: 2.6 },
   fichte: { conifer: true, H: 12.5, R0: 0.22, flare: 0.3, leader: 1, base: 0.07, R: 2.7, card: 1.05, step: 0.32, cells: [10, 10], bark: 'bark_fichte', strip: 5, vScale: 1, tint: ['#e8eee6', '#dce4da', '#f0f2ea'], tile: 1, mossK: 0.6, bend: 0.26, crownR: 2.8 },
-  kiefer: { conifer: true, pine: true, H: 13.5, R0: 0.22, flare: 0.25, leader: 0.93, base: 0.55, limbs: 9, ang: [35, 62], limb: 0.24, up: 0.3, sub: 0.6, card: 1.3, step: 0.35, cells: [11, 11], bark: 'bark_kiefer', strip: 6, vScale: 1, tint: ['#eef2e2', '#e4e8d6', '#f6f4e4'], tile: 2, mossK: 0.3, bend: 0.24, crownR: 3.4 },
+  kiefer: { conifer: true, pine: true, H: 13.5, R0: 0.22, flare: 0.25, leader: 0.93, base: 0.55, limbs: 10, ang: [35, 62], limb: 0.25, up: 0.3, sub: 0.55, card: 1.5, step: 0.35, cells: [11, 11], bark: 'bark_kiefer', strip: 6, vScale: 1, tint: ['#eef2e2', '#e4e8d6', '#f6f4e4'], tile: 2, mossK: 0.3, bend: 0.24, crownR: 3.4 },
   tot:    { dead: true, H: 11.5, R0: 0.25, flare: 0.5, leader: 0.6, base: 0.3, limbs: 6, ang: [40, 78], limb: 0.42, up: 0.18, sub: 0.9, card: 1.4, step: 0.9, cells: [12, 12], bark: 'bark', barkTint: '#8c8378', strip: 7, vScale: 1, tint: ['#ffffff', '#ece6e0'], tile: 1, mossK: 1.2, bend: 0.12, crownR: 4.4 },
 };
 /** Spielmaterialien der Rinden (bigworld lädt ihre Bibliothekssätze vor dem Aufbau). */
@@ -55,7 +55,7 @@ export const DEFAULT_MIX = {
 
 /** LOD-Abstände je Stufe (m): nah bis near, mittel bis mid, Impostor bis zur Fernsichtweite; Bänder = Überblendung. */
 export const TREE_LOD = {
-  low: { near: 9, mid: 42, bandN: 4, bandM: 8, variants: 1, imp: [64, 128] },
+  low: { near: 9, mid: 34, bandN: 4, bandM: 8, variants: 1, imp: [64, 128], midLod: 2 },
   medium: { near: 18, mid: 70, bandN: 5, bandM: 10, variants: 1, imp: [96, 192] },
   high: { near: 28, mid: 105, bandN: 6, bandM: 12, variants: 2, imp: [128, 256] },
   ultra: { near: 40, mid: 150, bandN: 7, bandM: 14, variants: 2, imp: [128, 256] },
@@ -318,19 +318,20 @@ function card(B, p, axis, face, len, wid, cell, sk, sp, fold, aoK = 1) {
       idx.push(B.v(q, ho(q), us[k], row ? uv.v1 : uv.v0, ao(q, row === 1), w[0], w[1]));
     }
   }
-  B.tri(idx[0], idx[1], idx[4]); B.tri(idx[0], idx[4], idx[3]); B.tri(idx[1], idx[2], idx[5]); B.tri(idx[1], idx[5], idx[4]);
+  if (fold > 0) { B.tri(idx[0], idx[1], idx[4]); B.tri(idx[0], idx[4], idx[3]); B.tri(idx[1], idx[2], idx[5]); B.tri(idx[1], idx[5], idx[4]); }
+  else { B.tri(idx[0], idx[2], idx[5]); B.tri(idx[0], idx[5], idx[3]); } // flach (Mittelstufe): 2 statt 4 Dreiecke
 }
 
 function leafCards(B, sk, sp, lod, r) {
-  const big = lod ? 1.65 : 1, stepK = lod ? 2.6 : 1, cc = sk.cc;
+  const big = lod === 2 ? 2.1 : lod ? 1.65 : 1, stepK = lod === 2 ? 3.9 : lod ? 2.6 : 1, cc = sk.cc;
   const P = new THREE.Vector3(), D = new THREE.Vector3(), F = new THREE.Vector3(), A = new THREE.Vector3();
   const pick = () => sp.cells[(r() * sp.cells.length) | 0];
   for (const b of sk.branches) {
     if (b.lvl === 0) continue;
     const conLimb = sp.conifer && !sp.pine;
     // Laub an Seitenästen ab 25 %, an Hauptästen nur außen (Krone hohl genug für Äste, dicht an der Hülle)
-    const t0 = conLimb ? 0.12 : b.lvl === 2 ? 0.25 : sp.pine ? 0.75 : 0.62;
-    const step = sp.step * stepK * (sp.pine ? 1.4 : 1);
+    const t0 = conLimb ? 0.12 : b.lvl === 2 ? 0.18 : sp.pine ? 0.75 : 0.45;
+    const step = sp.step * stepK * (sp.pine ? 1.0 : conLimb ? 1 : 0.8);
     const n = Math.max(1, Math.floor((b.len * (1 - t0)) / step));
     for (let i = 0; i <= n; i++) {
       const t = Math.min(1, t0 + (1 - t0) * (i + (i < n ? r() * 0.5 : 0)) / Math.max(1, n));
@@ -349,7 +350,7 @@ function leafCards(B, sk, sp, lod, r) {
         const S = new THREE.Vector3().crossVectors(axis, F);
         F.multiplyScalar(Math.cos(az)).addScaledVector(S, Math.sin(az)).normalize();
         const sz = sp.card * big * (0.78 + r() * 0.42) * (conLimb ? Math.min(1, 0.55 + b.len * 0.35) : 1);
-        card(B, P, axis, F, sz, sz * (sp.conifer ? 0.95 : 0.9), pick(), sk, sp, lod ? 0.08 : 0.17);
+        card(B, P, axis, F, sz, sz * (sp.conifer ? 0.95 : 0.9), pick(), sk, sp, lod ? 0 : 0.17);
       }
     }
   }
@@ -361,7 +362,8 @@ function leafCards(B, sk, sp, lod, r) {
 }
 
 /**
- * Baumvariante bauen. lod 0: { wood (Rinde), leaves }, lod 1: { mid } (Holz aus Atlas-Streifen + Laub, ein Material).
+ * Baumvariante bauen. lod 0: { wood (Rinde), leaves }, lod 1: { mid } (Holz aus Atlas-Streifen + Laub, ein Material),
+ * lod 2: Mittelstufe für „niedrig“ (noch weniger, größere Karten, nur dicke Äste).
  * → { wood?, leaves?, mid?, H, crownR, box }
  */
 export function buildTreeVariant(kind, seed, lod = 0) {
@@ -382,7 +384,8 @@ export function buildTreeVariant(kind, seed, lod = 0) {
   for (const b of sk.branches) {
     if (b.lvl === 2 && !sp.dead) continue; // Seitenäste verschwinden in der Mittelstufe im Laub
     if (b.lvl > 0 && (b.R[0] < 0.035 || (sp.conifer && !sp.pine && b.R[0] < 0.05)) && !sp.dead) continue;
-    tube(M, b, b.lvl === 0 ? 7 : 3, sp, sk.H, { strip: sp.strip, flare: b.lvl === 0 ? sp.flare * 0.8 : 0, rootPh });
+    if (lod === 2 && b.lvl > 0 && b.R[0] < 0.06 && !sp.dead) continue;
+    tube(M, b, b.lvl === 0 ? (lod === 2 ? 5 : 7) : 3, sp, sk.H, { strip: sp.strip, flare: b.lvl === 0 ? sp.flare * 0.8 : 0, rootPh });
   }
   leafCards(M, sk, sp, 1, r);
   const g = M.geometry(true);
@@ -659,7 +662,7 @@ export function renderImpostors(renderer, variants, cell, tints) {
   const rows = Math.ceil(variants.length / vpr), W = vpr * FRAMES * cw, H = rows * ch;
   const albedo = new Uint8Array(W * H * 4), normal = new Uint8Array(W * H * 4);
   const rt = new THREE.WebGLRenderTarget(cw, ch, { depthBuffer: true, type: THREE.UnsignedByteType, format: THREE.RGBAFormat, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false });
-  const mat = new THREE.ShaderMaterial({ vertexShader: CAPTURE_VS, fragmentShader: CAPTURE_FS, uniforms: { map: { value: atlasTex || placeholder }, mode: { value: 0 }, tint: { value: new THREE.Vector3(1, 1, 1) } }, side: THREE.DoubleSide });
+  const mat = new THREE.ShaderMaterial({ vertexShader: CAPTURE_VS, fragmentShader: CAPTURE_FS, uniforms: { map: { value: atlasTex || placeholder }, mode: { value: 0 }, tint: { value: new THREE.Vector3(1, 1, 1) } }, side: THREE.DoubleSide, vertexColors: true });
   const scene = new THREE.Scene(), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
   const buf = new Uint8Array(cw * ch * 4), dims = [];
   const prevRT = renderer.getRenderTarget(), prevClear = new THREE.Color(), prevA = renderer.getClearAlpha(), prevSM = renderer.shadowMap.autoUpdate;

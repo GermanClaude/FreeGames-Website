@@ -113,7 +113,7 @@ export const OUTLINE = [
     showcase: { karten: ['brandwald'], fahrzeuge: ['heli'] },
   },
   {
-    n: 7, id: 'm7', act: 2, title: 'Niemandsland', map: 'niemandsland', time: 'morgen', weather: 'morgennebel', status: 'geplant', type: 'Große Schlacht · Halten der Linie', minutes: 14, since: R2, owner: 'kampagne-b',
+    n: 7, id: 'm7', act: 2, title: 'Niemandsland', map: 'niemandsland', time: 'morgen', weather: 'morgennebel', status: 'spielbar', type: 'Große Schlacht · Halten der Linie', minutes: 14, since: R2, owner: 'kampagne-b',
     story: 'Kessar greift mit allem an, was ihm folgt. Darens Brigade erhält den Befehl, mitzumarschieren – und verweigert ihn. Nordkorps- und Ostbund-Soldaten halten gemeinsam die Kapellenruine, holen das Artillerie-Funkgerät zurück und bergen die Verwundeten, bis Kessars Angriff zusammenbricht. Kessar zieht sich zurück und kündigt über Funk an, „die Wahrheit selbst zu senden“.',
     goals: ['Kapellenruine halten (Zonenkontrolle, größer als M2)', 'Artillerie-Funkgerät zurückerobern', 'Präzisionsschlag auf die Panzerkolonne anfordern (Skriptereignis)', 'Verwundete zum Sanitätsposten bergen'],
     teaches: ['Große Schlacht mit vielen Verbündeten', 'Luft-/Artillerieunterstützung anfordern'],
@@ -121,7 +121,7 @@ export const OUTLINE = [
     showcase: { karten: ['niemandsland'] },
   },
   {
-    n: 8, id: 'm8', act: 2, title: 'Geleit', map: 'grenzland', time: 'abend', weather: 'bewoelkt', status: 'geplant', type: 'Konvoi · Bordschütze im Geländewagen', minutes: 12, since: R2, owner: 'kampagne-b',
+    n: 8, id: 'm8', act: 2, title: 'Geleit', map: 'grenzland', time: 'abend', weather: 'bewoelkt', status: 'spielbar', type: 'Konvoi · Bordschütze im Geländewagen', minutes: 12, since: R2, owner: 'kampagne-b',
     story: 'Daren soll vor der Waffenstillstandskommission aussagen. Falk sichert als Bordschütze am schweren MG eines Geländewagens den Konvoi vom Dorf zum Verhandlungszelt am Nordhang. Ein Hinterhalt stoppt die Kolonne; zu Fuß kämpft sich der Trupp durch die Felder, ein feindlicher Panzer muss mit dem Raketenwerfer ausgeschaltet werden. Lenz wird verwundet. Daren erreicht das Zelt – doch Kessar hat das Relais von Sant Aurel besetzt.',
     goals: ['Konvoi begleiten (Bordschütze, Fahrzeuge dürfen nicht ausfallen)', 'Hinterhalt im Dorf zerschlagen', 'Panzer mit dem Raketenwerfer ausschalten', 'Lenz zum Sanitäter bringen, Daren ins Zelt bringen'],
     teaches: ['Geländewagen-MG', 'Panzerabwehr zu Fuß (at_donner)'],
@@ -129,14 +129,14 @@ export const OUTLINE = [
     showcase: { fahrzeuge: ['jeep'], waffen: ['at_donner'] },
   },
   {
-    n: 9, id: 'm9', act: 2, title: 'Glockenschlag', map: 'altstadt', time: 'abend', weather: 'dunst', status: 'geplant', type: 'Häuserkampf · Falk führt den Trupp', minutes: 12, since: R2, owner: 'kampagne-b',
+    n: 9, id: 'm9', act: 2, title: 'Glockenschlag', map: 'altstadt', time: 'abend', weather: 'dunst', status: 'spielbar', type: 'Häuserkampf · Falk führt den Trupp', minutes: 12, since: R2, owner: 'kampagne-b',
     story: 'Zurück in Sant Aurel, diesmal am Abend und unter Zeitdruck: Kessar will über das Relais im Glockenturm gefälschte Angriffsbefehle an alle Einheiten senden. Lenz liegt im Lazarett – Falk führt den Trupp zum ersten Mal selbst. Die Einwohner suchen Schutz in der Kirche am Brunnenplatz. Das Relais wird rechtzeitig abgeschaltet; ein gefangener Funker verrät, dass Kessar zum Flugplatz Hallstein flieht.',
     goals: ['Trupp per Befehlsrad führen (Halten, Vorrücken, Folgen)', 'Den Sender vor Ablauf des Countdowns abschalten', 'Einwohner in der Kirche schützen', 'Den Funker lebend festnehmen'],
     teaches: ['Befehle an den Trupp unter Druck', 'Altstadt in umgekehrter Richtung (Osten → Westen)'],
     showcase: { karten: ['altstadt'] },
   },
   {
-    n: 10, id: 'm10', act: 2, title: 'Rollfeld', map: 'flugplatz', mapFallback: 'grenzland', time: 'morgen', weather: 'klar', status: 'geplant', type: 'Großangriff · Flugplatz', minutes: 14, since: R2, owner: 'kampagne-b',
+    n: 10, id: 'm10', act: 2, title: 'Rollfeld', map: 'flugplatz', mapFallback: 'grenzland', time: 'morgen', weather: 'klar', status: 'spielbar', type: 'Großangriff · Flugplatz', minutes: 14, since: R2, owner: 'kampagne-b',
     story: 'Kessar will mit den Unterlagen seiner Geldgeber außer Landes fliegen. Der Trupp – Lenz wieder dabei, Arm in der Schlinge – landet mit „Libelle 1“ am Rand des Militärflugplatzes Hallstein. Flugabwehr ausschalten, durch die Hangars vorstoßen, die Transportmaschine auf der Startbahn stoppen. Kessar entkommt im letzten Moment mit einem Wagen in die Stadt Veldmark.',
     goals: ['Flugabwehr am Rand des Flugplatzes ausschalten', 'Hangars durchkämmen (Innenräume)', 'Transportmaschine auf der Startbahn stoppen (Fahrwerk/Triebwerke beschießen oder Bahn blockieren)', 'Verfolgung aufnehmen'],
     teaches: ['Großkarte mit Luftunterstützung (verbündete Jets überfliegen per air.spawn jet airborne)'],
@@ -144,7 +144,7 @@ export const OUTLINE = [
     showcase: { karten: ['flugplatz'], fahrzeuge: ['jet', 'heli'] },
   },
   {
-    n: 11, id: 'm11', act: 2, title: 'Stadtkern', map: 'stadtkern', mapFallback: 'altstadt', time: 'morgen', weather: 'morgennebel', status: 'geplant', type: 'Finale · Verfolgung · Festnahme', minutes: 15, since: R2, owner: 'kampagne-b',
+    n: 11, id: 'm11', act: 2, title: 'Stadtkern', map: 'stadtkern', mapFallback: 'altstadt', time: 'morgen', weather: 'morgennebel', status: 'spielbar', type: 'Finale · Verfolgung · Festnahme', minutes: 15, since: R2, owner: 'kampagne-b',
     story: 'Kessar hat sich im Funkhaus von Veldmark verschanzt, mitten im dichten Stadtkern. Stockwerk für Stockwerk, durch Treppenhäuser und Wohnungen, an Zivilisten vorbei, stellt Falk ihn auf dem Dach. Kessar ergibt sich. Daren und Brandt verkünden über den Sender gemeinsam die Fortsetzung der Waffenruhe. Doch in Kessars Tasche steckt ein Notizbuch mit Zahlungen eines „Kranich“ – und auf der offenen Frequenz meldet sich eine fremde Stimme: „Kessar ist gescheitert. Phase zwei beginnt.“',
     goals: ['Durch den Stadtkern zum Funkhaus vorstoßen (mehrstöckig, Innenräume)', 'Zivilisten nicht gefährden', 'Kessar lebend festnehmen (Fehlschlag, wenn er fällt)', 'Epilog: Ansprache am Sender – offenes Ende (Kranich, Phase zwei)'],
     teaches: ['Mehrstöckiger Häuserkampf'],

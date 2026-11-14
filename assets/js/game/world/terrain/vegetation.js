@@ -785,7 +785,7 @@ export class Vegetation {
       const barkMats = new Map(), variants = [];
       for (const g of order) {
         const S = TREE_SPECIES[g.kind], seed = 1009 + g.v * 97 + g.kind.length * 13;
-        const near = buildTreeVariant(g.kind, seed, 0), mid = buildTreeVariant(g.kind, seed, 1);
+        const near = buildTreeVariant(g.kind, seed, 0), mid = buildTreeVariant(g.kind, seed, L.midLod || 1);
         this._geoms.push(near.wood, mid.mid); if (near.leaves) this._geoms.push(near.leaves);
         let bm = barkMats.get(g.kind);
         if (!bm) {
@@ -828,7 +828,47 @@ export class Vegetation {
       sp.farn.near = make(fg, fm, sp.farn.count, 'veg-farn', false);
       sp.farn.lim = R;
     }
+    this._buildStreu();
     return true;
+  }
+
+  /**
+   * Laubstreu unter Laubbäumen (baeume 14.11.): flache, weich auslaufende Flecken (Bodenauflage-Atlas boden.webp,
+   * Zelle „laub“) auf die Geländeneigung gekippt, 2,5–5 m groß, je Baum per Positions-Hash. Statisch, ein Draw Call.
+   */
+  _buildStreu() {
+    const L = this.species.laub;
+    if (!L || this.spec.streu === false) return;
+    const hf = this.hf, n3 = { x: 0, y: 1, z: 0 }, out = [];
+    for (let i = 0; i < L.count; i++) {
+      const tx = L.list[i * 5], tz = L.list[i * 5 + 2], ix = Math.round(tx * 10), iz = Math.round(tz * 10);
+      if (hash2(ix, iz, 101) > 0.75) continue;
+      const a = hash2(ix, iz, 103) * 6.283, d = hash2(ix, iz, 105) * 1.6, x = tx + Math.cos(a) * d, z = tz + Math.sin(a) * d;
+      if (!hf.contains(x, z) || this.blocked(x, z)) continue;
+      const nn = hf.normalAt(x, z, n3);
+      out.push(x, hf.heightAt(x, z) + 0.03, z, (2.6 + hash2(ix, iz, 107) * 2.6) * (L.list[i * 5 + 3] || 1), hash2(ix, iz, 109) * 6.283, nn.x, nn.y, nn.z);
+    }
+    const n = out.length / 8;
+    if (!n) return;
+    const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-Math.PI / 2); this._geoms.push(g);
+    const tex = new THREE.TextureLoader().load(new URL('../../../../lib/foliage/boden.webp', import.meta.url).href);
+    tex.colorSpace = THREE.SRGBColorSpace; tex.repeat.set(0.25, 0.5); tex.offset.set(0, 0.5); tex.anisotropy = 4; tex.name = 'laubstreu';
+    this._tex.push(tex);
+    const m = new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.95, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+    m.color.setRGB(1.75, 1.5, 1.15); // Streu heller/wärmer als die Bodenauflage (trockenes Buchen-/Eichenlaub)
+    m.name = 'laubstreu'; m.userData.surface = 'grass'; m.userData.disposable = true; this._own.push(m);
+    const mesh = new THREE.InstancedMesh(g, m, n);
+    const nrm = new THREE.Vector3(), q2 = new THREE.Quaternion();
+    for (let i = 0; i < n; i++) {
+      const o = i * 8;
+      nrm.set(out[o + 5], out[o + 6], out[o + 7]).normalize();
+      _q.setFromAxisAngle(_up, out[o + 4]); q2.setFromUnitVectors(_up, nrm); _q.premultiply(q2);
+      _s.set(out[o + 3], 1, out[o + 3]); _p.set(out[o], out[o + 1], out[o + 2]); _m.compose(_p, _q, _s); mesh.setMatrixAt(i, _m);
+    }
+    mesh.name = 'veg-laubstreu'; mesh.receiveShadow = true; mesh.castShadow = false; mesh.renderOrder = -1;
+    mesh.computeBoundingSphere();
+    this.group.add(mesh);
+    this.stats.streu = n;
   }
 
   /** Stufen der Bäume neu zuordnen (nach ≥ 4 m Kamerabewegung): nah / mittel / Impostor mit 4 m Rand um die Bänder. */

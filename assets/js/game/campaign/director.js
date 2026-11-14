@@ -140,7 +140,12 @@ export class Director {
     // Figuren ohne KI
     if (this.extras.size) { const cam = this.G.camera ? this.G.camera.position : null; for (const x of this.extras.values()) x.update(dt, cam); }
     // Bodenprüfung der Kampagnen-Akteure (nach dem Laden und laufend, 2×/s)
-    if ((this._groundT -= dt) <= 0) { this._groundT = 0.5; this._groundCheck(); }
+    if ((this._groundT -= dt) <= 0) {
+      this._groundT = 0.5;
+      this._groundCheck();
+      // Kartenfahrzeuge, die das Fahrzeugsystem erst nach dem Missionsstart aufstellt, ebenfalls räumen
+      if (this.mission.mapVehicles === false && this.elapsed < 20) this.clearMapVehicles();
+    }
     // Zwischensequenz
     if (this.cutscene) {
       if (this.cutscene.update(dt)) this._endCutscene();
@@ -164,7 +169,11 @@ export class Director {
     if (this._watched) this._watched = this._watched.filter((h) => !h.done);
     // Laufende Prüfungen der Mission (every): true als Rückgabe beendet sie
     if (this.tickers.length && !this.cutscene && this.state === 'run') {
-      this.tickers = this.tickers.filter((fn) => { try { return !fn(dt); } catch (err) { console.error('[Kampagne] every', err); return false; } });
+      // während des Durchlaufs neu angelegte Prüfungen (z. B. aus einem Alarm heraus) bleiben erhalten
+      const list = this.tickers;
+      this.tickers = [];
+      const keep = list.filter((fn) => { try { return !fn(dt); } catch (err) { console.error('[Kampagne] every', err); return false; } });
+      this.tickers = keep.concat(this.tickers);
     }
     // Gescriptete Fahrzeuge
     for (const s of this.scripted) this._tickScripted(s, dt);
@@ -353,11 +362,12 @@ export class Director {
     st.stop = () => { st.stopped = true; if (this.ui && !st.alarmed) this.ui.meter(null); };
     const hp = new Map();
     this.on('weapon:fire', (e) => {
-      if (st.alarmed || st.stopped || !e || e.actor !== this.G.player || e.suppressed) return;
+      if (st.alarmed || st.stopped || this.noDetect || !e || e.actor !== this.G.player || e.suppressed) return;
       if (guards().some((b) => b.alive && b.position.distanceTo(this.G.player.position) < 40)) raise('schuss');
     });
     this.every(() => {
       if (st.stopped || st.alarmed) return true;
+      if (this.noDetect) return false; // Tests: Abkürzungen per Teleport lösen keinen Alarm aus
       const P = this.G.player;
       let lvl = 0;
       for (const b of guards()) {
@@ -456,19 +466,27 @@ export class Director {
       const p = b.position;
       const fy = buriedY(G, p.x, p.z, p.y);
       if (fy != null) {
+        this._fixLog(b.name || 'Bot', p, fy);
         try { b.body.teleport(_v.set(p.x, fy + 0.02, p.z)); if (b.body.velocity) b.body.velocity.set(0, 0, 0); this.groundFixes++; } catch { /* */ }
       }
     }
     const P = G.player;
     if (P && P.alive && !P.vehicle && P.body) {
       const p = P.position, fy = buriedY(G, p.x, p.z, p.y, 0.35);
-      if (fy != null) { try { P.body.teleport(_v.set(p.x, fy + 0.02, p.z)); this.groundFixes++; } catch { /* */ } }
+      if (fy != null) { this._fixLog('Spieler', p, fy); try { P.body.teleport(_v.set(p.x, fy + 0.02, p.z)); this.groundFixes++; } catch { /* */ } }
     }
     for (const x of this.extras.values()) {
       if (x.removed) continue;
       const p = x.a.pos, fy = buriedY(G, p.x, p.z, p.y);
-      if (fy != null) { p.y = fy; this.groundFixes++; }
+      if (fy != null) { this._fixLog(x.id, p, fy); p.y = fy; this.groundFixes++; }
     }
+  }
+
+  /** Letzte Korrekturen (Tests: __game.campaign.director.groundLog). */
+  _fixLog(who, p, fy) {
+    const L = this.groundLog || (this.groundLog = []);
+    L.push(`${who} (${p.x.toFixed(1)}, ${p.y.toFixed(2)}, ${p.z.toFixed(1)}) → ${fy.toFixed(2)}`);
+    if (L.length > 12) L.shift();
   }
 
   /* ------------------------------------------------------------ Ziele */
@@ -984,7 +1002,7 @@ class Extra {
 
   place(p, yaw) { this.a.place(p, yaw ?? this.a.yaw); this.trail = []; }
   walk(points, speed = 1.6) { this.target = null; this.a.walk(points, speed); }
-  face(t) { this.a.face(t); }
+  face(t) { this.a.faceTo(t); }
   /** Dem Akteur folgen (null = stehen bleiben). */
   follow(actor, { crouch = false } = {}) { this.target = actor || null; this.trail = []; this.followCrouch = !!crouch; if (actor) this.a.crouch = !!crouch; }
 
@@ -1009,7 +1027,7 @@ class Extra {
         while (this.trail.length > 1 && this.trail[0].distanceToSquared(this.a.pos) < 0.5) this.trail.shift();
         if (d > 30) { this.a.place([tp.x, tp.y, tp.z], this.a.yaw); this.trail = []; } // abgehängt (Teleport/Wiedereinstieg)
         else this.a.walk([[this.trail[0].x, this.trail[0].z]], this.followCrouch ? (d > 8 ? 2.6 : 1.3) : d > 8 ? 3.6 : d > 4 ? 2.4 : 1.5);
-      } else if (this.a.path) { this.a.path = null; this.a.face(t); }
+      } else if (this.a.path) { this.a.path = null; this.a.faceTo(t); }
     }
     this.a.update(dt, cam);
   }

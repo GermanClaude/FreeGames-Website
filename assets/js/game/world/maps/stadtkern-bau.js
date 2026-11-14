@@ -151,14 +151,15 @@ export function altbau(b, o) {
   for (let at = shopL + 1.6; at < shopR - 1.0; at += 3.0) ops.push({ side: BS, at: at - x, w: 1.1, h: 1.5, kind: 'window', floor: 0, glass: false });
   // Obergeschosse: Fensterachsen (Straße, Hof); Balkone an der Straßenseite (Fenstertür)
   const nAx = Math.max(2, Math.floor((w - 1.6) / 2.6)), ax0 = -((nAx - 1) * 2.6) / 2;
-  const balk = [];
+  const balk = [], gard = [];
   for (let f = 1; f < floors; f++) {
     for (let k = 0; k < nAx; k++) {
       const at = ax0 + k * 2.6;
       const isBalk = o.balcony !== false && f <= floors - 2 && (k === 1 || k === nAx - 2) && Math.abs(x + at - cx) > 1.6 && H(50 + f * 7 + k) < 0.65;
       const broken = H(60 + f * 11 + k) < 0.55, boarded = !broken && H(70 + f + k * 3) < 0.25;
       if (isBalk) { ops.push({ side: SS, at, w: 1.1, h: 2.3, kind: 'gap', floor: f, frameMat: 'wood_dark', frameTint: '#4a3a2a' }); balk.push([x + at, f]); }
-      else ops.push({ side: SS, at, w: 1.2, h: 1.85, sill: 0.85, kind: 'window', floor: f, glass: broken || o.roof === 'ruin' && f === floors - 1 ? false : undefined, closed: boarded ? '#5e4c3a' : undefined, frameMat: 'wood_dark', frameTint: '#e8e2d4' });
+      else if (!boarded && !(o.roof === 'ruin' && f === floors - 1) && H(190 + f * 5 + k) < 0.7) gard.push([x + at, f, broken]);
+      if (!isBalk) ops.push({ side: SS, at, w: 1.2, h: 1.85, sill: 0.85, kind: 'window', floor: f, glass: broken || o.roof === 'ruin' && f === floors - 1 ? false : undefined, closed: boarded ? '#5e4c3a' : undefined, frameMat: 'wood_dark', frameTint: '#e8e2d4' });
       ops.push({ side: BS, at, w: 1.1, h: 1.6, sill: 0.95, kind: 'window', floor: f, glass: H(80 + f + k) < 0.6 ? false : undefined, frameMat: 'wood_dark', frameTint: '#e8e2d4' });
     }
     if (o.sideWin) for (const at of [-d / 4, d / 4]) ops.push({ side: o.sideWin, at: s * at, w: 1.0, h: 1.5, sill: 0.95, kind: 'window', floor: f, glass: false });
@@ -223,6 +224,12 @@ export function altbau(b, o) {
     }
     // Treppenhaus-Licht
     deckenlampe(b, cx, (f + 1) * fh - 0.25, landZ, yy, { drop: 0.3, r: 0.15, shade: '#e8e2d4', pool: 2.0 });
+  }
+  // Gardinen hinter den Straßenfenstern (bewohnt wirkende Fassade; zerschossene Fenster: zerrissen, schräg) – ab mittel
+  if (mittel(b)) for (const [gx2, f, broken] of gard) {
+    const zz = zf + s * 0.33, y0 = f * fh + 0.85, c = ['#e8e2d0', '#d8cfb8', '#c9b48e', '#e2d6c2', '#b8c4c0'][Math.floor(hash01(gx2, f, 21) * 5)];
+    for (const side of [-1, 1]) b.box(gx2 + side * 0.45, y0 + 0.05, zz, broken ? 0.28 : 0.36, 1.8, 0.02, 'tarp', { tint: c, ...VG, ao: false, rz: broken ? side * 0.12 : 0, bullet: false });
+    b.box(gx2, y0 + 1.9, zz, 1.5, 0.04, 0.04, 'metal_painted', { tint: '#5a5048', ...VG, ao: false });
   }
   // Balkone (Platte + Gitter) vor den Fenstertüren
   for (const [bx, f] of balk) {

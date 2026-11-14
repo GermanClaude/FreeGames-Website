@@ -385,7 +385,11 @@ export class VehicleSystem {
     for (const e of entries) { const k = e.team ?? null; if (!byTeam.has(k)) byTeam.set(k, []); byTeam.get(k).push(e); }
     const order = [];
     for (let i = 0; order.length < entries.length; i++) for (const list of byTeam.values()) if (list[i]) order.push(list[i]);
-    prepareVehicleModels([...new Set(order.map((e) => e.type))], [...byTeam.keys()], this.quality);
+    // Luftfahrzeug-Stellplätze der Karte (Flugplatz): Vorlagen über das Luft-Modul, Bodenfahrzeuge wie bisher
+    const ground = [...new Set(order.filter((e) => !VEHICLES[e.type].air).map((e) => e.type))];
+    if (ground.length) prepareVehicleModels(ground, [...byTeam.keys()], this.quality);
+    const airTypes = [...new Set(order.filter((e) => VEHICLES[e.type].air).map((e) => e.type))];
+    if (airTypes.length) this.air.prepareModels(airTypes, [...byTeam.keys()].filter((t) => t != null));
     for (const e of order) this.registerSpawn(e);
   }
 

@@ -199,7 +199,8 @@ export class StageActor {
     this.speed = speed;
   }
 
-  face(target) { this.faceTarget = target; }
+  /** Zum Ziel drehen (Darsteller/Vector3). Hinweis: this.face ist der Gesichts-Treiber (FaceDriver), daher faceTo. */
+  faceTo(target) { this.faceTarget = target; }
   look(target) { this.lookTarget = target; }
   setHidden(on) { this.hidden = !!on; this.soldier.root.visible = !on; }
 
@@ -463,7 +464,7 @@ export class Cutscene {
         if (!who) continue;
         if (a.place) who.place(a.place, a.place[2] ?? who.yaw);
         if (a.walk) who.walk(a.walk, a.speed || 1.4);
-        if (a.face !== undefined) who.face(typeof a.face === 'string' ? this.cast[a.face] || null : a.face ? toVec(this.G, a.face) : null);
+        if (a.face !== undefined) who.faceTo(typeof a.face === 'string' ? this.cast[a.face] || null : a.face ? toVec(this.G, a.face) : null);
         if (a.look !== undefined) who.look(typeof a.look === 'string' ? this.cast[a.look] || null : a.look ? toVec(this.G, a.look, new THREE.Vector3(), 1.5) : null);
         if (a.crouch !== undefined) who.crouch = !!a.crouch;
         if (a.aim !== undefined) who.pitch = a.aim;

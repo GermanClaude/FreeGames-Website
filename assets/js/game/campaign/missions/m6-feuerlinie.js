@@ -117,8 +117,16 @@ function crew(m, { airborne = false, board = true } = {}) {
   return heli;
 }
 
-/** Libelle 1 hält etwas aus (Skript): Rumpf nie unter 45 %. */
+/**
+ * Libelle 1 hält etwas aus (Skript): Rumpf nie unter 45 %, und der Skript-Autopilot (Pilot ist ein Bot, der Spieler
+ * sitzt am Kinnturm) verliert den Hubschrauber nicht an Baumleichen-Spitzen oder harte Aufsetzer: Kollisionsschaden aus.
+ */
 function sturdy(m, heli) {
+  if (heli && !heli._kcSturdy && typeof heli.applyDamage === 'function') {
+    heli._kcSturdy = true;
+    const orig = heli.applyDamage.bind(heli);
+    heli.applyDamage = (amount, info = {}) => (info && info.kind === 'collision' ? 0 : orig(amount, info));
+  }
   m.every(() => {
     if (!heli || !heli.alive) return true;
     if (heli.health < heli.maxHealth * 0.45) heli.repair(heli.maxHealth * 0.25);
@@ -169,7 +177,7 @@ export const MISSION_6 = {
   cutscenes: { intro: CUT_INTRO, outro: CUT_OUTRO },
 
   prepare(m) {
-    m.on('vehicle:destroyed', (e) => { if (e && e.vehicle && e.vehicle === m.get('heli')) m.fail('„Libelle 1“ wurde abgeschossen.'); });
+    m.on('vehicle:destroyed', (e) => { if (e && e.vehicle && e.vehicle === m.get('heli')) { console.warn('[Kampagne] Libelle 1 zerstört', e.weaponId || '', e.by ? e.by.name || e.by.team : ''); m.fail('„Libelle 1“ wurde abgeschossen.'); } });
   },
 
   stages: [
@@ -190,6 +198,7 @@ export const MISSION_6 = {
         P(m).body.teleport(m.vec([pd[0] - 9, pd[1] + 1]));
         yield m.cutsceneAt('intro');
         if (!heli) { m.tip('Hubschrauber nicht verfügbar – Absetzen per Fahrzeug entfällt.', 4); m.set('noHeli', true); return; }
+        sturdy(m, heli);
         for (const [role, seat] of [['lenz', 2], ['weber', 3]]) { const b = m.ally(role); if (b) m.boardAir(heli, seat, b); }
         m.objective('board', 'Steig in „Libelle 1“ (Bordschütze)', { pos: () => heli.position, label: 'Libelle 1' });
         m.tip(`Einsteigen: ${m.key('interact', 'Einsteigen')} – der Pilotensitz ist belegt, du kommst an den Kinnturm.`, 6);
@@ -212,6 +221,9 @@ export const MISSION_6 = {
         m.introduce('fahrzeug', 'heli', 'KHS-4 Sperber: Kampf- und Transporthubschrauber. Bordschütze am 30-mm-Kinnturm – zielen mit Maus/rechtem Stick, feuern wie gewohnt.');
         const air = m.G.vehicles.air;
         m.say('sander', 'Libelle 1 hebt ab. Kurs Holzplatz, Höhe vierzig.', { radio: true });
+        // erst senkrecht über die Baumleichen steigen, dann Kurs
+        air.fly(heli, { hover: true, alt: 42 });
+        yield m.until(() => !heli.alive || (heli.body && heli.body.agl > 30));
         air.fly(heli, { to: m.vec([70, 60]), alt: 45, speed: 32 });
         yield m.until(() => heli.body.pos.distanceTo(m.vec([70, 60])) < 40 || !heli.alive);
         m.wave('flak', { count: FLAK.length, scale: false, at: FLAK, hold: true });

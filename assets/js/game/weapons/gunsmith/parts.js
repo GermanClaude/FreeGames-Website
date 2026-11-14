@@ -129,6 +129,12 @@ export function acog(b, u0, railTop) {
   // Montage
   b.box('alu', 0.03, 0.012, 0.07, 0, railTop + 0.006, u0 + 0.055, { c: 0.002 });
   b.box('alu', 0.022, 0.016, 0.05, 0, railTop + 0.016, u0 + 0.055, { c: 0.003 });
+  // visier (14.11.): Optikkörper als eigenes Teil 'optic' – im vollen Anschlag blendet das Viewmodel ihn aus (wie das Zielfernrohr,
+  // HUD-Okularrand .h-acog übernimmt): durch ein 15-cm-Rohr sah man sonst nur ein Guckloch von ±4,5° in einem schwarzen Ring.
+  // Absehen (Chevron) bleibt stehen.
+  const prevPart = b.defPart;
+  b.part('optic', 0, axis, u0);
+  b.defPart = 'optic';
   if (b.hi) b.cyl('knurl', 0.0065, 0.0065, 0.01, 0.02, railTop + 0.006, u0 + 0.04, { axis: 'x', seg: 12 });
   // Gehäuse: Okular hinten, Prismenkörper, konisches Objektiv vorn
   b.lathe('alu', [
@@ -150,11 +156,12 @@ export function acog(b, u0, railTop) {
     // visier (14.11.): Objektiv nach vorn, Okular zum Auge nur leicht getönt (vorher zwei Schichten zum Auge: trüb)
     b.circle('lensClear', 0.0185, 0, axis, u0 + L - 0.002, { renderOrder: 1, ry: Math.PI });
     b.circle('lensEye', 0.0152, 0, axis, u0 + 0.002, { renderOrder: 1 });
-    // Chevron im Okular (sichtbar beim Zielen)
-    b.plane('reticleChevron', 0.011, 0.011, 0, axis, u0 + 0.004, { renderOrder: 3 });
+    // Chevron im Okular (sichtbar beim Zielen) – nicht im Optikkörper
+    b.plane('reticleChevron', 0.011, 0.011, 0, axis, u0 + 0.004, { renderOrder: 3, part: prevPart || 'static' });
     // Seiten-Einstelltürme
     b.cyl('alu', 0.007, 0.007, 0.006, 0.021, axis, u0 + 0.06, { axis: 'x', seg: 12 });
   }
+  b.defPart = prevPart;
   b.anchor('sight', 0, axis, u0 - 0.012, { data: { type: 'acog', eyeRelief: 0.085 } });
   return axis;
 }
@@ -165,7 +172,7 @@ export function sniperScope(b, u0, railTop, o = {}) {
   const axis = railTop + 0.046;
   const L = 0.35;
   b.lathe('alu', [
-    [0, 0], [0, 0.0225], [0.004, 0.0238], [0.034, 0.0238], [0.066, 0.0178], [0.076, 0.0168],
+    [0, b.hi ? 0.0205 : 0], [0, 0.0225], [0.004, 0.0238], [0.034, 0.0238],   // visier: Ego hinten offen (Okularlinse statt Deckel) [0.066, 0.0178], [0.076, 0.0168],
     [0.2, 0.0168], [0.24, 0.0168], [0.28, 0.0305], [0.334, 0.032], [0.341, 0.0302], [L, 0.0298], [L, 0.025],
   ], 0, axis, u0, { seg: b.seg(24, 8) });
   // Turmsattel

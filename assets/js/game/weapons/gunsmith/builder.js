@@ -252,7 +252,7 @@ export class Builder {
 
   _push(geo, mat, o, keepUV = false) {
     if (this.lite) mat = liteKey(mat);   // Handy: Atlas-Materialien mit eigenem, kleinerem Atlas (V4)
-    const part = this.parts.get(o.part || 'static');
+    const part = this.parts.get(o.part || this.defPart || 'static');   // defPart: Vorgabe-Teil für eine Baugruppe (visier, Optikkörper)
     if (!part) throw new Error('Unbekanntes Teil ' + o.part);
     if (!this.hi) {
       // Bot-Detailstufe: Durchsicht/Leuchten/Hohlräume und Kleinteile < 9 mm weglassen

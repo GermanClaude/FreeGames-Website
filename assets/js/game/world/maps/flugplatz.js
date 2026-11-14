@@ -137,17 +137,19 @@ function gefechtsstand(b, side) {
 // Späte Ortschaften (Geländehöhen nötig)
 function piste(b, ctx) {
   const hf = ctx.hf;
-  startbahn(b, RUNWAY, 0.05);
+  // Farbe liegt auf dem Asphaltband (Gelände + 3,5 cm, roads.js)
+  const py = hf.heightAt(0, RUNWAY.z) + 0.04, ty = hf.heightAt(0, TAXI_Z) + 0.04;
+  startbahn(b, RUNWAY, py);
   // Rollweg-Mittellinie (gelb) und blaue Randfeuer
-  b.decal(0, 0.05, TAXI_Z, 800, 1.2, 'line', { ry: 0, tint: '#e8c22c', kind: 'paint', opacity: 0.85 });
-  for (const x of [-400, -150, 150, 400]) b.decal(x, 0.05, (TAXI_Z + 17.5) / 2 - 4, 42, 1.2, 'line', { ry: Q, tint: '#e8c22c', kind: 'paint', opacity: 0.85 });
+  b.decal(0, ty, TAXI_Z, 800, 1.2, 'line', { ry: 0, tint: '#e8c22c', kind: 'paint', opacity: 0.85 });
+  for (const x of [-400, -150, 150, 400]) b.decal(x, ty, (TAXI_Z + 17.5) / 2 - 4, 42, 1.2, 'line', { ry: Q, tint: '#e8c22c', kind: 'paint', opacity: 0.85 });
   for (let x = -400; x <= 400; x += 40) for (const s of [-1, 1]) {
     const z = TAXI_Z + s * 11.2, y = hf.heightAt(x, z);
     b.cyl(x, y - 0.03, z, 0.06, 0.32, 'metal_painted', { tint: '#e8c22c', ...KEIN, seg: 6 });
     b.cyl(x, y + 0.29, z, 0.08, 0.1, 'lamp_lens', { tint: '#3a6fd8', ...KEIN, seg: 6, ao: false });
   }
   // Rollhalt-Markierung vor der Bahn (doppelt durchgezogen + gestrichelt) an den Verbindungen
-  for (const x of [-400, -150, 150, 400]) for (const dz of [0, 1.2]) b.decal(x, 0.05, 10 - dz, 18, 1.2, 'line', { ry: 0, tint: '#e8c22c', kind: 'paint', opacity: 0.9 });
+  for (const x of [-400, -150, 150, 400]) for (const dz of [0, 1.2]) b.decal(x, ty, 10 - dz, 18, 1.2, 'line', { ry: 0, tint: '#e8c22c', kind: 'paint', opacity: 0.9 });
   b.defineSign('rollhalt', { style: 'plate', text: 'A1 ▸ 09-27', bg: '#c8302a', fg: '#ffffff' });
   for (const x of [-400, -150, 150, 400]) { const y = hf.heightAt(x - 11, 8); b.box(x - 11, y, 8, 2.2, 1.0, 0.3, 'concrete', { tint: '#e8e4dc', minimap: false }); b.sign(x - 11, y + 1.0, 8, 2.0, 0.6, 'rollhalt', { ry: 0 }); }
   papi(b, RUNWAY.x0 + 300, RUNWAY.z - RUNWAY.w / 2 - 14, hf.heightAt(RUNWAY.x0 + 300, RUNWAY.z - 30));

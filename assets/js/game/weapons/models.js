@@ -77,7 +77,8 @@ const ANCHOR_NAMES = ['chargeGrab', 'magGrab', 'magWell', 'trigger', 'pumpGrab',
 const PART_NAMES = ['selector', 'dustCover', 'mag', 'bolt', 'charge', 'pump', 'slide', 'boltHandle', 'hammer', 'cover', 'belt', 'lid', 'pin', 'spoon', 'blade', 'shell', 'led',
   'crane', 'cylinder', 'ejector', 'loader', 'rocket',
   'barrels', 'toplever', 'extractor', 'shellR', 'shellL',
-  'rotor'];   // Laufbündel der Gatling (13.11., RG-6 Orkan)   // Kipplauf (26.10.): Läufe, Oberhebel, Auszieher, zwei Patronen
+  'rotor',   // Laufbündel der Gatling (13.11., RG-6 Orkan)
+  'optic'];  // Körper des Kampfvisiers (visier, 14.11.): im vollen Anschlag ausgeblendet, Viewmodel   // Kipplauf (26.10.): Läufe, Oberhebel, Auszieher, zwei Patronen
 
 const cache = new Map();
 

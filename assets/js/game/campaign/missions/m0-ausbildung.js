@@ -137,6 +137,7 @@ export const MISSION_0 = {
     m.on('weapon:reload', (e) => { if (e && e.actor === P(m) && e.phase === 'start') m.set('reloaded', true); });
     m.on('weapon:switch', (e) => { if (e && e.actor === P(m)) m.set('switched', (m.get('switched') || 0) + 1); });
     m.on('weapon:firemode', (e) => { if (!e || !e.actor || e.actor === P(m)) m.set('firemode', true); });
+    m.on('player:mantle', (e) => { if (e && e.phase === 'start') m.set('vaulted', true); });
     m.on('vehicle:enter', (e) => { if (e && e.actor === P(m)) m.set('inJeep', true); });
     m.on('vehicle:exit', (e) => { if (e && e.actor === P(m)) m.set('inJeep', false); });
     m.on('grenade:throw', (e) => { if (!e || e.actor !== P(m)) return; const tac = ['smoke', 'flash', 'stun', 'rauch', 'blend'].some((k) => String(e.type || '').includes(k)); m.set(tac ? 'threwTac' : 'threw', true); });
@@ -202,7 +203,8 @@ export const MISSION_0 = {
           title: 'Überklettern',
           say: ['krell', 'Der Parcours. Durch das Fenster – nicht durch die Tür.'],
           text: (mm) => `Laufe an das Fenster der Holzwand und drücke ${K(mm, 'jump', 'Springen')}, um hindurchzuklettern.`,
-          tick: (mm, st) => { if (P(mm).mantling) st.vault = true; },
+          setup: (mm) => mm.set('vaulted', false),
+          tick: (mm, st) => { if (P(mm).mantling || mm.get('vaulted')) st.vault = true; },
           done: (mm, st) => st.vault && P(mm).position.x < -12.3,
         });
         m.done('fenster', { quiet: true });

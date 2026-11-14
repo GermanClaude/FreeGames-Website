@@ -921,7 +921,8 @@ export function electricBox(b, x, y, z, o = {}) {
   f.box(0, 0, 0, w, h, d, 'metal_painted', { tint: o.tint || '#9aa39a', minimap: o.minimap ?? 'cover', collide: o.collide ?? true, aoFloor: o.aoFloor });
   f.box(0, 0.08, d / 2 + 0.005, 0.01, h - 0.16, 0.01, 'black', { collide: false, minimap: false, ao: false });
   f.box(w / 4, h * 0.55, d / 2 + 0.02, 0.06, 0.12, 0.03, 'metal_galvanized', { collide: false, minimap: false, ao: false });
-  if (o.warn !== false) b.sign(...f.P(-w / 4, d / 2 + 0.01), y + h * 0.62, 0.22, 0.2, 'warn_volt', { ry: o.ry || 0, back: false, depth: 0 });
+  // karten-voll: Reihenfolge x, y, z (vorher x, z, y → Schild schwebte an falscher Stelle)
+  if (o.warn !== false) { const [sx, sz] = f.P(-w / 4, d / 2 + 0.01); b.sign(sx, y + h * 0.62, sz, 0.22, 0.2, 'warn_volt', { ry: o.ry || 0, back: false, depth: 0 }); }
 }
 
 // ---------------------------------------------------------------------------

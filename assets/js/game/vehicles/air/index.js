@@ -96,6 +96,11 @@ export class AirSupport {
     return !!sys.military && !sys.civilOnly;
   }
 
+  /** Vorlagen für Luftfahrzeuge, die die Karte selbst aufstellt (world.vehicleSpawns mit heli/jet, VehicleSystem._setupSpawns). */
+  prepareModels(types, teams = ['A', 'B']) {
+    try { prepareAirModels(types, teams.length ? teams : [null], this.sys.quality); } catch (err) { console.warn('[luft] Modelle', err); }
+  }
+
   /** Stellplätze (VehicleSystem._setupSpawns, Host/offline): je Team Hubschrauber + Jet nahe der Basis. */
   setupSpawns(force = false) {
     const G = this.G, sys = this.sys, w = sys.world;

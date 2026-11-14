@@ -1340,6 +1340,10 @@ export class ViewModel {
     this.root.visible = this._visible && !scoped;
     this.scene.userData.npAds = scoped || !this._visible ? 0 : a; // gfx-licht: Tiefenschärfe beim Zielen (engine/post/dof.js)
     if (scoped) this.flash.hide();
+    // Kampfvisier (visier, 14.11.): im vollen Anschlag Optikkörper ausblenden – Okularrand zeichnet das HUD (.h-acog), das Absehen
+    // bleibt im Modell. Durch das 15-cm-Rohr sah man sonst nur ein kleines Guckloch in einem schwarzen Ring.
+    const optic = this.cur.ud.parts.optic;
+    if (optic) optic.visible = !(this._scopeOverlay === 'acog' && !vr && a > 0.9);
 
     // ---- Hände
     this.root.updateMatrixWorld(true);

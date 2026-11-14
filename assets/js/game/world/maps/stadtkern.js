@@ -121,6 +121,18 @@ function allee(b, zones) {
     bauzaun(b, sx * HX, -8, sx * HX, 8);
     for (let k = 0; k < 4; k++) igel(b, sx * (HX - 2), -6 + k * 4);
   }
+  // Kreuzungen Allee/Querstraße: Ampeln (aus), Straßenschilder; Kanaldeckel und Abläufe
+  b.defineSign('str_allee', { style: 'plate', text: 'LINDENALLEE', bg: '#f2f0ea', fg: '#1c1c1c' });
+  b.defineSign('str_quer', { style: 'plate', text: 'SPEICHERSTRASSE', bg: '#f2f0ea', fg: '#1c1c1c' });
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const px = sx * 47.2, pz = sz * 7.4;
+    b.cyl(px, 0, pz, 0.07, 3.6, 'metal_painted', { tint: '#3d4247', seg: 8, minimap: 'prop' });
+    b.box(px, 2.4, pz - sz * 0.15, 0.32, 0.95, 0.28, 'metal_painted', { tint: '#1c1c1c', ...KEIN });
+    for (let k = 0; k < 3; k++) b.cyl(px, 3.13 - k * 0.3, pz - sz * 0.3, 0.09, 0.03, k === 0 ? 'lamp_redlens' : k === 1 ? 'lamp_orange' : 'lamp_green', { axis: 'z', ...KEIN, seg: 10, ao: false });
+    b.sign(px, 3.65, pz, 1.6, 0.32, 'str_allee', { ry: 0 });
+    b.sign(px, 3.3, pz, 1.8, 0.32, 'str_quer', { ry: Q });
+  }
+  for (let x = -50; x <= 50; x += 12.5) { b.decal(x, 0.012, 3.6 * (x % 25 ? 1 : -1), 0.8, 0.8, 'manhole', { opacity: 0.85 }); b.decal(x + 3, 0.012, -5.6, 0.5, 0.9, 'drain', { opacity: 0.8, ry: 0 }); b.decal(x - 3, 0.012, 5.6, 0.5, 0.9, 'drain', { opacity: 0.8, ry: 0 }); }
   ubahn(b);
   b.footprints.push({ x: (UB.x0 + UB.x1) / 2, z: 0, hw: (UB.x1 - UB.x0) / 2, hd: 9, ry: 0, y0: UB.y, y1: UB.y + 3.6, kind: 'floor' });
 }
@@ -180,7 +192,7 @@ export default {
     // Startpunkte: Hinterstraßen (A Süd, B Nord); FFA verteilt (Höfe, Läden, Platz, U-Bahn, Dächer nicht)
     const spawns = { A: [], B: [], ffa: [] };
     for (const x of [-44, -36, -20, -12, -2, 6, 18, 24, 36, 44, -52, 52]) { spawns.A.push({ x, z: x === -52 || x === 52 ? 46 : 51.5, yaw: 0 }); spawns.B.push({ x, z: x === -52 || x === 52 ? -46 : -51.5, yaw: PI }); }
-    for (const [x, z, y] of [[-30, 30], [30, -30], [-30, -30], [30, 30], [0, 16], [0, -16], [-8, 3, -4.0], [-14, -5, -4.0], [-52, 0], [52, 0], [-38, 12.4], [38, -12.4], [22, 12.4], [-22, -12.4], [0, 42], [0, -42], [-40, 44], [40, -44]]) spawns.ffa.push(y != null ? { x, z, y } : { x, z });
+    for (const [x, z, y] of [[-26, 27], [26, -27], [-26, -27], [26, 27], [0, 16], [0, -16], [-8, 3, -4.0], [-14, -5, -4.0], [-52, 0], [52, 0], [-38, 7.6], [38, -7.6], [22, 7.6], [-22, -7.6], [0, 42], [0, -42], [-40, 44], [40, -44]]) spawns.ffa.push(y != null ? { x, z, y } : { x, z });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -38, z: 0, radius: 5.5 }, { id: 'B', x: -8, z: 0, y: -4.0, radius: 5 }, { id: 'C', x: 38, z: 0, radius: 5.5 }] },

@@ -128,10 +128,10 @@ function sight(b, u, front, folded = false) {
     b.box('gbSteel', 0.0024, 0.02, 0.0024, 0, base + 0.014, u, { c: 0 });
     b.box('gbAlu', 0.02, 0.004, 0.008, 0, base + 0.006, u, { c: 0.001 });
   } else {
-    // Diopterflügel mit rundem Durchblick Ø 6,4 mm (visier, 14.11.: vorher Vollplatte 22 × 30 mm mit schwarzem Punkt – das Loch lief
+    // Diopterflügel mit rundem Durchblick Ø 8,2 mm (Korn samt Schutzohren steht im Ring) (visier, 14.11.: vorher Vollplatte 22 × 30 mm mit schwarzem Punkt – das Loch lief
     // quer statt längs, im Anschlag ein Balken vor dem Ziel); Fuß des Flügels breit, oben schmaler Ring um die Blende
     b.side('gbAlu', [[-0.004, 0], [0.004, 0], [0.003, 0.012], [-0.003, 0.012]].map(([du, dv]) => [u + du, base + dv]), 0.016, 0, { bevel: 0.001 });
-    apertureSight(b, 'gbAlu', { x0: -0.0075, x1: 0.0075, v0: base + 0.011, v1: SIGHT + 0.0068, cv: SIGHT, r: 0.0032, u: u - 0.002, l: 0.004 });
+    apertureSight(b, 'gbAlu', { x0: -0.0085, x1: 0.0085, v0: base + 0.011, v1: SIGHT + 0.0072, cv: SIGHT, r: 0.0041, u: u - 0.002, l: 0.004 });
     for (const s of [-1, 1]) b.box('gbAlu', 0.004, 0.02, 0.01, s * 0.0115, base + 0.012, u, { c: 0.001 });
   }
 }

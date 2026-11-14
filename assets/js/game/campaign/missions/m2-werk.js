@@ -38,7 +38,7 @@ const CUT_INTRO = {
 const CUT_OUTRO = {
   location: ['Walzwerk 7 · Werkstor', '05:34 Uhr'],
   cast: {
-    brandt: actor('brandt', { pos: [3.2, 37.4], yaw: -2.6, aim: -0.9 }),
+    brandt: actor('brandt', { pos: [4.4, 37.7], yaw: -2.6, aim: -0.9 }), // Runde 2: vorher auf einer Kiste (0,81 m)
     lenz: actor('lenz', { pos: [1.2, 35.6], yaw: 0.5, aim: -0.6 }),
     falk: actor('falk', { pos: [-0.6, 37.0], yaw: -0.9, aim: -0.6 }),
     weber: actor('weber', { pos: [2.0, 39.4], yaw: 2.9, crouch: true, aim: -0.7 }),

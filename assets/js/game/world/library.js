@@ -40,7 +40,7 @@ export const LIB_MATERIALS = {
   plaster_blue: { id: 'plaster_blue_weathered', color: 1.05 },
   plaster_damaged: { id: 'plaster_damaged_brick', color: 1.1 },
   plaster_patched: { id: 'plaster_worn_patched', color: 1.3 },
-  brick: { id: 'brick_red_weathered', color: [1.2, 0.92, 1.15] }, // texturen 14.11.: Fotoscan (vorher vw_ziegel × [0,8 1,04 1,04], Video-Ziegel)
+  brick: { id: 'brick_red_weathered', color: [1.02, 0.9, 1.0], macro: [0.2, 0.1, 0.12] }, // texturen 14.11.: Fotoscan (vorher vw_ziegel × [0,8 1,04 1,04], Video-Ziegel)
   // brick_alt: { id: 'vw_ziegel', color: [0.8, 1.04, 1.04] }, // 16.10.: Video-Ziegel weniger knallrot (gemessen sat 0,48, bei uns 0,68) // Grafik-Vorlage 15.10.: echte Ziegel aus dem Video (Walzhalle), neu verlegt (vorher v_brick)
   brick_dark: { id: 'brick_dark', color: 2.0 },
   stone_wall: { id: 'sandstone_blocks', color: 1.0 },
@@ -62,8 +62,8 @@ export const LIB_MATERIALS = {
   bark: { id: 'bark_brown', color: [1.75, 1.8, 1.95], macro: false },
   // baeume 14.11.: Rinde je Baumart (Poly Haven CC0: jolcham_oak_bark_01, knotted_pine_bark (Buche; Birke daraus
   // aufgehellt mit Korkporen), bark_brown_01, pine_bark, bark_willow); Farbe auf ≈ Rindenhelligkeit kalibriert
-  bark_eiche: { id: 'bark_eiche', color: [1.8, 1.95, 2.3], macro: false },
-  bark_buche: { id: 'bark_buche', color: [3.0, 3.0, 3.1], macro: false },
+  bark_eiche: { id: 'bark_eiche', color: [1.35, 1.45, 1.7], macro: false },
+  bark_buche: { id: 'bark_buche', color: [2.3, 2.3, 2.4], macro: false },
   bark_birke: { id: 'bark_birke', color: 0.9, macro: false },
   bark_pappel: { id: 'bark_pappel', color: [1.0, 1.35, 3.0], macro: false },
   bark_kiefer: { id: 'bark_kiefer', color: [1.25, 1.45, 1.6], macro: false },

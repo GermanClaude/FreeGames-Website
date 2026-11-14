@@ -22,10 +22,10 @@ const VAULT = [0, -23.6];
 const CUT_INTRO = {
   location: ['Staatsarchiv Sant Aurel', '06:10 Uhr · Tag 24 der Waffenruhe'],
   cast: {
-    lenz: actor('lenz', { pos: [1.4, 23.0], yaw: 2.6, aim: -0.6 }),
-    falk: actor('falk', { pos: [-0.6, 22.4], yaw: -2.9, aim: -0.6 }),
-    weber: actor('weber', { pos: [-2.2, 23.8], yaw: -2.2, aim: -0.6, crouch: true }),
-    hofer: actor('hofer', { pos: [2.8, 24.4], yaw: 2.9, aim: -0.7 }),
+    lenz: actor('lenz', { pos: [1.4, 23.0], yaw: -0.5, aim: -0.6 }),
+    falk: actor('falk', { pos: [-0.6, 22.4], yaw: 0.5, aim: -0.6 }),
+    weber: actor('weber', { pos: [-2.2, 23.8], yaw: 0.7, aim: -0.6, crouch: true }),
+    hofer: actor('hofer', { pos: [2.8, 24.4], yaw: -0.7, aim: -0.7 }),
   },
   beats: [
     { cam: { from: [0, 9, -18], to: [0, 7.5, 2], look: [0, 3, 20], lookTo: [0, 1.6, 23] }, dur: 7, fadeIn: 1.5,
@@ -46,10 +46,10 @@ const CUT_INTRO = {
 const CUT_OUTRO = {
   location: ['Staatsarchiv · Eingangshalle', '06:58 Uhr'],
   cast: {
-    lindner: actor('lindner', { pos: [0.8, 22.6], yaw: 2.5, aim: -1.0 }),
-    falk: actor('falk', { pos: [-1.0, 21.6], yaw: -0.7, aim: -0.6 }),
-    lenz: actor('lenz', { pos: [-2.4, 23.4], yaw: -1.4, aim: -0.6 }),
-    weber: actor('weber', { pos: [2.6, 24.2], yaw: 2.2, aim: -0.6 }),
+    lindner: actor('lindner', { pos: [0.8, 22.6], yaw: -0.6, aim: -1.0 }),
+    falk: actor('falk', { pos: [-1.0, 21.6], yaw: 0.6, aim: -0.6 }),
+    lenz: actor('lenz', { pos: [-2.4, 23.4], yaw: 0.8, aim: -0.6 }),
+    weber: actor('weber', { pos: [2.6, 24.2], yaw: -0.8, aim: -0.6 }),
   },
   beats: [
     { cam: { from: [6, 3.2, 14], to: [4.5, 2.6, 16.5], look: [0, 1.4, 22.6] }, dur: 5, fadeIn: 1,

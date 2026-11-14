@@ -358,7 +358,7 @@ export function strommast(b, x, y, z, ry, o = {}) {
   }
   if (o.trafo) { // Masttrafo / Verteilerkasten
     f.box(0, 2.6, -0.3, 0.6, 0.8, 0.4, 'metal_painted', { ...DG, tint: '#7a8478' });
-    b.sign(...f.P(0, -0.51), y + 3.1, 0.2, 0.18, 'warn_volt', { ry: ry + Math.PI, back: false, depth: 0 });
+    { const [sx, sz] = f.P(0, -0.51); b.sign(sx, y + 3.1, sz, 0.2, 0.18, 'warn_volt', { ry: ry + Math.PI, back: false, depth: 0 }); }
   }
   if (o.lampe) { // Straßenleuchte am Mast
     f.box(0.6, h - 2.2, 0.15, 1.2, 0.05, 0.05, 'metal_galvanized', DN);

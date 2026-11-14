@@ -237,7 +237,7 @@ export class CampaignPane {
       </section>
       <section><ul class="kc-list" role="list">${acts}${tbc}</ul></section>
       <section class="kc-detail">
-        <small class="k">${outSel.tutorial ? 'Ausbildung' : `Mission ${outSel.n}`} · ${esc(outSel.type)}</small>
+        <small class="k">${outSel.tutorial ? esc(outSel.type) : `Mission ${outSel.n} · ${esc(outSel.type)}`}</small>
         <h3>${esc(outSel.title)}${sel && fresh.includes(sel.id) ? '<i class="kc-new">NEU</i>' : ''}</h3>
         <div class="kc-meta"><span>Karte: ${esc(this._mapName(outSel.map, outSel.mapFallback))}</span>${outSel.minutes ? `<span>ca. ${outSel.minutes} min</span>` : ''}${sel ? `<span>${sel.stages.length} Abschnitte mit Checkpoint</span>` : ''}${st && st.time ? `<span>Bestzeit ${Math.floor(st.time / 60)}:${String(st.time % 60).padStart(2, '0')}</span>` : ''}</div>
         <p>${esc(sel ? sel.summary : outSel.story)}</p>

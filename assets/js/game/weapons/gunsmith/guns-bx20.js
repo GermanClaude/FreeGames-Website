@@ -69,13 +69,20 @@ export function bx20(b) {
   const [s0, s1, sy] = R.SCOPE;
   const SV = V(sy);
   const railTop = V(R.RAIL[2]) + 0.0077;
+  // visier (14.11.): Visierrohr samt Schiene obenauf als Teil 'optic' (im vollen Anschlag ausgeblendet, siehe unten) – nur mit der
+  // Werksoptik; trägt die Schiene eine andere Optik (Aufsatz), bleibt sie stehen
+  const ownScope = !(b.att && b.att.optik && b.att.optik !== 'acog');
+  if (ownScope) { b.part('optic', 0, SV, U(s0)); b.defPart = 'optic'; }
   if (b.hi) b.picatinny('gaAlu', 0, V(R.RAIL[2]), U(R.RAIL[0]), U(R.RAIL[1]));
   else b.rail('gaAlu', 0, V(R.RAIL[2]), U(R.RAIL[0]), U(R.RAIL[1]));
+  b.defPart = null;
   const swapped = swapOptic(b, 'acog', U(262), railTop);
   // Visierrohr (gedreht), Augenmuschel, Objektivkappe, Linsen, Absehen
   const prof = R.SCOPE_PROFILE.map(([x, r]) => [U(x), mm(r)]);
   // visier (14.11.): in den Ego-Stufen ein offenes Rohr (Innenlippe bis r 11,5/13,5 mm) – barrel() schloss beide Enden mit vollen
   // Scheiben, im Anschlag blickte man auf den Deckel des Okulars statt durch das Visier. Bot-Stufe bleibt geschlossen.
+  // Visierrohr als Teil 'optic': im vollen Anschlag blendet das Viewmodel es aus (Okularrand vom HUD, Absehen bleibt), siehe parts.js acog
+  if (ownScope) b.defPart = 'optic';
   if (b.hi) {
     const u0 = prof[0][0];
     b.lathe('gaPolyOD', [[0, mm(11.5)], ...prof.map(([u, r]) => [u - u0, r]), [prof[prof.length - 1][0] - u0, mm(13.5)]], 0, SV, u0, { seg: b.seg(28, 6) });
@@ -86,10 +93,11 @@ export function bx20(b) {
     // visier (14.11.): Objektiv nach vorn (Reflexe außen), Okular zum Auge nur leicht getönt
     b.circle('lensClear', mm(14.5), 0, SV, U(s1) - 0.002, { renderOrder: 1, ry: Math.PI });
     b.circle('lensEye', mm(12), 0, SV, U(s0) + 0.002, { renderOrder: 1 });
-    b.plane('reticleChevron', 0.011, 0.011, 0, SV, U(s0) + 0.004, { renderOrder: 3 });
+    b.plane('reticleChevron', 0.011, 0.011, 0, SV, U(s0) + 0.004, { renderOrder: 3, part: 'static' });
     // Einstelltürme seitlich/oben am Bügel
     b.cyl('gaPolyOD', 0.0062, 0.0062, 0.006, REC_W + 0.003, SV, U(320), { axis: 'x', seg: 16 });
   }
+  b.defPart = null;
   if (swapped === null || swapped === undefined) b.anchor('sight', 0, SV, U(s0) - 0.012, { data: { type: 'acog', eyeRelief: 0.085 } });
   // ---------------------------------------------------------------- Laufgruppe (Stahl), Spannhebel, Lauf, Mündung
   slab(b, 'gaSteel', M(R.BGROUP), 0.0165, {

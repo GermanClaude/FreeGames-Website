@@ -251,6 +251,12 @@ export class CampaignMode extends BaseMode {
     return true;
   }
 
+  /** Mission sofort als erfüllt beenden (Tests; Outro läuft). */
+  win() { if (this.director) { this.G.match.unranked = true; this.director.complete(); } }
+
+  /** Neu starten ab Abschnitt/Checkpoint id (Tests). */
+  stage(id) { this.G.match.unranked = true; this.restartAt(id || null); }
+
   /** Alle Gegner der Mission ausschalten (Tests). */
   killWaves() {
     const G = this.G;

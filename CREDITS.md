@@ -9,7 +9,7 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (71)
+## Texturen (91)
 
 45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.

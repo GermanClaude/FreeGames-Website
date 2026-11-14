@@ -67,9 +67,11 @@ export function orkan(b) {
   b.box('gbSteel', 0.016, 0.012, 0.016, 0, AXIS + 0.058, 0.163, { c: 0.002 });
 
   // ---- Tragegriff über dem Gehäuse
-  for (const u of [-0.04, 0.1]) b.box('gbSteel', 0.012, 0.03, 0.016, 0, AXIS + 0.07, u, { c: 0.002 });
-  b.tube('gbSteel', [[0, AXIS + 0.08, -0.045], [0, AXIS + 0.094, -0.025], [0, AXIS + 0.1, 0.03], [0, AXIS + 0.094, 0.085], [0, AXIS + 0.08, 0.105]], 0.0062);
-  b.lathe('gbGrip', [[0, 0], [0, 0.0105], [0.004, 0.0115], [0.08, 0.0115], [0.084, 0.0105], [0.084, 0]], 0, AXIS + 0.1, -0.012, { seg: b.seg(16, 6) });
+  // visier (14.11.): Griff 30 mm nach links versetzt – mittig stand die vordere Stütze genau über dem Korn im Bild
+  const hx = -0.03;
+  for (const u of [-0.04, 0.1]) b.box('gbSteel', 0.012, 0.03, 0.016, hx, AXIS + 0.07, u, { c: 0.002 });
+  b.tube('gbSteel', [[hx, AXIS + 0.08, -0.045], [hx, AXIS + 0.094, -0.025], [hx, AXIS + 0.1, 0.03], [hx, AXIS + 0.094, 0.085], [hx, AXIS + 0.08, 0.105]], 0.0062);
+  b.lathe('gbGrip', [[0, 0], [0, 0.0105], [0.004, 0.0115], [0.08, 0.0115], [0.084, 0.0105], [0.084, 0]], hx, AXIS + 0.1, -0.012, { seg: b.seg(16, 6) });
 
   // ---- Laufbündel (Teil 'rotor'): Mittelachse, sechs Läufe, Rotorkopf, Mittel- und Mündungsschelle (Blütenform)
   b.part('rotor', 0, AXIS, U0);
