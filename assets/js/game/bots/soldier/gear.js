@@ -8,7 +8,8 @@
 // Gesichter sind verdeckt (Realismus-Plan C1: Sturmhaube, Halstuch, Shemagh, Gasmaske + Schutzbrillen) – wie Bodycam,
 // das Gesichter verpixelt; so entsteht kein „Uncanny Valley“ aus der Nähe.
 import * as THREE from 'three';
-import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf } from './builder.js?v=20261114060746';
+import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf, lathe } from './builder.js?v=20261114060746';
+import { hullShell, hullP, hullN, hullPath, sweep, rectProfile, roundProfile, onHull, pad, rectPoly, place, curve } from './gear-parts.js?v=20261114060746';
 import { SKIN_TONES } from './materials.js?v=20261114060746';
 import { BONE, DIM } from './rig.js?v=20261114060746';
 import { BODY_MESH } from './body-mesh.js?v=20261114060746';
@@ -68,6 +69,15 @@ const HELMET_TILT = new THREE.Matrix4().makeTranslation(0, 1.712, 0.006)
   .multiply(new THREE.Matrix4().makeRotationX(0.3))
   .multiply(new THREE.Matrix4().makeTranslation(0, -1.712, -0.006));
 const tiltHelmet = (g) => g.applyMatrix4(HELMET_TILT);
+void tiltHelmet;
+/** Helmrand (θ ab Scheitel, rad) je Richtung φ (gear-parts.js): vorn 74° (≈ 2,5 cm über den Brauen), seitlich 93° mit
+ *  Ausschnitt über den Ohren (High-Cut), hinten 117° (tief über den Hinterkopf). */
+function helmetRim(ph) {
+  const s = Math.sin(ph), c = Math.cos(ph);
+  let th = s < 0 ? 93 + 19 * s : 93 + 24 * s;
+  th -= 6 * Math.exp(-((1 - Math.abs(c)) ** 2) / 0.004);
+  return (th * Math.PI) / 180;
+}
 // Umgebungsverdeckung je Detailstufe (Strahlen, Zellmaß)
 const AO = [{ cell: 0.02, dirs: 8 }, { cell: 0.022, dirs: 8 }, { cell: 0.03, dirs: 6, steps: [0.04, 0.09, 0.16] }];
 
@@ -218,14 +228,17 @@ function buildSoldier(V, lod) {
     }
   };
   // MOLLE-Feld: Reihen aus kurzen Gurtschlaufen mit Lücken (liest sich als Gurtband statt als Streifen)
-  const molle = (x0, x1, y0, rows, z, bone = 'chest', dz = -1) => {
+  const molle = (x0, x1, y0, rows, z, bone = 'chest', dz = -1, bend = 0) => {
     const n = Math.max(1, Math.round((x1 - x0) / 0.038));
     const step = (x1 - x0) / n;
+    // bend: Wölbung der Unterlage (z += bend·x² zur Mitte hin) – Schlaufen liegen auf der gebogenen Platte
     for (let i = 0; i < rows; i++) for (let k = 0; k < n; k++) {
-      add(rbox(step - 0.007, 0.0095, 0.005, 0, 0, { p: [x0 + (k + 0.5) * step, y0 + i * 0.026, z + dz * 0.0025] }), bone, C.web);
+      const xc = x0 + (k + 0.5) * step;
+      add(rbox(step - 0.007, 0.0095, 0.005, 0, 0, { p: [xc, y0 + i * 0.026, z + dz * 0.0025 - dz * bend * xc * xc], r: [0, dz * 2 * bend * xc, 0] }), bone, C.web);
     }
   };
   const PLAST = { ...C.plastic, shine: 0.3 };
+  const PKs = L0 ? { k: 3, fr: 2, bv: 4 } : L01 ? { k: 1, fr: 1, bv: 2 } : { k: 1, fr: 0, bv: 1 };
   // Gurt entlang eines (y, z)-Pfads, gespiegelt links/rechts bei ±x (step > 1 dünnt den Pfad für ferne LODs aus)
   const strapPath = (pts, x, w, th, mat, step = 1) => {
     const P = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
@@ -268,12 +281,45 @@ function buildSoldier(V, lod) {
     add(R(0.03, 0.075, 0.04, 0.008, { p: [0.24, 0.825, 0.055], r: [0.25, 0, -0.03] }), 'thighR', C.plastic);
     if (L01) add(torus(0.11, 0.008, 3, q.cs + 2, { p: [0.1, 0.62, 0.006], r: [Math.PI / 2, 0, 0], s: [1, 1.08, 1] }), 'thighR', C.strap);
   }
+  // Knie-/Ellbogenschoner (sol 15.11.): gewölbte Hartschalen-Kissen um Knie bzw. Ellbogen gebogen, Haltegurte rundum
+  const ring = (cx, y, cz, rx, rz, bone, mat, w = 0.012, n = 14) => {
+    const pts = [];
+    for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; pts.push([cx + Math.cos(a) * rx, y, cz + Math.sin(a) * rz]); }
+    const ups = pts.map((p) => { const dx = p[0] - cx, dz = p[2] - cz, l = Math.hypot(dx, dz); return [dx / l, 0, dz / l]; });
+    pair(sweep(pts, ups, rectProfile(w, 0.003), { closed: true, smooth: false }), bone, bone.replace('L', 'R'), mat);
+  };
   if (V.knees) {
-    pair(R(0.13, 0.13, 0.048, 0.022, { p: [-0.1, 0.5, -0.082], r: [-0.1, 0, 0] }), 'shinL', 'shinR', C.knee);
-    if (L0) pair(torus(0.077, 0.007, 3, q.cs, { p: [-0.1, 0.45, 0.004], r: [Math.PI / 2, 0, 0], s: [1, 1.1, 1] }), 'shinL', 'shinR', C.strap);
+    if (FAR) pair(R(0.12, 0.13, 0.04, 0.02, { p: [-0.106, 0.5, -0.09], r: [-0.1, 0, 0] }), 'shinL', 'shinR', C.knee);
+    else {
+      const kp = pad({ ...PKs, w: 0.108, h: 0.135, d: 0.03, rb: 0.012, rc: 0.032, puff: L0 ? 0.007 : 0.004, bend: [7, 2.5] });
+      place(kp, { p: [-0.106, 0.502, -0.107], r: [-0.08, 0, 0] });
+      pair(kp, 'shinL', 'shinR', C.knee);
+      if (L0) {
+        // Polsterrand hinter der Schale + Haltegurte (oben/unten) mit Steckschnalle außen
+        const kp2 = pad({ k: 2, fr: 1, bv: 3, w: 0.118, h: 0.15, d: 0.012, rb: 0.005, rc: 0.035, bend: [7, 2.5] });
+        place(kp2, { p: [-0.106, 0.5, -0.094], r: [-0.08, 0, 0] });
+        pair(kp2, 'shinL', 'shinR', { pal: 'strap', shade: 0.9, detail: 1, cls: 'gear' });
+        ring(-0.106, 0.455, -0.005, 0.072, 0.092, 'shinL', C.strap);
+        ring(-0.106, 0.55, -0.005, 0.077, 0.094, 'shinL', C.strap);
+        pair(rbox(0.006, 0.02, 0.026, 0, 0, { p: [-0.181, 0.455, -0.01] }), 'shinL', 'shinR', PLAST);
+      }
+    }
+    // Ellbogenschoner (gleiche Ausführungen)
+    if (L01) {
+      const ep = pad({ ...PKs, w: 0.072, h: 0.092, d: 0.022, rb: 0.009, rc: 0.024, puff: L0 ? 0.005 : 0.003, bend: [10, 3] });
+      place(ep, { r: [0, Math.PI, 0] });
+      place(ep, { p: [-DIM.shoulderX - 0.012, 1.15, 0.083], r: [0.08, 0, 0] });
+      pair(ep, 'foreArmL', 'foreArmR', C.knee);
+      if (L0) ring(-DIM.shoulderX - 0.012, 1.115, 0.006, 0.058, 0.072, 'foreArmL', C.strap, 0.01, 12);
+    }
   }
-  // Schnürung vorn am Stiefelschaft
-  if (L0) for (let i = 0; i < 4; i++) pair(rbox(0.042, 0.006, 0.01, 0, 0, { p: [-0.1, 0.095 + i * 0.028, -0.066] }), 'shinL', 'shinR', C.plastic);
+  // Stiefel: Schnürung über Kreuz mit Ösen, Schleife oben
+  if (L0) for (let i = 0; i < 4; i++) {
+    const y = 0.105 + i * 0.026;
+    for (const sg of [-1, 1]) pair(rbox(0.04, 0.0035, 0.004, 0, 0, { p: [-0.1, y + 0.013, -0.07], r: [0, 0, sg * 0.55] }), 'shinL', 'shinR', { color: '#1d1b18', detail: 0.8, cls: 'cloth' });
+    for (const sx of [-1, 1]) pair(cyl(0.0035, 0.0035, 0.004, 6, { p: [-0.1 + sx * 0.019, y, -0.069], r: [Math.PI / 2, 0, 0] }), 'shinL', 'shinR', C.metal);
+  }
+  if (L0) pair(torus(0.009, 0.0025, 3, 8, { p: [-0.1, 0.214, -0.071], r: [0, 0, 0], s: [1.4, 0.8, 1] }), 'shinL', 'shinR', { color: '#1d1b18', detail: 0.8, cls: 'cloth' });
 
   // Gefechtsgürtel (Ring um das Becken) mit Schnalle, Taschen, Erste-Hilfe-Tasche hinten
   add(cyl(0.165, 0.165, 0.058, q.tseg, { p: [0, 0.995, 0.006], s: [1.03, 1, 0.74] }), 'hips', C.gear);
@@ -308,74 +354,119 @@ function buildSoldier(V, lod) {
   if (V.vest === 'heavy') add(R(0.17, 0.15, 0.03, 0.014, { p: [0, 0.885, -0.12], r: [-0.12, 0, 0] }), 'hips', C.gear);
 
   /* ------------------------------------------------------------ Westen */
+  // sol 15.11.: Plattenträger aus gewölbten Kissen (gear-parts.pad: gerundete Kanten, um die Brust gebogen, Schulterausschnitt)
+  // statt Quadern; Taschen mit Deckeln, Gummizug und Magazinen, Funkgerät mit Antenne, Erste-Hilfe-Tasche mit Zuglasche,
+  // gepolsterte Schulterträger, Kummerbund mit Gurtband. Ferne Stufe: nur die Silhouette tragenden Teile.
   const vest = V.vest;
+  const PK = L0 ? { k: 3, fr: 2, bv: 4 } : L01 ? { k: 1, fr: 1, bv: 2 } : { k: 1, fr: 0, bv: 1 };
+  // Kissen setzen: Mitte (x, y, z), Front zeigt nach −Z (dir 1) bzw. +Z (dir −1), Neigung rx, Drehung ry
+  const PAD = (o, x, y, z, bone, mat, { dir = 1, rx = 0, ry = 0, rz = 0 } = {}) => {
+    const g = pad({ ...PK, ...o });
+    if (dir < 0) place(g, { r: [0, Math.PI, 0] });
+    place(g, { p: [x, y, z], r: [rx, ry, rz] });
+    add(g, bone, mat);
+    return g;
+  };
+  // Tasche mit Deckel (Kissen + überstehender, gewölbter Deckel mit gerundeten Ecken + Klettlasche + Gurtschlaufe)
+  const pouch2 = (w, h, d, x, y, z, bone = 'chest', mat = C.gear2, { lid = true, ry = 0 } = {}) => {
+    PAD({ w, h, d, rb: Math.min(0.01, d * 0.3), rc: Math.min(0.014, w * 0.25), puff: L0 ? 0.004 : 0 }, x, y, z, bone, mat, { ry });
+    if (lid && L01) {
+      const lh = Math.min(0.05, h * 0.42);
+      const lid3 = pad({ w: w + 0.006, h: lh, d: 0.008, rb: 0.003, rc: 0.012, puff: 0.002, k: L0 ? 3 : 1, fr: L0 ? 1 : 0, bv: L0 ? 3 : 1, poly: rectPoly(w + 0.006, lh, 0, Math.min(0.012, lh * 0.3)) });
+      place(lid3, { p: [0, h / 2 - lh / 2 + 0.006, -d / 2 - 0.004], r: [-0.08, 0, 0] });
+      place(lid3, { p: [x, y, z], r: [0, ry, 0] });
+      add(lid3, bone, C.flap);
+      if (L0) {
+        add(place(rbox(Math.min(0.026, w * 0.4), 0.014, 0.003, 0, 0), { p: [x, y + h / 2 - lh + 0.008, z - d / 2 - 0.009] }), bone, C.strap);
+        add(place(rbox(0.016, h * 0.42, 0.003, 0, 0), { p: [x, y - h * 0.16, z - d / 2 - 0.004] }), bone, C.web);
+      }
+    }
+  };
   if (vest === 'plate' || vest === 'heavy' || vest === 'light') {
     const heavy = vest === 'heavy';
     const t = vest === 'light' ? 0.038 : 0.052;
-    add(R(0.29, 0.3, t, 0.022, { p: [0, 1.285, -0.118 - t / 2] }), 'chest', C.gear);
-    add(R(0.3, 0.32, t, 0.022, { p: [0, 1.29, 0.128 + t / 2] }), 'chest', C.gear);
+    const zF = -0.118 - t / 2, zB = 0.128 + t / 2;
+    // Front- und Rückenplatte im Träger: Schulterausschnitt, um die Brust gebogen, Front leicht gepolstert
+    PAD({ poly: rectPoly(0.29, 0.3, 0.05, 0.02), d: t, rb: 0.016, rc: 0.024, puff: 0.004, bend: [1.0, 0.25] }, 0, 1.285, zF, 'chest', C.gear);
+    PAD({ poly: rectPoly(0.3, 0.32, 0.045, 0.02), d: t, rb: 0.016, rc: 0.024, puff: 0.003, bend: [1.0, 0.2] }, 0, 1.29, zB, 'chest', C.gear, { dir: -1 });
     // Kummerbund (Ring um den Bauch) mit Seitentaschen
-    add(cyl(0.178, 0.172, 0.13, q.tseg, { p: [0, 1.18, 0.006], s: [1.06, 1, 0.82] }), 'chest', C.gear);
-    // Schulterträger (gepolstert) über die Schulter von Platte zu Platte
-    strapPath(VEST_STRAP, 0.1, 0.062, 0.016, C.gear, FAR ? 5 : L0 ? 1 : 2);
-    const fzP = -0.118 - t, bzP = 0.128 + t; // Vorder-/Rückfläche der Platten
-    // MOLLE-Reihen auf der Front (einzelne Schlaufen); auf LOD1 als durchgehende Bänder
-    if (L0) molle(-0.13, 0.13, 1.284, 4, fzP);
-    else if (L01) for (let i = 0; i < 2; i++) add(rbox(0.26, 0.012, 0.005, 0, 0, { p: [0, 1.29 + i * 0.05, fzP - 0.0025] }), 'chest', C.web);
+    add(cyl(0.178, 0.172, 0.13, L0 ? 28 : q.tseg, { p: [0, 1.18, 0.006], s: [1.06, 1, 0.82] }), 'chest', C.gear);
+    if (L0) for (const y of [1.247, 1.113]) add(cyl(0.18, 0.18, 0.008, 28, { p: [0, y, 0.006], s: [1.06, 1, 0.82] }, true), 'chest', C.strap); // Einfassband
+    // gepolsterte Schulterträger von Platte zu Platte
+    {
+      const P = VEST_STRAP.filter((_, i) => FAR ? i % 5 === 0 || i === VEST_STRAP.length - 1 : L0 || i % 2 === 0 || i === VEST_STRAP.length - 1);
+      const pts = P.map(([y, z]) => [-0.1, y, z]);
+      const ups = P.map(([y, z]) => { const dy = y - 1.4, dz = z - 0.005, l = Math.hypot(dy, dz); return [0, dy / l, dz / l]; });
+      pair(sweep(pts, ups, L0 ? [[-0.031, -0.004], [-0.026, -0.009], [0.026, -0.009], [0.031, -0.004], [0.031, 0.006], [0.024, 0.011], [-0.024, 0.011], [-0.031, 0.006]] : rectProfile(0.062, 0.016), { smooth: L0 }), 'chest', 'chest', C.gear);
+    }
+    const fzP = zF - t / 2 - 0.004, bzP = zB + t / 2 + 0.003; // Vorder-/Rückfläche der Platten (Mitte, mit Wölbung)
+    if (L0) molle(-0.13, 0.13, 1.29, 3, fzP + 0.002, 'chest', -1, 1.0);
+    else if (L01) for (let i = 0; i < 2; i++) add(rbox(0.26, 0.012, 0.005, 0, 0, { p: [0, 1.30 + i * 0.05, fzP - 0.0025] }), 'chest', C.web);
     if (L0) {
-      // Kantenband rund um beide Platten (dunkle Einfassung → Plattenträger liest sich als genähtes Teil)
-      for (const [z, w, h, yc] of [[fzP - 0.001, 0.29, 0.3, 1.285], [bzP + 0.001, 0.3, 0.32, 1.29]]) {
-        add(rbox(w - 0.02, 0.012, 0.006, 0, 0, { p: [0, yc + h / 2 - 0.008, z] }), 'chest', C.strap);
-        add(rbox(w - 0.02, 0.012, 0.006, 0, 0, { p: [0, yc - h / 2 + 0.008, z] }), 'chest', C.strap);
-        pair(rbox(0.012, h - 0.03, 0.006, 0, 0, { p: [-(w / 2 - 0.008), yc, z] }), 'chest', 'chest', C.strap);
-      }
       // Steckschnallen, an denen die Schulterträger in die Frontplatte greifen
-      pair(rbox(0.036, 0.024, 0.012, 0, 0, { p: [-0.098, 1.43, fzP - 0.006] }), 'chest', 'chest', PLAST);
-      pair(rbox(0.04, 0.034, 0.006, 0, 0, { p: [-0.098, 1.405, fzP - 0.003] }), 'chest', 'chest', C.strap);
+      pair(rbox(0.036, 0.024, 0.012, 0, 0, { p: [-0.098, 1.43, fzP + 0.004] }), 'chest', 'chest', PLAST);
       // Kummerbund: MOLLE an den Seiten + Klettzunge vorn
-      for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
-        add(rbox(0.006, 0.0095, 0.06, 0, 0, { p: [sx * 0.19, 1.14 + i * 0.026, 0.006] }), 'chest', C.web);
-      }
+      for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) add(rbox(0.006, 0.0095, 0.06, 0, 0, { p: [sx * 0.19, 1.14 + i * 0.026, 0.006] }), 'chest', C.web);
+      // Tragegriff (Rettungsschlaufe) oben an der Rückenplatte
+      add(torus(0.035, 0.008, 4, 10, { p: [0, 1.44, bzP - 0.006] }, Math.PI), 'chest', C.strap);
     }
     // Granattaschen hinten am Kummerbund
     if (L01 && vest !== 'light') for (const sx of [-1, 1]) {
-      add(cyl(0.026, 0.026, 0.072, q.cs, { p: [sx * 0.19, 1.165, 0.088] }), 'chest', C.gear2);
-      if (L0) add(cyl(0.029, 0.029, 0.016, q.cs, { p: [sx * 0.19, 1.205, 0.088] }), 'chest', C.flap);
+      add(cyl(0.026, 0.026, 0.072, L0 ? 12 : q.cs, { p: [sx * 0.19, 1.165, 0.088] }), 'chest', C.gear2);
+      if (L0) add(cyl(0.029, 0.029, 0.016, 12, { p: [sx * 0.19, 1.205, 0.088] }), 'chest', C.flap);
     }
     if (vest !== 'light') {
+      // drei Gewehrmagazin-Taschen vorn: offene Schnellzieh-Taschen mit Gummizug + Zuglasche, Magazine schauen heraus
       for (const x of [-0.088, 0, 0.088]) {
-        pouch(0.076, 0.115, 0.045, x, 1.19, -0.19);
+        PAD({ w: 0.074, h: 0.112, d: 0.044, rb: 0.01, rc: 0.012, puff: L0 ? 0.003 : 0 }, x, 1.19, -0.19, 'chest', C.gear2);
         if (L0) {
-          add(R(0.058, 0.03, 0.026, 0.006, { p: [x, 1.262, -0.183] }), 'chest', C.mag);
-          // Gummizug über den Magazinen mit Zuglasche
-          add(rbox(0.064, 0.007, 0.03, 0, 0, { p: [x, 1.262, -0.183] }), 'chest', C.strap);
-          add(rbox(0.016, 0.022, 0.005, 0, 0, { p: [x, 1.272, -0.1985] }), 'chest', PLAST);
-        }
+          // Magazin: gebogener Körper + Bodenplatte, Gummizug darüber, Zuglasche
+          add(place(pad({ w: 0.058, h: 0.05, d: 0.024, rb: 0.004, rc: 0.006, k: 2, fr: 0, bv: 2, bend: [0, 0.6] }), { p: [x, 1.262, -0.188], r: [0.12, 0, 0] }), 'chest', C.mag);
+          add(place(rbox(0.062, 0.008, 0.028, 0.003, 1), { p: [x, 1.289, -0.185], r: [0.12, 0, 0] }), 'chest', C.mag);
+          add(place(sweep([[x - 0.034, 1.252, -0.2], [x, 1.25, -0.204], [x + 0.034, 1.252, -0.2]], [0, 0, -1], rectProfile(0.008, 0.004), { smooth: false }), {}), 'chest', C.strap);
+          add(place(rbox(0.016, 0.024, 0.004, 0, 0), { p: [x, 1.262, -0.206] }), 'chest', PLAST);
+          add(place(rbox(0.016, 0.05, 0.003, 0, 0), { p: [x, 1.18, -0.2135] }), 'chest', C.web);
+        } else if (L01) add(rbox(0.058, 0.03, 0.026, 0, 0, { p: [x, 1.262, -0.183] }), 'chest', C.mag);
       }
-      if (!FAR) add(R(0.17, 0.075, 0.03, 0.01, { p: [0, 1.358, -0.183] }), 'chest', C.gear2);
-      if (!FAR) pouch(0.058, 0.13, 0.055, -0.205, 1.22, 0.04);
-      if (L01) add(cyl(0.006, 0.008, 0.22, 4, { p: [-0.21, 1.39, 0.055] }), 'chest', C.plastic);
-      // Seitentaschen am Kummerbund
-      if (L0) pair(R(0.03, 0.1, 0.08, 0.01, { p: [-0.196, 1.16, -0.02] }), 'chest', 'chest', C.gear2);
+      // Verwaltungs-/Kartentasche oben mit Reißverschluss und Klettfeld
+      if (!FAR) PAD({ w: 0.17, h: 0.075, d: 0.03, rb: 0.009, rc: 0.012, puff: L0 ? 0.004 : 0 }, 0, 1.358, -0.183, 'chest', C.gear2);
+      if (L0) add(sweep([[-0.07, 1.388, -0.199], [0.07, 1.388, -0.199]], [0, 0, -1], rectProfile(0.004, 0.003), { smooth: false }), 'chest', C.plastic);
+      // Funkgerät links am Kummerbund: Tasche, Gerät mit Bedienknöpfen, biegsame Antenne nach hinten
+      if (!FAR) {
+        pouch2(0.058, 0.1, 0.05, -0.205, 1.2, 0.035, 'chest', C.gear2, { lid: false, ry: Math.PI / 2 });
+        PAD({ w: 0.052, h: 0.06, d: 0.038, rb: 0.006, rc: 0.007, k: 1, fr: 0, bv: 2 }, -0.207, 1.275, 0.035, 'chest', { color: '#25282a', detail: 0.4, shine: 0.35, cls: 'hard' }, { ry: Math.PI / 2 });
+        if (L01) {
+          const ant = curve([[-0.207, 1.3, 0.05], [-0.212, 1.42, 0.07], [-0.2, 1.53, 0.115], [-0.18, 1.6, 0.17]], L0 ? 8 : 4);
+          add(sweep(ant, [1, 0, 0], roundProfile(0.0035, L0 ? 5 : 3), { smooth: true }), 'chest', C.plastic);
+        }
+        if (L0) for (const zz of [0.022, 0.046]) add(cyl(0.006, 0.006, 0.014, 8, { p: [-0.207, 1.311, zz] }), 'chest', C.plastic);
+      }
+      // Erste-Hilfe-Tasche rechts am Kummerbund (rote Zuglasche + Kreuz)
+      if (L0) {
+        pouch2(0.08, 0.1, 0.032, 0.2, 1.16, -0.015, 'chest', C.gear2, { lid: false, ry: -Math.PI / 2 });
+        add(place(rbox(0.004, 0.024, 0.03, 0, 0), { p: [0.217, 1.217, -0.015] }), 'chest', C.medRed);
+        add(place(rbox(0.003, 0.022, 0.007, 0, 0), { p: [0.2155, 1.16, -0.015] }), 'chest', C.medRed);
+        add(place(rbox(0.003, 0.007, 0.022, 0, 0), { p: [0.2155, 1.16, -0.015] }), 'chest', C.medRed);
+      }
     } else if (!FAR) {
-      add(R(0.15, 0.08, 0.03, 0.01, { p: [0, 1.22, -0.168] }), 'chest', C.gear2);
+      PAD({ w: 0.15, h: 0.08, d: 0.03, rb: 0.009, rc: 0.012, puff: L0 ? 0.004 : 0 }, 0, 1.22, -0.168, 'chest', C.gear2);
     }
-    // Teamabzeichen + Namensband; Tragegriff hinten oben
+    // Teamabzeichen + Namensband
     const fz = vest === 'light' ? -0.158 : -0.172;
-    add(rbox(0.07, 0.045, 0.006, 0, 0, { p: [0.078, 1.39, fz - 0.003] }), 'chest', C.accent);
-    if (L0) add(rbox(0.11, 0.024, 0.005, 0, 0, { p: [-0.066, 1.39, fz - 0.002] }), 'chest', C.patch);
+    add(rbox(0.07, 0.045, 0.004, 0, 0, { p: [0.078, 1.39, fz - 0.004] }), 'chest', C.accent);
+    if (L0) add(rbox(0.11, 0.024, 0.004, 0, 0, { p: [-0.066, 1.39, fz - 0.003] }), 'chest', C.patch);
     // Rückenplatte: MOLLE nur, wenn kein großer Rucksack sie verdeckt
-    if (L0 && V.back !== 'assault' && V.back !== 'radio') molle(-0.13, 0.13, 1.17, 6, bzP, 'chest', 1);
-    if (L0) add(torus(0.035, 0.008, 3, 8, { p: [0, 1.44, bzP + 0.007], r: [0, 0, 0] }, Math.PI), 'chest', C.strap);
+    if (L0 && V.back !== 'assault' && V.back !== 'radio') molle(-0.13, 0.13, 1.17, 6, bzP, 'chest', 1, 1.0);
     if (heavy) {
-      add(torus(0.098, 0.03, 4, q.cs + 2, { p: [0, 1.478, 0.008], r: [Math.PI / 2, 0, 0], s: [1.06, 0.92, 1] }), 'chest', C.gear);
-      pair(R(0.035, 0.16, 0.13, 0.014, { p: [-0.205, 1.23, 0.0] }), 'chest', 'chest', C.gear2);
+      // Kragen-/Halsschutz und Seitenpanzer
+      add(torus(0.098, 0.03, L0 ? 6 : 4, L0 ? 20 : q.cs + 2, { p: [0, 1.478, 0.008], r: [Math.PI / 2, 0, 0], s: [1.06, 0.92, 1] }), 'chest', C.gear);
+      for (const sx of [-1, 1]) PAD({ w: 0.13, h: 0.16, d: 0.035, rb: 0.01, rc: 0.014, bend: [1.5, 0] }, sx * 0.205, 1.23, 0.0, 'chest', C.gear2, { ry: -sx * Math.PI / 2 });
     }
   } else if (vest === 'rig') {
-    add(R(0.31, 0.14, 0.07, 0.022, { p: [0, 1.18, -0.142] }), 'chest', C.gear);
+    PAD({ w: 0.31, h: 0.14, d: 0.07, rb: 0.016, rc: 0.02, puff: 0.004, bend: [1.2, 0] }, 0, 1.18, -0.142, 'chest', C.gear);
     for (const x of [-0.105, -0.035, 0.035, 0.105]) {
-      pouch(0.062, 0.1, 0.03, x, 1.205, -0.19);
-      if (L0) add(R(0.05, 0.025, 0.022, 0.005, { p: [x, 1.268, -0.186] }), 'chest', C.mag);
+      pouch2(0.062, 0.1, 0.03, x, 1.205, -0.19, 'chest', C.gear2, { lid: false });
+      if (L0) add(place(pad({ w: 0.05, h: 0.03, d: 0.022, rb: 0.004, rc: 0.005, k: 2, fr: 0, bv: 2 }), { p: [x, 1.262, -0.188], r: [0.1, 0, 0] }), 'chest', C.mag);
     }
     strapPath(VEST_STRAP, 0.1, 0.045, 0.01, C.strap, FAR ? 5 : L0 ? 1 : 2);
     pair(rbox(0.04, 0.33, 0.012, 0, 0, { p: [-0.055, 1.3, 0.13], r: [0, 0, -0.55] }), 'chest', 'chest', C.strap);
@@ -464,52 +555,137 @@ function buildSoldier(V, lod) {
     }
   }
 
-  // Kopfbedeckungen
+  // Kopfbedeckungen (sol 15.11.: über der gemessenen Kopfhülle gear-parts.js gebaut – umschließen den anatomischen Kopf aus
+  // face.js wie den Körperkopf der fernen Stufen; vorher kleine Ellipsoid-Schalen, unter denen die Stirn hervorstach)
   const helmet = V.head === 'helmet';
+  const nph = L0 ? 40 : L01 ? 20 : 10, nth = L0 ? 10 : L01 ? 5 : 3;
+  const RUB = { color: '#1b1c1d', detail: 0.5, shine: 0.22, cls: 'leather' }; // Gummi-Kantenprofil
   if (helmet) {
-    // 21.10. (Nutzer: „Helme viel zu groß, die Soldaten können nicht drüber schauen“): Maße eines echten Gefechtshelms
-    // (außen ≈ 22 × 25 cm, 2–3 cm Luft zum Kopf), Vorderkante knapp über den Brauen, Nacken tiefer; Tarnbezug mit
-    // Gummiband, Seitenschienen, Nachtsicht-Halterung, Akkutasche, Klettfelder, Kinnriemen
+    // Gefechtshelm (High-Cut): Schale ≈ 2,4 cm über der Hülle (Polster + Schale), Vorderkante gut 2 cm über den Brauen,
+    // seitlich über den Ohren ausgeschnitten, hinten tief über den Hinterkopf; Tarnbezug mit Gummizug, Gummi-Kantenprofil,
+    // Innenpolster am Rand, Seitenschienen, Nachtsicht-Halterung, Akku-/Gegengewichtstasche, Klettfelder, Vierpunkt-Kinnriemen
+    const OFF = 0.024;
+    const rim = helmetRim;
     const shellMat = V.cover ? C.cover : C.helmet;
-    add(tiltHelmet(E(0.112, 0.108, 0.124, { p: [0, 1.712, 0.006] }, { thetaLength: Math.PI * 0.58 })), 'head', shellMat);
+    add(hullShell({ th1: rim, off: OFF, nph, nth }), 'head', shellMat);
     if (!FAR) {
-      add(tiltHelmet(torus(0.108, 0.007, 3, q.cs + 4, { p: [0, 1.679, 0.006], r: [Math.PI / 2, 0, 0], s: [1, 1.11, 1] })), 'head', V.cover ? { ...C.cover, color: '#b8b8b8' } : C.helmetDark);
-      // Seitenschienen (ARC) – auch über dem Bezug sichtbar
-      pair(tiltHelmet(R(0.01, 0.022, 0.1, 0.004, { p: [-0.111, 1.71, 0.006] })), 'head', 'head', C.plastic);
-      // Gummiband um den Bezug
-      if (L01 && V.cover) add(tiltHelmet(torus(0.1095, 0.005, 3, q.cs + 4, { p: [0, 1.738, 0.006], r: [Math.PI / 2, 0, 0], s: [1, 1.11, 1] })), 'head', C.strap);
-      // Nachtsicht-Halterung (Platte vorn), Akkutasche hinten, Klettfelder
-      add(tiltHelmet(R(0.036, 0.03, 0.012, 0.005, { p: [0, 1.76, -0.118], r: [-0.42, 0, 0] })), 'head', V.nvg ? C.metal : C.plastic);
-      add(tiltHelmet(R(0.068, 0.046, 0.032, 0.012, { p: [0, 1.728, 0.124], r: [0.32, 0, 0] })), 'head', C.flap);
-      if (L01) pair(tiltHelmet(rbox(0.009, 0.085, 0.006, 0, 0, { p: [-0.088, 1.63, -0.018], r: [0.15, 0, -0.06] })), 'head', 'head', C.strap); // Kinnriemen
-      if (L0) {
-        add(tiltHelmet(rbox(0.044, 0.026, 0.004, 0, 0, { p: [0, 1.792, 0.076], r: [0.95, 0, 0] })), 'head', C.patch); // Klettfeld hinten
-        pair(tiltHelmet(rbox(0.004, 0.026, 0.05, 0, 0, { p: [-0.106, 1.742, 0.0], r: [0, 0, -0.35] })), 'head', 'head', C.patch); // Klett seitlich
-        add(tiltHelmet(rbox(0.022, 0.014, 0.008, 0, 0, { p: [0, 1.805, 0.04], r: [0.4, 0, 0] })), 'head', C.plastic); // IR-Markierung
+      // Kantenprofil (Gummi) rund um den Rand
+      const rp = [];
+      const ru = [];
+      const nr = L0 ? 48 : 20;
+      for (let i = 0; i < nr; i++) {
+        const ph = (i / nr) * Math.PI * 2;
+        rp.push(hullP(rim(ph) - 0.012, ph, OFF - 0.003));
+        ru.push(hullN(rim(ph), ph, OFF));
       }
+      add(sweep(rp, ru, L0 ? roundProfile(0.0062, 6, 0.0048) : rectProfile(0.011, 0.008), { closed: true, smooth: true }), 'head', RUB);
+      // Seitenschienen (ARC) – auf Bezug bzw. Schale geschraubt
+      const rail = hullPath([[80, 214], [85, 180], [82, 146]], OFF + 0.004, L0 ? 4 : 2);
+      pair(sweep(rail.pts, rail.ups, rectProfile(0.017, 0.008), { smooth: false }), 'head', 'head', C.plastic);
+    }
+    if (L0) {
+      // Innenpolster/Futter am Rand (dunkler Schaumstoff, von unten und vorn sichtbar)
+      add(hullShell({ th0: (ph) => rim(ph) - 0.42, th1: (ph) => rim(ph) - 0.01, off: 0.008, nph: 32, nth: 3, flip: true }), 'head', { color: '#26272a', detail: 0.9, shine: 0.02, cls: 'cloth' });
+      // Stirnpolster
+      add(onHull(pad({ w: 0.075, h: 0.024, d: 0.012, rb: 0.005, rc: 0.008, puff: 0.002, bend: [3, 0], k: 2, fr: 1, bv: 3 }), rim(Math.PI * 1.5) - 0.12, Math.PI * 1.5, 0.007), 'head', { color: '#2e2f31', detail: 1, cls: 'cloth' });
+      if (V.cover) {
+        // Gummizug um den Bezug + Nähte des Bezugs (vorn/hinten, seitlich)
+        const bp = [], bu = [];
+        for (let i = 0; i < 40; i++) { const ph = (i / 40) * Math.PI * 2; bp.push(hullP(rim(ph) - 0.38, ph, OFF + 0.002)); bu.push(hullN(rim(ph) - 0.38, ph, OFF)); }
+        add(sweep(bp, bu, roundProfile(0.0032, 5), { closed: true }), 'head', C.strap);
+        for (const ph of [90, 270, 0, 180]) {
+          const s = hullPath([[3, ph], [40, ph], [75, ph]], OFF + 0.0008, 3);
+          add(sweep(s.pts, s.ups, rectProfile(0.0035, 0.0018), { smooth: false }), 'head', { ...C.cover, color: '#9a9a9a' });
+        }
+      }
+      // Klettfelder: oben/hinten und seitlich, Infrarot-Markierung oben
+      add(onHull(pad({ w: 0.06, h: 0.04, d: 0.003, rb: 0.0012, rc: 0.006, k: 2, fr: 0, bv: 2, back: false }), 0.5, Math.PI / 2, OFF + 0.001), 'head', C.patch);
+      pair(onHull(pad({ w: 0.055, h: 0.03, d: 0.003, rb: 0.0012, rc: 0.006, k: 2, fr: 0, bv: 2, back: false }), 1.0, Math.PI, OFF + 0.0015, 0.05), 'head', 'head', C.patch);
+      add(onHull(pad({ w: 0.024, h: 0.016, d: 0.012, rb: 0.004, rc: 0.005, k: 2, fr: 0, bv: 2 }), 0.42, Math.PI / 2, OFF + 0.006), 'head', C.plastic);
+      add(onHull(cyl(0.006, 0.007, 0.012, 8, { r: [Math.PI / 2, 0, 0] }), 0.42, Math.PI / 2, OFF + 0.014), 'head', C.lens);
+      // Vierpunkt-Kinnriemen: vorn/hinten vom Helmrand am Ohr vorbei zur Schnalle am Kieferwinkel, dann unter das Kinn
+      const D2 = Math.PI / 180;
+      const jaw = hullP(127 * D2, 196 * D2, 0.008);
+      const fr = hullPath([[rim(205 * D2) / D2 - 4, 205], [108, 202], [127, 196]], 0.008, 3);
+      const bk = hullPath([[rim(158 * D2) / D2 - 4, 158], [112, 172], [127, 196]], 0.008, 3);
+      const chin = curve([jaw, [-0.078, 1.6, -0.035], [-0.05, 1.556, -0.055], [0, 1.543, -0.062]], 8);
+      const up = (p) => { const d = [p[0], p[1] - 1.66, p[2] - 0.0]; const l = Math.hypot(...d); return d.map((v) => v / l); };
+      const STRAP = { pal: 'strap', shade: 0.9, detail: 0.9, cls: 'gear' };
+      pair(sweep(fr.pts, fr.ups, rectProfile(0.014, 0.0024), { smooth: false }), 'head', 'head', STRAP);
+      pair(sweep(bk.pts, bk.ups, rectProfile(0.014, 0.0024), { smooth: false }), 'head', 'head', STRAP);
+      pair(sweep(chin, chin.map(up), rectProfile(0.016, 0.0024), { smooth: false }), 'head', 'head', STRAP);
+      pair(onHull(pad({ w: 0.026, h: 0.02, d: 0.008, rb: 0.003, rc: 0.004, k: 1, fr: 0, bv: 2 }), 127 * D2, 196 * D2, 0.012), 'head', 'head', PLAST); // Schnalle
+      add(place(rbox(0.03, 0.006, 0.02, 0, 0), { p: [0, 1.541, -0.06] }), 'head', PLAST); // Kinnschale/Verschluss
+    } else if (L01) {
+      const D2 = Math.PI / 180;
+      const fr = hullPath([[rim(200 * D2) / D2 - 4, 200], [127, 196]], 0.008, 2);
+      pair(sweep(fr.pts, fr.ups, rectProfile(0.012, 0.003), { smooth: false, caps: false }), 'head', 'head', C.strap);
+    }
+    if (!FAR) {
+      // Nachtsicht-Halterung (Schwalbenschwanz-Platte mit Bügel) vorn, Gegengewicht-/Akkutasche hinten
+      const thS = rim(Math.PI * 1.5) - 0.2;
+      add(onHull(pad({ w: 0.048, h: 0.034, d: 0.01, rb: 0.003, rc: 0.008, k: L0 ? 2 : 1, fr: 0, bv: 2, bend: [5, 0] }), thS, Math.PI * 1.5, OFF + 0.005), 'head', V.nvg ? C.metal : C.plastic);
+      if (L0) {
+        add(onHull(rbox(0.02, 0.014, 0.012, 0.003, 1), thS + 0.11, Math.PI * 1.5, OFF + 0.012), 'head', C.metal);
+        for (const sx of [-1, 1]) add(onHull(cyl(0.0035, 0.0035, 0.004, 6, { r: [Math.PI / 2, 0, 0] }), thS - 0.04, Math.PI * 1.5 + sx * 0.18, OFF + 0.012), 'head', C.metal); // Schrauben
+      }
+      add(onHull(pad({ w: 0.072, h: 0.05, d: 0.03, rb: 0.009, rc: 0.012, puff: 0.003, k: L0 ? 2 : 1, fr: L0 ? 1 : 0, bv: L0 ? 3 : 2 }), 1.38, Math.PI / 2, OFF + 0.017), 'head', C.flap);
+      if (L0) add(onHull(pad({ w: 0.076, h: 0.02, d: 0.008, rb: 0.003, rc: 0.006, k: 1, fr: 0, bv: 2 }), 1.17, Math.PI / 2, OFF + 0.03), 'head', C.flap);
     }
     if (V.nvg && !FAR) {
-      // hochgeklapptes Nachtsichtgerät: Halterung + Doppelokular quer vor der Helmstirn
-      add(tiltHelmet(R(0.028, 0.032, 0.024, 0.008, { p: [0, 1.775, -0.122], r: [-0.6, 0, 0] })), 'head', C.plastic);
-      add(tiltHelmet(R(0.078, 0.03, 0.042, 0.011, { p: [0, 1.8, -0.132], r: [-0.95, 0, 0] })), 'head', C.plastic);
-      if (L01) pair(tiltHelmet(cyl(0.012, 0.012, 0.006, q.cs, { p: [-0.022, 1.815, -0.148], r: [-0.95 + Math.PI / 2, 0, 0] })), 'head', 'head', C.lens);
+      add(onHull(pad({ w: 0.08, h: 0.032, d: 0.045, rb: 0.012, rc: 0.014, k: 2, fr: 0, bv: 2 }), rim(Math.PI * 1.5) - 0.32, Math.PI * 1.5, OFF + 0.04), 'head', C.plastic);
     }
-    // kein Teamband um den Helm (Video); nur ein kleines Abzeichen hinten oben
-    add(tiltHelmet(R(0.022, 0.017, 0.026, 0.005, { p: [0, 1.806, 0.058], r: [0.55, 0, 0] })), 'head', C.accent);
+    // kleines Abzeichen in Teamfarbe hinten oben
+    add(onHull(pad({ w: 0.024, h: 0.018, d: 0.006, rb: 0.002, rc: 0.004, k: 1, fr: 0, bv: 1 }), 0.62, Math.PI / 2, OFF + 0.004), 'head', C.accent);
   } else if (V.head === 'cap') {
+    // Feldmütze: Sechs-Bahnen-Krone eng über der Hülle, gebogener Schirm, Knopf, Nähte, Teamband
     const back = V.capBack ? -1 : 1;
     const capMat = { pal: 'gear', shade: 1.08, detail: 1, cls: 'cloth' };
-    add(E(0.087, 0.084, 0.106, { p: [0, 1.716, 0.008] }, { thetaLength: Math.PI * 0.5 }), 'head', capMat);
-    add(R(0.13, 0.01, 0.085, 0.005, { p: [0, 1.722, -0.128 * back + 0.008], r: [-0.14 * back, 0, 0] }), 'head', { pal: 'gear', shade: 0.92, detail: 1, cls: 'cloth' });
-    add(rbox(0.036, 0.026, 0.006, 0, 0, { p: [0, 1.756, back > 0 ? -0.096 : 0.108], r: [back > 0 ? -0.45 : 0.45, 0, 0] }), 'head', C.accent);
-    add(torus(0.087, 0.007, 3, q.cs + 2, { p: [0, 1.722, 0.008], r: [Math.PI / 2, 0, 0], s: [1, 1.2, 1] }), 'head', C.band);
-    if (L0) add(E(0.011, 0.006, 0.011, { p: [0, 1.8, 0.008] }, undefined, 6, 3), 'head', capMat); // Knopf
+    const crim = (ph) => { const s = Math.sin(ph); return (s < 0 ? 79 + 9 * s : 79 + 15 * s) * Math.PI / 180; };
+    add(hullShell({ th1: crim, off: 0.007, nph: Math.round(nph * 0.8), nth }), 'head', capMat);
+    const fph = back > 0 ? Math.PI * 1.5 : Math.PI / 2;
+    const vis = pad({ w: 0.16, h: 0.075, d: 0.006, rb: 0.0028, rc: 0.032, k: L0 ? 4 : 2, fr: L0 ? 2 : 1, bv: L0 ? 3 : 2, bend: [-2.2, 0] });
+    // Schirm liegt waagerecht vor dem Rand, Seiten hängen
+    place(vis, { p: [0, 0, 0], r: [-Math.PI / 2, 0, 0] });
+    const rp = hullP(crim(fph), fph, 0.007), rn = hullN(crim(fph), fph, 0.007);
+    place(vis, { p: [rp[0], rp[1] - 0.004, rp[2] + back * -0.034], r: [-0.15 * back, back > 0 ? 0 : Math.PI, 0] });
+    add(vis, 'head', { pal: 'gear', shade: 0.92, detail: 1, cls: 'cloth' });
+    void rn;
+    add(onHull(pad({ w: 0.034, h: 0.024, d: 0.004, rb: 0.0015, rc: 0.005, k: 1, fr: 0, bv: 1 }), crim(fph) - 0.3, fph, 0.008), 'head', C.accent);
+    const bp = [], bu = [];
+    for (let i = 0; i < (L0 ? 36 : 16); i++) { const ph = (i / (L0 ? 36 : 16)) * Math.PI * 2; bp.push(hullP(crim(ph) - 0.06, ph, 0.0085)); bu.push(hullN(crim(ph), ph, 0.007)); }
+    add(sweep(bp, bu, rectProfile(0.011, 0.003), { closed: true, smooth: false }), 'head', C.band);
+    if (L0) {
+      add(onHull(ellipsoid(0.009, 0.009, 0.005, 8, 4), 0, 0, 0.009), 'head', capMat); // Knopf
+      for (let k = 0; k < 6; k++) {
+        const ph = (30 + 60 * k);
+        const s = hullPath([[4, ph], [40, ph], [crim(ph * Math.PI / 180) * 180 / Math.PI - 4, ph]], 0.0075, 3);
+        add(sweep(s.pts, s.ups, rectProfile(0.003, 0.0016), { smooth: false }), 'head', { pal: 'gear', shade: 0.85, detail: 1, cls: 'cloth' });
+      }
+    }
   } else if (V.head === 'boonie') {
-    add(cyl(0.098, 0.11, 0.08, q.cs, { p: [0, 1.772, 0.012], s: [1, 1, 1.08] }), 'head', C.top);
-    add(E(0.098, 0.022, 0.106, { p: [0, 1.812, 0.012] }, { thetaLength: Math.PI * 0.5 }), 'head', C.top);
-    add(cyl(0.185, 0.195, 0.014, q.cs + 3, { p: [0, 1.735, 0.012], r: [0.04, 0, 0], s: [1, 1, 1.05] }), 'head', C.top);
-    add(cyl(0.112, 0.112, 0.022, q.cs, { p: [0, 1.752, 0.012], s: [1, 1, 1.08] }), 'head', C.band); // Hutband in Teamfarbe
-    add(rbox(0.035, 0.022, 0.006, 0, 0, { p: [0.0, 1.752, -0.11] }), 'head', C.accent);
+    // Buschhut: Krone über der Hülle, umlaufende, leicht hängende Krempe mit Steppnähten, Hutband in Teamfarbe
+    const brim = (ph) => { const s = Math.sin(ph); return (s < 0 ? 84 + 6 * s : 84 + 10 * s) * Math.PI / 180; };
+    add(hullShell({ th1: brim, off: 0.014, nph: Math.round(nph * 0.8), nth }), 'head', C.top);
+    const np2 = L0 ? 40 : L01 ? 20 : 10;
+    const bp = [], bu = [];
+    for (let i = 0; i < np2; i++) {
+      const ph = (i / np2) * Math.PI * 2;
+      const p = hullP(brim(ph), ph, 0.014);
+      bp.push(p); bu.push([Math.cos(ph), 0, Math.sin(ph)]);
+    }
+    const prof = [[0.002, -0.002], [-0.018 + 0.0015, 0.068], [-0.018 - 0.0015, 0.068], [-0.002, -0.002]];
+    add(sweep(bp, bu, prof, { closed: true, smooth: false }), 'head', C.top);
+    if (!FAR) {
+      const hb = [], hu = [];
+      for (let i = 0; i < np2; i++) { const ph = (i / np2) * Math.PI * 2; hb.push(hullP(brim(ph) - 0.1, ph, 0.0155)); hu.push(hullN(brim(ph) - 0.1, ph, 0.014)); }
+      add(sweep(hb, hu, rectProfile(0.022, 0.003), { closed: true, smooth: false }), 'head', C.band);
+      add(onHull(pad({ w: 0.035, h: 0.02, d: 0.004, rb: 0.0015, rc: 0.004, k: 1, fr: 0, bv: 1 }), brim(Math.PI * 1.5) - 0.1, Math.PI * 1.5, 0.018), 'head', C.accent);
+    }
+    if (L0) for (const b of [0.028, 0.05]) {
+      const sp = bp.map((p, i) => [p[0] + bu[i][0] * b, p[1] - (0.018 / 0.068) * b + 0.0018, p[2] + bu[i][2] * b]);
+      add(sweep(sp, [0, 1, 0], rectProfile(0.0025, 0.0012), { closed: true, smooth: false }), 'head', { ...C.top, color: '#a8a8a8' });
+    }
   } else if (V.head === 'beanie') {
     add(E(0.103, 0.104, 0.114, { p: [0, 1.703, 0.012] }, { thetaLength: Math.PI * 0.55 }), 'head', C.knit);
     add(cyl(0.106, 0.108, 0.04, q.cs + 2, { p: [0, 1.718, 0.012], s: [1, 1, 1.07] }), 'head', { ...C.knit, color: '#323334' });
@@ -524,12 +700,36 @@ function buildSoldier(V, lod) {
     if (L01) pair(rbox(0.03, 0.09, 0.008, 0, 0, { p: [-0.018, 1.64, 0.13], r: [0.25, 0, 0.18] }), 'head', 'head', wrap);
     add(torus(0.1, 0.008, 3, q.cs + 2, { p: [0, 1.742, 0.014], r: [Math.PI / 2, 0, 0], s: [1, 1.08, 1] }), 'head', C.band);
   }
-  // Headset (Gehörschutz)
+  // Headset (Kapsel-Gehörschutz mit Funk): ovale Kapseln mit Ohrpolster über den Ohren, mit Helm an den Seitenschienen
+  // befestigt, sonst Kopfbügel; Mikrofonarm rechts zum Mund
   if (V.ears) {
-    pair(cyl(0.032, 0.032, 0.03, q.cs, { p: [-0.098, 1.67, 0.008], r: [0, 0, Math.PI / 2] }), 'head', 'head', C.plastic);
-    if (L0) pair(cyl(0.023, 0.023, 0.008, q.cs, { p: [-0.115, 1.67, 0.008], r: [0, 0, Math.PI / 2] }), 'head', 'head', { ...C.plastic, color: '#2a2d30' });
-    if (!helmet && !FAR) add(torus(0.095, 0.008, 3, q.cs, { p: [0, 1.67, 0.01], s: [1, 1.18, 1] }, Math.PI), 'head', C.plastic);
-    if (L0) add(cyl(0.004, 0.004, 0.08, 3, { p: [0.086, 1.625, -0.056], r: [0.2, 0.8, 1.2] }), 'head', C.plastic);
+    const cupProf = [[0.0005, 0], [0.026, 0], [0.034, 0.004], [0.038, 0.012], [0.039, 0.021], [0.035, 0.028], [0.025, 0.032], [0.0005, 0.033]];
+    const cup = lathe(cupProf, FAR ? 6 : L0 ? 18 : 10);
+    // lathe dreht um Y → um Z gekippt zeigt die Achse nach −X (linke Seite, rechts gespiegelt)
+    place(cup, { r: [0, 0, Math.PI / 2] }); place(cup, { s: [1, 1.13, 0.9], p: [-0.101, 1.668, 0.012] });
+    pair(cup, 'head', 'head', C.plastic);
+    if (!FAR) {
+      const cush = torus(0.029, 0.0085, L0 ? 6 : 3, L0 ? 18 : 10, { r: [0, Math.PI / 2, 0] });
+      place(cush, { s: [1, 1.13, 0.9], p: [-0.1, 1.668, 0.012] });
+      pair(cush, 'head', 'head', { color: '#2a2b2d', detail: 0.8, shine: 0.25, cls: 'leather' });
+    }
+    if (L0) {
+      // Deckel/Lautstärke-Knöpfe, Gitter
+      pair(cyl(0.004, 0.004, 0.008, 6, { p: [-0.118, 1.705, 0.03], r: [0, 0, 0.4] }), 'head', 'head', { color: '#2a2d30', detail: 0.3, shine: 0.4, cls: 'hard' });
+      pair(ellipsoid(0.004, 0.024, 0.02, 6, 4, { p: [-0.1325, 1.668, 0.012] }), 'head', 'head', { color: '#26292c', detail: 0.4, shine: 0.3, cls: 'hard' });
+    }
+    if (helmet) {
+      // Schienenadapter: kurzer Arm von der Kapsel hoch zur Seitenschiene
+      if (!FAR) pair(rbox(0.012, 0.036, 0.022, 0.003, L0 ? 1 : 0, { p: [-0.116, 1.716, 0.008] }), 'head', 'head', C.plastic);
+    } else if (!FAR) {
+      const hb = hullPath([[84, 180], [55, 180], [25, 180], [0, 180], [25, 0], [55, 0], [84, 0]], V.head === 'cap' ? 0.017 : 0.012, L0 ? 3 : 1);
+      add(sweep(hb.pts, hb.ups, rectProfile(0.024, 0.006), { smooth: false }), 'head', C.plastic);
+    }
+    if (L01) {
+      const mic = curve([[0.12, 1.648, -0.018], [0.112, 1.625, -0.06], [0.075, 1.607, -0.1], [0.034, 1.612, -0.12]], L0 ? 10 : 5);
+      add(sweep(mic, [0, 1, 0], roundProfile(0.0028, L0 ? 6 : 3), { smooth: true }), 'head', C.plastic);
+      if (L0) add(ellipsoid(0.008, 0.007, 0.008, 8, 6, { p: [0.03, 1.612, -0.122] }), 'head', { color: '#1a1b1c', detail: 1, shine: 0.02, cls: 'cloth' });
+    }
   }
   // Brillen / Maske
   if (V.eyes === 'goggles') {

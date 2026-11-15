@@ -59,7 +59,8 @@ export function rohrbuendel(b, x, z, ry = 0, L = 5) {
       for (const sx of [-1, 1]) f.cyl(sx * (L / 2 + 0.003), ly, lz, r * 0.82, 0.01, 'black', { ...PG, axis: 'x', seg: 10, bullet: false });
     }
   });
-  for (const sx of [-L / 2 + 0.9, L / 2 - 0.9]) f.box(sx, 0.16, 0, 0.05, 1.42, 2.3, 'metal_painted', { ...PG, tint: '#c9a227' }); // Spanngurte
+  // Keile an den Enden der untersten Lage (statt Spannrahmen)
+  for (const sx of [-L / 2 + 0.6, L / 2 - 0.6]) for (const sz of [-1, 1]) f.box(sx, 0.16, sz * 1.22, 0.2, 0.22, 0.16, 'wood_crate', { ...PG, tint: '#b39a72' });
   const H = 0.16 + 2 * r + 2 * r * 1.75 + 0.02;
   f.solid(0, 0, 0, L, H, 4 * (2 * r + 0.02), { minimap: 'cover' });
   return { hw: L / 2, hd: 2.3 / 2 };
