@@ -6,14 +6,14 @@
 // kein Luftstart, vehicles/air/aircraft.js), Hubschrauber stehen auf Landeplätzen in den Gefechtsständen.
 // Koordinaten: x Osten, z Süden (Norden = −z). Team A (West) / Team B (Ost). Geladen von world/terrain/bigworld.js.
 import * as THREE from 'three';
-import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw, schlepper, bodenstrom, munitionswagen, tankwagen } from './flugplatz-bau.js?v=20261114060746';
-import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261114060746';
-import { mgNest } from './grenzland-stellungen.js?v=20261114060746';
-import { burntWreck } from './brandwald-bau.js?v=20261114060746';
-import { KEIN, VG } from './neu-bau.js?v=20261114060746';
-import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261114060746'; // gelaende (Runde 3)
-import { reliefAvoid } from '../terrain/relief.js?v=20261114060746';
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
+import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw, schlepper, bodenstrom, munitionswagen, tankwagen } from './flugplatz-bau.js?v=20261115041504';
+import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261115041504';
+import { mgNest } from './grenzland-stellungen.js?v=20261115041504';
+import { burntWreck } from './brandwald-bau.js?v=20261115041504';
+import { KEIN, VG } from './neu-bau.js?v=20261115041504';
+import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261115041504'; // gelaende (Runde 3)
+import { reliefAvoid } from '../terrain/relief.js?v=20261115041504';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
 
 const PI = Math.PI, Q = PI / 2;
 const R_Y = 13;                                   // Plateau der Radarstellung

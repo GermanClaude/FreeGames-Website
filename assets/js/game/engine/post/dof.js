@@ -9,7 +9,7 @@
 // entsteht erst beim ersten Anlegen.
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261114060746';
+import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261115041504';
 
 const FOCUS_FRAG = /* glsl */ `
   uniform highp sampler2D tDepth;

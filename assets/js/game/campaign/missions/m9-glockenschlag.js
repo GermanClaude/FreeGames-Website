@@ -5,8 +5,8 @@
 // lebend in der Marktgasse gestellt und verrät den Fliegerhorst Hagenmoor.
 // Checkpoints: start, kirche, turm, funker. Fehlschlag: Countdown endet, Kirche fällt.
 
-import { actor } from './cast.js?v=20261114060746';
-import { guardZone, stopGuard, purgeDead, prop } from './hilfen-b.js?v=20261114060746';
+import { actor } from './cast.js?v=20261115041504';
+import { guardZone, stopGuard, purgeDead, prop } from './hilfen-b.js?v=20261115041504';
 
 const SEND = 11 * 60; // Sekunden bis zur Sendung
 const LEFT = { start: SEND, kirche: 8 * 60, turm: 5 * 60, funker: null }; // Restzeit beim Wiedereinstieg

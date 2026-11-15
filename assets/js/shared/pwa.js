@@ -6,7 +6,7 @@
 //
 // Kein Service Worker in der Desktop-App (Dateien liegen dort ohnehin lokal, app://-Protokoll) und auf localhost nur
 // mit ?sw=1 (sonst sähe die Entwicklung bei gleicher BUILD alten Code aus dem Zwischenspeicher). ?sw=0 meldet ihn ab.
-import { BUILD } from './build.js?v=20261114060746';
+import { BUILD } from './build.js?v=20261115041504';
 
 const W = typeof window !== 'undefined' ? window : null;
 const N = typeof navigator !== 'undefined' ? navigator : {};

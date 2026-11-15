@@ -5,8 +5,8 @@
 // Regeln wie die übrigen Karten: deterministisch (Zufall nur über hash01 der Position), Kollision unabhängig von der
 // Grafikstufe; Optik darf nach b.lookQuality sparen.
 import * as THREE from 'three';
-import { frame, hash01 } from '../props.js?v=20261114060746';
-import { railing } from '../arch.js?v=20261114060746';
+import { frame, hash01 } from '../props.js?v=20261115041504';
+import { railing } from '../arch.js?v=20261115041504';
 
 export const KEIN = { collide: false, minimap: false };
 export const VG = { ...KEIN, grad: false };

@@ -1,6 +1,6 @@
 // Wiederverwendbare Waffenbaugruppen: Visiere, Mündungen, Abzug, Griffe, Auswurf.
 // Alle Funktionen erhalten einen Builder b und arbeiten in Waffenkoordinaten (x, v, u).
-import { roundRect, ellipsePts } from './builder.js?v=20261114060746';
+import { roundRect, ellipsePts } from './builder.js?v=20261115041504';
 
 // ---------- Visierungen ----------
 

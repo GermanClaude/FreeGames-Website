@@ -6,10 +6,10 @@
 // Bedienung: Touch, Maus, Tastatur (Pfeile verschieben, +/− Größe, Tab nächster Knopf, Esc abbrechen) und
 // Gamepad (LB/RB Knopf wählen, Steuerkreuz/Stick verschieben, LT/RT Größe, A ein/aus, Y fertig, B abbrechen).
 
-import { TOUCH_BUTTONS, sanitizeTouchLayout, resolveTouchLayout } from '../../shared/bindings.data.js?v=20261114060746';
-import { esc, el } from './dom.js?v=20261114060746';
-import { ICON } from './icons.js?v=20261114060746';
-import { touchAspect, seedAspect, editTouch } from './settings/keys.js?v=20261114060746';
+import { TOUCH_BUTTONS, sanitizeTouchLayout, resolveTouchLayout } from '../../shared/bindings.data.js?v=20261115041504';
+import { esc, el } from './dom.js?v=20261115041504';
+import { ICON } from './icons.js?v=20261115041504';
+import { touchAspect, seedAspect, editTouch } from './settings/keys.js?v=20261115041504';
 
 const GRID = 2.5; // Raster in % der Fläche
 const SNAP = 0.9; // Einrasten an anderen Knöpfen (%)

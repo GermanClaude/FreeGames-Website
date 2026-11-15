@@ -10,9 +10,9 @@
 //   forests [{ x, z, r }], trenches [{ pts, width, depth, ramps }], craters { list: [[x, z, r, depth]], count, seed, area, r, depth, avoid },
 //   wasteland { dirt, mud } (Ödland statt Wiese), relief { knolls, ridges, sunken, scatter, avoid, avoidRects } (relief.js)
 // Reihenfolge: Grundform → Details → Fluss → Bauflächen → Dämme → Straßen (planieren) → Felder → Splat/Maske.
-import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261114060746';
-import { Heightfield } from './heightfield.js?v=20261114060746';
-import { applyRelief } from './relief.js?v=20261114060746'; // gelaende (Runde 3): Kuppen, Senken, Wälle, Hohlwege
+import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261115041504';
+import { Heightfield } from './heightfield.js?v=20261115041504';
+import { applyRelief } from './relief.js?v=20261115041504'; // gelaende (Runde 3): Kuppen, Senken, Wälle, Hohlwege
 
 /** Catmull-Rom-Kurve durch pts ([[x, z], …]), Abtastung ~step m. → [[x, z], …] */
 export function sampleSpline(pts, step = 2) {

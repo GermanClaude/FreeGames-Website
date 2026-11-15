@@ -2,7 +2,7 @@
 // AudioEngine → Lautstärke, Hall/Begrenzer und Stummschaltung gelten mit), Einzelklänge (Kanone, MG, Abpraller,
 // Aufprall) über die vorhandene API `G.audio.play(name, …)` (Katalognamen: explosion, boom_sub, ricochet,
 // impact_metal, Waffenprofile lmg/ar_heavy). Höchstens MAX_VOICES Motoren gleichzeitig (nächste zuerst).
-import { AirVoice, AIR_RANGE } from './air/audio.js?v=20261114060746';
+import { AirVoice, AIR_RANGE } from './air/audio.js?v=20261115041504';
 
 const MAX_VOICES = 3;
 const RANGE = 95;

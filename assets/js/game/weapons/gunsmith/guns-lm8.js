@@ -5,10 +5,10 @@
 // Tangentenvisier, Gasrohr mit Holzauflage, Holzhandschutz unten, schwerer Lauf, Gasblock, Zweibein (eingeklappt),
 // Korn mit Schutz, Laufschutzkappe, Klumpfußschaft aus Schichtholz mit Kolbenkappe, Pistolengriff, Sicherungshebel,
 // Spannhebel am Verschlussträger, Trommelmagazin mit Hals, Sicken und Aufziehknopf.
-import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261114060746';
-import { magRounds } from './magfill.js?v=20261114060746';
-import { notchSight } from './pistol-parts.js?v=20261114060746';   // Kimme mit echter Kerbe (visier, 14.11.)
-import { schrift } from './schrift.js?v=20261114060746';   // Gravuren (14.11., gfx-waffen)
+import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261115041504';
+import { magRounds } from './magfill.js?v=20261115041504';
+import { notchSight } from './pistol-parts.js?v=20261115041504';   // Kimme mit echter Kerbe (visier, 14.11.)
+import { schrift } from './schrift.js?v=20261115041504';   // Gravuren (14.11., gfx-waffen)
 const MARK_LM8 = schrift('lm8').mark;
 
 const AXIS = 0.062;

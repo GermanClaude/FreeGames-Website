@@ -10,11 +10,11 @@
 //
 // Konsole (Tests): __game.campaign → { director, skip(), win(), stage(id), teleport(zoneOderPunkt), state() }
 
-import { BaseMode } from '../modes/base.js?v=20261114060746';
-import { Director } from './director.js?v=20261114060746';
-import { CampaignUI } from './ui.js?v=20261114060746';
-import { CampaignProgress } from './progress.js?v=20261114060746';
-import { MISSIONS, MISSION_ORDER, STORY_ORDER, missionById } from './missions/index.js?v=20261114060746';
+import { BaseMode } from '../modes/base.js?v=20261115041504';
+import { Director } from './director.js?v=20261115041504';
+import { CampaignUI } from './ui.js?v=20261115041504';
+import { CampaignProgress } from './progress.js?v=20261115041504';
+import { MISSIONS, MISSION_ORDER, STORY_ORDER, missionById } from './missions/index.js?v=20261115041504';
 
 export class CampaignMode extends BaseMode {
   constructor(G, modeId, opts = {}) {

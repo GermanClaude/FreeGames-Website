@@ -13,7 +13,7 @@
 // Texturen: Fotoscan-Satz (KTX2, 512 auf low, sonst 1024) wird im Hintergrund geladen (upgradeSoldierMaterials);
 // bis dahin bzw. ohne Transcoder prozedurale Ersatztexturen – gleiches Programm, kein Neukompilieren beim Tausch.
 import * as THREE from 'three';
-import { assets, tierFor } from '../../../../lib/loader.js?v=20261114060746';
+import { assets, tierFor } from '../../../../lib/loader.js?v=20261115041504';
 
 /* ------------------------------------------------------------------ Farbschemata */
 

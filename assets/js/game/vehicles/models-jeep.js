@@ -11,7 +11,7 @@
 //
 // jeepBodyHQ(J, S, paint, lod) – J = { B (Lack/Kleinteile), box, cyl, sideExtrude }; jeepWheelHQ(R, J, S, paint, r, sx, lod)
 import * as THREE from 'three';
-import { bodyLoft, curve, withArches, surface, ribbon, tube, roundPlate, tire, steelRim, sideX } from './bodykit.js?v=20261114060746';
+import { bodyLoft, curve, withArches, surface, ribbon, tube, roundPlate, tire, steelRim, sideX } from './bodykit.js?v=20261115041504';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;

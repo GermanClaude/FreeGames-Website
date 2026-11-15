@@ -17,7 +17,7 @@ export const FACE_MORPHS = Object.freeze([
   'jawOpen', 'lipsWide', 'lipsRound', 'lipsPress', 'lipsPart', 'lipTuck', 'tongueUp', 'smile', 'frown', 'sneer',
   'browDown', 'browInnerUp', 'browUp', 'blink', 'squint', 'lidWide',
 ]);
-const ASSET_V = '20261114060746';
+const ASSET_V = '20261115041504';
 export const ASSET_URL = new URL('../../../../lib/models/kopf/kopf', import.meta.url).href;
 
 /* ------------------------------------------------------------------ Laden */

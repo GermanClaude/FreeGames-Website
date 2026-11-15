@@ -10,8 +10,8 @@
 // einen Ablauf aus den Startpunkten der Karte (Notlösung).
 
 import * as THREE from 'three';
-import { actor } from './cast.js?v=20261114060746';
-import { mapFor, clearAir, purgeDead, strike, jetPass, giveLauncher, prop } from './hilfen-b.js?v=20261114060746';
+import { actor } from './cast.js?v=20261115041504';
+import { mapFor, clearAir, purgeDead, strike, jetPass, giveLauncher, prop } from './hilfen-b.js?v=20261115041504';
 
 const COORDS = {
   // Fliegerhorst Hagenmoor (karten-neu): Startbahn z 40 (W–O), Vorfeld z −132…−45, Hangars x −120/−40/40 bei z −150

@@ -20,9 +20,9 @@
 //
 // Kollision bleibt unverändert in vegetation.js (Stamm-Prismen, auf allen Stufen gleich – Mehrspieler).
 import * as THREE from 'three';
-import { foliageUniforms, WIND_VERTEX } from '../atlas.js?v=20261114060746';
-import { addShaderPatch, copyShaderPatches } from '../shading.js?v=20261114060746';
-import { rng } from './noise.js?v=20261114060746';
+import { foliageUniforms, WIND_VERTEX } from '../atlas.js?v=20261115041504';
+import { addShaderPatch, copyShaderPatches } from '../shading.js?v=20261115041504';
+import { rng } from './noise.js?v=20261115041504';
 
 const TAU = Math.PI * 2;
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);

@@ -18,7 +18,7 @@
 // multiplikativ aufs HDR-Bild (nur Flächen, die zur Sonne zeigen), ausgeblendet nach 35 m.
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261114060746';
+import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261115041504';
 
 /* ------------------------------------------------------------ Normalen + Glanz (Vorpass) */
 

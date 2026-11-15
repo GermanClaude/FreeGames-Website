@@ -3,8 +3,8 @@
 // Haupthand, Laufrichtung, Sitzend/Stehend, echtes Ducken/Lehnen, VR-Grafik und -Auflösung. Die Belegung der
 // VR-Controller steht unter Belegung → VR-Controller.
 
-import { esc } from '../dom.js?v=20261114060746';
-import { rowHtml, syncRows, setRowDisabled } from './rows.js?v=20261114060746';
+import { esc } from '../dom.js?v=20261115041504';
+import { rowHtml, syncRows, setRowDisabled } from './rows.js?v=20261115041504';
 
 export const VR_KEYS = ['vrEnabled', 'vrHand', 'vrTurn', 'vrTurnStep', 'vrTurnSpeed', 'vrVignette', 'vrVignetteStrength', 'vrMoveDir',
   'vrSeated', 'vrPhysical', 'vrRoomScale', 'vrSmoothing', 'vrGripHold', 'vrTwoHand', 'vrLaser', 'vrQuality', 'vrScale'];
