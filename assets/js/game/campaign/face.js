@@ -311,11 +311,12 @@ export class FaceDriver {
     const s = this.track ? sampleMouth(this.track, this.t, this._s) : sampleMouth(null, 0, this._s);
     // Gedämpfte Feder je Kanal (kritisch gedämpft, ω ≈ 34/s): weich, schließt Verschlusslaute dennoch fast ganz
     const w = 34;
-    const n = Math.min(8, Math.max(1, Math.ceil(dt * 60))), h = dt / n; // Teilschritte: stabil auch bei 20 FPS
+    // exakte Lösung der kritisch gedämpften Feder: stabil bei jeder Bildzeit (auch < 5 FPS, keine Explosion/NaN)
+    const t = Math.min(Math.max(dt, 0), 1), e = Math.exp(-w * t);
     for (const k of ['open', 'wide', 'round', 'press', 'teeth']) {
-      let x = this.cur[k], v = this.vel[k];
-      for (let i = 0; i < n; i++) { v += (w * w * ((s[k] ?? 0) - x) - 2 * w * v) * h; x += v * h; }
-      this.vel[k] = v; this.cur[k] = x;
+      const g = s[k] ?? 0, c1 = this.cur[k] - g, c2 = this.vel[k] + w * c1;
+      this.cur[k] = g + (c1 + c2 * t) * e;
+      this.vel[k] = (c2 - w * (c1 + c2 * t)) * e;
     }
     // Gesichts-API: Rohkanäle (sie federt selbst); Ersatz: eigene Feder
     rig.setMouth(rig.mode === 'api' ? s : this.cur);
