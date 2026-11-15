@@ -275,9 +275,9 @@ function buildSoldier(V, lod) {
   const rolled = V.sleeves === 'rolled';
   // zivil: einfarbige Stoffe (Jacke/Hemd/Strick, Hose), Halbschuhe, bloße Hände
   const civ = V.civil ? {
-    top: { color: V.topColor, detail: 1, shine: V.top === 'jacke' ? 0.06 : 0, cls: 'cloth', wear: 0.2 },
-    shirt: { color: V.shirtColor, detail: 0.9, cls: 'cloth' },
-    pants: { color: V.pantsColor, detail: 1, cls: 'cloth', wear: 0.35 },
+    top: { color: V.topColor, detail: V.top === 'strick' ? 0.9 : 0.55, shine: V.top === 'jacke' ? 0.06 : 0, cls: 'cloth', wear: 0.2 },
+    shirt: { color: V.shirtColor, detail: 0.45, cls: 'cloth' },
+    pants: { color: V.pantsColor, detail: 0.7, cls: 'cloth', wear: 0.35 },
     shoe: { color: V.shoeColor, detail: 0.7, shine: 0.35, cls: 'leather', wear: 0.4 },
   } : null;
   const bodyMat = (r) => {
@@ -312,7 +312,14 @@ function buildSoldier(V, lod) {
       default: return C.top;
     }
   };
-  B.addMesh(bodyMesh(lod), bodyMat, L0 ? new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]) : null);
+  // zivil: Uniform-Brusttaschen gehören zum Oberteil (Bereich POCKET gilt sonst für Hosentaschen)
+  let BM = bodyMesh(lod);
+  if (civ) {
+    const reg = BM.reg.slice();
+    for (let i = 0; i < BM.n; i++) if (reg[i] === RG.POCKET && BM.pos[i * 3 + 1] > 1.0) reg[i] = RG.SHIRT;
+    BM = { ...BM, reg };
+  }
+  B.addMesh(BM, bodyMat, L0 ? new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]) : null);
   if (V.holster && !FAR) {
     add(R(0.06, 0.17, 0.1, 0.022, { p: [0.238, 0.72, 0.022], r: [0.08, 0, -0.03] }), 'thighR', C.gear2);
     add(R(0.03, 0.075, 0.04, 0.008, { p: [0.24, 0.825, 0.055], r: [0.25, 0, -0.03] }), 'thighR', C.plastic);
@@ -336,8 +343,7 @@ function buildSoldier(V, lod) {
         const kp2 = pad({ k: 2, fr: 1, bv: 3, w: 0.118, h: 0.15, d: 0.012, rb: 0.005, rc: 0.035, bend: [7, 2.5] });
         place(kp2, { p: [-0.106, 0.5, -0.094], r: [-0.08, 0, 0] });
         pair(kp2, 'shinL', 'shinR', { pal: 'strap', shade: 0.9, detail: 1, cls: 'gear' });
-        ring(-0.106, 0.455, -0.005, 0.072, 0.092, 'shinL', C.strap);
-        ring(-0.106, 0.55, -0.005, 0.077, 0.094, 'shinL', C.strap);
+        ring(-0.105, 0.452, 0, 0.08, 0.091, 'shinL', C.strap);
         pair(rbox(0.006, 0.02, 0.026, 0, 0, { p: [-0.181, 0.455, -0.01] }), 'shinL', 'shinR', PLAST);
       }
     }
@@ -657,8 +663,8 @@ function buildSoldier(V, lod) {
       }
       add(sweep(rp, ru, L0 ? roundProfile(0.0062, 6, 0.0048) : rectProfile(0.011, 0.008), { closed: true, smooth: true }), 'head', RUB);
       // Seitenschienen (ARC) – auf Bezug bzw. Schale geschraubt
-      const rail = hullPath([[80, 214], [85, 180], [82, 146]], OFF + 0.004, L0 ? 4 : 2);
-      pair(sweep(rail.pts, rail.ups, rectProfile(0.017, 0.008), { smooth: false }), 'head', 'head', C.plastic);
+      const rail = hullPath([[80, 208], [84, 180], [82, 152]], OFF + 0.003, L0 ? 4 : 2);
+      pair(sweep(rail.pts, rail.ups, rectProfile(0.014, 0.0055), { smooth: false }), 'head', 'head', C.plastic);
     }
     if (L0) {
       // Innenpolster/Futter am Rand (dunkler Schaumstoff, von unten und vorn sichtbar)
@@ -799,7 +805,7 @@ function buildSoldier(V, lod) {
       // Schienenadapter: kurzer Arm von der Kapsel hoch zur Seitenschiene
       if (!FAR) pair(rbox(0.012, 0.036, 0.022, 0.003, L0 ? 1 : 0, { p: [-0.116, 1.716, 0.008] }), 'head', 'head', C.plastic);
     } else if (!FAR) {
-      const hb = hullPath([[84, 180], [55, 180], [25, 180], [0, 180], [-25, 180], [-55, 180], [-84, 180]], V.head === 'cap' ? 0.017 : 0.012, L0 ? 3 : 1);
+      const hb = hullPath([[84, 180], [55, 180], [25, 180], [0, 180], [-25, 180], [-55, 180], [-84, 180]], V.head === 'cap' ? 0.0115 : 0.006, L0 ? 3 : 1);
       add(sweep(hb.pts, hb.ups, rectProfile(0.024, 0.006), { smooth: false }), 'head', C.plastic);
     }
     if (L01) {
@@ -913,7 +919,7 @@ function buildSoldier(V, lod) {
   }
   if (V.pauldrons) pair(E(0.102, 0.078, 0.108, { p: [AX - 0.018, 1.44, 0.0] }, { thetaLength: Math.PI * 0.5 }), 'upperArmL', 'upperArmR', C.gear);
   // hochgekrempelte Ärmel: Wulst unter dem Ellbogen
-  if (rolled) pair(torus(0.063, 0.016, 4, q.cs, { p: [AX, 1.1, 0.0], r: [Math.PI / 2, 0, 0], s: [0.9, 1.04, 1] }), 'foreArmL', 'foreArmR', C.top);
+  if (rolled) pair(torus(0.063, 0.016, 4, q.cs, { p: [AX, 1.1, 0.0], r: [Math.PI / 2, 0, 0], s: [0.9, 1.04, 1] }), 'foreArmL', 'foreArmR', civ ? civ.top : C.top);
   if (L0) add(R(0.014, 0.024, 0.032, 0.004, { p: [AX - 0.046, 0.965, 0] }), 'foreArmL', C.plastic); // Uhr
 
   const geo = B.build();

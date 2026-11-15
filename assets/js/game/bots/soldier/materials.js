@@ -249,15 +249,15 @@ function splitterMask(key) {
     }
     cls[y * N + x] = id;
   }
-  // Regenstriche: senkrechte Strichreihen (Abstand ≈ 5 mm, Strich ≈ 1,4 mm × 9–16 mm), je Spalte versetzt, lückig
+  // Regenstriche: senkrechte Strichreihen (Abstand ≈ 6 mm, Strich ≈ 0,9 mm × 6–12 mm), je Spalte versetzt, lückig, halbe Deckung
   const rain = new Uint8Array(N * N);
-  const colStep = 5.6;
+  const colStep = 6.4;
   for (let k = 0; k * colStep < N; k++) {
     const x0 = Math.round(k * colStep + hash2(k, 3, seed)[0] * 2);
     for (let y = 0; y < N;) {
       const h = hash2(k, y, seed + 5);
-      const len = 10 + Math.floor(h[0] * 8), gap = 6 + Math.floor(h[1] * 14);
-      if (h[2] < 0.72) for (let j = 0; j < len; j++) { const yy = (y + j) % N; rain[yy * N + (x0 % N)] = 255; rain[yy * N + ((x0 + 1) % N)] = 150; }
+      const len = 7 + Math.floor(h[0] * 7), gap = 8 + Math.floor(h[1] * 18);
+      if (h[2] < 0.55) for (let j = 0; j < len; j++) { const yy = (y + j) % N; rain[yy * N + (x0 % N)] = 255; }
       y += len + gap;
     }
   }
@@ -270,7 +270,7 @@ function splitterMask(key) {
     }
     const i = (y * N + x) * 4;
     const rn = rain[y * N + x] / 255;
-    d[i] = (r / 16) * 255; d[i + 1] = (g / 16) * (1 - rn * 0.8) * 255; d[i + 2] = Math.max(bl / 16, rn * 0.85) * 255; d[i + 3] = 255;
+    d[i] = (r / 16) * 255; d[i + 1] = (g / 16) * (1 - rn * 0.5) * 255; d[i + 2] = Math.max(bl / 16, rn * 0.5) * 255; d[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
   const tex = new THREE.CanvasTexture(c);
@@ -718,7 +718,7 @@ function newMaterial(schemeId, low) {
     uCls: { value: CLASS_PARAMS.map((p) => new THREE.Vector4(p[0], p[1], p[2], p[3])) },
     uCamoScale: { value: 2.2 }, // Tarnmuster-Kachel ≈ 45 cm (Splitter wie im Video)
     uCamoFacet: { value: 0 }, // 21.10.: Muster nicht mehr je Dreieck einfrieren (las sich als kantige Dreiecke)
-    uFacet: { value: new THREE.Vector2(0.0, 0.3) }, // Kantenanteil der Schattierung: Stoff, Ausrüstung
+    uFacet: { value: new THREE.Vector2(0.0, 0.08) }, // Kantenanteil der Schattierung: Stoff, Ausrüstung (sol: Ausrüstung jetzt gerundet → kaum Kante)
     uNpOrm: { value: D.orm },
     uNpDetail: { value: new THREE.Vector3(1 / D.aoMean, 1, D.kind === 'fotoscan' ? 1.0 : 1.0) },
     uNpMacro: { value: wrinkleTexture() },
