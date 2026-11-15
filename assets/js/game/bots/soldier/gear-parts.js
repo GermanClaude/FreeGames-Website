@@ -355,7 +355,7 @@ export function pad({ w = 0.1, h = 0.1, poly = null, d = 0.03, rb = 0.008, rc = 
   const idx = [];
   for (let r = 0; r + 1 < R; r++) for (let c = 0; c < N; c++) {
     const a = r * (N + 1) + c, b = a + N + 1;
-    idx.push(a, b, a + 1, a + 1, b, b + 1);
+    idx.push(a, a + 1, b, a + 1, b + 1, b); // gegen den Uhrzeigersinn von außen (Front −Z)
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
