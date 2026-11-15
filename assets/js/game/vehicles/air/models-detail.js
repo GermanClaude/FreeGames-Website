@@ -149,9 +149,6 @@ export function jetDetailHQ(B, M, P) {
   for (let i = 0; i < 4; i++) B.add(box(0.006, 0.05, 0.06), M.black, [-0.68, 2.05, -5.2 + i * 0.09]);
   // Luft-Luft-Flugkörper an den Flügelspitzenschienen
   for (const sx of [-1, 1]) missile(B, M, sx * 5.25, 1.66, 2.9, 2.6, 0.065);
-  // Fahrwerk: Drehmomentstützen, Naben, Landescheinwerfer am Bugbein (feste Teile im Fahrwerksschacht)
-  for (const sx of [-1, 1]) B.add(box(0.5, 0.05, 1.1), M.black, [sx * 1.7, 1.28, 1.1]);
-  B.add(box(0.4, 0.05, 1.0), M.black, [0, 1.32, -4.9]);
   // Kanonen-Mündungsverkleidung
   B.add(cylZ(0.07, 0.08, 0.18, 10), M.dark, [-0.62, 1.95, -5.62]);
 }

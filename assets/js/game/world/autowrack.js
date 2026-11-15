@@ -62,7 +62,7 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   const SH = pkwShape(st), { at, G } = SH;
   const yaw = ry + PI; // Fahrzeugraum: vorn −z
   // Wrack sitzt tiefer (Reifen weg) und schief: eine Seite tiefer
-  const drop = -0.12, roll = (r() - 0.5) * 0.08, pitch = (r() - 0.5) * 0.05;
+  const drop = -0.2, roll = (r() - 0.5) * 0.08, pitch = (r() - 0.5) * 0.05;
   const place = (geom, mat, tint = '#ffffff') => {
     geom.translate(0, drop, 0);
     geom.rotateZ(roll); geom.rotateX(pitch);
@@ -80,13 +80,13 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   const ghs = (z0, z1, t0, t1, nu, nv, thick) => surface((u, v) => pkwGreenhouse(SH, lerp(z0, z1, v), lerp(t0, t1, u)), nu, nv, { thick });
   const roof = ghs(G.zA1 - 0.01, G.zC1 + 0.01, -0.5, 0.5, 6, 6, 0.02);
   place(burn(roof, seedN + 2, color, { dent: 0.03, sag: 0.09 + r() * 0.08, roofY: 1.2, keepPaint: 0 }), 'metal_rust');
-  const edge = (z0, z1, t, n) => { const p = []; for (let i = 0; i <= n; i++) { const q = pkwGreenhouse(SH, lerp(z0, z1, i / n), t); p.push([q[0], q[1] - (q[1] > 1.3 ? 0.06 : 0), q[2]]); } return p; };
+  const edge = (z0, z1, t, n) => { const p = []; for (let i = 0; i <= n; i++) { const q = pkwGreenhouse(SH, lerp(z0, z1, i / n), t); p.push([q[0], q[1], q[2]]); } return p; };
   const pillars = [];
   for (const sg of [-1, 1]) {
     pillars.push(tube(edge(G.zA0, G.zA1, sg * 0.5, 5), 0.028, 4, 2));
     pillars.push(tube(edge(G.zC1, G.zC0, sg * 0.5, 5), 0.03, 4, 2));
     pillars.push(tube(edge(G.zA1, G.zC1, sg * 0.5, 5), 0.02, 4, 2));
-    pillars.push(tube([pkwGreenhouse(SH, G.zB, sg * 0.98), pkwGreenhouse(SH, G.zB, sg * 0.5)].map((p, i) => [p[0], p[1] - i * 0.06, p[2]]), 0.03, 4, 2));
+    pillars.push(tube([pkwGreenhouse(SH, G.zB, sg * 0.98), pkwGreenhouse(SH, G.zB, sg * 0.5)], 0.03, 4, 2));
   }
   place(burn(merge(pillars), seedN + 3, color, { dent: 0.01, keepPaint: 0 }), 'metal_rust');
   // Haube: aufgebogen (Spalt vorn), Kotflügelkanten
@@ -110,11 +110,11 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   for (const wz of [-1.38, 1.43]) for (const sx of [-1, 1]) {
     const ri = 0.21, g = st === 2 ? alloyRim(ri, 0.16, { spokes: 5, twin: true, seg: 14 }).face : steelRim(ri, { holes: 8, seg: 14 });
     if (sx < 0) g.rotateY(PI);
-    g.translate(sx * 0.82, ri + 0.12 - (r() * 0.04), wz);
+    g.translate(sx * 0.82, ri + 0.2 - (r() * 0.03), wz);
     rims.push(g);
-    const bar = new THREE.CylinderGeometry(ri * 0.98, ri * 0.98, 0.16, 14, 1, true).rotateZ(HP).translate(sx * 0.76, ri + 0.12, wz);
+    const bar = new THREE.CylinderGeometry(ri * 0.98, ri * 0.98, 0.16, 14, 1, true).rotateZ(HP).translate(sx * 0.76, ri + 0.2, wz);
     rims.push(bar);
-    rims.push(new THREE.TorusGeometry(ri * 1.08, 0.006, 3, 18).rotateY(HP).translate(sx * 0.78, ri + 0.12, wz));
+    rims.push(new THREE.TorusGeometry(ri * 1.08, 0.006, 3, 18).rotateY(HP).translate(sx * 0.78, ri + 0.2, wz));
   }
   place(burn(merge(rims), seedN + 6, '#3a2a20', { dent: 0.003, keepPaint: 0 }), 'metal_rust');
 }

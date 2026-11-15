@@ -94,8 +94,8 @@ export function jeepBodyHQ(J, S, paint, lod) {
   B.add(roundPlate(2.02, 0.18, 0.2, 0.03), S.dark, [0, 0.56, -2.5]);
   B.add(roundPlate(1.92, 0.15, 0.16, 0.03), S.dark, [0, 0.62, 2.3]);
   for (const sx of [-1, 1]) {
-    B.add(box(0.36, 0.035, 1.5), S.steel, [sx * 1.0, 0.68, 0.24]);
-    if (fine) for (let k = 0; k < 10; k++) B.add(box(0.05, 0.01, 0.02), S.steel, [sx * (0.94 + (k % 2) * 0.1), 0.703, -0.4 + k * 0.13], [0, (k % 2 ? 0.7 : -0.7), 0]);
+    B.add(box(0.2, 0.035, 1.4), S.dark, [sx * 0.98, 0.7, 0.24]);
+    if (fine) for (let k = 0; k < 10; k++) B.add(box(0.04, 0.008, 0.02), S.dark, [sx * (0.95 + (k % 2) * 0.06), 0.72, -0.36 + k * 0.13], [0, (k % 2 ? 0.7 : -0.7), 0]);
     B.add(box(0.06, 0.18, 0.06), S.dark, [sx * 0.92, 0.6, -0.3]);
     B.add(box(0.06, 0.18, 0.06), S.dark, [sx * 0.92, 0.6, 0.8]);
   }

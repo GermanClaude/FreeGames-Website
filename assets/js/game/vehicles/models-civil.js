@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 import { VEHICLES } from './data.js?v=20261114060746';
 import { civilPaint } from './materials.js?v=20261114060746';
-import { pkwBodyHQ } from './models-car.js?v=20261114060746';
+import { pkwBodyHQ, plateMaterial } from './models-car.js?v=20261114060746';
 import { tire, alloyRim, steelRim, brakeDisc, bodyLoft, roundPlate } from './bodykit.js?v=20261114060746';
 
 const PI = Math.PI, HP = PI / 2;
@@ -377,7 +377,7 @@ function buildTransporter(lod, S, K, variant) {
     // Fahrerhausdach als Fortsetzung des Kofferaufbaus (gleicher Querschnitt, gerundete Kanten), Regenrinne
     const zz = []; for (let i = 0; i <= (lod === 0 ? 10 : 4); i++) zz.push(-1.26 + (1.38 * i) / (lod === 0 ? 10 : 4));
     B.add(bodyLoft(zz, (z) => ({ yb: 2.2, ys: 2.24, yt: 2.42 - Math.max(0, (-z - 1.1) / 0.16) * 0.04, w: 0.995, wt: 0.965, rb: 0.02, rs: 0.16, crown: 0.025, bulge: 0 }), { q: lod === 0 ? 4 : 2 }), paint);
-    if (lod === 0) for (const sx of [-1, 1]) B.add(K.box(0.03, 0.025, 3.9), S.plastic, [sx * 0.99, 2.235, 0.68]);
+    if (lod === 0) for (const sx of [-1, 1]) B.add(K.box(0.03, 0.025, 3.75), S.plastic, [sx * 0.99, 2.235, 0.62]);
   } else B.add(K.box(1.96, 0.05, 1.36), paint, [0, 2.425, -0.56]);
   B.add(K.box(1.92, 0.16, 0.08), paint, [0, 2.33, -1.2]);
   B.add(K.box(1.4, 0.18, 4.4), S.dark, [0, 0.55, 0.0]);                                 // Unterboden
@@ -392,9 +392,9 @@ function buildTransporter(lod, S, K, variant) {
   B.add(K.box(2.02, 0.3, 0.18), S.plastic, [0, 0.52, -2.6]);
   B.add(K.box(0.92, 0.26, 0.04), S.dark, [0, 0.86, -2.625]);
   }
-  B.add(K.box(0.52, 0.11, 0.012), S.plate, [0, 0.5, -2.695]);
+  if (K.HQ && lod < 2) B.add(new THREE.PlaneGeometry(0.52, 0.112), plateMaterial(variant + 3, S), [0, 0.5, -2.702], [0, PI, 0], null, { keepUV: true }); else B.add(K.box(0.52, 0.11, 0.012), S.plate, [0, 0.5, -2.695]);
   B.add(K.box(2.02, 0.26, 0.14), S.plastic, [0, 0.52, 2.62]);
-  B.add(K.box(0.52, 0.11, 0.012), S.plate, [0, 0.68, 2.66]);
+  if (K.HQ && lod < 2) B.add(new THREE.PlaneGeometry(0.52, 0.112), plateMaterial(variant + 3, S), [0, 0.68, 2.697], null, null, { keepUV: true }); else B.add(K.box(0.52, 0.11, 0.012), S.plate, [0, 0.68, 2.66]);
   for (const sx of [-1, 1]) {
     if (K.HQ && lod < 2) {
       B.add(roundPlate(0.36, 0.18, 0.03, 0.05), S.chrome, [sx * 0.7, 0.93, -2.615], [0, sx * 0.12, 0]);

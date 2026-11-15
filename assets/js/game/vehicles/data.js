@@ -196,6 +196,8 @@ export const VEHICLES = {
     grip: { long: 1.15, lat: 1.15, handbrakeLat: 0.32, rollInfluence: 0.18 },
     drag: 0.45, angularDamp: 1.4,
     mgPivot: [0, 1.88, 0.42],
+    // Bezugspunkte für den Ego-Fahrerplatz (cabin.js): Armaturenbrett-Auflage (Mitte, Oberkante), Wannenboden (Oberkante)
+    cockpit: { dash: [0, 1.31, -0.75], floor: 0.92 },
     mgMuzzle: [0, 0.1, -1.15],
     mgLimits: { min: deg(-14), max: deg(42) },
     zones: {
@@ -811,6 +813,21 @@ for (const D of Object.values(VEHICLES)) {
   const s = R && D.seats.find((x) => x.drive);
   if (s && s.views && !s.views.some((v) => v.id === 'innen')) {
     s.views.push({ id: 'innen', label: 'Fahrerraum', space: 'hull', pos: R.eye, look: 'rel', yaw: [-2.0, 2.0], pitch: [-0.9, 0.5], zoom: [1], interior: true });
+  }
+}
+// Turm-Innensichten von Richtschütze/Kommandant (Koordinator 15.11.): Kamera etwas hinter/über dem Platz, damit Okular,
+// Rechner und Handräder im Bild sind und kein Gerät vor der Linse steht; `station` = ursprüngliche Lage (cabin.js baut
+// den Platz dort). Ladeschütze unverändert (Schrittlogik über interior.loaderEye).
+for (const D of Object.values(VEHICLES)) {
+  if (!D || D.drive !== 'tracked' || !D.seats) continue;
+  const sc = (D.interior && D.interior.scale) || 1;
+  for (const s of D.seats) {
+    if (s.loader) continue;
+    const v = (s.views || []).find((x) => x.interior && x.space === 'turret');
+    if (!v || v.station) continue;
+    const off = s.mount === 'gun' ? [Math.sign(v.pos[0] || 1) * 0.1, 0.05, 0.28] : [0, 0.03, 0.22];
+    v.station = v.pos.slice();
+    v.pos = [v.pos[0] + off[0] * sc, v.pos[1] + off[1] * sc, v.pos[2] + off[2] * sc];
   }
 }
 

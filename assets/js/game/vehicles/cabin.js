@@ -950,7 +950,7 @@ function buildDriver(root, D, C, det, era, cab) {
 function anchorsOf(D) {
   const I = D.interior || {}, sh = I.shift || [0, 0, 0], sc = I.scale || 1;
   const toG = (p) => [(p[0] - sh[0]) / sc, (p[1] - sh[1]) / sc, (p[2] - sh[2]) / sc];
-  const innen = (pred) => { const s = D.seats.find(pred); const v = s && (s.views || []).find((x) => x.interior && x.space === 'turret'); return v ? toG(v.pos) : null; };
+  const innen = (pred) => { const s = D.seats.find(pred); const v = s && (s.views || []).find((x) => x.interior && x.space === 'turret'); return v ? toG(v.station || v.pos) : null; };
   const hatch = (id) => { const h = D.hatches && D.hatches[id]; return h && h.space === 'turret' ? { pos: toG(h.pos), r: h.r / sc } : null; };
   const basket = !D.turretLimits && I.basket !== false;
   const hb = D.hullBox, tp = D.turretPivot, le = I.loaderEye || [0.55, 0.62, 0.35];
@@ -1176,11 +1176,11 @@ function buildTurret(D, C, det, era, cab, A) {
     GB.add(cyl(0.022 * sc, 0.022 * sc, 0.2 * sc, 10), C.metal, [cx, cy, zf - 0.05], [HP, 0, 0]);
     GB.add(rbox(0.035 * sc, 0.035 * sc, 0.12 * sc, 0.008), C.metal, [cx + 0.07 * sc, cy, zc + len * 0.25]); // Spannschieber
     // Gurtkasten + Zuführung, Hülsenschacht nach unten
-    const ab = [cx + Math.sign(cx) * 0.17 * sc, cy - 0.06 * sc, zc + 0.05 * sc];
+    const ab = [cx, cy - 0.2 * sc, zc + 0.12 * sc]; // unter dem Gehäuse – auf Augenhöhe des Richtschützen steht nichts
     GB.add(rbox(0.14 * sc, 0.2 * sc, 0.3 * sc, 0.01), C.olive, ab);
     GB.add(box(0.15 * sc, 0.02 * sc, 0.31 * sc), C.metal, [ab[0], ab[1] + 0.105 * sc, ab[2]]);
-    GB.tube(C.metal, [[ab[0] - Math.sign(cx) * 0.05 * sc, ab[1] + 0.1 * sc, ab[2]], [cx + Math.sign(cx) * 0.07 * sc, cy + 0.06 * sc, zc], [cx + Math.sign(cx) * 0.04 * sc, cy + 0.03 * sc, zc - 0.05 * sc]], 0.02 * sc, 6, 12);
-    GB.add(box(0.06 * sc, 0.25 * sc, 0.08 * sc), C.metal, [cx, cy - 0.18 * sc, zc + 0.05 * sc]);
+    GB.tube(C.metal, [[ab[0] - 0.05 * sc, ab[1] + 0.1 * sc, ab[2] - 0.08 * sc], [cx - 0.09 * sc, cy - 0.02 * sc, zc], [cx - 0.055 * sc, cy + 0.02 * sc, zc - 0.05 * sc]], 0.02 * sc, 6, 12);
+    GB.add(box(0.06 * sc, 0.25 * sc, 0.08 * sc), C.metal, [cx + 0.08 * sc, cy - 0.18 * sc, zc - 0.12 * sc]);
   }
   // Rücklaufschutz: Warnschilder beidseitig (am Rohr, laufen mit zurück)
   const lk = modern ? 'ruecklauf' : 'wk_achtung';
@@ -1661,6 +1661,9 @@ export function attachCockpit(model, D, S, quality = 'high') {
   let tpl = JTPL.get(det);
   if (!tpl) { tpl = buildJeepCockpit(D, S, det); JTPL.set(det, tpl); }
   const grp = tpl.clone(true);
+  // an die Bezugspunkte des Modells hängen (data.js cockpit; gebaut ist für Armaturenbrett-Oberkante 1,31 / z −0,75)
+  const ck = D.cockpit || {};
+  if (ck.dash) grp.position.set(0, ck.dash[1] - 1.31, ck.dash[2] + 0.75);
   model.root.add(grp);
   const cab = { D, grp, needles: [], pedals: [], parts: {}, t: 0 };
   grp.traverse((o) => {
