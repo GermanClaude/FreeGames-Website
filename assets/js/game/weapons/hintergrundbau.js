@@ -350,6 +350,8 @@ export const BUILD_ACTIONS = {
   _handBuildOk(job, quiet) {
     const cur = this.cur;
     if (!quiet || this._vrOn || !cur || !cur.stub || this._models.get(job.mk) !== cur) return false;
+    // Handy (leichte Stufe): nur, wenn der gemessene Bau dieser Waffe kurz war – sonst bleibt es beim Bau im Leerlauf
+    if (this._tier === 'lite' && job.step === 0) { const c = weaponBuildCost(job.key); if (!c || c.ms > 700) return false; }
     return this._quietNow() && this._time - (this._restT ?? 0) >= HAND_QUIET_S;
   },
 

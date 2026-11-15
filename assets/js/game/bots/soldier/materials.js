@@ -210,9 +210,85 @@ function hash2(x, y, seed) {
   return out;
 }
 
+/**
+ * Splittertarn als gedruckter Stoff (sol 15.11.; vorher 256² mit 7 × 7 groben Zellen → las sich wie Polygonflächen der
+ * Geometrie): 512² je 45-cm-Kachel, 11 × 11 Voronoi-Splitter mit leicht unruhigen Druckkanten (feines Verzerrungsrauschen),
+ * kleine Splitter-Inseln und die typischen senkrechten „Regenstriche“ (kurze dunkle Striche, Kanal B) über allen Farben.
+ * Kanten 1 px weich (3 × 3-Filter der Farbklassen) → ruhige Mip-Stufen. Kosten einmalig ≈ 40–80 ms.
+ */
+function splitterMask(key) {
+  const N = 512, G = 11;
+  const seed = 9137;
+  const { c, ctx } = canvas2d(N);
+  const img = ctx.createImageData(N, N);
+  const d = img.data;
+  const wn = [makeNoise(16, seed + 1), makeNoise(32, seed + 2)];
+  const cls = new Uint8Array(N * N);
+  // Zellpunkte (kachelbar) einmal vorberechnen
+  const cp = new Float32Array(G * G * 3);
+  for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) {
+    const h = hash2(x, y, seed), i = (y * G + x) * 3;
+    cp[i] = (x + 0.12 + 0.76 * h[0]) / G; cp[i + 1] = (y + 0.12 + 0.76 * h[1]) / G;
+    cp[i + 2] = h[2] < 0.33 ? 0 : h[2] < 0.62 ? 1 : h[2] < 0.88 ? 2 : 3;
+  }
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    let u = x / N, v = y / N;
+    // Druckkanten: kleine Verzerrung (≈ 2–3 mm) – Kanten bleiben gerade, aber nicht maschinell glatt
+    u += (wn[0](u * 16, v * 16) - 0.5) * 0.008 + (wn[1](u * 32, v * 32) - 0.5) * 0.004;
+    v += (wn[1](u * 32 + 7, v * 32 + 3) - 0.5) * 0.008;
+    const gx = Math.floor(u * G), gy = Math.floor(v * G);
+    let best = 1e9, id = 0;
+    for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+      const cx = gx + ox, cy = gy + oy;
+      const wx = ((cx % G) + G) % G, wy = ((cy % G) + G) % G, i = (wy * G + wx) * 3;
+      const px = cp[i] + (cx - wx) / G, py = cp[i + 1] + (cy - wy) / G;
+      const dx = u - px, dy = v - py;
+      const a = dx * 0.87 + dy * 0.5, b = -dx * 0.5 + dy * 0.87;
+      const dd = a * a * 0.5 + b * b;
+      if (dd < best) { best = dd; id = cp[i + 2]; }
+    }
+    cls[y * N + x] = id;
+  }
+  // Regenstriche: senkrechte Strichreihen (Abstand ≈ 5 mm, Strich ≈ 1,4 mm × 9–16 mm), je Spalte versetzt, lückig
+  const rain = new Uint8Array(N * N);
+  const colStep = 5.6;
+  for (let k = 0; k * colStep < N; k++) {
+    const x0 = Math.round(k * colStep + hash2(k, 3, seed)[0] * 2);
+    for (let y = 0; y < N;) {
+      const h = hash2(k, y, seed + 5);
+      const len = 10 + Math.floor(h[0] * 8), gap = 6 + Math.floor(h[1] * 14);
+      if (h[2] < 0.72) for (let j = 0; j < len; j++) { const yy = (y + j) % N; rain[yy * N + (x0 % N)] = 255; rain[yy * N + ((x0 + 1) % N)] = 150; }
+      y += len + gap;
+    }
+  }
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    let r = 0, g = 0, bl = 0;
+    for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+      const w = ox === 0 && oy === 0 ? 4 : ox === 0 || oy === 0 ? 2 : 1;
+      const k = cls[((y + oy + N) % N) * N + ((x + ox + N) % N)];
+      if (k === 1) r += w; else if (k === 2) g += w; else if (k === 3) bl += w;
+    }
+    const i = (y * N + x) * 4;
+    const rn = rain[y * N + x] / 255;
+    d[i] = (r / 16) * 255; d[i + 1] = (g / 16) * (1 - rn * 0.8) * 255; d[i + 2] = Math.max(bl / 16, rn * 0.85) * 255; d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.name = 'soldat:tarnmaske:splitter';
+  tex.needsUpdate = true;
+  texCache.set(key, tex);
+  return tex;
+}
+
 export function camoMaskTexture(pattern = 'multi') {
   const key = 'mask:' + pattern;
   if (texCache.has(key)) return texCache.get(key);
+  if (pattern === 'splitter') return splitterMask(key);
   const N = 256;
   const { c, ctx } = canvas2d(N);
   const img = ctx.createImageData(N, N);
@@ -588,6 +664,26 @@ const RIM = /* glsl */`
 	outgoingLight = max( outgoingLight, diffuseColor.rgb * uLightFloor * min( sdAmb, 1.0 ) );
 `;
 
+/**
+ * Staub/Schmutz an Stiefeln, Hosenbeinen und Knien je Karte (sol 15.11.): Farbe (linear) und Menge passend zum Boden –
+ * Schlamm im Niemandsland, Asche im Brandwald, heller Kalkstaub in der Altstadt, Betonstaub im Hafen/Werk/Flugplatz.
+ */
+const DUST = {
+  standard: [[0.36, 0.32, 0.26], 0.45],
+  hafen: [[0.3, 0.29, 0.27], 0.4], werk: [[0.27, 0.26, 0.24], 0.45], flugplatz: [[0.34, 0.33, 0.3], 0.38],
+  altstadt: [[0.5, 0.44, 0.34], 0.5], stadtkern: [[0.33, 0.32, 0.3], 0.4], bibliothek: [[0.36, 0.33, 0.28], 0.3],
+  grenzland: [[0.26, 0.21, 0.14], 0.55], niemandsland: [[0.2, 0.15, 0.1], 0.7], brandwald: [[0.13, 0.12, 0.11], 0.6],
+};
+let dustCur = DUST.standard;
+/** Karte setzen (BotManager beim Erzeugen): Staubfarbe/-menge aller Soldatenmaterialien. */
+export function setSoldierWorld(world) {
+  const id = world && (world.id || (world.def && world.def.id));
+  dustCur = DUST[id] || DUST.standard;
+  const apply = (m) => { const U = m.userData.npU; if (!U) return; U.uDust.value.setRGB(...dustCur[0]); U.uDustAmt.value = dustCur[1]; };
+  for (const m of live) apply(m);
+  for (const pool of pools.values()) for (const m of pool) apply(m);
+}
+
 /** Soldatenmaterialien je Schema × Qualität: freie Exemplare (Pool) + alle lebenden (für den Texturtausch). */
 const pools = new Map();
 const live = new Set();
@@ -627,8 +723,8 @@ function newMaterial(schemeId, low) {
     uNpDetail: { value: new THREE.Vector3(1 / D.aoMean, 1, D.kind === 'fotoscan' ? 1.0 : 1.0) },
     uNpMacro: { value: wrinkleTexture() },
     uNpMacroStr: { value: 0.55 },
-    uDust: { value: new THREE.Color(0.36, 0.32, 0.26) },
-    uDustAmt: { value: 0.45 },
+    uDust: { value: new THREE.Color(...dustCur[0]) },
+    uDustAmt: { value: dustCur[1] },
     uDissolve: { value: 0 },
     uDissolveColor: { value: new THREE.Color(0x0b0b0b) },
     // Randlicht: Verbündete dezent, Gegner kräftiger und zur Teamfarbe getönt (Silhouette auch im Schatten)

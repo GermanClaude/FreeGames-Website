@@ -67,6 +67,7 @@ export function hullR(th, ph) {
 
 /** Punkt über der Hülle: Richtung (θ, φ), Versatz off (m, Zahl oder Funktion (θ, φ)). */
 export function hullP(th, ph, off = 0, out = [0, 0, 0]) {
+  if (th < 0) { th = -th; ph += Math.PI; } // negatives θ = über den Scheitel auf die Gegenseite (Bügel)
   const o = typeof off === 'function' ? off(th, ph) : off;
   const r = hullR(th, ph) + o, s = Math.sin(th);
   out[0] = HULL_C[0] + s * Math.cos(ph) * r;
@@ -77,6 +78,7 @@ export function hullP(th, ph, off = 0, out = [0, 0, 0]) {
 
 /** Flächennormale der versetzten Hülle bei (θ, φ) (numerisch, nach außen). */
 export function hullN(th, ph, off = 0) {
+  if (th < 0) { th = -th; ph += Math.PI; }
   const e = 0.01;
   const tA = Math.max(0, th - e), tB = th + e;
   const a = hullP(tA, ph, off), b = hullP(tB, ph, off);
@@ -315,8 +317,10 @@ export function rectPoly(w, h, cut = 0, cutB = 0) {
  */
 export function pad({ w = 0.1, h = 0.1, poly = null, d = 0.03, rb = 0.008, rc = 0.012, puff = 0, bend = [0, 0], k = 3, fr = 2, bv = 4, back = true } = {}) {
   const P0 = poly || rectPoly(w, h);
-  rb = Math.min(rb, d / 2);
-  rc = Math.max(rc, rb + 0.0015);
+  // Rundungen an die Maße anpassen (sonst fällt der Kern-Umriss zusammen → entartete Normalen)
+  const half = Math.min(Math.max(...P0.map((v) => Math.abs(v[0]))), Math.max(...P0.map((v) => Math.abs(v[1]))));
+  rb = Math.max(0.0005, Math.min(rb, d / 2, half - 0.004));
+  rc = Math.min(Math.max(rc, rb + 0.0015), half - 0.0015);
   const O = coreOutline(P0, rb, rc, k);
   const N = O.length;
   const rows = []; // je Reihe: Funktion (Umrisspunkt) → { p:[x,y,z], arc }

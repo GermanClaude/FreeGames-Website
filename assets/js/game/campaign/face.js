@@ -16,7 +16,7 @@
 
 import * as THREE from 'three';
 import { BONE, BIND } from '../bots/soldier/rig.js?v=20261114060746';
-import { VARIANTS } from '../bots/soldier/gear.js?v=20261114060746';
+import { variantDef } from '../bots/soldier/gear.js?v=20261114060746';
 import { SKIN_TONES } from '../bots/soldier/materials.js?v=20261114060746';
 import { sampleMouth, expressionFor, VISEME_SHAPES } from './lipsync.js?v=20261114060746';
 
@@ -147,7 +147,7 @@ class FallbackFace {
   constructor(soldier) {
     this.mode = 'fallback';
     this.soldier = soldier;
-    const V = VARIANTS.find((v) => v.id === soldier.variant) || VARIANTS[0];
+    const V = variantDef(soldier.variant);
     const covered = V.face === 'balaclava';
     // Lidfarbe: Sturmhaube = dunkler Stoff, sonst Hautton der Ausführung
     const lidColor = covered ? '#2c2b28' : SKIN_TONES[V.skin % SKIN_TONES.length];

@@ -67,7 +67,7 @@ function CUT_OUTRO(m) {
     falk: actor('falk', { pos: o(64.4, 112.6), yaw: 2.6, aim: -0.6 }),
     lenz: actor('lenz', { pos: o(66.2, 113.8), yaw: 2.2, aim: -0.6 }),
     weber: actor('weber', { pos: o(63.2, 114.8), yaw: -2.6, aim: -0.7, crouch: true }),
-    haller: actor('zivil', { pos: o(65.6, 111.0), yaw: -2.9, aim: -1.1, variant: 'kundschafter', weapon: null, name: 'Arbeiter Haller' }),
+    haller: actor('zivil', { pos: o(65.6, 111.0), yaw: -2.9, aim: -1.1, variant: 'zivil-arbeit', weapon: null, name: 'Arbeiter Haller' }),
   },
   beats: [
     { cam: { from: c3(44, 14, 96), to: c3(50, 9, 102), look: c3(64, 2, 113) }, dur: 5.5, fadeIn: 1,
@@ -152,7 +152,7 @@ function workers(m, { follow = false, at = null } = {}) {
   WORKERS.forEach((w, k) => {
     if (m.extras.has(w.id)) return;
     const pos = at ? [at[0] + (k % 3) * 1.4 - 1.4, at[1] + Math.floor(k / 3) * 1.4] : w.at;
-    const x = m.extra(w.id, { pos, variant: k % 2 ? 'kundschafter' : 'sanitaeter', name: w.name, crouch: !follow, protect: true, aim: -1.2 });
+    const x = m.extra(w.id, { pos, variant: ['zivil-arbeit', 'zivil', 'zivil-hemd', 'zivil-strick'][k % 4], name: w.name, crouch: !follow, protect: true, aim: -1.2 });
     if (follow) x.follow(P(m));
   });
 }

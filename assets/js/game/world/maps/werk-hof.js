@@ -7,7 +7,7 @@
 import { freiPruefer, kartenSperre, suchePlatz, huegel, erdwall } from '../gelaende.js?v=20261114060746';
 import { legebloecke } from './hafen-kai.js?v=20261114060746';
 
-const MAT = { kies: ['gravel', '#a8a297'], sand: ['sand', '#c9b48e'], schlacke: ['gravel', '#5d5853'], erde: ['dirt', '#8a7a64'] };
+const MAT = { kies: ['gravel', '#9a9182'], sand: ['sand', '#c4a678'], schlacke: ['gravel', '#3a3633'], erde: ['dirt', '#7a6448'] };
 
 /**
  * Schüttgutbox: Halde (art) in einer U-förmigen Einfassung aus Legeblöcken (offene Seite zur Hofmitte, lokal +z).

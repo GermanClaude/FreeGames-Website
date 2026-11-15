@@ -78,7 +78,7 @@ function hideMagic(m) {
 function hostages(m, { follow = false } = {}) {
   for (const h of HOSTAGES) {
     if (m.extras.has(h.id)) continue;
-    const x = m.extra(h.id, { pos: h.at, yaw: h.yaw, variant: h.id === 'lindner' ? 'kundschafter' : 'sanitaeter', name: h.name, crouch: !follow, protect: true, aim: -1.2 });
+    const x = m.extra(h.id, { pos: h.at, yaw: h.yaw, variant: h.id === 'lindner' ? 'zivil-strick' : HOSTAGES.indexOf(h) % 2 ? 'zivil-hemd' : 'zivil', name: h.name, crouch: !follow, protect: true, aim: -1.2 });
     if (follow) x.follow(m.G.player);
   }
 }
@@ -252,7 +252,7 @@ export const MISSION_5 = {
       checkpoint: { at: [0, 17], yaw: 0 },
       setup(m) {
         const at = (k) => [ENTRY[0] - 3 + k * 2, ENTRY[1] + 0.8];
-        HOSTAGES.forEach((h, k) => { if (!m.extras.has(h.id)) m.extra(h.id, { pos: at(k), variant: h.id === 'lindner' ? 'kundschafter' : 'sanitaeter', name: h.name, crouch: true, protect: true, aim: -1.2 }); });
+        HOSTAGES.forEach((h, k) => { if (!m.extras.has(h.id)) m.extra(h.id, { pos: at(k), variant: h.id === 'lindner' ? 'zivil-strick' : HOSTAGES.indexOf(h) % 2 ? 'zivil-hemd' : 'zivil', name: h.name, crouch: true, protect: true, aim: -1.2 }); });
         m.order('follow');
       },
       *run(m) {

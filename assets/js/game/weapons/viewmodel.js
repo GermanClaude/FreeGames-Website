@@ -729,7 +729,9 @@ export class ViewModel {
     // 16.10.: Waffe/Arme bekamen Himmels- UND Umgebungslicht voll (bei Bewölkung 2,2 + 2,5) – ≈ 2,5× heller als gleich
     // helle Flächen der Welt (schwarze Waffe grau, dunkle Handschuhe weiß). Fülllicht auf Weltniveau absenken.
     this.hemi.intensity *= VM_FILL;
-    this.scene.environmentIntensity *= VM_FILL;
+    // waffen 14.11.: Umgebung (diffus + Spiegelung) weniger stark gedämpft als das Himmelslicht – schwarze Waffen liest man an den
+    // Himmelsspiegelungen; mit 0,42 standen sie im Schatten als schwarze Scherenschnitte vor der hellen Welt (Altstadt, Gasse)
+    this.scene.environmentIntensity *= VM_ENV;
   }
 
   _applyIntensitiesRaw() {
@@ -2010,6 +2012,7 @@ export class ViewModel {
 ViewModel.FOV = 54;
 // Anteil des Himmels-/Umgebungslichts der Ego-Ansicht relativ zur Welt (siehe _applyIntensities)
 const VM_FILL = 0.42;
+const VM_ENV = 0.62;
 // Staubmenge auf den Ego-Waffen je Karte (materials.js setWeaponDust; Farbe aus dem Bodenlicht der Karte)
 const DUST_BY_MAP = { grenzland: 0.7, niemandsland: 0.75, brandwald: 0.7, werk: 0.6, flugplatz: 0.5, altstadt: 0.5, hafen: 0.42, stadtkern: 0.45, bibliothek: 0.2, range: 0.25 };
 

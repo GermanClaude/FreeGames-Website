@@ -115,7 +115,7 @@ export const MISSION_9 = {
     }
     // Einwohner in der Kirche (Figuren ohne KI, geduckt)
     const people = [[22, -3, 1.2], [24, 3, 2.6], [27.5, -1.5, -1.9], [21.5, 2.5, 0.6], [28, 3.5, -2.4]];
-    m.set('leute', people.map(([x, z, yaw], i) => prop(m, { role: 'einwohner', name: 'Einwohner', team: 'A', variant: ['kundschafter', 'spaeher', 'kundschafter', 'spaeher', 'kundschafter'][i], weapon: null, at: [x, z], yaw, crouch: i % 2 === 0, aim: -1.0 })));
+    m.set('leute', people.map(([x, z, yaw], i) => prop(m, { role: 'einwohner', name: 'Einwohner', team: 'A', variant: ['zivil', 'zivil-strick', 'zivil-hemd', 'zivil-arbeit', 'zivil-strick'][i], weapon: null, at: [x, z], yaw, crouch: i % 2 === 0, aim: -1.0 })));
   },
 
   stages: [

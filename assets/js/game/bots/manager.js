@@ -19,7 +19,7 @@ import { difficultyProfile } from './difficulty.js?v=20261114060746';
 import { pickNames } from './names.js?v=20261114060746';
 import { Nameplate } from './nameplates.js?v=20261114060746';
 import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261114060746';
-import { upgradeSoldierMaterials, soldierDetailInfo } from './soldier/materials.js?v=20261114060746';
+import { upgradeSoldierMaterials, soldierDetailInfo, setSoldierWorld } from './soldier/materials.js?v=20261114060746';
 import { analyze } from './ai/tactics.js?v=20261114060746';
 import { botHearRange } from '../../shared/calibers.data.js?v=20261114060746';
 import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261114060746';
@@ -158,6 +158,7 @@ export class BotManager {
   spawnBots({ allies = 0, enemies = 0, ffa = false, difficulty = 'regulaer', modeId = 'tdm' } = {}) {
     const G = this.G;
     if (!this._subs) this.attach(G);
+    setSoldierWorld(G.world); // sol: Staub/Schmutz an Stiefeln und Hosen in der Bodenfarbe der Karte
     const diff = difficultyProfile(difficulty, G.data && G.data.DIFFICULTIES);
     this.adapt.begin(diff, modeId); // ai-adapt: gelerntes Spielermodell laden, Anpassungsstärke nach Schwierigkeit
     this._adaptOnline();

@@ -145,8 +145,8 @@ const CUT_OUTRO = (m) => {
 function civGroup(m, g, i) {
   const [x, z] = g.at;
   return [
-    prop(m, { role: 'zivil', name: 'Einwohner', team: 'A', variant: 'kundschafter', weapon: null, at: [x, z], yaw: g.yaw, crouch: true, aim: -1.0 }),
-    prop(m, { role: 'zivil', name: 'Einwohnerin', team: 'A', variant: i ? 'spaeher' : 'kundschafter', weapon: null, at: [x + 0.9, z + 0.6], yaw: g.yaw + 0.4, crouch: true, aim: -1.1 }),
+    prop(m, { role: 'zivil', name: 'Einwohner', team: 'A', variant: 'zivil', weapon: null, at: [x, z], yaw: g.yaw, crouch: true, aim: -1.0 }),
+    prop(m, { role: 'zivil', name: 'Einwohnerin', team: 'A', variant: i ? 'zivil-hemd' : 'zivil-strick', weapon: null, at: [x + 0.9, z + 0.6], yaw: g.yaw + 0.4, crouch: true, aim: -1.1 }),
   ];
 }
 

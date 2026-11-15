@@ -48,7 +48,7 @@ export function flugplatzGelaende(b, ctx, def) {
   };
   // 1) Erdwälle im Wiesenstreifen Rollweg ↔ Bahn (z ≈ −8 … −2), versetzt, Lücken für Fahrzeuge
   for (const [x, z, L] of [[45, -14.5, 18], [100, -13, 16], [205, -14, 20], [265, -12.5, 16], [335, -14.5, 18]]) {
-    paar(x, z, L / 2 + 3.2, 3.4, (px) => erdwall(b, px - L / 2, z, px + L / 2, z, { y: yAt(px, z) - 0.05, w: 6.6, h: 1.35, tint: '#8a8a64', mat: 'dirt' }));
+    paar(x, z, L / 2 + 3.2, 3.4, (px) => erdwall(b, px - L / 2, z, px + L / 2, z, { y: yAt(px, z) - 0.05, w: 6.6, h: 1.35, tint: '#d2d8b0', mat: 'grass' }));
   }
   // 2) Splitterschutz-U um die Abstellplätze (1/4 bei x ±140, sonst 2/3 bei ±80), offen nach Süden (Rollweg)
   for (const sx of [140, 80]) {
@@ -71,8 +71,8 @@ export function flugplatzGelaende(b, ctx, def) {
   // 4) Fahrzeug-Abstellplätze mit Splitterschutzwall südlich der Bahn (zwischen Bahn und Lagerstraße)
   paar(230, 116, 12, 8, (px, s) => {
     const y = yAt(px, 116);
-    erdwall(b, px - 10, 123, px + 10, 123, { y: y - 0.05, w: 6.4, h: 1.6, tint: '#7f8460' });
-    erdwall(b, px - 11 * s, 112, px - 11 * s, 121, { y: y - 0.05, w: 6.4, h: 1.6, tint: '#7f8460' });
+    erdwall(b, px - 10, 123, px + 10, 123, { y: y - 0.05, w: 6.4, h: 1.6, tint: '#d2d8b0', mat: 'grass' });
+    erdwall(b, px - 11 * s, 112, px - 11 * s, 121, { y: y - 0.05, w: 6.4, h: 1.6, tint: '#d2d8b0', mat: 'grass' });
     armeeLkw(b, px - 2, 115, 0.05 * s, { y });
     armeeLkw(b, px + 4, 115.5, -0.04 * s, { y, plane: '#4f5540' });
   });

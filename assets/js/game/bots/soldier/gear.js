@@ -33,6 +33,24 @@ export const VARIANTS = [
 ];
 export const VARIANT_IDS = VARIANTS.map((v) => v.id);
 
+/**
+ * Zivile Kleidung (sol 15.11.; Kampagne: Geiseln, Einwohner, Arbeiter, Kapitän, Archivare) – NICHT in VARIANTS, damit Bots
+ * und Zufallsauswahl sie nie bekommen; createSoldier({ variant: 'zivil' … }) nimmt sie über die Id. Kein Helm, keine Weste,
+ * kein Gürtelzeug, keine Teamabzeichen; Jacke/Hemd/Strickjacke, Hose, Halbschuhe, bloße Hände.
+ */
+export const CIVIL_VARIANTS = [
+  { id: 'zivil', name: 'Zivilist (Jacke)', civil: true, top: 'jacke', topColor: '#4d5a52', shirtColor: '#b9b3a6', pantsColor: '#3d4757', shoeColor: '#3b2d23', sleeves: 'long', skin: 0, hair: '#3b2a1c' },
+  { id: 'zivil-hemd', name: 'Zivilist (Hemd)', civil: true, top: 'hemd', topColor: '#7f93a6', shirtColor: '#7f93a6', pantsColor: '#5b5246', shoeColor: '#2b2622', sleeves: 'rolled', skin: 2, hair: '#2a2119' },
+  { id: 'zivil-strick', name: 'Zivilistin (Strickjacke)', civil: true, top: 'strick', topColor: '#7a5f50', shirtColor: '#cfc6b4', pantsColor: '#2f3238', shoeColor: '#241f1c', sleeves: 'long', skin: 5, hair: '#4a3420' },
+  { id: 'zivil-arbeit', name: 'Arbeiter', civil: true, top: 'jacke', topColor: '#33465e', shirtColor: '#8c8a80', pantsColor: '#3a3f47', shoeColor: '#2e2a26', sleeves: 'long', skin: 3, hair: '#18120d', hiVis: true },
+  { id: 'kapitaen', name: 'Kapitän', civil: true, top: 'jacke', topColor: '#1e2838', shirtColor: '#d8d6cf', pantsColor: '#23272e', shoeColor: '#1b1a19', sleeves: 'long', skin: 0, hair: '#5a4026' },
+];
+export const CIVIL_IDS = CIVIL_VARIANTS.map((v) => v.id);
+/** Ausführung (Soldat oder zivil) zu einer Id; unbekannt → erste Soldaten-Ausführung. */
+export function variantDef(id) {
+  return VARIANTS.find((v) => v.id === id) || CIVIL_VARIANTS.find((v) => v.id === id) || VARIANTS[0];
+}
+
 // Auflösung der Ausrüstungsteile je Detailstufe (Körper selbst: body-mesh.js mit eigenen Stufen 7000/2600/700 Dreiecke):
 // Profilsegmente, Ringe, Kappenringe, Rundquader, Kugel-Segmente, Zylinder
 const Q = [
@@ -92,7 +110,7 @@ export function soldierGeometry(variantId, schemeId, lod = 0, { noHead = false }
   const key = `${variantId}|${l}`;
   let g = cache.get(key);
   if (!g) {
-    const v = VARIANTS.find((x) => x.id === variantId) || VARIANTS[0];
+    const v = variantDef(variantId);
     g = buildSoldier(v, l);
     g.userData.key = key;
     cache.set(key, g);
@@ -255,7 +273,26 @@ function buildSoldier(V, lod) {
   // je Ausführung (Kampfhemd mit einfarbigem Rumpf unter der Weste, hochgekrempelte Ärmel, Sturmhaube …).
   const RG = BODY_MESH.regions;
   const rolled = V.sleeves === 'rolled';
+  // zivil: einfarbige Stoffe (Jacke/Hemd/Strick, Hose), Halbschuhe, bloße Hände
+  const civ = V.civil ? {
+    top: { color: V.topColor, detail: 1, shine: V.top === 'jacke' ? 0.06 : 0, cls: 'cloth', wear: 0.2 },
+    shirt: { color: V.shirtColor, detail: 0.9, cls: 'cloth' },
+    pants: { color: V.pantsColor, detail: 1, cls: 'cloth', wear: 0.35 },
+    shoe: { color: V.shoeColor, detail: 0.7, shine: 0.35, cls: 'leather', wear: 0.4 },
+  } : null;
   const bodyMat = (r) => {
+    if (civ) switch (r) {
+      case RG.SHIRT: case RG.SLEEVE: return civ.top;
+      case RG.COLLAR: return V.top === 'jacke' ? civ.top : civ.shirt;
+      case RG.FOREARM: return rolled ? C.skin : civ.top;
+      case RG.GLOVE: return C.skin;
+      case RG.PANTS: case RG.POCKET: case RG.PAD: return civ.pants;
+      case RG.BOOT: return civ.shoe;
+      case RG.SOLE: return C.sole;
+      case RG.NECK: case RG.EARS: case RG.EYES: case RG.FACE: return C.skin;
+      case RG.SKULL: return C.hair;
+      default: return civ.top;
+    }
     switch (r) {
       case RG.SHIRT: return V.shirt === 'combat' ? C.shirt : C.top;
       case RG.COLLAR: return V.shirt === 'combat' ? C.shirt : C.top;
@@ -304,8 +341,8 @@ function buildSoldier(V, lod) {
         pair(rbox(0.006, 0.02, 0.026, 0, 0, { p: [-0.181, 0.455, -0.01] }), 'shinL', 'shinR', PLAST);
       }
     }
-    // Ellbogenschoner (gleiche Ausführungen)
-    if (L01) {
+    // Ellbogenschoner (gleiche Ausführungen; nur nah)
+    if (L0) {
       const ep = pad({ ...PKs, w: 0.072, h: 0.092, d: 0.022, rb: 0.009, rc: 0.024, puff: L0 ? 0.005 : 0.003, bend: [10, 3] });
       place(ep, { r: [0, Math.PI, 0] });
       place(ep, { p: [-DIM.shoulderX - 0.012, 1.15, 0.083], r: [0.08, 0, 0] });
@@ -321,9 +358,37 @@ function buildSoldier(V, lod) {
   }
   if (L0) pair(torus(0.009, 0.0025, 3, 8, { p: [-0.1, 0.214, -0.071], r: [0, 0, 0], s: [1.4, 0.8, 1] }), 'shinL', 'shinR', { color: '#1d1b18', detail: 0.8, cls: 'cloth' });
 
+  if (civ) {
+    // Rumpf-Ausrüstung wird quer skaliert (BULK) → Maße hier vor der Skalierung: x / 1,17, z um 0,006 / 1,22
+    const bz = (z) => 0.006 + (z - 0.006) / 1.22, bx = (x) => x / 1.17;
+    // Hosengürtel mit Schnalle
+    add(cyl(0.158, 0.158, 0.03, L0 ? 24 : q.tseg, { p: [0, 0.985, 0.006], s: [1.0, 1, 0.76] }, true), 'hips', { color: '#2a211b', detail: 0.7, shine: 0.3, cls: 'leather' });
+    if (L01) add(rbox(0.032, 0.026, 0.006, 0, 0, { p: [0, 0.985, bz(-0.131)] }), 'hips', C.metal);
+    if (V.top === 'jacke' || V.top === 'strick') {
+      // Jackensaum, Reißverschluss bzw. Knopfleiste vorn, Taschen
+      add(cyl(0.16, 0.162, 0.04, L0 ? 24 : q.tseg, { p: [0, 1.015, 0.006], s: [1.0, 1, 0.8] }, true), 'spine', civ.top);
+      if (L01) {
+        const zp = [[1.0, -0.13], [1.1, -0.136], [1.2, -0.133], [1.29, -0.149], [1.35, -0.146], [1.4, -0.124], [1.44, -0.1]];
+        const pts = zp.map(([y, z]) => [0, y, bz(z - 0.002)]);
+        add(sweep(pts, [0, 0, -1], rectProfile(V.top === 'jacke' ? 0.007 : 0.016, 0.003), { smooth: false }), 'chest', V.top === 'jacke' ? { color: '#1e1f20', detail: 0.4, shine: 0.4, cls: 'hard' } : civ.top);
+        if (L0 && V.top === 'strick') for (let i = 0; i < 5; i++) { const [y, z] = zp[i + 1]; add(cyl(0.006, 0.006, 0.004, 8, { p: [0, y, bz(z - 0.005)], r: [Math.PI / 2, 0, 0] }), 'chest', { color: '#3a2c22', detail: 0.3, shine: 0.4, cls: 'hard' }); }
+        if (L0) for (const sx of [-1, 1]) {
+          // Seitentaschen (Klappen) unten an der Jacke
+          add(place(pad({ k: 2, fr: 0, bv: 2, w: 0.1, h: 0.03, d: 0.006, rb: 0.002, rc: 0.006, bend: [3, 0] }), { p: [bx(sx * 0.1), 1.09, bz(-0.138)], r: [0, sx * 0.45, 0] }), 'spine', { ...civ.top, color: shade(V.topColor, 0.85) });
+        }
+      }
+      if (V.hiVis) for (const y of [1.12, 1.2]) add(cyl(0.152, 0.152, 0.026, L0 ? 24 : q.tseg, { p: [0, y, 0.006], s: [1.0, 1, 0.84] }, true), 'chest', { color: '#d8dccf', detail: 0.3, shine: 0.6, emis: 0.05, cls: 'gear' });
+    } else if (L01) {
+      // Hemd: Knopfleiste mit Knöpfen, Brusttaschen
+      const zp = [[1.02, -0.128], [1.11, -0.134], [1.2, -0.131], [1.29, -0.147], [1.35, -0.144], [1.4, -0.122], [1.44, -0.098]];
+      add(sweep(zp.map(([y, z]) => [0, y, bz(z - 0.0015)]), [0, 0, -1], rectProfile(0.022, 0.0025), { smooth: false }), 'chest', { ...civ.top, color: shade(V.topColor, 0.92) });
+      if (L0) for (let i = 0; i < 6; i++) { const [y, z] = zp[i]; add(cyl(0.0045, 0.0045, 0.003, 8, { p: [0, y + 0.03, bz(z - 0.004)], r: [Math.PI / 2, 0, 0] }), 'chest', { color: '#d9d4c8', detail: 0.2, shine: 0.5, cls: 'hard' }); }
+      if (L0) for (const sx of [-1, 1]) add(place(pad({ k: 2, fr: 0, bv: 2, w: 0.075, h: 0.085, d: 0.006, rb: 0.002, rc: 0.006, bend: [2, 0] }), { p: [bx(sx * 0.085), 1.33, bz(-0.15)], r: [0, sx * 0.25, 0] }), 'chest', { ...civ.top, color: shade(V.topColor, 0.9) });
+    }
+  }
   // Gefechtsgürtel (Ring um das Becken) mit Schnalle, Taschen, Erste-Hilfe-Tasche hinten
-  add(cyl(0.165, 0.165, 0.058, q.tseg, { p: [0, 0.995, 0.006], s: [1.03, 1, 0.74] }), 'hips', C.gear);
-  if (!FAR) {
+  if (!civ) add(cyl(0.165, 0.165, 0.058, q.tseg, { p: [0, 0.995, 0.006], s: [1.03, 1, 0.74] }), 'hips', C.gear);
+  if (!FAR && !civ) {
     add(R(0.06, 0.04, 0.012, 0.004, { p: [0, 0.995, -0.124] }), 'hips', C.metal);
     pair(R(0.058, 0.085, 0.07, 0.018, { p: [-0.168, 0.968, 0.04] }), 'hips', 'hips', C.gear2);
     add(R(0.1, 0.075, 0.055, 0.018, { p: [0.055, 0.97, 0.132] }), 'hips', C.gear2);
@@ -361,7 +426,12 @@ function buildSoldier(V, lod) {
   const PK = L0 ? { k: 3, fr: 2, bv: 4 } : L01 ? { k: 1, fr: 1, bv: 2 } : { k: 1, fr: 0, bv: 1 };
   // Kissen setzen: Mitte (x, y, z), Front zeigt nach −Z (dir 1) bzw. +Z (dir −1), Neigung rx, Drehung ry
   const PAD = (o, x, y, z, bone, mat, { dir = 1, rx = 0, ry = 0, rz = 0 } = {}) => {
-    const g = pad({ ...PK, ...o });
+    // ferne Stufe: schlichter Quader in den Außenmaßen (wie vorher – die Silhouette genügt)
+    let g;
+    if (FAR) {
+      const P = o.poly, w = P ? Math.max(...P.map((v) => v[0])) * 2 : o.w, h = P ? Math.max(...P.map((v) => v[1])) * 2 : o.h;
+      g = rbox(w, h, o.d, 0, 0);
+    } else g = pad({ ...PK, ...o });
     if (dir < 0) place(g, { r: [0, Math.PI, 0] });
     place(g, { p: [x, y, z], r: [rx, ry, rz] });
     add(g, bone, mat);
@@ -475,13 +545,20 @@ function buildSoldier(V, lod) {
   }
 
   /* ------------------------------------------------------------ Rucksäcke */
+  // sol 15.11.: Rucksackteile als gepolsterte Stoffkissen (gewölbte Außenseite nach hinten, gerundete Kanten) statt Rundquader
+  const RP = (w, h, d, r, o = {}) => {
+    if (FAR) return R(w, h, d, r, o);
+    const g = pad({ ...PKs, w, h, d, rb: Math.min(r, d / 2 - 0.001), rc: Math.max(r, 0.012), puff: Math.min(0.014, d * 0.09) });
+    place(g, { r: [0, Math.PI, 0] });
+    return place(g, { p: o.p || [0, 0, 0], r: o.r || [0, 0, 0] });
+  };
   if (V.back === 'assault') {
     // Video: großer Rucksack im Tarnmuster vom Nacken bis unter die Taille, mit Seitentaschen und Deckel
-    add(R(0.3, 0.44, 0.16, 0.07, { p: [0, 1.22, 0.252] }), 'chest', C.gear2);
-    add(R(0.28, 0.1, 0.175, 0.05, { p: [0, 1.415, 0.256] }), 'chest', C.flap);
+    add(RP(0.3, 0.44, 0.16, 0.07, { p: [0, 1.22, 0.252] }), 'chest', C.gear2);
+    add(RP(0.28, 0.1, 0.175, 0.05, { p: [0, 1.415, 0.256] }), 'chest', C.flap);
     if (!FAR) {
       pair(R(0.045, 0.2, 0.1, 0.02, { p: [-0.145, 1.16, 0.252] }), 'chest', 'chest', C.gear);
-      add(R(0.2, 0.18, 0.045, 0.02, { p: [0, 1.14, 0.335] }), 'chest', C.gear);
+      add(RP(0.2, 0.18, 0.045, 0.02, { p: [0, 1.14, 0.335] }), 'chest', C.gear);
       if (L0) {
         molle(-0.085, 0.085, 1.075, 4, 0.3575, 'chest', 1);
         // Tragegriff oben, Kompressionsriemen mit Schnallen an den Seitentaschen
@@ -494,8 +571,8 @@ function buildSoldier(V, lod) {
     }
   } else if (V.back === 'radio') {
     // Funkgerät in einem Rucksack im Tarnmuster (Video: keine schwarzen Kästen auf dem Rücken), Antenne bleibt sichtbar
-    add(R(0.28, 0.4, 0.16, 0.045, { p: [0, 1.22, 0.255] }), 'chest', C.gear2);
-    if (!FAR) add(R(0.25, 0.11, 0.175, 0.035, { p: [0, 1.41, 0.26] }), 'chest', C.flap);
+    add(RP(0.28, 0.4, 0.16, 0.045, { p: [0, 1.22, 0.255] }), 'chest', C.gear2);
+    if (!FAR) add(RP(0.25, 0.11, 0.175, 0.035, { p: [0, 1.41, 0.26] }), 'chest', C.flap);
     add(cyl(0.006, 0.01, 0.55, 4, { p: [0.085, 1.66, 0.27], r: [-0.12, 0, -0.06] }), 'chest', C.plastic);
     if (L01) add(cyl(0.022, 0.022, 0.04, q.cs, { p: [-0.07, 1.47, 0.27] }), 'chest', C.metal);
     if (L0) {
@@ -503,14 +580,14 @@ function buildSoldier(V, lod) {
     }
   } else if (V.back === 'medbag') {
     // Sanitätstasche: weißes Feld mit rotem Kreuz (von hinten auf Distanz lesbar)
-    add(R(0.25, 0.22, 0.12, 0.03, { p: [0, 1.24, 0.235] }), 'chest', C.gear2);
+    add(RP(0.25, 0.22, 0.12, 0.03, { p: [0, 1.24, 0.235] }), 'chest', C.gear2);
     add(rbox(0.11, 0.11, 0.004, 0, 0, { p: [0, 1.25, 0.297] }), 'chest', C.medWhite);
     add(rbox(0.075, 0.022, 0.004, 0, 0, { p: [0, 1.25, 0.3] }), 'chest', C.medRed);
     add(rbox(0.022, 0.075, 0.004, 0, 0, { p: [0, 1.25, 0.3] }), 'chest', C.medRed);
-    if (!FAR) add(R(0.2, 0.05, 0.1, 0.02, { p: [0, 1.375, 0.235] }), 'chest', C.flap);
+    if (!FAR) add(RP(0.2, 0.05, 0.1, 0.02, { p: [0, 1.375, 0.235] }), 'chest', C.flap);
   } else if (V.back === 'launcher') {
     // Werfer RW-90 schräg auf dem Rücken (Rohr, Kappen, Visier, Griffstück) + kleiner Rucksack mit Ersatzraketen
-    add(R(0.24, 0.26, 0.11, 0.03, { p: [0, 1.25, 0.225] }), 'chest', C.gear2);
+    add(RP(0.24, 0.26, 0.11, 0.03, { p: [0, 1.25, 0.225] }), 'chest', C.gear2);
     add(cyl(0.052, 0.052, 1.02, q.cs, { p: [0.02, 1.2, 0.315], r: [0, 0, 0.55] }), 'chest', C.tube);
     add(cyl(0.062, 0.062, 0.1, q.cs, { p: [-0.245, 1.633, 0.315], r: [0, 0, 0.55] }), 'chest', C.plastic);
     add(cyl(0.062, 0.062, 0.1, q.cs, { p: [0.285, 0.767, 0.315], r: [0, 0, 0.55] }), 'chest', C.plastic);
@@ -520,7 +597,7 @@ function buildSoldier(V, lod) {
       pair(rbox(0.012, 0.36, 0.024, 0, 0, { p: [-0.12, 1.26, 0.2] }), 'chest', 'chest', C.strap);
     }
   } else if (V.back === 'hydration') {
-    add(R(0.2, 0.31, 0.065, 0.028, { p: [0, 1.28, 0.205] }), 'chest', C.gear2);
+    add(RP(0.2, 0.31, 0.065, 0.028, { p: [0, 1.28, 0.205] }), 'chest', C.gear2);
     if (L01) add(cyl(0.008, 0.008, 0.3, 4, { p: [-0.13, 1.34, -0.03], r: [0.4, 0, 0.3] }), 'chest', C.plastic);
   }
   // Rucksack-Tragegurte über die Schultern bis vorn auf Platte bzw. Brust, mit Brustgurt (Rucksack sitzt sichtbar am Körper)
@@ -558,7 +635,7 @@ function buildSoldier(V, lod) {
   // Kopfbedeckungen (sol 15.11.: über der gemessenen Kopfhülle gear-parts.js gebaut – umschließen den anatomischen Kopf aus
   // face.js wie den Körperkopf der fernen Stufen; vorher kleine Ellipsoid-Schalen, unter denen die Stirn hervorstach)
   const helmet = V.head === 'helmet';
-  const nph = L0 ? 40 : L01 ? 20 : 10, nth = L0 ? 10 : L01 ? 5 : 3;
+  const nph = L0 ? 40 : L01 ? 16 : 8, nth = L0 ? 10 : L01 ? 4 : 2;
   const RUB = { color: '#1b1c1d', detail: 0.5, shine: 0.22, cls: 'leather' }; // Gummi-Kantenprofil
   if (helmet) {
     // Gefechtshelm (High-Cut): Schale ≈ 2,4 cm über der Hülle (Polster + Schale), Vorderkante gut 2 cm über den Brauen,
@@ -572,7 +649,7 @@ function buildSoldier(V, lod) {
       // Kantenprofil (Gummi) rund um den Rand
       const rp = [];
       const ru = [];
-      const nr = L0 ? 48 : 20;
+      const nr = L0 ? 48 : 14;
       for (let i = 0; i < nr; i++) {
         const ph = (i / nr) * Math.PI * 2;
         rp.push(hullP(rim(ph) - 0.012, ph, OFF - 0.003));
@@ -608,14 +685,14 @@ function buildSoldier(V, lod) {
       const jaw = hullP(127 * D2, 196 * D2, 0.008);
       const fr = hullPath([[rim(205 * D2) / D2 - 4, 205], [108, 202], [127, 196]], 0.008, 3);
       const bk = hullPath([[rim(158 * D2) / D2 - 4, 158], [112, 172], [127, 196]], 0.008, 3);
-      const chin = curve([jaw, [-0.078, 1.6, -0.035], [-0.05, 1.556, -0.055], [0, 1.543, -0.062]], 8);
+      const chin = curve([jaw, [-0.079, 1.602, -0.035], [-0.052, 1.564, -0.054], [0, 1.551, -0.064]], 8);
       const up = (p) => { const d = [p[0], p[1] - 1.66, p[2] - 0.0]; const l = Math.hypot(...d); return d.map((v) => v / l); };
       const STRAP = { pal: 'strap', shade: 0.9, detail: 0.9, cls: 'gear' };
       pair(sweep(fr.pts, fr.ups, rectProfile(0.014, 0.0024), { smooth: false }), 'head', 'head', STRAP);
       pair(sweep(bk.pts, bk.ups, rectProfile(0.014, 0.0024), { smooth: false }), 'head', 'head', STRAP);
       pair(sweep(chin, chin.map(up), rectProfile(0.016, 0.0024), { smooth: false }), 'head', 'head', STRAP);
       pair(onHull(pad({ w: 0.026, h: 0.02, d: 0.008, rb: 0.003, rc: 0.004, k: 1, fr: 0, bv: 2 }), 127 * D2, 196 * D2, 0.012), 'head', 'head', PLAST); // Schnalle
-      add(place(rbox(0.03, 0.006, 0.02, 0, 0), { p: [0, 1.541, -0.06] }), 'head', PLAST); // Kinnschale/Verschluss
+      add(place(rbox(0.03, 0.006, 0.02, 0, 0), { p: [0, 1.549, -0.062] }), 'head', PLAST); // Kinnschale/Verschluss
     } else if (L01) {
       const D2 = Math.PI / 180;
       const fr = hullPath([[rim(200 * D2) / D2 - 4, 200], [127, 196]], 0.008, 2);
@@ -644,7 +721,7 @@ function buildSoldier(V, lod) {
     const crim = (ph) => { const s = Math.sin(ph); return (s < 0 ? 79 + 9 * s : 79 + 15 * s) * Math.PI / 180; };
     add(hullShell({ th1: crim, off: 0.007, nph: Math.round(nph * 0.8), nth }), 'head', capMat);
     const fph = back > 0 ? Math.PI * 1.5 : Math.PI / 2;
-    const vis = pad({ w: 0.16, h: 0.075, d: 0.006, rb: 0.0028, rc: 0.032, k: L0 ? 4 : 2, fr: L0 ? 2 : 1, bv: L0 ? 3 : 2, bend: [-2.2, 0] });
+    const vis = pad({ w: 0.16, h: 0.075, d: 0.006, rb: 0.0028, rc: 0.032, k: L0 ? 4 : 1, fr: L0 ? 2 : 0, bv: L0 ? 3 : 1, bend: [-2.2, 0] });
     // Schirm liegt waagerecht vor dem Rand, Seiten hängen
     place(vis, { p: [0, 0, 0], r: [-Math.PI / 2, 0, 0] });
     const rp = hullP(crim(fph), fph, 0.007), rn = hullN(crim(fph), fph, 0.007);
@@ -653,7 +730,7 @@ function buildSoldier(V, lod) {
     void rn;
     add(onHull(pad({ w: 0.034, h: 0.024, d: 0.004, rb: 0.0015, rc: 0.005, k: 1, fr: 0, bv: 1 }), crim(fph) - 0.3, fph, 0.008), 'head', C.accent);
     const bp = [], bu = [];
-    for (let i = 0; i < (L0 ? 36 : 16); i++) { const ph = (i / (L0 ? 36 : 16)) * Math.PI * 2; bp.push(hullP(crim(ph) - 0.06, ph, 0.0085)); bu.push(hullN(crim(ph), ph, 0.007)); }
+    for (let i = 0; i < (L0 ? 36 : 10); i++) { const ph = (i / (L0 ? 36 : 10)) * Math.PI * 2; bp.push(hullP(crim(ph) - 0.06, ph, 0.0085)); bu.push(hullN(crim(ph), ph, 0.007)); }
     add(sweep(bp, bu, rectProfile(0.011, 0.003), { closed: true, smooth: false }), 'head', C.band);
     if (L0) {
       add(onHull(ellipsoid(0.009, 0.009, 0.005, 8, 4), 0, 0, 0.009), 'head', capMat); // Knopf
@@ -667,7 +744,7 @@ function buildSoldier(V, lod) {
     // Buschhut: Krone über der Hülle, umlaufende, leicht hängende Krempe mit Steppnähten, Hutband in Teamfarbe
     const brim = (ph) => { const s = Math.sin(ph); return (s < 0 ? 84 + 6 * s : 84 + 10 * s) * Math.PI / 180; };
     add(hullShell({ th1: brim, off: 0.014, nph: Math.round(nph * 0.8), nth }), 'head', C.top);
-    const np2 = L0 ? 40 : L01 ? 20 : 10;
+    const np2 = L0 ? 40 : L01 ? 12 : 8;
     const bp = [], bu = [];
     for (let i = 0; i < np2; i++) {
       const ph = (i / np2) * Math.PI * 2;
@@ -704,12 +781,12 @@ function buildSoldier(V, lod) {
   // befestigt, sonst Kopfbügel; Mikrofonarm rechts zum Mund
   if (V.ears) {
     const cupProf = [[0.0005, 0], [0.026, 0], [0.034, 0.004], [0.038, 0.012], [0.039, 0.021], [0.035, 0.028], [0.025, 0.032], [0.0005, 0.033]];
-    const cup = lathe(cupProf, FAR ? 6 : L0 ? 18 : 10);
+    const cup = !L0 ? cyl(0.036, 0.038, 0.032, FAR ? 6 : 10, { r: [0, 0, Math.PI / 2], p: [0, 0.016, 0] }) : lathe(cupProf, 18);
     // lathe dreht um Y → um Z gekippt zeigt die Achse nach −X (linke Seite, rechts gespiegelt)
     place(cup, { r: [0, 0, Math.PI / 2] }); place(cup, { s: [1, 1.13, 0.9], p: [-0.101, 1.668, 0.012] });
     pair(cup, 'head', 'head', C.plastic);
-    if (!FAR) {
-      const cush = torus(0.029, 0.0085, L0 ? 6 : 3, L0 ? 18 : 10, { r: [0, Math.PI / 2, 0] });
+    if (L0) {
+      const cush = torus(0.029, 0.0085, L0 ? 6 : 3, L0 ? 18 : 8, { r: [0, Math.PI / 2, 0] });
       place(cush, { s: [1, 1.13, 0.9], p: [-0.1, 1.668, 0.012] });
       pair(cush, 'head', 'head', { color: '#2a2b2d', detail: 0.8, shine: 0.25, cls: 'leather' });
     }
@@ -722,7 +799,7 @@ function buildSoldier(V, lod) {
       // Schienenadapter: kurzer Arm von der Kapsel hoch zur Seitenschiene
       if (!FAR) pair(rbox(0.012, 0.036, 0.022, 0.003, L0 ? 1 : 0, { p: [-0.116, 1.716, 0.008] }), 'head', 'head', C.plastic);
     } else if (!FAR) {
-      const hb = hullPath([[84, 180], [55, 180], [25, 180], [0, 180], [25, 0], [55, 0], [84, 0]], V.head === 'cap' ? 0.017 : 0.012, L0 ? 3 : 1);
+      const hb = hullPath([[84, 180], [55, 180], [25, 180], [0, 180], [-25, 180], [-55, 180], [-84, 180]], V.head === 'cap' ? 0.017 : 0.012, L0 ? 3 : 1);
       add(sweep(hb.pts, hb.ups, rectProfile(0.024, 0.006), { smooth: false }), 'head', C.plastic);
     }
     if (L01) {
@@ -826,8 +903,8 @@ function buildSoldier(V, lod) {
   /* ------------------------------------------------------------ Arme (Arme/Hände selbst: body-mesh.js) */
   const AX = -DIM.shoulderX; // Armachse links (rechts gespiegelt)
   // Armbinde in Teamfarbe rund um den Oberarm (auch aus der Ferne und von hinten sichtbar)
-  pair(cyl(0.081, 0.078, 0.055, q.cs, { p: [AX, 1.25, 0.0], s: [0.88, 1, 1.02] }, true), 'upperArmL', 'upperArmR', C.band);
-  if (L0) pair(rbox(0.006, 0.044, 0.05, 0, 0, { p: [AX - 0.084, 1.35, -0.002] }), 'upperArmL', 'upperArmR', C.patch); // Klett auf der Ärmeltasche
+  if (!civ) pair(cyl(0.081, 0.078, 0.055, q.cs, { p: [AX, 1.25, 0.0], s: [0.88, 1, 1.02] }, true), 'upperArmL', 'upperArmR', C.band);
+  if (L0 && !civ) pair(rbox(0.006, 0.044, 0.05, 0, 0, { p: [AX - 0.084, 1.35, -0.002] }), 'upperArmL', 'upperArmR', C.patch); // Klett auf der Ärmeltasche
   if (V.armband === 'medic') {
     // Armbinde Sanitäter (weiß, rotes Kreuz außen) unter dem Teamband
     pair(cyl(0.077, 0.074, 0.065, q.cs, { p: [AX, 1.19, 0.0], s: [0.88, 1, 1.0] }, true), 'upperArmL', 'upperArmR', C.medWhite);

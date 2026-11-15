@@ -171,7 +171,7 @@ export const MISSION_4 = {
       setup(m) { weber(m); },
       *run(m) {
         m.clearObjectives();
-        const vogt = m.extra('vogt', { pos: OFFICE, yaw: Math.PI, variant: 'sanitaeter', name: 'Kapitän Vogt', crouch: true, protect: true, aim: -1.1 });
+        const vogt = m.extra('vogt', { pos: OFFICE, yaw: Math.PI, variant: 'kapitaen', name: 'Kapitän Vogt', crouch: true, protect: true, aim: -1.1 });
         m.wave('g4', { count: 3, scale: false, at: [[-30, -16], [-36, -24], [-27.5, -27]], hold: true, difficulty: STEALTH_DIFF[m.diffId] || 'rekrut', patrol: [[[-30, -16], [-34, -16]], [[-36, -24], [-36, -34]], [[-27.5, -27], [-27.5, -33]]] });
         const st = guard(m, ['g1', 'g2', 'g3', 'g4']);
         m.say('weber', 'Das Kaibüro. Drei Wachen davor. Pass auf, dass du den Kapitän nicht triffst.');
@@ -190,7 +190,7 @@ export const MISSION_4 = {
       checkpoint: { at: [-30.5, -17.5], yaw: 3.1 },
       setup(m) {
         weber(m);
-        const v = m.extra('vogt', { pos: [-31.5, -19.5], variant: 'sanitaeter', name: 'Kapitän Vogt', protect: true, aim: -1.1 });
+        const v = m.extra('vogt', { pos: [-31.5, -19.5], variant: 'kapitaen', name: 'Kapitän Vogt', protect: true, aim: -1.1 });
         v.follow(m.G.player);
       },
       *run(m) {

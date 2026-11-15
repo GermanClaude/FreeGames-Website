@@ -51,7 +51,7 @@ import * as THREE from 'three';
 import { FACE_MORPHS, HEAD_C, loadHeadAsset, buildHeadData, normProfile } from './face-mesh.js?v=20261114060746';
 import { bakeFaceMaps, normLook } from './face-skin.js?v=20261114060746';
 import { BONE } from './rig.js?v=20261114060746';
-import { VARIANTS } from './gear.js?v=20261114060746';
+import { VARIANTS, variantDef } from './gear.js?v=20261114060746';
 import { SKIN_TONES, SCHEMES } from './materials.js?v=20261114060746';
 
 export { FACE_MORPHS };
@@ -600,7 +600,7 @@ export class SoldierFace {
    */
   constructor(soldier, opts = {}) {
     this.soldier = soldier;
-    const V = VARIANTS.find((v) => v.id === soldier.variant) || VARIANTS[0];
+    const V = variantDef(soldier.variant);
     this.variant = V;
     this.res = opts.res || 'near';
     const shared = soldier.material && soldier.material.userData.npU;

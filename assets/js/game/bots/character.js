@@ -15,12 +15,12 @@ import * as THREE from 'three';
 import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261114060746';
 import { Animator } from './soldier/animator.js?v=20261114060746';
 import { Ragdoll } from './soldier/ragdoll.js?v=20261114060746';
-import { soldierGeometry, VARIANTS, VARIANT_IDS } from './soldier/gear.js?v=20261114060746';
+import { soldierGeometry, VARIANTS, VARIANT_IDS, CIVIL_IDS, variantDef } from './soldier/gear.js?v=20261114060746';
 import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261114060746';
 import { raySphere, rayCapsule } from '../combat.js?v=20261114060746';
 import { SoldierFace } from './soldier/face.js?v=20261114060746';
 
-export { VARIANTS, VARIANT_IDS, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes };
+export { VARIANTS, VARIANT_IDS, CIVIL_IDS, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes };
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -77,7 +77,7 @@ function deathStyle(zone, dir, yaw, strength) {
 
 /** Dicke von Weste (vorn) und Rucksack (hinten) ab Rumpfmitte je Ausrüstung (gear.js) – für die Leichen-Bodenlage. */
 function gearDepth(variantId) {
-  const V = VARIANTS.find((v) => v.id === variantId) || VARIANTS[0];
+  const V = variantDef(variantId);
   const front = V.vest === 'plate' || V.vest === 'heavy' ? 0.215 : V.vest === 'rig' ? 0.205 : V.vest === 'light' ? 0.185 : 0.15;
   const pack = { assault: 0.32, radio: 0.29, medbag: 0.295, launcher: 0.37, hydration: 0.24 }[V.back];
   const back = pack || (V.vest === 'plate' || V.vest === 'heavy' ? 0.18 : V.vest === 'light' ? 0.166 : 0.13);
@@ -122,7 +122,8 @@ export class Soldier {
     this.team = team;
     this.scheme = camo && SCHEMES[camo] ? camo : team === 'A' ? 'A' : team === 'B' ? 'B' : FFA_SCHEMES[this.id % FFA_SCHEMES.length];
     const vi = typeof variant === 'number' ? variant : Math.max(0, VARIANT_IDS.indexOf(variant));
-    this.variant = VARIANTS[((vi % VARIANTS.length) + VARIANTS.length) % VARIANTS.length].id;
+    // zivile Kleidung (gear.js CIVIL_VARIANTS) nur über die Id – Kampagne: Geiseln, Einwohner, Arbeiter
+    this.variant = typeof variant === 'string' && CIVIL_IDS.includes(variant) ? variant : VARIANTS[((vi % VARIANTS.length) + VARIANTS.length) % VARIANTS.length].id;
     this.quality = quality === 'low' ? 'low' : 'high';
     this.tier = LOD_DIST[quality] ? quality : this.quality;
     this.models = models;
