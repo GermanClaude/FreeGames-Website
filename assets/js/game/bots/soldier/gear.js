@@ -92,7 +92,8 @@ void tiltHelmet;
  *  Ausschnitt über den Ohren (High-Cut), hinten 117° (tief über den Hinterkopf). */
 function helmetRim(ph) {
   const s = Math.sin(ph), c = Math.cos(ph);
-  let th = s < 0 ? 93 + 19 * s : 93 + 24 * s;
+  // vorn über einen breiten Bogen hoch (Stirn/Brauenbogen bleiben frei, kein Krempen-Effekt an den Schläfen), dann zum Ohr
+  let th = s < 0 ? 93 - 19 * Math.pow(Math.min(1, -s * 1.35), 0.8) : 93 + 24 * s;
   th -= 6 * Math.exp(-((1 - Math.abs(c)) ** 2) / 0.004);
   return (th * Math.PI) / 180;
 }
@@ -283,7 +284,7 @@ function buildSoldier(V, lod) {
   const bodyMat = (r) => {
     if (civ) switch (r) {
       case RG.SHIRT: case RG.SLEEVE: return civ.top;
-      case RG.COLLAR: return V.top === 'jacke' ? civ.top : civ.shirt;
+      case RG.COLLAR: return V.top === 'hemd' ? civ.shirt : civ.top;
       case RG.FOREARM: return rolled ? C.skin : civ.top;
       case RG.GLOVE: return C.skin;
       case RG.PANTS: case RG.POCKET: case RG.PAD: return civ.pants;
