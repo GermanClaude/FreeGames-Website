@@ -52,7 +52,7 @@ export const HITBOXES = [
 ];
 
 // Detailstufen-Schwellen (m, × FOV/60) je Qualitätsstufe: Telefone früh vereinfachen, Ultra lange voll
-const LOD_DIST = { low: [4.5, 22], medium: [10, 30], high: [13, 36], ultra: [18, 46] };
+const LOD_DIST = { low: [6, 22], medium: [10, 30], high: [13, 36], ultra: [18, 46] };
 
 let serial = 0;
 
@@ -148,6 +148,9 @@ export class Soldier {
     this.cinematic = !!cinematic;
     // Telefone (low): keine volle Stufe – LOD1 (≈ 3 k Dreiecke) auch aus der Nähe; spart ≈ 0,95 MB je Variante
     const minLod = this.tier === 'low' && !this.cinematic ? 1 : 0;
+    // low: volle Stufe + Gesicht erst bei Bedarf (Figur < 6 m an der Kamera, z. B. Zwischensequenz/Nahkampf) nachladen
+    this._lazyFull = minLod === 1 && face !== false ? (typeof face === 'object' && face ? face : {}) : null;
+    this._full = minLod === 0;
     // Gesicht (face.js): modellierter Kopf mit Mimik auf Detailstufe 0 (Körper-Stufe 0 dann ohne eigenen Kopf)
     this.face = null;
     if (face !== false && minLod === 0) {
@@ -259,7 +262,7 @@ export class Soldier {
   /** Kopfnetz fertig (face.js): Körper-Stufe 0 ohne eigenen Kopf zeichnen (Ansicht derselben Puffer). */
   _faceReady() {
     const m = this.meshes && this.meshes[0];
-    if (m && !(this.tier === 'low' && !this.cinematic)) m.geometry = soldierGeometry(this.variant, this.scheme, 0, { noHead: true });
+    if (m && this._full) m.geometry = soldierGeometry(this.variant, this.scheme, 0, { noHead: true });
   }
 
   /** Detailstufe aus Kameraabstand (mit Hysterese). */
@@ -271,12 +274,30 @@ export class Soldier {
     if (lod === 1 && dist < d0 - 1) lod = 0;
     if (lod === 1 && dist > d1 + 2) lod = 2;
     if (lod === 2 && dist < d1 - 2) lod = 1;
+    if (lod === 0 && this._lazyFull) this._upgradeFull();
     if (lod !== this.lod) {
       this.lod = lod;
       for (let i = 0; i < 3; i++) this.meshes[i].visible = i === lod;
     }
     if (this.face) this.face.syncVisible(lod);
     return lod;
+  }
+
+  /** low: beim ersten Nahkommen volle Körperstufe und Detailkopf (einfacher Shader, kleine Karten) nachrüsten. */
+  _upgradeFull() {
+    const fo = this._lazyFull;
+    this._lazyFull = null;
+    this._full = true;
+    try {
+      this.meshes[0].geometry = soldierGeometry(this.variant, this.scheme, 0);
+      if (!this.face) {
+        this.face = new SoldierFace(this, { res: 'near', low: true, ...fo });
+        this.face.setShadows(this.castShadow);
+        if (this.state === 'dead') this.face.setDead(true);
+      }
+    } catch (err) {
+      if (typeof console !== 'undefined') console.warn('[bots] volle Stufe nicht verfügbar.', err);
+    }
   }
 
   /** Wurzel setzen (Füße, Körper-Gierung). Trefferzonen folgen (werden bei Bedarf neu berechnet). */

@@ -60,10 +60,33 @@ void npVmDirInfo( const in DirectionalLight dl, out IncidentLight l ) {
 #endif
 `;
 
+// Platzhalter-Tiefentextur im Vergleichsmodus: ein sampler2DShadow braucht immer eine passende Bindung (sonst „Mismatch between
+// texture format and sampler type“ bei jedem Zeichenaufruf – Website-Vitrine, Waffenlabor, Bilder vor der ersten Weltschattenkarte)
+let dummy = null;
+function dummyDepth(renderer) {
+  if (dummy && dummy.renderer === renderer) return dummy.tex;
+  if (!renderer || !renderer.isWebGLRenderer) return null;
+  const dt = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
+  dt.format = THREE.DepthFormat;
+  dt.compareFunction = THREE.LessEqualCompare;
+  dt.minFilter = dt.magFilter = THREE.LinearFilter;
+  dt.name = 'np:vm-shadow-dummy';
+  const rt = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: true, depthTexture: dt });
+  const prev = renderer.getRenderTarget();
+  renderer.setRenderTarget(rt);
+  renderer.clear(false, true, false);
+  renderer.setRenderTarget(prev);
+  dummy = { rt, tex: dt, renderer };
+  return dt;
+}
+/** Uniform ohne echte Karte wieder auf den Platzhalter legen (Matchende, Kontextverlust). */
+export function resetVmLight() { VMU.npVmShP.value.x = 0; VMU.npVmSh.value = dummy ? dummy.tex : null; }
+
 /** Der Haken selbst (MeshStandardMaterial/MeshPhysicalMaterial; andere Materialien bleiben unverändert). */
-export function vmLightPatch(shader) {
+export function vmLightPatch(shader, renderer) {
   const fs = shader.fragmentShader;
   if (fs.includes('npVmDirInfo') || !fs.includes('#include <shadowmap_pars_fragment>') || !fs.includes('#include <lights_pars_begin>')) return;
+  if (!VMU.npVmSh.value) VMU.npVmSh.value = dummyDepth(renderer);
   Object.assign(shader.uniforms, VMU);
   shader.fragmentShader = fs.replace('#include <shadowmap_pars_fragment>', `#include <shadowmap_pars_fragment>\n${FUNCS}`);
 }
@@ -75,7 +98,7 @@ export function vmLight(m) {
   const obc = m.onBeforeCompile, key = m.customProgramCacheKey;
   const ownObc = obc !== THREE.Material.prototype.onBeforeCompile ? obc : null;
   const ownKey = key !== THREE.Material.prototype.customProgramCacheKey ? key : null;
-  m.onBeforeCompile = function (sh, r) { if (ownObc) ownObc.call(this, sh, r); vmLightPatch(sh); };
+  m.onBeforeCompile = function (sh, r) { if (ownObc) ownObc.call(this, sh, r); vmLightPatch(sh, r); };
   m.customProgramCacheKey = function () { return (ownKey ? ownKey.call(this) : '') + '|vmw2'; };
   m.needsUpdate = true;
   return m;
@@ -90,7 +113,7 @@ const _S = new THREE.Matrix4(), _a = new THREE.Vector3(), _b = new THREE.Vector3
 export function updateVmLight(on, sun, main, vmCam, vmSun = null) {
   const P = VMU.npVmShP.value;
   const map = on && sun && sun.castShadow && sun.shadow && sun.shadow.map ? sun.shadow.map.depthTexture : null;
-  if (!map || !main || !vmCam || !vmSun) { P.x = 0; return false; }
+  if (!map || !main || !vmCam || !vmSun) { P.x = 0; if (dummy) VMU.npVmSh.value = dummy.tex; return false; }
   VMU.npVmSh.value = map;
   // Sichtfeld-Ausgleich wie viewmodel._vmToWorld: Bildposition + Tiefe bleiben, x/y skalieren mit tan(fov/2)
   const tm = Math.tan(THREE.MathUtils.degToRad(main.fov) / 2) / (main.zoom || 1);

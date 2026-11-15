@@ -16,6 +16,7 @@
 // Draw Calls); Fotoscan-Modelle laufen über b.model (instanziert, LOD).
 import * as THREE from 'three';
 import { frame, hash01, cable, pallet } from './props.js?v=20261114060746';
+import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261114060746';
 
 const D = { collide: false, minimap: false };
 const DG = { ...D, grad: false };
@@ -439,6 +440,9 @@ export const KAMPAGNE = {
   brandwald: [[24, 141], [19, 146], [96, -3], [100, -27], [112, -17], [113, -16], [118, -30], [98, -14], [98, -32], [114, -12], [96, -12], [120, -28], [108, -36], [90, -24], [124, -18], [104, -8], [76, 96], [62, 116], [64.4, 112.6], [66.2, 113.8]],
   grenzland: [[-30, 94], [-26, 58], [-14, 82], [-8, 41], [-6, 74], [3, 126], [4, 92], [4, 128], [5, 124], [6, 70], [6, 126], [8, 66], [8, 124], [8, 126], [9, 118], [9, 127], [10, 125], [11, 122], [14, 121], [18, 63], [22, 58], [24, -78], [24, 95], [26, 4], [31, -9], [32, -42], [33, -8], [34, -50], [34, -12], [35, -7], [35, 41], [35, 46], [38, -19], [40, -52], [40, -30], [40, -28], [44, -44], [50, -48], [52, -40], [62, -78]],
 };
+
+// gelaende (Runde 3): alle Missionen M0–M11 automatisch ergänzen (kampagne-punkte.js), nicht nur die Handliste oben
+for (const [k, pts] of Object.entries(KAMPAGNE_PUNKTE)) KAMPAGNE[k] = [...(KAMPAGNE[k] || []), ...pts];
 
 const inRect = (f, x, z, m = 0) => {
   const c = Math.cos(f.ry || 0), s = Math.sin(f.ry || 0), px = x - f.x, pz = z - f.z;

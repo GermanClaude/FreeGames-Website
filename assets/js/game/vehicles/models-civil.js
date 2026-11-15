@@ -17,7 +17,7 @@ import * as THREE from 'three';
 import { VEHICLES } from './data.js?v=20261114060746';
 import { civilPaint } from './materials.js?v=20261114060746';
 import { pkwBodyHQ } from './models-car.js?v=20261114060746';
-import { tire, alloyRim, steelRim, brakeDisc, bodyLoft } from './bodykit.js?v=20261114060746';
+import { tire, alloyRim, steelRim, brakeDisc, bodyLoft, roundPlate } from './bodykit.js?v=20261114060746';
 
 const PI = Math.PI, HP = PI / 2;
 const _q = new THREE.Quaternion(), _e = new THREE.Euler(), _d = new THREE.Vector3(), AZ = new THREE.Vector3(0, 0, 1);
@@ -371,20 +371,35 @@ function buildTransporter(lod, S, K, variant) {
   for (const sx of [-1, 1]) {
     bar(K, B, paint, [sx * 0.95, 1.31, -1.82], [sx * 0.93, 2.42, -1.18], 0.08, 0.08);
     bar(K, B, paint, [sx * 0.965, 1.37, 0.0], [sx * 0.965, 2.43, 0.0], 0.07, 0.12);
-    B.add(K.box(0.06, 0.24, 1.3), paint, [sx * 0.97, 2.32, -0.58]);
+    if (!(K.HQ && lod < 2)) B.add(K.box(0.06, 0.24, 1.3), paint, [sx * 0.97, 2.32, -0.58]);
   }
-  B.add(K.box(1.96, 0.05, 1.36), paint, [0, 2.425, -0.56]);
+  if (K.HQ && lod < 2) {
+    // Fahrerhausdach als Fortsetzung des Kofferaufbaus (gleicher Querschnitt, gerundete Kanten), Regenrinne
+    const zz = []; for (let i = 0; i <= (lod === 0 ? 10 : 4); i++) zz.push(-1.26 + (1.38 * i) / (lod === 0 ? 10 : 4));
+    B.add(bodyLoft(zz, (z) => ({ yb: 2.2, ys: 2.24, yt: 2.42 - Math.max(0, (-z - 1.1) / 0.16) * 0.04, w: 0.995, wt: 0.965, rb: 0.02, rs: 0.16, crown: 0.025, bulge: 0 }), { q: lod === 0 ? 4 : 2 }), paint);
+    if (lod === 0) for (const sx of [-1, 1]) B.add(K.box(0.03, 0.025, 3.9), S.plastic, [sx * 0.99, 2.235, 0.68]);
+  } else B.add(K.box(1.96, 0.05, 1.36), paint, [0, 2.425, -0.56]);
   B.add(K.box(1.92, 0.16, 0.08), paint, [0, 2.33, -1.2]);
   B.add(K.box(1.4, 0.18, 4.4), S.dark, [0, 0.55, 0.0]);                                 // Unterboden
   for (const zz of [1.55]) B.add(K.box(1.3, 0.4, 0.96), S.dark, [0, 0.62, zz]);
   // Bug, Heck, Leuchten
+  if (K.HQ && lod < 2) {
+    B.add(roundPlate(2.0, 0.3, 0.2, 0.06), S.plastic, [0, 0.62, -2.6]);
+    B.add(roundPlate(0.96, 0.28, 0.04, 0.05), S.chrome, [0, 0.88, -2.635]);
+    B.add(roundPlate(0.9, 0.22, 0.04, 0.04), S.dark, [0, 0.88, -2.645]);
+    if (lod === 0) for (let k = 0; k < 5; k++) B.add(K.box(0.84, 0.012, 0.012), S.plastic, [0, 0.8 + k * 0.04, -2.67]);
+  } else {
   B.add(K.box(2.02, 0.3, 0.18), S.plastic, [0, 0.52, -2.6]);
   B.add(K.box(0.92, 0.26, 0.04), S.dark, [0, 0.86, -2.625]);
+  }
   B.add(K.box(0.52, 0.11, 0.012), S.plate, [0, 0.5, -2.695]);
   B.add(K.box(2.02, 0.26, 0.14), S.plastic, [0, 0.52, 2.62]);
   B.add(K.box(0.52, 0.11, 0.012), S.plate, [0, 0.68, 2.66]);
   for (const sx of [-1, 1]) {
-    LB.add(K.box(0.36, 0.16, 0.05), S.lensOff, [sx * 0.7, 0.95, -2.6], [0, sx * 0.12, 0], null, { tag: { lens: true } });
+    if (K.HQ && lod < 2) {
+      B.add(roundPlate(0.36, 0.18, 0.03, 0.05), S.chrome, [sx * 0.7, 0.93, -2.615], [0, sx * 0.12, 0]);
+      LB.add(roundPlate(0.33, 0.15, 0.03, 0.045), S.lensOff, [sx * 0.7, 0.93, -2.628], [0, sx * 0.12, 0], null, { tag: { lens: true } });
+    } else LB.add(K.box(0.36, 0.16, 0.05), S.lensOff, [sx * 0.7, 0.95, -2.6], [0, sx * 0.12, 0], null, { tag: { lens: true } });
     B.add(K.box(0.14, 0.42, 0.04), S.rearLamp, [sx * 0.9, 1.0, 2.64]);
     B.add(K.box(0.1, 0.05, 0.04), S.amber, [sx * 0.92, 0.6, -2.58]);
     B.add(K.box(0.03, 0.16, 2.2), S.plastic, [sx * 1.0, 0.56, -0.2]);                  // Schutzleiste

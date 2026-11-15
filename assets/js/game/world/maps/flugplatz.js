@@ -13,6 +13,7 @@ import { burntWreck } from './brandwald-bau.js?v=20261114060746';
 import { KEIN, VG } from './neu-bau.js?v=20261114060746';
 import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261114060746'; // gelaende (Runde 3)
 import { reliefAvoid } from '../terrain/relief.js?v=20261114060746';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
 
 const PI = Math.PI, Q = PI / 2;
 const R_Y = 13;                                   // Plateau der Radarstellung
@@ -399,7 +400,7 @@ const FLUGPLATZ = {
 // Wiesen/Feldern um den Fliegerhorst. Bahn, Rollwege, Vorfeld, Schneisen und Ortschaften sind Bauflächen (pads) und
 // werden danach wieder eingeebnet; Flaggen, Startpunkte, Fahrzeuge und Ortschaften sind zusätzlich ausgeblendet.
 FLUGPLATZ.terrain.relief = {
-  ...reliefAvoid(FLUGPLATZ),
+  ...reliefAvoid(FLUGPLATZ, KAMPAGNE_PUNKTE.flugplatz.map(([x, z]) => [x, z, 5])),
   knolls: [
     { x: -60, z: 190, r: 20, h: 3.4, w: 15, ry: 0.3 }, { x: 60, z: 190, r: 20, h: 3.4, w: 15, ry: -0.3 },
     { x: -220, z: -250, r: 22, h: 3.6, w: 16, ry: 0.2 }, { x: 220, z: -250, r: 22, h: 3.6, w: 16, ry: -0.2 },

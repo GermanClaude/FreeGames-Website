@@ -54,6 +54,12 @@ const ST_GPU = 1, ST_GRIPS = 2, ST_COLL = 3;
 // 26.10.: schwerer Schritt eines nicht dringenden Auftrags (Vorrat, Plan) nur, wenn vom Leerlauf noch so viel übrig ist (s) – eine
 // Foto-Waffe kostet am PC grob 0,2–1,5 s, im Container bis 4,5 s; ein Bau überzieht den Leerlauf so höchstens einmal
 const IDLE_MIN_S = 0.75;
+// waffen 14.11. (Nutzer: „Waffen sehen absolut vereinfacht aus“): eine aufgehobene/zugeteilte Foto-Waffe blieb bis zum nächsten
+// Leerlauf (Tod, Pause) als Bot-Fassung in der Hand – mitten im Match oft minutenlang ein Klötzchenmodell vor dem Gesicht. Jetzt baut
+// der Hintergrund die Vorlage der Waffe IN DER HAND auch im Spiel, sobald längere Ruhe herrscht (HAND_QUIET_S seit Ziehen/Schuss,
+// kein Anschlag, keine Aktion, 2 s ohne Treffer; nicht in VR). Ein einmaliges Stocken (PC ≈ 0,2–1,5 s) in einer ruhigen Sekunde
+// statt eines dauerhaft groben Modells. Kontaktgitter bleibt dem Leerlauf (Hände greifen bis dahin ohne Oberflächenkontakt).
+const HAND_QUIET_S = 3.5;
 
 const attKeyOf = (att) => (att ? Object.values(att).join('+') : '');
 
@@ -257,6 +263,9 @@ export const BUILD_ACTIONS = {
     try { done = this._bgRun(job, idle); } catch (err) { console.warn('[viewmodel] Hintergrund-Bau', job.mk, err); done = true; }
     if (done) {
       q.splice(q.indexOf(job), 1);
+      if (job.collLater && job.entry && this._models.get(job.mk) === job.entry && !job.entry.collider) {
+        this._enqueue({ mk: job.mk, id: job.id, key: job.key, att: job.att, ak: job.ak, prio: 2, step: ST_COLL, entry: job.entry });
+      }
       // fertig, aber nicht übernommen (inzwischen anders gebaut, Fehler): Ego-Fassung nicht weiter halten (Freigabe je Waffe, models.js)
       if (job.entry && this._models.get(job.mk) !== job.entry) this._dropEntry(job.entry);
     }
@@ -289,7 +298,12 @@ export const BUILD_ACTIONS = {
       }
       case ST_GPU: this._gpuWarm(job.entry, !job.prefetch); job.step = ST_GRIPS; return false;
       case ST_GRIPS: this._prepareGrips(job.entry); magWellOf(job.entry); job.step = ST_COLL; return false;
-      case ST_COLL: this._entryCollider(job.entry); job.step = 4; return false;
+      case ST_COLL:
+        // Im Spiel für die Waffe in der Hand (Platzhalter, _handBuildOk): erst tauschen, Kontaktgitter im nächsten Leerlauf nachreichen
+        if (!idle && this.cur && this.cur.stub && this._models.get(job.mk) === this.cur && !this._colliderShared(job.entry)) {
+          job.entry.collider = null; job.entry.contactMemo = new Map(); job.collLater = true;
+        } else this._entryCollider(job.entry);
+        job.step = 4; return false;
       default: return this._bgFinish(job, idle);
     }
   },
@@ -330,6 +344,13 @@ export const BUILD_ACTIONS = {
   _quietNow() {
     return !this.action && !this._pending && !this._lowering && this._equipT >= 1 && this._ads < 0.05 &&
       this._time - (this._restT ?? 0) >= QUIET_S;
+  },
+
+  /** Platzhalter in der Hand und lange Ruhe: Vorlage der gehaltenen Waffe auch im Spiel bauen (HAND_QUIET_S, siehe oben). */
+  _handBuildOk(job, quiet) {
+    const cur = this.cur;
+    if (!quiet || this._vrOn || !cur || !cur.stub || this._models.get(job.mk) !== cur) return false;
+    return this._quietNow() && this._time - (this._restT ?? 0) >= HAND_QUIET_S;
   },
 
   /** Schritt kostet bis zu Sekunden am Stück (Vorlage bauen; Kontaktgitter, wenn es nicht geteilt werden kann). */
@@ -489,7 +510,8 @@ export const BUILD_ACTIONS = {
       // 26.10.: begonnene Plan-Aufträge (Vorlage steht) ebenso – baute der Todesbildschirm die Vorlage gerade noch, lud sonst der
       // Aufstieg auf diese Waffe ihre Atlanten und Programme erst im Wechselbild (Probe aufstieg.mjs: Adler 3 Texturen, 3 Programme)
       const urgent = j.prio >= 1 || (j.plan && j.step > 0);
-      if (!idle && (!urgent || !calm || this._heavyStep(j))) continue;
+      const handNow = !idle && (j.step === 0 || j.step === ST_COLL) && j.prio >= 2 && this._handBuildOk(j, quiet);
+      if (!idle && (!urgent || !calm || (this._heavyStep(j) && !handNow))) continue;
       if (busy && this._heavyStep(j)) continue; // Menü wird bedient: auch die gewählte Waffe erst in Ruhe (Prüfung 26.10.)
       if (idle && j.prio < 2 && idleLeft < IDLE_MIN_S && this._heavyStep(j)) continue; // Leerlauf reicht nicht mehr (26.10.)
       if (j.step >= 4 && this.cur && this._models.get(j.mk) === this.cur && !this._swapReady(idle)) continue;

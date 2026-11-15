@@ -12,6 +12,7 @@
 import { container, crateStack, palletStack, barrelGroup, sandbags, hash01 } from '../props.js?v=20261114060746';
 import { armeeLkw } from './flugplatz-bau.js?v=20261114060746';
 import { freiPruefer, sperrKreise, platzFrei, erdwall } from '../gelaende.js?v=20261114060746';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261114060746';
 
 /** Sperrflächen: Bahn, Rollweg, Abrollwege, Schneisen, Straßen als Rechtecke [x0, z0, x1, z1]. */
 const SPERR_RECHTECKE = [
@@ -36,7 +37,7 @@ function tWand(b, x, y, z, ry, L, h = 3.0) {
 export function flugplatzGelaende(b, ctx, def) {
   const hf = ctx.hf, yAt = (x, z) => hf.heightAt(x, z);
   const fl = def.flags || {};
-  const frei = freiPruefer(sperrKreise({ spawns: def.spawns, flags: [...(fl.cq || []), ...(fl.dom || [])], rFlag: 12, punkte: (def.vehicles || []).map((v) => [v.x, v.z, 10]) }));
+  const frei = freiPruefer(sperrKreise({ spawns: def.spawns, flags: [...(fl.cq || []), ...(fl.dom || [])], rFlag: 12, punkte: [...(def.vehicles || []).map((v) => [v.x, v.z, 10]), ...(KAMPAGNE_PUNKTE.flugplatz || []).map(([x, z]) => [x, z, 3])] }));
   let gesetzt = 0;
   const aus = [];
   const imRechteck = (x, z, hw, hd) => SPERR_RECHTECKE.some(([x0, z0, x1, z1]) => x + hw > x0 && x - hw < x1 && z + hd > z0 && z - hd < z1);
@@ -49,8 +50,8 @@ export function flugplatzGelaende(b, ctx, def) {
   for (const [x, z, L] of [[45, -14.5, 18], [100, -13, 16], [205, -14, 20], [265, -12.5, 16], [335, -14.5, 18]]) {
     paar(x, z, L / 2 + 3.2, 3.4, (px) => erdwall(b, px - L / 2, z, px + L / 2, z, { y: yAt(px, z) - 0.05, w: 6.6, h: 1.35, tint: '#8a8a64', mat: 'dirt' }));
   }
-  // 2) Splitterschutz-U um Abstellplatz 1 (−140, −95) und 4 (140, −95), offen nach Süden (Rollweg)
-  for (const sx of [140]) {
+  // 2) Splitterschutz-U um die Abstellplätze (1/4 bei x ±140, sonst 2/3 bei ±80), offen nach Süden (Rollweg)
+  for (const sx of [140, 80]) {
     paar(sx, -103, 13.5, 9.5, (px) => {
       const y = yAt(px, -100);
       tWand(b, px, y, -112.5, 0, 24);

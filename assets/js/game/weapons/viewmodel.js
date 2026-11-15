@@ -34,7 +34,7 @@ import { uploadTextures } from '../engine/warm.js?v=20261114060746';
 import { applyCamo } from './gunsmith/camos.js?v=20261114060746';
 import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261114060746';
 import { setReticleSize, setWeaponDust } from './gunsmith/materials.js?v=20261114060746';
-import { VMU, updateVmLight } from './gunsmith/vmlight.js?v=20261114060746';   // Weltschatten auf Waffe/Armen (waffen, 14.11.)
+import { updateVmLight, resetVmLight } from './gunsmith/vmlight.js?v=20261114060746';   // Weltschatten auf Waffe/Armen (waffen, 14.11.)
 import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261114060746';
 import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261114060746';
 import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261114060746';
@@ -141,7 +141,7 @@ export class ViewModel {
     this.scene.onBeforeRender = (r, sc, cam) => {
       this._wsh = updateVmLight(!this._vrOn && this.quality !== 'low' && !!this._lighting, this._lighting?.sun, this.G?.camera, cam, this.sun);
     };
-    this.scene.onAfterRender = () => { VMU.npVmShP.value.x = 0; };
+    this.scene.onAfterRender = () => { resetVmLight(); };
     this.root = new THREE.Group();
     this.root.name = 'viewmodel';
     this.scene.add(this.root);
@@ -1985,7 +1985,7 @@ export class ViewModel {
     this._disposed = true;
     this._offQuality?.();
     this.scene.onBeforeRender = this.scene.onAfterRender = () => {};
-    VMU.npVmShP.value.x = 0; VMU.npVmSh.value = null;
+    resetVmLight();
     this.scene.remove(this.root);
     this.flash.group.removeFromParent();
     // Requisiten teilen Geometrien mit dem Modell-Cache: vor dem Entsorgen der Arme abhängen
