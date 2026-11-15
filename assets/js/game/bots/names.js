@@ -1,7 +1,7 @@
 // NULLPUNKT — Rufnamen der Bots (fiktiv, deutsch geprägt), ohne Wiederholung innerhalb eines Matches.
 export const CALLSIGNS = [
   'Falke', 'Wolf', 'Kobra', 'Specht', 'Luchs', 'Dachs', 'Bussard', 'Fuchs', 'Rabe', 'Iltis', 'Otter', 'Marder',
-  'Hornisse', 'Viper', 'Adler', 'Habicht', 'Keiler', 'Sperber', 'Elster', 'Kranich', 'Uhu', 'Wiesel', 'Bär',
+  'Hornisse', 'Viper', 'Adler', 'Habicht', 'Keiler', 'Sperber', 'Elster', 'Kormoran', 'Uhu', 'Wiesel', 'Bär',
   'Taifun', 'Granit', 'Kiesel', 'Nordlicht', 'Funke', 'Anker', 'Bolzen', 'Lotse', 'Schmied', 'Kompass', 'Riff',
   'Sturmvogel', 'Möwe', 'Gämse', 'Steinbock', 'Hummel', 'Natter', 'Polarfuchs', 'Kauz', 'Nebel', 'Schakal',
   'Zander', 'Hecht', 'Waran', 'Föhn', 'Basalt', 'Quarz', 'Kolibri', 'Ozelot', 'Puma', 'Lanze', 'Pfeil',

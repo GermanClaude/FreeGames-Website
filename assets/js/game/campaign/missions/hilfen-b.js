@@ -435,6 +435,15 @@ export function prop(m, def) {
     m.every(() => { tick(); return false; });
   }
   a.remove = () => { const i = m._kbProps.indexOf(a); if (i >= 0) m._kbProps.splice(i, 1); try { a.dispose(); } catch { /* */ } };
+  // kamp3: geschützte Figur (Einwohner, Geisel, Kessar): Treffer durch den Spieler → Fehlschlag (director._shotAtExtras)
+  if (def.protect) {
+    a.protect = true;
+    a.hit = (by) => {
+      if (by !== m.G.player || m.state !== 'run') return;
+      try { a.crouch = true; } catch { /* */ }
+      m.fail(def.failText || 'Ein Zivilist wurde getroffen. Wir schießen nur, wenn wir sicher sind.');
+    };
+  }
   return a;
 }
 

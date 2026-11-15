@@ -67,7 +67,9 @@ export function sense(bot, now, dt) {
     const d = Math.hypot(dx, dy, dz) || 1e-3;
     let rec = mem.get(a);
     const firing = now - (a.lastFiredTime || -1e9) < 0.8;
-    const maxD = D.viewDistance * (firing ? 1.3 : 1);
+    // Nacht (Kampagne, world.nightVis 0–1): kürzere Sicht und langsameres Entdecken – außer bei Mündungsfeuer
+    const night = world && world.nightVis > 0 && world.nightVis < 1 && !firing ? world.nightVis : 1;
+    const maxD = D.viewDistance * (firing ? 1.3 : 1) * (night < 1 ? Math.max(0.3, night) : 1);
     if (d > maxD) { if (rec) { rec.visible = false; rec.spot = Math.max(0, rec.spot - dt * 0.5); } continue; }
     const cos = (dx * fx + dz * fz) / Math.max(1e-3, Math.hypot(dx, dz));
     const tracked = rec && rec.visible;
@@ -116,6 +118,7 @@ export function sense(bot, now, dt) {
       if (d < 6) rate *= 4;
       if (a.isStreakEntity) rate *= 1.5;
       rate *= haze; // Dunst/Rauchrand
+      if (night < 1) rate *= night;
       rec.spot = Math.min(1, rec.spot + rate * dt);
       if (rec.spot >= 1) {
         rec.acquiredAt = now;

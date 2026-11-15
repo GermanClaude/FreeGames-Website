@@ -9,7 +9,7 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (91)
+## Texturen (116)
 
 45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
@@ -165,6 +165,9 @@ aufgehellt und mit gezeichneten Korkporen versehen.
 | Pine Bark | `bark_kiefer` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/pine_bark) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Bark Willow | `bark_fichte` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/bark_willow) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
+Dazu kommen 15 Sätze mit der Kennung `vh_*`, `vp_*` und `vw_*` (Hafen-Wellblech, Container, Kaimauer, Pflaster,
+Ziegel), die NULLPUNKT selbst aus einer eigenen Video-Vorlage des Projekts erzeugt hat – keine Fremdquelle, CC0.
+
 ## HDRIs (8)
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
@@ -276,6 +279,7 @@ Kenney) sind mit Quelle, Urheber:in und Lizenz je Datei in [docs/AUDIO_SOURCES.m
 |---|---|---|
 | [three.js](https://threejs.org) r186 (inkl. GLTFLoader, KTX2Loader, HDRLoader) | Rendering, Laden | MIT |
 | [Basis Universal](https://github.com/BinomialLLC/basis_universal) (Transcoder, `assets/vendor/three/addons/libs/basis/`) | KTX2-Transkodierung im Browser | Apache-2.0 |
+| [noble-secp256k1](https://github.com/paulmillr/noble-secp256k1) v3.2.0 (`assets/vendor/noble/`) | Signaturen im Mehrspieler-Netz | MIT |
 | [meshoptimizer](https://github.com/zeux/meshoptimizer) (Decoder) | Geometrie-Dekompression | MIT |
 | [zstddec](https://github.com/donmccurdy/zstddec) / [ktx-parse](https://github.com/donmccurdy/ktx-parse) | KTX2-Superkompression / Container | MIT |
 | [glTF Transform](https://gltf-transform.dev), [ktx2-encoder](https://github.com/gz65555/ktx2-encoder), [sharp](https://sharp.pixelplumbing.com) | nur Build-Pipeline (nicht ausgeliefert) | MIT / Apache-2.0 |

@@ -115,7 +115,7 @@ export const MISSION_9 = {
     }
     // Einwohner in der Kirche (Figuren ohne KI, geduckt)
     const people = [[22, -3, 1.2], [24, 3, 2.6], [27.5, -1.5, -1.9], [21.5, 2.5, 0.6], [28, 3.5, -2.4]];
-    m.set('leute', people.map(([x, z, yaw], i) => prop(m, { role: 'einwohner', name: 'Einwohner', team: 'A', variant: ['zivil', 'zivil-strick', 'zivil-hemd', 'zivil-arbeit', 'zivil-strick'][i], weapon: null, at: [x, z], yaw, crouch: i % 2 === 0, aim: -1.0 })));
+    m.set('leute', people.map(([x, z, yaw], i) => prop(m, { role: 'einwohner', name: 'Einwohner', team: 'A', variant: ['zivil', 'zivil-strick', 'zivil-hemd', 'zivil-arbeit', 'zivil-strick'][i], weapon: null, at: [x, z], yaw, crouch: i % 2 === 0, aim: -1.0, protect: true, failText: 'Ein Einwohner in der Kirche wurde getroffen. Wir schießen nur, wenn wir sicher sind.' })));
   },
 
   stages: [
@@ -188,7 +188,7 @@ export const MISSION_9 = {
       *run(m) {
         m.clearObjectives();
         m.order('follow');
-        const fig = prop(m, { role: 'malek', at: MALEK, yaw: 1.4, crouch: true, aim: -1.1 });
+        const fig = prop(m, { role: 'malek', at: MALEK, yaw: 1.4, crouch: true, aim: -1.1, protect: true, failText: 'Der Funker wurde getroffen. Wir brauchten ihn lebend.' });
         m.say('weber', 'Der Funker ist raus – Richtung Torhaus und Marktgasse! Wir brauchen ihn lebend, Falke!', { expr: 'angespannt' });
         m.tip('Der Funker ist unbewaffnet – schalte seine Begleiter aus, nicht ihn.', 6);
         m.wave('f1', { count: 4, at: [[-21.5, 2.5], [-18, 4], [-30.5, 2], [-31, 16]], hold: true });

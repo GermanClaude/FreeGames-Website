@@ -314,6 +314,16 @@ export function decorateCampaignEnd(G, screen, result) {
   });
 }
 
+/**
+ * Tageszeit/Wetter einer Mission (kamp3, 15.11.): gilt für jeden Start – Lobby, Debug-URL, Checkpoint, Revanche –, solange
+ * die Konfiguration nichts anderes verlangt (main.js startMatch → G.modules.modes.campaignConditions). → { time, weather } | null
+ */
+export function campaignConditions(missionId) {
+  const m = missionById(missionId);
+  if (!m) return null;
+  return { time: m.time || null, weather: m.weather || null };
+}
+
 /** Startkonfiguration einer Mission (Lobby/Endbildschirm). */
 export function missionConfig(mission, base = {}, { checkpoint = null, difficulty = null, maps = null } = {}) {
   // Karte fehlt im Build (z. B. neue Karte eines anderen Strangs noch nicht da) → Rückfallkarte der Mission

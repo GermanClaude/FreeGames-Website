@@ -104,7 +104,7 @@ class Bucket {
   add(geom, mat, pos = null, rot = null, scl = null, { keepUV = false, tag = null } = {}) {
     const g = geom.index ? geom.toNonIndexed() : geom.clone();
     geom.dispose();
-    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && !(keepUV && k === 'uv')) g.deleteAttribute(k);
+    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'aVehE' && !(keepUV && k === 'uv')) g.deleteAttribute(k);
     g.clearGroups();
     _e.set(rot ? rot[0] : 0, rot ? rot[1] : 0, rot ? rot[2] : 0);
     _q.setFromEuler(_e);
@@ -117,6 +117,12 @@ class Bucket {
   }
   build(parent, { shadow = true, off = null } = {}) {
     for (const [mat, list] of this.map) {
+      // armorkit: gerundete Hüllen bringen ihre Kantenabnutzung (aVehE aus der Wölbung) mit – übrige Teile je Teil rechnen
+      const vp = HQ && mat.userData && mat.userData.vehPaint;
+      if (list.some((g) => g.attributes.aVehE)) for (const g of list) {
+        if (!vp) { if (g.attributes.aVehE) g.deleteAttribute('aVehE'); continue; }
+        if (!g.attributes.aVehE) g.setAttribute('aVehE', new THREE.BufferAttribute(edgeAttribute(g), 3));
+      }
       const merged = list.length === 1 ? list[0] : mergeGeometries(list, false);
       if (list.length > 1) for (const g of list) g.dispose();
       if (!merged.attributes.uv) boxUV(merged, 1);
@@ -126,7 +132,7 @@ class Bucket {
         const ox = off ? off[0] : 0, oy = off ? off[1] : 0, oz = off ? off[2] : 0;
         for (let i = 0; i < P.count; i++) { A[i * 3] = P.getX(i) + ox; A[i * 3 + 1] = P.getY(i) + oy; A[i * 3 + 2] = P.getZ(i) + oz; }
         merged.setAttribute('aVeh', new THREE.BufferAttribute(A, 3));
-        if (mat.userData && mat.userData.vehPaint) merged.setAttribute('aVehE', new THREE.BufferAttribute(edgeAttribute(merged), 3));
+        if (mat.userData && mat.userData.vehPaint && !merged.attributes.aVehE) merged.setAttribute('aVehE', new THREE.BufferAttribute(edgeAttribute(merged), 3));
       }
       merged.computeBoundingSphere();
       const mesh = new THREE.Mesh(merged, mat);

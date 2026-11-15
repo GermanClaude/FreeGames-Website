@@ -145,8 +145,8 @@ const CUT_OUTRO = (m) => {
 function civGroup(m, g, i) {
   const [x, z] = g.at;
   return [
-    prop(m, { role: 'zivil', name: 'Einwohner', team: 'A', variant: 'zivil', weapon: null, at: [x, z], yaw: g.yaw, crouch: true, aim: -1.0 }),
-    prop(m, { role: 'zivil', name: 'Einwohnerin', team: 'A', variant: i ? 'zivil-hemd' : 'zivil-strick', weapon: null, at: [x + 0.9, z + 0.6], yaw: g.yaw + 0.4, crouch: true, aim: -1.1 }),
+    prop(m, { role: 'zivil', name: 'Einwohner', team: 'A', variant: 'zivil', weapon: null, at: [x, z], yaw: g.yaw, crouch: true, aim: -1.0, protect: true }),
+    prop(m, { role: 'zivil', name: 'Einwohnerin', team: 'A', variant: i ? 'zivil-hemd' : 'zivil-strick', weapon: null, at: [x + 0.9, z + 0.6], yaw: g.yaw + 0.4, crouch: true, aim: -1.1, protect: true }),
   ];
 }
 
@@ -260,7 +260,7 @@ export const MISSION_11 = {
         const c = C(m);
         m.clearObjectives();
         m.order('hold');
-        const k = prop(m, { role: 'kessar', at: c.kessar, yaw: c.kessarYaw, aim: -1.2, weapon: null, top: !!c.roof });
+        const k = prop(m, { role: 'kessar', at: c.kessar, yaw: c.kessarYaw, aim: -1.2, weapon: null, top: !!c.roof, protect: true, failText: 'Kessar wurde getroffen. Ohne seine Aussage bleibt die Wahrheit im Dunkeln – wir brauchen ihn lebend.' });
         if (c.roof) {
           const roofAt = [c.kessar[0], (c.Y || 0) + 0.1, c.kessar[1]];
           m.zone('dach', { at: roofAt, r: 9, h: 2.5 });

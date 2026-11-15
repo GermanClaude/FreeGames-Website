@@ -1136,6 +1136,11 @@ async function runStart(config, gen) {
       cfg.enemies = Math.max(0, netCfg.botsB | 0);
       cfg.net = netCfg;
     }
+    // kamp3: Kampagne – Tageszeit/Wetter der Mission auch bei Debug-URL/Checkpoint/Revanche (nicht nur aus dem Menü)
+    if (cfg.modeId === 'kampagne' && cfg.campaign && cfg.timeOfDay == null && cfg.weather == null) {
+      const mc = safe('kampagne-wetter', () => G.modules.modes?.campaignConditions?.(cfg.campaign.mission)) || null;
+      if (mc) { cfg.timeOfDay = mc.time; cfg.weather = mc.weather; }
+    }
     // atmosphere-weather: Wetter/Zeit hier auflösen – „Zufall“ würfelt bei jedem Start (auch Revanche) neu, der
     // Ladebildschirm zeigt das Ergebnis; anderes Wetter/Zeit → Welt neu aufbauen
     const cond = safe('weather', () => G.modules.world?.resolveConditions?.(G.data.MAPS?.[cfg.mapId], { weather: cfg.weather, time: cfg.timeOfDay })) || null;
