@@ -266,7 +266,9 @@ export const MODES = {
     lethals: true,
     campaign: true,
     // Karte je Mission (main.js normalizeConfig; Quelle: game/campaign/outline.js); Liste = Karte und Rückfall, falls sie fehlt
-    missionMaps: { m0: 'range', m1: 'altstadt', m2: 'werk', m3: 'grenzland', m4: 'hafen', m5: 'bibliothek', m6: 'brandwald', m7: 'niemandsland', m8: 'grenzland', m9: 'altstadt', m10: ['flugplatz', 'grenzland'], m11: ['stadtkern', 'altstadt'], m12: 'grenzland', m13: 'stadtkern', m14: 'niemandsland', m15: 'flugplatz' },
+    missionMaps: { m0: 'range', m1: 'altstadt', m2: 'werk', m3: 'grenzland', m4: 'hafen', m5: 'bibliothek', m6: 'brandwald', m7: 'niemandsland', m8: 'grenzland', m9: 'altstadt', m10: ['flugplatz', 'grenzland'], m11: ['stadtkern', 'altstadt'], m12: 'grenzland', m13: 'stadtkern', m14: 'niemandsland', m15: 'flugplatz',
+      // Panzer-Kampagne „Eisenwind“ (campaign/panzer/*)
+      p1: 'grenzland', p2: 'flugplatz', p3: 'grenzland', p4: 'brandwald', p5: 'niemandsland', p6: ['stadtkern', 'altstadt'] },
   },
   cq: {
     id: 'cq',

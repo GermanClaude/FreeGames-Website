@@ -17,12 +17,16 @@ import { InfectedMode } from './infected.js?v=20261115041504';
 import { UltimateMode } from './ultimate.js?v=20261115041504';
 import { KnifeMode } from './knife.js?v=20261115041504';
 import { HoldPointMode } from './hp.js?v=20261115041504';
-import { CampaignMode, campaignConditions } from '../campaign/mode.js?v=20261115041504'; // Kampagne „Stille Grenze“ (game/campaign/*)
+import { CampaignMode, campaignConditions as infantryConditions } from '../campaign/mode.js?v=20261115041504'; // Kampagne „Stille Grenze“ (game/campaign/*)
 import { PanzerMode } from './panzer.js?v=20261115041504'; // Panzersimulation (vehicles/psim/*)
+import { PanzerCampaignMode } from '../campaign/panzer/mode.js?v=20261115041504'; // Panzer-Kampagne „Eisenwind“ (Missionen p1…p6)
+import { pzMission } from '../campaign/panzer/missions.js?v=20261115041504';
 
 export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode, messer: KnifeMode, ult: UltimateMode, hp: HoldPointMode, kampagne: CampaignMode, panzer: PanzerMode };
 
 export function createMode(G, modeId, opts = {}) {
+  // Panzer-Kampagne: läuft unter „kampagne“ (Karte/Wetter/Checkpoint wie die Infanterie-Kampagne), Missions-Ids p1…p6
+  if (modeId === 'kampagne' && opts.campaign && pzMission(opts.campaign.mission)) return new PanzerCampaignMode(G, modeId, opts);
   const Cls = MODE_CLASSES[modeId];
   if (Cls) return new Cls(G, modeId, opts);
   // Unbekannter Modus: nach Datenlage Team- oder Einzelwertung
@@ -31,7 +35,12 @@ export function createMode(G, modeId, opts = {}) {
 }
 
 export { BaseMode, TdmMode, FfaMode, DomMode, GunMode, TrainingMode, ConquestMode, KillConfirmedMode, InfectedMode, KnifeMode, HoldPointMode };
-export { campaignConditions }; // kamp3: Tageszeit/Wetter der Mission (main.js startMatch)
+/** kamp3: Tageszeit/Wetter der Mission (main.js startMatch) – auch für die Panzer-Kampagne. */
+export function campaignConditions(missionId) {
+  const pm = pzMission(missionId);
+  if (pm) return { time: pm.time || null, weather: pm.weather || null };
+  return infantryConditions(missionId);
+}
 export { SquadSystem } from './squads.js?v=20261115041504';
 export { chooseSpawn } from './spawns.js?v=20261115041504';
 export { StreakManager } from './streaks.js?v=20261115041504';

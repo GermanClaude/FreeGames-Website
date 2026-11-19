@@ -2,12 +2,15 @@
 //   Partikel-Atlas 4×4 (je 128 px): weiche Wolke, 2× Rauch, Funke, Stern-Blitz, Flammenzunge, Splitter,
 //   Tropfen, 8 Feuerball-Phasen (Sprite-Sheet). Einschuss-Atlas 4×2: Beton (2), Metall, Holz, Erde,
 //   Glas, Brandfleck, Putz/Fliese.
+// zer2 19.11.: Atlas 5×5 – dazu dichte Rußballen (2, Blumenkohl-Rand für Volumen), Staubschleier, Druckring,
+//   kantiger Brocken, Holzspan, Blechsplitter. Feuerball-Phasen verlaufen jetzt glühend → rußig-dunkel (kein rosa Fleck).
 import * as THREE from 'three';
 
 export const CELL = {
   SOFT: 0, SMOKE_A: 1, SMOKE_B: 2, SPARK: 3, STAR: 4, FLAME: 5, CHIP: 6, DROP: 7, FIRE: 8, FIRE_FRAMES: 8,
+  SOOT_A: 16, SOOT_B: 17, DUST: 18, RING: 19, CHUNK: 20, SPLINTER: 21, SHARD: 22,
 };
-export const ATLAS_GRID = 4;
+export const ATLAS_GRID = 5;
 
 export const DECAL = { CONCRETE: 0, CONCRETE_B: 1, METAL: 2, WOOD: 3, SOFT: 4, GLASS: 5, SCORCH: 6, PLASTER: 7 };
 export const DECAL_GRID = [4, 2];
@@ -143,24 +146,85 @@ export function getParticleAtlas() {
     const hl = Math.exp(-Math.hypot(u + 0.25, v + 0.25) * 9) * 0.5;
     o[0] = o[1] = o[2] = Math.min(1, 0.82 + hl); o[3] = a;
   });
-  // Feuerball-Phasen: heiß → ausbrennend
+  // Feuerball-Phasen: heiß → ausbrennend → Ruß. Farbrampe wie ein Schwarzkörper (gelbweiß → orange → braunrot) und
+  // ab der Mitte der Lebenszeit überzieht dunkler Ruß den Ball von außen – nur Glutnester bleiben (zer2 19.11.)
   for (let f = 0; f < CELL.FIRE_FRAMES; f++) {
     const t = f / (CELL.FIRE_FRAMES - 1);
     paintCell(ctx, ...at(CELL.FIRE + f), S, (u, v, o) => {
       const d = Math.hypot(u, v);
       const n = n1(u * 2.4 + t * 1.7, v * 2.4 - t * 2.3, 5);
       const m = n2(u * 4.6 - t * 3, v * 4.6 + t, 3);
-      let heat = (1.05 - d * (1.15 + t * 0.4)) + (n - 0.5) * (0.9 + t * 0.6) + (m - 0.5) * 0.3 - t * 0.55;
-      heat = Math.max(0, heat);
-      const a = sstep(0.04, 0.32, heat) * (1 - sstep(0.88, 1.0, d));
-      // Farbrampe: weißgelb → orange → rot → dunkel
-      const h = Math.min(1, heat * 1.25);
-      o[0] = Math.min(1, 0.55 + h * 0.9);
-      o[1] = Math.min(1, 0.12 + h * h * 0.95);
-      o[2] = Math.min(1, 0.02 + Math.pow(h, 4) * 0.8);
-      o[3] = a;
+      // Blumenkohl-Rand: Umriss aus Rauschen, Dichte zur Mitte
+      const edge = 1 - sstep(0.55, 0.98, d + (n - 0.5) * 0.55 + (m - 0.5) * 0.18);
+      let heat = (1.05 - d * (1.1 + t * 0.5)) + (n - 0.5) * (0.8 + t * 0.7) + (m - 0.5) * 0.35 - t * 0.75;
+      heat = Math.max(0, Math.min(1, heat * 1.2));
+      const soot = sstep(0.0, 0.55, t * 1.25 - heat * 0.9 + (m - 0.5) * 0.4);
+      const h = heat;
+      // Schwarzkörper: 0 → dunkelrot, 0,5 → orange, 1 → gelbweiß
+      let r = Math.min(1, 0.32 + h * 1.1), g = Math.min(1, 0.06 + h * h * 0.9), b = Math.min(1, 0.02 + Math.pow(h, 3.2) * 0.7);
+      // Ruß: dunkles Braungrau, Schattierung aus dem Rauschen (Wölbungen)
+      const sl = 0.05 + 0.07 * m + 0.03 * (0.5 - v * 0.5);
+      r = r * (1 - soot) + sl * 1.05 * soot; g = g * (1 - soot) + sl * soot; b = b * (1 - soot) + sl * 0.92 * soot;
+      o[0] = r; o[1] = g; o[2] = b;
+      o[3] = Math.max(0, edge * (0.55 + 0.45 * Math.min(1, heat * 2 + soot)) * (1 - t * 0.25));
     });
   }
+  // Rußballen: mehrere überlappende Kugeln mit gewelltem Rand (liest sich als Volumen, nicht als Fleck);
+  // Graustufe = eingebackene Höhlung (Licht kommt im Shader von der Sonne dazu)
+  const soot = (nz, off) => {
+    const blobs = [];
+    const r0 = makeNoise(Math.round(off * 100));
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + r0(i, off) * 2, rr = i ? 0.32 + 0.18 * r0(off, i) : 0;
+      blobs.push([Math.cos(a) * rr, Math.sin(a) * rr * 0.85 - 0.05, i ? 0.32 + 0.16 * r0(i * 3, off) : 0.5]);
+    }
+    return (u, v, o) => {
+      let dens = 0, sh = 0;
+      for (const [bx, by, br] of blobs) {
+        const dd = Math.hypot(u - bx, v - by) / br;
+        if (dd < 1) { const k = Math.sqrt(1 - dd * dd); dens = Math.max(dens, k); sh += k * (0.5 - (v - by) / br * 0.5); }
+      }
+      const n = nz(u * 3.2 + off, v * 3.2 - off, 5), m = nz(u * 9 - off, v * 9 + off, 3);
+      const a = sstep(0.04, 0.42, dens + (n - 0.5) * 0.55) * (0.78 + 0.22 * m);
+      const lit = Math.min(1, 0.55 + 0.25 * Math.min(1, sh) + (n - 0.5) * 0.35 + (m - 0.5) * 0.12);
+      o[0] = o[1] = o[2] = lit; o[3] = Math.max(0, a);
+    };
+  };
+  paintCell(ctx, ...at(CELL.SOOT_A), S, soot(n3, 5.3));
+  paintCell(ctx, ...at(CELL.SOOT_B), S, soot(n1, 17.9));
+  // Staubschleier: flach, ausgefranst, streifig (aufgewirbelter Schmutz)
+  paintCell(ctx, ...at(CELL.DUST), S, (u, v, o) => {
+    const d = Math.hypot(u * 0.85, v * 1.25);
+    const n = n2(u * 2.6 + 4.1, v * 4.2 + 1.3, 5), m = n3(u * 7 + 2, v * 2.2, 3);
+    const a = (1 - sstep(0.25, 1.0, d + (n - 0.5) * 0.7)) * (0.35 + 0.65 * n) * (0.75 + 0.25 * m);
+    o[0] = o[1] = o[2] = 0.85 + 0.15 * m; o[3] = Math.max(0, a * 0.85);
+  });
+  // Druckring: dünner, unruhiger Ring (Staub/Luftschliere der Druckwelle)
+  paintCell(ctx, ...at(CELL.RING), S, (u, v, o) => {
+    const d = Math.hypot(u, v), ang = Math.atan2(v, u);
+    const n = n1(Math.cos(ang) * 3 + 7, Math.sin(ang) * 3 + 7, 4);
+    const r = 0.78 + (n - 0.5) * 0.1;
+    const a = Math.exp(-Math.pow((d - r) / 0.09, 2)) * (0.5 + 0.5 * n) + Math.exp(-Math.pow((d - r + 0.12) / 0.16, 2)) * 0.25;
+    o[0] = o[1] = o[2] = 1; o[3] = Math.min(1, a) * (1 - sstep(0.94, 1, d));
+  });
+  // Brocken / Holzspan / Blechsplitter: Vielecke mit Licht von oben links und dunkler Bruchkante
+  const poly = (cell, pts, k, shade) => {
+    const [cx, cy] = at(cell);
+    ctx.save();
+    ctx.translate(cx + S / 2, cy + S / 2);
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x * S * k, y * S * k) : ctx.moveTo(x * S * k, y * S * k)));
+    ctx.closePath();
+    const g = ctx.createLinearGradient(-S * 0.35, -S * 0.35, S * 0.35, S * 0.35);
+    g.addColorStop(0, shade[0]); g.addColorStop(0.55, shade[1]); g.addColorStop(1, shade[2]);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.lineWidth = S * 0.035; ctx.strokeStyle = 'rgba(70,70,70,0.9)'; ctx.stroke();
+    ctx.restore();
+  };
+  poly(CELL.CHUNK, [[-0.7, -0.5], [-0.1, -0.9], [0.5, -0.75], [0.9, -0.1], [0.6, 0.55], [0.1, 0.85], [-0.55, 0.65], [-0.9, 0.05]], 0.4, ['#ffffff', '#c4c4c4', '#7a7a7a']);
+  poly(CELL.SPLINTER, [[-0.95, -0.05], [-0.4, -0.13], [0.3, -0.1], [0.98, 0.02], [0.35, 0.09], [-0.5, 0.12]], 0.48, ['#ffffff', '#d2d2d2', '#8c8c8c']);
+  poly(CELL.SHARD, [[-0.8, -0.3], [0.1, -0.7], [0.85, -0.45], [0.4, 0.2], [0.65, 0.7], [-0.3, 0.45], [-0.6, 0.75]], 0.42, ['#ffffff', '#b8b8b8', '#6e6e6e']);
   particleTex = new THREE.CanvasTexture(canvas);
   particleTex.colorSpace = THREE.SRGBColorSpace;
   particleTex.generateMipmaps = true;

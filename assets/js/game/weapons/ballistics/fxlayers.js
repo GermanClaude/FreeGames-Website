@@ -14,6 +14,7 @@ attribute float a3; // Atlas-Zelle
 uniform float uCells;
 varying vec2 vUv;
 varying vec4 vColor;
+varying vec3 vQ; // zer2: Lage im Ballen (x, y −1..1, Ansicht) und z = Volumen-Schattierung an (Rauch/Ruß/Staub)
 #include <fog_pars_vertex>
 void main() {
   vec4 mvCenter = modelViewMatrix * vec4(a0.xyz, 1.0);
@@ -22,19 +23,29 @@ void main() {
   vec3 mv;
   vec3 sv = (modelViewMatrix * vec4(a2.xyz, 0.0)).xyz;
   float dl = length(sv.xy);
+  float fade = 1.0;
+  vQ = vec3(0.0);
   if (dot(a2.xyz, a2.xyz) > 1e-8 && dl > 1e-6) {
     vec2 ax = sv.xy / dl;
     vec2 ay = vec2(-ax.y, ax.x);
     vec3 mid = mvCenter.xyz - sv * 0.5;
     mv = mid + vec3(ax * c.x * (dl + size) + ay * c.y * size, 0.0);
   } else {
+    // zer2 19.11.: große Ballen ein Stück zur Kamera rücken (schneiden nicht hart in die Wand, an der sie entstehen) und
+    // nah an der Kamera ausblenden (kein bildschirmfüllendes Rechteck)
+    float dist = -mvCenter.z;
+    float push = min(size * 0.3, max(0.0, dist - 0.4) * 0.5);
+    mvCenter.xyz += normalize(-mvCenter.xyz) * push;
+    fade = clamp((-mvCenter.z - 0.15) / (size * 0.45 + 0.25), 0.0, 1.0);
     float s = sin(a2.w), co = cos(a2.w);
     mv = mvCenter.xyz + vec3((co * c.x - s * c.y) * size, (s * c.x + co * c.y) * size, 0.0);
+    float cl = a3 + 0.5;
+    vQ = vec3(vec2(co * c.x - s * c.y, s * c.x + co * c.y) * 2.0, (cl > 1.0 && cl < 3.0) || (cl > 16.0 && cl < 19.0) ? 1.0 : 0.0);
   }
   float col = mod(a3, uCells);
   float row = floor(a3 / uCells);
   vUv = vec2((col + c.x + 0.5) / uCells, 1.0 - (row + 0.5 - c.y) / uCells);
-  vColor = a1;
+  vColor = vec4(a1.rgb, a1.a * fade);
   vec4 mvPosition = vec4(mv, 1.0);
   gl_Position = projectionMatrix * mvPosition;
   #include <fog_vertex>
@@ -43,14 +54,25 @@ void main() {
 const P_FRAG = /* glsl */ `
 uniform sampler2D map;
 uniform vec3 uLight;
+uniform vec4 uSunV; // xyz Sonnenrichtung (Ansicht), w Stärke der Volumen-Schattierung
 varying vec2 vUv;
 varying vec4 vColor;
+varying vec3 vQ;
 #include <fog_pars_fragment>
 void main() {
   vec4 t = texture2D(map, vUv);
   vec4 c = vec4(vColor.rgb * t.rgb, vColor.a * t.a);
   #ifdef LIT
   c.rgb *= uLight;
+  // zer2 19.11.: Rauch-/Staubballen als Kugel beleuchtet (Sonnenseite hell, Schattenseite dunkel, dichter Kern
+  // dunkler) – Volumen statt flacher Scheibe
+  if (vQ.z > 0.5 && uSunV.w > 0.0) {
+    float r2 = min(dot(vQ.xy, vQ.xy), 1.0);
+    vec3 nB = vec3(vQ.xy, sqrt(1.0 - r2));
+    float lam = clamp(dot(nB, uSunV.xyz) * 0.5 + 0.5, 0.0, 1.0);
+    float sh = mix(0.5, 1.22, lam) * mix(1.0, 0.82, t.a * (1.0 - lam));
+    c.rgb *= mix(1.0, sh, uSunV.w);
+  }
   #endif
   if (c.a < 0.003) discard;
   gl_FragColor = c;
@@ -119,7 +141,7 @@ export class ParticleLayer {
     this.geometry = geo;
     this.material = new THREE.ShaderMaterial({
       name: name || (additive ? 'fx-add' : 'fx-alpha'),
-      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: texture }, uCells: { value: ATLAS_GRID }, uLight: { value: new THREE.Color(1, 1, 1) } }]),
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: texture }, uCells: { value: ATLAS_GRID }, uLight: { value: new THREE.Color(1, 1, 1) }, uSunV: { value: new THREE.Vector4(0, 1, 0, 0) } }]),
       vertexShader: P_VERT,
       fragmentShader: P_FRAG,
       transparent: true,
@@ -136,6 +158,7 @@ export class ParticleLayer {
   }
 
   get light() { return this.material.uniforms.uLight.value; }
+  get sunV() { return this.material.uniforms.uSunV.value; }
 
   /** Neuer Partikel → Index (bei vollem Pool wird ein bestehender überschrieben). */
   spawn(x, y, z, vx, vy, vz, life, s0, s1, r, g, b, a, cell) {

@@ -20,7 +20,7 @@ import { prepareVehicleModels } from '../vehicles/models.js?v=20261115041504';
 import { projectToScreen } from '../vehicles/hud.js?v=20261115041504';
 import { viewOf, viewsOf, viewLookDir } from '../vehicles/views.js?v=20261115041504';
 import { gunSeat, loaderSeat } from '../vehicles/crew.js?v=20261115041504';
-import { equipTank, registerAmmo, KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from '../vehicles/psim/ammo.js?v=20261115041504';
+import { equipTank, registerAmmo, rackFor, KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from '../vehicles/psim/ammo.js?v=20261115041504';
 import { installHooks } from '../vehicles/psim/hooks.js?v=20261115041504';
 import { TankCrew, EnemyTank, TARGET_LABEL, targetPoint, bearingWord, roundRange } from '../vehicles/psim/crew-ai.js?v=20261115041504';
 import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplacement.js?v=20261115041504';
@@ -44,10 +44,12 @@ export class PanzerMode extends BaseMode {
     this.respawnDelay = 99;
     // Optionen: Lobby (settings.modeOptions.panzer) + ?mopt= + eigene URL-Parameter
     let raw = {};
-    try { raw = { ...((G.settings.get('modeOptions') || {})[modeId] || {}) }; } catch { raw = {}; }
+    // optKey: Panzer-Kampagne (campaign/panzer/mode.js) merkt Rolle/Spielart unter einem eigenen Schlüssel
+    const optKey = opts.optKey || modeId;
+    try { raw = { ...((G.settings.get('modeOptions') || {})[optKey] || {}) }; } catch { raw = {}; }
     const P = G.params && typeof G.params.get === 'function' ? G.params : null;
     if (P && P.get('mopt')) raw = { ...raw, ...parseModeOptions(P.get('mopt')) };
-    const o = modeOptionValues(modeId, raw);
+    const o = modeOptionValues('panzer', raw);
     if (P) {
       if (P.get('sim') === '1') o.stil = 'simulation'; else if (P.get('sim') === '0' || P.get('arcade') === '1') o.stil = 'arcade';
       const r = ROLE_ALIAS[(P.get('rolle') || '').toLowerCase()]; if (r) o.rolle = r;
@@ -119,32 +121,60 @@ export class PanzerMode extends BaseMode {
     void G;
   }
 
-  _setup() {
-    const G = this.G, sys = G.vehicles, W = G.world;
-    if (!sys) return;
+  /** Fahrzeugsystem vorbereiten: Kartenpanzer räumen, Stellungstypen anlegen. → sys | null */
+  _prepSystem() {
+    const G = this.G, sys = G.vehicles;
+    if (!sys) return null;
     if (!sys.attached) sys.attach(G);
-    if (!sys.attached) return;
+    if (!sys.attached) return null;
     sys.civilOnly = false;
     registerEmplacements();
     // Kartenpanzer entfernen (Stellplätze ohne Wiedererscheinen) – der Modus stellt seine eigenen Kräfte
     sys.spawns = (sys.spawns || []).filter((sp) => VEHICLES[sp.type] && VEHICLES[sp.type].civil);
     for (const v of [...sys.list]) if (!v.def.civil) { try { sys.removeVehicle(v); } catch { /* */ } }
-    // Typen
-    const era0 = this.cfg.panzer && this.cfg.panzer !== 'karte' ? null : (G.match && G.match.tankEra) || 'karte';
-    const type = this.cfg.panzer && this.cfg.panzer !== 'karte' && VEHICLES[this.cfg.panzer] ? this.cfg.panzer : tankTypeFor(era0, G.match && G.match.mapId, 'A');
-    const era = eraOf(VEHICLES[type]);
-    const E = TANK_ERAS[era] || TANK_ERAS.modern;
-    const foeTypes = [...new Set([E.B, E.B2, E.A, E.A2])].filter((t) => t && VEHICLES[t] && VEHICLES[t].drive === 'tracked' && t !== 'spz');
-    try { prepareVehicleModels([...new Set([type, ...foeTypes])], ['A', 'B'], sys.quality); } catch (err) { console.warn('[Panzer] Modelle', err); }
-    // Aufstellung: eigene Basis (Team A) und Feindlinie zwischen den Basen
+    return sys;
+  }
+
+  /** Eigene Basis (Team A) und Feindbasis (B) der Karte → { A, B } (Mittel der Spawnpunkte). */
+  _bases() {
+    const W = this.G.world;
     const avg = (list) => { const p = new THREE.Vector3(); if (!list || !list.length) return null; for (const s of list) p.add(s.position); return p.multiplyScalar(1 / list.length); };
     const center = W.bounds ? W.bounds.getCenter(new THREE.Vector3()) : new THREE.Vector3();
     const A = avg(W.spawns && W.spawns.A) || center.clone().add(_a.set(-150, 0, 0));
     const B = avg(W.spawns && W.spawns.B) || center.clone().add(_a.set(150, 0, 0));
     this.baseA = A; this.baseB = B;
+    return { A, B };
+  }
+
+  /** Feindtypen passend zur Generation des eigenen Panzers (KP-68: Kalter Krieg, nicht die modernen). */
+  _foeTypes(type) {
+    const D = VEHICLES[type];
+    const E = TANK_ERAS[D && D.era] || TANK_ERAS[eraOf(D)] || TANK_ERAS.modern;
+    return [...new Set([E.B, E.B2, E.A, E.A2])].filter((t) => t && VEHICLES[t] && VEHICLES[t].drive === 'tracked' && t !== 'spz');
+  }
+
+  _setup() {
+    const G = this.G, sys = this._prepSystem();
+    if (!sys) return;
+    // Typen
+    const era0 = this.cfg.panzer && this.cfg.panzer !== 'karte' ? null : (G.match && G.match.tankEra) || 'karte';
+    const type = this.cfg.panzer && this.cfg.panzer !== 'karte' && VEHICLES[this.cfg.panzer] ? this.cfg.panzer : tankTypeFor(era0, G.match && G.match.mapId, 'A');
+    const foeTypes = this._foeTypes(type);
+    try { prepareVehicleModels([...new Set([type, ...foeTypes])], ['A', 'B'], sys.quality); } catch (err) { console.warn('[Panzer] Modelle', err); }
+    // Aufstellung: eigene Basis (Team A) und Feindlinie zwischen den Basen
+    const { A, B } = this._bases();
     const spot = sys.findSpot(A, type, { avoidSpawns: true, toward: B, maxR: 60 }) || { position: A.clone(), yaw: Math.atan2(-(B.x - A.x), -(B.z - A.z)) };
-    const tank = sys.spawnVehicle(type, spot.position, spot.yaw, 'A');
-    if (!tank) { console.warn('[Panzer] Panzer konnte nicht erscheinen'); return; }
+    if (!this._spawnOwn(type, spot.position, spot.yaw)) return;
+    this._spawnForces(type, foeTypes, A, B);
+    this._hooks();
+    this._intro();
+  }
+
+  /** Eigener Panzer mit KI-Besatzung und Spieler im gewählten Platz. → Fahrzeug | null */
+  _spawnOwn(type, position, yaw) {
+    const G = this.G, sys = G.vehicles;
+    const tank = sys.spawnVehicle(type, position, yaw, 'A');
+    if (!tank) { console.warn('[Panzer] Panzer konnte nicht erscheinen'); return null; }
     this.tank = tank;
     equipTank(tank);
     // Besatzung (Bots) in alle Plätze außer dem des Spielers
@@ -177,7 +207,13 @@ export class PanzerMode extends BaseMode {
     this._ownDef(tank);
     // Spieler einsetzen
     this._enterPlayer();
-    // Feindkräfte
+    return tank;
+  }
+
+  /** Zufällige Feindkräfte zwischen den Basen (freier Modus; die Kampagne stellt ihre Kräfte selbst). */
+  _spawnForces(type, foeTypes, A, B) {
+    const G = this.G, sys = G.vehicles;
+    const era = eraOf(VEHICLES[type]);
     const F = { ...(FORCES[this.cfg.gegner] || FORCES.mittel) };
     if (sys.quality === 'low') { F.tanks = Math.min(F.tanks, 2); F.pak = Math.min(F.pak, 1); F.bunker = Math.min(F.bunker, 1); }
     const dir = _b.copy(B).sub(A).setY(0);
@@ -193,37 +229,54 @@ export class PanzerMode extends BaseMode {
     const width = Math.min(260, L * 0.8);
     for (let i = 0; i < F.pak; i++) {
       const s2 = place(wk1 ? 0.62 : 0.7 + Math.random() * 0.08, lat(i, F.pak, width), 'psim_pak');
-      const e = spawnEmplacement(sys, 'psim_pak', s2.position, s2.yaw, 'B', { ammoId: registerAmmo(foeTypes[0])[0] });
-      this._emplCrew(e);
-      this.empl.push(e);
+      this.spawnEmpl('pak', s2.position, s2.yaw, 'B', { ammoFrom: foeTypes[0] });
     }
     for (let i = 0; i < F.bunker; i++) {
       const s2 = place(0.78 + Math.random() * 0.08, lat(i, F.bunker, width * 0.7), 'psim_bunker');
-      const e = spawnEmplacement(sys, 'psim_bunker', s2.position, s2.yaw, 'B');
-      this._emplCrew(e);
-      this.empl.push(e);
+      this.spawnEmpl('bunker', s2.position, s2.yaw, 'B');
     }
     for (let i = 0; i < F.tanks; i++) {
       const ft = foeTypes[i % foeTypes.length];
       const s2 = place(0.82 + Math.random() * 0.12, lat(i, F.tanks, width), ft);
-      const v = sys.spawnVehicle(ft, s2.position, s2.yaw, 'B');
-      if (!v) continue;
-      equipTank(v);
-      this._ownDef(v);
-      crewOf(v);
-      const [bot] = G.bots.spawnBots({ allies: 0, enemies: 1, difficulty: G.match.difficulty, modeId: 'panzer' }) || [];
-      if (!bot) continue;
-      bot._psim = { tankCrew: true };
-      if (!G.actors.includes(bot)) G.actors.push(bot);
-      G.spawnActor(bot, { position: v.position.clone().add(_a.set(3, 0, 0)), yaw: 0 });
-      try { sys.enter(bot, v, 0); } catch (err) { console.warn('[Panzer] Feindbesatzung', err); }
-      this.enemies.push(new EnemyTank(this, v, bot, { post: s2.position.clone() }));
+      this.spawnTank(ft, s2.position, s2.yaw, 'B', { post: s2.position.clone() });
     }
     this.targetsTotal = this.enemies.length + this.empl.length;
     // Verteidigungsposten der Infanterie (Lobby-Gegner) an den Stellungen
     this.posts = this.empl.map((e) => e.position.clone().addScaledVector(_c.set(Math.sin(e.yaw), 0, Math.cos(e.yaw)), 6));
-    this._hooks();
-    this._intro();
+  }
+
+  /**
+   * KI-Panzer (Feind B oder Verbündeter A) mit einem Bot am Steuer (EnemyTank-KI: Ziele suchen, richten, Stellung).
+   * o: { post, route: [Vector3…], name, hold } → EnemyTank | null (Feinde landen in this.enemies, Verbündete in this.friends)
+   */
+  spawnTank(type, position, yaw, team = 'B', o = {}) {
+    const G = this.G, sys = G.vehicles;
+    try { prepareVehicleModels([type], [team], sys.quality); } catch { /* bei Bedarf */ }
+    const v = sys.spawnVehicle(type, position, yaw, team);
+    if (!v) return null;
+    equipTank(v);
+    this._ownDef(v);
+    crewOf(v);
+    const [bot] = G.bots.spawnBots({ allies: team === 'A' ? 1 : 0, enemies: team === 'B' ? 1 : 0, difficulty: G.match.difficulty, modeId: 'panzer' }) || [];
+    if (!bot) { sys.removeVehicle(v); return null; }
+    bot._psim = { tankCrew: true };
+    if (o.name) { bot.name = o.name; try { const pl = G.bots._plates && G.bots._plates.get(bot); if (pl && pl.setName) pl.setName(o.name); } catch { /* */ } }
+    if (!G.actors.includes(bot)) G.actors.push(bot);
+    G.spawnActor(bot, { position: v.position.clone().add(_a.set(3, 0, 0)), yaw: 0 });
+    try { sys.enter(bot, v, 0); } catch (err) { console.warn('[Panzer] Panzerbesatzung', err); }
+    const e = new EnemyTank(this, v, bot, { post: o.post || position.clone(), route: o.route || null, team, hold: !!o.hold, side: o.side || 1 });
+    if (team === 'B') this.enemies.push(e); else (this.friends || (this.friends = [])).push(e);
+    return e;
+  }
+
+  /** Feste Stellung (pak, bunker, funk, lager, bruecke) mit Bedienung (pak/bunker). → Emplacement */
+  spawnEmpl(kind, position, yaw, team = 'B', { crew = true, ammoFrom = null } = {}) {
+    const sys = this.G.vehicles;
+    const ammoType = ammoFrom || (this.tank ? this._foeTypes(this.tank.type)[0] : 'mbt');
+    const e = spawnEmplacement(sys, `psim_${kind}`, position, yaw, team, kind === 'pak' ? { ammoId: registerAmmo(ammoType)[0] } : {});
+    if (crew && (kind === 'pak' || kind === 'bunker')) this._emplCrew(e);
+    this.empl.push(e);
+    return e;
   }
 
   /** Datenkopie je Fahrzeug (Schwenkgeschwindigkeit nach Turmantrieb/Schaden), Rest über den Prototyp. */
@@ -231,6 +284,8 @@ export class PanzerMode extends BaseMode {
     if (v._psimBase) return;
     v._psimBase = v.def;
     v.def = Object.create(v.def);
+    // Gestell-Sollbestand in Modus-Munition: sonst füllt die Versorgung (resupply.js) mit den Grundsorten PG/SG auf
+    if (v._psimAmmo) v.def.ammo = rackFor(v.type);
   }
 
   _emplCrew(e) {

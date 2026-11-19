@@ -11,6 +11,7 @@ import { CAMPAIGN_DIFF } from './director.js?v=20261115041504';
 import { missionConfig } from './mode.js?v=20261115041504';
 import { ensureCampaignStyles } from './ui.js?v=20261115041504';
 import { textToVisemes, sampleMouth } from './lipsync.js?v=20261115041504';
+import { PanzerCampaignPane } from './panzer/menu.js?v=20261115041504'; // Panzer-Kampagne „Eisenwind“ (Umschalter oben)
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SPEEDS = [['langsam', 'Langsam'], ['normal', 'Normal'], ['schnell', 'Schnell']];
@@ -64,6 +65,9 @@ const CSS = `
 .kc-pane .kc-show span { font-size: 12px; padding: 3px 8px; border: 1px solid var(--np-line, rgba(233,230,223,.12)); background: rgba(10,11,13,.5); color: #dcd8cf; }
 .kc-pane .kc-show span b { color: var(--np-gold, #ffc23d); font-weight: 600; margin-right: 4px; }
 .kc-pane .kc-hero .kc-train { margin-left: 4px; }
+.kc-which { display: flex; gap: 6px; margin: 0 2px 10px; flex-wrap: wrap; }
+.kc-which button { min-height: 42px; padding: 0 16px; border: 1px solid var(--np-line, rgba(233,230,223,.12)); background: rgba(10,11,13,.6); color: inherit; font: inherit; font-size: 14px; letter-spacing: .04em; cursor: pointer; }
+.kc-which button[aria-pressed="true"] { border-color: var(--np-signal, #ff5b1f); background: rgba(255,91,31,.16); }
 @media (max-width: 760px), (max-height: 520px) {
   .kc-pane { grid-template-columns: 1fr; gap: 12px; }
   .kc-pane .kc-hero .kc-prog { margin-left: 0; text-align: left; }
@@ -92,6 +96,8 @@ export class CampaignPane {
     this.el = null;
     this._off = null;
     this._demo = 0;
+    this.which = 'infanterie'; // 'infanterie' | 'panzer'
+    this.pz = new PanzerCampaignPane(this);
   }
 
   _unlocked(id) { return !!(this.G.debug || this.store.unlocked(id)); }
@@ -124,6 +130,8 @@ export class CampaignPane {
     const b = e.target.closest('button');
     if (!b || b.disabled || !this.el) return;
     const ds = b.dataset;
+    if (ds.kcWhich) { this.which = ds.kcWhich; this.menus.sound('click'); this.render(); return; }
+    if (this.which === 'panzer' && this.pz.click(b)) return;
     if (ds.kcSel) { this.sel = ds.kcSel; this.menus.sound('click'); this.render(); return; }
     if (ds.kcDiff) { this.store.setDiff(ds.kcDiff); this.menus.sound('click'); this.render(); return; }
     if (ds.kcSpeed) { this.store.setSpeed(ds.kcSpeed); this.menus.sound('click'); this.render(); this._previewMouth(); return; }
@@ -134,6 +142,7 @@ export class CampaignPane {
 
   /** Startet die gewählte Mission (fromCheckpoint: ab gespeichertem Checkpoint). */
   start(fromCheckpoint = false) {
+    if (this.which === 'panzer') return this.pz.start(fromCheckpoint);
     const m = MISSIONS[this.sel];
     if (!m || !this._unlocked(m.id) || !this.menus.onStart) { this.menus.sound('error'); return false; }
     const st = this.store.mission(m.id);
@@ -147,6 +156,7 @@ export class CampaignPane {
 
   /** Fußknopf-Beschriftung (lobby._renderStart). */
   footLabel() {
+    if (this.which === 'panzer') return this.pz.footLabel();
     const m = MISSIONS[this.sel];
     if (!m) return 'Mission starten';
     return m.tutorial ? 'Ausbildung starten' : `Mission ${m.number} starten`;
@@ -191,6 +201,12 @@ export class CampaignPane {
   render() {
     const el = this.el;
     if (!el) return;
+    const which = `<div class="kc-which" role="tablist"><button type="button" data-kc-which="infanterie" aria-pressed="${this.which !== 'panzer'}">Stille Grenze · Infanterie</button><button type="button" data-kc-which="panzer" aria-pressed="${this.which === 'panzer'}">Eisenwind · Panzer</button></div>`;
+    if (this.which === 'panzer') {
+      el.innerHTML = which + this.pz.html();
+      if (this.lobby && typeof this.lobby._renderStart === 'function') this.lobby._renderStart();
+      return;
+    }
     const c = this.store.get();
     const done = this.store.doneCount();
     const resume = this.store.resumeTarget();
@@ -228,7 +244,7 @@ export class CampaignPane {
     const hours = (TOTAL_MINUTES / 60).toFixed(1).replace('.', ',');
     const show = this._showcase(outSel);
     const tut = MISSION_ORDER.find((id) => MISSIONS[id].tutorial);
-    el.innerHTML = `<div class="kc-pane">
+    el.innerHTML = `${which}<div class="kc-pane">
       <section class="kc-hero">
         <div><small>Kampagne</small><h2>${esc(CAMPAIGN.title)}</h2><p>${esc(CAMPAIGN.summary)}</p></div>
         <div class="kc-prog"><small>Fortschritt</small><b>${storyDone} von ${storyTotal} Missionen</b><span class="kc-hint">${MISSION_ORDER.length} Kapitel spielbar · ca. ${hours} h Spielzeit</span><i><u style="transform:scaleX(${(storyDone / Math.max(1, storyTotal)).toFixed(3)})"></u></i></div>

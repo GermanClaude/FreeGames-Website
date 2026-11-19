@@ -22,8 +22,8 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) * 1.15;
 
-export const TARGET_LABEL = { panzer: 'Panzer', pak: 'Pak', bunker: 'Bunker', infanterie: 'Infanterie', panzerabwehr: 'Panzerabwehrtrupp', fahrzeug: 'Fahrzeug' };
-const PRIO = { panzer: 6, pak: 5, panzerabwehr: 4, bunker: 3, fahrzeug: 2.5, infanterie: 2 };
+export const TARGET_LABEL = { panzer: 'Panzer', pak: 'Pak', bunker: 'Bunker', infanterie: 'Infanterie', panzerabwehr: 'Panzerabwehrtrupp', fahrzeug: 'Fahrzeug', funk: 'Funkstelle', lager: 'Nachschublager', bruecke: 'Brücke' };
+const PRIO = { panzer: 6, pak: 5, panzerabwehr: 4, bunker: 3, fahrzeug: 2.5, infanterie: 2, funk: 1.5, lager: 1.2, bruecke: 1 };
 
 /** Richtung relativ zur Wanne als Wort. yaw positiv = links. */
 export function bearingWord(rel) {
@@ -91,10 +91,10 @@ export function ammoForTarget(v, t) {
   const has = (k) => !!idFor(v, k) && v.gun && v.gun.rack[idFor(v, k)] > 0;
   const pick = (...ks) => ks.find(has) || ks.find((k) => !!idFor(v, k)) || null;
   const kind = t ? t.kind : 'panzer';
-  if (kind === 'panzer') return pick('wucht', 'pzgr', 'mz', 'hl');
-  if (kind === 'pak' || kind === 'bunker' || kind === 'fahrzeug') return pick('spreng', 'mz', 'hl', 'pzgr');
-  if (t && t.dist < (idFor(v, 'kan') ? 420 : 200)) return pick('kan', 'kart', 'spreng', 'mz');
-  return pick('spreng', 'mz', 'pzgr');
+  if (kind === 'panzer') return pick('lfk', 'wucht', 'tsg', 'pzgr', 'mz', 'hl');
+  if (kind === 'pak' || kind === 'bunker' || kind === 'fahrzeug' || kind === 'funk' || kind === 'lager' || kind === 'bruecke') return pick('spreng', 'qk', 'mz', 'hl', 'pzgr');
+  if (t && t.dist < (idFor(v, 'kan') ? 420 : 200)) return pick('kan', 'kart', 'spreng', 'qk', 'mz');
+  return pick('spreng', 'qk', 'mz', 'pzgr');
 }
 
 /* ====================================================================== eigene Besatzung */
@@ -502,8 +502,10 @@ export class TankCrew {
 /* ====================================================================== Feindpanzer */
 
 export class EnemyTank {
-  constructor(mode, v, bot, { post = null, route = null } = {}) {
+  constructor(mode, v, bot, { post = null, route = null, team = 'B', hold = false, side = 1 } = {}) {
     this.mode = mode; this.G = mode.G; this.v = v; this.bot = bot;
+    // team 'A': verbündeter KI-Panzer (Panzer-Kampagne) – gleiche KI, folgt der Route bzw. dem Spielerpanzer
+    this.team = team; this.hold = hold; this.side = side;
     this.post = post; this.route = route || [];
     this.leg = 0;
     this.known = new Map(); this.targets = [];
@@ -527,7 +529,7 @@ export class EnemyTank {
       this.scanT = 0.7;
       const range = (v.def.era || 'modern') === 'modern' ? 2600 : 1200;
       _c.copy(v.body.pos); _c.y += 1.6;
-      this.targets = scanTargets(G, _c, range, 'B', this.known, 0.7, { maxLos: 10, vehicle: v });
+      this.targets = scanTargets(G, _c, range, this.team, this.known, 0.7, { maxLos: 10, vehicle: v });
       const tank = this.targets.find((t) => t.kind === 'panzer' || t.kind === 'fahrzeug');
       const nt = tank || this.targets.find((t) => t.dist < 500) || null;
       if (nt && (!this.target || nt.ent !== this.target.ent)) { this.target = nt; this.aimT = 0; }
@@ -546,9 +548,13 @@ export class EnemyTank {
         const side = _a.set(Math.cos(v.body.yaw()), 0, -Math.sin(v.body.yaw())).multiplyScalar((Math.random() < 0.5 ? -1 : 1) * 18);
         v.driveTo(bot, v.position.clone().add(side), { arriveRadius: 4, maxSpeed: 5 });
       } else if (it.arrived || !it.path) v.stop(bot);
+    } else if (this.hold && !this.route.length) {
+      if (this.state !== 'halten') { this.state = 'halten'; v.stop(bot); }
     } else {
       if (this.state !== 'fahrt') { this.state = 'fahrt'; this._next(); }
       if (it.arrived) { this.leg++; this._next(); }
+      // Verbündete ohne Route: dem Spielerpanzer folgen (neues Ziel alle paar Sekunden)
+      else if (this.team !== 'B' && this.leg >= this.route.length && (this._followT = (this._followT || 0) - dt) <= 0) { this._followT = 4; this._next(); }
     }
     // Waffe
     if (!t || !gunOk) { if (!t) v.aimAt(bot, null, false); return; }
@@ -585,6 +591,16 @@ export class EnemyTank {
   _next() {
     const v = this.v, bot = this.bot;
     let goal = this.route[this.leg] || null;
+    if (!goal && this.team !== 'B') {
+      // Verbündeter: seitlich hinter dem Spielerpanzer (Abstand ~30 m), steht still, wenn er schon dort ist
+      const P = this.mode.tank;
+      if (!P || !P.alive) { v.stop(bot); return; }
+      const y = P.body.yaw(), side = this.side;
+      goal = P.position.clone().add(_a.set(Math.sin(y) * 22 + Math.cos(y) * 14 * side, 0, Math.cos(y) * 22 - Math.sin(y) * 14 * side));
+      if (goal.distanceTo(v.position) < 12) { v.stop(bot); return; }
+      v.driveTo(bot, goal, { arriveRadius: 8, maxSpeed: 6 });
+      return;
+    }
     if (!goal) {
       const P = this.mode.tank;
       if (P && P.alive && Math.random() < 0.6) goal = P.position.clone().lerp(this.post || v.position, 0.55);

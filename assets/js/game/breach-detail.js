@@ -7,11 +7,16 @@
 //   zum Liegeplatz (≈ 0,3–0,9 s), statt dort aufzutauchen. Auf „niedrig“ sofort am Platz.
 // • Schuttkegel als Deckung: Unter großen Breschen (≥ 0,6 m²) liegt innen ein flacher Kegel (≤ 0,42 m, unter der
 //   Stufenhöhe – begehbar), der Kugeln aufhält (building.addSolid, je Karte höchstens COVER_MAX).
-// Nur Optik + Deckung; Kosten: ein InstancedMesh (Zylinder, 6 Seiten) je Match, Arbeit verteilt auf update().
+// • Bruchkante (zer2 19.11.): Am Rand jeder größeren Bresche stehen Bruchstücke in die Öffnung – Steine/Ziegel in
+//   Lagen durch die Wandstärke (Mauerwerk), Spreißel und Brettstümpfe (Holz), aufgebogene, gerissene Blechlappen
+//   (Blech). Zeigt die Materialstärke statt eines papierdünnen Schnitts. Ab „mittel“, ein InstancedMesh (Quader).
+// Nur Optik + Deckung; Kosten: zwei InstancedMeshes (Zylinder, Quader) je Match, Arbeit verteilt auf update().
 import * as THREE from 'three';
 import { worldPartsFrom } from './building.js?v=20261115041504';
 
 const REBAR_MAX = { low: 0, medium: 420, high: 900, ultra: 1400 };
+const EDGE_MAX = { low: 0, medium: 600, high: 1400, ultra: 2000 };
+const EDGE_PER = 170; // höchstens je Bresche
 const COVER_MAX = 24;
 const SP = 0.2;          // Mattenraster (m)
 const RB_R = 0.007;      // Stabradius (Ø 14 mm)
@@ -20,6 +25,9 @@ const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3
 const _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _m = new THREE.Matrix4(), _up = new THREE.Vector3(0, 1, 0);
 const _tx = new THREE.Vector3(), _ty = new THREE.Vector3();
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+// Bruchkante je Stil (0 Holz, 1 Beton, 2 Putz, 3 Blech, 7 Ziegel): Abstand der Stücke entlang des Rands (m)
+const EDGE_STYLE = { 0: 0.06, 1: 0.13, 2: 0.15, 3: 0.12, 7: 0.15 };
+const _e1 = new THREE.Vector3(), _e2 = new THREE.Vector3(), _e3 = new THREE.Vector3(), _ep = new THREE.Vector3(), _em = new THREE.Matrix4(), _ec = new THREE.Color();
 
 function rng(seed) {
   let s = (Math.floor(seed * 1e5) * 2654435761) >>> 0 || 7;
@@ -51,13 +59,31 @@ export class BreachDetail {
       this._rbN = 0;
       if (G.scene) G.scene.add(this.rebar);
     }
-    this.stats = { rebar: 0, covers: 0, falling: 0 };
+    const ecap = EDGE_MAX[q] ?? 600;
+    this.edge = null;
+    if (ecap > 0) {
+      const geo = new THREE.BoxGeometry(1, 1, 1);
+      const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.88, metalness: 0.05, name: 'bruchkante' });
+      mat.userData.surface = 'concrete';
+      this.edge = new THREE.InstancedMesh(geo, mat, ecap);
+      this.edge.name = 'bruchkante';
+      this.edge.count = 0;
+      this.edge.frustumCulled = false;
+      this.edge.castShadow = q === 'high' || q === 'ultra';
+      this.edge.receiveShadow = true;
+      this.edge.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      this.edge.setColorAt(0, new THREE.Color(1, 1, 1));
+      this._egN = 0;
+      this._egOwner = [];
+      if (G.scene) G.scene.add(this.edge);
+    }
+    this.stats = { rebar: 0, covers: 0, falling: 0, edge: 0 };
   }
 
   /** Bresche h hat sich geändert (Umriss gewachsen): Stahl neu, sobald Zeit ist. */
   touch(h) {
     if (!h || !h.cut || h.dead) return;
-    if (this.rebar && h.style === 1 && (h.tn || 0) >= 0.1) this._dirty.add(h);
+    if ((this.rebar && h.style === 1 && (h.tn || 0) >= 0.1) || (this.edge && EDGE_STYLE[h.style])) this._dirty.add(h);
   }
 
   // --- Bewehrung ----------------------------------------------------------------------------------------------
@@ -84,8 +110,9 @@ export class BreachDetail {
   }
 
   _build(h) {
+    this._buildEdge(h);
     const M = this.rebar, H = this.H;
-    if (!M || h.dead || !h.prof) return;
+    if (!M || h.dead || !h.prof || h.style !== 1 || !((h.tn || 0) >= 0.1)) return;
     const A = this._area(h);
     if (h._rbA && A < h._rbA * 1.15) return;
     h._rbA = A;
@@ -146,8 +173,126 @@ export class BreachDetail {
     this.stats.rebar = Math.min(M.instanceMatrix.count, this._rbN);
   }
 
+  // --- Bruchkante ---------------------------------------------------------------------------------------------
+
+  _egSet(h, pos, quat, scl, col) {
+    const M = this.edge, cap = M.instanceMatrix.count;
+    const slot = this._egN % cap;
+    const prev = this._egOwner[slot];
+    if (prev && prev !== h && prev._eg) { const i = prev._eg.indexOf(slot); if (i >= 0) prev._eg.splice(i, 1); }
+    this._egOwner[slot] = h;
+    _em.compose(pos, quat, scl);
+    M.setMatrixAt(slot, _em);
+    M.setColorAt(slot, col);
+    h._eg.push(slot);
+    this._egN++;
+  }
+
+  /**
+   * Bruchstücke entlang des Umrisses (Rand bei jeder Tiefe nach _cutR, also auch die Aufweitung hinten). Gleiche
+   * Zufallsfolge aus Seed und Lage → auf allen Geräten dieselbe Kante. Neu, wenn die Fläche um > 15 % wächst.
+   */
+  _buildEdge(h) {
+    const M = this.edge, H = this.H, step = EDGE_STYLE[h.style];
+    if (!M || !step || h.dead || !h.prof) return;
+    let R = 0; for (const r of h.prof) R = Math.max(R, r);
+    if (R < 0.14) return;
+    const A = this._area(h);
+    if (h._egA && A < h._egA * 1.15) return;
+    h._egA = A;
+    for (const sl of h._eg || []) M.setMatrixAt(sl, ZERO);
+    h._eg = [];
+    H._frame(h.n, _tx, _ty);
+    const rnd = rng((h.seed || 0) * 1.7 + h.pos.x * 0.13 + h.pos.z * 0.29 + 0.5);
+    const tn = Math.max(0.004, h.tn), st = h.style;
+    const alb = h.alb || [0.3, 0.3, 0.3];
+    const L = Math.max(0.004, 0.2126 * alb[0] + 0.7152 * alb[1] + 0.0722 * alb[2]);
+    const cl = (x) => Math.max(0, Math.min(1, x));
+    // Farben (linear) passend zum Lochshader: Ziegel unter Putz, frischer Beton-/Steinbruch, helles Holz, Lack/Blank
+    const brick = [0.66 * cl(L * 1.45 + 0.1), 0.31 * cl(L * 1.45 + 0.1), 0.2 * cl(L * 1.45 + 0.1)];
+    const fresh = st === 1 ? [cl((alb[0] * 0.7 + L * 0.3) * 1.7), cl((alb[1] * 0.7 + L * 0.3) * 1.7), cl((alb[2] * 0.7 + L * 0.3) * 1.7)]
+      : st === 7 ? [cl(alb[0] * 2.0), cl(alb[1] * 1.7), cl(alb[2] * 1.5)]
+      : st === 0 ? [1.0 * cl(L * 2.4 + 0.05), 0.7 * cl(L * 2.4 + 0.05), 0.42 * cl(L * 2.4 + 0.05)] : alb;
+    const into = _e3.copy(h.n).negate(); // in die Wand / Wirkrichtung
+    let th = rnd() * 0.3, n = 0;
+    const per = st === 0 ? 1 : st === 3 ? 1 : Math.max(1, Math.min(4, Math.round(tn / 0.11)));
+    while (th < Math.PI * 2 && n < EDGE_PER) {
+      const c = Math.cos(th), sn = Math.sin(th);
+      const R0 = H._cutR(h, c, sn, 0);
+      if (!(R0 > 0.05)) { th += 0.2; continue; }
+      // radial nach innen (zur Mitte) und tangential in der Wandebene
+      const rx = -c, ry = -sn;
+      for (let k = 0; k < per && n < EDGE_PER; k++) {
+        if (st !== 0 && st !== 3 && rnd() < 0.35) continue;
+        const f = per > 1 ? (k + 0.2 + 0.6 * rnd()) / per : 0.15 + 0.7 * rnd();
+        const Rf = H._cutR(h, c, sn, f);
+        const depth = tn * f;
+        let sx, sy, sz, back = 0;
+        if (st === 3) {
+          // Blechlappen: am Rand angelenkt, ragt in die Öffnung und ist in Wirkrichtung umgebogen
+          const len = (0.06 + 0.18 * rnd()) * Math.min(1.6, 0.6 + R0 * 0.5), wid = step * (0.6 + 0.6 * rnd());
+          const bend = 0.5 + 1.0 * rnd(); // rad
+          const dirIn = _e1.set(0, 0, 0).addScaledVector(_tx, rx).addScaledVector(_ty, ry);
+          const d = _e2.copy(dirIn).multiplyScalar(Math.cos(bend)).addScaledVector(into, Math.sin(bend) * (rnd() < 0.8 ? 1 : -1)).normalize();
+          _ep.copy(h.pos).addScaledVector(_tx, c * Rf * 0.995).addScaledVector(_ty, sn * Rf * 0.995).addScaledVector(into, depth).addScaledVector(d, len * 0.5);
+          // Achsen: x tangential, y entlang d, z Blechdicke
+          const tg = _e1.set(0, 0, 0).addScaledVector(_tx, -sn).addScaledVector(_ty, c);
+          const zz = new THREE.Vector3().crossVectors(tg, d).normalize();
+          _m.makeBasis(tg, d, zz);
+          _q.setFromRotationMatrix(_m);
+          _q.multiply(new THREE.Quaternion().setFromAxisAngle(_up, (rnd() - 0.5) * 0.5));
+          _s.set(wid, len, 0.004);
+          const b = 0.7 + 0.35 * rnd(), bare = rnd() < 0.3;
+          _ec.setRGB((bare ? L * 2.2 : alb[0]) * b, (bare ? L * 2.2 : alb[1]) * b, (bare ? L * 2.2 : alb[2]) * b);
+          this._egSet(h, _ep, _q, _s, _ec);
+          n++;
+          continue;
+        }
+        if (st === 0) {
+          // Spreißel: dünn und lang, schräg in die Öffnung, in Wirkrichtung gebogen; ab und zu ein Brettstumpf
+          const stump = rnd() < 0.18;
+          const len = stump ? 0.08 + 0.12 * rnd() : 0.07 + 0.26 * rnd() * rnd() + 0.05;
+          const d = _e2.set(0, 0, 0).addScaledVector(_tx, rx * 0.55 + (rnd() - 0.5) * 0.5).addScaledVector(_ty, ry * 0.55 + (rnd() < 0.5 ? 0.5 : -0.5) * 0.6)
+            .addScaledVector(into, 0.25 + 0.6 * rnd()).normalize();
+          _ep.copy(h.pos).addScaledVector(_tx, c * Rf * 1.02).addScaledVector(_ty, sn * Rf * 1.02).addScaledVector(into, depth).addScaledVector(d, len * 0.42);
+          _q.setFromUnitVectors(_up, d);
+          _q.multiply(new THREE.Quaternion().setFromAxisAngle(_up, rnd() * 3.14));
+          const w = stump ? 0.04 + 0.05 * rnd() : 0.008 + 0.014 * rnd();
+          _s.set(w, len, stump ? Math.min(0.03, tn * 0.8) : w * (0.6 + 0.6 * rnd()));
+          const b = stump ? 0.55 + 0.25 * rnd() : 0.8 + 0.4 * rnd();
+          _ec.setRGB(fresh[0] * b, fresh[1] * b, fresh[2] * b);
+          this._egSet(h, _ep, _q, _s, _ec);
+          n++;
+          continue;
+        }
+        // Mauerwerk: Ziegel (Putz/Ziegel) in Lagen, waagerecht; Beton/Stein: kantige Brocken, verdreht
+        const brickLike = st === 2 || st === 7;
+        if (brickLike) _s.set(0.2 + 0.05 * rnd(), 0.065 + 0.01 * rnd(), Math.min(0.11, tn * 0.9) * (0.8 + 0.2 * rnd()));
+        else { const g = 0.05 + 0.1 * rnd() * (0.6 + Math.min(0.6, tn)); _s.set(g * (0.8 + 0.6 * rnd()), g * (0.6 + 0.5 * rnd()), g * (0.7 + 0.6 * rnd())); }
+        // halb in der Wand, halb in der Öffnung (sichtbar ist nur, was übersteht)
+        const radial = Math.max(_s.x * Math.abs(c), _s.y * Math.abs(sn)) * (0.15 + 0.35 * rnd());
+        _ep.copy(h.pos).addScaledVector(_tx, c * (Rf - radial)).addScaledVector(_ty, sn * (Rf - radial)).addScaledVector(into, Math.min(tn - _s.z * 0.45, Math.max(_s.z * 0.45, depth)));
+        if (brickLike) _ep.y = Math.round(_ep.y * 13.33) / 13.33 + 0.0375; // auf die Ziegelschichten (7,5 cm)
+        _m.makeBasis(_tx, _ty, h.n);
+        _q.setFromRotationMatrix(_m);
+        _q.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler((rnd() - 0.5) * (brickLike ? 0.25 : 1.2), (rnd() - 0.5) * (brickLike ? 0.3 : 1.2), (rnd() - 0.5) * (brickLike ? 0.35 : 1.4))));
+        const col = st === 2 ? (rnd() < 0.8 ? brick : fresh) : fresh, b = 0.72 + 0.4 * rnd();
+        _ec.setRGB(col[0] * b, col[1] * b, col[2] * b);
+        this._egSet(h, _ep, _q, _s, _ec);
+        n++;
+        back++;
+      }
+      th += (step * (0.7 + 0.6 * rnd())) / Math.max(0.15, R0);
+    }
+    M.count = Math.min(M.instanceMatrix.count, this._egN);
+    M.instanceMatrix.needsUpdate = true;
+    if (M.instanceColor) M.instanceColor.needsUpdate = true;
+    this.stats.edge = M.count;
+  }
+
   /** Bresche verschwunden (removeWhere): ihre Stäbe weg. */
   drop(h) {
+    if (this.edge && h && h._eg) { for (const sl of h._eg) this.edge.setMatrixAt(sl, ZERO); h._eg = []; this.edge.instanceMatrix.needsUpdate = true; }
     if (!this.rebar || !h || !h._rb) return;
     for (const sl of h._rb) this.rebar.setMatrixAt(sl, ZERO);
     h._rb = [];
@@ -234,5 +379,6 @@ export class BreachDetail {
     this.anim = [];
     this._dirty.clear();
     if (this.rebar) { this.rebar.removeFromParent(); this.rebar.geometry.dispose(); this.rebar.material.dispose(); this.rebar = null; }
+    if (this.edge) { this.edge.removeFromParent(); this.edge.geometry.dispose(); this.edge.material.dispose(); this.edge.dispose?.(); this.edge = null; }
   }
 }

@@ -62,7 +62,47 @@ function rngAt(p) {
   return () => { st = (st + 0x6d2b79f5) >>> 0; let t = st; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 const CUT_MIN_R = 0.03; // ab diesem Lochradius wird die Wand wirklich ausgeschnitten (echter Durchblick)
-const jag = (th, seed, amp) => 1 + amp * (0.55 * Math.sin(3 * th + seed * 1.7) + 0.3 * Math.sin(5 * th + seed * 2.9) + 0.15 * Math.sin(9 * th + seed * 4.3));
+// zer2 19.11.: amp = Zacken + Stil (JA): weiche Wellen + Bruchrand je Werkstoff – gleiche Formel wie npCutJag/npCutDet
+// (world/shading.js): Mauerwerk blockweise, Holz mit Spreißeln nach innen, Blech unregelmäßig gerissen
+const fr = (x) => x - Math.floor(x);
+const h1 = (i, s) => fr(Math.sin(i * 1.37 + s * 0.173) * 437.585);
+const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function cutDet(th, seed, st) {
+  const u = fr(th * 0.15915494 + 1);
+  if ((st > 0.5 && st < 2.5) || st > 6.5) {
+    const x = u * 26, i = Math.floor(x), f = x - i;
+    const blk = h1(i, seed) + (h1((i + 1) % 26, seed) - h1(i, seed)) * ss(0.8, 1, f) - 0.5;
+    const x2 = u * 71, i2 = Math.floor(x2), f2 = x2 - i2;
+    const fine = h1(i2 + 100, seed) + (h1(((i2 + 1) % 71) + 100, seed) - h1(i2 + 100, seed)) * f2 - 0.5;
+    return blk * 0.13 + fine * 0.045;
+  }
+  if (st < 0.5) {
+    const x = u * 34, i = Math.floor(x), f = x - i;
+    const c = 0.3 + 0.4 * h1(i + 400, seed);
+    const sp = h1(i + 200, seed) > 0.5 ? (0.05 + 0.12 * h1(i + 300, seed)) * Math.pow(Math.max(0, 1 - Math.abs(f - c) / 0.18), 1.5) : 0;
+    const x2 = u * 61, i2 = Math.floor(x2), f2 = x2 - i2;
+    const fine = h1(i2 + 100, seed) + (h1(((i2 + 1) % 61) + 100, seed) - h1(i2 + 100, seed)) * f2 - 0.5;
+    return fine * 0.04 - sp;
+  }
+  if (st > 2.5 && st < 3.5) {
+    const x = u * 13, i = Math.floor(x), f = x - i;
+    const lo = h1(i + 600, seed) + (h1(((i + 1) % 13) + 600, seed) - h1(i + 600, seed)) * f * f * (3 - 2 * f) - 0.5;
+    const x2 = u * 37, i2 = Math.floor(x2), f2 = x2 - i2;
+    const mid = h1(i2 + 100, seed) + (h1(((i2 + 1) % 37) + 100, seed) - h1(i2 + 100, seed)) * f2 - 0.5;
+    const x3 = u * 7, i3 = Math.floor(x3), f3 = x3 - i3;
+    const tear = h1(i3 + 500, seed) > 0.7 ? 0.07 * Math.max(0, 1 - Math.abs(f3 - 0.5) / 0.06) : 0;
+    return lo * 0.1 + mid * 0.05 + tear;
+  }
+  const x2 = u * 41, i2 = Math.floor(x2), f2 = x2 - i2;
+  return (h1(i2 + 100, seed) + (h1(((i2 + 1) % 41) + 100, seed) - h1(i2 + 100, seed)) * f2 - 0.5) * 0.05;
+}
+const jag = (th, seed, amp) => {
+  const st = Math.floor(amp); amp -= st;
+  return 1 + amp * (0.55 * Math.sin(3 * th + seed * 1.7) + 0.3 * Math.sin(5 * th + seed * 2.9) + 0.15 * Math.sin(9 * th + seed * 4.3)) + cutDet(th, seed, st);
+};
+/** Zacken + Stil für jag()/npCutJag (Stil im ganzzahligen Teil) */
+const JA = (st) => JAG[st] + st;
+const DET_MAX = 0.1; // größter Ausschlag des Bruchrands nach außen (Hüllradius)
 // Synchrone Breschen (Panzer, 21.10.): Oberfläche je Stil, falls die Wand vor Ort nicht ermittelt werden kann
 const STYLE_SURF = ['wood', 'concrete', 'plaster', 'metal', 'glass', 'dirt', 'fabric', 'brick'];
 // Staubfarbe der Bresche je Stil (Holz bräunlich, Mauerwerk grau-beige, Ziegel rötlich)
@@ -294,6 +334,7 @@ export class BulletHoles {
       h.depth = Math.min(thick, h.depth + pen * 0.6);
     }
     if (backN && !h.backN) h.backN = backN;
+    h.soot = Math.min(1, (h.soot || 0) + Math.min(0.8, 0.25 + 0.2 * Q) * Math.min(1, s * 0.6)); // zer2: Ruß der Sprengung
     if (!flat && thick !== Infinity && pen >= thick) {
       const rb = Math.min(1.2, 0.06 + 0.16 * Math.sqrt(s / res));
       h.depth = thick;
@@ -400,7 +441,7 @@ export class BulletHoles {
     let m = 0;
     for (const r of h.prof) m = Math.max(m, r);
     h.r = m;
-    h.rc = m * (1 + JAG[h.style]) * 1.12 + 0.08;
+    h.rc = m * (1 + JAG[h.style] + DET_MAX) * 1.12 + 0.08;
     this._syncExit(h);
     if (this.detail) this.detail.touch(h);
     // groß genug für einen Menschen? → Navigation prüft (destruction.js _navLink)
@@ -418,7 +459,7 @@ export class BulletHoles {
       ex.seed = h.seed;
       ex.entry = h;
       ex.r = h.r * h.kb;
-      ex.rc = ex.r * (1 + JAG[h.style]) * 1.12 + 0.08;
+      ex.rc = ex.r * (1 + JAG[h.style] + DET_MAX) * 1.12 + 0.08;
     } else ex.pos.copy(h.pos).addScaledVector(h.dir, h.thick === Infinity ? 0 : h.thick);
   }
 
@@ -428,7 +469,7 @@ export class BulletHoles {
     const u = ((th < 0 ? th + Math.PI * 2 : th) * CUT_K) / (Math.PI * 2);
     const k0 = Math.floor(u) % CUT_K, k1 = (k0 + 1) % CUT_K;
     let t = u - Math.floor(u); t = t * t * (3 - 2 * t);
-    return (h.prof[k0] + (h.prof[k1] - h.prof[k0]) * t) * jag(th, h.seed, JAG[h.style]) * (1 + (h.kb - 1) * f);
+    return (h.prof[k0] + (h.prof[k1] - h.prof[k0]) * t) * jag(th, h.seed, JA(h.style)) * (1 + (h.kb - 1) * f);
   }
 
   /** Punkt p relativ zum Durchbruch h: { x, y } in den Ausschnittachsen, hh Abstand vor der Vorderfläche. */
@@ -699,7 +740,7 @@ export class BulletHoles {
       A[o] = h.pos.x; A[o + 1] = h.pos.y; A[o + 2] = h.pos.z; A[o + 3] = h.tn;
       A[o + 4] = h.n.x; A[o + 5] = h.n.y; A[o + 6] = h.n.z; A[o + 7] = h.kb;
       A[o + 8] = _tx.x; A[o + 9] = _tx.y; A[o + 10] = _tx.z; A[o + 11] = h.seed;
-      A[o + 12] = J; A[o + 13] = h.r * h.kb * (1 + J) + 0.01; A[o + 14] = h.cm || 0.03; A[o + 15] = h.cmF || 0;
+      A[o + 12] = J + h.style; A[o + 13] = h.r * h.kb * (1 + J + DET_MAX) + 0.01; A[o + 14] = h.cm || 0.03; A[o + 15] = h.cmF || 0;
       for (let k = 0; k < CUT_K; k++) A[o + 16 + k] = h.prof[k];
     });
     setCutCount(on.length);
@@ -1021,7 +1062,7 @@ export class BulletHoles {
       slot = old.slot;
       if (old.viewSlot != null) this._slots[old.viewSlot] = null;
       old.dead = true;
-      if (old.cut) { this._cutDirty = true; this._cutList = this._cutList.filter((h) => !h.dead); }
+      if (old.cut) { this._cutDirty = true; this._cutList = this._cutList.filter((h) => !h.dead); if (this.detail) this.detail.drop(old); }
     } else slot = this._nextSlot++;
     const h = { pos: point.clone(), n: n.clone(), dir: dir.clone(), surface, style, r: 0.005, rc: 0.02, depth: 0.005, thick, through: false, hits: 1, slot, exit, seed: Math.random() * 100, behind: [0.02, 0.02, 0.02], exitHole: null, alb: alb.slice(0, 3) };
     this.holes.push(h);
@@ -1038,19 +1079,22 @@ export class BulletHoles {
     _m.makeBasis(_tx, _ty, n);
     _q.setFromRotationMatrix(_m);
     // Quad = Krater × Streckung (schräger Treffer: länglich entlang der Schussrichtung); Tiefen senkrecht zur Fläche
-    const el = this._elong(h), Q = h.rc * el, cz = Math.max(0.24, h.cos ?? 1);
+    // zer2: Durchbrüche bekommen einen Hof (Abplatzungen, Risse, Ruß) – Quad um 0,2–0,9 m größer
+    const cutR = h.cut ? h : h.exit && h.entry && h.entry.cut ? h.entry : null;
+    const hk = cutR ? (h.rc + Math.min(0.9, 0.2 + 0.35 * cutR.r)) / h.rc : 1;
+    const el = this._elong(h), Q = h.rc * el * hk, cz = Math.max(0.24, h.cos ?? 1);
     _s.setScalar(Q);
     _m.compose(_v.copy(h.pos).addScaledVector(n, 0.0015), _q, _s);
     _m.toArray(this.mesh.instanceMatrix.array, k * 16);
     const a = this.aHole.array, b = this.aHole2.array, c = this.aHole3.array, g = this.aHole6.array;
-    const hr = Math.min(0.95, h.r / h.rc);
+    const hr = Math.min(0.95, h.r / (h.rc * hk));
     const D = ((h.thick === Infinity ? Math.max(h.depth, 0.01) : h.depth) * cz) / Q;
     a[k * 4] = hr; a[k * 4 + 1] = D; a[k * 4 + 2] = h.through ? 1 : 0; a[k * 4 + 3] = h.style + (h.exit ? 10 : 0);
     b[k * 4] = h.seed; b[k * 4 + 1] = h.behind[0]; b[k * 4 + 2] = h.behind[1]; b[k * 4 + 3] = h.behind[2];
     // Kratertiefe: je Werkstoff, Austritt tiefer ausgebrochen, nie tiefer als das Loch selbst
     const S = SHAPE[h.style];
     const dc = S.dc * (h.exit ? 1.6 : 1) * (h.hits > 1 ? 1.15 : 1);
-    c[k * 4] = h.alb[0]; c[k * 4 + 1] = h.alb[1]; c[k * 4 + 2] = h.alb[2]; c[k * 4 + 3] = Math.min(dc / el, D * 0.85);
+    c[k * 4] = h.alb[0]; c[k * 4 + 1] = h.alb[1]; c[k * 4 + 2] = h.alb[2]; c[k * 4 + 3] = Math.min(dc / el / hk, D * 0.85);
     const e = this.aHole4.array, f = this.aHole5.array, cl = h.clip || [1, 1, 1, 1];
     for (let i = 0; i < 4; i++) e[k * 4 + i] = Math.min(4, cl[i] / Q);
     f[k * 2] = (h.kx || 0) * Q; f[k * 2 + 1] = (h.ky || 0) * Q;
@@ -1063,7 +1107,7 @@ export class BulletHoles {
     // Durchbruch aktiv (Wand im Weltshader ausgeschnitten): Feld in npCut + Seite (0 vorn, 1 Austritt), sonst −1
     const t7 = this.aHole7.array, cutH = h.exit ? h.entry : h;
     const on = !!(cutH && cutH.cutOn && !cutH.dead && cutH.cutSlot >= 0);
-    t7[k * 4] = on ? cutH.cutSlot : -1; t7[k * 4 + 1] = h.exit ? 1 : 0; t7[k * 4 + 2] = 0; t7[k * 4 + 3] = 0;
+    t7[k * 4] = on ? cutH.cutSlot : -1; t7[k * 4 + 1] = h.exit ? 1 : 0; t7[k * 4 + 2] = Math.min(1, (cutH ? cutH.soot || 0 : h.soot || 0) * (h.exit ? 0.45 : 1)); t7[k * 4 + 3] = 0;
     for (const [attr, w] of [[this.mesh.instanceMatrix, 16], [this.aHole, 4], [this.aHole2, 4], [this.aHole3, 4], [this.aHole4, 4], [this.aHole5, 2], [this.aHole6, 4], [this.aHole7, 4]]) {
       attr.addUpdateRange(k * w, w);
       attr.needsUpdate = true;
@@ -1241,7 +1285,7 @@ export class BulletHoles {
       if (!pred(h)) { keep.push(h); continue; }
       h.dead = true;
       if (h.cut) this._cutDirty = true;
-      if (h._rb && this.detail) this.detail.drop(h);
+      if ((h._rb || h._eg) && this.detail) this.detail.drop(h);
       if (h.viewSlot != null) this._slots[h.viewSlot] = null;
       _m.makeScale(0, 0, 0).toArray(this.mesh.instanceMatrix.array, h.slot * 16);
       this.mesh.instanceMatrix.addUpdateRange(h.slot * 16, 16);
@@ -1477,7 +1521,7 @@ export class BulletHoles {
   _newPlan(w, cp, shape, kb, opts) {
     const n = w.n, ax = new THREE.Vector3(), ay = new THREE.Vector3();
     this._frame(n, ax, ay);
-    const seed = _q3(rngAt(cp)() * 100), J = JAG[w.style];
+    const seed = _q3(rngAt(cp)() * 100), J = JA(w.style);
     const prof = new Float32Array(CUT_K);
     for (let k = 0; k < CUT_K; k++) prof[k] = shape((k / CUT_K) * Math.PI * 2);
     if (opts.exact) for (let i = 0; i < 64; i++) { const th = (i / 64) * Math.PI * 2, r = shape(th); this._cover(prof, Math.cos(th) * r, Math.sin(th) * r, seed, J); }
@@ -1499,7 +1543,7 @@ export class BulletHoles {
     this._frame(n, ax, ay);
     _wt.copy(cp).sub(h.pos);
     const ox = _wt.dot(ax), oy = _wt.dot(ay);
-    const J = JAG[h.style], seed = h.seed, kb = Math.max(h.kb, kbN);
+    const J = JA(h.style), seed = h.seed, kb = Math.max(h.kb, kbN);
     // Wanddicke: reicht die neue Wand (andere Schicht) tiefer, wird bis zu ihrer Rückseite ausgeschnitten
     const thick = Math.max(h.tn, Math.min(1.2, w.thick - hh));
     // Randpunkte [x, y, Aufweitung in ihrer Tiefe] relativ zur alten Mitte: hinten weitet der neue Umriss nur um
@@ -1596,18 +1640,20 @@ export class BulletHoles {
         const ax = new THREE.Vector3(), ay = new THREE.Vector3();
         this._frame(h.n, ax, ay);
         _wt.copy(h.pos).sub(p);
-        keep = this._rim(h.prof, h.seed, JAG[h.style], 1, _wt.dot(ax), _wt.dot(ay), 64);
+        keep = this._rim(h.prof, h.seed, JA(h.style), 1, _wt.dot(ax), _wt.dot(ay), 64);
         h.pos.copy(p);
         h.prof.fill(0);
       }
     }
     const kb = Number(m.kb);
     if (Number.isFinite(kb)) h.kb = Math.max(1, Math.min(1.4, kb));
+    // zer2: Ruß nach Wirkung (1 Spreng, 2 Wucht/Hohlladung, 4 Rammen mit Sprengung; 3 reines Rammen: nur Staub)
+    { const fk = m.fx | 0; h.fxK = Math.max(h.fxK | 0, fk); h.soot = Math.max(h.soot || 0, fk === 1 ? 0.95 : fk === 2 ? 0.55 : fk === 4 ? 0.7 : 0); }
     for (let k = 0; k < CUT_K; k++) {
       h.sprof[k] = Math.max(0, Math.min(BREACH_CAP, (Number(m.r[k]) || 0) / 100));
       h.prof[k] = Math.max(h.prof[k], h.sprof[k]);
     }
-    if (keep) for (const q of keep) this._cover(h.prof, q[0], q[1], h.seed, JAG[h.style], 1, 0.01);
+    if (keep) for (const q of keep) this._cover(h.prof, q[0], q[1], h.seed, JA(h.style), 1, 0.01);
     this._sizeCut(h);
     this._cutDirty = true;
     this._absorb(h);
@@ -1727,7 +1773,7 @@ export class BulletHoles {
     const out = [];
     for (const [id, h] of this._sync) {
       if (h.dead) continue;
-      out.push({ id, p: [_q3(h.pos.x), _q3(h.pos.y), _q3(h.pos.z)], n: [_q3(h.n.x, 1000), _q3(h.n.y, 1000), _q3(h.n.z, 1000)], w: _q3(h.tn, 1000), s: h.style, sd: h.seed, kb: _q3(h.kb), r: Array.from(h.sprof, (r) => Math.round(r * 100)), fx: 0 });
+      out.push({ id, p: [_q3(h.pos.x), _q3(h.pos.y), _q3(h.pos.z)], n: [_q3(h.n.x, 1000), _q3(h.n.y, 1000), _q3(h.n.z, 1000)], w: _q3(h.tn, 1000), s: h.style, sd: h.seed, kb: _q3(h.kb), r: Array.from(h.sprof, (r) => Math.round(r * 100)), fx: h.fxK | 0 });
     }
     return out;
   }
@@ -1899,6 +1945,13 @@ float npHoleR( vec2 u ) {
 float npEdge( vec2 u ) {
   if ( npIsCut ) return min( 0.97, npHoleR( u ) * 1.1 + ( 0.03 + 0.035 * npN2( u * 3.0 + npSeed * 2.3 ) ) / npQ );
   float e = 0.5 + 0.34 * npN2( u * 1.7 + npSeed * 2.3 ) + 0.14 * npN2( u * 5.0 + npSeed * 0.7 );
+  // zer2 19.11.: Mauerwerk platzt in Schuppen ab – kantiger, vieleckiger Kraterrand statt runder Scheibe
+  if ( npSt == 1 || npSt == 2 || npSt == 7 ) {
+    float nI = floor( 7.0 + 3.0 * npVar ); // Schuppen je Umlauf
+    float x = ( atan( u.y, u.x ) + 3.14159265 ) * nI / 6.2831853, i = floor( x ), f = x - i;
+    e *= 0.78 + 0.34 * mix( npH2( vec2( i, npSeed ) ), npH2( vec2( mod( i + 1.0, nI ), npSeed ) ), smoothstep( 0.7, 1.0, f ) );
+    e = min( e, 0.93 );
+  }
   if ( npSt == 0 ) e = npExit ? e : min( mix( npR * 1.3, e, 0.15 ), 0.95 ); // Holz: Eintritt fast sauber, Austritt reißt aus
   if ( npSt == 3 ) e = min( 0.95, npR * 2.4 + 0.12 * npN2( u * 3.0 + npSeed ) );
   return e;
@@ -1924,7 +1977,7 @@ float npL;
 vec3 npFreshCol( vec3 alb ) {
   float L = max( dot( alb, vec3( 0.2126, 0.7152, 0.0722 ) ), 0.004 ); npL = L;
   if ( npSt == 0 ) return vec3( 1.0, 0.7, 0.42 ) * clamp( L * 2.4, 0.05, 0.32 ); // Holz: frische helle Fasern (auch unter Kohle)
-  if ( npSt == 1 ) return mix( alb, vec3( L ), 0.3 ) * 1.9;                      // Beton: heller Bruch
+  if ( npSt == 1 ) return mix( alb, vec3( L ), 0.35 ) * mix( 1.6, 0.92, smoothstep( 0.12, 0.5, L ) ); // Beton: Bruch heller als dunkle, grauer als helle Flächen
   if ( npSt == 2 ) return min( mix( alb, vec3( L ), 0.6 ) * 1.3, vec3( 0.85 ) ); // Putz/Gips: weiß
   if ( npSt == 3 ) return vec3( clamp( L * 2.5, 0.08, 0.55 ) );                  // Blech: blank
   if ( npSt == 4 ) return vec3( 0.8, 0.85, 0.88 );                               // Glas: zerstoßen
@@ -2034,7 +2087,7 @@ vec3 npSunL() {
         vec2 facet = ( vec2( npH2( vec2( c.y, 1.3 ) ), npH2( vec2( c.y, 7.1 ) ) ) - 0.5 ) * ( npSt == 5 ? 0.2 : 0.32 )
           + ( vec2( npN2( q * 31.0 + npSeed ), npN2( q * 29.0 - npSeed ) ) - 0.5 ) * 0.35; // feine Körnung bricht das Zellmuster
         npHoleN = vec3( vec2( gx, gy ) / ( 2.0 * e ) * 0.8 + facet, 1.0 );
-        float cav = mix( 1.0, 0.55, clamp( rd / max( npDc, 1e-3 ), 0.0, 1.0 ) );
+        float cav = mix( 1.0, 0.4, clamp( rd / max( npDc, 1e-3 ), 0.0, 1.0 ) );
         float grain = npSt == 0 ? 0.75 + 0.5 * npN2( vec2( q.x * 3.0, q.y * 40.0 ) + npSeed ) : 0.86 + 0.28 * c.y * ( 0.6 + 0.4 * npN2( q * 23.0 + npSeed ) );
         float crack = npSt == 5 || npSt == 3 ? 1.0 : mix( 0.8, 1.0, smoothstep( 0.0, 0.05, c.z ) * ( 0.6 + 0.4 * npN2( q * 13.0 + npSeed ) ) + 0.3 * step( 0.5, npN2( npC( q ) * 4.0 + npSeed * 2.0 ) ) );
         col = fresh * mix( 1.0, 0.75, 1.0 - cav ) * grain * crack;
@@ -2125,10 +2178,79 @@ vec3 npSunL() {
       float e = npDc > 0.0 ? npEdge( u ) : npHoleR( u );
       float rel = clamp( ( crho - e ) / max( 1.0 - e, 1e-3 ), 0.0, 1.0 );
       float n1 = npN2( p0 * 6.0 + npSeed * 1.7 ), n2 = npN2( p0 * 17.0 + npSeed * 5.3 );
-      if ( npSt == 1 || npSt == 7 || npSt == 2 ) {
+      if ( npIsCut ) {
+        // zer2 19.11.: Hof um die Bresche (in Metern ab dem Bruchrand): abgeplatzte Deckschicht mit dem Mauerwerk
+        // darunter, Risse, Staubfilm und Ruß (Sprengung, vHole7.z) – statt eines glatten, pappartigen Schnitts
+        float dm = max( crho - e, 0.0 ) * npQ;
+        vec2 pm = p0 * npQ;                                   // Meter im Quad
+        float nA = npN2( pm * 2.2 + npSeed ), nB = npN2( pm * 8.0 - npSeed ), nC = npN2( pm * 21.0 + npSeed * 0.3 );
+        float soot = vHole7.z;
+        bool mas = npSt == 1 || npSt == 2 || npSt == 7;
+        vec3 wallC = vHole3.rgb;
+        vec3 cl = fresh;
+        float al = 0.0;
+        vec2 nrm = vec2( 0.0 );
+        if ( mas ) {
+          // abgeplatzt: bis 8–35 cm vom Rand, Grenze ausgefranst; Putz zeigt Ziegel samt Fugen, Beton Zuschlag
+          float wsp = ( 0.07 + 0.26 * nA ) * ( npSt == 2 ? 1.25 : 0.9 );
+          float sp = 1.0 - smoothstep( wsp - 0.015, wsp + 0.01, dm + ( nB - 0.5 ) * 0.06 );
+          vec3 cc = npCell( pm * 9.0 + npSeed );
+          vec3 sub = fresh * ( 0.78 + 0.34 * cc.y ) * ( 0.85 + 0.25 * nC );
+          if ( npSt == 2 || npSt == 7 ) {
+            float hx = dot( npW, normalize( vWX ) ), course = floor( npW.y * 13.3 );
+            float jy = abs( fract( npW.y * 13.3 ) - 0.5 ) * 2.0, jx = abs( fract( hx * 4.0 + course * 0.5 ) - 0.5 ) * 2.0;
+            float joint = max( smoothstep( 0.8, 0.92, jy ), smoothstep( 0.9, 0.97, jx ) );
+            sub = mix( npBrickCol() * ( 0.8 + 0.35 * npH2( vec2( course, floor( hx * 4.0 + course * 0.5 ) ) ) ) * ( 0.85 + 0.2 * nC ), vec3( npL * 0.75 + 0.05 ), joint * 0.85 );
+            nrm += vec2( 0.0, ( jy - 0.5 ) * 0.4 * joint );
+          }
+          // Stufe am Abplatzrand (Schatten an der Kante, Licht auf der Bruchfläche)
+          float lipS = smoothstep( wsp - 0.05, wsp, dm ) * sp;
+          cl = mix( sub, sub * 0.55, lipS );
+          al = sp;
+          nrm += ( vec2( npH2( vec2( cc.y, 1.3 ) ), npH2( vec2( cc.y, 7.1 ) ) ) - 0.5 ) * 0.5 * sp - u * lipS * 0.6;
+          // Risse: Netz aus gestreckten Zellen (radial), wenige reichen weit
+          float ang = atan( cp0.y, cp0.x );
+          vec3 ck = npCell( vec2( ang * 3.2, dm * 1.6 ) + npSeed * 3.1 );
+          float reach = 0.25 + 0.9 * npH2( vec2( floor( ang * 3.2 + npSeed ), 3.3 ) );
+          float crack = ( 1.0 - smoothstep( 0.012, 0.035 + 0.02 * ( 1.0 - dm ), ck.z ) ) * ( 1.0 - smoothstep( reach * 0.6, reach, dm ) ) * step( 0.02, dm );
+          cl = mix( cl, wallC * 0.18, crack * 0.9 );
+          al = max( al, crack * 0.85 );
+          // Staubfilm (hell, körnig), weit hinaus
+          float dust = ( 1.0 - smoothstep( 0.0, 0.5 + 0.4 * nA, dm ) ) * ( 0.25 + 0.5 * nB ) * 0.45;
+          cl = mix( mix( wallC * 1.4 + 0.04, fresh, 0.5 ), cl, clamp( al / max( al + dust, 1e-3 ), 0.0, 1.0 ) );
+          al = max( al, dust );
+        } else if ( npSt == 0 ) {
+          // Holz: gestauchte dunkle Fasern am Rand, helle frische Späne entlang der Bretter (senkrecht), Ruß
+          float crush = 1.0 - smoothstep( 0.0, 0.03 + 0.05 * nA, dm );
+          vec3 c = npCell( vec2( pm.x * 14.0, pm.y * 2.2 ) + npSeed );
+          float spl = ( 1.0 - smoothstep( 0.18, 0.32, c.x ) ) * step( 0.45, c.y ) * ( 1.0 - smoothstep( 0.05, 0.16 + 0.2 * c.y, dm ) );
+          al = max( crush * 0.9, spl );
+          cl = crush > spl ? fresh * 0.4 : fresh * ( 1.05 + 0.3 * c.y );
+          nrm = vec2( ( c.y - 0.5 ) * 0.8 * spl, 0.0 );
+        } else if ( npSt == 3 ) {
+          // Blech: blanker Saum am Riss, dahinter Lack angesengt/abgeblättert (braungrau), Kratzer
+          float bare = 1.0 - smoothstep( 0.005, 0.02 + 0.04 * nB, dm );
+          float burn = ( 1.0 - smoothstep( 0.04, 0.12 + 0.2 * nA, dm ) ) * ( 0.6 + 0.4 * nC );
+          al = max( bare, burn * 0.8 );
+          cl = mix( wallC * vec3( 0.55, 0.45, 0.38 ) * ( 0.7 + 0.4 * nC ), vec3( clamp( npL * 2.4, 0.12, 0.6 ) ), bare );
+          nrm = u * bare * 0.8;
+        }
+        // Ruß: von der Bresche nach außen, nach oben weiter (Rauch steigt), fleckig
+        if ( soot > 0.01 ) {
+          float rs = ( 0.25 + 0.7 * soot ) * ( 1.0 + 0.8 * max( u.y, 0.0 ) ) * ( 0.65 + 0.7 * nA );
+          float sa = soot * ( 1.0 - smoothstep( 0.0, rs, dm ) ) * ( 0.55 + 0.45 * nB );
+          cl = mix( cl, vec3( 0.018, 0.016, 0.015 ) + wallC * 0.04, clamp( sa * 1.2, 0.0, 1.0 ) );
+          al = max( al, sa * 0.92 );
+        }
+        a = al;
+        col = cl;
+        npHoleN = vec3( nrm + ( vec2( nB, nC ) - 0.5 ) * 0.15 * al, 1.0 );
+      } else if ( npSt == 1 || npSt == 7 || npSt == 2 ) {
         // Bruchkante (schmaler heller Saum), feiner Staub, kleine Splitter-Narben drumherum
         float lip = ( 1.0 - smoothstep( 0.0, 0.03 + 0.06 * n2, rel ) ) * ( 0.55 + 0.45 * n1 );
-        float dust = ( 1.0 - smoothstep( 0.0, 1.0, rel ) ) * ( 0.35 + 0.65 * n1 ) * ( npSt == 2 ? 0.35 : 0.18 );
+        // Staubhof: ungleichmäßig (Auswurf in Lappen), endet weich weit vor dem Quadrand – kein runder Stempel
+        float reach = 0.3 + 0.6 * npN2( u * 1.6 + npSeed * 1.3 );
+        float dust = ( 1.0 - smoothstep( 0.0, reach, rel ) ) * ( 0.25 + 0.75 * n1 * n2 ) * ( npSt == 2 ? 0.38 : 0.2 );
         vec3 c = npCell( p0 * 13.0 + npSeed * 2.0 );
         float pit = ( 1.0 - smoothstep( 0.06, 0.12, c.x ) ) * step( 0.72, c.y ) * ( 1.0 - smoothstep( 0.2, 0.9, rel ) );
         a = max( max( lip * 0.9, dust ), pit * 0.95 );
@@ -2152,8 +2274,8 @@ vec3 npSunL() {
         col = vec3( npL * 0.25 );
         // Austritt: Blech reißt sternförmig auf, die Lappen biegen sich nach außen (blanke Bruchkanten, Licht von der Seite)
         if ( npExit ) {
-          float ang = atan( cp0.y, cp0.x );
-          float lobe = 0.55 + 0.45 * sin( ang * 5.0 + npSeed * 3.7 + 1.3 * sin( ang * 3.0 + npSeed ) );
+          // unregelmäßige Lappen (verschieden breit/lang, kein Sternmuster)
+          float lobe = 0.3 + 0.7 * npN2( u * 2.1 + npSeed * 3.7 ) * ( 0.55 + 0.45 * npN2( u * 5.3 - npSeed ) );
           float petal = 1.0 - smoothstep( 0.22 * lobe, 0.3 * lobe + 0.02, rel );
           if ( petal > 0.01 ) {
             a = max( a, petal );

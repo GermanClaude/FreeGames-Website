@@ -5,6 +5,7 @@
 //   Pak:    richtet sich auf das nächste feindliche Fahrzeug in Sicht (≤ 900 m, Schwenkbereich ±30°) und schießt alle ~7 s
 //           eine Panzergranate (Modus-Munition der Generation) mit Streuung, die sich mit jedem Schuss verringert
 //   Bunker: MG-Feuerstöße auf ungedeckte Gegner (Infanterie, offene Luken) ≤ 380 m
+// Panzer-Kampagne (19.11.): Funkstelle, Nachschublager, Behelfsbrücke – feste Ziele ohne Bedienung (nur Granaten wirken).
 // Typen werden zur Laufzeit in VEHICLES angelegt (registerEmplacements), nicht in data.js → keine Netz-Indizes.
 import * as THREE from 'three';
 import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261115041504';
@@ -33,6 +34,25 @@ export function registerEmplacements() {
     health: 900, armored: false, respawn: 1e9, wreckTime: 1e9, smallArmsMult: 0, explosiveMult: 0.6, ramMult: 0.05,
     mass: 9e6, com: [0, 1.1, 0], hullBox: [0, 1.15, 0, 2.6, 1.15, 2.3], zones: { hull: { label: 'Bunker', hp: 900 } },
     seats: [], emplacement: 'bunker', ...BASE(),
+  };
+  // Panzer-Kampagne: weitere Einrichtungen (ohne Bedienung): Funkstelle, Nachschublager, Behelfsbrücke
+  VEHICLES.psim_funk = {
+    id: 'psim_funk', name: 'Funkstelle', cls: 'Funkstelle', drive: 'static', model: 'psim_funk', sound: null,
+    health: 260, armored: false, respawn: 1e9, wreckTime: 1e9, smallArmsMult: 0.12, explosiveMult: 1.2, ramMult: 1.5,
+    mass: 9e6, com: [0, 1.2, 0], hullBox: [0, 1.25, 0, 1.35, 1.25, 2.7], zones: { hull: { label: 'Funkstelle', hp: 260 } },
+    seats: [], emplacement: 'funk', ...BASE(),
+  };
+  VEHICLES.psim_lager = {
+    id: 'psim_lager', name: 'Nachschublager', cls: 'Nachschublager', drive: 'static', model: 'psim_lager', sound: null,
+    health: 320, armored: false, respawn: 1e9, wreckTime: 1e9, smallArmsMult: 0.1, explosiveMult: 1.6, ramMult: 1.5,
+    mass: 9e6, com: [0, 0.8, 0], hullBox: [0, 0.85, 0, 3.6, 0.85, 3.0], zones: { hull: { label: 'Lager', hp: 320 } },
+    seats: [], emplacement: 'lager', ...BASE(),
+  };
+  VEHICLES.psim_bruecke = {
+    id: 'psim_bruecke', name: 'Behelfsbrücke', cls: 'Brücke', drive: 'static', model: 'psim_bruecke', sound: null,
+    health: 620, armored: false, respawn: 1e9, wreckTime: 1e9, smallArmsMult: 0, explosiveMult: 0.8, ramMult: 0.05,
+    mass: 9e6, com: [0, 0.9, 0], hullBox: [0, 0.75, 0, 2.3, 0.75, 8.2], zones: { hull: { label: 'Brücke', hp: 620 } },
+    seats: [], emplacement: 'bruecke', ...BASE(),
   };
   VEHICLE_WEAPONS.psim_bunker_mg = {
     id: 'psim_bunker_mg', name: 'Bunker-MG', short: 'MG', kind: 'mg', caliber: '762x51', rpm: 700, mag: 250, reload: 6, spread: 0.012, range: 380, profile: 'lmg',
@@ -139,9 +159,86 @@ function bunkerModel() {
   return { root, gun: null, barrel: null };
 }
 
+/** Funkstelle: Gerätekabine auf Kufen, Gittermast mit Abspannung, Stromerzeuger, Richtantenne. */
+function funkModel() {
+  const M = mats();
+  const root = new THREE.Group(); root.name = 'psim:funk';
+  const cab = new THREE.Group(); root.add(cab);
+  cab.add(mesh(new THREE.BoxGeometry(2.5, 2.2, 5.2), M.paint, 0, 1.35, 0));
+  cab.add(mesh(new THREE.BoxGeometry(2.6, 0.08, 5.3), M.steel, 0, 2.48, 0));
+  for (const s of [-1, 1]) cab.add(mesh(new THREE.BoxGeometry(0.16, 0.22, 5.4), M.steel, s * 1.0, 0.13, 0)); // Kufen
+  cab.add(mesh(new THREE.BoxGeometry(0.9, 1.7, 0.05), M.steel, 0.5, 1.15, 2.63)); // Tür
+  cab.add(mesh(new THREE.BoxGeometry(0.7, 0.35, 0.05), M.dark, -0.6, 1.7, 2.63)); // Lüftung
+  const mast = new THREE.Group(); mast.position.set(-2.6, 0, -1.2); root.add(mast);
+  const legG = new THREE.CylinderGeometry(0.035, 0.05, 13, 5);
+  for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; mast.add(mesh(legG, M.steel, Math.cos(a) * 0.22, 6.5, Math.sin(a) * 0.22)); }
+  for (let y = 1; y < 13; y += 1.3) mast.add(mesh(new THREE.TorusGeometry(0.22, 0.02, 3, 6).rotateX(Math.PI / 2), M.steel, 0, y, 0));
+  mast.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, 3.2, 4), M.steel, 0, 14.4, 0)); // Peitschenantenne
+  mast.add(mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.08, 14).rotateX(Math.PI / 2.2), M.steel, 0.3, 11.4, 0)); // Richtantenne
+  for (let i = 0; i < 3; i++) { // Abspannseile
+    const a = (i / 3) * Math.PI * 2 + 0.4, L = 9.2;
+    const g = new THREE.CylinderGeometry(0.008, 0.008, L, 3);
+    const m = mesh(g, M.steel, Math.cos(a) * 3.2, 6.1, Math.sin(a) * 3.2);
+    m.lookAt(new THREE.Vector3(0, 12, 0).add(mast.position)); m.rotateX(Math.PI / 2);
+    mast.add(m);
+  }
+  root.add(mesh(new THREE.BoxGeometry(1.2, 0.9, 0.8), M.paint, 2.1, 0.45, 1.6)); // Stromerzeuger
+  root.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6, 6), M.dark, 2.3, 1.1, 1.6));
+  sandbags(root, M, 0, 0, 3.6, -0.7, 0.7, 2);
+  return { root, gun: null, barrel: null, mast, cab };
+}
+
+/** Nachschublager: Kistenstapel unter Tarnplane, Treibstofffässer, Granatkisten auf Paletten. */
+function lagerModel() {
+  const M = mats();
+  const root = new THREE.Group(); root.name = 'psim:lager';
+  const stock = new THREE.Group(); root.add(stock);
+  const crate = new THREE.BoxGeometry(1.1, 0.55, 0.7), pal = new THREE.BoxGeometry(1.25, 0.14, 1.25);
+  const drum = new THREE.CylinderGeometry(0.29, 0.29, 0.88, 12);
+  let k = 0;
+  for (let ix = -2; ix <= 2; ix++) for (let iz = -1; iz <= 1; iz++) {
+    const x = ix * 1.35, z = iz * 1.45 - 0.4;
+    if (k++ % 4 === 3) { // Fässer
+      for (let d = 0; d < 4; d++) stock.add(mesh(drum, M.paint, x + (d % 2 - 0.5) * 0.6, 0.58, z + (Math.floor(d / 2) - 0.5) * 0.6));
+      stock.add(mesh(pal, M.wood, x, 0.07, z));
+      continue;
+    }
+    stock.add(mesh(pal, M.wood, x, 0.07, z));
+    const h = 1 + ((ix * 7 + iz * 3) & 1) + (ix === 0 ? 1 : 0);
+    for (let j = 0; j < h; j++) stock.add(mesh(crate, j % 2 ? M.wood : M.paint, x + (Math.random() - 0.5) * 0.05, 0.42 + j * 0.56, z, 0, (Math.random() - 0.5) * 0.06));
+  }
+  // Tarnplane auf Stangen
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) root.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 5), M.wood, sx * 3.6, 1.3, sz * 2.4 - 0.4));
+  const tarp = mesh(new THREE.PlaneGeometry(7.8, 5.6, 8, 6), M.net, 0, 2.55, -0.4, -Math.PI / 2);
+  const p = tarp.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -Math.abs(p.getX(i)) * 0.06 + (Math.random() - 0.5) * 0.2);
+  tarp.geometry.computeVertexNormals(); root.add(tarp);
+  return { root, gun: null, barrel: null, stock, tarp };
+}
+
+/** Behelfsbrücke (Pioniergerät): Stahlträger mit Fahrbahn auf zwei Holzstapeln, Geländer – über Graben/Bach gelegt. */
+function brueckeModel() {
+  const M = mats();
+  const root = new THREE.Group(); root.name = 'psim:bruecke';
+  const halves = [];
+  for (const s of [-1, 1]) {
+    const h = new THREE.Group(); h.position.set(0, 1.0, 0); root.add(h); halves.push(h);
+    h.add(mesh(new THREE.BoxGeometry(4.0, 0.12, 8.1), M.steel, 0, 0.16, s * 4.05)); // Fahrbahn
+    for (const x of [-1.6, -0.5, 0.5, 1.6]) h.add(mesh(new THREE.BoxGeometry(0.22, 0.42, 8.1), M.steel, x, -0.12, s * 4.05)); // Träger
+    for (const x of [-2.0, 2.0]) {
+      h.add(mesh(new THREE.BoxGeometry(0.06, 0.06, 8.1), M.steel, x, 1.0, s * 4.05)); // Geländer
+      for (let z = 0.4; z < 8.1; z += 2) h.add(mesh(new THREE.BoxGeometry(0.06, 0.85, 0.06), M.steel, x, 0.6, s * z));
+    }
+    for (let z = 0.6; z < 8; z += 0.9) h.add(mesh(new THREE.BoxGeometry(3.9, 0.03, 0.08), M.dark, 0, 0.235, s * z)); // Querrillen
+  }
+  for (const s of [-1, 1]) for (let j = 0; j < 4; j++) root.add(mesh(new THREE.BoxGeometry(4.4, 0.24, 0.5 + (j % 2) * 0.1), M.wood, 0, 0.12 + j * 0.24, s * 7.6 + (j % 2 ? 0.3 : -0.3), 0, j % 2 ? Math.PI / 2 * 0 : 0));
+  return { root, gun: null, barrel: null, halves };
+}
+
+const MODELS = { psim_pak: pakModel, psim_bunker: bunkerModel, psim_funk: funkModel, psim_lager: lagerModel, psim_bruecke: brueckeModel };
+
 /** Modell-Hülle mit der Schnittstelle, die vehicle.js/index.js erwarten. */
 function makeModel(type, team) {
-  const parts = type === 'psim_pak' ? pakModel(team) : bunkerModel();
+  const parts = (MODELS[type] || bunkerModel)(team);
   const M = mats();
   const model = {
     root: parts.root, gun: parts.gun, barrel: parts.barrel, turret: null, wheels: [], trackMats: [], occ: [], lightsOn: false, wrecked: false,
@@ -153,6 +250,11 @@ function makeModel(type, team) {
       if (parts.barrel) { parts.barrel.rotation.x = -0.35; parts.barrel.position.y -= 0.15; }
       if (parts.gun) parts.gun.rotation.z = 0.25;
       if (type === 'psim_bunker') parts.root.children.forEach((c, i) => { if (i > 1 && i < 6) c.visible = false; });
+      if (parts.mast) { parts.mast.rotation.z = 1.35; parts.mast.position.y = 0.3; }
+      if (parts.cab) { parts.cab.rotation.z = 0.08; parts.cab.position.y = -0.25; }
+      if (parts.stock) parts.stock.children.forEach((c, i) => { if (i % 3) c.visible = false; else { c.rotation.z = (Math.random() - 0.5) * 0.8; c.position.y *= 0.4; } });
+      if (parts.tarp) parts.tarp.visible = false;
+      if (parts.halves) parts.halves.forEach((h, i) => { h.rotation.x = (i ? -1 : 1) * 0.42; h.position.y = -0.4; });
     },
     addScar() {},
     dispose() { parts.root.traverse((o) => { if (o.isMesh && o.geometry) o.geometry.dispose(); }); },
@@ -185,10 +287,13 @@ export class Emplacement extends Vehicle {
   shellHit(def, hit, dir, attacker) {
     const P = def.psim || {};
     let dmg;
-    if (this.kind === 'bunker') dmg = P.role === 'he' ? 520 : P.role === 'ce' ? 300 : P.role === 'ke' ? 70 : 10;
+    const T = { // [Spreng, Hohlladung, Wucht, Schrot]
+      bunker: [520, 300, 70, 10], funk: [300, 220, 110, 25], lager: [340, 260, 120, 30], bruecke: [260, 180, 60, 0],
+    }[this.kind];
+    if (T) dmg = P.role === 'he' ? T[0] : P.role === 'ce' ? T[1] : P.role === 'ke' ? T[2] : T[3];
     else dmg = P.role === 'can' ? 20 : 400; // Pak: jeder Granatentreffer zerstört
     if (hit.face === 'front' && this.kind === 'pak' && P.role === 'ke' && Math.random() < 0.15) dmg = 60; // Schild lenkt ab
-    this.sys.G.effects?.impact?.(hit.point, hit.normal, this.kind === 'bunker' ? 'concrete' : 'metal', { big: true, hole: true });
+    this.sys.G.effects?.impact?.(hit.point, hit.normal, this.kind === 'bunker' ? 'concrete' : this.kind === 'lager' ? 'wood' : 'metal', { big: true, hole: true });
     return this.applyDamage(dmg, { attacker, weaponId: def.id, zone: 'hull', kind: 'psim', point: hit.point, dir });
   }
 

@@ -415,8 +415,42 @@ export function setCutLimit(n) {
  */
 export const cutGLSL = () => `uniform vec4 npCut[ ${CUT_MAX * CUT_STRIDE} ];
 uniform int npCutN;
+// zer2 19.11.: amp = Zacken + Stil (ganzzahlig). Zu den weichen Wellen kommt ein Bruchrand je Werkstoff (wie jag() in
+// bullet-holes.js, gleiche Formel): Mauerwerk bricht blockweise (Steine/Ziegel), Holz mit nach innen stehenden
+// Spreißeln, Blech unregelmäßig gerissen mit einzelnen Rissen – statt glatter, pappartiger Kontur
+float npH1( float i, float s ) { return fract( sin( i * 1.37 + s * 0.173 ) * 437.585 ); }
+float npCutDet( float th, float seed, float st ) {
+  float u = fract( th * 0.15915494 + 1.0 );
+  if ( ( st > 0.5 && st < 2.5 ) || st > 6.5 ) {
+    float x = u * 26.0, i = floor( x ), f = x - i;
+    float blk = mix( npH1( i, seed ), npH1( mod( i + 1.0, 26.0 ), seed ), smoothstep( 0.8, 1.0, f ) ) - 0.5;
+    float x2 = u * 71.0, i2 = floor( x2 ), f2 = x2 - i2;
+    float fine = mix( npH1( i2 + 100.0, seed ), npH1( mod( i2 + 1.0, 71.0 ) + 100.0, seed ), f2 ) - 0.5;
+    return blk * 0.13 + fine * 0.045;
+  }
+  if ( st < 0.5 ) {
+    float x = u * 34.0, i = floor( x ), f = x - i;
+    float c = 0.3 + 0.4 * npH1( i + 400.0, seed );
+    float sp = npH1( i + 200.0, seed ) > 0.5 ? ( 0.05 + 0.12 * npH1( i + 300.0, seed ) ) * pow( max( 0.0, 1.0 - abs( f - c ) / 0.18 ), 1.5 ) : 0.0;
+    float x2 = u * 61.0, i2 = floor( x2 ), f2 = x2 - i2;
+    float fine = mix( npH1( i2 + 100.0, seed ), npH1( mod( i2 + 1.0, 61.0 ) + 100.0, seed ), f2 ) - 0.5;
+    return fine * 0.04 - sp;
+  }
+  if ( st > 2.5 && st < 3.5 ) {
+    float x = u * 13.0, i = floor( x ), f = x - i;
+    float lo = mix( npH1( i + 600.0, seed ), npH1( mod( i + 1.0, 13.0 ) + 600.0, seed ), f * f * ( 3.0 - 2.0 * f ) ) - 0.5;
+    float x2 = u * 37.0, i2 = floor( x2 ), f2 = x2 - i2;
+    float mid = mix( npH1( i2 + 100.0, seed ), npH1( mod( i2 + 1.0, 37.0 ) + 100.0, seed ), f2 ) - 0.5;
+    float x3 = u * 7.0, i3 = floor( x3 ), f3 = x3 - i3;
+    float tear = npH1( i3 + 500.0, seed ) > 0.7 ? 0.07 * max( 0.0, 1.0 - abs( f3 - 0.5 ) / 0.06 ) : 0.0;
+    return lo * 0.1 + mid * 0.05 + tear;
+  }
+  float x2 = u * 41.0, i2 = floor( x2 ), f2 = x2 - i2;
+  return ( mix( npH1( i2 + 100.0, seed ), npH1( mod( i2 + 1.0, 41.0 ) + 100.0, seed ), f2 ) - 0.5 ) * 0.05;
+}
 float npCutJag( float th, float seed, float amp ) {
-  return 1.0 + amp * ( 0.55 * sin( 3.0 * th + seed * 1.7 ) + 0.3 * sin( 5.0 * th + seed * 2.9 ) + 0.15 * sin( 9.0 * th + seed * 4.3 ) );
+  float st = floor( amp ); amp -= st;
+  return 1.0 + amp * ( 0.55 * sin( 3.0 * th + seed * 1.7 ) + 0.3 * sin( 5.0 * th + seed * 2.9 ) + 0.15 * sin( 9.0 * th + seed * 4.3 ) ) + npCutDet( th, seed, st );
 }
 // Radius (m) des Ausschnitts i in Weltrichtung w (in der Wandebene) bei relativer Tiefe f (0 vorn … 1 hinten)
 float npCutRAt( int i, vec3 w, float f ) {

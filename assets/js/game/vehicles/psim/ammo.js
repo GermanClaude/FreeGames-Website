@@ -33,9 +33,16 @@ export const KINDS = {
   pzgr: { label: 'Panzergranate', short: 'PZ', call: 'Panzergranate', role: 'ke', color: '#d9d2b0' },
   hl: { label: 'Hohlladung', short: 'HL', call: 'Hohlladung', role: 'ce', color: '#c9a04a' },
   kart: { label: 'Kartätsche', short: 'KT', call: 'Kartätsche', role: 'can', color: '#8fb3c9' },
+  // Strang panzermod-Typen (19.11.): Kalter Krieg (KP-68, 105 mm) und Schützenpanzer (SZ-8, 30 mm + Lenkflugkörper)
+  tsg: { label: 'Treibspiegelgeschoss', short: 'TS', call: 'Treibspiegel', role: 'ke', color: '#d9d2b0' },
+  qk: { label: 'Quetschkopfgranate', short: 'QK', call: 'Quetschkopf', role: 'he', color: '#b6a36a' },
+  lfk: { label: 'Lenkflugkörper', short: 'LF', call: 'Lenkflugkörper', role: 'ce', color: '#c9a04a' },
 };
 
 export const ERA_KINDS = { modern: ['wucht', 'mz', 'spreng', 'kan'], wk2: ['pzgr', 'hl', 'spreng', 'kart'], wk1: ['pzgr', 'spreng', 'kart'] };
+/** Eigene Sätze je Typ: KP-68 (1960er, 105 mm: Treibspiegel, Hohlladung, Quetschkopf, Kanister), SZ-8 (30-mm-Maschinenkanone). */
+export const TYPE_KINDS = { kk: ['tsg', 'hl', 'qk', 'kan'], spz: ['wucht', 'spreng', 'lfk'] };
+const TYPE_LOADOUT = { kk: { tsg: 0.4, hl: 0.25, qk: 0.25, kan: 0.1 }, spz: { wucht: 0.45, spreng: 0.53, lfk: 0.02 } };
 /** Gestellbelegung (Anteile) je Generation. */
 const LOADOUT = {
   modern: { wucht: 0.42, mz: 0.32, spreng: 0.16, kan: 0.1 },
@@ -58,6 +65,15 @@ export function caliberOf(D) {
 /** Daten einer Art für Kaliber/Generation. */
 function kindSpec(kind, cal, era) {
   const k = cal / 75; // Bezug 75 mm
+  if (cal <= 40 && era === 'modern') {
+    // Maschinenkanone (SZ-8): Pfeilgeschoss und Spreng-Brand in Feuerstößen, Lenkflugkörper (langsam, Hohlladung)
+    if (kind === 'wucht') return { speed: 1400, life: 1.6, pen0: 110, penLoss: 0.05, norm: 0, rico: 78, dmgPen: 70, dmgNo: 4, cone: 8, coneLen: 1.2, filler: 0, splash: { radius: 0.8, maxDamage: 25 }, actorDamage: 90, penetrating: true, reload: 0.3 };
+    if (kind === 'spreng') return { speed: 1080, life: 2.2, pen0: 12, penLoss: 0, norm: 0, rico: 88, dmgPen: 40, dmgNo: 10, cone: 20, coneLen: 1.0, filler: 0.4, splash: { radius: 3.2, maxDamage: 75, innerRadius: 0.8, minDamage: 12 }, actorDamage: 110, penetrating: false, reload: 0.3 };
+  }
+  if (kind === 'lfk') return { speed: 260, gravity: 0.6, life: 9, pen0: 700, penLoss: 0, norm: 0, rico: 85, dmgPen: 380, dmgNo: 50, cone: 10, coneLen: 2.8, filler: 0, splash: { radius: 4, maxDamage: 150, innerRadius: 1.2, minDamage: 20 }, actorDamage: 210, penetrating: false, reload: 12 };
+  if (kind === 'tsg') return { speed: 1470, life: 3.4, pen0: 300 * (cal / 105), penLoss: 0.03, norm: 2, rico: 75, dmgPen: 320, dmgNo: 12, cone: 16, coneLen: 2.8, filler: 0, splash: { radius: 2.2, maxDamage: 70 }, actorDamage: 230, penetrating: true };
+  if (kind === 'qk') return { speed: 730, life: 5, pen0: 30, penLoss: 0, norm: 0, rico: 86, dmgPen: 240, dmgNo: 95, cone: 26, coneLen: 1.6, filler: 1.2, splash: { radius: 8, maxDamage: 200, innerRadius: 2, minDamage: 25 }, actorDamage: 220, penetrating: false };
+  if (kind === 'hl' && era === 'modern') return { speed: 1170, life: 4, pen0: 3.6 * cal, penLoss: 0, norm: 0, rico: 82, dmgPen: 290, dmgNo: 35, cone: 9, coneLen: 2.4, filler: 0, splash: { radius: 6, maxDamage: 150, innerRadius: 1.5, minDamage: 22 }, actorDamage: 200, penetrating: false };
   const base = (VEHICLES.wk2 && VEHICLES.wk2.weaponMods) || {};
   switch (kind) {
     case 'wucht': return { speed: 1650, life: 3.2, pen0: 600 * (cal / 120), penLoss: 0.04, norm: 0, rico: 80, dmgPen: 360, dmgNo: 14, cone: 14, coneLen: 3.2, filler: 0, splash: { radius: 2.2, maxDamage: 70 }, actorDamage: 260, penetrating: true };
@@ -88,13 +104,13 @@ export function registerAmmo(type) {
   const D = VEHICLES[type];
   const era = eraOf(D), cal = caliberOf(D);
   const list = [];
-  for (const kind of ERA_KINDS[era] || ERA_KINDS.modern) {
+  for (const kind of TYPE_KINDS[type] || ERA_KINDS[era] || ERA_KINDS.modern) {
     const s = kindSpec(kind, cal, era), K = KINDS[kind];
     const id = `psim_${type}_${kind}`;
-    const rl = reloadFor(cal);
+    const rl = s.reload || reloadFor(cal);
     VEHICLE_WEAPONS[id] = {
-      id, name: `${cal} mm ${K.label}`, short: K.short, kind: 'shell', icon: 'shell',
-      speed: s.speed, gravity: 9.81, reload: rl, reloadNoLoader: rl * 1.7, mag: 1, life: s.life,
+      id, name: kind === 'lfk' ? K.label : `${cal} mm ${K.label}`, short: K.short, kind: 'shell', icon: 'shell',
+      speed: s.speed, gravity: s.gravity ?? 9.81, reload: rl, reloadNoLoader: s.reload ? rl : rl * 1.7, mag: 1, life: s.life,
       vehicleDamage: s.dmgPen, actorDamage: s.actorDamage, splash: s.splash, penetrating: s.penetrating,
       shake: clamp(cal / 220, 0.2, 0.6), selfSafe: 0.3,
       psim: { kind, role: K.role, cal, era, ...s },
@@ -121,7 +137,7 @@ export function registerAmmo(type) {
 export function rackFor(type) {
   const D = VEHICLES[type], ids = registerAmmo(type);
   const total = Object.values(D.ammo || { a: 40 }).reduce((a, b) => a + b, 0);
-  const L = LOADOUT[eraOf(D)] || LOADOUT.modern, out = {};
+  const L = TYPE_LOADOUT[type] || LOADOUT[eraOf(D)] || LOADOUT.modern, out = {};
   let used = 0;
   ids.forEach((id, i) => {
     const kind = VEHICLE_WEAPONS[id].psim.kind;

@@ -48,6 +48,7 @@ export class PanzerOptics {
     let f = null, label = '';
     if (th && th.on) { f = this.polarity === 'schwarz' ? BH : WH; label = this.polarity === 'schwarz' ? 'WB · SCHWARZ-HEISS' : 'WB · WEISS-HEISS'; }
     else if (this.nv && inOptic && v && !v.def.noThermal) { f = NV; label = 'RESTLICHT'; }
+    if (!f && this.mode.baseFilter) f = this.mode.baseFilter; // Nachtbild der Panzer-Kampagne (ohne Sichtgerät)
     if (c && (f !== this._filter || (f && c.style.filter !== f))) { if (f || this._filter) c.style.filter = f || ''; this._filter = f; }
     if (this.liveMirrors && inside && v) this._mirrors(dt, v);
     else this._restoreMirrors();

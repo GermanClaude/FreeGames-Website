@@ -9,19 +9,30 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const CSS = `
 #psim{position:absolute;inset:0;pointer-events:none;font-family:"Barlow Condensed","Roboto Condensed",system-ui,sans-serif;color:#e8e4d6;z-index:6}
 #psim [hidden]{display:none!important}
-.ps-sub{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:min(760px,92vw);display:flex;flex-direction:column;gap:4px;align-items:center}
+.ps-sub{position:absolute;left:50%;bottom:17%;transform:translateX(-50%);width:min(700px,52vw);display:flex;flex-direction:column;gap:4px;align-items:center}
 .ps-line{background:rgba(8,10,8,.72);border-left:3px solid #9fb07a;padding:4px 10px;font-size:clamp(13px,1.35vw,17px);letter-spacing:.02em;max-width:100%;transition:opacity .4s}
 .ps-line b{color:#c9d79f;font-weight:600;margin-right:8px;text-transform:uppercase;font-size:.8em;letter-spacing:.08em}
 .ps-line.is-funk{border-left-color:#d8a64a}.ps-line.is-funk b{color:#e7c27a}
 .ps-line.is-me{border-left-color:#6fa8dc}.ps-line.is-me b{color:#9cc6ee}
 .ps-line.is-warn{border-left-color:#d8543c}.ps-line.is-warn b{color:#f08a74}
-.ps-side{position:absolute;left:14px;bottom:15%;display:flex;flex-direction:column;gap:6px;width:225px;font-size:12.5px}
+/* Aufräumen 19.11.: links unten eine Spalte (Kopf mit Fahrzeug/Tempo/Hülle, Besatzung, Munition, Zustand), rechts eine Spalte
+   (Sichtgerät, Hilfe-Hinweis, Handgriffe ODER Bedienhilfe), Bordsprech unten mittig (höchstens 3 Zeilen, ein Hinweis zur Zeit).
+   Das alte Fahrzeug-HUD (.vh-panel: Name, Zonen, Waffen-/Munitionsliste, Gestell) ist im Modus aus – nichts doppelt. */
+.ps-side{position:absolute;left:calc(14px + env(safe-area-inset-left));bottom:15%;display:flex;flex-direction:column;gap:5px;width:236px;font-size:12.5px;max-height:62vh;overflow:hidden}
+.ps-head{display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:5px 9px;background:rgba(10,12,10,.62);border:1px solid rgba(200,200,170,.16)}
+.ps-head b{font-size:14px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-head span{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}.ps-head small{font-size:11px;opacity:.75;margin-left:2px}
+.ps-hull{height:4px;margin:-3px 0 0;background:rgba(233,230,223,.16)}.ps-hull i{display:block;height:100%;background:#9fd37a;transform-origin:left}
+.ps-hull.is-low i{background:#e7c35a}.ps-hull.is-crit i{background:#e5634b}
+.ps-right{position:absolute;right:calc(14px + env(safe-area-inset-right));top:25%;width:280px;display:flex;flex-direction:column;align-items:stretch;gap:6px;max-height:58vh;overflow:hidden}
+.ps-right>*{position:static!important;width:auto!important}
 .ps-box{background:rgba(10,12,10,.62);border:1px solid rgba(200,200,170,.16);padding:7px 9px}
 .ps-box h4{margin:0 0 4px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#a9b08e;font-weight:600}
-.ps-row{display:flex;justify-content:space-between;gap:6px;line-height:1.35}
+.ps-row{display:flex;justify-content:space-between;gap:6px;line-height:1.35;white-space:nowrap}.ps-row i{overflow:hidden;text-overflow:ellipsis}
 .ps-row i{font-style:normal;color:#bdbca9}.ps-row em{font-style:normal;font-size:12px;opacity:.85}
 .ps-ok{color:#9fd37a}.ps-hurt{color:#e7c35a}.ps-dead{color:#e5634b}.ps-me{color:#9cc6ee}
-.ps-mods{display:grid;grid-template-columns:1fr 1fr;gap:1px 10px}.ps-mods .ps-row{white-space:nowrap}
+.ps-mods{display:flex;flex-wrap:wrap;gap:3px 4px}.ps-mods span{white-space:nowrap;padding:1px 5px;border-radius:2px;background:rgba(233,230,223,.08);font-size:11.5px}
+.ps-mods span.ps-hurt{background:rgba(231,195,90,.16)}.ps-mods span.ps-dead{background:rgba(229,99,75,.2)}
 .ps-row kbd{font:inherit;font-size:.85em;background:#2a2c26;border:1px solid #6a6c5e;border-radius:3px;padding:0 4px;margin-right:5px}
 .ps-ammo .ps-row.is-sel{background:rgba(160,180,120,.16)}
 .ps-ammo .ps-row.is-load i::after{content:" ●";color:#e7c35a}
@@ -36,15 +47,15 @@ const CSS = `
 .ps-hot span kbd,.ps-help kbd,.ps-steps kbd{font:inherit;font-size:.85em;background:#2a2c26;border:1px solid #6a6c5e;border-radius:3px;padding:0 4px;margin:0 2px}
 @keyframes psPulse{50%{transform:scale(1.12)}}
 .ps-next{border-color:rgba(120,200,255,.95);box-shadow:0 0 12px rgba(90,170,255,.6)}.ps-next span{border-left-color:#7cc4ff}
-.ps-why{margin:6px 0 0;font-size:12px;color:#cfd8b8;line-height:1.35}.ps-hint{position:absolute;right:14px;top:22%;font-size:12px;background:rgba(10,12,10,.6);padding:3px 8px}
+.ps-why{margin:6px 0 0;font-size:12px;color:#cfd8b8;line-height:1.35}.ps-hint{font-size:12px;background:rgba(10,12,10,.6);padding:3px 8px;align-self:flex-end}
 .ps-dot{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:rgba(255,240,200,.85);box-shadow:0 0 3px #000}
-.ps-steps{position:absolute;right:14px;top:16%;width:260px;font-size:13px}
+.ps-steps{font-size:13px}
 .ps-steps li{list-style:none;padding:2px 0 2px 20px;position:relative;opacity:.75}
 .ps-steps li::before{content:"";position:absolute;left:2px;top:6px;width:10px;height:10px;border:1px solid #a9b08e}
 .ps-steps li.is-done{opacity:.5;text-decoration:line-through}.ps-steps li.is-done::before{background:#9fd37a;border-color:#9fd37a}
 .ps-steps li.is-next{opacity:1;color:#ffe2a0}.ps-steps li.is-next::before{border-color:#ffd678}
 .ps-steps ul{margin:0;padding:0}
-.ps-help{position:absolute;right:14px;bottom:18%;width:300px;font-size:12.5px;line-height:1.45}
+.ps-help{font-size:12.5px;line-height:1.45}.ps-help h4{margin:0 0 4px}.ps-help p{margin:0 0 2px}
 .ps-help p{margin:0}
 .ps-wheel{position:absolute;left:50%;top:50%;width:380px;height:380px;margin:-190px 0 0 -190px}
 .ps-wheel svg{width:100%;height:100%}
@@ -56,10 +67,26 @@ const CSS = `
 .ps-crack svg{position:absolute;inset:0;width:100%;height:100%}
 .ps-crack p{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-size:18px;color:#f08a74;text-shadow:0 1px 3px #000;letter-spacing:.08em}
 .ps-banner{position:absolute;left:50%;top:30%;transform:translateX(-50%);font-size:clamp(22px,3.4vw,40px);letter-spacing:.2em;text-transform:uppercase;text-shadow:0 2px 8px #000;color:#f3e7c0}
-.ps-vis{position:absolute;right:14px;top:12%;font-size:12px;letter-spacing:.12em;background:rgba(10,12,10,.6);padding:3px 8px;color:#c9d79f}
-body.is-touch .ps-side{width:170px;font-size:12px;top:40%}
-body.is-touch .ps-help{display:none}
-@media (max-width:820px){.ps-side{width:160px;font-size:11.5px}.ps-steps{width:200px;font-size:12px}.ps-help{display:none}}
+.ps-vis{font-size:12px;letter-spacing:.12em;background:rgba(10,12,10,.6);padding:3px 8px;color:#c9d79f;align-self:flex-end}
+.psim-on .vh-panel,.psim-on .vh-rack,.psim-on .vh-seats{display:none!important}
+.psim-on .vo-load{bottom:calc(4% + env(safe-area-inset-bottom))}
+/* Handy/kleine Fenster: alles kompakter; Touch (quer): Zustand rechts oben unter der Pause, Handgriffe links unter der Minikarte,
+   Bordsprech schmal zwischen Stick und Feuerknöpfen, Bedienhilfe aus (Tastatur) */
+@media (max-height:560px),(max-width:900px){
+  .ps-side{width:188px;font-size:11px;bottom:12%;gap:3px;max-height:70vh}.ps-box{padding:4px 7px}.ps-box h4{font-size:10px;margin-bottom:2px}.ps-row{line-height:1.25}
+  .ps-head{padding:3px 7px}.ps-head b{font-size:12px}.ps-head span{font-size:13px}
+  .ps-right{width:210px;top:22%}.ps-steps{font-size:11.5px}.ps-steps li{padding:1px 0 1px 18px}.ps-steps li::before{top:4px;width:9px;height:9px}.ps-why{font-size:11px;margin-top:3px}
+  .ps-help{display:none!important}.ps-line{font-size:13px;padding:3px 8px}.ps-sub{width:min(560px,56vw);bottom:14%}
+}
+body[data-input-mode="touch"] .ps-side{left:auto;right:calc(8px + env(safe-area-inset-right));top:58px;bottom:auto;width:172px;font-size:10.5px;max-height:44vh}
+body[data-input-mode="touch"] .ps-side .ps-crew{display:none}
+body[data-input-mode="touch"] .ps-row kbd{display:none}
+body[data-input-mode="touch"] .ps-right{right:auto;left:calc(8px + env(safe-area-inset-left));top:calc(var(--mm-touch,118px) + 34px);width:190px;max-height:46vh}
+body[data-input-mode="touch"] .ps-steps kbd{display:none}
+body[data-input-mode="touch"] .ps-help{display:none!important}
+body[data-input-mode="touch"] .ps-sub{bottom:4%;width:min(440px,44vw)}
+body[data-input-mode="touch"] .ps-line{font-size:12.5px}
+body[data-input-mode="touch"] .ps-ord{top:22%;font-size:20px}
 `;
 
 /** Bordsprech/Funk: Zeilen mit Sprecher, Dauer nach Textlänge, Sprachausgabe (de-DE) wenn verfügbar und an. */
@@ -85,8 +112,11 @@ export class Radio {
     const cls = tone || (from === 'Funk' ? 'funk' : me ? 'me' : '');
     const life = 2.6 + text.length * 0.045;
     const line = { from: me ? `${from} (du)` : from, text, until: now + life, cls, el: null };
+    // höchstens ein Hinweis zur Zeit (ersetzt den vorigen), höchstens drei Zeilen insgesamt
+    if (from === 'Hinweis') for (let i = this.lines.length - 1; i >= 0; i--) if (this.lines[i].hint) { this.lines[i].el?.remove(); this.lines.splice(i, 1); }
+    line.hint = from === 'Hinweis';
     this.lines.push(line);
-    if (this.lines.length > 4) { const old = this.lines.shift(); old.el?.remove(); }
+    while (this.lines.length > 3) { const old = this.lines.shift(); old.el?.remove(); }
     const el = document.createElement('div');
     el.className = `ps-line${cls ? ' is-' + cls : ''}`;
     el.innerHTML = `<b>${esc(line.from)}</b>${esc(text)}`;
@@ -159,15 +189,18 @@ export class PanzerHUD {
       <div class="ps-hot" hidden><span></span></div>
       <div class="ps-hot ps-next" hidden><span></span></div>
       <div class="ps-ord" hidden></div>
-      <div class="ps-vis" hidden></div>
       <div class="ps-side">
+        <div class="ps-head"><b></b><span></span></div><div class="ps-hull"><i></i></div>
         <div class="ps-box ps-crew"><h4>Besatzung</h4><div class="ps-crewl"></div></div>
         <div class="ps-box ps-ammo"><h4>Munition</h4><div class="ps-ammol"></div></div>
         <div class="ps-box"><h4>Zustand</h4><div class="ps-mods"></div></div>
       </div>
-      <div class="ps-box ps-steps" hidden><h4>Handgriffe</h4><ul></ul><p class="ps-why" hidden></p></div>
-      <div class="ps-hint" hidden></div>
-      <div class="ps-box ps-help" hidden></div>
+      <div class="ps-right">
+        <div class="ps-vis" hidden></div>
+        <div class="ps-hint" hidden></div>
+        <div class="ps-box ps-steps" hidden><h4>Handgriffe</h4><ul></ul><p class="ps-why" hidden></p></div>
+        <div class="ps-box ps-help" hidden></div>
+      </div>
       <div class="ps-wheel" hidden></div>
       <div class="ps-banner" hidden></div>
       <div class="ps-sub"></div>`;
@@ -177,7 +210,8 @@ export class PanzerHUD {
     this.el = {
       crew: q('.ps-crewl'), ammo: q('.ps-ammol'), mods: q('.ps-mods'), ord: q('.ps-ord'), mark: q('.ps-mark'), tgt: q('.ps-tgt'), tgtL: q('.ps-tgt span'),
       hot: q('.ps-hot:not(.ps-next)'), hotL: q('.ps-hot:not(.ps-next) span'), next: q('.ps-next'), nextL: q('.ps-next span'), steps: q('.ps-steps'), stepsL: q('.ps-steps ul'), why: q('.ps-why'), hint: q('.ps-hint'), help: q('.ps-help'), wheel: q('.ps-wheel'),
-      sub: q('.ps-sub'), crack: q('.ps-crack'), banner: q('.ps-banner'), dot: q('.ps-dot'), vis: q('.ps-vis'), side: q('.ps-side'),
+      sub: q('.ps-sub'), crack: q('.ps-crack'), banner: q('.ps-banner'), dot: q('.ps-dot'), vis: q('.ps-vis'), side: q('.ps-side'), right: q('.ps-right'),
+      headN: q('.ps-head b'), headS: q('.ps-head span'), hull: q('.ps-hull'), hullI: q('.ps-hull i'),
     };
     this._c = {};
     this._t = 0;
@@ -240,8 +274,19 @@ export class PanzerHUD {
     this._set('banH', el.banner, 'hidden', !s.banner);
     if (s.banner) this._set('banT', el.banner, 'text', s.banner);
     this._set('sideH', el.side, 'hidden', !s.visible);
+    this._set('rightH', el.right, 'hidden', !s.visible);
     if (this._t > 0) return;
     this._t = 0.2;
+    // Kopf: Fahrzeug, Tempo, Hülle (ersetzt die Fahrzeugtafel des Fahrzeug-HUDs)
+    const V = s.vehicle;
+    if (V) {
+      this._set('headN', el.headN, 'text', V.def.name || '');
+      this._set('headS', el.headS, 'html', `${Math.round(Math.abs(V.body.speed) * 3.6)}<small>km/h</small>`);
+      const hp = Math.max(0, Math.min(1, V.health / (V.maxHealth || 1)));
+      this._set('hullT', el.hullI, 'tf', `scaleX(${hp.toFixed(3)})`);
+      const hc = hp < 0.3 ? 'ps-hull is-crit' : hp < 0.6 ? 'ps-hull is-low' : 'ps-hull';
+      if (this._c.hullC !== hc) { this._c.hullC = hc; el.hull.className = hc; }
+    }
     // Besatzung
     const crew = (s.crew || []).map((c) => `<div class="ps-row"><i class="${c.me ? 'ps-me' : ''}">${esc(c.role)}</i><em class="${c.cls}">${esc(c.state)}</em></div>`).join('');
     this._set('crew', el.crew, 'html', crew);
@@ -251,8 +296,11 @@ export class PanzerHUD {
     // Module
     const mods = s.vehicle ? modsOf(s.vehicle) : null;
     if (mods) {
-      const m = ['motor', 'ketten', 'turm', 'optik', 'rohr', 'munition'].map((k) => `<div class="ps-row"><i>${MOD_LABEL[k]}</i><em class="${mods[k] >= 1 ? 'ps-ok' : mods[k] > 0 ? 'ps-hurt' : 'ps-dead'}">${mods[k] >= 1 ? 'OK' : mods[k] > 0 ? 'beschäd.' : 'aus'}</em></div>`).join('')
-        + (mods.brand > 0 ? '<div class="ps-row"><i>Brand</i><em class="ps-dead">FEUER</em></div>' : '');
+      // nur Abweichungen als Plaketten (kein Umbruch in Spalten); alles heil → eine Zeile
+      const bad = ['motor', 'ketten', 'turm', 'optik', 'rohr', 'munition', 'funk'].filter((k) => mods[k] < 1);
+      const m = (mods.brand > 0 ? '<span class="ps-dead">Brand!</span>' : '')
+        + bad.map((k) => `<span class="${mods[k] > 0 ? 'ps-hurt' : 'ps-dead'}">${MOD_LABEL[k]} ${mods[k] > 0 ? 'beschädigt' : 'ausgefallen'}</span>`).join('')
+        || '<span class="ps-ok">Alle Baugruppen i. O.</span>';
       this._set('mods', el.mods, 'html', m);
     }
     // Prüfliste / Hilfe

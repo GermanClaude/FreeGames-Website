@@ -109,8 +109,8 @@ function allee(b, zones) {
   for (const [x, z, r] of [[-30, 3.2, 1.3], [30, -3.2, 1.3], [0, 4.6, 0.9], [0, -4.6, 0.9], [-44, -3.5, 1.0], [44, 3.5, 1.0]]) {
     b.decal(x, 0.012, z, r * 3.4, r * 3.4, 'cracks', { opacity: 0.9 });
     b.decal(x, 0.014, z, r * 2.2, r * 2.2, 'soot', { opacity: 0.7 });
-    // platz (19.11.): Auswurf aus Erde/Schotter mit hellen Asphaltschollen statt schwarzem Asphaltkegel (QA: „schwarzer Klotz“)
-    rubble(b, x + r * 0.9, z, r * 0.7, { mat: 'dirt', tint: '#8f8270', chunkMat: 'asphalt', chunkTint: '#b4aea4' });
+    // platz (19.11.): Auswurf aus Erde mit grauen Belagbrocken statt schwarzem Asphaltkegel (QA: „schwarzer Klotz“)
+    rubble(b, x + r * 0.9, z, r * 0.7, { mat: 'dirt', tint: '#8f8270', chunkMat: 'concrete_dirty', chunkTint: '#7c7872' });
   }
   // Barrikaden auf der Allee (versetzt, beidseits gleich)
   for (const s of [-1, 1]) {
