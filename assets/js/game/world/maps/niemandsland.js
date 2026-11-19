@@ -199,7 +199,7 @@ const NIEMANDSLAND = {
   wallMargin: 40,
   assets: { hdri: 'np_sky_vormittag_bewoelkt', // 16.10.: eigener Himmel (Kartenstandard Vormittag, bewölkt)
     // tex4 (15.11.): Grabenverschalung/Laufroste aus verwittertem Bretterscan statt lackiertem Dielenboden (wirkte wie Parkett)
-    materials: { wood_planks: { id: 'wood_planks_weathered', color: [3.4, 3.3, 3.3], roughness: 1.1 } } },
+    materials: { wood_planks: { id: 'wood_planks_weathered', color: [4.8, 4.6, 4.5], roughness: 1.1 } } },
   lighting: {
     // bedeckt: Sonne hoch und schwach, kein Hof um die Sonne (blendete tief im Gegenlicht – Nutzer 11.10.)
     sun: { elevation: 42, azimuth: 200, color: '#ddd6ca', intensity: 1.25 },
