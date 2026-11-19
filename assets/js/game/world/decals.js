@@ -151,23 +151,22 @@ function drawAtlas(ctx) {
     // tex4 (15.11.): Sprühdose statt Comic-Zickzack – erfundene, schnell gesprühte Buchstabenzüge (keine echten Zeichen)
     // mit weichem Sprühnebel (Unschärfe), Laufnasen, verblasst und teils übergestrichen
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const strokes = [];
-    let x = 34;
-    for (let g = 0; g < 5; g++) { // fünf „Zeichen“: je ein Bogen/Haken aus 3–5 Stützpunkten
-      const n = 3 + Math.floor(r() * 3), pts = [];
-      for (let i = 0; i < n; i++) pts.push([x + r() * 30, 92 + r() * 74]);
-      strokes.push(pts); x += 34 + r() * 8;
+    // ein durchgehender, schnell gesprühter Schriftzug (Schleifen/Haken, keine echten Buchstaben), dünn, ohne Kontur
+    const pts = [];
+    let x = 26, y = 130;
+    for (let g = 0; g < 7; g++) {
+      const up = 40 + r() * 40, loop = r() < 0.5;
+      pts.push([x + 6, y - up], [x + 12 + (loop ? 10 : 0), y - up * (loop ? 0.6 : 0.2)], [x + 18, y + 6 + r() * 10]);
+      x += 26 + r() * 6;
     }
-    const spray = (col, w, blur) => {
-      ctx.shadowColor = col; ctx.shadowBlur = blur; ctx.strokeStyle = col; ctx.lineWidth = w;
-      for (const p of strokes) { ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]); for (let i = 1; i < p.length; i++) { const m = [(p[i - 1][0] + p[i][0]) / 2, (p[i - 1][1] + p[i][1]) / 2]; ctx.quadraticCurveTo(p[i - 1][0], p[i - 1][1], m[0], m[1]); } ctx.stroke(); }
-      ctx.shadowBlur = 0;
-    };
-    const hue = r() < 0.5 ? '38,40,46' : '58,74,92';
-    spray(`rgba(${hue},0.55)`, 10, 6); // Umriss
-    spray(r() < 0.5 ? 'rgba(168,64,52,0.6)' : 'rgba(198,182,150,0.55)', 5, 3);
-    // Laufnasen unter dicken Stellen
-    for (const p of strokes) if (r() < 0.6) { const q = p[Math.floor(r() * p.length)], len = 10 + r() * 30; const g2 = ctx.createLinearGradient(0, q[1], 0, q[1] + len); g2.addColorStop(0, `rgba(${hue},0.45)`); g2.addColorStop(1, `rgba(${hue},0)`); ctx.fillStyle = g2; ctx.fillRect(q[0] - 1, q[1], 2, len); }
+    const hue = r() < 0.5 ? '44,46,54' : (r() < 0.5 ? '150,58,48' : '52,78,110');
+    ctx.strokeStyle = `rgba(${hue},0.75)`; ctx.lineWidth = 4.5; ctx.shadowColor = `rgba(${hue},0.6)`; ctx.shadowBlur = 3;
+    ctx.beginPath(); ctx.moveTo(26, 130);
+    for (let i = 0; i + 1 < pts.length; i += 2) ctx.quadraticCurveTo(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]);
+    ctx.stroke(); ctx.shadowBlur = 0;
+    // Unterstrich + Laufnasen
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(30, 150); ctx.quadraticCurveTo(120, 160, x, 146); ctx.stroke();
+    for (let k = 0; k < 5; k++) { const qx = 30 + r() * (x - 30), qy = 120 + r() * 30, len = 8 + r() * 26; const g2 = ctx.createLinearGradient(0, qy, 0, qy + len); g2.addColorStop(0, `rgba(${hue},0.5)`); g2.addColorStop(1, `rgba(${hue},0)`); ctx.fillStyle = g2; ctx.fillRect(qx - 0.8, qy, 1.6, len); }
     ctx.globalCompositeOperation = 'destination-out';
     for (let i = 0; i < 900; i++) { ctx.globalAlpha = r() * 0.55; ctx.fillRect(r() * 256, r() * 256, 1 + r() * 2.5, 1 + r() * 2.5); } // abgewittert
     ctx.globalAlpha = 0.35; ctx.fillRect(0, 150 + r() * 40, 256, 60); // teils überstrichen/verblasst
