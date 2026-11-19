@@ -545,6 +545,11 @@ export function wandkram(b, o = {}) {
         if (blocked) continue;
         // platz (19.11.): Pflanzkübel nur neben einer Haustür eines Wohnhauses (nicht an Scheunen, Hallen, Mauern)
         if (pick.tuer && !(f.kind === 'building' && wohnhaus(b, f.x, f.z, f.y0 + 0.5) && doors.some(([dx, dz, r, dy]) => Math.abs(dy - f.y0 - 1) < 2 && Math.hypot(px - dx, pz - dz) < r + 1.2))) continue;
+        // platz: wandnahe Stücke (Zählerkasten, angelehntes Werkzeug) nicht vor Fenster-/Türöffnungen
+        if (off < 0.2 && f.kind === 'building') {
+          const [wx0, wz0] = W(lx, lz), onx = nx * c + nz * s, onz = -nx * s + nz * c;
+          if (!wandStelle(b, near, null, onx, onz, 0, wx0 + onx * 0.01, f.y0 + 0.9, wz0 + onz * 0.01, 0.35)) continue;
+        }
         const ry = Math.atan2(nx * c + nz * s, -nx * s + nz * c); // lokal +z = Außennormale
         pick.fn(b, px, f.y0, pz, ry, hash01(px, pz, 302), f.y1 - f.y0);
         n++;
@@ -633,6 +638,22 @@ const TABELLE = {
 };
 
 /**
+ * platz (19.11.): Ist an der Wandstelle (ax, ay, az) wirklich Wand? Hinter der Stelle (Außennormale ox/oz, Wandtiefe
+ * dt) muss ein Gebäude-Grundriss liegen (sonst hinge das Teil neben der Hausecke in der Luft), und keine andere
+ * Öffnung (Fenster, Tür) darf die Stelle überdecken (Briefkasten im Fensterloch). halb = halbe Breite des Teils.
+ */
+function wandStelle(b, near, p, ox, oz, dt, ax, ay, az, halb = 0.2) {
+  const ix = ax - ox * (dt + 0.15), iz = az - oz * (dt + 0.15);
+  if (!near(ix, iz).some((f) => f.kind === 'building' && ay > f.y0 && ay < f.y1 && inRect(f, ix, iz, -halb))) return false;
+  for (const q of b.openings || []) {
+    if (q === p || Math.abs(q.y - ay) > q.h / 2 + 0.2) continue;
+    const dx = ax - q.x, dz = az - q.z;
+    if (Math.abs(dx * q.ux + dz * q.uz) < q.w / 2 + halb + 0.05 && Math.abs(-dx * q.uz + dz * q.ux) < 0.7) return false;
+  }
+  return true;
+}
+
+/**
  * Hausanschlüsse an Außentüren im Erdgeschoss: Briefkasten, Hausnummer, Wandleuchte, Fußabtreter/Stufe.
  * o: { bereich, stil, sperr } – nur Türen in Gebäudewänden (eine Seite im Gebäude, die andere frei).
  */
@@ -652,11 +673,17 @@ export function tuerdetails(b, o = {}) {
     const y0 = p.y - p.h / 2, wall = p.t / 2 + 0.005;
     const side = hash01(p.x, p.z, 401) < 0.5 ? -1 : 1, sx = p.ux * side, sz = p.uz * side;
     const off = p.w / 2 + 0.38;
-    if (o.stil !== 'industrie' && o.stil !== 'militaer') {
-      briefkasten(b, p.x + sx * off + ox * (wall + 0.06), y0 + 1.05, p.z + sz * off + oz * (wall + 0.06), ry);
-      hausnummer(b, p.x - sx * (off - 0.08) + ox * (wall + 0.006), y0 + 1.75, p.z - sz * (off - 0.08) + oz * (wall + 0.006), ry);
+    // platz (19.11.): jedes Teil nur, wo Wand ist (nicht neben der Hausecke, nicht im Nachbarfenster); Briefkasten
+    // und Hausnummer nur an Wohnhäusern (nicht an Scheunen, Ställen, Hallen)
+    const ok = (ax, ay, az, h) => wandStelle(b, near, p, ox, oz, p.t / 2, ax, ay, az, h);
+    if (o.stil !== 'industrie' && o.stil !== 'militaer' && wohnhaus(b, p.x - ox, p.z - oz, y0 + 1)) {
+      const bx = p.x + sx * off + ox * (wall + 0.06), bz2 = p.z + sz * off + oz * (wall + 0.06);
+      if (ok(bx, y0 + 1.25, bz2, 0.2)) briefkasten(b, bx, y0 + 1.05, bz2, ry);
+      const hx = p.x - sx * (off - 0.08) + ox * (wall + 0.006), hz = p.z - sz * (off - 0.08) + oz * (wall + 0.006);
+      if (ok(hx, y0 + 1.85, hz, 0.12)) hausnummer(b, hx, y0 + 1.75, hz, ry);
     }
-    wandleuchte(b, p.x - sx * (p.w / 2 + 0.25) + ox * wall, y0 + p.h + 0.15, p.z - sz * (p.w / 2 + 0.25) + oz * wall, ry);
+    const lx = p.x - sx * (p.w / 2 + 0.25) + ox * wall, lz = p.z - sz * (p.w / 2 + 0.25) + oz * wall;
+    if (ok(lx, y0 + p.h + 0.3, lz, 0.1)) wandleuchte(b, lx, y0 + p.h + 0.15, lz, ry);
     // Fußabtreter vor der Tür
     if (fein(b)) b.box(p.x + ox * (wall + 0.32), y0 + 0.002, p.z + oz * (wall + 0.32), Math.min(0.9, p.w - 0.2), 0.015, 0.5, 'rubber_floor', { ...DN, ry: Math.atan2(-p.uz, p.ux), tint: '#4a4440' });
     n++;
@@ -707,7 +734,7 @@ export function fensterleben(b, o = {}) {
     if (bot > 2 && (o.stil === 'stadt' || o.stil === 'dorf') && h3 < P.kasten && kastenOk) { blumenkasten(b, p.x + ex + ox * 0.12, bot - 0.04, p.z + ez + oz * 0.12, ry, Math.min(1.2, p.w)); merkeFensterdeko(b, p.x, bot, p.z); n++; }
     else if (bot > 2 && (o.stil === 'stadt' || o.stil === 'dorf') && h3 < P.kasten) { /* kein Ersatz: Fenster bleibt frei */ }
     else if (o.stil === 'stadt' && bot > 1.5 && h3 < P.kasten + P.klima) { (b._acs || (b._acs = [])).push([p.x + ex + ox * 0.25, bot - 0.75, p.z + ez + oz * 0.25, ry]); n++; }
-    else if (o.stil === 'stadt' && bot > 3 && h3 < P.kasten + P.klima + P.sat) { satschuessel(b, p.x + p.ux * (p.w / 2 + 0.5) + ex + ox * 0.05, bot + 0.2, p.z + p.uz * (p.w / 2 + 0.5) + ez + oz * 0.05, ry); n++; }
+    else if (o.stil === 'stadt' && bot > 3 && h3 < P.kasten + P.klima + P.sat && wandStelle(b, near, p, ox, oz, p.t / 2, p.x + p.ux * (p.w / 2 + 0.5) + ex, bot + 0.5, p.z + p.uz * (p.w / 2 + 0.5) + ez, 0.35)) { satschuessel(b, p.x + p.ux * (p.w / 2 + 0.5) + ex + ox * 0.05, bot + 0.2, p.z + p.uz * (p.w / 2 + 0.5) + ez + oz * 0.05, ry); n++; }
   }
   // Klimageräte gesammelt (Fotoscan exterior_aircon_unit, sonst Primitive)
   for (const [x, y, z, ry] of b._acs || []) {
@@ -849,7 +876,7 @@ export function bodenmarken(b, o = {}) {
 // Einrichtung leerer Räume
 // ---------------------------------------------------------------------------
 /** Möbel: L = Breite an der Wand, D = Tiefe, H = Höhe (Kollision ab H > 0.6), fn baut das Stück (Unterkante-Mitte,
- *  lokal +z in den Raum). */
+ *  lokal +z in den Raum; mit wand: true liegt der Ursprung an der Wandlinie, sonst in der Mitte des Stücks). */
 const MOEBEL = {
   schrank: { L: 1.0, D: 0.6, H: 2.0, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry), t = ['#7a5a3a', '#8a6a4a', '#d8d0c0', '#5a4636'][Math.floor(hash01(x, z, 800) * 4)];
@@ -869,7 +896,7 @@ const MOEBEL = {
       if (k < 4 && fein(b)) for (let i = 0; i < 8; i++) { const hh = 0.2 + hash01(x + i, z + k, 801) * 0.1; if (hash01(x + k, z + i, 802) < 0.2) continue; f.box(-0.4 + i * 0.11, 0.065 + k * 0.38, 0.02, 0.07 + hash01(i, k, 803) * 0.04, hh, 0.24, 'tarp', { ...DN, tint: ['#7a2a20', '#2a4a6a', '#3a5a3a', '#c8b890', '#5a3a5a', '#2a2a2a'][Math.floor(hash01(x + i, k, 804) * 6)] }); }
     }
   } },
-  bett: { L: 0.95, D: 2.02, H: 0.62, fn: (b, x, y, z, ry) => {
+  bett: { L: 0.95, D: 2.02, H: 0.62, wand: true, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry);
     const [bx, bz] = f.P(0, 1.0);
     lib(b, 'old_bed_frame', bx, y, bz, { ry }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0, 1.0, 0.92, 0.35, 2.0, 'wood_dark', DG); g.box(0, 0, 0.03, 0.92, 1.0, 0.06, 'wood_dark', DG); });
@@ -887,13 +914,13 @@ const MOEBEL = {
     f.box(0, 1.45, -0.12, 1.8, 0.7, 0.35, 'wood_painted', { ...DN, tint: t }); // Hängeschrank
     if (fein(b)) { f.cyl(-0.5, 0.9, 0.05, 0.1, 0.12, 'metal_galvanized', { ...DN, seg: 10 }); f.cyl(-0.2, 0.9, 0.1, 0.05, 0.1, 'white', { ...DN, seg: 8, tint: '#d8d0c0' }); }
   } },
-  tisch: { L: 1.6, D: 1.15, H: 0.78, stuehle: true, fn: (b, x, y, z, ry) => {
+  tisch: { L: 1.6, D: 1.15, H: 0.78, stuehle: true, wand: true, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry);
     const [tx, tz] = f.P(0, 0.58);
     lib(b, 'painted_wooden_table', tx, y, tz, { ry, sx: 0.66, sy: 0.8, sz: 0.85 }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0.72, 0.58, 1.55, 0.05, 0.9, 'wood_planks', { ...DN, tint: '#a8845e' }); for (const sx of [-0.7, 0.7]) for (const sz of [0.2, 0.96]) g.box(sx, 0, sz, 0.06, 0.72, 0.06, 'wood_dark', DN); });
     for (const sx of [-0.45, 0.45]) { const [cx, cz] = f.P(sx, 1.35); lib(b, 'painted_wooden_chair_01', cx, y, cz, { ry: ry + Math.PI + (hash01(cx, cz, 807) - 0.5) * 0.4 }, (bb) => { const g = frame(bb, cx, y, cz, ry + Math.PI); g.box(0, 0.44, 0, 0.42, 0.04, 0.42, 'wood_planks', DN); g.box(0, 0.48, -0.19, 0.42, 0.45, 0.03, 'wood_planks', DN); for (const a of [-0.18, 0.18]) for (const c of [-0.18, 0.18]) g.box(a, 0, c, 0.03, 0.44, 0.03, 'wood_dark', DN); }); }
   } },
-  schreibtisch: { L: 2.0, D: 0.95, H: 0.79, buero: true, fn: (b, x, y, z, ry) => {
+  schreibtisch: { L: 2.0, D: 0.95, H: 0.79, buero: true, wand: true, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry), [cx, cz] = f.P(0, 0.47);
     lib(b, 'metal_office_desk', cx, y, cz, { ry }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0.74, 0.47, 2.0, 0.045, 0.94, 'wood_planks', { ...DN, tint: '#8a7a62' }); g.box(-0.72, 0, 0.47, 0.5, 0.74, 0.9, 'metal_painted', { ...DG, tint: '#6f7a80' }); });
     f.box(0.2, 0.79, 0.25, 0.5, 0.32, 0.04, 'polymer', { ...DN, tint: '#1e2023' });
@@ -1112,7 +1139,9 @@ export function einrichten(b, o = {}) {
           if (!ok) { cur += 0.45; continue; }
           if (M.H > 0.6) lauf.setze(cx, cz, hx, hz);
           const ry = Math.atan2(nx, nz);
-          const [wx, wz] = along ? [u, c] : [c, u];
+          // platz (19.11.): Stücke ohne „wand“ bauen um ihre Mitte – vorher an der Wandlinie gesetzt, d. h. halb in der Wand
+          // (Schrank/Herd schauten außen aus der Fassade); Kollision lag schon richtig (cx, cz)
+          const [wx, wz] = M.wand ? (along ? [u, c] : [c, u]) : [cx, cz];
           M.fn(b, wx, fy, wz, ry);
           if (M.H > 0.6) {
             b.box(cx, fy, cz, hx * 2 - 0.04, Math.min(M.H, 1.9), hz * 2 - 0.04, 'black', { visual: false, minimap: false });
