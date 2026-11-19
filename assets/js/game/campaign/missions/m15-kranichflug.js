@@ -184,7 +184,7 @@ export const MISSION_15 = {
   weather: 'klar',
   type: 'Geiselbefreiung · Jet-Einsatz',
   summary: 'Die Graue Kompanie hält das Bodenpersonal von Hagenmoor fest, und Seyfrieds Hubschrauber steht startbereit. Befrei die Geiseln, starte den Jäger von der Bahn und zwing Seyfried zur Landung.',
-  loadoutHint: 'Jet: W/S Schub, Maus neigen/rollen, A/D Seitenruder. Auf der Bahn Vollgas, ab etwa 60 m/s sanft ziehen.',
+  loadoutHint: 'Jet: W/S Schub, Maus neigen/rollen, A/D Seitenruder. Auf der Bahn Vollgas, ab etwa 250 km/h sanft ziehen.',
   loadout: { primary: 'ar_k36', secondary: 'pi_p9' },
   mapVehicles: false,
   finale: true,
@@ -294,8 +294,8 @@ export const MISSION_15 = {
         const j = m.get('jet');
         if (!j) { m.fail('Kein Jäger verfügbar.'); return; }
         if (G.player.vehicle !== j) { try { G.vehicles.enter(G.player, j, 0); } catch { /* */ } }
-        m.say('sander', 'Gut. Schub ganz nach vorn. Bleib auf der Mittellinie. Bei sechzig Metern pro Sekunde ziehst du sanft – nicht reißen.', { radio: true });
-        m.tip('Start: Vollgas (W bzw. rechter Trigger), auf der Mittellinie bleiben, ab etwa 60 m/s die Nase sanft anheben.', 9);
+        m.say('sander', 'Gut. Schub ganz nach vorn. Bleib auf der Mittellinie. Bei etwa zweihundertfünfzig Stundenkilometern ziehst du sanft – nicht reißen.', { radio: true });
+        m.tip('Start: Vollgas (W bzw. rechter Trigger), auf der Mittellinie bleiben, ab etwa 250 km/h die Nase sanft anheben.', 9);
         m.objective('abheben', 'Starte den JK-9 von der Bahn', { label: 'Startbahn' });
         yield () => j.alive && j.body && !j.body.onGround && (j.body.agl || 0) > 25;
         m.done('abheben');

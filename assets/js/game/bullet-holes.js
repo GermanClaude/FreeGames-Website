@@ -1931,7 +1931,9 @@ vec3 npFreshCol( vec3 alb ) {
   if ( npSt == 5 ) return alb * 0.6;                                             // Erde: feucht, dunkler
   if ( npSt == 6 ) return alb * 0.5;                                             // Stoff
   return alb * vec3( 2.2, 1.85, 1.6 );                                           // Ziegel: frisch, orangerot
-}`)
+}
+// zerstoerung 19.11.: unter dem Putz (≈ 2 cm) liegt Mauerwerk – tiefer im Krater und im Kanal frischer Ziegelbruch
+vec3 npBrickCol() { return vec3( 0.66, 0.31, 0.2 ) * clamp( npL * 1.45, 0.1, 0.78 ); }`)
     .replace('#include <lights_pars_begin>', `#include <lights_pars_begin>
 vec3 npSunL() {
 #if NUM_DIR_LIGHTS > 0
@@ -1993,7 +1995,7 @@ vec3 npSunL() {
       float k = clamp( zOut / D, 0.0, 1.0 );
       float stri = 0.8 + 0.4 * npN2( vec2( atan( uw.y, uw.x ) * 4.0, zOut * 30.0 ) + npSeed );
       vec3 cc = npCell( uw * 9.0 + vec2( zOut * 11.0 ) + npSeed );
-      col = fresh * mix( 0.9, 0.35, k ) * stri * ( 0.85 + 0.3 * cc.y );
+      col = ( npSt == 2 && zOut > 0.025 ? npBrickCol() : fresh ) * mix( 0.9, 0.35, k ) * stri * ( 0.85 + 0.3 * cc.y );
       npAO = mix( 0.6, 0.1, k );
       npSun = 0.0;
       npHoleN = vec3( -uw / max( length( uw ), 1e-4 ), 0.25 );
@@ -2037,6 +2039,12 @@ vec3 npSunL() {
         float crack = npSt == 5 || npSt == 3 ? 1.0 : mix( 0.8, 1.0, smoothstep( 0.0, 0.05, c.z ) * ( 0.6 + 0.4 * npN2( q * 13.0 + npSeed ) ) + 0.3 * step( 0.5, npN2( npC( q ) * 4.0 + npSeed * 2.0 ) ) );
         col = fresh * mix( 1.0, 0.75, 1.0 - cav ) * grain * crack;
         if ( npSt == 0 ) col *= mix( 0.55, 0.95, 1.0 - cav ); // Holz: gestauchte, dunkle Fasern, zum Loch hin heller aufgerissen
+        // Putz: unterhalb der Putzschicht (gezackte Grenze) der Ziegel darunter – Fugen als dunkle Bänder
+        if ( npSt == 2 ) {
+          float lay = smoothstep( 0.26, 0.36, rd / max( npDc, 1e-3 ) + 0.1 * ( npN2( q * 18.0 + npSeed ) - 0.5 ) );
+          float joint = 1.0 - 0.45 * ( 1.0 - smoothstep( 0.0, 0.06, abs( fract( npW.y * 13.3 ) - 0.5 ) * 2.0 - 0.86 ) );
+          col = mix( col, npBrickCol() * grain * crack * mix( 1.0, 0.75, 1.0 - cav ) * joint, lay );
+        }
         // Blech: Delle bleibt lackiert, nur ein schmaler Saum am Loch ist blank abgeplatzt
         if ( npSt == 3 ) {
           float bare = 1.0 - smoothstep( npR * 1.06, npR * 1.45, length( npC( q ) ) );
@@ -2082,7 +2090,7 @@ vec3 npSunL() {
           float att = exp( -( wd - z0 ) / max( npR * 2.2, 0.02 ) );
           vec2 rw = q + dxy * s, rc0 = rw - npS * wd; // Wandpunkt, relativ zur Kanalmitte in dieser Tiefe
           float stri = 0.8 + 0.4 * npN2( vec2( atan( rc0.y, rc0.x ) * 3.0, wd * 25.0 ) + npSeed );
-          col = fresh * mix( 0.35, 0.8, att ) * stri;
+          col = ( npSt == 2 ? npBrickCol() : fresh ) * mix( 0.35, 0.8, att ) * stri;
           npAO = mix( 0.04, 0.5, att );
           // Sonnenfleck an der Kanalwand: Licht kommt durch die Öffnung bis hierher
           {
@@ -2142,6 +2150,17 @@ vec3 npSunL() {
         float soot = ( 1.0 - smoothstep( 0.0, 0.8, rel ) ) * 0.22 * n1;
         a = soot;
         col = vec3( npL * 0.25 );
+        // Austritt: Blech reißt sternförmig auf, die Lappen biegen sich nach außen (blanke Bruchkanten, Licht von der Seite)
+        if ( npExit ) {
+          float ang = atan( cp0.y, cp0.x );
+          float lobe = 0.55 + 0.45 * sin( ang * 5.0 + npSeed * 3.7 + 1.3 * sin( ang * 3.0 + npSeed ) );
+          float petal = 1.0 - smoothstep( 0.22 * lobe, 0.3 * lobe + 0.02, rel );
+          if ( petal > 0.01 ) {
+            a = max( a, petal );
+            col = mix( col, vec3( clamp( npL * 2.2, 0.1, 0.6 ) ) * ( 0.75 + 0.35 * n2 ), petal );
+            npHoleN = vec3( u * 1.4 * petal, 1.0 );
+          }
+        }
       } else if ( npSt == 4 ) {
         // Glas: Spinnennetz – Strahlen + Ringe, weiß zerstoßen am Loch
         float ang = atan( p0.y, p0.x );
