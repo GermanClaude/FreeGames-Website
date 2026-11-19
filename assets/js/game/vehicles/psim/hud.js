@@ -15,13 +15,14 @@ const CSS = `
 .ps-line.is-funk{border-left-color:#d8a64a}.ps-line.is-funk b{color:#e7c27a}
 .ps-line.is-me{border-left-color:#6fa8dc}.ps-line.is-me b{color:#9cc6ee}
 .ps-line.is-warn{border-left-color:#d8543c}.ps-line.is-warn b{color:#f08a74}
-.ps-side{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;width:210px;font-size:13px}
+.ps-side{position:absolute;left:14px;bottom:15%;display:flex;flex-direction:column;gap:6px;width:225px;font-size:12.5px}
 .ps-box{background:rgba(10,12,10,.62);border:1px solid rgba(200,200,170,.16);padding:7px 9px}
 .ps-box h4{margin:0 0 4px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#a9b08e;font-weight:600}
 .ps-row{display:flex;justify-content:space-between;gap:6px;line-height:1.35}
 .ps-row i{font-style:normal;color:#bdbca9}.ps-row em{font-style:normal;font-size:12px;opacity:.85}
 .ps-ok{color:#9fd37a}.ps-hurt{color:#e7c35a}.ps-dead{color:#e5634b}.ps-me{color:#9cc6ee}
-.ps-mods{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.ps-mods{display:grid;grid-template-columns:1fr 1fr;gap:1px 10px}.ps-mods .ps-row{white-space:nowrap}
+.ps-row kbd{font:inherit;font-size:.85em;background:#2a2c26;border:1px solid #6a6c5e;border-radius:3px;padding:0 4px;margin-right:5px}
 .ps-ammo .ps-row.is-sel{background:rgba(160,180,120,.16)}
 .ps-ammo .ps-row.is-load i::after{content:" ●";color:#e7c35a}
 .ps-ord{position:absolute;left:50%;top:13%;transform:translateX(-50%);text-align:center;font-size:clamp(20px,3vw,34px);letter-spacing:.16em;text-transform:uppercase;color:#f0e6c0;text-shadow:0 2px 6px #000}
@@ -37,7 +38,7 @@ const CSS = `
 .ps-next{border-color:rgba(120,200,255,.95);box-shadow:0 0 12px rgba(90,170,255,.6)}.ps-next span{border-left-color:#7cc4ff}
 .ps-why{margin:6px 0 0;font-size:12px;color:#cfd8b8;line-height:1.35}.ps-hint{position:absolute;right:14px;top:22%;font-size:12px;background:rgba(10,12,10,.6);padding:3px 8px}
 .ps-dot{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:rgba(255,240,200,.85);box-shadow:0 0 3px #000}
-.ps-steps{position:absolute;right:14px;top:22%;width:250px;font-size:13px}
+.ps-steps{position:absolute;right:14px;top:16%;width:260px;font-size:13px}
 .ps-steps li{list-style:none;padding:2px 0 2px 20px;position:relative;opacity:.75}
 .ps-steps li::before{content:"";position:absolute;left:2px;top:6px;width:10px;height:10px;border:1px solid #a9b08e}
 .ps-steps li.is-done{opacity:.5;text-decoration:line-through}.ps-steps li.is-done::before{background:#9fd37a;border-color:#9fd37a}
@@ -250,7 +251,7 @@ export class PanzerHUD {
     // Module
     const mods = s.vehicle ? modsOf(s.vehicle) : null;
     if (mods) {
-      const m = ['motor', 'ketten', 'turm', 'optik', 'rohr', 'munition'].map((k) => `<div class="ps-row"><i>${MOD_LABEL[k]}</i><em class="${mods[k] >= 1 ? 'ps-ok' : mods[k] > 0 ? 'ps-hurt' : 'ps-dead'}">${mods[k] >= 1 ? 'i. O.' : mods[k] > 0 ? 'beschädigt' : 'ausgefallen'}</em></div>`).join('')
+      const m = ['motor', 'ketten', 'turm', 'optik', 'rohr', 'munition'].map((k) => `<div class="ps-row"><i>${MOD_LABEL[k]}</i><em class="${mods[k] >= 1 ? 'ps-ok' : mods[k] > 0 ? 'ps-hurt' : 'ps-dead'}">${mods[k] >= 1 ? 'OK' : mods[k] > 0 ? 'beschäd.' : 'aus'}</em></div>`).join('')
         + (mods.brand > 0 ? '<div class="ps-row"><i>Brand</i><em class="ps-dead">FEUER</em></div>' : '');
       this._set('mods', el.mods, 'html', m);
     }

@@ -415,12 +415,12 @@ export class TankCrew {
         const rel = wrap(Math.atan2(-(t.pos.x - eye.x), -(t.pos.z - eye.z)) - v.body.yaw());
         this.say('Kommandant', `Richtschütze – ${TARGET_LABEL[t.kind]} – ${bearingWord(rel)} – ${roundRange(t.dist)}${kind ? ` – ${KINDS[kind].call}` : ''}!`, { key: 'ziel' });
         if (kind) this.orderAmmo(kind, { quiet: true });
-        if (this.isPlayer('gunner')) { C.overrideT = 1.4; this._overrideTo(t); }
+        if (this.isPlayer('gunner') && !this.arcade) { C.overrideT = 1.4; this._overrideTo(t); }
         else if (this.isBot('gunner')) setTimeout(() => this.say('Richtschütze', 'Erkannt!', { quiet: true }), 800);
         C.phase = 'richten'; C.sinceCall = now;
         // Fahrer: zum Schuss anhalten (Weltkrieg immer, modern auf große Entfernung)
         const wk = (v.def.era || 'modern') !== 'modern';
-        if ((wk || t.dist > 1200) && Math.abs(v.body.speed) > 1 && (this.drive.cmd === 'vor' || this.drive.cmd === 'markierung' || this.isPlayer('driver'))) this._driveOrder('halt');
+        if (!this.arcade && (wk || t.dist > 1200) && Math.abs(v.body.speed) > 1 && (this.drive.cmd === 'vor' || this.drive.cmd === 'markierung' || this.isPlayer('driver'))) this._driveOrder('halt');
       }
       // Feuerbefehl, sobald geladen und gerichtet
       const g = v.gun;
@@ -437,7 +437,7 @@ export class TankCrew {
       }
     } else if (C.phase !== 'suche') C.phase = 'suche';
     // Fahrbefehle: ohne Ziel auf das nächste Angriffsziel vorrücken
-    if (!t && now - C.driveSaidT > 6 && !mode.engineOff()) {
+    if (!t && !this.arcade && now - C.driveSaidT > 6 && !mode.engineOff()) {
       const obj = mode.nextObjective();
       if (obj) {
         const d = obj.distanceTo(v.position);
@@ -455,7 +455,7 @@ export class TankCrew {
       }
     }
     // Schwer getroffen: Deckung
-    if (v.health < v.maxHealth * 0.45 && now - C.hurtT > 25 && (this.drive.cmd !== 'deckung')) { C.hurtT = now; this._driveOrder('deckung'); }
+    if (!this.arcade && v.health < v.maxHealth * 0.45 && now - C.hurtT > 25 && (this.drive.cmd !== 'deckung')) { C.hurtT = now; this._driveOrder('deckung'); }
     // Kommandantenübersteuerung (Spieler-Richtschütze): Turm weich auf das Ziel
     if (C.overrideT > 0 && this.isPlayer('gunner')) {
       C.overrideT -= dt;

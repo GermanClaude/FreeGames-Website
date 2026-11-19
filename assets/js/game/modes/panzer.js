@@ -863,7 +863,7 @@ export class PanzerMode extends BaseMode {
           if (h) { S.next = proj(this.simc.world(v, h, _c)); S.nextLabel = `Nächster Schritt: ${next.html}`; }
         }
       } else if (steps && this.guide === 'hilfe') S.stepHint = `<kbd>${G.input.label('inspect') || 'I'}</kbd> Hilfe zu den Handgriffen`;
-      S.help = this._helpText();
+      S.help = S.steps ? null : this._helpText();
     }
     if (this._banner) S.banner = this._banner;
     this.hud.update(dt, S);
