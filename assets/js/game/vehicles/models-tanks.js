@@ -490,7 +490,7 @@ export function buildWK2M(lod, S, team, K) {
     for (const sx of [-1, 1]) weld(K, B, paint, [[sx * 1.06, 1.5, -1.7], [sx * 1.06, 1.52, 2.5]], lod, 0.014);
   }
   if (lod === 0) { B.add(box(0.05, 0.05, 1.0), S.wood, [-1.18, 1.28, -0.2]); B.add(box(0.2, 0.03, 0.12), S.dark, [-1.18, 1.28, -0.75]); }
-  for (const sx of [-1, 1]) B.add(cyl(0.2, 0.2, 0.02, seg), mark, [sx * 1.25, 1.2, 0.3], [0, 0, sx * 0.42 + HP]);
+  for (const sx of [-1, 1]) B.add(cyl(0.2, 0.2, 0.02, seg), mark, [sx * 1.31, 1.2, 0.3], [0, 0, -sx * 0.99]); // auf der geneigten Seitenplatte
   // Federlaufwerk: fünf große Laufrollen, Triebrad hinten, Leitrad vorn, keine Stützrollen (Kette liegt auf)
   for (const sx of [-1, 1]) {
     const x = sx * W.x;

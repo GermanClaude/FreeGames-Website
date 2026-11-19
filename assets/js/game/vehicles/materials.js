@@ -261,13 +261,16 @@ function paintLookPatch(team, era = 'modern') {
         {
           // Gussnarben (Gussflag aus armorkit: aVehE.z + 100) bzw. feine Walzhaut auf Platten – Höhenrauschen als Bump
           float npCast = step( 50.0, vVehE.z - min( vVehE.x, vVehE.y ) );
-          float npH = ( npVn( vVeh * 19.0 ) * 0.55 + npVn( vVeh * 41.0 + 3.0 ) * 0.45 ) * mix( 0.0, 0.0022, npCast ); // nur Guss (Walzplatten glatt)
+          // Ableitungen außerhalb der Verzweigung (gleichmäßiger Kontrollfluss), Anwendung nur auf Guss
+          float npH = ( npVn( vVeh * 19.0 ) * 0.55 + npVn( vVeh * 41.0 + 3.0 ) * 0.45 ) * 0.0022 * npCast;
           vec3 npDx = dFdx( -vViewPosition ), npDy = dFdy( -vViewPosition );
           vec2 npDh = vec2( dFdx( npH ), dFdy( npH ) );
-          vec3 npR1 = cross( npDy, normal ), npR2 = cross( normal, npDx );
-          float npDet = dot( npDx, npR1 );
-          vec3 npG = sign( npDet ) * ( npDh.x * npR1 + npDh.y * npR2 );
-          normal = normalize( abs( npDet ) * normal - npG );
+          if ( npCast > 0.5 ) {
+            vec3 npR1 = cross( npDy, normal ), npR2 = cross( normal, npDx );
+            float npDet = dot( npDx, npR1 );
+            vec3 npN = abs( npDet ) * normal - sign( npDet ) * ( npDh.x * npR1 + npDh.y * npR2 );
+            if ( abs( npDet ) > 1e-12 && dot( npN, npN ) > 1e-30 ) normal = normalize( npN );
+          }
         }`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor = mix( mix( mix( roughnessFactor, 0.97, npVMud ), mix( 0.42, 0.9, uRust ), npVCh ), mix( 0.5, 0.85, uRust ), npEw * 0.7 );`)

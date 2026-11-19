@@ -1134,7 +1134,7 @@ const NEW_TANKS = {
         ] },
       { id: 'loader', label: 'Ladeschütze', loader: true, weapons: [], pos: [0.55, 0.7, -0.9], exit: [[2.3, 0, -0.8], [-2.3, 0, -0.8], [0, 0, 3.9]],
         views: [
-          { id: 'innen', label: 'Kampfraum', space: 'turret', pos: [0.23, 0.15, 1.34], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
+          { id: 'innen', label: 'Kampfraum', space: 'turret', pos: [-0.06, 0.15, 1.21], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
           { id: 'luke', label: 'Luke offen', space: 'hull', pos: [-0.45, 2.42, 0.3], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 2], exposed: true, hatch: 'loader', pin: [-0.45, 1.25, 0.3] },
           { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.0, pivot: 2.2 } },
         ] },
@@ -1151,7 +1151,7 @@ const NEW_TANKS = {
       loader: { space: 'hull', pos: [-0.45, 1.9, 0.3], r: 0.25 },
     },
     // Kasematte: Aufbau des KP-1 hinter die Blende verschoben (wie SK-18); Granaten an der rechten Wand hinter dem Ladeschützen
-    interior: { scale: 0.82, shift: [-0.22, -0.36, 1.05], breech: [0, 0.42, -0.55], breechScale: 0.75, loaderEye: [0.55, 0.62, 0.35], rack: [0.98, 0.45, 0.75], rackRot: [0, Math.PI / 2] },
+    interior: { scale: 0.82, shift: [-0.22, -0.36, 1.05], breech: [0, 0.42, -0.55], breechScale: 0.75, loaderEye: [0.2, 0.62, 0.2], rack: [0.98, 0.45, 0.75], rackRot: [0, Math.PI / 2] },
     crew: { switchTime: 1.3, faceTol: 0.6 },
     ammo: { mbt_ap: 22, mbt_he: 19 },
     lights: [[-0.95, 1.05, -2.92]],
