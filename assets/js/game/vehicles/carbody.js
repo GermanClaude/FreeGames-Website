@@ -17,7 +17,7 @@
 // jeder Aufruf liefert eigene Kopien (Bucket.add verwirft die übergebene Geometrie). Reines JS + three (Worker-tauglich).
 // Lage: vorwärts −z, x rechts, y oben, y = 0 Boden.
 import * as THREE from 'three';
-import { subdivide, toGeometry, cornerNormals, faceNormals, vertexFaces, vertexNormals, borderFaces, seamGeometry, edgeKey } from '../engine/subsurf.js?v=20261115041504';
+import { subdivide, toGeometry, cornerNormals, faceNormals, vertexFaces, vertexNormals, borderFaces, seamGeometry, edgeKey, toLimit } from '../engine/subsurf.js?v=20261115041504';
 import { curve } from './bodykit.js?v=20261115041504';
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -194,16 +194,19 @@ export function finishBody(B, opts) {
   // Innenhaut (eine Stufe gröber, nach innen versetzt, umgedreht): hell in der Kabine, sonst dunkel
   let inner = null;
   if (!opts.noInner) {
-    const L = Math.max(0, levels - 1), S2 = L === levels ? S : subdivide(B.M, L);
+    // eine Stufe gröber, Ecken auf die Grenzfläche gezogen (sonst stößt die Innenhaut an Kehlen/Radlauf-Wülsten durch)
+    const L = Math.max(0, levels - 1), S2 = toLimit(subdivide(B.M, L));
     const CN2 = cornerNormals(S2, 60);
     const cab = opts.cabin || [-9, 9], off = opts.innerOffset ?? 0.035;
     const zc = (f) => { let z = 0, y = 0; for (let i = 0; i < 4; i++) { z += S2.P[S2.Q[f * 4 + i] * 3 + 2]; y += S2.P[S2.Q[f * 4 + i] * 3 + 1]; } return [z / 4, y / 4]; };
     const solid = (f) => SOLID.has(S2.F[f]) || S2.F[f] === TAG.LAMP || S2.F[f] === TAG.RLAMP;
     const inCab = (f) => { const [z, y] = zc(f); return z > cab[0] && z < cab[1] && y > (opts.cabinFloor ?? 0.45); };
+    // Radlauf-Wülste: dort liegt die Innenhaut zu nah an der Außenhaut (Radhausschalen decken den Blick ohnehin ab)
+    const nearArch = (f) => { const [z, y] = zc(f); return (opts.wheels || []).some((w) => Math.hypot(z - w.z, y - w.y) < w.r * 1.25 + 0.3); };
     inner = {
-      trim: toGeometry(S2, (f) => solid(f) && inCab(f), { normals: CN2, offset: off, flip: true }),
+      trim: toGeometry(S2, (f) => solid(f) && inCab(f) && !nearArch(f), { normals: CN2, offset: off, flip: true }),
       // außerhalb der Kabine nur die untere Hälfte (Blick durch Radläufe/von unten) – Haube/Deckel innen sieht man nie
-      dark: toGeometry(S2, (f) => solid(f) && !inCab(f) && zc(f)[1] < (opts.darkBelow ?? 9), { normals: CN2, offset: off, flip: true }),
+      dark: toGeometry(S2, (f) => solid(f) && !inCab(f) && !nearArch(f) && zc(f)[1] < (opts.darkBelow ?? 9), { normals: CN2, offset: off, flip: true }),
     };
   }
   let tris = 0;

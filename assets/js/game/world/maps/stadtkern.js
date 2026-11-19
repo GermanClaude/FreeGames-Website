@@ -167,7 +167,7 @@ export default {
   chunkSize: 32,
   ambience: 'industrial',
   // texturen 14.11.: neue Fotoscan-Sätze – dunkler Straßenasphalt, Gehwegplatten; Beton/Putz/Ziegel aus der Standardzuordnung
-  assets: { hdri: 'np_sky_nachmittag_dunst', materials: { asphalt: 'asphalt_dark', paving: 'paving_slabs' } },
+  assets: { hdri: 'np_sky_nachmittag_dunst', materials: { asphalt: { id: 'asphalt_dark', color: [1.4, 2.1, 2.95] }, paving: 'paving_slabs' } }, // tex4: neutral dunkelgrau statt rotbraun
   defaultSurface: 'concrete',
   navSpacing: 1.5,
   groundNoise: 0.18,

@@ -34,6 +34,8 @@ const CSS = `
 .ps-hot span{position:absolute;left:52px;top:6px;white-space:nowrap;background:rgba(10,10,8,.78);padding:3px 8px;font-size:14px;border-left:2px solid #ffd678}
 .ps-hot span kbd,.ps-help kbd,.ps-steps kbd{font:inherit;font-size:.85em;background:#2a2c26;border:1px solid #6a6c5e;border-radius:3px;padding:0 4px;margin:0 2px}
 @keyframes psPulse{50%{transform:scale(1.12)}}
+.ps-next{border-color:rgba(120,200,255,.95);box-shadow:0 0 12px rgba(90,170,255,.6)}.ps-next span{border-left-color:#7cc4ff}
+.ps-why{margin:6px 0 0;font-size:12px;color:#cfd8b8;line-height:1.35}.ps-hint{position:absolute;right:14px;top:22%;font-size:12px;background:rgba(10,12,10,.6);padding:3px 8px}
 .ps-dot{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:rgba(255,240,200,.85);box-shadow:0 0 3px #000}
 .ps-steps{position:absolute;right:14px;top:22%;width:250px;font-size:13px}
 .ps-steps li{list-style:none;padding:2px 0 2px 20px;position:relative;opacity:.75}
@@ -154,6 +156,7 @@ export class PanzerHUD {
       <div class="ps-mark" hidden><span>Markierung</span></div>
       <div class="ps-tgt" hidden><span></span></div>
       <div class="ps-hot" hidden><span></span></div>
+      <div class="ps-hot ps-next" hidden><span></span></div>
       <div class="ps-ord" hidden></div>
       <div class="ps-vis" hidden></div>
       <div class="ps-side">
@@ -161,7 +164,8 @@ export class PanzerHUD {
         <div class="ps-box ps-ammo"><h4>Munition</h4><div class="ps-ammol"></div></div>
         <div class="ps-box"><h4>Zustand</h4><div class="ps-mods"></div></div>
       </div>
-      <div class="ps-box ps-steps" hidden><h4>Handgriffe</h4><ul></ul></div>
+      <div class="ps-box ps-steps" hidden><h4>Handgriffe</h4><ul></ul><p class="ps-why" hidden></p></div>
+      <div class="ps-hint" hidden></div>
       <div class="ps-box ps-help" hidden></div>
       <div class="ps-wheel" hidden></div>
       <div class="ps-banner" hidden></div>
@@ -171,7 +175,7 @@ export class PanzerHUD {
     const q = (s) => r.querySelector(s);
     this.el = {
       crew: q('.ps-crewl'), ammo: q('.ps-ammol'), mods: q('.ps-mods'), ord: q('.ps-ord'), mark: q('.ps-mark'), tgt: q('.ps-tgt'), tgtL: q('.ps-tgt span'),
-      hot: q('.ps-hot'), hotL: q('.ps-hot span'), steps: q('.ps-steps'), stepsL: q('.ps-steps ul'), help: q('.ps-help'), wheel: q('.ps-wheel'),
+      hot: q('.ps-hot:not(.ps-next)'), hotL: q('.ps-hot:not(.ps-next) span'), next: q('.ps-next'), nextL: q('.ps-next span'), steps: q('.ps-steps'), stepsL: q('.ps-steps ul'), why: q('.ps-why'), hint: q('.ps-hint'), help: q('.ps-help'), wheel: q('.ps-wheel'),
       sub: q('.ps-sub'), crack: q('.ps-crack'), banner: q('.ps-banner'), dot: q('.ps-dot'), vis: q('.ps-vis'), side: q('.ps-side'),
     };
     this._c = {};
@@ -225,6 +229,7 @@ export class PanzerHUD {
     proj('mark', el.mark, s.mark, null, null);
     proj('tgt', el.tgt, s.target, s.targetLabel || '', el.tgtL);
     proj('hot', el.hot, s.hot, s.hotLabel || '', el.hotL);
+    proj('next', el.next, s.next, s.nextLabel || '', el.nextL);
     this._set('dotH', el.dot, 'hidden', !s.dot);
     this._set('crackH', el.crack, 'hidden', !s.crack);
     this._set('ordH', el.ord, 'hidden', !s.order);
@@ -256,6 +261,10 @@ export class PanzerHUD {
       let next = false;
       this._set('steps', el.stepsL, 'html', st.map((x) => { const cls = x.done ? 'is-done' : !next ? (next = true, 'is-next') : ''; return `<li class="${cls}">${x.html}</li>`; }).join(''));
     }
+    this._set('whyH', el.why, 'hidden', !s.stepWhy);
+    if (s.stepWhy) this._set('why', el.why, 'text', s.stepWhy);
+    this._set('hintH', el.hint, 'hidden', !s.stepHint);
+    if (s.stepHint) this._set('hint', el.hint, 'html', s.stepHint);
     this._set('helpH', el.help, 'hidden', !s.help);
     if (s.help) this._set('help', el.help, 'html', s.help);
   }

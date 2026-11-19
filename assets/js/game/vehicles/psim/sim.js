@@ -78,13 +78,14 @@ export class SimControls {
         add({ id: 'hebel', label: () => 'Lenkhebel (A/D ziehen)', part: 'hebel:l', pos: [F[0] - 0.2, F[1] + 0.55, F[2] - 0.2], r: 0.06, use: () => this.mode.hint('Lenken: A/D – der Hebel bremst die Kette dieser Seite') });
       }
     } else if (role === 'richtschuetze') {
-      add({ id: 'waffe', space: 'turret', label: () => `Hauptschalter Waffe – ${st.armed ? 'SCHARF' : 'gesichert'}`, pos: [eye[0] + 0.24, eye[1] - 0.14, eye[2] - 0.32], panel: 'f', use: (d) => this.mode.simAction('waffe', d), on: () => st.armed });
+      add({ id: 'waffe', space: 'turret', label: () => `Hauptschalter Waffe – ${st.armed ? 'SCHARF' : 'gesichert'}`, pos: [eye[0] + 0.24, eye[1] - 0.14, eye[2] - 0.32], panel: 'f', use: (d) => this.mode.simAction('waffe', d), on: () => st.armed, warn: () => (this.mode._warnLamp || 0) > this.G.time.elapsed });
       add({ id: 'antrieb', space: 'turret', label: () => `Turmantrieb – ${st.hydraulics ? 'elektrisch' : 'Notbetrieb (Handräder)'}`, pos: [eye[0] + 0.24, eye[1] - 0.26, eye[2] - 0.28], panel: 'f', use: (d) => this.mode.simAction('antrieb', d), on: () => st.hydraulics });
       add({ id: 'rechner', space: 'turret', label: () => `Feuerleitrechner – Munition: ${this.mode.selectedAmmoLabel()} (LMT/RMT wählen)`, part: 'btn:mbt_ap', pos: [eye[0] + 0.1, eye[1] - 0.06, eye[2] - 0.42], r: 0.08, use: (d) => this.mode.simAction('rechner', d) });
       if ((D.era || 'modern') === 'modern') add({ id: 'laser', space: 'turret', label: () => 'Laser-Entfernungsmesser – auslösen', pos: [eye[0] + 0.12, eye[1] - 0.16, eye[2] - 0.4], panel: 'f', use: () => this.mode.simAction('laser', 1), on: () => true });
       add({ id: 'rad', space: 'turret', label: () => 'Handräder Höhe/Seite (Notbetrieb: Maus dreht langsam)', part: 'rad:seite', pos: [eye[0] - 0.1, eye[1] - 0.35, eye[2] - 0.25], r: 0.07, use: () => this.mode.hint(st.hydraulics ? 'Handräder: nur im Notbetrieb – Turmantrieb ausschalten' : 'Notbetrieb: Maus dreht Turm/Rohr über die Handräder (langsam)') });
     } else if (role === 'ladeschuetze') {
       const rack = ip(I.rack || [0, 0.45, 1.55]), br = ip(I.breech || [0, 0.42, -0.55]);
+      add({ id: 'wahl', space: 'turret', label: () => `Munitionswahl – ${this.mode.loaderSel()} (LMT/RMT wechseln)`, pos: [rack[0] + 0.35, rack[1] + 0.25, rack[2] - 0.35], panel: 'f', use: (d) => this.mode.simAction('wahl', d), on: () => true });
       add({ id: 'gestell', space: 'turret', label: () => this.mode.loaderLabel('gestell'), pos: rack, r: 0.2, use: () => this.mode.simAction('gestell', 1) });
       add({ id: 'verschluss', space: 'turret', label: () => this.mode.loaderLabel('verschluss'), pos: br, r: 0.16, use: () => this.mode.simAction('verschluss', 1) });
       add({ id: 'sicherung', space: 'turret', label: () => `Sicherung – ${st.safe ? 'GESICHERT (LMT entsichern)' : 'entsichert'}`, part: 'lampe:sicher', pos: [br[0] + 0.3, br[1] + 0.12, br[2] + 0.3], panel: 'f', use: (d) => this.mode.simAction('sicherung', d), on: () => !st.safe, warn: () => st.safe && v.gun && v.gun.step === 'geladen' });

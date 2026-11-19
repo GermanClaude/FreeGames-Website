@@ -55,7 +55,10 @@ export class PanzerMode extends BaseMode {
       const g = P.get('gegner'); if (g && FORCES[g]) o.gegner = g;
       if (P.get('stimme') === '1') o.stimme = 'an';
     }
+    if (P) { const f = P.get('fuehrung'); if (f === 'tutorial' || f === 'hilfe' || f === 'aus') o.fuehrung = f; }
     this.cfg = o;
+    this.guide = o.fuehrung || 'hilfe';
+    this._helpOn = this.guide === 'tutorial';
     this.arcade = o.stil === 'arcade';
     this.sim = !this.arcade;
     this.role = this.arcade ? 'richtschuetze' : ROLE_ALIAS[o.rolle] || 'kommandant';
@@ -441,6 +444,8 @@ export class PanzerMode extends BaseMode {
     return g === 0 ? 'Leerlauf' : g > 0 ? `${g}. Gang` : `${-g}. Rückwärtsgang`;
   }
 
+  loaderSel() { const g = this.tank && this.tank.gun; const k = g && kindOf(g.select); return k ? KINDS[k].label : '–'; }
+
   selectedAmmoLabel() {
     const v = this.tank, gs = v && gunSeat(v);
     const w = gs && gs.weapons[gs.weaponIndex];
@@ -509,6 +514,14 @@ export class PanzerMode extends BaseMode {
         sys._range = { text: h ? `E ${Math.round(h.distance)} m` : 'E ––– m', until: G.time.elapsed + 4 };
         v._laserRange = h ? h.distance : NaN;
         this.hint(h ? `Laser: ${Math.round(h.distance)} m` : 'Laser: kein Echo');
+        break;
+      }
+      case 'wahl': {
+        const ids = v._psimAmmo || [];
+        const i = ids.indexOf(v.gun.select);
+        const id = ids[(i + (d > 0 ? 1 : ids.length - 1) + ids.length) % ids.length];
+        if (id) this._load(P, 'munition', id);
+        this._click();
         break;
       }
       case 'gestell': this._load(P, 'greifen'); break;
@@ -608,6 +621,7 @@ export class PanzerMode extends BaseMode {
       else if (I.pressed('ads')) { I.consume('ads'); hot.use(-1); this._hotUsed = true; }
       else if ((hot.id === 'gang' || hot.id === 'rechner') && I.pressed('swap')) { I.consume('swap'); hot.use(1); this._hotUsed = true; }
     } else if (I.pressed('interact')) I.consume('interact'); // kein Aussteigen
+    if (this.sim && take('inspect')) { this._helpOn = !this._helpOn; if (this.guide === 'aus') this.guide = 'hilfe'; }
     // Sichtgeräte: N = Polarität / Restlicht (moderne Panzer)
     if (take('verband')) { const t = this.optics.cycle(v, viewOf(seat)); sys._viewLabel = { text: t, until: G.time.elapsed + 1.6 }; }
     const role = this.role;
@@ -757,6 +771,10 @@ export class PanzerMode extends BaseMode {
     if (gs) {
       const it = gs.intent;
       const w = gs.weapons[gs.weaponIndex];
+      if (w && w.def.kind === 'shell' && it.firePressed && v.gun && v.gun.step !== 'geladen' && gs.actor === P && now - this._msgT > 1.2) {
+        this._msgT = now; this._warnLamp = now + 1.5;
+        this.hint(v.gun.step === 'eingeschoben' ? 'Abzug: nichts – Verschluss offen (Warnleuchte)' : 'Abzug: nichts – Kanone nicht geladen (Warnleuchte)');
+      }
       if (w && w.def.kind === 'shell' && this.gunBlocked() && (it.firePressed)) {
         it.firePressed = false; it.fire = false;
         if (gs.actor === P && now - this._msgT > 1.2) { this._msgT = now; this.hint(mods.rohr <= 0 ? 'Rohr zerstört – Kanone fällt aus' : !st.armed ? 'Waffe nicht scharf – Hauptschalter Waffe' : 'Kanone gesichert – Ladeschütze muss entsichern'); }
@@ -834,7 +852,17 @@ export class PanzerMode extends BaseMode {
       const tt = ds && G.time.elapsed < ds.until ? ds.t : this.crew && this.role !== 'kommandant' && this.crew.cmd.target ? this.crew.cmd.target : null;
       if (tt && tt.ent && tt.ent.alive && !(cv && cv.interior)) { S.target = proj(targetPoint(tt, _a)); S.targetLabel = `${TARGET_LABEL[tt.kind]} ${roundRange(tt.pos.distanceTo(v.position))} m`; }
       S.order = this._orderText();
-      S.steps = this.sim ? this._steps() : null;
+      const steps = this.sim && this.guide !== 'aus' ? this._steps() : null;
+      // Führung: Tutorial = Liste + nächster Schritt am Bedienelement markiert + Erklärung; Hilfe = nur auf Anfrage (I)
+      if (steps && (this.guide === 'tutorial' || this._helpOn)) {
+        S.steps = steps;
+        const next = steps.find((x) => !x.done);
+        S.stepWhy = this.guide === 'tutorial' && next ? next.why : null;
+        if (next && next.hot && !hot && inside) {
+          const h = this.simc.list.find((x) => x.id === next.hot);
+          if (h) { S.next = proj(this.simc.world(v, h, _c)); S.nextLabel = `Nächster Schritt: ${next.html}`; }
+        }
+      } else if (steps && this.guide === 'hilfe') S.stepHint = `<kbd>${G.input.label('inspect') || 'I'}</kbd> Hilfe zu den Handgriffen`;
       S.help = this._helpText();
     }
     if (this._banner) S.banner = this._banner;
@@ -876,6 +904,12 @@ export class PanzerMode extends BaseMode {
     return t ? `${t}<small>Befehl des Kommandanten</small>` : null;
   }
 
+  /**
+   * Handgriffe je Station als Zustandsmaschine: jeder Eintrag beschreibt einen Zustand (done = aus dem Fahrzeugzustand
+   * abgelesen, nicht abgehakt) – die Reihenfolge ist nur die Empfehlung der Führung. Ohne Führung darf man in jeder physikalisch
+   * möglichen Reihenfolge arbeiten; unmögliche Griffe lehnt crew.js/simAction ab (z. B. einschieben ohne Granate in der Hand).
+   * hot = Bedienelement (sim.js), why = Erklärung (Tutorial).
+   */
   _steps() {
     const st = this.state, v = this.tank, g = v.gun;
     const k = (a, fb) => `<kbd>${this.G.input.label(a) || fb}</kbd>`;
@@ -883,30 +917,41 @@ export class PanzerMode extends BaseMode {
       case 'fahrer': {
         const modern = eraOf(v.def) === 'modern';
         return [
-          { html: 'Hauptschalter EIN', done: st.battery },
-          { html: `Anlasser drücken ${k('tactical', 'X')}`, done: st.engine === 'an' },
-          { html: `Feststellbremse lösen ${k('gadget', 'B')}`, done: !st.parkBrake },
-          { html: `${modern ? 'Wahlhebel auf D' : 'Gang einlegen'} ${k('swap', 'Mausrad')}`, done: modern ? st.selector === 'D' || st.selector === 'R' : !!(v.body.drive && v.body.drive.targetGear) },
-          { html: `Fahren ${k('move_forward', 'W')} · Bremse ${k('move_back', 'S')}`, done: Math.abs(v.body.speed) > 2 },
+          { html: 'Hauptschalter EIN', hot: 'batterie', done: st.battery, why: 'Schaltet das Bordnetz zu – ohne Strom kein Anlasser, keine Instrumente, kein Innenlicht.' },
+          { html: `Anlasser drücken ${k('tactical', 'X')}`, hot: 'anlasser', done: st.engine === 'an', why: 'Der Anlasser orgelt den Diesel etwa zwei Sekunden, dann läuft der Motor im Leerlauf.' },
+          { html: `Feststellbremse lösen ${k('gadget', 'B')}`, hot: 'bremse', done: !st.parkBrake, why: 'Mit angezogener Feststellbremse blockieren beide Ketten.' },
+          { html: `${modern ? 'Wahlhebel auf D' : 'Gang einlegen'} ${k('swap', 'Mausrad')}`, hot: 'gang', done: modern ? st.selector === 'D' || st.selector === 'R' : !!(v.body.drive && v.body.drive.targetGear), why: modern ? 'Automatikgetriebe: R rückwärts, N neutral, D fahren. Nur im Stand die Richtung wechseln.' : 'Schaltgetriebe: Gang für Gang hoch; beim Anfahren den 1. Gang.' },
+          { html: `Fahren ${k('move_forward', 'W')} · Bremse ${k('move_back', 'S')}`, hot: 'hebel', done: Math.abs(v.body.speed) > 2, why: 'W = Fahrpedal, A/D ziehen den Lenkhebel (bremst die Kette dieser Seite), S/Leertaste bremsen.' },
         ];
       }
       case 'richtschuetze':
         return [
-          { html: 'Hauptschalter Waffe: SCHARF', done: st.armed },
-          { html: `Hauptzieloptik ${k('crouch', 'C')}`, done: viewOf(v.seats[this.playerSeat]).overlay === 'optic' },
-          { html: `Munition wählen ${k('swap', 'Mausrad')} / 1–4`, done: true },
-          ...(v.def.noThermal ? [] : [{ html: `Wärmebild ${k('grenade', 'G')} · Restlicht ${k('verband', 'N')}`, done: !!(this.G.vehicles.thermal && this.G.vehicles.thermal.on) }]),
-          { html: `Laser ${k('light', 'T')} · Feuer ${k('fire', 'LMT')}`, done: false },
+          { html: 'Hauptschalter Waffe: SCHARF', hot: 'waffe', done: st.armed, why: 'Erst mit scharf geschalteter Waffe gibt der Abzug die Kanone frei.' },
+          { html: 'Munition am Rechner wählen', hot: 'rechner', done: !!(this.crew && this.crew.ammoOrder), why: 'Der Rechner muss die geladene Munition kennen, sonst stimmen Haltepunkt und Entfernungsmarken nicht. Verschossen wird immer die tatsächlich geladene Granate.' },
+          ...(eraOf(v.def) === 'modern' ? [{ html: `Entfernung lasern ${k('light', 'T')}`, hot: 'laser', done: Number.isFinite(v._laserRange), why: 'Der Laser misst die Zielentfernung; Strichplatte und Rechner setzen den Haltepunkt.' }] : []),
+          { html: `Hauptzieloptik ${k('crouch', 'C')}`, done: viewOf(v.seats[this.playerSeat]).overlay === 'optic', why: 'In der Optik richten, ab Freigabe „Feuer!“ des Kommandanten abziehen.' },
+          { html: `Feuer ${k('fire', 'LMT')}`, done: false, why: 'Feuer nur mit geladener, entsicherter Kanone – sonst bleibt der Abzug wirkungslos (Warnung).' },
         ];
       case 'ladeschuetze': {
         const s = g ? g.step : 'leer';
         const bunker = !!(v.def.interior && v.def.interior.blastDoor);
+        const wish = this.crew && this.crew.ammoOrder;
         return [
-          ...(bunker ? [{ html: `Bunkertür öffnen ${k('reload', 'R')}`, done: s !== 'leer' || g.busyKind === 'tuer' }] : []),
-          { html: `Granate greifen ${k('reload', 'R')}`, done: s === 'gegriffen' || s === 'eingeschoben' || s === 'geladen' },
-          { html: `Einschieben ${k('fire', 'LMT')}`, done: s === 'eingeschoben' || s === 'geladen' },
-          { html: `Verschluss schließen ${k('reload', 'R')}`, done: s === 'geladen' },
-          { html: `Entsichern ${k('reload', 'R')}`, done: s === 'geladen' && !st.safe },
+          { html: `Befohlene Munition wählen ${k('swap', 'Mausrad')}/1–4`, hot: 'wahl', done: s !== 'leer' && s !== 'offen' ? true : !wish || g.select === wish, why: 'Die Sorte ruft der Kommandant aus (Untertitel). Wähle sie, bevor du greifst – eine falsche Granate im Rohr muss erst verschossen werden.' },
+          ...(bunker ? [{ html: `Bunkertür öffnen ${k('reload', 'R')}`, hot: 'gestell', done: s !== 'leer' || g.busyKind === 'tuer', why: 'Der Munitionsbunker im Turmheck ist durch eine Schiebetür vom Kampfraum getrennt (Sprengklappen nach außen).' }] : []),
+          { html: `Granate greifen ${k('reload', 'R')}`, hot: 'gestell', done: s === 'gegriffen' || s === 'eingeschoben' || s === 'geladen', why: 'Zum Gestell drehen und die Granate herausziehen – bei starken Stößen fällt sie aus der Hand.' },
+          { html: `Ansetzen/einschieben ${k('fire', 'LMT')}`, hot: 'verschluss', done: s === 'eingeschoben' || s === 'geladen', why: 'Zum Verschluss drehen und die Granate ins Rohr schieben.' },
+          { html: `Verschluss schließen ${k('reload', 'R')}`, hot: 'verschluss', done: s === 'geladen', why: 'Der Keil schließt – erst jetzt ist die Kanone feuerbereit.' },
+          { html: `Entsichern ${k('reload', 'R')}`, hot: 'sicherung', done: s === 'geladen' && !st.safe, why: 'Sicherung lösen und „Geladen!“ melden – der Richtschütze darf feuern.' },
+        ];
+      }
+      case 'kommandant': {
+        const seat = v.seats[this.playerSeat];
+        return [
+          { html: 'Lage: Periskop / Luke', hot: 'luke', done: viewOf(seat).overlay === 'peri' || !!seat.hatchOpen, why: 'Durch das Rundblickperiskop (oder mit offener Luke – verwundbar!) nach Zielen suchen.' },
+          { html: `Ziel übergeben ${k('squad_order', 'H')}`, done: !!(this.crew && this.crew.gun.target), why: 'Ziel ins Fadenkreuz nehmen und übergeben: der Richtschütze dreht den Turm darauf und meldet „Erkannt!“.' },
+          { html: 'Munition befehlen 1–4', done: !!(this.crew && this.crew.ammoOrder), why: 'Wucht/Panzergranate gegen Panzer, Spreng gegen Pak, Bunker und Infanterie, Kanister auf kurze Entfernung.' },
+          { html: `Feuer! ${k('jump', 'Leertaste')}`, done: false, why: 'Wenn „Geladen!“ gemeldet ist und der Richtschütze aufgefasst hat: Feuerbefehl.' },
         ];
       }
       default: return null;

@@ -180,12 +180,11 @@ export function pkwBodyHQ(K, S, B, GB, LB, lod, paint, variant) {
       if (!lc) continue;
       const rot = alignZ(lc.n);
       if (fine) {
-        // zwei Projektoren (Linse dunkel mit Chromring) + Tagfahrlicht-Bogen unter der Linse
+        // zwei Projektoren (Chrom-Reflektor mit Linsenring), klein im Scheinwerferglas
         for (const dx of [-0.075, 0.06]) {
           const q = hitFront(sx * 0.66 + sx * dx, 0.655) || lc;
-          B.add(new THREE.CircleGeometry(0.034, 18), S.chrome, [q.p[0] + q.n[0] * 0.003, q.p[1], q.p[2] + q.n[2] * 0.003], alignZ(q.n));
-          B.add(new THREE.CircleGeometry(0.012, 12), S.gloss, [q.p[0] + q.n[0] * 0.005, q.p[1], q.p[2] + q.n[2] * 0.005], alignZ(q.n));
-          B.add(new THREE.TorusGeometry(0.033, 0.0045, 4, 22), S.gloss, [q.p[0] + q.n[0] * 0.003, q.p[1], q.p[2] + q.n[2] * 0.003], alignZ(q.n));
+          B.add(new THREE.CircleGeometry(0.026, 18), S.chrome, [q.p[0] + q.n[0] * 0.003, q.p[1], q.p[2] + q.n[2] * 0.003], alignZ(q.n));
+          B.add(new THREE.TorusGeometry(0.028, 0.003, 4, 22), S.lensOff, [q.p[0] + q.n[0] * 0.004, q.p[1], q.p[2] + q.n[2] * 0.004], alignZ(q.n));
         }
       }
       const fg = hitFront(sx * 0.66, 0.365);

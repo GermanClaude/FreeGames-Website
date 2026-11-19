@@ -39,7 +39,7 @@ export const LIB_MATERIALS = {
   plaster_peeling: { id: 'plaster_white_peeling', color: 1.15, roughness: 1.5 }, // textures-2: Putz matt (Ø 0,52 → 0,78)
   plaster_blue: { id: 'plaster_blue_weathered', color: 1.05 },
   plaster_damaged: { id: 'plaster_damaged_brick', color: 1.1 },
-  plaster_patched: { id: 'plaster_white', color: [0.64, 0.57, 0.47] }, // tex4: feiner Altputz (white_stucco_02) – der Flicken-Scan worn_plaster_wall hatte eine senkrechte Fallrohr-Naht → Streifen alle 1,8 m und Tarnfleck-Muster
+  plaster_patched: { id: 'plaster_white', color: [0.62, 0.58, 0.53] }, // tex4: feiner Altputz (white_stucco_02) – der Flicken-Scan worn_plaster_wall hatte eine senkrechte Fallrohr-Naht → Streifen alle 1,8 m und Tarnfleck-Muster
   brick: { id: 'brick_red_weathered', color: [1.02, 0.9, 1.0], macro: [0.2, 0.1, 0.12] }, // texturen 14.11.: Fotoscan (vorher vw_ziegel × [0,8 1,04 1,04], Video-Ziegel)
   // brick_alt: { id: 'vw_ziegel', color: [0.8, 1.04, 1.04] }, // 16.10.: Video-Ziegel weniger knallrot (gemessen sat 0,48, bei uns 0,68) // Grafik-Vorlage 15.10.: echte Ziegel aus dem Video (Walzhalle), neu verlegt (vorher v_brick)
   brick_dark: { id: 'brick_dark', color: 2.0 },
@@ -241,7 +241,7 @@ export const HERO_SETS = {
   werk: ['asphalt', 'brick'],
   altstadt: ['cobble', 'plaster_white'],
   grenzland: ['plaster_white'],
-  stadtkern: ['asphalt_dark', 'plaster_patched'],
+  stadtkern: ['asphalt'], // Spielname (Kartenzuordnung asphalt → asphalt_dark); Putz 2K hätte das 25-%-Budget gerissen
   // brandwald: keine (die Brandwald-Sätze sind neu im Download, +18 % schon ohne 2K)
 };
 function isPhone() {

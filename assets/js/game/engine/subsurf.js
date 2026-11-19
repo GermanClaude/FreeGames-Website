@@ -264,3 +264,33 @@ export function borderFaces(M, isInner, isOuter, rings = 1) {
   }
   return res;
 }
+
+/**
+ * Grenzlagen (Lage auf der Grenzfläche) der Ecken eines Netzes: glatt (n²·v + 4·Σkante + Σdiagonal) / (n(n+5)),
+ * Rand/Kante (a + 4v + b) / 6, Ecke fest. Ein so verschobenes grobes Netz liegt an den Ecken auf der feinen Fläche
+ * (z. B. Innenhaut aus einer gröberen Stufe, die die äußere Haut nicht durchstoßen soll). → neues Netz (P ersetzt)
+ */
+export function toLimit(M) {
+  const { P, Q } = M, nV = P.length / 3, nQ = Q.length / 4, crease = M.crease || new Map();
+  const eF = new Map(), vE = Array.from({ length: nV }, () => new Set()), vF = Array.from({ length: nV }, () => []);
+  for (let f = 0; f < nQ; f++) for (let i = 0; i < 4; i++) {
+    const a = Q[f * 4 + i], b = Q[f * 4 + ((i + 1) & 3)], k = edgeKey(a, b);
+    eF.set(k, (eF.get(k) || 0) + 1);
+    vE[a].add(b); vE[b].add(a); vF[a].push(f);
+  }
+  const out = new Float64Array(P.length);
+  for (let v = 0; v < nV; v++) {
+    const nb = [...vE[v]], o = v * 3;
+    const sharp = nb.filter((u) => eF.get(edgeKey(v, u)) === 1 || crease.get(edgeKey(v, u)) > 0);
+    if (!nb.length || M.corner?.has(v) || sharp.length > 2) { for (let t = 0; t < 3; t++) out[o + t] = P[o + t]; continue; }
+    if (sharp.length === 2) { const [a, b] = sharp; for (let t = 0; t < 3; t++) out[o + t] = (P[a * 3 + t] + 4 * P[o + t] + P[b * 3 + t]) / 6; continue; }
+    const n = nb.length;
+    for (let t = 0; t < 3; t++) {
+      let e = 0, d = 0;
+      for (const u of nb) e += P[u * 3 + t];
+      for (const f of vF[v]) for (let i = 0; i < 4; i++) { const w = Q[f * 4 + i]; if (w !== v && !vE[v].has(w)) d += P[w * 3 + t]; }
+      out[o + t] = (n * n * P[o + t] + 4 * e + d) / (n * (n + 5));
+    }
+  }
+  return { ...M, P: out };
+}
