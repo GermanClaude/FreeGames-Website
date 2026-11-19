@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { getMat, UV_SCALE, lodInfo, LOD_SKIP, liteKey } from './materials.js?v=20261113221339';
+import { getMat, UV_SCALE, lodInfo, LOD_SKIP, liteKey } from './materials.js?v=20261115041504';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
 
@@ -252,7 +252,7 @@ export class Builder {
 
   _push(geo, mat, o, keepUV = false) {
     if (this.lite) mat = liteKey(mat);   // Handy: Atlas-Materialien mit eigenem, kleinerem Atlas (V4)
-    const part = this.parts.get(o.part || 'static');
+    const part = this.parts.get(o.part || this.defPart || 'static');   // defPart: Vorgabe-Teil für eine Baugruppe (visier, Optikkörper)
     if (!part) throw new Error('Unbekanntes Teil ' + o.part);
     if (!this.hi) {
       // Bot-Detailstufe: Durchsicht/Leuchten/Hohlräume und Kleinteile < 9 mm weglassen
@@ -433,6 +433,7 @@ export class Builder {
   // Zusammenbau: Teile → Gruppen, Material-Merge, Anker, Statistik
   build(key) {
     if (!this.hi) return this._buildMerged(key);
+    if (this.max) this._soot();
     const root = new THREE.Group();
     root.name = `waffe:${key}:${this.lod}`;
     const objs = new Map();
@@ -516,6 +517,34 @@ export class Builder {
     return root;
   }
 }
+
+// Schmauch (14.11.2026, gfx-waffen): Ruß an Mündung(en) und Auswurffenster als Schmutzanteil (wearDirt.y → materials.js wearPatch:
+// dunkler, matt, ohne Glanzlicht) – nur PC hoch/ultra (dort tragen die Netze wearDirt). Wirkt im Bauteil-Raum jedes Teils; Ruß nimmt mit
+// dem Abstand zur Mündung ab (≈ 4 cm), hinter der Mündung schneller als auf der Stirnfläche. Mehrfach angewandt gleich (Maximum).
+const SOOT = { muzzle: [0.045, 1], muzzle2: [0.045, 1], ejection: [0.026, 0.45] };
+Builder.prototype._soot = function () {
+  const src = this.anchors.filter((a) => SOOT[a.name]);
+  if (!src.length) return;
+  const q = new THREE.Vector3();
+  for (const p of this.parts.values()) {
+    const pts = src.map((a) => ({ c: q.copy(a.pos).sub(p.pivot).clone(), r: SOOT[a.name][0], k: SOOT[a.name][1], front: a.name !== 'ejection' }));
+    for (const it of p.items) {
+      const wd = it.geo.attributes.wearDirt, pos = it.geo.attributes.position;
+      if (!wd || !pos) continue;
+      const P = pos.array, W = wd.array;
+      for (let i = 0, n = pos.count; i < n; i++) {
+        let s = 0;
+        for (const m of pts) {
+          const dx = P[i * 3] - m.c.x, dy = P[i * 3 + 1] - m.c.y, dz = P[i * 3 + 2] - m.c.z;
+          // −z = vorn: hinter der Mündung (dz > 0) zählt der Abstand doppelt
+          const d = Math.hypot(dx, dy, m.front && dz > 0 ? dz * 1.6 : dz);
+          if (d < m.r) { const t = 1 - d / m.r; s = Math.max(s, m.k * t * t * (3 - 2 * t)); }
+        }
+        if (s > W[i * 2 + 1]) W[i * 2 + 1] = s;
+      }
+    }
+  }
+};
 
 Builder.prototype._buildMerged = function (key) {
   // Bot-Detailstufe: alle Teile (außer Magazin-Baugruppe und meta.botParts) in zwei Vertex-Farb-Meshes (Metall/Matt)

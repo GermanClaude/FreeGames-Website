@@ -8,9 +8,10 @@
 //   camoSwatch(camoId, size)       kleines Vorschaubild (Canvas) für Menüs
 //   disposeCamos()                 alle Texturen/Materialien freigeben
 import * as THREE from 'three';
-import { CAMOS } from '../../../shared/weapons.data.js?v=20261113221339';
-import { getMat } from './materials.js?v=20261113221339';
-import { onCustomChange } from '../../../shared/customcamo.js?v=20261113221339';
+import { CAMOS } from '../../../shared/weapons.data.js?v=20261115041504';
+import { getMat } from './materials.js?v=20261115041504';
+import { onCustomChange } from '../../../shared/customcamo.js?v=20261115041504';
+import { copyShaderPatches } from '../../world/shading.js?v=20261115041504';
 
 const SIZE = 256;
 /** Materialschlüssel (gs:<key>), die ein Tarnmuster erhalten. */
@@ -23,7 +24,11 @@ export const CAMO_TARGETS = new Set(['alu', 'aluTan', 'aluOD', 'polymer', 'polym
   'p9aSlide', 'p9aSlideS', 'p9aFrame', 'p9aFrameS',   // P-9A (26.10.): gemeinsamer Atlas Schlitten/Rahmen
   'wirbelWood', 'wirbelSteel', 'wirbelMantel', 'wirbelDrum']);   // PS-41 Wirbel (26.10.): Schaft, Stahl, Mantel, Trommel – Verschluss bleibt blank
 
-for (const k of ['zwWood', 'zwBlued', 'zwBarrel']) CAMO_TARGETS.add(k);   // ZW-12 Zwilling (26.10.): Holz, Basküle, Läufe – Schloss blank
+for (const k of ['zwWood', 'zwBlued', 'zwBarrel']) CAMO_TARGETS.add(k);
+// Waffen nach Vorbild, Gruppe B (13.11.): Gehäuse, Kunststoff, Holz, Stahlteile – Lauf, Verschluss, Griffflächen bleiben
+for (const k of ['gbPoly', 'gbPolyGrey', 'gbSteel', 'gbAlu', 'gbWood', 'gbOlive', 'gbBakelite']) CAMO_TARGETS.add(k);
+// Waffen nach Vorbild, Gruppe A (13.11.): Gehäuse/Schaft/Handschutz (Polymer, Alu, Stahl), Magazin – Lauf, Verschluss, Griffe bleiben
+for (const k of ['gaPoly', 'gaPolyTan', 'gaPolyOD', 'gaSteel', 'gaAlu', 'gaTan', 'gaMag']) CAMO_TARGETS.add(k);   // ZW-12 Zwilling (26.10.): Holz, Basküle, Läufe – Schloss blank
 
 const texCache = new Map();
 const matCache = new Map();
@@ -307,6 +312,14 @@ export function camoMaterial(baseKey, id) {
   m.roughness = f.roughness ?? Math.max(0.55, base.roughness ?? 0.7);
   if (!metallic) m.metalnessMap = null;
   if (f.env) m.envMapIntensity = f.env;
+  // Gebrauchsspuren/Oberflächen-Baukasten (materials.js wearPatch) gelten auch unter der Tarnung – clone() übernimmt
+  // onBeforeCompile nicht (14.11.: Tarnungen wirkten dadurch glatt wie neu)
+  if (copyShaderPatches(base, m, ':camo')) { /* Verteiler-Haken sauber übertragen (sonst npProbe doppelt) */ }
+  else if (base.onBeforeCompile && base.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) {
+    const ck = base.customProgramCacheKey();
+    m.onBeforeCompile = base.onBeforeCompile;
+    m.customProgramCacheKey = () => ck + ':camo';
+  }
   if (def.shimmer) shimmer(m);
   m.userData = { camo: id, baseKey, shimmer: !!def.shimmer };
   m.needsUpdate = true;

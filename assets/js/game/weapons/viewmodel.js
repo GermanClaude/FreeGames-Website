@@ -16,29 +16,30 @@
 // Animationen 09.10. (anim/): Nachlade-Varianten mit Magazin entlang der Schachtachse (magwell.js, reloads.js), vier
 // Inspektionen je Mechanik + Kammer-Patrone (inspects.js), Ziehen je Klasse, Bereitmachen, Gesten, Posen (moves.js).
 import * as THREE from 'three';
-import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel } from './models.js?v=20261113221339';
-import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261113221339';
-import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261113221339';
-import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261113221339';
-import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261113221339';
-import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261113221339';
-import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261113221339';
-import { BREAK_ACTIONS } from './anim/break.js?v=20261113221339';   // Kipplauf (26.10., ZW-12 Zwilling)
-import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261113221339';
-import { COSMETIC } from './anim/reloads.js?v=20261113221339';
-import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261113221339';
-export { LADDER_AHEAD, ladderWindow, ladderOrder, ladderPrebuild } from './hintergrundbau.js?v=20261113221339'; // Waffenspiel-Vorbau (main.js, 26.10.)
-import { magWellOf } from './anim/magwell.js?v=20261113221339';
-import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261113221339';
-import { uploadTextures } from '../engine/warm.js?v=20261113221339';
-import { applyCamo } from './gunsmith/camos.js?v=20261113221339';
-import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261113221339';
-import { setReticleSize } from './gunsmith/materials.js?v=20261113221339';
-import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261113221339';
-import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261113221339';
-import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261113221339';
-import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261113221339';
-import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261113221339';
+import { createWeaponModel, setMagRounds, weaponDetailTier, holdWeaponModel } from './models.js?v=20261115041504';
+import { WEAPONS, weaponHandling } from '../../shared/weapons.data.js?v=20261115041504';
+import { Arms, gripTransform, getPose, mixPose, newPose, copyPose, PROP_SHAPES } from './gunsmith/arms.js?v=20261115041504';
+import { ID_TO_MODEL, handlingFor, poseFor, KNIFE_MELEE, MELEE_STYLES } from './gunsmith/handling.js?v=20261115041504';
+import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261115041504';
+import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261115041504';
+import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261115041504';
+import { BREAK_ACTIONS } from './anim/break.js?v=20261115041504';   // Kipplauf (26.10., ZW-12 Zwilling)
+import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261115041504';
+import { COSMETIC } from './anim/reloads.js?v=20261115041504';
+import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261115041504';
+export { LADDER_AHEAD, ladderWindow, ladderOrder, ladderPrebuild } from './hintergrundbau.js?v=20261115041504'; // Waffenspiel-Vorbau (main.js, 26.10.)
+import { magWellOf } from './anim/magwell.js?v=20261115041504';
+import { GunCollider, MultiCollider } from './gunsmith/contact.js?v=20261115041504';
+import { uploadTextures } from '../engine/warm.js?v=20261115041504';
+import { applyCamo } from './gunsmith/camos.js?v=20261115041504';
+import { DETAIL, setWeaponDetail } from './gunsmith/builder.js?v=20261115041504';
+import { setReticleSize, setWeaponDust } from './gunsmith/materials.js?v=20261115041504';
+import { updateVmLight, resetVmLight } from './gunsmith/vmlight.js?v=20261115041504';   // Weltschatten auf Waffe/Armen (waffen, 14.11.)
+import { CLASS_LOOKS, SKIN_TIERS, classLookId } from '../../shared/weapons.data.js?v=20261115041504';
+import { MuzzleFlash, ShellPool, SmokeWisps, HeatHaze } from './gunsmith/fx.js?v=20261115041504';
+import { SCHEMES, schemeForTeam } from '../bots/soldier/materials.js?v=20261115041504';
+import { Spring, Spring3, curve, windowW, clamp, damp, smooth, easeOut, easeInOut, easeOutBack } from './gunsmith/anim.js?v=20261115041504';
+import { camoMap, fabricNormal, tapeMap, watchFaceTexture, flashMap, smokeMap } from './gunsmith/textures.js?v=20261115041504';
 
 const V3 = () => new THREE.Vector3();
 const _v = V3(), _v2 = V3(), _v3 = V3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _e = new THREE.Euler();
@@ -134,6 +135,13 @@ export class ViewModel {
     this.onGrenadeRelease = null;   // optionaler Rückruf beim Loslassen der Granate
     this.onMeleeHit = null;         // optionaler Rückruf im Treffermoment des Messerhiebs
 
+    // waffen 14.11.: Schattenkarte der Kartensonne auf Waffe und Armen (gunsmith/vmlight.js) – je Viewmodel-Durchgang an, danach
+    // wieder aus (geteilte Waffenmaterialien in der Weltszene bleiben unberührt). Nicht auf „niedrig“ und nicht in VR.
+    this._wsh = false;
+    this.scene.onBeforeRender = (r, sc, cam) => {
+      this._wsh = updateVmLight(!this._vrOn && this.quality !== 'low' && !!this._lighting, this._lighting?.sun, this.G?.camera, cam, this.sun);
+    };
+    this.scene.onAfterRender = () => { resetVmLight(); };
     this.root = new THREE.Group();
     this.root.name = 'viewmodel';
     this.scene.add(this.root);
@@ -687,6 +695,15 @@ export class ViewModel {
       this._sunDir = new THREE.Vector3(0.5, 0.75, 0.35).normalize();
       this._ensureOwnEnv();
     }
+    // Kartenstaub auf den Waffen (materials.js wearPatch): Farbton des Kartenbodens (Bodenlicht), Helligkeit wie feiner Staub
+    if (L && L.hemiGround) {
+      const d = L.hemiGround.clone(), lum = 0.2126 * d.r + 0.7152 * d.g + 0.0722 * d.b;
+      d.multiplyScalar(lum > 1e-4 ? 0.26 / lum : 1);
+      // Menge je Karte: Feld/Wald/Grenze (Erde, Asche) mehr, Industrie mittel, Hallen/Stand kaum; Regen wäscht ab
+      const id = this.G?.world?.id || '';
+      const wet = /regen|rain|sturm|storm/i.test(String(this.G?.world?.weather?.weather || ''));
+      setWeaponDust(d, (DUST_BY_MAP[id] ?? 0.45) * (wet ? 0.5 : 1));
+    } else setWeaponDust(null, 0);
     // Neue Karte/Beleuchtung: Sonde beim nächsten Bild sofort vollständig messen
     this._probe.reset = true;
     this._applyIntensities();
@@ -712,7 +729,9 @@ export class ViewModel {
     // 16.10.: Waffe/Arme bekamen Himmels- UND Umgebungslicht voll (bei Bewölkung 2,2 + 2,5) – ≈ 2,5× heller als gleich
     // helle Flächen der Welt (schwarze Waffe grau, dunkle Handschuhe weiß). Fülllicht auf Weltniveau absenken.
     this.hemi.intensity *= VM_FILL;
-    this.scene.environmentIntensity *= VM_FILL;
+    // waffen 14.11.: Umgebung (diffus + Spiegelung) weniger stark gedämpft als das Himmelslicht – schwarze Waffen liest man an den
+    // Himmelsspiegelungen; mit 0,42 standen sie im Schatten als schwarze Scherenschnitte vor der hellen Welt (Altstadt, Gasse)
+    this.scene.environmentIntensity *= VM_ENV;
   }
 
   _applyIntensitiesRaw() {
@@ -722,7 +741,8 @@ export class ViewModel {
     const envBase = L ? (L.envIntensity ?? 0.8) * 1.05 : 0.9;
     // Im Schatten bleibt nur ein Rest Streulicht der Sonne; drinnen (Himmel verdeckt) wird das
     // Himmels-/Umgebungslicht ähnlich stark gedämpft wie das gebackene Innenraumlicht der Karte.
-    this.sun.intensity = sunBase * (0.07 + 0.93 * pr.sun);
+    // Mit Weltschattenkarte (vmlight.js) schattet der Shader je Fragment ab – die Sonde dunkelt dann nicht zusätzlich pauschal ab
+    this.sun.intensity = this._wsh ? sunBase : sunBase * (0.07 + 0.93 * pr.sun);
     // atmosphere-weather: mit Sonden-Gitter (world.probes) Himmelssicht + Rückprall an der Augenposition wie die
     // Welt (V ≈ 0,05–0,2 in Hallen) → Waffe/Arme dunkeln drinnen natürlich ab; Untergrenzen 0,16 (Himmel) bzw.
     // 0,22 (Umgebung/Glanz). Draußen (V ≈ 1) unverändert – der Glanz der Waffe bleibt.
@@ -734,12 +754,15 @@ export class ViewModel {
       const fill = Math.min(0.35, b * sunBase * 0.6); // Sonnenrückprall hellt drinnen auf (Fenster, Tore)
       this.hemi.intensity = hemiBase * (0.16 + 0.84 * sky) + fill;
       this.scene.environmentIntensity = envBase * (0.22 + 0.78 * sky) + fill * 0.5;
-      this.rim.intensity = 0.6 * (0.3 + 0.7 * sky);
+      this.rim.intensity = 0;
       return;
     }
     this.hemi.intensity = hemiBase * (0.5 + 0.5 * pr.sky);
     this.scene.environmentIntensity = envBase * (0.42 + 0.58 * pr.sky);
-    this.rim.intensity = 0.6 * (0.45 + 0.55 * pr.sky);
+    // waffen 14.11.: Kantenlicht nur ohne Weltbeleuchtung (Waffenlabor/Vitrine) – in der Karte gibt es dieses Licht nicht, es zog
+    // eine harte helle Kontur um Waffe und Hände (Nutzer: „anderer Beleuchtung als die Welt“); den Saum liefert die Umgebung (Fresnel).
+    // Intensität 0 statt unsichtbar: gleiche Lichtanzahl → keine neu zu übersetzenden Shader beim Kartenwechsel
+    this.rim.intensity = L ? 0 : 0.6 * (0.45 + 0.55 * pr.sky);
   }
 
   /**
@@ -1338,7 +1361,12 @@ export class ViewModel {
     const scoped = !vr && this._scopeOverlay === 'sniper' && a > 0.96 && (!this.action || this.action.type === 'boltCycle');
     this.showScopeOverlay = scoped;
     this.root.visible = this._visible && !scoped;
+    this.scene.userData.npAds = scoped || !this._visible ? 0 : a; // gfx-licht: Tiefenschärfe beim Zielen (engine/post/dof.js)
     if (scoped) this.flash.hide();
+    // Kampfvisier (visier, 14.11.): im vollen Anschlag Optikkörper ausblenden – Okularrand zeichnet das HUD (.h-acog), das Absehen
+    // bleibt im Modell. Durch das 15-cm-Rohr sah man sonst nur ein kleines Guckloch in einem schwarzen Ring.
+    const optic = this.cur.ud.parts.optic;
+    if (optic) optic.visible = !(this._scopeOverlay === 'acog' && !vr && a > 0.9);
 
     // ---- Hände
     this.root.updateMatrixWorld(true);
@@ -1958,6 +1986,8 @@ export class ViewModel {
   dispose() {
     this._disposed = true;
     this._offQuality?.();
+    this.scene.onBeforeRender = this.scene.onAfterRender = () => {};
+    resetVmLight();
     this.scene.remove(this.root);
     this.flash.group.removeFromParent();
     // Requisiten teilen Geometrien mit dem Modell-Cache: vor dem Entsorgen der Arme abhängen
@@ -1982,6 +2012,9 @@ export class ViewModel {
 ViewModel.FOV = 54;
 // Anteil des Himmels-/Umgebungslichts der Ego-Ansicht relativ zur Welt (siehe _applyIntensities)
 const VM_FILL = 0.42;
+const VM_ENV = 0.62;
+// Staubmenge auf den Ego-Waffen je Karte (materials.js setWeaponDust; Farbe aus dem Bodenlicht der Karte)
+const DUST_BY_MAP = { grenzland: 0.7, niemandsland: 0.75, brandwald: 0.7, werk: 0.6, flugplatz: 0.5, altstadt: 0.5, hafen: 0.42, stadtkern: 0.45, bibliothek: 0.2, range: 0.25 };
 
 // Welle 2 (Arsenal): zusätzliche Choreografien (Nachladen je Mechanik, Inspizieren je Klasse, Platte, Klingenhiebe);
 // Animationen 09.10.: Nachladen mit Varianten, Magazin entlang der Schachtachse (anim/reloads.js, anim/magwell.js),

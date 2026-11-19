@@ -15,10 +15,12 @@
 // Luken und Innenraum liegen außerhalb der LOD-Stufen (eigene Netze; der Innenraum nur für den lokalen Insassen).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boxUV } from '../engine/textures.js?v=20261113221339';
-import { VEHICLES, mountY, staticComp } from './data.js?v=20261113221339';
-import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261113221339';
-import { CIVIL_BUILDERS } from './models-civil.js?v=20261113221339';
+import { boxUV } from '../engine/textures.js?v=20261115041504';
+import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261115041504';
+import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261115041504';
+import { CIVIL_BUILDERS } from './models-civil.js?v=20261115041504';
+import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261115041504';
+import { attachCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261115041504';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const PI = Math.PI, HP = PI / 2;
@@ -246,7 +248,30 @@ function mbtTrackPath(lod) {
   return pts;
 }
 
+/* Laufwerk zum Anfassen (Nutzer 14.11.): auf high/ultra werden die Laufrollen der Nahstufe nicht in die Wanne
+ * verschmolzen, sondern je Rollentyp als InstancedMesh gesammelt (drehen mit dem Kettenlauf, federn mit den
+ * Federstrahlen der Simulation), und die Kette besteht aus einzelnen Gliedern (InstancedMesh entlang der Laufbahn, die
+ * unter den eingefederten Rollen mitgeht). RG ist nur während des Baus der Stufe 0 gesetzt. */
+let RG = null;
+/** Rolle erfassen statt verschmelzen: build(Bucket, sx) baut sie um den Ursprung. → true wenn erfasst */
+function rgWheel(kind, x, y, z, r, build) {
+  if (!RG) return false;
+  const sx = Math.sign(x) || 1, key = `${kind}|${sx}|${r}`;
+  let set = RG.wheels.get(key);
+  if (!set) {
+    const keep = RG; RG = null;
+    const B = new Bucket();
+    build(B, sx * 1e-4);
+    RG = keep;
+    set = { B, r, off: [x, y, z], centers: [] };
+    RG.wheels.set(key, set);
+  }
+  set.centers.push([x, y, z]);
+  return true;
+}
+
 function addRoadWheel(B, S, x, y, z, r, seg, lod) {
+  if (lod === 0 && rgWheel('rw', x, y, z, r, (BB, cx) => addRoadWheel(BB, S, cx, 0, 0, r, seg, lod))) return;
   B.add(cyl(r, r, 0.42, seg), S.rubber, [x, y, z], [0, 0, HP]);
   if (lod < 2) {
     B.add(cyl(r * 0.72, r * 0.72, 0.46, seg), S.dark, [x, y, z], [0, 0, HP]);
@@ -256,6 +281,7 @@ function addRoadWheel(B, S, x, y, z, r, seg, lod) {
 
 /** env-look (medium+): Laufrolle mit Gummibandage, lackierter Radscheibe, Nabe und (high) Radmuttern. */
 function addRoadWheelHQ(B, S, paint, x, y, z, r, seg, lod) {
+  if (lod === 0 && rgWheel('hq', x, y, z, r, (BB, cx) => addRoadWheelHQ(BB, S, paint, cx, 0, 0, r, seg, lod))) return;
   const sx = Math.sign(x) || 1;
   B.add(cyl(r, r, 0.42, seg), S.rubber, [x, y, z], [0, 0, HP]);
   B.add(cyl(r * 0.78, r * 0.78, 0.44, seg), paint, [x, y, z], [0, 0, HP]);
@@ -356,6 +382,22 @@ function mbtDetail(B, S, paint, lod, seg) {
     // Heckplatte: Lüftergitter zwischen den Auspuffkästen
     B.add(box(1.1, 0.34, 0.03), S.dark, [0, 1.15, 3.6]);
     if (lod === 0 && hi) for (let j = 0; j < 5; j++) B.add(box(1.06, 0.03, 0.05), paint, [0, 1.03 + j * 0.06, 3.62], [0.6, 0, 0]);
+  }
+  if (lod < 2) {
+    // Reaktivpanzerung (Nutzer 14.11.): Kacheln auf den beiden vorderen Schürzensegmenten, je Kachel zwei Schrauben;
+    // Gitterschutz (Käfig aus Flachstählen) vor dem Heck gegen Hohlladungen
+    for (const sx of [-1, 1]) for (let i = 0; i < 2; i++) {
+      const z = -2.55 + i * 1.04;
+      if (lod === 0) for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) {
+        const y = 0.63 + r * 0.22, zz = z - 0.36 + k * 0.24;
+        B.add(box(0.075, 0.2, 0.225), paint, [sx * 1.925, y, zz], [0, 0, sx * 0.035]);
+        if (DET === 2) for (const dy of [-0.06, 0.06]) B.add(cyl(0.014, 0.014, 0.02, 6), S.dark, [sx * 1.965, y + dy, zz], [0, 0, HP]);
+      } else B.add(box(0.075, 0.42, 0.96), paint, [sx * 1.925, 0.74, z], [0, 0, sx * 0.035]);
+    }
+    const zc = 3.92;
+    for (const y of [0.98, 1.56]) B.add(box(3.34, 0.045, 0.05), S.dark, [0, y, zc]);
+    for (const sx of [-1, 1]) { B.add(box(0.05, 0.62, 0.05), S.dark, [sx * 1.65, 1.27, zc]); B.add(box(0.04, 0.04, 0.28), S.dark, [sx * 1.65, 1.5, zc - 0.15]); B.add(box(0.04, 0.04, 0.28), S.dark, [sx * 1.65, 1.04, zc - 0.15]); }
+    if (lod === 0) for (let x = -1.54; x <= 1.55; x += DET === 2 ? 0.105 : 0.21) B.add(box(0.016, 0.56, 0.07), S.dark, [x, 1.27, zc]);
   }
   if (lod === 0) {
     // Schaufel + Brechstange neben der Fahrerluke
@@ -513,7 +555,8 @@ function buildMBT(lod, S, team) {
   B.build(hull, { shadow: true });
   // Ketten (eigenes Material je Seite → Texturlauf)
   const path = mbtTrackPath(lod);
-  for (const [i, sx] of [[0, -1], [1, 1]]) {
+  if (RG) RG.tracks.push({ path, x: W.x, w: 0.62, t: 0.07 });
+  else for (const [i, sx] of [[0, -1], [1, 1]]) {
     const { geometry, k, length } = trackLoop(path, 0.62, 0.07);
     geometry.translate(sx * W.x, 0, 0);
     geometry.computeBoundingSphere();
@@ -619,6 +662,7 @@ function trackPathFor(lod, z0, z1, front, back) {
 
 /** Ketten beider Seiten (eigenes Material je Seite → Texturlauf) an hull hängen. */
 function addTracks(hull, path, x, w) {
+  if (RG) { RG.tracks.push({ path, x, w, t: 0.06 }); return; }
   for (const [i, sx] of [[0, -1], [1, 1]]) {
     const { geometry, k, length } = trackLoop(path, w, 0.06);
     geometry.translate(sx * x, 0, 0);
@@ -904,8 +948,16 @@ function buildWK1(lod, S, team) {
   return { hull, tur, gun, cmg };
 }
 
+/** Kleine Stahlrolle (1. WK, leichter Panzer). */
+function addSmallRoller(B, S, x, y, z, r, seg, lod) {
+  if (lod === 0 && rgWheel('sr', x, y, z, r, (BB, cx) => addSmallRoller(BB, S, cx, 0, 0, r, seg, lod))) return;
+  B.add(cyl(r, r, 0.3, seg), S.dark, [x, y, z], [0, 0, HP]);
+  if (lod === 0 && HQ) B.add(cyl(r * 0.35, r * 0.35, 0.34, 6), S.steel, [x, y, z], [0, 0, HP]);
+}
+
 /** Schachtellaufwerk-Rolle: schmale Gummibandage, gewölbte Scheibe, Nabe (Achse quer). */
 function addDiscWheel(B, S, paint, x, y, z, r, w, seg, lod) {
+  if (lod === 0 && rgWheel(`disc${w}`, x, y, z, r, (BB, cx) => addDiscWheel(BB, S, paint, cx, 0, 0, r, w, seg, lod))) return;
   B.add(cyl(r, r, w, seg), S.rubber, [x, y, z], [0, 0, HP]);
   if (lod < 2) {
     B.add(cyl(r * 0.8, r * 0.8, w + 0.02, seg), paint, [x, y, z], [0, 0, HP]);
@@ -1109,7 +1161,7 @@ function buildWK1L(lod, S, team) {
   // Laufwerk: viele kleine Rollen (hinter den Trägern), großes Leitrad vorn (Speichen aus Holz), Triebrad hinten
   for (const sx of [-1, 1]) {
     const x = sx * W.x;
-    if (lod < 2) for (let i = 0; i < 9; i++) B.add(cyl(0.13, 0.13, 0.3, lod === 0 ? 10 : 6), S.dark, [x, 0.165, -1.25 + i * 0.32], [0, 0, HP]);
+    if (lod < 2) for (let i = 0; i < 9; i++) addSmallRoller(B, S, x, 0.165, -1.25 + i * 0.32, 0.13, lod === 0 ? 10 : 6, lod);
     B.add(cyl(0.42, 0.42, 0.32, seg + 2), S.dark, [x, 0.78, -1.85], [0, 0, HP]);
     B.add(cyl(0.36, 0.36, 0.34, seg + 2), S.wood, [x, 0.78, -1.85], [0, 0, HP]);
     if (lod === 0) for (let i = 0; i < 6; i++) { const a = (i / 6) * PI; B.add(box(0.36, 0.05, 0.66), S.dark, [x, 0.78, -1.85], [a, 0, 0]); }
@@ -1186,21 +1238,22 @@ function treadTire(r, w) {
 /** env-look: Geländewagen – Seilwinde, Abschleppösen, Blinker, Scheinwerferringe, Wischer, Außenspiegel, Antenne,
  * Trittbretter, Kotflügelverbreiterungen, Rammschutz, Planenrolle, Schmutzfänger; high: Munitionskisten, Spaten,
  * Anhängerkupplung, Scheinwerfergitter. Nur HQ (medium+). */
-function jeepDetail(B, S, paint, lod, seg) {
+function jeepDetail(B, S, paint, lod, seg, hqb = false) {
   const D = VEHICLES.jeep;
-  if (lod < 2) {
+  if (lod < 2 && !hqb) {
     for (const sx of [-1, 1]) {
       B.add(box(0.06, 0.06, 1.6), paint, [sx * 0.96, 0.66, 0.35]);                  // Trittbrett
       B.add(box(0.08, 0.06, 1.1), S.rubber, [sx * 1.0, 1.0, -1.47]);               // Kotflügelverbreiterung
       B.add(box(0.07, 0.05, 0.04), S.lensOff, [sx * 0.88, 0.86, -2.4]);             // Blinker
     }
-    B.add(cyl(0.09, 0.09, 0.62, Math.max(8, seg >> 1)), S.dark, [0, 0.56, -2.62], [0, 0, HP]); // Seilwinde
   }
+  if (lod < 2) B.add(cyl(0.09, 0.09, 0.62, Math.max(8, seg >> 1)), S.dark, [0, 0.56, -2.62], [0, 0, HP]); // Seilwinde
   if (lod === 0) {
     for (const sx of [-1, 1]) B.add(new THREE.TorusGeometry(0.06, 0.016, 4, 10), S.dark, [sx * 0.62, 0.48, -2.6], [0, HP, 0]); // Ösen
-    for (const L of D.lights) B.add(new THREE.TorusGeometry(0.125, 0.015, 4, 16), S.dark, [L[0], L[1], L[2] - 0.03]);
+    if (!hqb) for (const L of D.lights) B.add(new THREE.TorusGeometry(0.125, 0.015, 4, 16), S.dark, [L[0], L[1], L[2] - 0.03]);
     for (const sx of [-1, 1]) {
       B.add(box(0.5, 0.012, 0.02), S.dark, [sx * 0.42, 1.31, -0.96], [0, 0, sx * 0.25]); // Wischer
+      if (hqb) continue;
       B.add(cyl(0.01, 0.01, 0.3, 4), S.dark, [sx * 0.98, 1.62, -0.92], [0, 0, sx * 1.1]); // Spiegelarm
       B.add(box(0.03, 0.16, 0.12), S.dark, [sx * 1.1, 1.7, -0.92]);
       B.add(box(0.005, 0.13, 0.1), S.glass, [sx * 1.118, 1.7, -0.92]);
@@ -1225,8 +1278,8 @@ function jeepDetail(B, S, paint, lod, seg) {
     B.add(box(0.02, 0.2, 0.16), S.dark, [0.97, 1.16, 1.26]);
     B.add(box(0.14, 0.08, 0.16), S.dark, [0, 0.56, 2.4]);
     B.add(new THREE.TorusGeometry(0.045, 0.014, 4, 8), S.dark, [0, 0.56, 2.5], [HP, 0, 0]);
-    for (const L of D.lights) for (const dx of [-0.07, 0, 0.07]) B.add(box(0.012, 0.24, 0.012), S.dark, [L[0] + dx, L[1], L[2] - 0.1]);
-    for (const sx of [-1, 1]) B.add(box(0.05, 0.06, 0.08), S.dark, [sx * 0.82, 1.12, -1.7]);
+    for (const L of D.lights) for (const dx of [-0.07, 0, 0.07]) B.add(box(0.012, 0.24, 0.012), S.dark, [L[0] + dx, L[1], L[2] - (hqb ? 0.2 : 0.1)]);
+    if (!hqb) for (const sx of [-1, 1]) B.add(box(0.05, 0.06, 0.08), S.dark, [sx * 0.82, 1.12, -1.7]);
   }
 }
 
@@ -1238,6 +1291,10 @@ function buildJeep(lod, S, team) {
   const mark = S.mark[team] || S.mark.null;
   const hull = new THREE.Group();
   const B = new Bucket();
+  // Nutzer 14.11.: Detailkarosserie ab medium in den Nahstufen (models-jeep.js); low und Fernstufe wie bisher
+  const hqb = HQ && lod < 2;
+  if (hqb) jeepBodyHQ({ B, box, cyl, sideExtrude }, S, paint, DET === 2 ? lod : 1);
+  else {
   // Rahmen
   for (const sx of [-1, 1]) B.add(box(0.12, 0.16, 4.3), S.dark, [sx * 0.5, 0.52, 0]);
   // Motorhaube + Front
@@ -1269,6 +1326,7 @@ function buildJeep(lod, S, team) {
     B.add(cyl(0.03, 0.03, 1.9, 8), S.dark, [sx * 0.86, 1.62, 1.15], [1.08, 0, 0]);
   }
   B.add(cyl(0.035, 0.035, 1.72, 8), S.dark, [0, 2.1, 0.3], [0, 0, HP]);
+  }
   // Sitze, Lenkrad (env-look LOD0: gepolsterte Kissen mit gerundeten Kanten)
   const seat = (w, h, d, pos, rot) => {
     if (HQ && lod === 0) { const g = topExtrude([[-w / 2 + 0.04, d / 2 - 0.04], [w / 2 - 0.04, d / 2 - 0.04], [w / 2 - 0.04, -d / 2 + 0.04], [-w / 2 + 0.04, -d / 2 + 0.04]], h - 0.08, true); g.translate(0, -h / 2 + 0.04, 0); B.add(g, S.canvas, pos, rot); }
@@ -1280,9 +1338,25 @@ function buildJeep(lod, S, team) {
   }
   seat(1.5, 0.14, 0.5, [0, 1.0, 1.6]);
   seat(1.5, 0.5, 0.1, [0, 1.28, 1.9], [-0.1, 0, 0]);
-  if (lod < 2) {
-    B.add(new THREE.TorusGeometry(0.18, 0.022, 6, seg), S.dark, [-0.46, 1.48, -0.6], [-0.95, 0, 0]);
-    B.add(cyl(0.022, 0.022, 0.5, 6), S.dark, [-0.46, 1.32, -0.75], [-0.95 + HP, 0, 0]);
+  let extra = null;
+  if (lod === 1) B.add(new THREE.TorusGeometry(0.18, 0.022, 6, seg), S.dark, [-0.46, 1.48, -0.6], [-0.95, 0, 0]);
+  if (lod < 2) B.add(cyl(0.022, 0.022, 0.5, 6), S.dark, [-0.46, 1.32, -0.75], [-0.95 + HP, 0, 0]);
+  if (lod === 0) {
+    // Lenkrad dreht mit dem Einschlag (vehicle.js sync, wie bei den Zivilfahrzeugen): Kranz, drei Speichen, Hupenknopf
+    const outer = new THREE.Group();
+    outer.name = 'lenkrad';
+    outer.position.set(-0.46, 1.48, -0.6);
+    outer.rotation.x = -0.95;
+    const inner = new THREE.Group();
+    inner.name = 'lenkrad:dreh';
+    const LB = new Bucket();
+    LB.add(new THREE.TorusGeometry(0.18, 0.02, 8, seg + 4), S.rubber);
+    LB.add(cyl(0.045, 0.05, 0.05, 12), S.dark, [0, 0, 0.01], [HP, 0, 0]);
+    LB.add(cyl(0.028, 0.028, 0.012, 10), S.steel, [0, 0, 0.04], [HP, 0, 0]);
+    for (const a of [0, PI, -HP]) LB.add(box(0.13, 0.026, 0.012), S.dark, [Math.cos(a) * 0.105, Math.sin(a) * 0.105, 0], [0, 0, a]);
+    LB.build(inner, { shadow: true });
+    outer.add(inner);
+    extra = [outer];
   }
   // MG-Sockel
   B.add(cyl(0.06, 0.08, 0.9, 10), S.dark, [D.mgPivot[0], 1.42, D.mgPivot[2]]);
@@ -1293,13 +1367,13 @@ function buildJeep(lod, S, team) {
   }
   if (lod === 0) for (const sx of [-1, 1]) B.add(box(0.16, 0.44, 0.32), sx < 0 ? paint : S.dark, [sx * -0.55 - 0.1, 1.2, 2.3]);
   // Kennung
-  B.add(cyl(0.24, 0.24, 0.015, seg), mark, [0, 1.165, -1.62], [0.05, 0, 0]);
-  B.add(cyl(0.15, 0.15, 0.015, seg), mark, [-0.5, 1.12, 2.186], [HP, 0, 0]);
-  if (HQ) jeepDetail(B, S, paint, lod, seg);
+  B.add(cyl(0.24, 0.24, 0.015, seg), mark, [0, hqb ? 1.188 : 1.165, -1.62], [0.05, 0, 0]);
+  B.add(cyl(0.15, 0.15, 0.015, seg), mark, [-0.5, 1.12, hqb ? 2.212 : 2.186], [HP, 0, 0]);
+  if (HQ) jeepDetail(B, S, paint, lod, seg, hqb);
   B.build(hull, { shadow: true });
   if (HQ && lod < 2) {
     const MK = new Bucket();
-    for (const sx of [-1, 1]) MK.add(new THREE.PlaneGeometry(0.5, 0.125), markingMaterial(team), [sx * 0.866, 0.95, -1.62], [0, sx * HP, 0], null, { keepUV: true });
+    for (const sx of [-1, 1]) MK.add(new THREE.PlaneGeometry(0.5, 0.125), markingMaterial(team), [sx * 0.853, 0.95, -1.62], [0, sx * HP, 0], null, { keepUV: true });
     MK.build(hull, { shadow: false });
   }
   // Glas
@@ -1307,7 +1381,7 @@ function buildJeep(lod, S, team) {
   GB.add(box(1.66, 0.5, 0.015), S.glass, [0, 1.53, -0.92], [-0.08, 0, 0]);
   GB.build(hull, { shadow: false });
   const LB = new Bucket();
-  for (const L of D.lights) LB.add(cyl(0.1, 0.1, 0.03, seg), S.lensOff, [L[0], L[1], L[2] - 0.03], [HP, 0, 0], null, { tag: { lens: true } });
+  for (const L of D.lights) LB.add(cyl(0.1, 0.1, 0.03, seg), S.lensOff, [L[0], L[1], L[2] - (hqb ? 0.165 : 0.03)], [HP, 0, 0], null, { tag: { lens: true } });
   LB.build(hull, { shadow: false });
 
   // MG (eigene Lafette)
@@ -1332,6 +1406,12 @@ function buildJeep(lod, S, team) {
     for (const sx of [-1, 1]) {
       const spin = new THREE.Group();
       const R = new Bucket();
+      if (hqb && lod === 0) {
+        jeepWheelHQ(R, { box, cyl }, S, paint, W.radius, sx, DET === 2 ? lod : 1);
+        R.build(spin, { shadow: true, off: [sx * W.x, W.radius, z] });
+        wheels.push({ spin, axle, side: sx, x: sx * W.x, z });
+        continue;
+      }
       R.add(tireGeometry(W.radius, 0.32, seg, HQ && lod === 0), S.rubber, null, [0, 0, HP]);
       R.add(cyl(0.25, 0.25, 0.3, seg), S.dark, null, [0, 0, HP]);
       if (lod === 0) R.add(cyl(0.08, 0.08, 0.34, 8), paint, null, [0, 0, HP]);
@@ -1344,7 +1424,7 @@ function buildJeep(lod, S, team) {
       wheels.push({ spin, axle, side: sx, x: sx * W.x, z });
     }
   });
-  return { hull, mg, wheels };
+  return { hull, mg, wheels, extra };
 }
 
 /* -------------------------------------------------------------- Besatzung: Luken, Turm-Innenraum */
@@ -1502,11 +1582,8 @@ function buildInterior(S, D) {
     B.add(box(1.5, 0.02, 1.3), S.dark, [0.15, 0.07, 0.3]);                        // Bodenplatte
   }
   B.add(box(0.74, 0.62, 0.03), S.dark, [0, 0.42, -1.135]);                         // Rahmen der Rohrdurchführung
-  // Richtschützenplatz (rechts vorn), Kommandantenplatz (links), Funkgerät (links hinten)
-  if (!rackRight) B.add(box(0.36, 0.3, 0.32), S.dark, [0.8, 0.5, -0.85]);
-  B.add(box(0.2, 0.28, 0.46), S.dark, [-1.12, 0.48, 0.95]);
+  // Kommandantensitz (Richtschützenplatz, Funkgeräte und Optiken baut cabin.js im Detail, sobald jemand innen sitzt)
   if (DET > 0) {
-    if (!rackRight) B.add(box(0.12, 0.1, 0.16), S.rubber, [0.8, 0.6, -0.65]);
     B.add(box(0.4, 0.06, 0.38), S.canvas, [-0.62, 0.3, 0.55]);
     B.add(box(0.4, 0.24, 0.05), S.canvas, [-0.62, 0.45, 0.76], [-0.12, 0, 0]);
   }
@@ -1754,7 +1831,8 @@ function hullCompartment(S, D, I, CAB, DET, ring) {
   const B = new Bucket(), hb = D.hullBox, tp = D.turretPivot;
   const yF = hb[1] - hb[4] + 0.1, yR = tp[1] - 0.02;
   const wx = Math.max(ring + 0.12, Math.min(hb[3] - 0.5, ring + 0.3));
-  const zF = Math.max(hb[2] - hb[5] + 0.35, tp[2] - ring - 0.75), zB = Math.min(hb[2] + hb[5] - 0.3, tp[2] + ring + 0.55);
+  const DC = driverCabin(D);
+  const zF = Math.max(hb[2] - hb[5] + 0.35, tp[2] - ring - 0.75, DC ? DC.zB + 0.05 : -Infinity), zB = Math.min(hb[2] + hb[5] - 0.3, tp[2] + ring + 0.55);
   B.add(inward(topExtrude([[-wx, -zF], [wx, -zF], [wx, -zB], [-wx, -zB]], yR - yF)), CAB, [0, yF, 0]);
   B.add(box(wx * 2 - 0.1, 0.02, zB - zF - 0.1), S.dark, [0, yF + 0.01, (zF + zB) / 2]);           // Riffelblech
   if (DET === 2) for (let z = zF + 0.3; z < zB - 0.2; z += 0.35) B.add(box(wx * 2 - 0.2, 0.006, 0.02), S.steel, [0, yF + 0.023, z]);
@@ -1764,7 +1842,7 @@ function hullCompartment(S, D, I, CAB, DET, ring) {
   B.add(box(0.72, oh, 0.02), S.rubber, [dx, yF + oh / 2 + 0.05, zF + 0.012]);
   for (const sx of [-1, 1]) B.add(box(0.05, oh, 0.05), S.steel, [dx + sx * 0.38, yF + oh / 2 + 0.05, zF + 0.03]);
   B.add(box(0.8, 0.05, 0.05), S.steel, [dx, yF + oh + 0.07, zF + 0.03]);
-  B.add(box(0.46, 0.5, 0.08), S.canvas, [dx, yF + 0.45, zF + 0.06], [0.12, 0, 0]);               // Fahrersitz-Lehne
+  if (!DC) B.add(box(0.46, 0.5, 0.08), S.canvas, [dx, yF + 0.45, zF + 0.06], [0.12, 0, 0]);       // Fahrersitz-Lehne (ohne Fahrerkammer)
   // Munitionsstand in der Wanne neben dem Fahrer (Hülsenböden zum Kampfraum)
   const mx = dx > 0 ? -wx + 0.35 : wx - 0.35;
   B.add(box(0.62, 0.7, 0.04), S.dark, [mx, yF + 0.45, zF + 0.04]);
@@ -1783,6 +1861,165 @@ function hullCompartment(S, D, I, CAB, DET, ring) {
   grp.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
   return grp;
 }
+
+
+/* -------------------------------------------------------------- Laufwerk: Rollen und Kettenglieder (high/ultra, Stufe 0) */
+
+const LINK_GEO = new Map();
+/** Kettenglied (lokal: X quer, Y nach außen, Z längs): Platte, Greifsteg, Endverbinder mit Bolzen, Führungszahn innen. */
+function linkGeometry(w, t, pitch) {
+  const key = `${w}|${t}|${pitch}`;
+  if (LINK_GEO.has(key)) return LINK_GEO.get(key);
+  const parts = [];
+  const add = (g, pos, rot = null) => {
+    const gg = g.index ? g.toNonIndexed() : g;
+    if (gg !== g) g.dispose();
+    gg.deleteAttribute('uv');
+    _e.set(rot ? rot[0] : 0, rot ? rot[1] : 0, rot ? rot[2] : 0);
+    gg.applyMatrix4(_m.compose(_p.set(pos[0], pos[1], pos[2]), _q.setFromEuler(_e), _s.set(1, 1, 1)));
+    parts.push(gg);
+  };
+  add(box(w, t * 0.55, pitch * 0.84), [0, 0, 0]);
+  add(box(w * 0.94, t * 0.42, pitch * 0.2), [0, t * 0.46, -pitch * 0.16]);                 // Greifsteg
+  for (const sx of [-1, 1]) add(box(0.05, t * 0.8, pitch * 0.34), [sx * (w / 2 + 0.012), 0, pitch * 0.42]); // Endverbinder
+  add(cyl(t * 0.2, t * 0.2, w + 0.05, 6), [0, 0, pitch * 0.42], [0, 0, HP]);             // Bolzen
+  add(box(0.06, 0.06 + t * 0.4, pitch * 0.42), [0, -(t * 0.3 + 0.03), -pitch * 0.05]);    // Führungszahn
+  if (w > 0.5) for (const sx of [-1, 1]) add(box(w * 0.3, t * 0.16, pitch * 0.62), [sx * w * 0.26, -t * 0.34, 0]); // Gummipolster innen
+  const g = mergeGeometries(parts, false);
+  for (const x of parts) x.dispose();
+  boxUV(g, 0.5);
+  g.computeBoundingSphere();
+  LINK_GEO.set(key, g);
+  return g;
+}
+
+let LINK_MAT = null;
+function linkMaterial() {
+  if (!LINK_MAT) LINK_MAT = new THREE.MeshStandardMaterial({ name: 'veh:kettenglied', color: 0xffffff, roughness: 0.8, metalness: 0.55, envMapIntensity: 0.6 });
+  const D = vehicleMaterials().dark; // Fotoscan (gunmetal_worn), sobald geladen
+  if (D.map && LINK_MAT.map !== D.map) { LINK_MAT.map = D.map; LINK_MAT.normalMap = D.normalMap || null; LINK_MAT.roughnessMap = D.roughnessMap || null; LINK_MAT.metalnessMap = D.metalnessMap || null; LINK_MAT.needsUpdate = true; }
+  return LINK_MAT;
+}
+
+/** Laufbahn (z, y) für die Glieder: Untertrum über die (eingefederten) Rollen, Bögen um Trieb-/Leitrad, Obertrum. */
+function linkPath(U, dyAt, side, out) {
+  const base = U.path;
+  out.length = 0;
+  const z0 = base[0][0], z1 = base[1][0], t = base[0][1];
+  out.push([z0, t + dyAt(side, z0)]);
+  for (const z of U.wz) if (z > z0 + 0.05 && z < z1 - 0.05) out.push([z, t + dyAt(side, z)]);
+  out.push([z1, t + dyAt(side, z1)]);
+  for (let i = 2; i < base.length; i++) out.push(base[i]);
+  return out;
+}
+const _lp = [], _lc = [];
+const _lm = new THREE.Matrix4();
+/** Glieder entlang der Bahn setzen (Versatz s0 = Kettenlauf in m). */
+function placeLinks(mesh, dyAt, s0) {
+  const U = mesh.userData.links;
+  const P = linkPath(U, dyAt, U.side, _lp), n = P.length;
+  _lc.length = n + 1; _lc[0] = 0;
+  for (let i = 0; i < n; i++) { const a = P[i], b = P[(i + 1) % n]; _lc[i + 1] = _lc[i] + Math.hypot(b[0] - a[0], b[1] - a[1]); }
+  const L = _lc[n], N = U.N, step = L / N;
+  let s = ((s0 % L) + L) % L, j = 0;
+  // erstes Segment suchen, danach fortlaufend (s wächst, ein Umlauf)
+  while (j < n - 1 && _lc[j + 1] <= s) j++;
+  for (let i = 0; i < N; i++) {
+    let guard = 0;
+    while (_lc[j + 1] <= s && guard++ < n + 1) { j++; if (j >= n) { j = 0; s -= L; } }
+    const a = P[j], b = P[(j + 1) % n], sl = Math.max(1e-6, _lc[j + 1] - _lc[j]), f = (s - _lc[j]) / sl;
+    const tz = (b[0] - a[0]) / sl, ty = (b[1] - a[1]) / sl;
+    const nz = U.ccw ? ty : -ty, ny = U.ccw ? -tz : tz; // Außennormale (z, y)
+    const pz = a[0] + (b[0] - a[0]) * f, py = a[1] + (b[1] - a[1]) * f;
+    _lm.set(1, 0, 0, U.x, 0, ny, -nz, py, 0, nz, ny, pz, 0, 0, 0, 1);
+    mesh.setMatrixAt(i, _lm);
+    s += step;
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+}
+
+const ZERO_DY = () => 0;
+/** Erfasste Rollen (je Typ ein InstancedMesh je Material) und Glieder-Ketten an die Wanne der Stufe 0 hängen. */
+function attachRunningGear(hull, R) {
+  const wz = [[], []];
+  for (const set of R.wheels.values()) {
+    const tmp = new THREE.Group();
+    set.B.build(tmp, { shadow: true, off: set.off });
+    for (const m of [...tmp.children]) {
+      const im = new THREE.InstancedMesh(m.geometry, m.material, set.centers.length);
+      set.centers.forEach((c, k) => im.setMatrixAt(k, _m.compose(_p.set(c[0], c[1], c[2]), _q.identity(), _s.set(1, 1, 1))));
+      im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false;
+      im.name = 'laufrollen';
+      im.userData.rw = { r: set.r, centers: set.centers };
+      hull.add(im);
+    }
+    for (const c of set.centers) wz[c[0] < 0 ? 0 : 1].push(Math.round(c[2] * 100) / 100);
+  }
+  for (const k of [0, 1]) wz[k] = [...new Set(wz[k])].sort((a, b) => a - b);
+  for (const T of R.tracks) {
+    const pitch = Math.min(0.2, Math.max(0.13, T.w * 0.26));
+    const geo = linkGeometry(T.w, T.t, Math.round(pitch * 1000) / 1000);
+    let area = 0;
+    for (let i = 0; i < T.path.length; i++) { const a = T.path[i], b = T.path[(i + 1) % T.path.length]; area += a[0] * b[1] - b[0] * a[1]; }
+    for (const [side, sx] of [[0, -1], [1, 1]]) {
+      const U = { side, x: sx * T.x, path: T.path.map((p) => p.slice()), wz: wz[side].length ? wz[side] : wz[1 - side], ccw: area > 0, N: 0 };
+      linkPath(U, ZERO_DY, side, _lp);
+      let L = 0;
+      for (let i = 0; i < _lp.length; i++) { const a = _lp[i], b = _lp[(i + 1) % _lp.length]; L += Math.hypot(b[0] - a[0], b[1] - a[1]); }
+      U.N = Math.max(8, Math.round(L / pitch));
+      const im = new THREE.InstancedMesh(geo, linkMaterial(), U.N);
+      im.name = `kette:${side}`;
+      im.userData.links = U;
+      im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false;
+      const col = new THREE.Color();
+      for (let i = 0; i < U.N; i++) { const k = Math.random(); im.setColorAt(i, col.setRGB(0.42 + k * 0.12, 0.4 + k * 0.1, 0.36 + k * 0.08)); }
+      placeLinks(im, ZERO_DY, 0);
+      hull.add(im);
+    }
+  }
+}
+
+
+/* -------------------------------------------------------------- Treffer- und Brandspuren (Nutzer 14.11.) */
+
+let SCAR_MAT = null;
+const SCAR_GEO = [];
+/** Ruß-/Einschussflecken: 2 Varianten im Atlas (links Durchschuss mit blankem Rand, rechts nur Ruß/Brand). */
+function scarMaterial() {
+  if (SCAR_MAT) return SCAR_MAT;
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 256, 128);
+  for (const [ox, hole] of [[64, true], [192, false]]) {
+    for (let i = 0; i < 26; i++) {
+      const a = Math.random() * 6.3, r = Math.random() * 40;
+      const gr = g.createRadialGradient(ox + Math.cos(a) * r * 0.5, 64 + Math.sin(a) * r * 0.5, 2, ox + Math.cos(a) * r * 0.5, 64 + Math.sin(a) * r * 0.5, 18 + Math.random() * 26);
+      gr.addColorStop(0, `rgba(12,10,8,${0.35 + Math.random() * 0.3})`); gr.addColorStop(1, 'rgba(12,10,8,0)');
+      g.fillStyle = gr; g.fillRect(ox - 64, 0, 128, 128);
+    }
+    // Anlauffarben (Hitze) und Spritzer
+    const ht = g.createRadialGradient(ox, 64, 6, ox, 64, 30);
+    ht.addColorStop(0, 'rgba(70,52,40,0.0)'); ht.addColorStop(0.5, 'rgba(92,60,38,0.45)'); ht.addColorStop(0.8, 'rgba(48,52,70,0.35)'); ht.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = ht; g.fillRect(ox - 64, 0, 128, 128);
+    for (let i = 0; i < 40; i++) { const a = Math.random() * 6.3, r = 16 + Math.random() * 44; g.fillStyle = `rgba(20,16,12,${Math.random() * 0.6})`; g.fillRect(ox + Math.cos(a) * r, 64 + Math.sin(a) * r, 1 + Math.random() * 3, 1 + Math.random() * 3); }
+    if (hole) {
+      g.fillStyle = 'rgba(165,160,150,0.95)'; g.beginPath(); g.arc(ox, 64, 11, 0, 7); g.fill();
+      g.fillStyle = 'rgba(6,5,4,1)'; g.beginPath(); g.arc(ox, 64, 7.5, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(140,130,118,0.8)'; g.lineWidth = 1.2;
+      for (let i = 0; i < 9; i++) { const a = Math.random() * 6.3; g.beginPath(); g.moveTo(ox + Math.cos(a) * 11, 64 + Math.sin(a) * 11); g.lineTo(ox + Math.cos(a) * (16 + Math.random() * 10), 64 + Math.sin(a) * (16 + Math.random() * 10)); g.stroke(); }
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  SCAR_MAT = new THREE.MeshStandardMaterial({ name: 'veh:brandspur', map: t, transparent: true, depthWrite: false, roughness: 0.95, metalness: 0.1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+  for (const u0 of [0, 0.5]) {
+    const pg = new THREE.PlaneGeometry(1, 1), uv = pg.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, u0 + uv.getX(i) * 0.5);
+    SCAR_GEO.push(pg);
+  }
+  return SCAR_MAT;
+}
+const _sr = new THREE.Raycaster(), _sn = new THREE.Vector3(), _sc = new THREE.Vector3(), _so = new THREE.Vector3(), _snm = new THREE.Matrix3(), _sz = new THREE.Vector3(0, 0, 1);
 
 /* -------------------------------------------------------------- Vorlagen */
 
@@ -1814,7 +2051,13 @@ function template(type, team, quality, variant = 0) {
   if (DT && DT.drive === 'tracked') {
     // Kettenfahrzeuge (KP-1 und Panzergenerationen 1./2. WK): Wanne, Turm (bzw. Schildlafette), Rohr, zweites MG
     const D = DT;
-    const lv = [0, 1, 2].map((l) => (TANK_BUILDERS[D.model] || buildMBT)(l, S, team));
+    const lv = [0, 1, 2].map((l) => {
+      RG = l === 0 && DET === 2 ? { wheels: new Map(), tracks: [] } : null; // Laufwerk zum Anfassen nur high/ultra
+      const r = (TANK_BUILDERS[D.model] || buildMBT)(l, S, team);
+      if (RG) { CUR_LOD = 0; attachRunningGear(r.hull, RG); }
+      RG = null;
+      return r;
+    });
     root.add(lodOf(lv.map((x) => x.hull), dists));
     const tur = new THREE.Group(); tur.name = 'turret';
     tur.position.fromArray(D.turretPivot);
@@ -1899,7 +2142,7 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
     cmg: root.getObjectByName('cmg') || null,
     mg: root.getObjectByName('mg') || null,
     wheels: [], trackMats: [], trackK: [1, 1], trackLen: [1, 1],
-    lenses: [], cones: [], meshes: [], occ: [],
+    lenses: [], cones: [], meshes: [], occ: [], rwMeshes: [], linkMeshes: [],
     lightsOn: false, wrecked: false,
   };
   const hq = quality !== 'low';
@@ -1916,6 +2159,8 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
       }
       o.userData.baseMat = o.material;
     }
+    if (o.userData.rw) model.rwMeshes.push(o);
+    if (o.userData.links) model.linkMeshes.push(o);
     if (o.name && o.name.startsWith('wheel')) model.wheels.push({ pivot: o, spin: o.getObjectByName('spin'), axle: o.userData.axle, side: o.userData.side });
     if (o.name && o.name.startsWith('occ:')) model.occ[+o.name.slice(4)] = o;
   });
@@ -1941,12 +2186,94 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
       } else { o.visible = true; o.material = base; }
     }
     if (on) {
+      if (VEHICLES[type] && VEHICLES[type].armored && model.addScar) {
+        root.updateMatrixWorld(true);
+        const D = VEHICLES[type], hb = D.hullBox;
+        for (let i = 0; i < 6; i++) {
+          const p = new THREE.Vector3(hb[0] + (Math.random() - 0.5) * hb[3] * 2, hb[1] + Math.random() * hb[4] * 1.6, hb[2] + (Math.random() - 0.5) * hb[5] * 2);
+          root.localToWorld(p);
+          model.addScar(p, { hole: i < 2, size: 1.1 + Math.random() * 0.8 });
+        }
+      }
       for (const o of model.occ) if (o) o.visible = false;
       model.setLights(false);
       for (const id of Object.keys(model.hatches)) model.setHatch(id, 0);
       model.setInterior(false);
       model.setHeld(null);
     } else applyRack();
+  };
+  // Laufwerk zum Anfassen (high/ultra, Nahstufe): Rollen drehen und federn, Glieder laufen um und folgen den Rollen
+  const hullLod = root.children.find((c) => c.isLOD) || null;
+  const run = { d: [0, 0], first: true, sig: 0, dy: new Float32Array(16), matT: 0 };
+  const _rq = new THREE.Quaternion(), _rp = new THREE.Vector3(), _rs = new THREE.Vector3(1, 1, 1), _rm = new THREE.Matrix4(), _rx = new THREE.Vector3(1, 0, 0);
+  model.syncRunning = (veh, dt) => {
+    if (!model.linkMeshes.length && !model.rwMeshes.length) return;
+    if (!root.visible || model.wrecked || !hullLod || hullLod.getCurrentLevel() !== 0) return;
+    const b = veh.body, ts = b.trackSpeed || [0, 0], D = veh.def, W = D.wheels, nAx = W.z.length, cs = staticComp(D);
+    run.d[0] += (ts[0] || 0) * dt; run.d[1] += (ts[1] || 0) * dt;
+    let sig = 0;
+    const bws = b.wheels || [];
+    for (let i = 0; i < bws.length && i < 16; i++) { const bw = bws[i]; const dy = bw.contact ? Math.max(-0.1, Math.min(0.12, bw.comp - cs)) : 0; run.dy[i] = dy; sig += dy * (i + 1); }
+    if (!run.first && Math.abs(ts[0] || 0) < 1e-3 && Math.abs(ts[1] || 0) < 1e-3 && Math.abs(sig - run.sig) < 1e-3) return;
+    run.first = false; run.sig = sig;
+    if ((run.matT -= dt) <= 0) { run.matT = 5; linkMaterial(); } // Fotoscan nachziehen
+    const dyAt = (side, z) => {
+      if (!bws.length) return 0;
+      const Z = W.z, o = side * nAx;
+      if (z <= Z[0]) return run.dy[o];
+      for (let k = 1; k < nAx; k++) if (z <= Z[k]) { const f = (z - Z[k - 1]) / (Z[k] - Z[k - 1]); return run.dy[o + k - 1] * (1 - f) + run.dy[o + k] * f; }
+      return run.dy[o + nAx - 1];
+    };
+    for (const im of model.rwMeshes) {
+      const U = im.userData.rw;
+      for (let k = 0; k < U.centers.length; k++) {
+        const c = U.centers[k], side = c[0] < 0 ? 0 : 1;
+        _rq.setFromAxisAngle(_rx, -run.d[side] / U.r);
+        im.setMatrixAt(k, _rm.compose(_rp.set(c[0], c[1] + dyAt(side, c[2]), c[2]), _rq, _rs));
+      }
+      im.instanceMatrix.needsUpdate = true;
+    }
+    for (const im of model.linkMeshes) placeLinks(im, dyAt, run.d[im.userData.links.side]);
+  };
+  /**
+   * Treffer-/Brandspur an einem Weltpunkt (vehicle.js applyDamage bei Granaten/Explosionen, Wrack): Strahl von außen auf
+   * die Nahstufe der Wanne bzw. des Turms → Fleck liegt auf der echten Fläche (Normale), höchstens 12 je Fahrzeug.
+   */
+  model.scars = [];
+  const turLod = model.turret ? model.turret.children.find((c) => c.isLOD) : null;
+  model.addScar = (point, { hole = true, size = 0.9 } = {}) => {
+    const targets = [hullLod && hullLod.levels[0] && hullLod.levels[0].object, turLod && turLod.levels[0] && turLod.levels[0].object].filter(Boolean);
+    if (!targets.length || !point) return false;
+    root.updateMatrixWorld(true);
+    root.getWorldPosition(_sc); _sc.y += 1.2;
+    _sn.subVectors(point, _sc);
+    if (_sn.lengthSq() < 1e-6) _sn.set(0, 1, 0);
+    _sn.normalize();
+    _so.copy(point).addScaledVector(_sn, 2.5);
+    _sr.set(_so, _sn.clone().negate());
+    _sr.far = 5;
+    const hit = _sr.intersectObjects(targets, true).find((h) => h.object.isMesh && !h.object.isInstancedMesh && h.face && h.object.material !== S.optic && h.object.material !== S.glass);
+    if (!hit) return false;
+    const mat = scarMaterial();
+    const m = new THREE.Mesh(SCAR_GEO[hole ? 0 : 1], mat);
+    m.name = 'brandspur';
+    m.renderOrder = 3;
+    _snm.getNormalMatrix(hit.object.matrixWorld);
+    const n = hit.face.normal.clone().applyMatrix3(_snm).normalize();
+    const parent = hit.object.parent;
+    parent.updateMatrixWorld(true);
+    m.position.copy(hit.point).addScaledVector(n, 0.012);
+    parent.worldToLocal(m.position);
+    const ql = new THREE.Quaternion().setFromUnitVectors(_sz, n);
+    parent.getWorldQuaternion(_rq).invert();
+    m.quaternion.copy(_rq).multiply(ql);
+    m.rotateZ(Math.random() * Math.PI * 2);
+    m.scale.setScalar(size * (0.8 + Math.random() * 0.4));
+    m.castShadow = false; m.receiveShadow = true;
+    parent.add(m);
+    model.scars.push(m);
+    if (model.scars.length > 12) model.scars.shift().removeFromParent();
+    return true;
   };
   /** Kettenlauf: Geschwindigkeit links/rechts (m/s) über dt. */
   model.scrollTracks = (vl, vr, dt) => {
@@ -1994,10 +2321,18 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
   // Wannen-Außenhülle: mit Turmkorb durch die Drehkranz-Öffnung sichtbar – im Innenraum ausgeblendet (der Kampfraum
   // der Wanne umschließt den Blick), sonst deckte das Wannendach den Korb ab
   model.hullInterior = root.getObjectByName('hullInterior') || null;
-  const hullShell = model.hullInterior ? root.children.find((c) => c.isLOD) : null;
+  const hullShell = model.hullInterior || driverCabin(VEHICLES[type]) ? root.children.find((c) => c.isLOD) : null; // auch ohne Turmkorb (1. WK): Fahrerkammer umschließt den Blick
+  model.cabin = null;
+  let cabinTried = false;
   model.setInterior = (on) => {
     if (!model.interior) return;
     const v = !!on && !model.wrecked;
+    // Detail-Innenraum (cabin.js): erst beim ersten Öffnen gebaut/angehängt – fremde Panzer tragen ihn nie
+    if (v && !cabinTried) {
+      cabinTried = true;
+      try { model.cabin = attachCabin(model, VEHICLES[type], S, quality); } catch (err) { console.warn('[vehicles] Innenraum-Ausbau fehlgeschlagen:', err); model.cabin = null; }
+    }
+    if (model.cabin) setCabinVisible(model.cabin, v);
     model.interior.visible = v;
     if (turShell) turShell.visible = !v;
     if (model.hullInterior) model.hullInterior.visible = v;
@@ -2008,6 +2343,17 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
   const rackDoor = model.interior ? model.interior.getObjectByName('rackDoor') : null;
   /** Schiebetür des Munitionsbunkers: t 0 zu … 1 offen (fährt nach links weg). */
   model.setRackDoor = (t) => { if (rackDoor) rackDoor.position.x = -1.7 * clamp01(t); };
+  // Geländewagen: ausgestatteter Fahrerplatz (Armaturen, Pedale, Funkgerät …) – lazy, nur lokaler Insasse in der Ego-Sicht
+  model.cockpit = null;
+  let cockTried = false;
+  model.setCockpit = (on) => {
+    const v = !!on && !model.wrecked;
+    if (v && !cockTried) { cockTried = true; try { model.cockpit = attachCockpit(model, VEHICLES[type], S, quality); } catch (err) { console.warn('[vehicles] Fahrerplatz fehlgeschlagen:', err); } }
+    if (model.cockpit) model.cockpit.grp.visible = v;
+  };
+  model.syncCockpit = (veh, dt) => { if (model.cockpit && model.cockpit.grp.visible) syncCockpit(model.cockpit, veh, dt); };
+  /** Takt des Detail-Innenraums (vehicle.js _syncCrew, nur für den lokalen Insassen). */
+  model.syncCabin = (veh, dt, ctx) => { if (model.cabin && model.interior && model.interior.visible) syncCabin(model.cabin, veh, dt, ctx); };
   model.setBreech = (t) => { if (keil) keil.position.y = -0.3 * clamp01(t); };
   model.setRack = (counts) => {
     if (!racks.length || !counts) return;

@@ -6,18 +6,18 @@
 // Mehrspieler (ui/net-menus.js, this.net): Lobby-Reiter, Raum-Bildschirm ('room', 'roomequip'), Online-Teil von
 // Pause und Endbildschirm. Einstiege für Deep-Links: openJoin(code) · openRoom().
 
-import { el, esc, clock } from './dom.js?v=20261113221339';
-import { ICON } from './icons.js?v=20261113221339';
-import { Lobby } from './lobby.js?v=20261113221339';
-import { WeaponPreview } from './preview3d.js?v=20261113221339';
-import { SettingsPanel } from './settings-panel.js?v=20261113221339';
-import { TouchEditor } from './touch-editor.js?v=20261113221339';
-import { controlsHtml, bindControls } from './controls-help.js?v=20261113221339';
-import { EndScreen } from './endscreen.js?v=20261113221339';
-import { LoadoutPanel } from './loadout-panel.js?v=20261113221339';
-import { drawMapArt, rememberMinimap } from './mapart.js?v=20261113221339';
-import { NetMenus } from './net-menus.js?v=20261113221339';
-import { openFeedback } from '../../shared/feedback.js?v=20261113221339';
+import { el, esc, clock } from './dom.js?v=20261115041504';
+import { ICON } from './icons.js?v=20261115041504';
+import { Lobby } from './lobby.js?v=20261115041504';
+import { WeaponPreview } from './preview3d.js?v=20261115041504';
+import { SettingsPanel } from './settings-panel.js?v=20261115041504';
+import { TouchEditor } from './touch-editor.js?v=20261115041504';
+import { controlsHtml, bindControls } from './controls-help.js?v=20261115041504';
+import { EndScreen } from './endscreen.js?v=20261115041504';
+import { LoadoutPanel } from './loadout-panel.js?v=20261115041504';
+import { drawMapArt, rememberMinimap } from './mapart.js?v=20261115041504';
+import { NetMenus } from './net-menus.js?v=20261115041504';
+import { openFeedback } from '../../shared/feedback.js?v=20261115041504';
 
 // VR-Brille (Knopf „VR starten“ im Pausenmenü; Symbole in icons.js gehören zu einem anderen Bereich)
 const VR_ICON = '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M6 16h36v16a3 3 0 0 1-3 3H31l-4-6h-6l-4 6H9a3 3 0 0 1-3-3z"/><circle cx="16" cy="24" r="3"/><circle cx="32" cy="24" r="3"/></svg>';
@@ -141,6 +141,7 @@ export class Menus {
       const act = b.dataset.act;
       if (act === 'start') this._start(b);
       else if (act === 'net-host') this.net.createRoom({}, b);
+      else if (act === 'camp-start') this.lobby.campaign.start(); // Kampagne (campaign/menu.js)
       else if (act === 'settings') this.showSettings('lobby');
       else if (act === 'profile') { this.settingsPanel.group = 'profil'; this.showSettings('lobby'); }
       else if (act === 'controls') this.showControls('lobby');
@@ -488,6 +489,8 @@ export class Menus {
         if (this.onExit) this.onExit();
       }
     });
+    // Kampagne: Missionsergebnis, „Nächste Mission“, „Kampagnenmenü“ (campaign/mode.js decorateEnd)
+    if (result && result.campaign && G.campaign && typeof G.campaign.decorateEnd === 'function') { try { G.campaign.decorateEnd(s, result); } catch (err) { console.error('[NULLPUNKT] Kampagne/Ende:', err); } }
     this.endScreen.animate(s, progression);
     this._focusFirst(s);
   }

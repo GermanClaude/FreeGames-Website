@@ -4,10 +4,14 @@
 // Dazwischen das Niemandsland: Hunderte Granattrichter (die tiefsten voll Wasser), Stacheldrahtgürtel vor beiden
 // Fronten, zersplitterte Baumstümpfe, eine Dorfruine (West) und eine Kapellenruine (Ost) mit zerstörbaren Mauern, in
 // der Mitte ein liegengebliebener Panzer. Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { wall } from '../arch.js?v=20261113221339';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261113221339';
-import { sampleSpline } from '../terrain/generate.js?v=20261113221339';
-import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261113221339';
+import { wall } from '../arch.js?v=20261115041504';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261115041504';
+import { sampleSpline } from '../terrain/generate.js?v=20261115041504';
+import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261115041504';
+// karten-voll (14.11.): Grabenleben, Trümmerfeld, ausgebrannte Lastwagen, Ruinen-Schutt
+import { kriegsspuren, ruinenLeben } from './niemandsland-leben.js?v=20261115041504';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261115041504'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -183,7 +187,7 @@ function frontWorks(b, ctx) {
 // ---------------------------------------------------------------------------
 // Karte
 // ---------------------------------------------------------------------------
-export default {
+const NIEMANDSLAND = {
   id: 'niemandsland',
   name: 'Niemandsland',
   scale: 'gross',
@@ -240,11 +244,13 @@ export default {
       ruin(b, -132, -12, 10, 8, 3); ruin(b, -112, -14, 9, 9, 7); ruin(b, -136, 10, 8, 10, 11);
       ruin(b, -110, 12, 12, 8, 17, { h: 5.5 }); ruin(b, -96, -2, 7, 7, 23, { h: 3 });
       for (let i = 0; i < 5; i++) sandbags(b, -125 + i * 4, -22, -122 + i * 4, -22, { rows: 2 });
+      ruinenLeben(b, [[-132, -12, 10, 8], [-112, -14, 9, 9], [-136, 10, 8, 10], [-110, 12, 12, 8], [-96, -2, 7, 7]], 0.4);
     }, seeds: [[-120, 0, 0.4]], height: 8 },
     { id: 'kapelle', name: 'Kapellenruine', y: 0.6, bounds: { minX: 106, maxX: 144, minZ: -24, maxZ: 12 }, build: (b) => {
       ruin(b, 125, -6, 12, 20, 31, { h: 6.5, tint: '#a8a092' });
       b.box(125, 0, -18, 2.2, 7.5, 2.2, 'stone_wall', { tint: '#a8a092', minimap: 'pillar' }); // Rest des Turms
       crateStack(b, 118, 6, { n: 2 });
+      ruinenLeben(b, [[125, -6, 12, 20]], 0.6);
     }, seeds: [[125, -6, 0.6]], height: 10 },
     { id: 'mitte', name: 'Panzerwrack', bounds: { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, build: (b) => tankWreck(b, 8, 12, 0.6), seeds: [[0, 18]], height: 6 },
     { id: 'basis_a', name: 'Basis A', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: HQZ - 18, maxZ: HQZ + 18 }, build: (b) => { dugout(b, -18, HQZ, 1); dugout(b, 18, HQZ + 2, 1); }, seeds: [[0, HQZ, 0.5]], nav: true },
@@ -252,6 +258,7 @@ export default {
   ],
   lateSites: [
     { id: 'front', name: 'Gräben und Draht', bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, chunkSize: 80, build: (b, ctx) => frontWorks(b, ctx) },
+    { id: 'leben', name: 'Kriegsspuren', bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, chunkSize: 80, build: (b, ctx) => kriegsspuren(b, ctx, NIEMANDSLAND, TRENCHES) },
   ],
 
   flags: {
@@ -285,3 +292,22 @@ export default {
   ],
   secrets: [],
 };
+// gelaende (14.11., Runde 3): Kleinrelief im Niemandsland (terrain/relief.js) – punktsymmetrische Kuppen und Rücken als
+// Sichtdeckung zwischen den Fronten, je Flanke ein Hohlweg (verdeckter Anmarsch) und Streukuppen. Gräben, Flaggen,
+// Startpunkte, Ruinen und Kampagnenpunkte bleiben eben (weich ausgeblendet).
+NIEMANDSLAND.terrain.relief = (() => {
+  const a = reliefAvoid(NIEMANDSLAND, [...KAMPAGNE_PUNKTE.niemandsland.map(([x, z]) => [x, z, 5]), ...linienPunkte(TRENCHES.map((t) => t.pts), 5, 6)]);
+  const pair = (k) => [k, { ...k, x: -k.x, z: -k.z }];
+  return {
+    ...a,
+    knolls: [
+      ...pair({ x: -60, z: 60, r: 21, h: 3.4, w: 16, ry: 0.4 }), ...pair({ x: -22, z: -48, r: 12, h: 2.4 }), ...pair({ x: 182, z: 52, r: 20, h: 3.2, w: 15, ry: -0.5 }),
+      ...pair({ x: 92, z: 30, r: 11, h: 2.2, w: 8, ry: 1.0 }), ...pair({ x: -250, z: 40, r: 13, h: 2.4 }),
+    ],
+    ridges: [{ pts: [[-112, 72], [-96, 80], [-78, 86]], w: 3.6, h: 1.4 }, { pts: [[112, -72], [96, -80], [78, -86]], w: 3.6, h: 1.4 },
+      { pts: [[30, 86], [52, 80]], w: 3.4, h: 1.3 }, { pts: [[-30, -86], [-52, -80]], w: 3.4, h: 1.3 }],
+    sunken: [{ pts: [[-206, -98], [-176, -44], [-190, 14], [-168, 98]], w: 4, d: 1.7, bank: 5.5 }, { pts: [[206, 98], [176, 44], [190, -14], [168, -98]], w: 4, d: 1.7, bank: 5.5 }],
+    scatter: { seed: 1917, count: 40, area: { minX: -285, maxX: 285, minZ: -100, maxZ: 100 }, r: [7, 15], h: [1.0, 2.2], hollow: 0.2, gap: 5 },
+  };
+})();
+export default NIEMANDSLAND;

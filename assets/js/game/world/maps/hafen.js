@@ -2,23 +2,28 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261113221339';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261115041504';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261113221339';
-import { clawd } from '../clawd.js?v=20261113221339';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261113221339';
+} from '../props.js?v=20261115041504';
+import { clawd } from '../clawd.js?v=20261115041504';
+import { farShore } from '../kulisse.js?v=20261115041504'; // gfx-welt: ferne Ufer
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261115041504';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261113221339';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261115041504';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261113221339';
+} from './hafen-ausstattung.js?v=20261115041504';
+// karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
+import { belebe, sperrpunkte, KAMPAGNE, tauwerk } from '../kleinkram.js?v=20261115041504';
+import { kaiAusbau } from './hafen-kai.js?v=20261115041504'; // gelaende (Runde 3): Schwergut an der Kaikante
 
 const H = CONTAINER_H;
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
 const QUAY_X = -44;
 
 export default {
@@ -33,7 +38,7 @@ export default {
   // Büro-/Pförtnerwände: glatt gestrichener Putz statt Außenputz
   // 16.10.: eigener Himmel je Tageszeit × Wetter (weather.js skyFor); Standard Nachmittag, klar
   // Grafik-Vorlage 15.10.: Boden = Rissbeton 1:1 aus dem Video (Einstellung Containergasse), Kachel 4 m
-  assets: { hdri: 'np_sky_nachmittag_klar', materials: { plaster_white: { id: 'plaster_painted', color: 1.6 }, concrete: { id: 'vh_kai', color: 0.3, macro: [0.12, 0.06, 0.1] } } },
+  assets: { hdri: 'np_sky_nachmittag_klar', materials: { plaster_white: { id: 'plaster_painted', color: 1.6 }, concrete: { id: 'concrete_floor_worn2', color: [0.19, 0.29, 0.45], macro: [0.12, 0.06, 0.1] } /* texturen 14.11.: Fotoscan statt Video-Kai (vh_kai) */ } },
   defaultSurface: 'concrete',
   lighting: {
     // Grafik-Vorlage Etappe 0 (15.10.): klarer Nachmittag wie im Video statt Goldener Stunde – neutral-weiße Sonne,
@@ -82,6 +87,8 @@ export default {
     b.decal(QUAY_X + 0.9, 0.01, 0, 0.4, 104, 'line', { ry: 0, tint: '#e8c22c', kind: 'paint', opacity: 0.85 });
     for (let z = -100; z <= 50; z += 6) b.cyl(QUAY_X - 0.75, -2.6, z, 0.32, 2.4, 'rubber', { seg: 10, collide: false, minimap: false, grad: false });
     for (let z = -46; z <= 48; z += 11.5) bollard(b, QUAY_X + 0.9, z, { mooring: true });
+    // karten-voll: aufgeschossene Festmacher neben jedem zweiten Poller (nur Optik)
+    for (let z = -46, i = 0; z <= 48; z += 11.5, i++) if (i % 2 === 0) tauwerk(b, QUAY_X + 1.75, 0, z + 0.9);
     // Kaikante (kein Sturz ins Wasser): Kollision an der Mauer, sichtbar gemacht durch Pfosten mit Kette auf der Kante
     b.collider(QUAY_X - 0.2, -3, 0, 0.4, 12, 112);
     kaiAbsperrung(b, QUAY_X + 0.28, -51.6, 51.6);
@@ -144,12 +151,12 @@ export default {
     // -----------------------------------------------------------------------
     // Westlicher Rand (x ≈ −24.4)
     stackAt(b, -24.4, -40, 12.19, 'z', ['#2d5f94', '#8d9399']);
-    offenerContainer(b, -24.4, -22.2, { len: 6.06, ry: -Math.PI / 2, color: '#c8402f' }); // 15.10.: wie Gegenstück (Video-Gasse)
+    offenerContainer(b, -24.4, -22.2, { len: 6.06, ry: -Math.PI / 2, color: '#c8402f', phi: Math.PI - 0.06 }); // gelaende: Flügel zurückgeschlagen (vorher sperrten sie den 2-m-Spalt zum Nachbarcontainer → unerreichbares Inneres) // 15.10.: wie Gegenstück (Video-Gasse)
     stackAt(b, -24.4, -14, 6.06, 'z', ['#3e7a4c', '#c9a227']);
     stackAt(b, -24.4, 40, 12.19, 'z', ['#c8402f', '#2d5f94']);
     // Grafik-Vorlage (Video, Containergasse): links ein blauer Container wie im Video (vorher orange)
     // 15.10.: 4,8 m nach Norden – Stirnseite steht wie im Video auf Höhe des Doppelstapels gegenüber
-    offenerContainer(b, -24.4, 22.2, { len: 6.06, ry: Math.PI / 2, color: '#2d5f94' });
+    offenerContainer(b, -24.4, 22.2, { len: 6.06, ry: Math.PI / 2, color: '#2d5f94', phi: Math.PI - 0.06 });
     stackAt(b, -24.4, 14, 6.06, 'z', ['#6b3f7a', '#3e7a4c']);
     container(b, -25.6, 0, 1.5, { len: 6.06, ry: Math.PI / 2 + 0.28, color: '#1f6f6a' });
     // Reihe 2 (doppelt, x ≈ −15.6)
@@ -292,6 +299,10 @@ export default {
     const sA = [[-38, 47], [-31, 43], [-19, 47.5], [-9, 48], [0, 47], [10.5, 47.5], [15.5, 44.5], [34, 49.5], [-21, 41.5], [1.5, 43.5], [55.5, 48.5], [64, 49.5], [72.5, 49.5]];
     for (const [x, z] of sA) { spawns.A.push({ x, z, yaw: 0 }); spawns.B.push({ x, z: -z, yaw: Math.PI }); }
     for (const [x, z] of [[-40, 20], [-38, -8], [-34, -40], [-20, -26], [-20, 26], [-10, 18], [-11, -18], [0, -1], [10.2, -24.4], [10.2, 24.4], [20, -10], [38.5, 8], [24, 14], [38, -14], [30, -40], [-26, -48], [61, -15], [61, 15], [71.5, 0], [52.5, -32], [52.5, 32], [64.5, -44], [64.5, 44]]) spawns.ffa.push({ x, z });
+    // gelaende (Runde 3): Schwergut an der Kaikante (Coils, Lukendeckel, Rohrbündel, Legeblöcke) – feste Deckung
+    b.gelaende = kaiAusbau(b, spawns);
+    // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
+    belebe(b, { stil: 'hafen', einrichten: true, huellen: ['building', 'container'], boden: { asphalt: true, bereich: { minX: -43, maxX: 74, minZ: -52, maxZ: 52 } }, bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52 }, sperr: sperrpunkte({ spawns }, [...(KAMPAGNE.hafen || []), ...KAMPAGNE_PUNKTE.hafen]) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 30.6, radius: 5 }, { id: 'B', x: -14.2, z: -0.8, radius: 6 }, { id: 'C', x: -13.6, z: -30.6, radius: 5 }] },
@@ -1018,5 +1029,6 @@ function ship(b) {
   b.boxMM(x0 + 4, 24.2, z0 + 5.9, x1 - 4, 25.05, z0 + 9.1, 'metal_painted', { tint: '#1d1f22', collide: false, minimap: false, grad: false });
   // Ferne Silhouetten
   b.boxMM(-330, -1.7, -260, -300, 5, -140, 'metal_painted', { tint: '#5b6773', collide: false, minimap: false, grad: false, ao: false });
-  for (const [x, z, w, h] of [[-420, 60, 180, 14], [-460, -120, 200, 22], [-380, 220, 160, 10]]) b.box(x, -2, z, 40, h, w, 'grass', { tint: '#6a7356', collide: false, minimap: false, grad: false, ao: false, cast: false });
+  // gfx-welt 14.11.: Ufer mit Böschung, Baumreihen und Gewerbe statt flacher grüner Kästen (world/kulisse.js)
+  [[-420, 60, 180, 14, false], [-460, -120, 200, 22, true], [-380, 220, 160, 10, true]].forEach(([x, z, w, h, town], i) => farShore(b, { x: x + 20, z0: z - w / 2, z1: z + w / 2, depth: 70, h, face: 1, seed: 31 + i * 17, town }));
 }

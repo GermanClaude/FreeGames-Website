@@ -244,6 +244,30 @@ export const MODES = {
     recommendedMaps: ['range'],
     icon: icon('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>'),
   },
+  // Kampagne „Stille Grenze“ (game/campaign/*): nicht in MODE_ORDER (eigener Lobby-Reiter), Missionen bestimmen Karte,
+  // Gegner und Verbündete; allies/enemies 1 nur zum Vorwärmen der Soldaten (der Modus entfernt sie im ersten Bild)
+  kampagne: {
+    id: 'kampagne',
+    name: 'Kampagne',
+    short: 'KMP',
+    tagline: 'Stille Grenze – die Geschichte.',
+    description: 'Missionen mit Zwischensequenzen, Dialogen, Checkpoints und gespeichertem Fortschritt.',
+    rules: ['Missionsziele statt Punktelimit', 'Wiedereinstieg am Checkpoint', 'Fortschritt wird im Profil gespeichert'],
+    hudObjective: 'Folge den Missionszielen',
+    scoreUnit: 'Punkte',
+    scoreLimit: 0,
+    timeLimit: 0,
+    teams: true,
+    defaultAllies: 1,
+    defaultEnemies: 1,
+    limits: { allies: [0, 1], enemies: [0, 1] },
+    respawnDelay: 3.5,
+    streaks: false,
+    lethals: true,
+    campaign: true,
+    // Karte je Mission (main.js normalizeConfig; Quelle: game/campaign/outline.js); Liste = Karte und Rückfall, falls sie fehlt
+    missionMaps: { m0: 'range', m1: 'altstadt', m2: 'werk', m3: 'grenzland', m4: 'hafen', m5: 'bibliothek', m6: 'brandwald', m7: 'niemandsland', m8: 'grenzland', m9: 'altstadt', m10: ['flugplatz', 'grenzland'], m11: ['stadtkern', 'altstadt'] },
+  },
   cq: {
     id: 'cq',
     name: 'Eroberung',
@@ -275,21 +299,21 @@ export const MODES = {
     deploy: true,
     vehicles: true,
     scales: ['gross'],
-    // Tickets je Seite nach Teamgröße (≤ 8 / ≤ 16 / ≤ 24 / ≤ 32), × Matchlänge; Ausbluten: 1 Ticket alle
+    // Tickets je Seite nach Teamgröße (≤ 8 / ≤ 16 / ≤ 24 / ≤ 32 / ≤ 50 / ≤ 100 / ≤ 250), × Matchlänge; Ausbluten: 1 Ticket alle
     // bleedInterval / Flaggendifferenz Sekunden, alle Flaggen → 1 je Sekunde. Einnehmen wie Herrschaft (12 s allein).
     objective: {
       flags: ['A', 'B', 'C', 'D', 'E'],
       captureTime: 12,
       captureRateBonus: 0.5,
       maxCapturers: 5,
-      tickets: [[8, 150], [16, 250], [24, 320], [32, 400]],
+      tickets: [[8, 150], [16, 250], [24, 320], [32, 400], [50, 550], [100, 900], [250, 1800]], // masse: 50 v 50 und Massenschlacht
       bleedInterval: 6,
       hqWarning: 10,
       hqRadius: 34,
       points: { capture: 200, neutralize: 100, defend: 50 },
     },
     matchLengths: { kurz: 0.6, standard: 1, lang: 1.7 },
-    recommendedMaps: ['grenzland', 'niemandsland', 'brandwald'],
+    recommendedMaps: ['grenzland', 'niemandsland', 'brandwald', 'flugplatz'],
     icon: icon('<path d="M4 21V4"/><path d="M4 5h8l-2 3 2 3H4"/><path d="M14 21V10"/><path d="M14 11h6l-1.5 2.25L20 15.5h-6"/>'),
   },
 
@@ -860,18 +884,31 @@ export const SQUAD_SIZE = 4;
 
 /* ------------------------------------------------------------ Teamgrößen je Karte und Gerät (GROSSKAMPF §3.2) */
 
-const BIG_MAPS = new Set(['grenzland', 'talsperre', 'nordkueste', 'niemandsland', 'brandwald']);
+const BIG_MAPS = new Set(['grenzland', 'talsperre', 'nordkueste', 'niemandsland', 'brandwald', 'flugplatz']);
 export function mapScaleOf(map) {
   if (map && typeof map === 'object') return map.scale === 'gross' ? 'gross' : 'arena';
   return BIG_MAPS.has(map) ? 'gross' : 'arena';
 }
 
 /**
- * limitsFor(modeId, map (MAPS-Eintrag oder Id), { tier: 'low'|'medium'|'high'|'ultra', touch, deviceMemory })
- * → { allies:[min,max], enemies:[min,max], recommended:{allies,enemies}, warn:{yellow,red} (Teamgröße inkl. Spieler), scale }
- * `allies` zählt ohne Spieler. Arena-Karten höchstens 12 v 12, Großkarten 32 v 32 (deviceMemory ≤ 2: 16 v 16).
+ * masse: Teamgröße je Seite (inkl. Spieler) auf Großkarten – normal bis 50 v 50, „Massenschlacht“ je Grafikstufe höher.
+ * Gemessen (Prüfstand masse, CPU-Zeit der Simulation je Bild, Messwerte in bots/crowd.js): Physik, Waffen und Sichtstrahlen
+ * bleiben je Bot bestehen (≈ linear), dazu ≈ 2 MB Speicher je Bot. 500 Akteure sind die Grenze (Ultra, experimentell);
+ * 1000 nicht: im Test Absturz wegen Speicher, und die Simulation allein bräuchte auch auf einem Spiele-PC > 30 ms je Bild.
  */
-export function limitsFor(modeId, map, { tier = 'high', touch = false, deviceMemory = null } = {}) {
+export const BIG_SIDE = 50;
+// desktop (14.11.): „extrem“ = Grafikstufe Extrem der Desktop-App (JS-Heap bis 8 GB statt ≈ 4 GB im Tab) → 400 je Seite
+// (800 Akteure, ≈ 1,6 GB für die Bots; 1000 bleiben gesperrt, siehe oben)
+export const MASS_SIDE = Object.freeze({ low: 50, medium: 100, high: 150, ultra: 250, extrem: 400 });
+
+/**
+ * limitsFor(modeId, map (MAPS-Eintrag oder Id), { tier: 'low'|'medium'|'high'|'ultra', touch, deviceMemory, mass })
+ * → { allies:[min,max], enemies:[min,max], recommended:{allies,enemies}, warn:{yellow,red} (Teamgröße inkl. Spieler), scale,
+ *     massOk (Massenschlacht hier möglich), mass (aktiv) }
+ * `allies` zählt ohne Spieler. Arena-Karten höchstens 12 v 12, Großkarten 50 v 50 (Touch 32 v 32, deviceMemory ≤ 2: 16 v 16), mit
+ * `mass` (Massenschlacht, nur Teammodi auf Großkarten) bis MASS_SIDE[tier] je Seite.
+ */
+export function limitsFor(modeId, map, { tier = 'high', touch = false, deviceMemory = null, mass = false } = {}) {
   const m = MODES[modeId] || MODES.tdm;
   const scale = mapScaleOf(map);
   const teams = m.teams !== false;
@@ -880,28 +917,43 @@ export function limitsFor(modeId, map, { tier = 'high', touch = false, deviceMem
   let enemies = base.enemies.slice();
   let rec = { allies: teams ? m.defaultAllies ?? 5 : 0, enemies: m.defaultEnemies ?? 6 };
   const warn = { yellow: null, red: null };
-  if (modeId === 'training' || modeId === 'inf') return { allies, enemies, recommended: rec, warn, scale };
+  if (modeId === 'training' || modeId === 'inf') return { allies, enemies, recommended: rec, warn, scale, massOk: false, mass: false };
+  const weak = deviceMemory != null && deviceMemory <= 2;
+  // Telefone/Tablets und „Niedrig“: keine Massenschlacht (Hitze, Akku, Speicher)
+  const massOk = scale === 'gross' && teams && !weak && !touch && (MASS_SIDE[tier] || MASS_SIDE.high) > BIG_SIDE;
+  mass = !!mass && massOk;
   if (scale === 'gross') {
-    const side = deviceMemory != null && deviceMemory <= 2 ? 16 : 32;
-    if (teams) { allies = [0, side - 1]; enemies = [1, side]; } else enemies = [1, Math.min(23, side * 2 - 1)];
+    let side = weak ? 16 : touch ? 32 : BIG_SIDE; // Telefone/Tablets wie bisher höchstens 32 v 32
+    if (mass) side = Math.max(BIG_SIDE, MASS_SIDE[tier] || MASS_SIDE.high);
+    if (teams) { allies = [0, side - 1]; enemies = [1, side]; } else enemies = [1, Math.min(touch || weak ? 23 : 49, side * 2 - 1)];
     if (modeId === 'cq') {
       const n = tier === 'low' ? 12 : tier === 'medium' ? (touch ? 16 : 24) : 32;
       rec = { allies: Math.min(n, side) - 1, enemies: Math.min(n, side) };
     }
-    if (tier === 'low') { warn.yellow = 16; warn.red = 24; } else if (tier === 'medium') warn.yellow = 24;
+    if (mass) {
+      const n = tier === 'low' ? 32 : tier === 'medium' ? 50 : 100;
+      rec = { allies: Math.min(n, side) - 1, enemies: Math.min(n, side) };
+    }
+    if (tier === 'low') { warn.yellow = 16; warn.red = 24; } else if (tier === 'medium') { warn.yellow = 24; warn.red = 64; } else { warn.yellow = 64; warn.red = 101; }
   } else if (tier === 'low') warn.yellow = teams ? 9 : 10;
-  return { allies, enemies, recommended: rec, warn, scale };
+  return { allies, enemies, recommended: rec, warn, scale, massOk, mass };
 }
 
 /** Warnstufe für eine Besetzung: { level: null|'yellow'|'red', text }. */
 export function teamWarning(lim, allies, enemies, teams = true) {
   if (!lim || !lim.warn) return { level: null, text: '' };
   const size = teams ? Math.max((allies | 0) + 1, enemies | 0) : (enemies | 0) + 1;
-  if (lim.warn.red && size >= lim.warn.red) return { level: 'red', text: 'Experimentell: Bei so vielen Bots kann die Bildrate auf diesem Gerät unter 30 FPS fallen.' };
+  if (lim.warn.red && size >= lim.warn.red) {
+    return { level: 'red', text: lim.mass && size > 100
+      ? 'Experimentell: Über 100 je Seite braucht einen starken Prozessor (6+ Kerne). Ferne Soldaten erscheinen als vereinfachte Silhouetten und denken seltener; die Bildrate kann unter 60 FPS fallen.'
+      : 'Experimentell: Bei so vielen Bots kann die Bildrate auf diesem Gerät unter 30 FPS fallen.' };
+  }
   if (lim.warn.yellow && size >= lim.warn.yellow) {
     const r = lim.recommended || {};
     const rec = teams ? `${(r.allies ?? 5) + 1} gegen ${r.enemies ?? 6}` : `${(r.enemies ?? 7) + 1} Spieler`;
-    return { level: 'yellow', text: `Für dieses Gerät empfohlen: ${rec}. Mehr Bots können ruckeln und das Gerät warm machen.` };
+    return { level: 'yellow', text: lim.mass || size > 32
+      ? `Große Schlacht: ferne Soldaten werden vereinfacht gezeichnet. Für dieses Gerät empfohlen: ${rec}.`
+      : `Für dieses Gerät empfohlen: ${rec}. Mehr Bots können ruckeln und das Gerät warm machen.` };
   }
   return { level: null, text: '' };
 }

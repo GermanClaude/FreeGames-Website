@@ -1,11 +1,11 @@
 // NULLPUNKT — MapBuilder: sammelt statische Geometrie, verschmilzt sie pro Material/Chunk,
 // backt Ambient Occlusion in Vertexfarben, erzeugt Kollisions- und Kugel-Geometrie (Owner: world)
 import * as THREE from 'three';
-import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261113221339';
-import { applyGrateFade } from './gitterrost.js?v=20261113221339';
-import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261113221339';
-import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261113221339';
-import { assets } from '../../../lib/loader.js?v=20261113221339';
+import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261115041504';
+import { applyGrateFade } from './gitterrost.js?v=20261115041504';
+import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261115041504';
+import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261115041504';
+import { assets } from '../../../lib/loader.js?v=20261115041504';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric', 'flesh', 'vehicle']; // vehicle = Fahrzeugblech (Durchschuss)
 const SURF_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s, i]));
@@ -128,6 +128,7 @@ function cylPrim(r0, r1, h, seg, caps, rows, arc = Math.PI * 2) {
     P[pi] = x; P[pi + 1] = y; P[pi + 2] = z; N[pi] = nx; N[pi + 1] = ny; N[pi + 2] = nz; pi += 3;
     U[ui++] = u; U[ui++] = v;
   };
+  const chordK = Math.sin(arc / seg / 2), chordM = 2 * circ * chordK, slant = Math.hypot(1, slope);
   for (let i = 0; i < seg; i++) {
     const a0 = (i / seg) * arc, a1 = ((i + 1) / seg) * arc;
     const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
@@ -139,7 +140,10 @@ function cylPrim(r0, r1, h, seg, caps, rows, arc = Math.PI * 2) {
       for (let k = 0; k < 6; k++) {
         const c = CYL_IDX[k], second = c === 1 || c === 2, top = c >= 2;
         const cc = second ? c1 : c0, ss = second ? s1 : s0, rr = top ? rb : ra, l = second ? l1 : l0;
-        put(cc * rr, top ? y1 : y0, ss * rr, cc * l, slope * l, ss * l, (second ? a1 : a0) * circ, top ? y1 : y0);
+        // texturen 14.11.: U je Fläche um die Flächenmitte mit der echten Sehnenbreite der Reihe, V entlang der Mantellinie –
+        // Kegel/Pyramidendächer ohne Scherung und Stauchung (vorher U = Winkel × mittlerer Radius, V = Höhe)
+        const uc = (i + 0.5) * chordM, half = rr * chordK;
+        put(cc * rr, top ? y1 : y0, ss * rr, cc * l, slope * l, ss * l, uc + (second ? half : -half), (top ? y1 : y0) * slant);
       }
     }
   }
@@ -265,7 +269,7 @@ export class MapBuilder {
     const key = mat + (matOpts ? JSON.stringify(matOpts) : '') + '|' + chunk + '|' + (cast ? 1 : 0);
     let bk = this.buckets.get(key);
     if (!bk) {
-      bk = { mat, matOpts, chunk, cast, pos: new FBuf(), nor: new FBuf(), uv: new FBuf(), col: new FBuf(), flg: new U8Buf(), bullet: new U8Buf(1024) };
+      bk = { mat, matOpts, chunk, cast, pos: new FBuf(), nor: new FBuf(), uv: new FBuf(), col: new FBuf(), flg: new U8Buf(), grm: new U8Buf(), bullet: new U8Buf(1024) }; // grm: texturen 14.11. Sockelschmutz (Höhe über Boden)
       this.buckets.set(key, bk);
       this.materials.add(mat);
     }
@@ -294,8 +298,8 @@ export class MapBuilder {
     const cast = o.cast !== false;
     const bk = this._bucket(mat, o.chunk ?? this._chunk(center[0], center[2]), cast, o.matOpts || null);
     const nV = prim.p.length / 3;
-    bk.pos.ensure(nV * 3); bk.nor.ensure(nV * 3); bk.uv.ensure(nV * 2); bk.col.ensure(nV * 3); bk.flg.ensure(nV); bk.bullet.ensure(nV / 3);
-    const P = bk.pos.a, N = bk.nor.a, UV = bk.uv.a, C = bk.col.a, FL = bk.flg.a;
+    bk.pos.ensure(nV * 3); bk.nor.ensure(nV * 3); bk.uv.ensure(nV * 2); bk.col.ensure(nV * 3); bk.flg.ensure(nV); bk.bullet.ensure(nV / 3); bk.grm.ensure(nV);
+    const P = bk.pos.a, N = bk.nor.a, UV = bk.uv.a, C = bk.col.a, FL = bk.flg.a, GR = bk.grm.a;
     let pi = bk.pos.n, ui = bk.uv.n, fi = bk.flg.n;
     const tint = tintFor(mat, o.tint);
     const uvMode = o.uv || 'world', uvs = 1 / (o.uvScale || 1), uo = o.uvOffset || [0, 0], uvSwap = !!o.uvSwap;
@@ -338,9 +342,11 @@ export class MapBuilder {
       if (lc) { C[pi] = tint[0] * k * lc[i * 3]; C[pi + 1] = tint[1] * k * lc[i * 3 + 1]; C[pi + 2] = tint[2] * k * lc[i * 3 + 2]; }
       else { C[pi] = tint[0] * k; C[pi + 1] = tint[1] * k; C[pi + 2] = tint[2] * k; }
       FL[fi] = flags;
+      // texturen 14.11.: Sockelschmutz/Spritzwasser – 1 am Wandfuß, 0 ab ≈ 1,6 m (Shader: engine/textures.js, Haken „surf“)
+      GR[fi] = grad && ny > -0.6 && ny < 0.6 ? Math.round(255 * (1 - smoothstep(0, 1.6, wy - floorY))) : 0;
       pi += 3; ui += 2; fi++;
     }
-    bk.pos.n = bk.nor.n = bk.col.n = pi; bk.uv.n = ui; bk.flg.n = fi;
+    bk.pos.n = bk.nor.n = bk.col.n = pi; bk.uv.n = ui; bk.flg.n = bk.grm.n = fi;
     const bv = o.bullet === false ? 0 : 1;
     for (let t = 0; t < nV / 3; t++) bk.bullet.push(bv);
   }
@@ -873,19 +879,22 @@ export class MapBuilder {
     const makeMesh = (list, mat, matOpts, cast) => {
       let total = 0; for (const b of list) total += b.pos.n;
       const pos = new Float32Array(total), nor = new Float32Array(total), col = new Float32Array(total), uv = new Float32Array(total / 3 * 2);
-      const bullet = new Uint8Array(total / 9);
-      let o = 0, ou = 0, ot = 0;
+      const bullet = new Uint8Array(total / 9), grm = new Uint8Array(total / 3);
+      let o = 0, ou = 0, ot = 0, og = 0, anyGrime = false;
       for (const b of list) {
         pos.set(b.pos.view(), o); nor.set(b.nor.view(), o); col.set(b.col.view(), o); uv.set(b.uv.view(), ou); bullet.set(b.bullet.view(), ot);
-        o += b.pos.n; ou += b.uv.n; ot += b.bullet.n;
+        const gv = b.grm.view(); grm.set(gv, og); if (!anyGrime) for (let i = 0; i < gv.length; i++) if (gv[i]) { anyGrime = true; break; }
+        o += b.pos.n; ou += b.uv.n; ot += b.bullet.n; og += b.grm.n;
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
       g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
       g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      // texturen 14.11.: Sockelschmutz-Attribut (normiert 0..1); eigenes Material (grime) nur für Meshes mit Attribut
+      if (anyGrime && quality !== 'low') g.setAttribute('npGrime', new THREE.BufferAttribute(grm, 1, true));
       g.computeBoundingSphere(); g.computeBoundingBox();
-      const material = getMaterial(mat, { ...(matOpts || {}), vertexColors: true });
+      const material = getMaterial(mat, { ...(matOpts || {}), vertexColors: true, ...(anyGrime && quality !== 'low' ? { grime: true } : {}) });
       const mesh = new THREE.Mesh(g, material);
       mesh.castShadow = cast; mesh.receiveShadow = true;
       mesh.matrixAutoUpdate = false; mesh.updateMatrix();

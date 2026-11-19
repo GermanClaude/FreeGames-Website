@@ -8,15 +8,15 @@
 // Rahmen und Gehäuse mit eigenem Atlas (qx90-tex.js), Schrauben/Kleinteile aus dem Polymer-Baukasten (polymer-parts.js).
 // Detailstufen: PC hoch/ultra (b.max) feinste Netze + Kanten-/Muldenfarbe + Kleinteile, PC niedrig/mittel Standard,
 // Handy (b.lite) gröbere Netze und kleiner Atlas, Bots ≤ 600 Dreiecke – Anker in allen Stufen gleich.
-import * as R from './qx90-ref.js?v=20261113221339';
-import { frameUV, upperUV } from './qx90-tex.js?v=20261113221339';
-import { extrudeRound, smin, sdPolygon, simplifyPoly } from './sdf.js?v=20261113221339';
-import { STEEL, POLY, sdfMesh, roundMax } from './sdfkit.js?v=20261113221339';
-import { smoothPoly } from './ak-parts.js?v=20261113221339';
-import { hexScrew, roundRect2, slot2, pocket, boss, smokeBox, gridBand } from './polymer-parts.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
-import { muzzleDevice, swapOptic } from './parts.js?v=20261113221339';
-import { schrift } from './schrift.js?v=20261113221339';
+import * as R from './qx90-ref.js?v=20261115041504';
+import { frameUV, upperUV } from './qx90-tex.js?v=20261115041504';
+import { extrudeRound, smin, sdPolygon, simplifyPoly } from './sdf.js?v=20261115041504';
+import { STEEL, POLY, sdfMesh, roundMax } from './sdfkit.js?v=20261115041504';
+import { smoothPoly } from './ak-parts.js?v=20261115041504';
+import { hexScrew, roundRect2, slot2, pocket, boss, smokeBox, gridBand } from './polymer-parts.js?v=20261115041504';
+import { magRounds } from './magfill.js?v=20261115041504';
+import { muzzleDevice, swapOptic } from './parts.js?v=20261115041504';
+import { schrift } from './schrift.js?v=20261115041504';
 
 const { U, V, M, HW } = R, AX = R.AXIS, px = (n) => n / R.PPM;
 const MAT = { frame: 'qx90Frame', upper: 'qx90Upper', optic: 'qx90Optic', black: 'qx90Black', butt: 'qx90Butt', steel: 'qx90Steel', rod: 'qx90Rod', mag: 'qx90Mag', cap: 'qx90MagCap', tick: 'qx90MagTick' };
@@ -235,7 +235,9 @@ function optic(b) {
   b.front(MAT.optic, [[-nw - 0.0002, vBot], [nw + 0.0002, vBot], [nw + 0.0002, wb], [-nw - 0.0002, wb]], u1 - u0 - K.depth, u0 + 0.0003, { bevel: 0 });
   // Glas hinter der Blende (leicht getönt, spiegelt), Ringabsehen dahinter; Lichtsensor im Hals unter dem Fenster
   // (Prüfung 25.10.: lag halb im Fenster und wirkte wie ein schwarzer Punkt darin); Stifte seitlich
-  b.plane('lensClear', w, h, 0, vS, u1 - K.depth - 0.0004, { renderOrder: 1 });
+  // visier (14.11.): Scheibe außen spiegelnd (nach vorn), zum Auge nur ein Hauch Tönung
+  b.plane('lensClear', w, h, 0, vS, u1 - K.depth - 0.0002, { renderOrder: 1, ry: Math.PI });
+  b.plane('lensEye', w, h, 0, vS, u1 - K.depth - 0.0004, { renderOrder: 1 });
   b.plane('reticleHolo', 0.022, 0.022, 0, vS, u1 - K.depth - 0.0014, { renderOrder: 3 });
   b.circle('lens', 0.0021, 0, V(294), u1 - K.depth + 0.0003, { ry: Math.PI, seg: 16 });
   const [dx, dy, dr] = R.OPTIC_DOT;

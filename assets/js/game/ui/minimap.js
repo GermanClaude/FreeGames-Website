@@ -5,7 +5,7 @@
 // (am Rand festgeklemmt; G.vehicles.supplyMarkers, Prüfung 22.10.). Beschriftungen (N, Flaggen) als Schrift-Sprites
 // (glyphs.js): fillText erzwänge je Bild eine Stilberechnung des Dokuments.
 
-import { drawGlyph } from './glyphs.js?v=20261113221339';
+import { drawGlyph } from './glyphs.js?v=20261115041504';
 
 const COL = {
   ally: '#38b6ff', enemy: '#ff3b3b', me: '#ffffff', gold: '#ffc23d', signal: '#ff5b1f', neutral: '#e9e6df',
@@ -186,8 +186,11 @@ export class Minimap {
     const noEnemies = flags.minimapEnemies === false;
     const blips = uav && uav.own && flags.uavEnemies !== false ? uav.own.blips : null;
     const blipAge = uav && uav.own ? now - uav.own.sweepAt : 0;
+    // masse: Akteure außerhalb des Kartenausschnitts gar nicht erst zeichnen (Massenschlacht: Hunderte Mitspieler)
+    const cull = (this.range * 1.5) ** 2; // um die Kartenmitte (px, pz)
     for (const a of G.actors) {
       if (a === p || !a.alive) continue;
+      if ((a.position.x - px) ** 2 + (a.position.z - pz) ** 2 > cull) continue;
       const hostile = G.combat ? G.combat.isHostile(p, a) : a.team !== p.team;
       if (!hostile) {
         toScreen(a.position.x, a.position.z, pt);

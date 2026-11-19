@@ -3,24 +3,25 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261113221339';
-import { modeOptionsHtml } from './mode-options.js?v=20261113221339'; // Modus-Einstellungen (B6, 26.10.)
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261113221339';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261113221339'; // atmosphere-weather; Fahrzeuge je Kartengröße
-import { realTimePreset } from '../world/weather.js?v=20261113221339'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261113221339';
-import { esc, num, secs, meters } from './dom.js?v=20261113221339';
-import { ICON } from './icons.js?v=20261113221339';
-import { drawMapArt } from './mapart.js?v=20261113221339';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261113221339';
-import { openCamoEditor } from './camo-editor.js?v=20261113221339';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261113221339';
-import { ProgressView } from './progress.js?v=20261113221339';
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261113221339';
+import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261115041504';
+import { modeOptionsHtml } from './mode-options.js?v=20261115041504'; // Modus-Einstellungen (B6, 26.10.)
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261115041504';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261115041504'; // atmosphere-weather; Fahrzeuge je Kartengröße
+import { realTimePreset } from '../world/weather.js?v=20261115041504'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261115041504';
+import { esc, num, secs, meters } from './dom.js?v=20261115041504';
+import { ICON } from './icons.js?v=20261115041504';
+import { drawMapArt } from './mapart.js?v=20261115041504';
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261115041504';
+import { openCamoEditor } from './camo-editor.js?v=20261115041504';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261115041504';
+import { ProgressView } from './progress.js?v=20261115041504';
+import { CampaignPane } from '../campaign/menu.js?v=20261115041504'; // Reiter „Kampagne“ (game/campaign)
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261115041504';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
-const MAP_PREP = { hafen: 'im', altstadt: 'in der', werk: 'im', range: 'am', grenzland: 'im', brandwald: 'im' };
+const MAP_PREP = { hafen: 'im', altstadt: 'in der', werk: 'im', range: 'am', grenzland: 'im', brandwald: 'im', flugplatz: 'auf dem', stadtkern: 'im' };
 const LENGTHS = [['kurz', 'Kurz'], ['standard', 'Standard'], ['lang', 'Lang']];
 
 export class Lobby {
@@ -35,6 +36,7 @@ export class Lobby {
     this._paramsUsed = false;
     this._offs = [];
     this.progress = new ProgressView(this.G);
+    this.campaign = new CampaignPane(this); // Kampagne
   }
 
   /* ------------------------------------------------------------ Daten */
@@ -83,6 +85,7 @@ export class Lobby {
       weather: S.get('lastWeather') || 'standard',
       vehicles: S.get('lastVehicles') === 'aus' ? 'aus' : 'an', // Panzer/Fahrzeuge offline an/aus (Raum: net-menus „Fahrzeuge“)
       tankEra: ['karte', 'modern', 'wk2', 'wk1'].includes(S.get('lastTankEra')) ? S.get('lastTankEra') : 'karte', // Panzer-Generation
+      mass: S.get('lastMass') === 'an', // masse: Massenschlacht (Großkarten, Teammodi)
     };
     if (prm) {
       if (d.MODES[prm.get('mode')]) base.modeId = prm.get('mode');
@@ -92,6 +95,7 @@ export class Lobby {
       const e = parseInt(prm.get('enemies'), 10);
       if (Number.isFinite(a)) { base.allies = a; base.balance = false; }
       if (Number.isFinite(e)) base.enemies = e;
+      if (prm.get('mass') === '1') base.mass = true; // masse
       for (const k of ['primary', 'secondary']) if (d.W[prm.get(k)]) base[k] = prm.get(k);
       if (d.EQ[prm.get('lethal')]) base.lethal = prm.get('lethal');
       if (GAME_STYLES[prm.get('style')]) base.style = prm.get('style');
@@ -123,7 +127,8 @@ export class Lobby {
     const c = this.cfg;
     const G = this.G;
     return limitsFor(c.modeId, d.MAPS[c.mapId] || c.mapId, {
-      tier: (G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
+      tier: (G.renderer && G.renderer.preset && G.renderer.preset.extreme ? 'extrem' : G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
+      mass: !!c.mass,
     });
   }
 
@@ -137,7 +142,7 @@ export class Lobby {
     const lim = { allies: L.allies, enemies: L.enemies };
     const teams = m.teams !== false;
     // Neuer Modus/Kartenmaßstab: Empfehlung für dieses Gerät übernehmen
-    const key = `${c.modeId}:${L.scale}`;
+    const key = `${c.modeId}:${L.scale}:${L.mass ? 'masse' : ''}`;
     if (this._limKey && this._limKey !== key) { c.enemies = null; c.allies = null; c.balance = true; }
     this._limKey = key;
     if (!Number.isFinite(c.enemies) || c.enemies == null) c.enemies = L.recommended.enemies ?? m.defaultEnemies ?? (teams ? 6 : 7);
@@ -187,7 +192,7 @@ export class Lobby {
     let skin = null;
     try { skin = this.G.profile.get().cosmetics.equipped.operator[c.cls] || null; } catch { /* */ }
     return {
-      modeId: c.modeId, mapId: c.mapId, difficulty: c.difficulty, allies: c.allies, enemies: c.enemies,
+      modeId: c.modeId, mapId: c.mapId, difficulty: c.difficulty, allies: c.allies, enemies: c.enemies, mass: !!(c.mass && this._lim().mass),
       style: c.style, crosshair: c.style === 'realistisch' ? !!this.G.settings.get('realisticCrosshair') : null,
       matchLength: c.matchLength, timeOfDay: this._todFor(c) || 'standard', vehicles: c.vehicles !== 'aus', tankEra: c.tankEra || 'karte', weather: c.weather && c.weather !== 'standard' ? c.weather : null,
       loadout: { primary: c.primary, secondary: c.secondary, lethal: c.lethal, tactical: c.tactical || 'smoke', melee: c.melee || 'knife', cls: c.cls, camo, att: pickAtt(c), ...(skin ? { skin } : {}) },
@@ -224,6 +229,7 @@ export class Lobby {
             <button type="button" class="m-tab" role="tab" data-tab="deploy" aria-selected="${this.tab === 'deploy'}">${ICON.map}<span>Einsatz</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="loadout" aria-selected="${this.tab === 'loadout'}">${ICON.target}<span>Ausrüstung</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="progress" aria-selected="${this.tab === 'progress'}">${ICON.trophy}<span>Fortschritt</span></button>
+            <button type="button" class="m-tab" role="tab" data-tab="kampagne" aria-selected="${this.tab === 'kampagne'}">${ICON.flag}<span>Kampagne</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="online" aria-selected="${this.tab === 'online'}">${ICON.globe}<span>Mehrspieler</span><i class="m-tab-beta" title="Erste Fassung – Fehler gerne melden">Beta</i></button>
           </div>
           <div class="lb-me"><button type="button" class="lb-profile" data-act="profile" title="Rufzeichen ändern"></button></div>
@@ -239,6 +245,7 @@ export class Lobby {
           <div class="lb-pane lb-pane-loadout" data-pane="loadout"${this.tab === 'loadout' ? '' : ' hidden'}></div>
           <div class="lb-pane m-scroll" data-scrollable data-pane="progress"${this.tab === 'progress' ? '' : ' hidden'}></div>
           <div class="lb-pane m-scroll" data-scrollable data-pane="online"${this.tab === 'online' ? '' : ' hidden'}></div>
+          <div class="lb-pane m-scroll" data-scrollable data-pane="kampagne"${this.tab === 'kampagne' ? '' : ' hidden'}></div>
           <aside class="lb-side">
             <div class="lb-stage" aria-label="Waffenvorschau – ziehen zum Drehen"><div class="lb-stage-name"></div><div class="lb-stage-hint">Ziehen zum Drehen</div></div>
             <div class="lb-kit"></div>
@@ -251,7 +258,7 @@ export class Lobby {
         </footer>
       </div>`;
     this.el = {
-      screen, deploy: screen.querySelector('[data-pane="deploy"]'), loadout: screen.querySelector('[data-pane="loadout"]'), progress: screen.querySelector('[data-pane="progress"]'), online: screen.querySelector('[data-pane="online"]'),
+      screen, deploy: screen.querySelector('[data-pane="deploy"]'), loadout: screen.querySelector('[data-pane="loadout"]'), progress: screen.querySelector('[data-pane="progress"]'), online: screen.querySelector('[data-pane="online"]'), kampagne: screen.querySelector('[data-pane="kampagne"]'),
       start: screen.querySelector('.lb-start'),
       stage: screen.querySelector('.lb-stage'), stageName: screen.querySelector('.lb-stage-name'), kit: screen.querySelector('.lb-kit'),
       summary: screen.querySelector('.lb-summary'), side: screen.querySelector('.lb-side'), profile: screen.querySelector('.lb-profile'),
@@ -279,6 +286,7 @@ export class Lobby {
     this._renderKit();
     this._renderSummary();
     this._syncTab();
+    try { this.campaign.announce(screen); } catch (err) { console.warn('[Kampagne] Hinweis', err); } // neue Kampagnenkapitel nach einem Update
   }
 
   _renderProfile() {
@@ -319,6 +327,7 @@ export class Lobby {
     if (ds.camo) { this._setCamo(ds.camo, b); return; }
     if (ds.diff) { c.difficulty = ds.diff; this._renderDeploy(); this._renderSummary(); this.menus.sound('click'); return; }
     if (ds.step) { this._step(ds.step, Number(ds.d)); return; }
+    if (ds.mass != null) { c.mass = !c.mass; try { this.G.settings.set('lastMass', c.mass ? 'an' : 'aus'); } catch { /* */ } this._fixMode(); this._renderDeploy(); this._renderSummary(); this.menus.sound('toggle'); return; }
     if (ds.balance != null) { c.balance = !c.balance; this._fixMode(); this._renderDeploy(); this._renderSummary(); this.menus.sound('toggle'); return; }
     if (ds.slot) { this.slot = ds.slot; this.view = c[this.slot]; this._renderLoadout(); this._showView(); this.menus.sound('click'); return; }
     if (ds.weapon) { this._choose(ds.weapon); return; }
@@ -332,6 +341,8 @@ export class Lobby {
     this.el.loadout.hidden = this.tab !== 'loadout';
     this.el.progress.hidden = this.tab !== 'progress';
     this.el.online.hidden = this.tab !== 'online';
+    if (this.el.kampagne) this.el.kampagne.hidden = this.tab !== 'kampagne';
+    if (this.tab === 'kampagne' && this.el.kampagne) this.campaign.mount(this.el.kampagne); else this.campaign.unmount(); // Kampagne
     if (this.tab === 'progress') this.progress.mount(this.el.progress); else this.progress.unmount();
     // Mehrspieler (ui/net-menus.js): Reiter nur beobachten (öffentliche Spiele), solange er sichtbar ist
     const nm = this.menus.net;
@@ -452,15 +463,20 @@ export class Lobby {
       host.innerHTML = `<h2 class="m-h2">Bahnen</h2><p class="lb-note">Allein am Stand. Unbegrenzte Munition, jede Waffe frei wählbar, Bestzeiten im Parcours.</p>`;
       return;
     }
+    // masse: große Spannen (Großkarte bis 50, Massenschlacht bis 250 je Seite) zusätzlich in Zehnerschritten
+    const big = Math.max(lim.allies[1], lim.enemies[1]) > 40;
     const stepper = (k, label, v, min, max) => `
-      <div class="lb-step"><span>${label}</span>
+      <div class="lb-step${big ? ' is-big' : ''}"><span>${label}</span>
+        ${big ? `<button type="button" class="m-icon lb-ten" data-step="${k}" data-d="-10" aria-label="${label} um 10 verringern"${v <= min ? ' disabled' : ''}>−10</button>` : ''}
         <button type="button" class="m-icon" data-step="${k}" data-d="-1" aria-label="${label} verringern"${v <= min ? ' disabled' : ''}>${ICON.minus}</button>
         <b>${v}</b>
-        <button type="button" class="m-icon" data-step="${k}" data-d="1" aria-label="${label} erhöhen"${v >= max ? ' disabled' : ''}>${ICON.plusSmall}</button></div>`;
+        <button type="button" class="m-icon" data-step="${k}" data-d="1" aria-label="${label} erhöhen"${v >= max ? ' disabled' : ''}>${ICON.plusSmall}</button>
+        ${big ? `<button type="button" class="m-icon lb-ten" data-step="${k}" data-d="10" aria-label="${label} um 10 erhöhen"${v >= max ? ' disabled' : ''}>+10</button>` : ''}</div>`;
     host.innerHTML = `<h2 class="m-h2">${teams ? 'Teams' : 'Spieler'}</h2>
       ${teams ? stepper('allies', 'Verbündete', c.allies, lim.allies[0], lim.allies[1]) : ''}
       ${stepper('enemies', teams ? 'Gegner' : 'Gegner (Bots)', c.enemies, lim.enemies[0], lim.enemies[1])}
       ${teams && c.modeId !== 'inf' ? `<button type="button" class="lb-bal" data-balance aria-pressed="${!!c.balance}"><i class="m-check">${ICON.check}</i>Teams ausgleichen</button>` : ''}
+      ${L.massOk ? `<button type="button" class="lb-bal" data-mass aria-pressed="${!!L.mass}"><i class="m-check">${ICON.check}</i>Massenschlacht (bis ${L.mass ? L.enemies[1] : limitsFor(c.modeId, d.MAPS[c.mapId] || c.mapId, { tier: (this.G.renderer && this.G.renderer.preset && this.G.renderer.preset.extreme ? 'extrem' : this.G.renderer && this.G.renderer.quality) || 'high', touch: !!(this.G.input && this.G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null, mass: true }).enemies[1]} je Seite)</button>` : ''}
       <p class="lb-note">${c.modeId === 'inf' ? `${c.allies + 1} Überlebende gegen ${c.enemies} Infizierte${c.enemies === 1 ? 'n' : ''}.` : teams ? `${c.allies + 1} gegen ${c.enemies}${c.allies + 1 !== c.enemies ? ' – das kleinere Team kommt schneller zurück.' : '.'}` : `${c.enemies + 1} Spieler, jeder für sich.`}</p>
       ${(() => { const w = teamWarning(L, c.allies, c.enemies, teams && c.modeId !== 'inf'); return w.level ? `<p class="lb-warn is-${w.level}">${ICON.warn}<span>${esc(w.text)}</span></p>` : ''; })()}`;
   }
@@ -478,6 +494,13 @@ export class Lobby {
     const b = this.el && this.el.start;
     if (!b) return;
     const online = this.tab === 'online';
+    if (this.tab === 'kampagne') { // Kampagne: „Mission n starten“ (menus.js: data-act camp-start)
+      b.disabled = false;
+      b.dataset.act = 'camp-start';
+      b.classList.remove('is-go');
+      b.innerHTML = `${ICON.play}<span>${this.campaign.footLabel()}<em>.</em></span>`;
+      return;
+    }
     const act = online ? 'net-host' : 'start';
     b.disabled = online && !(this.menus.net && this.menus.net.net);
     if (b.dataset.act === act) return;
@@ -488,6 +511,7 @@ export class Lobby {
 
   _renderSummary() {
     if (this.tab === 'online' && this.menus.net) { this.el.summary.innerHTML = this.menus.net.summaryHtml(); return; }
+    if (this.tab === 'kampagne') { this.el.summary.innerHTML = '<small>Kampagne</small><b>Stille Grenze</b><span>Ausrüstung aus dem Reiter „Ausrüstung“</span>'; return; }
     const d = this._data();
     const c = this.cfg;
     const m = d.MODES[c.modeId] || {};
@@ -745,6 +769,7 @@ export class Lobby {
 
   unmount() {
     this.progress.unmount();
+    this.campaign.unmount();
     if (this.menus.net) this.menus.net.unmountPane();
     for (const off of this._offs) off();
     this._offs = [];

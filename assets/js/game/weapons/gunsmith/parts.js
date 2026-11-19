@@ -1,6 +1,6 @@
 // Wiederverwendbare Waffenbaugruppen: Visiere, Mündungen, Abzug, Griffe, Auswurf.
 // Alle Funktionen erhalten einen Builder b und arbeiten in Waffenkoordinaten (x, v, u).
-import { roundRect, ellipsePts } from './builder.js?v=20261113221339';
+import { roundRect, ellipsePts } from './builder.js?v=20261115041504';
 
 // ---------- Visierungen ----------
 
@@ -32,8 +32,10 @@ export function holoSight(b, u0, railTop, o = {}) {
     b.box('alu', 0.006, 0.003, hoodL - 0.006, -ow + 0.004, oh1 + 0.0012, hu + hoodL / 2, { c: 0.0008 });
     b.box('alu', 0.006, 0.003, hoodL - 0.006, ow - 0.004, oh1 + 0.0012, hu + hoodL / 2, { c: 0.0008 });
     // Fensterscheiben (vorn + hinten)
-    b.plane('glass', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + hoodL - 0.004, { renderOrder: 1 });
-    b.plane('glass', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + 0.004, { renderOrder: 1 });
+    // visier (14.11.): Frontscheibe zeigt nach vorn (Reflexe von außen), Augenseite nur leicht getönt – vorher zwei getönte,
+    // spiegelnde Scheiben zum Auge hin: im Anschlag milchig
+    b.plane('glass', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + hoodL - 0.004, { renderOrder: 1, ry: Math.PI });
+    b.plane('lensEye', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + 0.004, { renderOrder: 1 });
     // Absehen (leuchtend): Ring + Punkt
     b.plane('reticleHolo', 0.02, 0.02, 0, axis, hu + 0.012, { renderOrder: 3 });
   }
@@ -71,8 +73,8 @@ function holoSightMax(b, u0, railTop) {
   const iw = W / 2 - 0.0025, ih0 = railTop + baseH + 0.0015, ih1 = axis + 0.0175;
   b.front(M, roundRect(-ow, oh0, ow, oh1, 0.008, 5), hoodL, hu, { holes: [roundRect(-iw, ih0, iw, ih1, 0.0045, 4).reverse()], bevel: 0.0018, bevelSeg: 2 });
   b.box(M, 0.012, 0.0022, hoodL - 0.008, 0, oh1 + 0.0006, hu + hoodL / 2, { r: 0.0009 });
-  b.plane('glass', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + hoodL - 0.005, { renderOrder: 1 });
-  b.plane('glass', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + 0.005, { renderOrder: 1 });
+  b.plane('glass', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + hoodL - 0.005, { renderOrder: 1, ry: Math.PI });   // nach vorn (visier)
+  b.plane('lensEye', iw * 2, ih1 - ih0, 0, (ih0 + ih1) / 2, hu + 0.005, { renderOrder: 1 });
   b.plane('reticleHolo', 0.02, 0.02, 0, axis, hu + 0.013, { renderOrder: 3 });
   b.anchor('sight', 0, axis, u0, { data: { type: 'holo', eyeRelief: 0.2 } });
   return axis;
@@ -89,7 +91,8 @@ export function redDot(b, u0, railTop, o = {}) {
     b.torus(o.mat || 'polymer', 0.0145, 0.0034, 0, axis, u0 + 0.034, { seg: b.seg(8, 4), tseg: b.seg(24, 10) });
     b.box(o.mat || 'polymer', 0.008, 0.016, 0.012, 0, railTop + 0.014, u0 + 0.034, { c: 0.002 });
     if (b.hi) {
-      b.circle('lensClear', 0.0125, 0, axis, u0 + 0.033, { renderOrder: 1 });
+      b.circle('lensClear', 0.0125, 0, axis, u0 + 0.0332, { renderOrder: 1, ry: Math.PI });   // visier: Außenseite nach vorn
+      b.circle('lensEye', 0.0125, 0, axis, u0 + 0.033, { renderOrder: 1 });
       b.plane('reticleDot', 0.02, 0.02, 0, axis, u0 + 0.031, { renderOrder: 3 });
       b.cyl('knurl', 0.0055, 0.0055, 0.006, 0.019, axis, u0 + 0.034, { axis: 'x', seg: 12 });
     }
@@ -109,8 +112,9 @@ export function redDot(b, u0, railTop, o = {}) {
     b.cyl('knurl', 0.0062, 0.0062, 0.008, 0.019, axis, u0 + 0.024, { axis: 'x', seg: 12 });
     b.cyl('knurl', 0.0062, 0.0062, 0.008, 0, axis + 0.019, u0 + 0.024, { axis: 'v', seg: 12 });
     // Linsen vorn + hinten: leicht getönt und spiegelnd, aber durchsichtig
-    b.circle('lensClear', 0.0136, 0, axis, u0 + 0.0455, { renderOrder: 1 });
-    b.circle('lensClear', rIn, 0, axis, u0 + 0.0055, { renderOrder: 1 });
+    // visier (14.11.): Objektiv nach vorn (Reflexe von außen, von hinten unsichtbar), Okular zum Auge nur leicht getönt
+    b.circle('lensClear', 0.0136, 0, axis, u0 + 0.0455, { renderOrder: 1, ry: Math.PI });
+    b.circle('lensEye', rIn, 0, axis, u0 + 0.0055, { renderOrder: 1 });
     b.plane('reticleDot', 0.02, 0.02, 0, axis, u0 + 0.008, { renderOrder: 3 });
   }
   b.anchor('sight', 0, axis, u0, { data: { type: 'reddot', eyeRelief: 0.2 } });
@@ -125,6 +129,12 @@ export function acog(b, u0, railTop) {
   // Montage
   b.box('alu', 0.03, 0.012, 0.07, 0, railTop + 0.006, u0 + 0.055, { c: 0.002 });
   b.box('alu', 0.022, 0.016, 0.05, 0, railTop + 0.016, u0 + 0.055, { c: 0.003 });
+  // visier (14.11.): Optikkörper als eigenes Teil 'optic' – im vollen Anschlag blendet das Viewmodel ihn aus (wie das Zielfernrohr,
+  // HUD-Okularrand .h-acog übernimmt): durch ein 15-cm-Rohr sah man sonst nur ein Guckloch von ±4,5° in einem schwarzen Ring.
+  // Absehen (Chevron) bleibt stehen.
+  const prevPart = b.defPart;
+  b.part('optic', 0, axis, u0);
+  b.defPart = 'optic';
   if (b.hi) b.cyl('knurl', 0.0065, 0.0065, 0.01, 0.02, railTop + 0.006, u0 + 0.04, { axis: 'x', seg: 12 });
   // Gehäuse: Okular hinten, Prismenkörper, konisches Objektiv vorn
   b.lathe('alu', [
@@ -143,13 +153,15 @@ export function acog(b, u0, railTop) {
     // Gummi-Augenschutz
     b.lathe('rubber', [[0, 0.0175], [-0.006, 0.019], [-0.012, 0.0195], [-0.012, 0.016]], 0, axis, u0, { seg: 16 });
     // Linsen
-    b.circle('lensClear', 0.0185, 0, axis, u0 + L - 0.002, { renderOrder: 1 });
-    b.circle('lensClear', 0.0152, 0, axis, u0 + 0.002, { renderOrder: 1 });
-    // Chevron im Okular (sichtbar beim Zielen)
-    b.plane('reticleChevron', 0.011, 0.011, 0, axis, u0 + 0.004, { renderOrder: 3 });
+    // visier (14.11.): Objektiv nach vorn, Okular zum Auge nur leicht getönt (vorher zwei Schichten zum Auge: trüb)
+    b.circle('lensClear', 0.0185, 0, axis, u0 + L - 0.002, { renderOrder: 1, ry: Math.PI });
+    b.circle('lensEye', 0.0152, 0, axis, u0 + 0.002, { renderOrder: 1 });
+    // Chevron im Okular (sichtbar beim Zielen) – nicht im Optikkörper
+    b.plane('reticleChevron', 0.011, 0.011, 0, axis, u0 + 0.004, { renderOrder: 3, part: prevPart || 'static' });
     // Seiten-Einstelltürme
     b.cyl('alu', 0.007, 0.007, 0.006, 0.021, axis, u0 + 0.06, { axis: 'x', seg: 12 });
   }
+  b.defPart = prevPart;
   b.anchor('sight', 0, axis, u0 - 0.012, { data: { type: 'acog', eyeRelief: 0.085 } });
   return axis;
 }
@@ -160,7 +172,7 @@ export function sniperScope(b, u0, railTop, o = {}) {
   const axis = railTop + 0.046;
   const L = 0.35;
   b.lathe('alu', [
-    [0, 0], [0, 0.0225], [0.004, 0.0238], [0.034, 0.0238], [0.066, 0.0178], [0.076, 0.0168],
+    [0, b.hi ? 0.0205 : 0], [0, 0.0225], [0.004, 0.0238], [0.034, 0.0238],   // visier: Ego hinten offen (Okularlinse statt Deckel) [0.066, 0.0178], [0.076, 0.0168],
     [0.2, 0.0168], [0.24, 0.0168], [0.28, 0.0305], [0.334, 0.032], [0.341, 0.0302], [L, 0.0298], [L, 0.025],
   ], 0, axis, u0, { seg: b.seg(24, 8) });
   // Turmsattel
@@ -174,7 +186,7 @@ export function sniperScope(b, u0, railTop, o = {}) {
     // Parallaxe links
     b.cyl('knurl', 0.012, 0.012, 0.018, -0.028, axis, u0 + 0.14, { axis: 'x', seg: 16 });
     // Linsen
-    b.circle('lens', 0.0296, 0, axis, u0 + L - 0.003);
+    b.circle('lens', 0.0296, 0, axis, u0 + L - 0.003, { ry: Math.PI });   // Objektiv zeigt nach vorn (visier, 14.11.)
     b.circle('lens', 0.0222, 0, axis, u0 + 0.002);
     // Vergrößerungsring mit Wurfhebel
     b.box('alu', 0.004, 0.012, 0.008, 0.024, axis + 0.006, u0 + 0.05, { c: 0.001 });

@@ -3,8 +3,8 @@
 // Haupthand, Laufrichtung, Sitzend/Stehend, echtes Ducken/Lehnen, VR-Grafik und -Auflösung. Die Belegung der
 // VR-Controller steht unter Belegung → VR-Controller.
 
-import { esc } from '../dom.js?v=20261113221339';
-import { rowHtml, syncRows, setRowDisabled } from './rows.js?v=20261113221339';
+import { esc } from '../dom.js?v=20261115041504';
+import { rowHtml, syncRows, setRowDisabled } from './rows.js?v=20261115041504';
 
 export const VR_KEYS = ['vrEnabled', 'vrHand', 'vrTurn', 'vrTurnStep', 'vrTurnSpeed', 'vrVignette', 'vrVignetteStrength', 'vrMoveDir',
   'vrSeated', 'vrPhysical', 'vrRoomScale', 'vrSmoothing', 'vrGripHold', 'vrTwoHand', 'vrLaser', 'vrQuality', 'vrScale'];
@@ -41,7 +41,12 @@ export function vrSectionHtml(P) {
     const why = sup === null
       ? 'VR-Unterstützung wird geprüft …'
       : 'Dieser Browser meldet keine VR-Brille (WebXR „immersive-vr“). Auf der Meta Quest 3: diese Seite im Quest-Browser öffnen. Am PC: Quest per Air Link oder Link-Kabel verbinden und die Seite in Chrome oder Edge öffnen (HTTPS).';
-    return `<p class="sp-tip" data-vr-status>${esc(why)}</p>`;
+    // app (14.11.): Desktop-App (Electron) – WebXR/OpenXR ist eingeschaltet, Electron meldet aber nicht jede Brille;
+    // Android-App (WebView) kann gar kein WebXR
+    const appWhy = sup === null ? '' : typeof window !== 'undefined' && window.nullpunktDesktop
+      ? ' Die PC-App versucht VR über OpenXR (SteamVR, Quest Link), meldet hier aber keine Brille – für PC-VR die Webseite in Chrome oder Edge öffnen; Mehrspieler-Räume sind dieselben.'
+      : typeof window !== 'undefined' && window.Capacitor ? ' Die Android-App kann kein VR – auf der Quest den Quest-Browser nehmen.' : '';
+    return `<p class="sp-tip" data-vr-status>${esc(why + appWhy)}</p>`;
   }
   const rows = VR_KEYS.map((k) => rowHtml(P, k, { hint: HINTS[k] })).join('');
   return `<p class="sp-tip" data-vr-status>${esc(statusText(G))}</p>${rows}`;

@@ -1,3 +1,11 @@
 node_modules/
 .DS_Store
 *.log
+
+# Desktop-App (desktop/): Abhängigkeiten und Build-Ergebnisse nicht ins Repo
+desktop/node_modules/
+desktop/dist/
+
+# Android-App (mobile/): Abhängigkeiten und das erzeugte Android-Projekt nicht ins Repo
+mobile/node_modules/
+mobile/android/

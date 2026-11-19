@@ -17,21 +17,21 @@
 // Schüsse (Zählerwechsel) → Schussgeste + manager.puppetFired (nur Darstellung, kein Schaden). Leben/Tod nicht aus der
 // Pose, sondern über respawn()/onDeath() (Ereignisse vom Host).
 import * as THREE from 'three';
-import { CapsuleBody } from '../engine/physics.js?v=20261113221339';
-import { raycastHumanoid } from '../combat.js?v=20261113221339';
-import { Soldier } from './character.js?v=20261113221339';
-import { Memory } from './ai/memory.js?v=20261113221339';
-import { sense } from './ai/perception.js?v=20261113221339';
-import { Navigator } from './ai/navigator.js?v=20261113221339';
-import { Gunner } from './ai/combat.js?v=20261113221339';
-import { think, newGoal, useStreaks } from './ai/brain.js?v=20261113221339';
-import { targetPoints } from './ai/perception.js?v=20261113221339';
-import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261113221339';
-import { BONE } from './soldier/rig.js?v=20261113221339';
-import { importCC } from '../../shared/customcamo.js?v=20261113221339';
-import { applyAttachments } from '../../shared/attachments.data.js?v=20261113221339';
-import { getWeaponModelMeta } from '../weapons/models.js?v=20261113221339';
-import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261113221339';
+import { CapsuleBody } from '../engine/physics.js?v=20261115041504';
+import { raycastHumanoid } from '../combat.js?v=20261115041504';
+import { Soldier } from './character.js?v=20261115041504';
+import { Memory } from './ai/memory.js?v=20261115041504';
+import { sense } from './ai/perception.js?v=20261115041504';
+import { Navigator } from './ai/navigator.js?v=20261115041504';
+import { Gunner } from './ai/combat.js?v=20261115041504';
+import { think, newGoal, useStreaks } from './ai/brain.js?v=20261115041504';
+import { targetPoints } from './ai/perception.js?v=20261115041504';
+import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261115041504';
+import { BONE } from './soldier/rig.js?v=20261115041504';
+import { importCC } from '../../shared/customcamo.js?v=20261115041504';
+import { applyAttachments } from '../../shared/attachments.data.js?v=20261115041504';
+import { getWeaponModelMeta } from '../weapons/models.js?v=20261115041504';
+import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261115041504';
 
 const STAND_H = 1.8, CROUCH_H = 1.15, PRONE_H = 0.75;
 const SPEED = { walk: 3.1, run: 5.4, sprint: 8.2, crouch: 2.6, crawl: 1.05 };
@@ -158,7 +158,7 @@ let serial = 0;
 
 export class Bot {
   /**
-   * @param {import('./manager.js?v=20261113221339').BotManager} manager
+   * @param {import('./manager.js?v=20261115041504').BotManager} manager
    * opts: { team, name, diff (Profil), loadout, variant, scheme, modeId, lane, puppet (Mehrspieler-Puppe) }
    */
   constructor(manager, { team, name, diff, loadout, variant = 0, scheme = null, modeId = 'tdm', lane = 1, puppet = false }) {
@@ -540,6 +540,10 @@ export class Bot {
     const body = this.body;
     const w = this.weapon;
     const world = G.world;
+    // masse: Prüfstand (manager._botProf = {}): CPU-Zeit je Abschnitt aufsummieren
+    const P = this.manager._botProf;
+    let pt = P ? performance.now() : 0;
+    const lap = P ? (k) => { const t = performance.now(); P[k] = (P[k] || 0) + t - pt; pt = t; } : null;
 
     // --- Wahrnehmen + Entscheiden (gestaffelt)
     this._senseDt += dt;
@@ -553,6 +557,7 @@ export class Bot {
       const rec = gunner.selectTarget(now);
       if (rec && (!gunner.rec || gunner.rec.actor !== rec.actor) && goal.kind !== 'engage') this._thinkT = Math.min(this._thinkT, 0.05);
     }
+    if (lap) lap('sense');
     if (!frozen) {
       this._thinkT -= dt;
       if (this._thinkT <= 0) {
@@ -563,6 +568,7 @@ export class Bot {
       this._streakT -= dt;
       if (this._streakT <= 0) { this._streakT = rnd(1.8, 3); if (this.manager.handlesStreaks) useStreaks(this, now); }
     }
+    if (lap) lap('think');
 
     // --- Zielen / Blick
     let angErr = Infinity;
@@ -589,6 +595,7 @@ export class Bot {
       this._lookAround(dt, now);
     }
 
+    if (lap) lap('aim');
     // --- Bewegung
     let mx = 0, mz = 0;
     let speedKind = goal.speed || 'run';
@@ -713,7 +720,9 @@ export class Bot {
     } else if (targetH < body.height - 1e-3) body.setHeight(body.height + (targetH - body.height) * (1 - Math.exp(-18 * dt)));
     const wasGround = body.onGround;
     const vyBefore = v.y;
+    if (lap) lap('move');
     body.step(dt, world, STEP_OPTS);
+    if (lap) lap('physics');
     if (!wasGround && body.onGround && -vyBefore > FALL_SAFE && G.combat && !frozen) {
       G.combat.damage(this, { amount: (-vyBefore - FALL_SAFE) * 9, attacker: null, weaponId: 'fall', zone: 'body', dir: new THREE.Vector3(0, -1, 0) });
       if (!this.alive) return;
@@ -775,8 +784,10 @@ export class Bot {
     // Sanitäter: Verbandskasten für den Verwundeten bzw. sich selbst
     if (!frozen && this.gadget && this.gadget.id === 'medkit' && this.gadget.charges > 0 && now >= this.gadget.cooldownUntil) this._medkit(now, ord);
 
+    if (lap) lap('weapon');
     // --- Darstellung
     this._animate(dt, now);
+    if (lap) lap('animate');
   }
 
   /* ================================================================ Puppe (Mehrspieler) */
@@ -1487,7 +1498,15 @@ export class Bot {
   _separation(out) {
     out.set(0, 0, 0);
     const p = this.position;
-    const actors = this.G.actors;
+    let actors = this.G.actors;
+    // masse: große Matches – nur Nachbarn aus dem Raster des Managers (statt aller Akteure)
+    const grid = this.manager.grid;
+    if (actors.length > 48 && grid && grid.frame === this.manager._frame && this.manager.massOpt) {
+      const near = this._near || (this._near = []);
+      near.length = 0;
+      grid.each(p.x, p.z, 1.2, this._nearPush || (this._nearPush = (a) => { this._near.push(a); }));
+      actors = near;
+    }
     for (let i = 0; i < actors.length; i++) {
       const a = actors[i];
       if (a === this || !a.alive || !a.position) continue;
@@ -1525,6 +1544,7 @@ export class Bot {
     }
     // aufgelaufene Zeit (gedrosselte Rate); begrenzt, damit Schrittzyklus/Gesten nicht springen
     const adt = Math.min(this._animAcc, ANIM_MAX_STEP);
+    this.manager.debug.anims = (this.manager.debug.anims | 0) + 1; // masse: Zähler (Animationsschritte je Bild)
     this._animAcc = 0;
     const w = this.weapon;
     const def = w ? w.currentDef : null;

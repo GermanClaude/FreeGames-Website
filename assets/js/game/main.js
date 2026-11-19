@@ -16,64 +16,64 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261113221339';
-import { profile } from '../shared/profile.js?v=20261113221339';
-import { TrophyToasts } from './ui/trophy-toast.js?v=20261113221339';
-import * as weaponsData from '../shared/weapons.data.js?v=20261113221339';
-import * as modesData from '../shared/modes.data.js?v=20261113221339';
-import * as mapsData from '../shared/maps.data.js?v=20261113221339';
-import * as classesData from '../shared/classes.data.js?v=20261113221339'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261113221339'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
-import { EventBus } from './engine/events.js?v=20261113221339';
-import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261113221339';
-import { learnTier, deviceInfo } from './engine/device.js?v=20261113221339';
-import { Input } from './engine/input.js?v=20261113221339';
-import { watchForUpdates } from './engine/update.js?v=20261113221339'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261113221339';
-import { DynamicResolution } from './engine/dynres.js?v=20261113221339';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261113221339'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261113221339';
-import { Combat } from './combat.js?v=20261113221339';
-import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261113221339'; // Interaktionspunkte der Karten (Taste F)
-import { Building } from './building.js?v=20261113221339'; // Bauen (Taste K)
-import { Injuries } from './injuries.js?v=20261113221339'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
-import { Gore } from './gore.js?v=20261113221339'; // Blutlachen + Spritzer
-import { Destruction } from './destruction.js?v=20261113221339'; // zerstörbare Fassaden
-import { CarDeform } from './deform.js?v=20261113221339'; // verformbare Autos
-import { Digging } from './digging.js?v=20261113221339'; // Graben mit dem Klappspaten (Großkarten)
-import { Doors } from './doors.js?v=20261113221339'; // bewegliche Türen und Tore (Taste F)
-import { BulletHoles } from './bullet-holes.js?v=20261113221339'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
-import { TreeFall } from './treefall.js?v=20261113221339'; // Bäume brechen unter Beschuss und fallen
-import * as Feedback from '../shared/feedback.js?v=20261113221339'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
+import { settings } from '../shared/settings.js?v=20261115041504';
+import { profile } from '../shared/profile.js?v=20261115041504';
+import { TrophyToasts } from './ui/trophy-toast.js?v=20261115041504';
+import * as weaponsData from '../shared/weapons.data.js?v=20261115041504';
+import * as modesData from '../shared/modes.data.js?v=20261115041504';
+import * as mapsData from '../shared/maps.data.js?v=20261115041504';
+import * as classesData from '../shared/classes.data.js?v=20261115041504'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261115041504'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
+import { EventBus } from './engine/events.js?v=20261115041504';
+import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261115041504';
+import { learnTier, deviceInfo } from './engine/device.js?v=20261115041504';
+import { Input } from './engine/input.js?v=20261115041504';
+import { watchForUpdates } from './engine/update.js?v=20261115041504'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261115041504';
+import { DynamicResolution } from './engine/dynres.js?v=20261115041504';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261115041504'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261115041504';
+import { Combat } from './combat.js?v=20261115041504';
+import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261115041504'; // Interaktionspunkte der Karten (Taste F)
+import { Building } from './building.js?v=20261115041504'; // Bauen (Taste K)
+import { Injuries } from './injuries.js?v=20261115041504'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
+import { Gore } from './gore.js?v=20261115041504'; // Blutlachen + Spritzer
+import { Destruction } from './destruction.js?v=20261115041504'; // zerstörbare Fassaden
+import { CarDeform } from './deform.js?v=20261115041504'; // verformbare Autos
+import { Digging } from './digging.js?v=20261115041504'; // Graben mit dem Klappspaten (Großkarten)
+import { Doors } from './doors.js?v=20261115041504'; // bewegliche Türen und Tore (Taste F)
+import { BulletHoles } from './bullet-holes.js?v=20261115041504'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
+import { TreeFall } from './treefall.js?v=20261115041504'; // Bäume brechen unter Beschuss und fallen
+import * as Feedback from '../shared/feedback.js?v=20261115041504'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261113221339', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261113221339', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261113221339', ['ViewModel']],
-  world: ['./world/index.js?v=20261113221339', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261113221339', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261113221339', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261113221339', ['Effects']],
-  bots: ['./bots/manager.js?v=20261113221339', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261113221339', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261115041504', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261115041504', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261115041504', ['ViewModel']],
+  world: ['./world/index.js?v=20261115041504', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261115041504', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261115041504', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261115041504', ['Effects']],
+  bots: ['./bots/manager.js?v=20261115041504', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261115041504', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261113221339', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261113221339', []],
-  modes: ['./modes/index.js?v=20261113221339', ['createMode']],
-  hud: ['./ui/hud.js?v=20261113221339', ['HUD']],
-  menus: ['./ui/menus.js?v=20261113221339', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261115041504', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261115041504', []],
+  modes: ['./modes/index.js?v=20261115041504', ['createMode']],
+  hud: ['./ui/hud.js?v=20261115041504', ['HUD']],
+  menus: ['./ui/menus.js?v=20261115041504', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261113221339', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261113221339', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261115041504', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261115041504', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261113221339', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261113221339', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261113221339', ['ClientSync']],
+  net: ['./net/index.js?v=20261115041504', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261115041504', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261115041504', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261113221339', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261115041504', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
@@ -110,7 +110,7 @@ const TIPS = [
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
 const AUTOSTART = params.get('autostart') === '1';
-const QUALITY_OVERRIDE = QUALITY_LEVELS.includes(params.get('quality')) ? params.get('quality') : null;
+const QUALITY_OVERRIDE = QUALITY_LEVELS.includes(params.get('quality')) || (params.get('quality') === 'extrem' && window.nullpunktDesktop) ? params.get('quality') : null; // desktop: auch „extrem“
 const clampTimeScale = (v) => Math.min(4, Math.max(0.05, Number(v) || 1));
 // Test-/Entwicklerparameter wirken nur zusammen mit debug=1 (und machen das Match „ungewertet“)
 const DEV_GOD = DEBUG && params.get('god') === '1';
@@ -357,8 +357,11 @@ function setState(state) {
 
 const errorKeys = new Set();
 function step(key, fn) {
+  // masse: Prüfstand – G.prof = {} sammelt die CPU-Zeit je Schritt (ms, aufsummiert), sonst kein Aufwand
+  const pr = G.prof, t0 = pr ? performance.now() : 0;
   try {
     fn();
+    if (pr) pr[key] = (pr[key] || 0) + performance.now() - t0;
   } catch (err) {
     const k = `${key}:${err && err.message}`;
     if (!errorKeys.has(k)) {
@@ -411,6 +414,7 @@ function mapsForMode(modeId) {
   const ids = (G.data.MAP_ORDER || Object.keys(MAPS)).filter((id) => MAPS[id]);
   const list = ids.filter((id) => Array.isArray(MAPS[id].modes) && MAPS[id].modes.includes(modeId));
   if (list.length) return list;
+  if (modeId === 'kampagne') return ids; // Kampagne: alle Karten (Ausbildung M0 auf dem Schießstand)
   return modeId === 'training' ? ids.filter((id) => id === 'range') : ids.filter((id) => id !== 'range');
 }
 
@@ -422,15 +426,19 @@ function normalizeConfig(cfg = {}) {
   const modeId = MODES[cfg.modeId] ? cfg.modeId : MODES[settings.get('lastMode')] ? settings.get('lastMode') : 'tdm';
   const maps = mapsForMode(modeId);
   const rec = (MODES[modeId] && MODES[modeId].recommendedMaps) || [];
-  const mapId = [cfg.mapId, settings.get('lastMap'), ...rec, maps[0]].find((id) => id && maps.includes(id)) || 'hafen';
+  // Kampagne: die Mission bestimmt die Karte (MODES.kampagne.missionMaps)
+  const missionMap = modeId === 'kampagne' && cfg.campaign && MODES.kampagne && MODES.kampagne.missionMaps ? MODES.kampagne.missionMaps[cfg.campaign.mission] : null;
+  const mapId = [...[].concat(missionMap || []), cfg.mapId, settings.get('lastMap'), ...rec, maps[0]].find((id) => id && maps.includes(id)) || 'hafen';
   const difficulty = DIFFS.includes(cfg.difficulty) ? cfg.difficulty : DIFFS.includes(settings.get('difficulty')) ? settings.get('difficulty') : 'regulaer';
   const counts = modeCounts(modeId);
-  // modes-ui: Teamgrößen je Karte und Gerät (limitsFor, GROSSKAMPF §3.2: Arena 12 v 12, Großkarte 32 v 32)
+  // modes-ui: Teamgrößen je Karte und Gerät (limitsFor, GROSSKAMPF §3.2: Arena 12 v 12, Großkarte 50 v 50; masse: Massenschlacht)
+  let mass = false;
   if (typeof G.data.limitsFor === 'function') {
     const L = safe('limitsFor', () => G.data.limitsFor(modeId, (G.data.MAPS || {})[mapId] || mapId, {
-      tier: (G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null,
+      tier: (G.renderer && G.renderer.preset && G.renderer.preset.extreme ? 'extrem' : G.renderer && G.renderer.quality) || 'high', touch: !!(G.input && G.input.mode === 'touch'), deviceMemory: navigator.deviceMemory ?? null, // desktop: extrem
+      mass: cfg.mass === true || cfg.mass === '1' || cfg.mass === 'an',
     }));
-    if (L) Object.assign(counts, { alliesRange: L.allies, enemiesRange: L.enemies, allies: L.recommended.allies, enemies: L.recommended.enemies });
+    if (L) { Object.assign(counts, { alliesRange: L.allies, enemiesRange: L.enemies, allies: L.recommended.allies, enemies: L.recommended.enemies }); mass = !!L.mass; }
   }
   const ffa = isFfaMode(modeId);
   const allies = ffa ? 0 : intParam(cfg.allies, counts.allies, counts.alliesRange[0], Math.max(counts.alliesRange[1], 0));
@@ -467,12 +475,14 @@ function normalizeConfig(cfg = {}) {
   for (const k of Object.keys(loadout)) delete loadout[k];
   Object.assign(loadout, full, extra);
   return {
-    modeId, mapId, difficulty, allies, enemies, loadout, ffa, armor: armorFor(cfg, mapId, modeId),
+    modeId, mapId, difficulty, allies, enemies, loadout, ffa, armor: armorFor(cfg, mapId, modeId), mass,
     style, crosshair: typeof cfg.crosshair === 'boolean' ? cfg.crosshair : null,
     matchLength: ['kurz', 'standard', 'lang'].includes(cfg.matchLength) ? cfg.matchLength : 'standard',
     timeOfDay: typeof cfg.timeOfDay === 'string' ? cfg.timeOfDay : null,
     weather: typeof cfg.weather === 'string' ? cfg.weather : null, // atmosphere-weather: id | 'standard' | 'zufall'
     timeLimit: numParam(cfg.timeLimit), scoreLimit: numParam(cfg.scoreLimit),
+    // Kampagne (game/campaign): Mission + Checkpoint
+    campaign: modeId === 'kampagne' && cfg.campaign && typeof cfg.campaign === 'object' ? { mission: String(cfg.campaign.mission || ''), checkpoint: cfg.campaign.checkpoint ? String(cfg.campaign.checkpoint) : null } : null,
   };
 }
 
@@ -491,11 +501,12 @@ function isUnranked(cfg) {
 function configFromParams() {
   return {
     modeId: params.get('mode'), mapId: params.get('map'), difficulty: params.get('diff'),
-    allies: params.get('allies'), enemies: params.get('enemies'),
+    allies: params.get('allies'), enemies: params.get('enemies'), mass: params.get('mass'), // masse: mass=1 Massenschlacht
     loadout: { primary: params.get('primary'), secondary: params.get('secondary'), lethal: params.get('lethal'), cls: params.get('cls'), armor: params.get('vest'), helmet: params.get('helmet') },
     timeLimit: params.get('time'), scoreLimit: params.get('score'), style: params.get('style'), armor: params.get('armor'),
     // atmosphere-weather: weather=klar|dunst|morgennebel|bewoelkt|zufall, tod=<Tageszeit-id> (time= nur, wenn nicht numerisch)
     weather: params.get('weather'), timeOfDay: params.get('tod') || (params.get('time') && !/^[\d.]+$/.test(params.get('time')) ? params.get('time') : null),
+    campaign: params.get('mission') ? { mission: params.get('mission'), checkpoint: params.get('cp') } : null, // Kampagne: mode=kampagne&mission=m1[&cp=…]
   };
 }
 
@@ -524,6 +535,7 @@ function spawnActor(actor, fixed = null) {
     if (s) spawn = { position: s.position.clone(), yaw: s.yaw || 0 };
   }
   if (!spawn) spawn = { position: new THREE.Vector3(), yaw: 0 };
+  else if (!fixed && G.bots && typeof G.bots.spreadSpawn === 'function') spawn = safe('spreadSpawn', () => G.bots.spreadSpawn(actor, spawn)) || spawn; // masse: belegte Punkte → freier Knoten daneben
   // core-mechanics: vorgemerkte Ausrüstung (Pausemenü/Todesbildschirm) gilt ab diesem Spawn; Klasse + Panzerung ausgeben
   if (actor === G.player && G.match.pendingLoadout) {
     const lo = G.match.pendingLoadout;
@@ -1144,9 +1156,11 @@ async function runStart(config, gen) {
       vehicles: netCfg ? !!netCfg.vehicles : undefined, // online: Raum-Einstellung „Fahrzeuge“ (vor spawnBots – Werfer der Bots)
       prebuildAll: prebuildAll(cfg), // 26.10.: Waffenspiel-Leiter ganz vorbauen (Online-Host) statt im Leerlauf (WeaponController.warmup)
       tankEra: (netCfg ? netCfg.tankEra : cfg.tankEra) || 'karte', // Panzer-Generation (vehicles/index.js tankType)
+      campaign: cfg.campaign, // Kampagne: { mission, checkpoint } (campaign/mode.js)
     });
     // Online: Modus/Karte/Schwierigkeit gehören dem Raum – die Lobby-Vorauswahl für Einzelspieler bleibt
     if (netCfg) settings.patch({ lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
+    else if (cfg.modeId === 'kampagne') settings.patch({ lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' }); // Kampagne ändert die Lobby-Vorauswahl nicht
     else settings.patch({ lastMode: cfg.modeId, lastMap: cfg.mapId, difficulty: cfg.difficulty, lastLoadout: cfg.loadout, lastClass: cfg.loadout.cls || 'sturm' });
     applyStyle(cfg); // core-mechanics: G.match.style/styleFlags/armor
     setState('loading');
@@ -1196,7 +1210,7 @@ async function runStart(config, gen) {
     const opts = {
       timeLimit: cfg.timeLimit ?? undefined, scoreLimit: cfg.scoreLimit ?? undefined,
       time: cfg.timeLimit ?? undefined, score: cfg.scoreLimit ?? undefined,
-      difficulty: cfg.difficulty, allies: cfg.allies, enemies: cfg.enemies, mapId: cfg.mapId,
+      difficulty: cfg.difficulty, allies: cfg.allies, enemies: cfg.enemies, mapId: cfg.mapId, campaign: cfg.campaign,
     };
     // Mehrspieler: von den Serienprämien online Aufklärer, FPV-Drohne und Präzisionsschlag (ONLINE_STREAKS, Einsatz bestätigt der Host –
     // net/sync-host.js); Client führt den Modus als Abbild (Zustand vom Host)
@@ -2366,7 +2380,7 @@ async function bootstrap() {
     if (!G.renderer) { showFatal('webgl'); return; }
     G.renderer.onQualityChange(onQualityChanged);
     // 21.10.: Browser ohne GPU-Beschleunigung (Software-Rendering, häufige Ursache für ≈ 10 FPS) – beim ersten Match sagen
-    if (G.renderer.gpu && G.renderer.gpu.cls === 'software') tierNotice = { text: 'Grafik läuft ohne GPU-Beschleunigung – im Browser die Hardwarebeschleunigung einschalten.', short: 'Grafik ohne GPU – anderen Browser testen.' };
+    if (G.renderer.gpu && G.renderer.gpu.cls === 'software') tierNotice = window.nullpunktDesktop ? { text: 'Grafik läuft ohne GPU-Beschleunigung – Grafiktreiber aktualisieren.', short: 'Grafik ohne GPU – Treiber prüfen.' } /* desktop */ : { text: 'Grafik läuft ohne GPU-Beschleunigung – im Browser die Hardwarebeschleunigung einschalten.', short: 'Grafik ohne GPU – anderen Browser testen.' };
     if (G.renderer.onStyleChange) G.renderer.onStyleChange(applyQualityClasses); // Bildstil (core-render)
     if (DEBUG && G.renderer.exposure) G.renderer.exposure.track = true;
     applyQualityClasses();

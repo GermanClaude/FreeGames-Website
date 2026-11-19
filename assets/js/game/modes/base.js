@@ -3,15 +3,15 @@
 // Unterklassen überschreiben die Haken onKillScored / onSuicide / tick / decide / extraRow.
 
 import * as THREE from 'three';
-import { modeOptionValues, parseModeOptions, MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261113221339';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261113221339';
-import { chooseSpawn } from './spawns.js?v=20261113221339';
-import { MedalTracker } from './medals.js?v=20261113221339';
-import { StreakManager } from './streaks.js?v=20261113221339';
-import { CheatSystem } from '../cheats.js?v=20261113221339';
+import { modeOptionValues, parseModeOptions, MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261115041504';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261115041504';
+import { chooseSpawn } from './spawns.js?v=20261115041504';
+import { MedalTracker } from './medals.js?v=20261115041504';
+import { StreakManager } from './streaks.js?v=20261115041504';
+import { CheatSystem } from '../cheats.js?v=20261115041504';
 
 /** Karten mit Einsatzkarte nach dem Tod (Draufsicht, Einstieg bei Kameraden). */
-const DEPLOY_MAPS = new Set(['grenzland', 'bibliothek', 'niemandsland', 'brandwald']);
+const DEPLOY_MAPS = new Set(['grenzland', 'bibliothek', 'niemandsland', 'brandwald', 'flugplatz']);
 
 const STREAK_WEAPONS = new Set(['strike', 'sentry', 'uav', 'drohne']);
 export const OVERTIME_SECONDS = 60;
@@ -64,6 +64,11 @@ export class BaseMode {
     this._applyKillGoal(G, opts);
     // Riesige Abschussziele (auch online aus dem Raum-Menü): ohne ausdrückliches Zeitlimit keine Zeitgrenze
     if (this.def.scoreUnit === 'Abschüsse' && this.scoreLimit > 100 && !(Number(opts.timeLimit ?? opts.time) > 0)) this.timeLimit = 0;
+    // masse: große Teams offline (Großkarte bis 50 v 50, Massenschlacht bis 250 v 250) – Abschussziel mit der Teamgröße
+    // strecken (je 8 Akteure je Seite das gewählte Ziel), Zeitlimit bleibt; online/ausdrücklich gesetzt unverändert
+    const side = Math.max((opts.allies | 0) + 1, opts.enemies | 0);
+    if (this.teams && this.def.scoreUnit === 'Abschüsse' && side > 16 && this.scoreLimit > 0 && !(G.match && G.match.net) &&
+        !(Number(opts.scoreLimit ?? opts.score) > 0)) this.scoreLimit = Math.round(this.scoreLimit * side / 8 / 10) * 10;
     // Spielstil (Arcade/Realistisch): main setzt G.match.style + G.match.styleFlags (core-mechanics, classes.data.js)
     const m = G.match || {};
     this.style = m.style === 'realistisch' && this.id !== 'training' ? 'realistisch' : 'arcade';

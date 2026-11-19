@@ -4,9 +4,9 @@
 // v hoch, u vorn; Maße in Metern. Kleinteile unter 3 mm entfallen am Handy (b.lite), in der Bot-Stufe fallen Teile < 9 mm
 // ohnehin weg (Builder).
 import * as THREE from 'three';
-import { shapeFrom } from './builder.js?v=20261113221339';
-import { box2 } from './sdfkit.js?v=20261113221339';
-import { sdPolygon } from './sdf.js?v=20261113221339';
+import { shapeFrom, ellipsePts } from './builder.js?v=20261115041504';
+import { box2 } from './sdfkit.js?v=20261115041504';
+import { sdPolygon } from './sdf.js?v=20261115041504';
 
 // ---------------------------------------------------------------- Atlas-UVs je Dreieck
 /**
@@ -159,6 +159,16 @@ export function notchSight(b, mat, pts, hw, { nw, vN, part, bevel = 0.00035, dot
     const vTop = Math.max(...high.map((p) => p[1]));
     for (const s of [-1, 1]) b.circle('paintWhite', 0.0008, s * (nw / 2 + ew / 2), (vN + vTop) / 2 - 0.0004, uRear - 0.00005, { ry: Math.PI, seg: 12, part });
   }
+}
+
+/**
+ * Lochkimme (Diopter) als Platte quer zur Visierlinie mit echtem runden Durchblick (visier, 14.11.): Querschnitt x0..x1 × v0..v1,
+ * Loch Radius r um (0, cv), Dicke l ab u (nach vorn). Vorher an mehreren Waffen eine Vollplatte mit schwarzem Punkt – im Anschlag
+ * verdeckte sie das Ziel als dunkler Balken.
+ */
+export function apertureSight(b, mat, { x0, x1, v0, v1, cv, r, u, l = 0.004, part, bevel = 0.0004 }) {
+  const hole = ellipsePts(0, cv, r, r, b.hi ? 24 : 10).reverse();
+  b.front(mat, [[x0, v0], [x1, v0], [x1, v1], [x0, v1]], l, u, { holes: [hole], keepHoles: true, bevel, bevelSeg: 1, part });
 }
 
 /** Korn: Seitenprofil (Rampe), quer ±hw; dot: weißer Punkt hinten (Fläche nach hinten) auf Höhe dot.v bei dot.u. */

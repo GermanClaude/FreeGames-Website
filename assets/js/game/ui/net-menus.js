@@ -5,13 +5,13 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261113221339';
-import { ICON, deviceOf } from './icons.js?v=20261113221339';
-import { LoadoutPanel } from './loadout-panel.js?v=20261113221339';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261113221339';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261113221339';
-import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261113221339';
-import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261113221339';
+import { esc, el } from './dom.js?v=20261115041504';
+import { ICON, deviceOf } from './icons.js?v=20261115041504';
+import { LoadoutPanel } from './loadout-panel.js?v=20261115041504';
+import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261115041504';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261115041504';
+import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261115041504';
+import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261115041504';
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
@@ -101,7 +101,9 @@ export function parseRoomCode(text) {
 /** Einladungslink (absolut). Ein Test-Relay (?relays=…) wird mitgegeben, sonst fände der Link den Raum nicht. */
 export function roomLink(code) {
   let url;
-  try { url = new URL('spielen.html', location.href); } catch { return `spielen.html?raum=${code}`; }
+  // desktop: die App läuft unter app://nullpunkt – Einladungen zeigen auf die öffentliche Seite (Browser-Spieler, andere Apps)
+  const base = (typeof window !== 'undefined' && window.nullpunktDesktop && window.nullpunktDesktop.webUrl) || location.href;
+  try { url = new URL('spielen.html', base); } catch { return `spielen.html?raum=${code}`; }
   const q = new URLSearchParams();
   q.set('raum', code);
   try { const r = new URLSearchParams(location.search).get('relays'); if (r) q.set('relays', r); } catch { /* */ }

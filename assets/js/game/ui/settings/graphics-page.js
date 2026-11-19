@@ -5,12 +5,12 @@
 // In der Lobby ist noch keine Karte geladen: Karteninhalt dann aus der letzten Messung dieser Stufe bzw. dem Modell
 // des Plans (§4.2), Bildpuffer immer gemessen.
 
-import { esc, num } from '../dom.js?v=20261113221339';
-import { ICON } from '../icons.js?v=20261113221339';
-import { QUALITY_PRESETS } from '../../engine/renderer.js?v=20261113221339';
-import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261113221339';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261113221339';
-import { HINTS } from './schema-page.js?v=20261113221339';
+import { esc, num } from '../dom.js?v=20261115041504';
+import { ICON } from '../icons.js?v=20261115041504';
+import { QUALITY_PRESETS, EXTREME_PRESET } from '../../engine/renderer.js?v=20261115041504';
+import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261115041504';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261115041504';
+import { HINTS } from './schema-page.js?v=20261115041504';
 
 const MB = 1024 * 1024;
 const MEM_KEY = 'nullpunkt:gfxmem';
@@ -19,8 +19,9 @@ const SECTIONS = [
   ['Qualitätsstufe', ['quality']],
   ['Auflösung', ['renderScale', 'gfxPixelRatio', 'upscaler', 'sharpness']],
   ['Bildrate', ['fpsLimit', 'showFps']],
-  ['Licht und Schatten', ['gfxShadows', 'gfxAO', 'autoExposure']],
-  ['Nachbearbeitung', ['gfxPost', 'gfxAA', 'gfxBloom', 'colorLook', 'lensStyle', 'lensStrength', 'grain', 'lensArtifacts', 'lensBorder']],
+  ['Licht und Schatten', ['gfxShadows', 'gfxAO', 'gfxContact', 'gfxSSR', 'autoExposure']],
+  ['Nachbearbeitung', ['gfxPost', 'gfxAA', 'gfxBloom', 'gfxDOF', 'colorLook', 'lensStyle', 'lensStrength', 'grain', 'lensArtifacts', 'lensBorder']],
+  ['Texturen', ['gfxTextures']],
   ['Effekte', ['gfxEffects']],
 ];
 const LOCAL_HINTS = {
@@ -31,9 +32,13 @@ const LOCAL_HINTS = {
   gfxShadows: 'Auflösung und Reichweite der Sonnenschatten, Schatten der Figuren.',
   gfxAO: 'Verdeckung in Ecken und Fugen. Rendert die Szene ein zweites Mal (auf „Hoch“ in halber Auflösung) – kostet Leistung.',
   gfxPost: 'Einfach: alles in einem Durchgang (Handys). Voll: Leuchten, Kantenglättung, Lichtstrahlen.',
-  gfxAA: 'FXAA ist billig, SMAA schärfer und ruhiger.',
+  gfxAA: 'FXAA ist billig, SMAA schärfer und ruhiger. TAA verrechnet mehrere Bilder: feine Details (Zäune, Gras, Kanten) und weiche Schatten stehen ruhig, das Bild wird etwas weicher.',
+  gfxContact: 'Feine Schatten dort, wo Dinge den Boden berühren (Füße, Kisten, Leisten) – ergänzt die Schattenkarte. Ab „Hoch“.',
+  gfxDOF: 'Beim Zielen wird Nahes vor dem Ziel (Deckungskanten, Gras) weich, das Ziel bleibt scharf. Ab „Hoch“.',
+  gfxSSR: 'Spiegelungen der Umgebung in Wasser, Glas, Metall und glatten Flächen (nur was im Bild ist). Ultra.',
   gfxBloom: 'Leuchten heller Lichter, mit Linsenschmutz im Bodycam-Stil.',
   colorLook: 'Natürlich: kräftigere Farben. Video-Look: grau-grün und entsättigt wie die Video-Vorlage. Ab Stufe „Mittel“.',
+  gfxTextures: 'Auflösung der Fotoscan-Texturen (Böden, Wände, Holz, Metall). Ultra lädt 2048er-Scans: deutlich schärfer aus der Nähe, braucht mehr Grafikspeicher und Ladezeit. Nur auf Qualitätsstufe Hoch/Ultra und nicht auf Telefonen. Gilt ab dem nächsten Match.',
   gfxEffects: 'Partikelmenge, Rauch, Funken, Hülsen und Zahl der Einschusslöcher.',
 };
 const SEGS = [
@@ -58,7 +63,7 @@ export function graphicsPage(P) {
   const KEYS = SECTIONS.flatMap(([, k]) => k);
 
   const R = () => G.renderer;
-  const basePreset = () => QUALITY_PRESETS[(R() && R().quality) || 'high'] || QUALITY_PRESETS.high;
+  const basePreset = () => (R() && R().preset && R().preset.extreme ? EXTREME_PRESET : QUALITY_PRESETS[(R() && R().quality) || 'high'] || QUALITY_PRESETS.high); // desktop: Extrem
   const effPreset = () => (R() && R().preset) || applyGraphics(basePreset(), S);
 
   /** „Automatisch (Hoch)“ – Wert, den die Stufe ohne Abweichung hätte. */
@@ -177,7 +182,7 @@ export function graphicsPage(P) {
     if (!host) return;
     const p = effPreset();
     const lite = !p.post;
-    for (const k of ['gfxAA', 'gfxBloom', 'gfxAO']) setRowDisabled(host, k, lite, 'Nur mit voller Nachbearbeitung.');
+    for (const k of ['gfxAA', 'gfxBloom', 'gfxAO', 'gfxContact', 'gfxSSR', 'gfxDOF']) setRowDisabled(host, k, lite, 'Nur mit voller Nachbearbeitung.');
     const style = S.get('lensStyle');
     for (const k of ['lensStrength', 'grain', 'lensArtifacts', 'lensBorder']) setRowDisabled(host, k, style !== 'bodycam', 'Nur im Bildstil „Bodycam“.');
     setRowDisabled(host, 'sharpness', style === 'klassisch', 'Im Stil „Klassisch“ ohne Nachschärfen.');
@@ -186,6 +191,7 @@ export function graphicsPage(P) {
     setRowCost(host, 'gfxShadows', p.shadows ? `${p.shadowMapSize}² · ${cost('gfxShadows')}` : '');
     setRowCost(host, 'gfxAO', cost('gfxAO'));
     setRowCost(host, 'gfxAA', cost('gfxAA'));
+    setRowCost(host, 'gfxSSR', cost('gfxSSR'));
     setRowCost(host, 'gfxBloom', cost('gfxBloom'));
     setRowCost(host, 'renderScale', `${sz.w} × ${sz.h}`);
     setRowCost(host, 'gfxPixelRatio', `${sz.ow} × ${sz.oh}`);

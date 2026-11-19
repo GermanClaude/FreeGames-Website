@@ -12,8 +12,9 @@
 //   handle.stats                         → { download, gpu, sets, models, hdri, ms, failed, tier }
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261113221339';
-import { textureAnisotropy } from '../engine/textures.js?v=20261113221339';
+import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261115041504';
+import { deviceInfo } from '../engine/device.js?v=20261115041504';
+import { textureAnisotropy } from '../engine/textures.js?v=20261115041504';
 
 // ---------------------------------------------------------------------------
 // Zuordnung Spielmaterial → Bibliothekssatz
@@ -26,25 +27,29 @@ import { textureAnisotropy } from '../engine/textures.js?v=20261113221339';
 // macro: [Albedo groß, Albedo mittel, Rauheit] der Weltraum-Variation (false = aus).
 export const LIB_MATERIALS = {
   // Grafik-Vorlage Etappe 2 (15.10.): eigene prozedurale Sätze im Video-Stil (tools/assets/lib/vorlage-gen.mjs, „v_…“)
-  concrete: { id: 'v_concrete_slab', color: 0.9, macro: [0.16, 0.08, 0.1] }, // vorher concrete_floor_worn × 1,45 (Rauheit × 1,4)
+  // texturen 14.11.: Fotoscan statt Video-/Eigensatz (Farbe auf den bisherigen Mittelwert kalibriert, Wiederholung per Hex-Kachelung aufgelöst)
+  concrete: { id: 'concrete_floor_worn2', color: [1.66, 2.0, 2.5], macro: [0.16, 0.08, 0.1] }, // vorher v_concrete_slab × 0,9 (6-m-Platten, weich)
   concrete_dark: { id: 'concrete_wall_dark', color: 1.35 },
   concrete_panel: { id: 'concrete_panels', color: 1.5 },
   concrete_dirty: { id: 'concrete_dirty', color: 1.0 },
   concrete_painted: { id: 'concrete_painted_peeling', color: 1.0 },
   asphalt: { id: 'asphalt_cracked', color: 0.85, macro: [0.18, 0.1, 0.14] },
   plaster_warm: { id: 'plaster_beige', color: [1.95, 2.1, 2.4] }, // textures-2: weniger lachsfarben (Scan Ø #836f56 × 2,1 war R/B 2,4)
-  plaster_white: { id: 'v_plaster', color: 1.0 }, // Grafik-Vorlage: Video-Putz (vorher plaster_white × 1,7)
+  plaster_white: { id: 'plaster_smooth_grey', color: [2.55, 2.62, 2.6] }, // texturen 14.11.: Fotoscan-Glattputz (vorher v_plaster, Video-Putz ohne Struktur)
   plaster_peeling: { id: 'plaster_white_peeling', color: 1.15, roughness: 1.5 }, // textures-2: Putz matt (Ø 0,52 → 0,78)
   plaster_blue: { id: 'plaster_blue_weathered', color: 1.05 },
   plaster_damaged: { id: 'plaster_damaged_brick', color: 1.1 },
   plaster_patched: { id: 'plaster_worn_patched', color: 1.3 },
-  brick: { id: 'vw_ziegel', color: [0.8, 1.04, 1.04] }, // 16.10.: Video-Ziegel weniger knallrot (gemessen sat 0,48, bei uns 0,68) // Grafik-Vorlage 15.10.: echte Ziegel aus dem Video (Walzhalle), neu verlegt (vorher v_brick)
+  brick: { id: 'brick_red_weathered', color: [1.02, 0.9, 1.0], macro: [0.2, 0.1, 0.12] }, // texturen 14.11.: Fotoscan (vorher vw_ziegel × [0,8 1,04 1,04], Video-Ziegel)
+  // brick_alt: { id: 'vw_ziegel', color: [0.8, 1.04, 1.04] }, // 16.10.: Video-Ziegel weniger knallrot (gemessen sat 0,48, bei uns 0,68) // Grafik-Vorlage 15.10.: echte Ziegel aus dem Video (Walzhalle), neu verlegt (vorher v_brick)
   brick_dark: { id: 'brick_dark', color: 2.0 },
   stone_wall: { id: 'sandstone_blocks', color: 1.0 },
   // 16.10. am Video-Platz nachgemessen: Steine ≈ 14 cm (nicht 27 cm) → Satz auf halbe Weltgröße, etwas heller wie im Video
-  cobble: { id: 'vp_pflaster', color: 1.2, sizeM: 2.04, macro: [0.1, 0.05, 0.12] }, // Grafik-Vorlage 15.10.: echte Pflastersteine aus dem Video-Platz (Läuferverband, keine Kreuzfugen; vorher v_setts)
+  cobble: { id: 'cobble_rows', color: [1.9, 2.05, 2.1], macro: [0.1, 0.05, 0.12] }, // texturen 14.11.: Fotoscan-Pflaster in Reihen (vorher vp_pflaster × 1,2 auf 2,04 m)
+  // cobble_alt: { id: 'vp_pflaster', color: 1.2, sizeM: 2.04, macro: [0.1, 0.05, 0.12] }, // Grafik-Vorlage 15.10.: echte Pflastersteine aus dem Video-Platz (Läuferverband, keine Kreuzfugen; vorher v_setts)
   paving: { id: 'paving_flagstone', color: [1.45, 1.6, 1.75] }, // Weißabgleich Richtung Kalkstein
-  roof_tiles: { id: 'v_roof', color: [0.76, 0.93, 1.0] }, // 16.10. gemessen: Video-Dach #785b4d (braunes Terrakotta), bei uns #a2624d → // Grafik-Vorlage: rot-orange Hohlpfannen wie im Video (vorher roof_clay_tiles)
+  roof_tiles: { id: 'roof_clay_red', color: [0.95, 0.85, 0.95] }, // texturen 14.11.: Fotoscan-Biberschwanz (vorher v_roof × [0,76 0,93 1])
+  // roof_alt: { id: 'v_roof', color: [0.76, 0.93, 1.0] }, // 16.10. gemessen: Video-Dach #785b4d (braunes Terrakotta), bei uns #a2624d → // Grafik-Vorlage: rot-orange Hohlpfannen wie im Video (vorher roof_clay_tiles)
   wood_planks: { id: 'wood_planks', color: [1.2, 1.32, 1.5] }, // etwas entsättigt (Fotoscan sehr orange)
   wood_dark: { id: 'wood_planks_dark', color: 0.8 },
   wood_crate: { id: 'wood_crate', color: 0.95, repeat: 0.62, macro: [0.16, 0.1, 0.12], normalScale: 1.35, aoMapIntensity: 1.3 }, // LV-7: Bretter in echter Breite (1,87-m-Satz ≈ 1,16 m je Kistenseite), Kisten nicht mehr gleichfarbig
@@ -53,12 +58,24 @@ export const LIB_MATERIALS = {
   wood_floor: { id: 'wood_floor_old', color: 1.2 },
   osb: { id: 'osb', color: 0.9, roughness: 1.4 }, // textures-2: Ø 0,58 → 0,81
   bark_palm: { id: 'bark_palm', color: 0.8, macro: false },
+  // gfx-welt 14.11.: Stämme/Äste und Felsen der Großkarten als Fotoscans (Poly Haven bark_brown_02, rock_boulder_dry)
+  bark: { id: 'bark_brown', color: [1.75, 1.8, 1.95], macro: false },
+  // baeume 14.11.: Rinde je Baumart (Poly Haven CC0: jolcham_oak_bark_01, knotted_pine_bark (Buche; Birke daraus
+  // aufgehellt mit Korkporen), bark_brown_01, pine_bark, bark_willow); Farbe auf ≈ Rindenhelligkeit kalibriert
+  bark_eiche: { id: 'bark_eiche', color: [1.05, 1.1, 1.25], normalScale: 1.4, macro: false },
+  bark_buche: { id: 'bark_buche', color: [2.3, 2.3, 2.4], macro: false },
+  bark_birke: { id: 'bark_birke', color: 0.9, macro: false },
+  bark_pappel: { id: 'bark_pappel', color: [1.0, 1.35, 3.0], macro: false },
+  bark_kiefer: { id: 'bark_kiefer', color: [1.25, 1.45, 1.6], macro: false },
+  bark_fichte: { id: 'bark_fichte', color: [2.6, 3.1, 3.6], macro: false },
+  fels: { id: 'rock_boulder', color: 0.78, macro: false },
   // cardboard: bleibt prozedural – der Fotoscan ist nackte Wellpappe; Klebeband/Aufdruck des prozeduralen Kartons lesen
   // sich auf Kistenflächen besser (Kartenzuordnung assets.materials.cardboard = 'cardboard' schaltet ihn wieder zu)
   metal_painted: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },
   car_paint: { id: 'metal_painted', color: 1.35, macro: [0.1, 0.08, 0.1] },
   metal_rust: { id: 'metal_rust_painted', color: 0.75 },
-  metal_corrugated: { id: 'vh_wand', color: 1.55, normalScale: 0.55 }, // 15.10.: Rippenkontrast wie im Video (gemessen: Std. 6,5 statt 19) // Grafik-Vorlage 15.10.: Hallen-Wellblech 1:1 aus dem Video (vorher v_cladding)
+  metal_corrugated: { id: 'metal_corrugated_painted', color: [0.8, 0.82, 0.72] }, // texturen 14.11.: Fotoscan-Wellblech (vorher vh_wand × 1,55, Video)
+  // corrugated_alt: { id: 'vh_wand', color: 1.55, normalScale: 0.55 }, // 15.10.: Rippenkontrast wie im Video (gemessen: Std. 6,5 statt 19) // Grafik-Vorlage 15.10.: Hallen-Wellblech 1:1 aus dem Video (vorher v_cladding)
   metal_corrugated_rust: { id: 'metal_corrugated_rusty', color: 1.6 },
   metal_cladding: { id: 'metal_cladding_green', color: 1.0 },
   metal_navy: { id: 'vw_blau', color: 0.5 }, // 16.10. gemessen: Video-Fassade L 0,011, bei uns 0,029 → // Grafik-Vorlage 15.10.: dunkelblaue Blechfassade 1:1 aus dem Video (Werkgasse)
@@ -105,22 +122,48 @@ export const LIB_MATERIALS = {
   epoxy: { id: 'concrete_epoxy', color: [2.07, 2.52, 2.29], macro: [0.06, 0.04, 0.08] },
   epoxy_blue: { id: 'concrete_epoxy', color: [1.2, 1.78, 2.38], macro: [0.06, 0.04, 0.08] },
   panel_wall: { id: 'felt_panel', color: 1.15, macro: false },
+  // texturen 14.11.: weitere Fotoscan-Sätze (Poly Haven, CC0) – eigene Spielnamen für die Karten (engine/textures.js MATS)
+  concrete_floor2: { id: 'concrete_floor_worn2', color: [1.5, 1.75, 2.1] },
+  concrete_hall: { id: 'concrete_garage', color: [1.45, 1.65, 2.0] },
+  paving_slabs: { id: 'paving_slabs', color: [1.5, 1.6, 1.7] },
+  asphalt_light: { id: 'asphalt_light', color: 1.0, macro: [0.16, 0.08, 0.12] },
+  asphalt_dark: { id: 'asphalt_dark', color: [1.9, 2.3, 2.6], macro: [0.16, 0.08, 0.12] },
+  cobble_rows: { id: 'cobble_rows', color: [1.9, 2.05, 2.1], macro: [0.1, 0.05, 0.12] },
+  gravel_trail: { id: 'gravel_trail', color: 0.9, macro: [0.18, 0.1, 0.12] },
+  dirt_dry: { id: 'dirt_dry', color: 1.05, roughness: 1.5, macro: [0.2, 0.1, 0.1] },
+  plaster_smooth: { id: 'plaster_smooth_grey', color: [2.55, 2.62, 2.6] },
+  plaster_rough: { id: 'plaster_rough', color: [1.7, 1.85, 2.0] },
+  plaster_stained: { id: 'plaster_stained', color: [1.75, 1.9, 2.1] },
+  brick_red: { id: 'brick_red_weathered', color: [1.2, 0.92, 1.15] },
+  brick_light: { id: 'brick_light', color: 1.0 },
+  brick_clinker: { id: 'brick_clinker', color: 1.15, roughness: 1.4 },
+  roof_clay: { id: 'roof_clay_red', color: [0.95, 0.85, 0.95] },
+  roof_old: { id: 'roof_tiles_old', color: 1.15 },
+  metal_corrugated_painted: { id: 'metal_corrugated_painted', color: 1.0 },
+  metal_corrugated_worn: { id: 'metal_corrugated_worn', color: 1.0 },
+  metal_rust_heavy: { id: 'metal_rust_heavy', color: 1.0 },
+  wood_planks_brown: { id: 'wood_planks_brown', color: 1.35 },
 };
 
 // env-look (medium+, nie low): Nahdetail je Materialklasse – detail (Stärke der Detailnormalen), ds (Maßstab 1/m),
 // anti (gedrehte zweite Albedo-Abtastung gegen Kachelwiederholung; nur bei ungerichteten Mustern, nie bei Ziegeln,
 // Fliesen, Planken, Wellblech), pom (Parallaxe-Tiefe in m, nur ultra; Höhe = AO-Kanal). textures.js applyLook().
-const LOOK_GROUND = { detail: 0.34, ds: 1.25, anti: 0.6, fade: [7, 30] };
-const LOOK_WALL = { detail: 0.22, ds: 1.6, anti: 0.4, fade: [5, 22] };
-const LOOK_MASONRY = { detail: 0.16, ds: 2.4, anti: 0, fade: [4, 18] };
-const LOOK_METAL = { detail: 0.1, ds: 3.2, anti: 0, fade: [3, 14] };
-const LOOK_WOOD = { detail: 0.08, ds: 3.0, anti: 0, fade: [3, 12] };
+// hex (texturen 14.11., nur high/ultra): Kachel-Auflösung nach Mikkelsen (engine/surface.js) – Kontrast 0..1, hexScale
+// (Zellen je Texturwiederholung), hexRot (Drehung 0..1: nur ungerichtete Böden; Wände ohne, wegen Laufspuren). Ersetzt dort „anti“.
+// texturen3 (14.11.): hexEq/eq – großräumige Flecken des Scans per grober Mip-Stufe herausrechnen (gegen das Dreiecks-
+// Flickenmuster der Hex-Kachelung auf hellem Putz und gegen die 2,5-m-Wiederholung dunkler Wolken auf Ziegelfassaden);
+// weather – Regenläufer/Verfärbung in Weltkoordinaten auf senkrechten Flächen (engine/surface.js). Ab medium.
+const LOOK_GROUND = { detail: 0.34, ds: 1.25, anti: 0.6, fade: [7, 30], hex: 0.6, hexScale: 1.3, hexRot: 1, hexEq: 0.6 };
+const LOOK_WALL = { detail: 0.22, ds: 1.6, anti: 0.4, fade: [5, 22], hex: 0.4, hexScale: 1.0, hexRot: 0, hexEq: 0.7, weather: [0.55, 0.5, 0.4] };
+const LOOK_MASONRY = { detail: 0.16, ds: 2.4, anti: 0, fade: [4, 18], eq: 0.75, weather: [0.9, 0.5, 0.6] };
+const LOOK_METAL = { detail: 0.1, ds: 3.2, anti: 0, fade: [3, 14], eq: 0.5, weather: [0.6, 0.3, 0.4] };
+const LOOK_WOOD = { detail: 0.08, ds: 3.0, anti: 0, fade: [3, 12], eq: 0.5 };
 export const LIB_LOOK = {
-  concrete: LOOK_GROUND, asphalt: LOOK_GROUND, sand: LOOK_GROUND, dirt: LOOK_GROUND, mud: LOOK_GROUND, ground_dry: LOOK_GROUND,
+  concrete: { ...LOOK_GROUND, joint: [6, 0.012, 1, 0.1] }, asphalt: LOOK_GROUND, // joint: Plattenfugen (texturen 14.11.) sand: LOOK_GROUND, dirt: LOOK_GROUND, mud: LOOK_GROUND, ground_dry: LOOK_GROUND,
   gravel: { ...LOOK_GROUND, detail: 0.2 }, rubble: { ...LOOK_GROUND, detail: 0.2 }, grass: { ...LOOK_GROUND, detail: 0.25 },
   epoxy: { ...LOOK_GROUND, detail: 0.14, anti: 0.4 }, epoxy_blue: { ...LOOK_GROUND, detail: 0.14, anti: 0.4 },
-  concrete_dark: LOOK_WALL, concrete_panel: { ...LOOK_WALL, anti: 0 }, concrete_dirty: LOOK_WALL, concrete_painted: LOOK_WALL,
-  plaster_warm: LOOK_WALL, plaster_white: LOOK_WALL, plaster_peeling: LOOK_WALL, plaster_blue: LOOK_WALL, plaster_damaged: { ...LOOK_WALL, anti: 0 }, plaster_patched: LOOK_WALL,
+  concrete_dark: LOOK_WALL, concrete_panel: { ...LOOK_WALL, anti: 0, hex: 0 }, concrete_dirty: LOOK_WALL, concrete_painted: LOOK_WALL,
+  plaster_warm: LOOK_WALL, plaster_white: LOOK_WALL, plaster_peeling: LOOK_WALL, plaster_blue: LOOK_WALL, plaster_damaged: { ...LOOK_WALL, anti: 0, hex: 0 }, plaster_patched: LOOK_WALL,
   brick: { ...LOOK_MASONRY, pom: 0.022 }, brick_dark: { ...LOOK_MASONRY, pom: 0.022 }, stone_wall: { ...LOOK_MASONRY, pom: 0.03 },
   cobble: { ...LOOK_MASONRY, detail: 0.2, pom: 0.035 }, paving: { ...LOOK_MASONRY, detail: 0.22, pom: 0.012 }, roof_tiles: { ...LOOK_MASONRY, pom: 0.03 },
   tiles: LOOK_MASONRY, tiles_terracotta: LOOK_MASONRY,
@@ -131,6 +174,15 @@ export const LIB_LOOK = {
   wood_planks: LOOK_WOOD, wood_dark: LOOK_WOOD, wood_weathered: LOOK_WOOD, wood_peeling: LOOK_WOOD, wood_floor: LOOK_WOOD,
   wood_crate: { ...LOOK_WOOD, detail: 0.14, ds: 2.6 }, // LV-7: Maserung/Dellen in der Nähe
   sandbag: { detail: 0.3, ds: 4.5, anti: 0, fade: [2, 12] }, // LV-7: Knitter/Falten (≈ 22 cm) auf dem Sackleinen
+  // texturen 14.11.: neue Sätze
+  concrete_floor2: LOOK_GROUND, concrete_hall: LOOK_GROUND, asphalt_light: LOOK_GROUND, asphalt_dark: LOOK_GROUND,
+  gravel_trail: { ...LOOK_GROUND, detail: 0.2 }, dirt_dry: LOOK_GROUND,
+  paving_slabs: { ...LOOK_MASONRY, detail: 0.22, pom: 0.012 }, cobble_rows: { ...LOOK_MASONRY, detail: 0.2, pom: 0.035 },
+  plaster_smooth: LOOK_WALL, plaster_rough: LOOK_WALL, plaster_stained: LOOK_WALL,
+  brick_red: { ...LOOK_MASONRY, pom: 0.022 }, brick_light: { ...LOOK_MASONRY, pom: 0.022 }, brick_clinker: { ...LOOK_MASONRY, pom: 0.02 },
+  roof_clay: { ...LOOK_MASONRY, pom: 0.03 }, roof_old: { ...LOOK_MASONRY, pom: 0.03 },
+  metal_corrugated_painted: LOOK_METAL, metal_corrugated_worn: LOOK_METAL, metal_rust_heavy: { ...LOOK_METAL, detail: 0.16, hex: 0.5, hexScale: 1.2 },
+  wood_planks_brown: LOOK_WOOD,
 };
 
 // textures-2: low (Telefon) bekommt auf den großen, flach gesehenen Flächen (Böden, Wände, Mauerwerk) eine günstige
@@ -163,6 +215,21 @@ const hdr = () => (hdrLoader ||= new HDRLoader().setDataType(THREE.HalfFloatType
 
 /** Bytes einer Datei aus dem Manifest (Download-Statistik). */
 const fileBytes = (f, k) => f?.sizes?.[k] || 0;
+// Texturqualität (Einstellung gfxTextures, 13.11.): eigene Stufe für die Fotoscan-Sätze, sonst aus der Qualitätsstufe
+const TEX_SETTING_TIER = { niedrig: 512, mittel: 1024, ultra: 2048 };
+function textureTier(G, q) {
+  let v = 'auto';
+  try { v = G.settings && typeof G.settings.get === 'function' ? G.settings.get('gfxTextures') : 'auto'; } catch { v = 'auto'; }
+  let t = TEX_SETTING_TIER[v] || tierFor(q, 'texture');
+  if (!TEX_SETTING_TIER[v] && G.renderer?.preset?.extreme) return 4096; // desktop „Extrem“: größte vorhandene Stufe (2K/4K)
+  // 2048er-Scans nur auf Hoch/Ultra und nie auf Telefonen (Touch + kurze Bildschirmkante < 900 px): Grafikspeicher/Ladezeit
+  if (t > 1024) {
+    let phone = false;
+    try { const d = deviceInfo(); phone = !!d.touch && d.short > 0 && d.short < 900; } catch { phone = false; }
+    if (phone || q === 'low' || q === 'medium') t = 1024;
+  }
+  return t;
+}
 
 /**
  * Asset-Verwaltung einer Karte (eine Instanz je loadWorld).
@@ -176,7 +243,7 @@ export function createWorldAssets(G, def, quality) {
   const q = ['low', 'medium', 'high', 'ultra'].includes(quality) ? quality : 'high';
   const t0 = performance.now();
   const stats = {
-    tier: { texture: tierFor(q, 'texture'), model: tierFor(q, 'model'), hdri: tierFor(q, 'hdri') },
+    tier: { texture: textureTier(G, q), model: G.renderer?.preset?.extreme ? 4096 : tierFor(q, 'model'), hdri: G.renderer?.preset?.extreme ? 2048 : tierFor(q, 'hdri') }, // desktop: Extrem
     download: 0, gpu: { desktop: 0, mobile: 0 }, sets: 0, models: 0, modelsSkipped: [], hdri: null, ms: 0, failed: [], formats: [],
     available: false, reason: '',
   };
@@ -230,6 +297,8 @@ export function createWorldAssets(G, def, quality) {
       let look = spec.look === false ? null : (spec.look || LIB_LOOK[name] || null);
       if (q === 'low') look = look && lowLit ? lowLook(look) : null;
       else if (look && q !== 'ultra' && look.pom) look = { ...look, pom: 0 };
+      // texturen 14.11.: Hex-Kachelung (≈ 2× Texturabfragen) nur high/ultra; dort ersetzt sie die Gegen-Kachelung „anti“
+      if (look && look.hex) look = q === 'high' || q === 'ultra' ? { ...look, anti: 0 } : { ...look, hex: 0, eq: look.eq ?? look.hexEq ?? 0 };
       const lk = look ? ':L' + JSON.stringify(look) : '';
       // sizeM in der Zuordnung: abweichender Weltmaßstab der Textur (z. B. kleinere Pflastersteine)
       plan.set(name, { ...spec, look, tier, sizeM: spec.sizeM ?? e.sizeM?.[0], key: `${spec.id}@${tier}:${calib}${spec.sizeM ? ':s' + spec.sizeM : ''}${q === 'low' ? ':lo' : ''}${lk}` });
@@ -330,7 +399,7 @@ export function createWorldAssets(G, def, quality) {
         const tier = pickTier(e.tiers, stats.tier.hdri);
         // Drehung: Sonnenazimut des HDRIs auf den der Karte (Schattenrichtung) legen
         const rotation = THREE.MathUtils.degToRad((e.sun?.azimuthDeg ?? 0) - (sun?.azimuth ?? e.sun?.azimuthDeg ?? 0));
-        const skyTier = pickTier(e.tiers, SKY_TIER[q] || 1024);
+        const skyTier = pickTier(e.tiers, G.renderer?.preset?.extreme ? 4096 : SKY_TIER[q] || 1024); // desktop: Extrem
         // reine Himmel (eigene np_sky_…, früher Fotos …_puresky) → Bodenfarbe der Karte einsetzen (buildEnvironment)
         const envGround = def.lighting?.env?.hdriGround ?? (/puresky|^np_sky_/.test(cfg.hdri) ? { color: def.lighting?.env?.ground || def.lighting?.hemi?.ground } : null);
         const wantSky = def.lighting?.sky?.hdri !== false;

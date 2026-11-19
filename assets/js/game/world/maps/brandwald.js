@@ -5,8 +5,13 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261113221339';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261113221339';
+import { sampleSpline } from '../terrain/generate.js?v=20261115041504';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261115041504';
+// karten-voll (14.11.): Trümmer im Niemandsland (Wagenreste, Blech, Hülsen, Kisten, Drahtreste)
+import { truemmerfeld } from './niemandsland-leben.js?v=20261115041504';
+import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261115041504';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261115041504'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -59,7 +64,7 @@ const NEST_TINTS = ['#6f685a', '#645e52', '#787060', '#5c564b'];
 // Stromtrasse (Masten alle ≈ 70 m, quer durch das Niemandsland)
 export const POWER_LINE = [[-300, -70], [-215, -48], [-140, -28], [-70, -8], [0, 10], [72, 30], [145, 50], [220, 70], [300, 92]];
 
-export default {
+const BRANDWALD = {
   id: 'brandwald',
   name: 'Brandwald',
   scale: 'gross',
@@ -113,7 +118,7 @@ export default {
     burnt: { ash: 0.75, light: 0.6, dirt: 0.12, mud: 0.3 },
   },
 
-  vegetation: { seed: 21, forests: [], scatter: { count: 0 }, hedges: [], rocks: { count: 20, clusters: [] }, grass: false },
+  vegetation: { seed: 21, forests: [], scatter: { count: 0 }, hedges: [], rocks: { count: 20, clusters: [], tint: '#6f6a64' }, grass: false }, // gfx-welt: Felsen verrußt
   deadwood: {
     seed: 2112, density: 2.4, step: 3.1, clearNoise: 0.5, logs: 0.4,
     mix: { hoch: 0.3, gebrochen: 0.36, stumpf: 0.16, grau: 0.18 },
@@ -139,6 +144,7 @@ export default {
     { id: 'front', name: 'Gräben', bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180 }, chunkSize: 60, build: (b, ctx) => trenchWorks(b, ctx, TRENCHES, { front: FRONT }) },
     { id: 'boden', name: 'Pfützen und Draht', bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180 }, chunkSize: 60, build: (b, ctx) => groundDetails(b, ctx, { area: { minX: -176, maxX: 176, minZ: -176, maxZ: 176 }, avoid: TRENCHES.map((t) => [t.pts, (t.width ?? 2) / 2 + (t.revet || 0) + 3]), wire: [{ z: FRONT - 13, x0: -165, x1: 165 }, { z: -FRONT + 13, x0: -165, x1: 165 }], wrecks: WRECKS, nests: NESTS, nestTints: NEST_TINTS }) },
     { id: 'leitung', name: 'Stromtrasse', bounds: { minX: -320, maxX: 320, minZ: -200, maxZ: 200 }, chunkSize: 80, build: (b, ctx) => pylonLine(b, ctx, POWER_LINE, { fallen: 4 }) },
+    { id: 'truemmer', name: 'Trümmer', bounds: { minX: -180, maxX: 180, minZ: -180, maxZ: 180 }, chunkSize: 60, build: (b, ctx) => { b.kleinkram = { truemmer: truemmerfeld(b, ctx, { area: { minX: -165, maxX: 165, minZ: -FRONT + 8, maxZ: FRONT - 8 }, trenches: TRENCHES, count: 150, sperr: sperrpunkte(BRANDWALD, [...(KAMPAGNE.brandwald || []), ...BRANDWALD.flags.cq.map((f) => [f.x, f.z, 8]), ...WRECKS.map((w) => [w[0], w[1], 6]), ...NESTS.map((n) => [n[0], n[1], 5])], 4) }) }; return {}; } },
   ],
 
   flags: {
@@ -171,3 +177,18 @@ export default {
   ],
   secrets: [],
 };
+// gelaende (14.11., Runde 3): Kleinrelief im verbrannten Niemandsland (terrain/relief.js) – punktsymmetrische Kuppen,
+// Rücken und je Flanke eine Rinne; Gräben, Wracks, MG-Nester, Flaggen, Startpunkte und Kampagnenpunkte bleiben eben.
+BRANDWALD.terrain.relief = (() => {
+  const a = reliefAvoid(BRANDWALD, [...KAMPAGNE_PUNKTE.brandwald.map(([x, z]) => [x, z, 5]), ...linienPunkte(TRENCHES.map((t) => t.pts), 5, 6),
+    ...WRECKS.map((w) => [w[0], w[1], 7]), ...NESTS.map((n) => [n[0], n[1], 5]), ...linienPunkte([FORSTWEG], 6, 3)]);
+  const pair = (k) => [k, { ...k, x: -k.x, z: -k.z }];
+  return {
+    ...a,
+    knolls: [...pair({ x: -50, z: 46, r: 11, h: 2.2, w: 8, ry: 0.3 }), ...pair({ x: 142, z: 42, r: 16, h: 3.0, w: 14 }), ...pair({ x: 60, z: 52, r: 9, h: 1.8, w: 6, ry: -0.8 })],
+    ridges: [{ pts: [[-32, -32], [-8, -42]], w: 3.4, h: 1.3 }, { pts: [[32, 32], [8, 42]], w: 3.4, h: 1.3 }],
+    sunken: [{ pts: [[150, -74], [160, -40], [148, -6]], w: 3.6, d: 1.5, bank: 5 }, { pts: [[-150, 74], [-160, 40], [-148, 6]], w: 3.6, d: 1.5, bank: 5 }],
+    scatter: { seed: 2113, count: 45, area: { minX: -170, maxX: 170, minZ: -78, maxZ: 78 }, r: [6, 13], h: [0.9, 2.0], hollow: 0.2, gap: 5 },
+  };
+})();
+export default BRANDWALD;

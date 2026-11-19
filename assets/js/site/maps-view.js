@@ -2,17 +2,17 @@
 // (oder Finger) ist ein Operator – was er sieht, steht fett, alles hinter Deckung fällt zur Haarlinie.
 // Darüber der „Durchblick“: ein Standbild aus dem Spiel, sichtbar nur durch die Buchstaben des Kartennamens.
 // Ohne vermessenen Plan zeichnet die Seite die Karte aus Maßen und Wegen (dimensions, lanes, features).
-import { h, $, signalLost, tabs } from './dom.js?v=20261113221339';
-import { fit } from './fit.js?v=20261113221339';
-import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261113221339';
-import { makeBallistics } from './ballistics.js?v=20261113221339';
-import { ui } from './state.js?v=20261113221339';
-import { announce } from './live.js?v=20261113221339';
-import { loop } from './loop.js?v=20261113221339';
-import { reduced, pointerFine } from './motion.js?v=20261113221339';
-import { num, NNBSP } from './fmt.js?v=20261113221339';
-import { jumpTo } from './jump.js?v=20261113221339';
-import { segmentsFrom, castVisibility, boundsOf, wordFor, corners, blocked, defaultPoint, planText, polyPath, isSoft, labelBlocks } from './plan.js?v=20261113221339';
+import { h, $, signalLost, tabs } from './dom.js?v=20261115041504';
+import { fit } from './fit.js?v=20261115041504';
+import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261115041504';
+import { makeBallistics } from './ballistics.js?v=20261115041504';
+import { ui } from './state.js?v=20261115041504';
+import { announce } from './live.js?v=20261115041504';
+import { loop } from './loop.js?v=20261115041504';
+import { reduced, pointerFine } from './motion.js?v=20261115041504';
+import { num, NNBSP } from './fmt.js?v=20261115041504';
+import { jumpTo } from './jump.js?v=20261115041504';
+import { segmentsFrom, castVisibility, boundsOf, wordFor, corners, blocked, defaultPoint, planText, polyPath, isSoft, labelBlocks } from './plan.js?v=20261115041504';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
@@ -23,7 +23,7 @@ const svg = (tag, attrs = {}) => {
 };
 const idle = (fn) => (window.requestIdleCallback ? window.requestIdleCallback(fn, { timeout: 600 }) : setTimeout(fn, 60));
 const MIN_PX = 9; // kleiner gesetzt wird kein Wort
-const STILLS = new Set(['hafen', 'altstadt', 'werk', 'range']);
+const STILLS = new Set(['hafen', 'altstadt', 'werk', 'range', 'flugplatz']);
 let uid = 0;
 
 /** Baut den SVG-Plan einer Karte (einmal pro Karte, danach wiederverwendet). */

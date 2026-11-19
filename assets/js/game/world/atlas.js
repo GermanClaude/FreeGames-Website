@@ -1,6 +1,7 @@
 // NULLPUNKT — Canvas-Atlanten: Decals (Flecken, Pfützen, Markierungen), Schilder (fiktive Beschriftung),
 // Foliage (Büsche, Gräser, Palmwedel, Blüten) als instanzierte Karten mit Wind (Owner: world)
 import * as THREE from 'three';
+import { buildCrown, buildBush, createLeafMaterial, loadTreeAtlas } from './terrain/trees.js?v=20261115041504';
 
 const FONT = '"Archivo NP", "Arial Narrow", "Helvetica Neue", Arial, sans-serif';
 const MONO = '"JetBrains Mono NP", "Courier New", monospace';
@@ -626,8 +627,32 @@ function ensureFoliageAtlas(quality) {
   const old = foliageTex;
   foliageTex = atlasTexture(S, S, (ctx, w) => drawFoliageAtlas(ctx, w), { anisotropy: 4, name: 'foliage' });
   foliageSize = S;
-  for (const [k, m] of foliageMats) if (k !== 't') m.map = foliageTex;
+  for (const [k, m] of foliageMats) if (k !== 't' && !(k === 's' && m.map?.name === 'foliage-foto-fichte')) m.map = foliageTex;
   old?.dispose();
+  // gfx-welt: Foto-Laub ersetzt den gezeichneten Atlas, sobald geladen (gleiches Zellraster)
+  photoAtlas('foliage').then((t) => {
+    if (!t || foliageSize !== S) return;
+    const was = foliageTex; foliageTex = t;
+    for (const [k, m] of foliageMats) if (k !== 't' && !(k === 's' && m.map?.name === 'foliage-foto-fichte')) m.map = t;
+    if (was !== t) was?.dispose();
+  });
+}
+
+// gfx-welt (14.11.): Foto-Laubatlanten aus freigestellten CC0-Scans (Poly Haven: shrub_03, shrub_04,
+// grass_medium_01/02, siehe CREDITS.md) im Zellraster der gezeichneten Atlanten; Fichtenzweig (fichte.webp) eigen. WebP mit ausgeblutetem
+// Rand (kein dunkler Saum in den Mipmaps), als <img> hochgeladen (keine Vormultiplikation über eine Canvas). Schlägt
+// das Laden fehl, bleibt der gezeichnete Atlas.
+const PHOTO_URL = { foliage: '../../../lib/foliage/foliage.webp', laub: '../../../lib/foliage/laub.webp', fichte: '../../../lib/foliage/fichte.webp' };
+const photoCache = new Map();
+function photoAtlas(key) {
+  if (!photoCache.has(key)) {
+    photoCache.set(key, new THREE.TextureLoader().loadAsync(new URL(PHOTO_URL[key], import.meta.url).href).then((t) => {
+      t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.name = 'foliage-foto-' + key;
+      t.userData.keep = true;
+      return t;
+    }).catch((err) => { console.warn('[atlas] Foto-Laub', key, err?.message || err); return null; }));
+  }
+  return photoCache.get(key);
 }
 
 // Laubbaum-Blätter (Grafik-Vorlage 15.10.: Bäume im Video haben lockere Kronen aus vielen Blattbüscheln mit Lücken
@@ -685,6 +710,34 @@ function ensureTreeLeafAtlas(quality) {
   treeLeafSize = S;
   if (foliageMats.has('t')) foliageMats.get('t').map = treeLeafTex;
   old?.dispose();
+  photoAtlas('laub').then((t) => {
+    if (!t || treeLeafSize !== S) return;
+    const was = treeLeafTex; treeLeafTex = t;
+    if (foliageMats.has('t')) foliageMats.get('t').map = t;
+    if (was !== t) was?.dispose();
+  });
+}
+
+/**
+ * gfx-welt: Fichtenzweig-Material (Großkarten, terrain/vegetation.js spruceGeometry). Die Zweigkarten liegen in Zelle 0
+ * des Laub-Atlas (u 0…0,5, v 0,5…1); die eigene Zweigtextur (fichte.webp, 512 × 1024, Spitze oben) wird per
+ * repeat/offset auf genau diese Zelle gelegt. Bis sie geladen ist (oder wenn sie fehlt) zeigt die Karte den Atlas.
+ */
+export function spruceMaterial(quality = 'high') {
+  ensureFoliageAtlas(quality);
+  const base = foliageMaterial(true);
+  if (foliageMats.has('s')) return foliageMats.get('s');
+  const m = new THREE.MeshStandardMaterial({ map: foliageTex, alphaTest: 0.45, roughness: 0.86, metalness: 0, side: THREE.DoubleSide });
+  m.name = 'foliage'; m.userData.surface = 'grass';
+  m.onBeforeCompile = base.onBeforeCompile;
+  m.customProgramCacheKey = base.customProgramCacheKey;
+  foliageMats.set('s', m);
+  photoAtlas('fichte').then((t) => {
+    if (!t) return;
+    t.repeat.set(2, 2); t.offset.set(0, -1); t.updateMatrix();
+    m.map = t;
+  });
+  return m;
 }
 
 function foliageMaterial(cast, tree = false) {
@@ -701,9 +754,19 @@ function foliageMaterial(cast, tree = false) {
       ${WIND_VERTEX}`);
     // Rückseiten nicht abdunkeln: Normalen der Karte nach oben gemischt
     sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
-      normal = normalize(mix(normal, (viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz, 0.55));`);
+      normal = normalize(mix(normal, (viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz, 0.55));`)
+      // gfx-welt: Deckung in den Mipmaps halten (gemittelte Alpha fällt unter die Schwelle → Laub dünnt in der Ferne aus)
+      .replace('#include <alphatest_fragment>', `#ifdef USE_MAP
+        vec2 npDx = dFdx(vMapUv) * 1024.0, npDy = dFdy(vMapUv) * 1024.0;
+        float npLod = max(0.0, 0.5 * log2(max(dot(npDx, npDx), dot(npDy, npDy))));
+        diffuseColor.a *= 1.0 + 0.13 * min(npLod, 4.0);
+      #endif
+      #include <alphatest_fragment>`)
+      // Blätter glänzen kaum: Himmelsspiegelung dämpfen (sonst grauer Schleier auf den nach oben gemischten Normalen)
+      .replace('#include <aomap_fragment>', `#include <aomap_fragment>
+      reflectedLight.indirectSpecular *= 0.35; reflectedLight.directSpecular *= 0.6;`);
   };
-  m.customProgramCacheKey = () => 'foliage-v2-wind';
+  m.customProgramCacheKey = () => 'foliage-v4-wind';
   foliageMats.set(key, m);
   return m;
 }
@@ -800,32 +863,38 @@ function laubbaumGeom() {
   return g;
 }
 
-/** Palmkrone: hängende Wedel. */
+/** Palmkrone: hängende Wedel. baeume 14.11.: 16 Wedel in drei Altern (junge steil, alte weit hängend), je 5 Abschnitte
+ *  entlang einer Bogenlinie, längs zur Mittelrippe geknickt (V-Form → Volumen auch von der Seite), Breite zur Spitze und
+ *  zum Ansatz schmaler; vorher 11 flache Doppelkarten. */
 function palmCrownGeom() {
-  const parts = [];
-  const n = 11;
+  const P = [], U = [], N = [], r = rng(61);
+  const n = 16, S = 5;
   for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 + (i % 2) * 0.2;
-    const droop = 0.35 + (i % 3) * 0.18;
-    // Wedel als 2 Segmente (geknickt)
-    const P = [], U = [], N = [];
-    const L = 3.4, W = 1.5;
-    const pts = [[0, 0], [L * 0.5, 0.35 - droop * 0.4], [L, -droop * 1.5]];
-    for (let s = 0; s < 2; s++) {
-      const [x0, y0] = pts[s], [x1, y1] = pts[s + 1];
-      const uA = 0.005 + (s / 2) * 0.49, uB = 0.005 + ((s + 1) / 2) * 0.49;
-      const q = [[x0, y0, -W / 2, uA, 0.505], [x1, y1, -W / 2, uB, 0.505], [x1, y1, W / 2, uB, 0.995], [x0, y0, W / 2, uA, 0.995]];
-      for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z, u, v] = q[k]; P.push(x, y, z); U.push(u, v); N.push(0, 1, 0); }
+    const age = i % 4 === 0 ? 0 : i % 4 === 2 ? 2 : 1; // 0 jung (steil), 1 mittel, 2 alt (hängt)
+    const a = (i / n) * Math.PI * 2 + (r() - 0.5) * 0.3, ca = Math.cos(a), sa = Math.sin(a);
+    const L = 3.0 + r() * 0.8 - age * 0.15, rise = [1.6, 0.9, 0.35][age], droop = [0.35, 0.9, 1.5][age] + r() * 0.25;
+    const W = 1.55 + r() * 0.2;
+    const rows = [];
+    for (let k = 0; k <= S; k++) {
+      const t = k / S, x = L * t, y = rise * t * L * 0.5 - droop * t * t * L * 0.55;
+      const w = W * Math.pow(Math.sin(Math.PI * Math.min(1, t * 0.95 + 0.06)), 0.55) / 2, fold = w * 0.42;
+      const u = 0.005 + t * 0.49;
+      rows.push([[x, y - fold, -w, u, 0.505], [x, y + 0.02, 0, u, 0.75], [x, y - fold, w, u, 0.995]]);
     }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
-    g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
-    g.rotateX((i % 2 ? 0.25 : -0.25));
-    g.rotateY(-a);
-    parts.push(g);
+    const put = ([x, y, z, u, v]) => {
+      P.push(x * ca - z * sa, y, x * sa + z * ca); U.push(u, v);
+      N.push(-0.25 * ca, 1, -0.25 * sa);
+    };
+    for (let k = 0; k < S; k++) for (let h = 0; h < 2; h++) {
+      const A = rows[k][h], B = rows[k][h + 1], C = rows[k + 1][h + 1], D = rows[k + 1][h];
+      for (const q of [A, D, C, A, C, B]) put(q);
+    }
   }
-  return mergeSimple(parts);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  return g;
 }
 
 function mergeSimple(geoms) {
@@ -849,10 +918,12 @@ const tip = (h, bend, flut) => (x, y) => { const t = Math.min(1, Math.max(0, y /
 const crown = (top, bend, flut) => (x, y) => { const t = Math.min(1, Math.max(0, y / top)); return [bend * t * t, flut * (0.35 + 0.65 * t)]; };
 const KINDS = {
   // visual-hunt: crossGeom steht auf y 0 (nicht mittig) → Busch schwebte ≈ 0,5 m (Schatten frei darunter); 0,9 → 0,6
-  bush:    { geom: () => clusterGeom(0, 1.2, 7, 11, 0.6), wind: crown(1.6, 0.06, 0.035), cast: true, tint: ['#9fb27a', '#87a06a', '#b2b884'] },
+  // baeume 14.11.: Busch, Olivenbaum und Laubbaum aus vielen kleinen Zweigkarten (terrain/trees.js, Zweig-Atlas
+  // baeume.webp) statt weniger großer Kreuzkarten; Tönung nahe Weiß (der Atlas ist schon farbig)
+  bush:    { geom: () => buildBush(11, 0), baum: true, cast: true, tint: ['#eef2e0', '#f6f6e6', '#e0e8d0'] },
   hedge:   { geom: () => clusterGeom(0, 1.0, 6, 12, 0.7), wind: crown(1.5, 0.04, 0.03), cast: true, tint: ['#7f9a5a', '#90a868'] },
-  olive:   { geom: () => clusterGeom(0, 2.6, 14, 13, 3.6), wind: crown(5.5, 0.14, 0.045), cast: true, tint: ['#a9b391', '#9aa884', '#b6bb98'] },
-  tree:    { geom: () => clusterGeom(0, 3.0, 16, 14, 4.6), wind: crown(7.0, 0.2, 0.05), cast: true, tint: ['#8ea866', '#7f9c5c', '#a0b070'] },
+  olive:   { geom: () => buildCrown('olive', 13), wind: crown(5.5, 0.14, 0.045), baum: true, cast: true, tint: ['#d8dcc8', '#ccd4bc', '#e2e2d0'] },
+  tree:    { geom: () => buildCrown('tree', 14), wind: crown(7.0, 0.2, 0.05), baum: true, cast: true, tint: ['#f0f4e2', '#e4ecd6', '#f8f6e4'] },
   // Laubbaum nach Video-Vorlage (Krone aus Blattbüscheln, eigener Atlas; Stamm/Äste baut der Aufrufer)
   laubbaum: { geom: () => laubbaumGeom(), wind: crown(LAUBBAUM.top, 0.22, 0.05), cast: true, tree: true, tint: ['#8ea866', '#7f9c5c', '#a0b070'] },
   grass:   { geom: () => crossGeom(1, 0.9, 0.7, 3), wind: tip(0.7, 0.13, 0.03), cast: false, tint: ['#c7c9a0', '#b9c08e', '#d6cfa0'] },
@@ -864,6 +935,10 @@ const KINDS = {
   vine:    { geom: () => clusterGeom(3, 1.1, 5, 15, 0.6), wind: () => [0, 0.018], cast: true, tint: ['#ffffff', '#efe2ea'] },
 };
 
+let baumMat = null;
+/** Gemeinsames Zweigkarten-Material der Arenakarten (ohne LOD-Ausblenden). */
+function baumLeafMaterial() { return baumMat || (baumMat = createLeafMaterial({ name: 'baum-laub-arena' })); }
+
 /**
  * Baut InstancedMeshes für alle Pflanzen. plants: [{ kind, x, y, z, s, ry, tint }]
  * @returns {{ meshes: THREE.InstancedMesh[] }}
@@ -871,6 +946,7 @@ const KINDS = {
 export function createFoliage(plants, quality = 'high') {
   if (plants.length) ensureFoliageAtlas(quality);
   if (plants.some((p) => KINDS[p.kind]?.tree)) ensureTreeLeafAtlas(quality);
+  if (plants.some((p) => KINDS[p.kind]?.baum)) loadTreeAtlas(quality);
   setFoliageQuality(quality);
   const byKind = new Map();
   for (const p of plants) {
@@ -885,9 +961,9 @@ export function createFoliage(plants, quality = 'high') {
   for (const [kind, list] of byKind) {
     const def = KINDS[kind];
     const geom = def.geom();
-    setWindAttribute(geom, def.wind);
+    if (def.wind) setWindAttribute(geom, def.wind);
     geom.computeBoundingSphere();
-    const mesh = new THREE.InstancedMesh(geom, foliageMaterial(def.cast, !!def.tree), list.length);
+    const mesh = new THREE.InstancedMesh(geom, def.baum ? baumLeafMaterial() : foliageMaterial(def.cast, !!def.tree), list.length);
     list.forEach((p, i) => {
       q.setFromAxisAngle(up, p.ry);
       s.setScalar(p.s);

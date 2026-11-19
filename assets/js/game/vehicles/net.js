@@ -12,10 +12,10 @@
 //   (placeInSeat/clearSeat), Schnappschüsse puffern und mit der Abspieluhr der Puppen interpolieren (tickReplica), eigene
 //   Sitz-Absicht als VEH_INPUT im 30-Hz-Zustand (inputState), Anfragen über enter/exit/seat/load.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261113221339';
-import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261113221339';
-import { SUPPLY, supplyOf, supplyStateIndex, supplyStateOf, ammoNeed } from './resupply.js?v=20261113221339';
-import { falloff } from '../combat.js?v=20261113221339';
+import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261115041504';
+import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261115041504';
+import { SUPPLY, supplyOf, supplyStateIndex, supplyStateOf, ammoNeed } from './resupply.js?v=20261115041504';
+import { falloff } from '../combat.js?v=20261115041504';
 
 const HOST_ID = 1; // net/index.js HOST_ID (hier ohne Import: Fahrzeuge laden auch ohne Netzmodul)
 const NEAR = 160; // m (xz): eigenes Fahrzeug und nähere bekommen jeden Takt einen Block
@@ -67,7 +67,7 @@ const mgShots = (seat) => { let n = 0; for (const w of seat.weapons) if (w.def.k
 
 export class VehicleNet {
   /**
-   * @param {import('./index.js?v=20261113221339').VehicleSystem} sys
+   * @param {import('./index.js?v=20261115041504').VehicleSystem} sys
    * @param {{replica?: boolean}} opts replica: Client-Abbild (sonst Host)
    */
   constructor(sys, { replica = false } = {}) {
@@ -115,6 +115,8 @@ export class VehicleNet {
         G.events.on('vehicle:exit', (e) => this._onExit(e)),
         G.events.on('vehicle:fire', (e) => this._onFire(e)),
         G.events.on('vehicle:hit', (e) => this._onHit(e)),
+        // Luftfahrzeuge: Täuschkörper-Salve → Darstellung bei allen
+        G.events.on('vehicle:flare', (e) => { if (e && e.vehicle && !e.net && Number.isInteger(e.vehicle.netId) && this.online) this._send('all', { t: 'ev', e: 'vf', v: e.vehicle.netId }); }),
       );
     } else {
       this._offs.push(
@@ -246,6 +248,7 @@ export class VehicleNet {
     o.vx = b.vel.x; o.vy = b.vel.y; o.vz = b.vel.z;
     o.wy = b.angVel.y;
     if (hasTurret(def)) { o.a[0] = m.turretYaw; o.a[1] = m.gunPitch; o.a[2] = m.cmgYaw; o.a[3] = m.cmgPitch; }
+    else if (v.isAircraft) { o.a[0] = m.mgYaw; o.a[1] = m.mgPitch; o.a[2] = v.air === 'jet' ? b.thr : 0; o.a[3] = b.ab || 0; } // Jet: Schub, Nachbrenner
     else { o.a[0] = m.mgYaw; o.a[1] = m.mgPitch; o.a[2] = 0; o.a[3] = 0; }
     o.hp = Math.max(0, Math.round(v.health));
     ['engine', 'tracks', 'turret'].forEach((k, i) => { o.zones[i] = Z[k] ? Math.round((Math.max(0, Z[k].hp) / Z[k].max) * 255) : 255; });
@@ -261,6 +264,12 @@ export class VehicleNet {
       o.gun = ammoIdx(g.loaded) | (ammoIdx(g.held) << 2) | (Math.max(0, STEPS.indexOf(g.step)) << 4) | (g.breechOpen ? 128 : 0);
       o.busy = g.auto ? (g.autoMax > 0 ? 1 - g.autoT / g.autoMax : 0) : g.busy > 0 && g._busyMax > 0 ? 1 - g.busy / g._busyMax : 0;
       o.rackAP = g.rack.mbt_ap | 0; o.rackHE = g.rack.mbt_he | 0;
+    } else if (v.isAircraft) {
+      // Luftfahrzeuge: Raketen/Bomben im Magazin (rackAP/rackHE), Täuschkörper (aux)
+      o.gun = 0; o.busy = 0;
+      const ws = v.seats[0] ? v.seats[0].weapons : [];
+      const rk = ws.find((w) => w.def.kind === 'rocket'), bm = ws.find((w) => w.def.kind === 'bomb');
+      o.rackAP = rk ? rk.mag | 0 : 0; o.rackHE = bm ? bm.mag | 0 : 0;
     } else { o.gun = 0; o.busy = 0; o.rackAP = 0; o.rackHE = 0; }
     const mg = mgSlots(v);
     const w0 = mg[0] && v.seats[mg[0].seat].weapons[mg[0].w], w1 = mg[1] && v.seats[mg[1].seat].weapons[mg[1].w];
@@ -268,7 +277,7 @@ export class VehicleNet {
     const arm = armedSeats(v);
     o.sel = ((arm[0] ? arm[0].weaponIndex : 0) & 3) | (((arm[1] ? arm[1].weaponIndex : 0) & 3) << 2)
       | (w0 && w0.reloadT > 0 ? 16 : 0) | (w1 && w1.reloadT > 0 ? 32 : 0) | (g && !autoReload(v) ? 64 : 0) | (g && g.auto ? 128 : 0);
-    o.aux = g ? (ammoIdx(g.select) & 3) | (Math.min(63, Math.round(Math.max(0, g.autoT || 0) * 4)) << 2) : 0;
+    o.aux = g ? (ammoIdx(g.select) & 3) | (Math.min(63, Math.round(Math.max(0, g.autoT || 0) * 4)) << 2) : v.isAircraft && v.flares ? v.flares.left & 255 : 0;
     // Versorgung (resupply.js): Ersatzgurte je MG (0…7; ohne Vorrat 7) + Zustand
     const beltsOf = (w) => (w && w.reserve != null ? Math.min(7, Math.ceil(w.reserve / w.def.mag)) : 7);
     o.supply = beltsOf(w0) | (beltsOf(w1) << 3) | (supplyStateIndex(v.supply ? v.supply.state : 'frei') << 6);
@@ -311,9 +320,18 @@ export class VehicleNet {
       it.path = null; it.moveTo = null;
       const lights = (vin.bits & 8) !== 0;
       if (v.lights !== lights && v.alive) v.lights = lights;
+      if (v.isAircraft) {
+        // Pilot: Knüppel (Rollen/Nicken) in aimYaw/aimPitch, Täuschkörper/Nachbrenner/Schweben in bits 5–7
+        it.roll = clamp(fin(vin.aimYaw) ? vin.aimYaw : 0, -1, 1);
+        it.pitch = clamp(fin(vin.aimPitch) ? vin.aimPitch : 0, -1, 1);
+        it.flare = (vin.bits & 32) !== 0;
+        it.boost = (vin.bits & 64) !== 0;
+        it.level = (vin.bits & 128) !== 0;
+        it.handbrake = false;
+      }
     }
     if (Number.isInteger(vin.weapon) && vin.weapon !== 255 && vin.weapon < seat.weapons.length) it.weapon = vin.weapon;
-    if (seat.def.mount && fin(vin.aimYaw) && fin(vin.aimPitch)) {
+    if (seat.def.mount && seat.def.mount !== 'fixed' && fin(vin.aimYaw) && fin(vin.aimPitch)) {
       const yaw = vin.aimYaw, pitch = clamp(vin.aimPitch, -1.5, 1.5), cp = Math.cos(pitch);
       it.aimDir = (it.aimDir || new THREE.Vector3()).set(-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp);
       it.aimAt = null;
@@ -408,7 +426,7 @@ export class VehicleNet {
   _onFire(e) {
     if (!e || !e.vehicle || !this.online) return;
     const def = VEHICLE_WEAPONS[e.weaponId];
-    if (!def || def.kind !== 'shell' || !Number.isInteger(e.vehicle.netId)) return;
+    if (!def || (def.kind !== 'shell' && def.kind !== 'rocket' && def.kind !== 'bomb') || !Number.isInteger(e.vehicle.netId)) return;
     const a = e.actor;
     this._send('all', { t: 'ev', e: 'vs', v: e.vehicle.netId, s: e.seat | 0, w: def.id, o: r3(e.origin, 2), d: r3(e.dir, 4), sh: a && Number.isInteger(a.netId) ? a.netId : 0 });
   }
@@ -605,14 +623,16 @@ export class VehicleNet {
     o.vid = v.netId; o.seat = idx;
     o.throttle = clamp(it.throttle || 0, -1, 1);
     o.steer = clamp(it.steer || 0, -1, 1);
-    o.bits = (it.fire ? 1 : 0) | (it.brake > 0 ? 2 : 0) | (it.handbrake ? 4 : 0) | (v.lights ? 8 : 0) | (it.gearbox === 'hold' ? 16 : 0);
+    o.bits = (it.fire ? 1 : 0) | (it.brake > 0 ? 2 : 0) | (it.handbrake ? 4 : 0) | (v.lights ? 8 : 0) | (it.gearbox === 'hold' ? 16 : 0)
+      | (v.isAircraft ? (it.flare ? 32 : 0) | (it.boost ? 64 : 0) | (it.level ? 128 : 0) : 0);
     o.shift = (c.up & 15) | ((c.dn & 15) << 4);
     o.fireSeq = c.fire & 255;
     o.act = (c.rel & 15) | ((c.cyc & 15) << 4);
     o.weapon = 255;
     o.view = seat.view | 0;
     const w = seat.aimWant;
-    if (seat.def.mount && w && w.lengthSq() > 0.5) {
+    if (v.isAircraft && seat.def.drive) { o.aimYaw = clamp(it.roll || 0, -1, 1); o.aimPitch = clamp(it.pitch || 0, -1, 1); } // Knüppel
+    else if (seat.def.mount && w && w.lengthSq() > 0.5) {
       o.aimYaw = Math.atan2(-w.x, -w.z);
       o.aimPitch = Math.asin(clamp(w.y, -1, 1));
     } else { o.aimYaw = 0; o.aimPitch = 0; }
@@ -659,6 +679,11 @@ export class VehicleNet {
         d.normalize();
         const shooter = this._actor(m.sh);
         sys.shells.fire(def, o, d, shooter, v || null, { display: true });
+        if (def.kind === 'rocket' || def.kind === 'bomb') { // Luftfahrzeug-Raketen/-Bomben
+          sys.air?.fireFx(v || null, def, o, d, !!(v && G.player && G.player.vehicle === v));
+          G.events.emit('vehicle:fire', { vehicle: v || null, seat: m.s | 0, actor: shooter, weaponId: def.id, origin: o, dir: d, net: true });
+          return;
+        }
         G.effects?.muzzleFlash?.(o, d, { cls: 'sniper', scale: 3.4 });
         G.effects?.muzzleLight?.(o, 34, 3, 0.09, 20);
         G.effects?.smoke?.(_a.copy(o).addScaledVector(d, 1.2), { count: 7, size: 2.6, life: 2.4, rise: 0.35, alpha: 0.42 });
@@ -668,6 +693,11 @@ export class VehicleNet {
         if (v) v.recoil = 1;
         if (own) { G.player.shake?.(def.shake || 0.5); G.input?.rumble?.(0.9, 0.6, 200); }
         G.events.emit('vehicle:fire', { vehicle: v || null, seat: m.s | 0, actor: shooter, weaponId: def.id, origin: o, dir: d, net: true });
+        return;
+      }
+      case 'vf': { // Täuschkörper eines Luftfahrzeugs
+        const v = this._byVid.get(m.v);
+        if (v && typeof v.deployFlares === 'function') v.deployFlares({ net: true });
         return;
       }
       case 'vh': // Treffermarker: index.js zeigt ihn für vehicle:hit mit dem eigenen Spieler als Angreifer
@@ -887,6 +917,14 @@ export class VehicleNet {
         if (own) this.sys.audio?.play?.('reload_bolt', { volume: 0.75, pitch: 0.55 });
       }
       st.step = g.step;
+    }
+    // Luftfahrzeuge: Schub/Nachbrenner (Darstellung, Klang), Raketen/Bomben, Täuschkörper
+    if (v.isAircraft) {
+      v._netAir = { thr: s.a[2] || 0, ab: s.a[3] || 0 };
+      const ws = v.seats[0] ? v.seats[0].weapons : [];
+      const rk = ws.find((w) => w.def.kind === 'rocket'), bm = ws.find((w) => w.def.kind === 'bomb');
+      if (rk) rk.mag = s.rackAP; if (bm) bm.mag = s.rackHE;
+      if (v.flares) v.flares.left = s.aux | 0;
     }
     // Waffenwahl + Magazine
     const arm = armedSeats(v);

@@ -5,7 +5,7 @@
 // Alles deterministisch (kein Math.random, Varianten nur positionsabhängig über hash01). Kollision hängt weder von der
 // Grafikstufe noch von der Bibliothek ab: Bibliotheksmodelle bekommen feste Quader in Manifest-Maßen.
 import * as THREE from 'three';
-import { frame, hash01, chair, crate, pallet, cable, CONTAINER_H, CONTAINER_W, ctrFamily, corrPanel, videoTone } from '../props.js?v=20261113221339';
+import { frame, hash01, chair, crate, pallet, cable, CONTAINER_H, CONTAINER_W, ctrFamily, corrPanel, videoTone } from '../props.js?v=20261115041504';
 
 const KEIN = { collide: false, minimap: false };
 const VG = { ...KEIN, grad: false };
@@ -269,7 +269,7 @@ export function offenerContainer(b, x, z, o = {}) {
   f.box(L2 - 0.09, H - 0.26, 0, 0.18, 0.26, W - 0.3, 'container', { tint: dark, ...V, grad: false });
   f.box(L2 - 0.08, 0, 0, 0.16, fl, W - 0.3, 'metal_painted', { tint: '#3a3d40', ...VG });
   // Türflügel: an den Eckpfosten angeschlagen, ~100° geöffnet (leicht nach außen gespreizt), Verschlussstangen außen
-  const lw = W2 - 0.04, phi = 0.17;
+  const lw = W2 - 0.04, phi = o.phi ?? 0.17; // o.phi ≈ π: Flügel ganz zurückgeschlagen (an den Seitenwänden) – gelaende: enge Gassen bleiben begehbar
   for (const s of [-1, 1]) {
     const hx = L2 + 0.03, hz = s * (W2 + 0.02), dx = Math.cos(phi), dz = s * Math.sin(phi);
     const cx = hx + dx * lw / 2, cz = hz + dz * lw / 2, rr = -s * phi;

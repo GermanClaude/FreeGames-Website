@@ -3,7 +3,7 @@
 // Drehmomentband und rotem Bereich über Nenndrehzahl, Getriebeart, Hinweise („Drehzahl zu niedrig – runterschalten“,
 // „Erst anhalten“) und die Touch-Knöpfe „Gang +“/„Gang −“. Liest nur vehicle.body.drive (läuft auch auf Abbildern).
 // Eigene Styles; DOM-Schreibzugriffe nur bei Änderung (wie VehicleHUD._set).
-import { gearList, gearName } from './drivetrain.js?v=20261113221339';
+import { gearList, gearName } from './drivetrain.js?v=20261115041504';
 
 const CSS = `
 .vd-root{margin:5px 0 2px}
@@ -140,7 +140,7 @@ export class DriveHUD {
     const v = s && s.seated ? s.vehicle : null;
     const seat = s && s.seat;
     const D = v && v.body && v.body.drive;
-    if (!v || !seat || !seat.def.drive || !D || s.visible === false) {
+    if (!v || !seat || !seat.def.drive || !D || s.visible === false || v.isAircraft) { // Luftfahrzeuge: Flug-HUD (air/hud.js)
       this._veh = null;
       this._set('rootH', this.root, 'hidden', true);
       this._body('vehicleDrive', null);

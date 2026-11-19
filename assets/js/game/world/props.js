@@ -1,6 +1,7 @@
 // NULLPUNKT — Requisiten aus Primitiven: Container, Fahrzeuge, Kisten, Fässer, Paletten, Sandsäcke,
 // Betonbarrieren, Lampen, Zäune, Bäume, Marktstände … (Owner: world)
 import * as THREE from 'three';
+import { autoWrack } from './autowrack.js?v=20261115041504';
 
 /** Lokales Koordinatensystem (x, y, z, ry) für Unterteile eines Props. */
 export function frame(b, x, y, z, ry = 0) {
@@ -612,6 +613,13 @@ export function car(b, x, z, o = {}) {
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0);
   const L = 4.3, W = 1.8, hatch = o.style === 'hatch';
   const wreck = o.style === 'wreck';
+  // Nutzer 14.11.: ausgebranntes Wrack als echte Karosserie (autowrack.js) ab medium; low behält das Requisit
+  if (wreck && b.quality && b.quality !== 'low') {
+    autoWrack(b, x, o.y ?? 0, z, o.ry || 0, { seed: Math.abs(x * 0.37 + z * 0.11) + 0.5, color: col });
+    f.solid(0, 0, 0, W, 1.42, L, { minimap: 'vehicle', mat: 'hull' });
+    b.decal(x, (o.y ?? 0) + 0.01, z, 2.6, 4.6, 'oil', { ry: o.ry || 0, opacity: 0.6 });
+    return;
+  }
   const pm = 'car_paint';
   f.box(0, 0.32, 0, W, 0.52, L, pm, { tint: col, collide: false, minimap: false, grad: false });
   f.box(0, 0.24, 0, W - 0.1, 0.1, L - 0.4, 'rubber', { collide: false, minimap: false, grad: false });
@@ -921,7 +929,8 @@ export function electricBox(b, x, y, z, o = {}) {
   f.box(0, 0, 0, w, h, d, 'metal_painted', { tint: o.tint || '#9aa39a', minimap: o.minimap ?? 'cover', collide: o.collide ?? true, aoFloor: o.aoFloor });
   f.box(0, 0.08, d / 2 + 0.005, 0.01, h - 0.16, 0.01, 'black', { collide: false, minimap: false, ao: false });
   f.box(w / 4, h * 0.55, d / 2 + 0.02, 0.06, 0.12, 0.03, 'metal_galvanized', { collide: false, minimap: false, ao: false });
-  if (o.warn !== false) b.sign(...f.P(-w / 4, d / 2 + 0.01), y + h * 0.62, 0.22, 0.2, 'warn_volt', { ry: o.ry || 0, back: false, depth: 0 });
+  // karten-voll: Reihenfolge x, y, z (vorher x, z, y → Schild schwebte an falscher Stelle)
+  if (o.warn !== false) { const [sx, sz] = f.P(-w / 4, d / 2 + 0.01); b.sign(sx, y + h * 0.62, sz, 0.22, 0.2, 'warn_volt', { ry: o.ry || 0, back: false, depth: 0 }); }
 }
 
 // ---------------------------------------------------------------------------

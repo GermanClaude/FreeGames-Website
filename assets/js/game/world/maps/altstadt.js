@@ -3,16 +3,20 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261113221339';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261115041504';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, acUnit, cable,
   cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js?v=20261113221339';
-import { createBell } from './altstadt-glocke.js?v=20261113221339';
+} from '../props.js?v=20261115041504';
+import { createBell } from './altstadt-glocke.js?v=20261115041504';
 import {
   setupLook, isNight, lampGlass, lampLight, parkBench, flowerBed, fountainWater, hrng,
   table, tableChairs, bed, wardrobe, dresser, nightstand, shelf, kitchen, armchair, pendant, ceilingLamp, rug, picture, barrelRack, sacks,
-} from './altstadt-ausstattung.js?v=20261113221339';
+} from './altstadt-ausstattung.js?v=20261115041504';
+// karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261115041504';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
+import { terrassen } from './altstadt-terrassen.js?v=20261115041504'; // gelaende (Runde 3)
 
 const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe
@@ -136,6 +140,10 @@ export default {
       [25, 24.5], [26.5, -36], [33, 12], [33, -27], [40, 5], [-12.6, 17.6], [-34, -38], [33.5, 38],
       [48.5, 20], [48.5, -20], [62, 4.8], [65.5, 28], [65.5, -28], [55, 23], [55, -23],
     ]) spawns.ffa.push({ x, z });
+    // gelaende (Runde 3): Brunnenterrassen – zweite Ebene zwischen Brunnenplatz und den Plätzen A/C
+    b.gelaende = terrassen(b, spawns);
+    // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
+    belebe(b, { stil: 'stadt', einrichten: true, boden: true, bereich: { minX: -46, maxX: 69, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, [...KAMPAGNE.altstadt, ...KAMPAGNE_PUNKTE.altstadt]) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 29, radius: 5 }, { id: 'B', x: -7.5, z: 0, radius: 5.5 }, { id: 'C', x: -5, z: -29, radius: 5 }] },
@@ -767,7 +775,7 @@ function church(b) {
   // Lisenen (Wandpfeiler) außen
   for (const xx of [23.9, 26.7, x1 - 0.3]) for (const zz of [z0 - 0.2, z1 + 0.2]) b.box(xx, 0, zz, 0.6, H, 0.4, 'stone_wall', { tint: '#ddd0b4', minimap: false, grad: false });
   // Dach
-  pitchedRoof(b, { x: (x0 + x1) / 2, z: 0, w: x1 - x0, d: z1 - z0, y: H, ridge: 'x', pitch: rise / 8, over: 0.5, gableMat: mat, gableTint: tint, tint: '#c27154' });
+  pitchedRoof(b, { chimney: false, x: (x0 + x1) / 2, z: 0, w: x1 - x0, d: z1 - z0, y: H, ridge: 'x', pitch: rise / 8, over: 0.5, gableMat: mat, gableTint: tint, tint: '#c27154' });
   b.noNav(x0 - 1, z0 - 1, x1 + 1, z1 + 1, H - 1, 40);
   b.footprints.push({ x: (x0 + x1) / 2, z: 0, hw: (x1 - x0) / 2, hd: (z1 - z0) / 2, ry: 0, y0: 0, y1: H, kind: 'building' });
   // Innen: Holzdecke mit Balken
@@ -897,7 +905,7 @@ function loggia(b, x0, z0, x1, z1) {
   for (const xx of [x0 + 0.35, x1 - 0.35]) arch(b, xx, H - 1.1, z, spanZ - 0.6, 0.9, 1.1, 0.5, mat, { ry: Math.PI / 2, tint });
   b.boxMM(x0, H, z0, x1, H + 0.6, z1, mat, { tint, minimap: 'roof', grad: false });
   b.boxMM(x0 - 0.12, H + 0.6, z0 - 0.12, x1 + 0.12, H + 0.8, z1 + 0.12, mat, { tint: '#d6c8aa', collide: false, minimap: false, grad: false });
-  pitchedRoof(b, { x, z, w: x1 - x0, d: z1 - z0, y: H + 0.8, ridge: 'z', pitch: 0.35, over: 0.3, gableMat: mat, gableTint: tint, tint: '#c47a5a' });
+  pitchedRoof(b, { chimney: false, x, z, w: x1 - x0, d: z1 - z0, y: H + 0.8, ridge: 'z', pitch: 0.35, over: 0.3, gableMat: mat, gableTint: tint, tint: '#c47a5a' });
   b.interior(x0, z0, x1, z1, -0.1, H, 0.8);
   b.noNav(x0 - 0.5, z0 - 0.5, x1 + 0.5, z1 + 0.5, 2.5, 40);
   parkBench(b, x, z + 1.4, { ry: Math.PI });

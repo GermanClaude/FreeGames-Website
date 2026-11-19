@@ -3,19 +3,22 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261113221339';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261115041504';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261113221339';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261113221339';
-import { createFire } from '../feuer.js?v=20261113221339';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261113221339';
+} from '../props.js?v=20261115041504';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261115041504';
+import { createFire } from '../feuer.js?v=20261115041504';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261115041504';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261113221339';
+} from './werk-ausstattung.js?v=20261115041504';
+// karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261115041504';
+import { hofAusbau } from './werk-hof.js?v=20261115041504'; // gelaende (Runde 3)
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
@@ -35,7 +38,7 @@ export default {
   // Grafik-Vorlage Etappe 0 (15.10.): Tag wie im Video (Halle mit hellen Fensterbahnen, Gasse mit klarem Himmel) statt
   // Dämmerung; 16.10.: eigener Himmel (Nachmittag, klar) als Himmel und Umgebungslicht
   // Grafik-Vorlage 15.10.: Boden = dunkler Beton aus dem Video (wie Hafen, Gasse und Hallenboden im Video ähnlich)
-  assets: { hdri: 'np_sky_nachmittag_klar', materials: { concrete: { id: 'vh_kai', color: 0.42, macro: [0.12, 0.06, 0.1] } } },
+  assets: { hdri: 'np_sky_nachmittag_klar', materials: { concrete: { id: 'concrete_floor_worn2', color: [0.27, 0.4, 0.62], macro: [0.12, 0.06, 0.1] } /* texturen 14.11.: Fotoscan statt Video-Kai (vh_kai) */ } },
   defaultSurface: 'concrete',
   navSpacing: 1.5,
   groundNoise: 0.22,
@@ -125,6 +128,10 @@ export default {
       [26, 18], [25.7, -15], [36, 16], [35, 0], [48, 12], [47.5, -30], [24, -38],
       [-68, 1.5], [-57, 14], [-57, -14], [-72, 26], [-72, -24], [-64, 38], [-64, -37],
     ]) spawns.ffa.push({ x, z });
+    // gelaende (Runde 3): Halden, Schüttgutboxen, Erdwälle im Lkw-Hof und Außenlager (begehbares Relief, feste Deckung)
+    b.gelaende = hofAusbau(b, spawns);
+    // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
+    belebe(b, { stil: 'industrie', huellen: ['building', 'container'], boden: { asphalt: true }, bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -36, z: 27, radius: 5 }, { id: 'B', x: 0, z: 0, radius: 5.5 }, { id: 'C', x: -36, z: -27, radius: 5 }] },

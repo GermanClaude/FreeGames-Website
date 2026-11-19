@@ -3,11 +3,11 @@
 // alles beim Laden, synchronisiert sich zwischen Tabs. Freischaltungen über
 // WEAPONS[id].unlockLevel aus weapons.data.js, XP-Regeln aus modes.data.js (beide statisch importiert).
 
-import { settings } from './settings.js?v=20261113221339';
-import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261113221339';
-import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261113221339';
-import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261113221339';
-import { pendingTrophies } from './trophies.data.js?v=20261113221339';
+import { settings } from './settings.js?v=20261115041504';
+import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261115041504';
+import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261115041504';
+import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261115041504';
+import { pendingTrophies } from './trophies.data.js?v=20261115041504';
 
 const STORAGE_KEY = 'nullpunkt:profile';
 /**
@@ -212,7 +212,38 @@ function blank() {
     cosmetics: { equipped: { weapon: {}, operator: {} } }, challenges: blankChallenges(), secrets: {}, counters: {},
     og: false, ogChecked: true,
     trophies: blankTrophies(), // Trophäen (13.11., trophies.data.js)
+    campaign: blankCampaign(), // Kampagne (game/campaign/progress.js): Missionen, Checkpoint, Einstellungen
   };
+}
+
+function blankCampaign() {
+  return { missions: {}, current: null, speed: 'normal', diff: 'regulaer' };
+}
+
+/** Kampagnenstand bereinigen (Ids, Werte begrenzt). */
+function cleanCampaign(c) {
+  const out = blankCampaign();
+  if (!c || typeof c !== 'object') return out;
+  const DIFF = ['rekrut', 'regulaer', 'veteran', 'elite'];
+  if (c.missions && typeof c.missions === 'object') {
+    for (const [id, m] of Object.entries(c.missions).slice(0, 32)) {
+      if (!ID_RE.test(id) || !m || typeof m !== 'object') continue;
+      out.missions[id] = {
+        done: m.done === true, best: DIFF.includes(m.best) ? m.best : null, diff: DIFF.includes(m.diff) ? m.diff : null,
+        checkpoint: typeof m.checkpoint === 'string' && ID_RE.test(m.checkpoint) ? m.checkpoint : null,
+        time: Math.round(num(m.time, 0, 1e6)), plays: int(m.plays, 0, 1e6), at: int(m.at, 0, 1e15),
+      };
+    }
+  }
+  out.current = typeof c.current === 'string' && ID_RE.test(c.current) ? c.current : null;
+  out.speed = ['langsam', 'normal', 'schnell'].includes(c.speed) ? c.speed : 'normal';
+  out.diff = DIFF.includes(c.diff) ? c.diff : 'regulaer';
+  // Neu im Update (campaign/progress.js syncNew): bekannte Kapitel (ack) und noch nicht gespielte neue Kapitel (fresh)
+  const ids = (v) => (Array.isArray(v) ? [...new Set(v.filter((x) => typeof x === 'string' && ID_RE.test(x)))].slice(0, 64) : null);
+  const ack = ids(c.ack), fresh = ids(c.fresh);
+  if (ack) out.ack = ack;
+  if (fresh) out.fresh = fresh;
+  return out;
 }
 
 function blankTrophies() {
@@ -286,6 +317,7 @@ function sanitize(data) {
   }
   if (Array.isArray(data.history)) p.history = data.history.filter((h) => h && typeof h === 'object').slice(0, HISTORY_MAX);
   cleanExtras(p, data);
+  p.campaign = cleanCampaign(data.campaign); // Kampagne
   p.createdAt = int(data.createdAt, 0, 1e15) || Date.now();
   p.updatedAt = int(data.updatedAt, 0, 1e15) || Date.now();
   p.og = data.og === true;
@@ -540,6 +572,20 @@ export const profile = {
     data.name = settings.get('playerName');
     save();
     notify();
+  },
+
+  /** Kampagnenstand (Kopie; game/campaign/progress.js). */
+  getCampaign() {
+    return JSON.parse(JSON.stringify(data.campaign || blankCampaign()));
+  },
+
+  /** Kampagnenstand speichern (wird bereinigt). */
+  setCampaign(c) {
+    data.campaign = cleanCampaign(c);
+    data.updatedAt = Date.now();
+    save();
+    notify();
+    return this.getCampaign();
   },
 
   reset() {

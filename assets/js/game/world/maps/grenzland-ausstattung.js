@@ -4,8 +4,9 @@
 // (b.rand) bleibt unberührt – übrige Platzierung unverändert. Kollision unabhängig von der Grafikstufe; auf low
 // entfallen nur kleine Auslagen ohne Kollision.
 import * as THREE from 'three';
-import { frame, hash01, awning, lowSphereGeom, sphereGeom } from '../props.js?v=20261113221339';
-import { railing } from '../arch.js?v=20261113221339';
+import { frame, hash01, awning, lowSphereGeom, sphereGeom } from '../props.js?v=20261115041504';
+import { railing } from '../arch.js?v=20261115041504';
+import { tire, steelRim } from '../../vehicles/bodykit.js?v=20261115041504';
 
 // ---------------------------------------------------------------------------
 // Bauernmarkt (Gemüsestände)
@@ -136,7 +137,19 @@ function fenderGeom(r, w) {
 }
 
 /** Rad mit Stollenreifen (Achse lokal x): Reifen, Felge, Nabe, Stollen versetzt (Profil sichtbar). */
-function tractorWheel(f, lx, ly, lz, r, w, rim, lugs) {
+function tractorWheel(f, lx, ly, lz, r, w, rim, lugs, hq = false) {
+  if (hq) {
+    // Nutzer 14.11.: Stollenreifen mit Flanke (bodykit), Stahlfelge mit Lochkranz, Nabe – Geometrie je Größe geteilt
+    const key = `${r},${w},${lugs}`, side = Math.sign(lx) || 1;
+    const G = tractorWheel.cache || (tractorWheel.cache = new Map());
+    if (!G.has(key)) G.set(key, { t: tire(r, w, r * 0.6, { kind: 'mud', seg: Math.max(24, lugs * 2) }), rim: steelRim(r * 0.6, { holes: 8, seg: 20 }) });
+    const g = G.get(key);
+    f.geom(g.t, lx, ly, lz, 'rubber', { collide: false, minimap: false, ao: false });
+    f.geom(g.rim, lx + side * w * 0.12, ly, lz, 'metal_painted', { tint: rim, collide: false, minimap: false, ao: false, ry: side < 0 ? Math.PI : 0 });
+    f.cyl(lx, ly, lz, r * 0.58, w * 0.7, 'metal_painted', { axis: 'x', tint: '#2b2d30', collide: false, minimap: false, seg: 14 });
+    f.cyl(lx, ly, lz, r * 0.2, w + 0.07, 'metal_painted', { axis: 'x', tint: '#2b2d30', collide: false, minimap: false, seg: 8 });
+    return;
+  }
   f.cyl(lx, ly, lz, r - 0.035, w, 'rubber', { axis: 'x', ry: 0, collide: false, minimap: false, seg: 18 });
   // Felge/Nabe etwas breiter als der Reifen (die Reifen-Deckflächen sind geschlossen)
   f.cyl(lx, ly, lz, r * 0.62, w + 0.02, 'metal_painted', { axis: 'x', tint: rim, collide: false, minimap: false, seg: 14 });
@@ -160,8 +173,8 @@ export function traktor(b, x, z, o = {}) {
   const R = 0.8, Rf = 0.44, zr = -0.75, zf = 1.32;
   // Räder
   for (const s of [-1, 1]) {
-    tractorWheel(f, s * 0.8, R, zr, R, 0.42, rim, 18);
-    tractorWheel(f, s * 0.66, Rf, zf, Rf, 0.24, rim, 12);
+    tractorWheel(f, s * 0.8, R, zr, R, 0.42, rim, 18, b.quality && b.quality !== 'low');
+    tractorWheel(f, s * 0.66, Rf, zf, Rf, 0.24, rim, 12, b.quality && b.quality !== 'low');
   }
   // Achsen, Rahmen, Motorblock (dunkel)
   f.box(0, Rf - 0.07, zf, 1.12, 0.14, 0.16, 'metal_painted', { ...P, tint: dark, grad: false });

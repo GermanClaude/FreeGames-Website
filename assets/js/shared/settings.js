@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261113221339';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261115041504';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -32,7 +32,7 @@ export const DEFAULTS = Object.freeze({
   audioMix: 'auto', hearingProtection: false, audioRecordings: true,
   // HUD-Stil, erweiterte Grafik, Gyro-Kalibrierung, Controller-Symbole (Realismus-Plan S6–S9, §5.3; ui-controls)
   hudStyle: 'voll', bodycamStamp: false,
-  gfxPost: 'auto', gfxShadows: 'auto', gfxAA: 'auto', gfxAO: 'auto', gfxBloom: 'auto', gfxEffects: 'auto', gfxPixelRatio: 'auto',
+  gfxPost: 'auto', gfxShadows: 'auto', gfxAA: 'auto', gfxAO: 'auto', gfxContact: 'auto', gfxSSR: 'auto', gfxDOF: 'auto', gfxBloom: 'auto', gfxEffects: 'auto', gfxPixelRatio: 'auto', gfxTextures: 'auto',
   renderScale: 'auto', fpsLimit: '0',
   gyroBiasX: 0, gyroBiasY: 0, gyroBiasZ: 0, padIcons: 'auto',
   // Kernmechanik (core-mechanics): Spielstil, Klassen, stufenlose Zielhilfe und Auto-Feuer
@@ -41,7 +41,7 @@ export const DEFAULTS = Object.freeze({
   // Vollbild (engine/fullscreen.js): auto = bei „Einsatz starten“, „Fortsetzen“ und (Touch) Tippen auf die Steuerung im Match | off = nur Knopf/Taste
   fullscreen: 'auto',
   // Lobby: Wetter/Tageszeit (atmosphere-weather): 'standard' | 'zufall' | Wetter-/Zeit-id
-  lastWeather: 'standard', lastTime: 'standard', lastVehicles: 'an', lastTankEra: 'karte',
+  lastWeather: 'standard', lastTime: 'standard', lastVehicles: 'an', lastTankEra: 'karte', lastMass: 'aus', // masse: Massenschlacht (Lobby)
   // Lobby: Modus-Einstellungen je Modus (B6, 26.10.; MODES[id].options, z. B. { hp: { wechsel: 45 } } – nur Abweichungen)
   modeOptions: Object.freeze({}),
   // Lernende Bots (ai-adapt): Gegner stellen sich auf den Spielstil ein (Stärke nach Schwierigkeit)
@@ -68,6 +68,8 @@ const HOLD_TOGGLE = Object.freeze({ options: ['hold', 'toggle'], labels: { hold:
  * Beschreibung jedes Werts für Einstellungsoberflächen (Website + Spielmenü):
  * type, Grenzen, Schrittweite, deutsche Beschriftung, Optionen mit Beschriftungen.
  */
+/** Desktop-App (desktop/preload.js): zusätzliche Grafikstufe „Extrem“. */
+const DESKTOP_APP = typeof window !== 'undefined' && !!window.nullpunktDesktop;
 export const SETTINGS_SCHEMA = Object.freeze({
   playerName: { type: 'string', maxLength: 16, label: 'Spielername', group: 'profil' },
   sensitivity: { type: 'number', min: 0.1, max: 5, step: 0.05, label: 'Mausempfindlichkeit', group: 'steuerung' },
@@ -77,8 +79,8 @@ export const SETTINGS_SCHEMA = Object.freeze({
   fov: { type: 'number', min: 60, max: 110, step: 1, integer: true, unit: '°', label: 'Sichtfeld', group: 'grafik' },
   quality: {
     type: 'enum', label: 'Grafikqualität', group: 'grafik',
-    options: ['auto', 'low', 'medium', 'high', 'ultra'],
-    labels: { auto: 'Automatisch', low: 'Niedrig', medium: 'Mittel', high: 'Hoch', ultra: 'Ultra' },
+    options: ['auto', 'low', 'medium', 'high', 'ultra', ...(DESKTOP_APP ? ['extrem'] : [])], // desktop: „Extrem“ nur in der App
+    labels: { auto: 'Automatisch', low: 'Niedrig', medium: 'Mittel', high: 'Hoch', ultra: 'Ultra', extrem: 'Extrem' },
   },
   masterVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Gesamtlautstärke', group: 'audio' },
   sfxVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Effekte', group: 'audio' },
@@ -195,10 +197,23 @@ export const SETTINGS_SCHEMA = Object.freeze({
   },
   gfxAA: {
     type: 'enum', label: 'Kantenglättung', group: 'erweitert',
-    options: ['auto', 'aus', 'fxaa', 'smaa'], labels: { auto: 'Automatisch', aus: 'Aus', fxaa: 'FXAA', smaa: 'SMAA' },
+    options: ['auto', 'aus', 'fxaa', 'smaa', 'taa'], labels: { auto: 'Automatisch', aus: 'Aus', fxaa: 'FXAA', smaa: 'SMAA', taa: 'TAA + SMAA' },
   },
   gfxAO: {
     type: 'enum', label: 'Umgebungsverdeckung (GTAO)', group: 'erweitert',
+    options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
+  },
+  // gfx-licht: Bildschirmraum-Kontaktschatten und -Reflexionen ('auto' = Stufe: Kontaktschatten ab hoch, SSR ultra)
+  gfxContact: {
+    type: 'enum', label: 'Kontaktschatten', group: 'erweitert',
+    options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
+  },
+  gfxSSR: {
+    type: 'enum', label: 'Bildschirmraum-Reflexionen (SSR)', group: 'erweitert',
+    options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
+  },
+  gfxDOF: {
+    type: 'enum', label: 'Tiefenschärfe beim Zielen', group: 'erweitert',
     options: ['auto', 'aus', 'an'], labels: { auto: 'Automatisch', aus: 'Aus', an: 'An' },
   },
   gfxBloom: {
@@ -209,6 +224,11 @@ export const SETTINGS_SCHEMA = Object.freeze({
     type: 'enum', label: 'Effekte (Partikel, Einschusslöcher)', group: 'erweitert',
     options: ['auto', 'niedrig', 'mittel', 'hoch', 'ultra'],
     labels: { auto: 'Automatisch', niedrig: 'Niedrig', mittel: 'Mittel', hoch: 'Hoch', ultra: 'Ultra' },
+  },
+  // Texturqualität (13.11.): Fotoscan-Auflösung der Welt unabhängig von der Qualitätsstufe (Ultra = 2048er-Scans)
+  gfxTextures: {
+    type: 'enum', label: 'Texturqualität', group: 'erweitert',
+    options: ['auto', 'niedrig', 'mittel', 'ultra'], labels: { auto: 'Automatisch', niedrig: 'Niedrig (512)', mittel: 'Hoch (1024)', ultra: 'Ultra (2048)' },
   },
   gfxPixelRatio: {
     type: 'enum', label: 'Pixeldichte (höchstens)', group: 'erweitert',
@@ -238,6 +258,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   lastWeather: { type: 'id', label: 'Letztes Wetter', group: 'intern' },
   lastVehicles: { type: 'id', label: 'Panzer & Fahrzeuge (Lobby)', group: 'intern' },
   lastTankEra: { type: 'id', label: 'Panzer-Generation (Lobby)', group: 'intern' },
+  lastMass: { type: 'id', label: 'Massenschlacht (Lobby)', group: 'intern' },
   lastTime: { type: 'id', label: 'Letzte Tageszeit', group: 'intern' },
   classLoadouts: { type: 'classLoadouts', label: 'Ausrüstung je Klasse', group: 'intern' },
   modeOptions: { type: 'modeOptions', label: 'Modus-Einstellungen (Lobby)', group: 'intern' },

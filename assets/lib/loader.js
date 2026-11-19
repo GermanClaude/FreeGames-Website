@@ -214,7 +214,13 @@ export class AssetLibrary {
         const paths = ['albedo', 'normal', 'orm'].map((k) => files[k]);
         for (const k of ['albedo', 'normal', 'orm']) this._track(files[k], files.sizes?.[k], files.gpuFiles?.[k]);
         this._loaded.set(`tex:${key}`, { type: 'texture', id, tier: t, paths });
-        return { id, tier: t, map, normalMap, ormMap, meta: e, sizeM: e.sizeM, detailRepeat: e.detailRepeat || 1, materials: new Set() };
+        // texturen 14.11.: normalXY = Normalen als X (RGB) + Y (Alpha), Z wird im Shader rekonstruiert (engine/surface.js)
+        if (files.normalXY) normalMap.userData = { ...(normalMap.userData || {}), normalXY: true };
+        // texturen3: Poly-Haven-Scans liegen ungespiegelt im KTX2 (Zeile 0 = Bildoberkante, OpenGL-Normalen) – außer
+        // Stufen mit vflip (gespiegelt kodiert). unflipped → Spielmaterialien zeichnen mit negativer V-Wiederholung und
+        // negieren Normal-Y (engine/textures.js, engine/surface.js, Gelände world/terrain/splat.js)
+        const unflipped = e.source === 'polyhaven' && !files.vflip;
+        return { id, tier: t, map, normalMap, ormMap, meta: e, sizeM: e.sizeM, detailRepeat: e.detailRepeat || 1, normalXY: !!files.normalXY, unflipped, materials: new Set() };
       })();
       p.catch(() => this._sets.delete(key));
       this._sets.set(key, p);
@@ -247,6 +253,14 @@ export class AssetLibrary {
       depthWrite: opts.depthWrite ?? !thin,
     });
     if (opts.normalScale != null) m.normalScale.setScalar(opts.normalScale);
+    if (set.normalXY) {
+      // XY-Normalen (X in RGB, Y in Alpha): Z rekonstruieren – eigener kleiner Haken (Spielmaterialien: engine/surface.js)
+      m.onBeforeCompile = (sh) => {
+        sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_maps>', '#undef texture2D\n#define texture2D( s, c ) npLibNxy( s, c )\n#include <normal_fragment_maps>\n#undef texture2D\n#define texture2D texture')
+          .replace('#include <common>', '#include <common>\nvec4 npLibNxy( sampler2D s, vec2 uv ) { vec4 t = texture( s, uv ); vec2 xy = vec2( t.r, 1.0 - t.a ) * 2.0 - 1.0; return vec4( vec3( xy, sqrt( clamp( 1.0 - dot( xy, xy ), 0.0, 1.0 ) ) ) * 0.5 + 0.5, 1.0 ); }');
+      };
+      m.customProgramCacheKey = () => 'np-lib-nxy';
+    }
     m.userData = { assetId: set.id, surface: e.surface, sizeM: e.sizeM, tier: set.tier };
     set.materials.add(m);
     return m;

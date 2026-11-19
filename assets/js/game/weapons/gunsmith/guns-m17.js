@@ -3,14 +3,14 @@
 // verfolgt und kalibriert, Bauteile als Distanzfelder (Profil × eigene Breite, weich vereinigt, Fenster/Nuten/Schächte
 // abgezogen), Schaft und Griff mit eigenem Atlas, Gravuren als Schriftfelder. Der gemeinsame AR-Unterbau (arLower in
 // guns-ar.js) bleibt für SK-14 und Ursprung unverändert.
-import * as R from './m17-ref.js?v=20261113221339';
-import { furnUV3, SLOTS } from './m17-tex.js?v=20261113221339';
-import { schrift } from './schrift.js?v=20261113221339';
-import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, simplifyPoly, cavityColors } from './sdf.js?v=20261113221339';
-import { ALU, STEEL, POLY, box2, field2, sdRoundRect, roundMax, segDist, cutWindow, fase, sdfMesh, sideFurn } from './sdfkit.js?v=20261113221339';
-import { roundRect, ellipsePts } from './builder.js?v=20261113221339';
-import { holoSight, birdcage } from './parts.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import * as R from './m17-ref.js?v=20261115041504';
+import { furnUV3, SLOTS } from './m17-tex.js?v=20261115041504';
+import { schrift } from './schrift.js?v=20261115041504';
+import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, simplifyPoly, cavityColors } from './sdf.js?v=20261115041504';
+import { ALU, STEEL, POLY, box2, field2, sdRoundRect, roundMax, segDist, cutWindow, fase, sdfMesh, sideFurn } from './sdfkit.js?v=20261115041504';
+import { roundRect, ellipsePts } from './builder.js?v=20261115041504';
+import { holoSight, birdcage } from './parts.js?v=20261115041504';
+import { magRounds } from './magfill.js?v=20261115041504';
 
 const { U, V } = R;
 const AX = R.AXIS;
@@ -29,7 +29,7 @@ const EP = (() => {
 const { mark, markTop, railNumbers } = schrift('m17', { lite: true });
 
 // Distanzfeld-Netze (sdfMesh), Profile (sideFurn), Fenster/Fasen und Gebrauchsspuren-Voreinstellungen: sdfkit.js
-export function m17(b) {
+export function m17(b, o = {}) {   // o.optic(b): eigene Werksoptik statt Holo, o.sight: deren Typ (UR-1 Ursprung, 13.11.)
   const axis = AX;
   const rk = b.max ? 0.45 : 1;   // PC: knappe Kantenrundung (gefräst statt geknetet)
   if (b.hi) {
@@ -216,13 +216,13 @@ export function m17(b) {
     b.circle('cavity', 0.0016, 0.0154, 0.1323, U(1185), { ry: Math.PI / 2, seg: 10 });
   }
   // ---------------------------------------------------------------- Holo-Visier (Werksoptik) und Magazin
-  holoSight(b, U(1440), 0.124);   // wie die Optik im Foto: vorn auf der Gehäuseschiene, hinten Platz für die Klappkimme
+  if (o.optic) o.optic(b, U(1440), 0.124); else holoSight(b, U(1440), 0.124);   // wie die Optik im Foto: vorn auf der Gehäuseschiene, hinten Platz für die Klappkimme
   m17Mag(b);
   const grip = { rake: 0.38, gw: 0.0135, gd: 0.023, gu: 0.0, ho: 0.018, tu: 0.034 };
   b.anchor('rightHandGrip', 0, 0.0, 0, { data: grip });
   b.anchor('magWell', 0, V(1452), U(1700));
   b.anchor('leftHandGrip', 0, axis - 0.026, 0.255, { data: { style: 'under', r: 0.026 } });
-  b.meta = { sight: 'holo', axis, kind: 'rifle', selector: { semi: Math.PI / 2, auto: Math.PI }, dustCover: { closed: b.max ? EP.open : Math.PI } };
+  b.meta = { sight: o.sight || 'holo', axis, kind: 'rifle', selector: { semi: Math.PI / 2, auto: Math.PI }, dustCover: { closed: b.max ? EP.open : Math.PI } };
 }
 
 // Unterteil (Gehäuse, Abzugsbügel, Magazinschacht) und Oberteil (Gehäuse, Auswurffenster, Hülsenabweiser) – ein

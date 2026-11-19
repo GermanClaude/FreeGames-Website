@@ -4,12 +4,17 @@
 // Flaggen (Eroberung): A Gehöft · B Dorf · C Brücke · D Kieswerk · E Funkhügel; HQ A im Süden, HQ B im Norden.
 // Geladen von world/terrain/bigworld.js (Ortschaften je eigener MapBuilder, Boden y = 0 bzw. Plateauhöhe).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261113221339';
-import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261113221339';
-import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261113221339';
-import * as Innen from './grenzland-innen.js?v=20261113221339';
-import { mgNest } from './grenzland-stellungen.js?v=20261113221339';
-import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261113221339';
+import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261115041504';
+import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261115041504';
+import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261115041504';
+import * as Innen from './grenzland-innen.js?v=20261115041504';
+import { mgNest } from './grenzland-stellungen.js?v=20261115041504';
+import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261115041504';
+// karten-voll (14.11.): Kleinkram an Häusern/Höfen, Freileitungen, Fahrspuren, Hochsitze, Feldstellungen
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261115041504';
+import { landschaft } from './grenzland-land.js?v=20261115041504';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261115041504'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 // Grafik-Vorlage (Video-Dorfplatz bild-7_8s): hellgrau-weißer Putz, Tonziegel rot-orange (Farbe aus der Textur v_roof,
@@ -190,17 +195,17 @@ function dorf(b) {
   const h35 = haus(b, { x: 35, z: 40, w: 8, d: 8, floors: 1, doors: [{ side: 'w', at: 0 }, { side: 'e', at: 0 }] });
   // Schuppen (Holz; Bretter heller getönt – die Schattenseite war mit #8a6a4a fast schwarz)
   const schuppen = building(b, { x: -48, z: 72, w: 7, d: 9, floors: 1, fh: 3.2, mat: 'wood_planks', tint: '#a8845e', openings: [{ side: 'e', at: 0, w: 2.6, h: 2.6, kind: 'gap', frame: false }, { side: 'w', at: 1, w: 1, h: 1, sill: 1.2, kind: 'window' }], roof: { edge: false, mat: 'wood_planks', tint: '#6a5038' }, floorMat: 'wood_planks' });
-  pitchedRoof(b, { x: -48, z: 72, w: 7.02, d: 9.02, y: 3.18, ridge: 'z', pitch: 0.55, over: 0.4, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#5d5a52' });
+  pitchedRoof(b, { chimney: false, x: -48, z: 72, w: 7.02, d: 9.02, y: 3.18, ridge: 'z', pitch: 0.55, over: 0.4, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#5d5a52' });
   b.noNav(-52, 67, -44, 77, 2.6, 40);
   palletStack(b, -46, 70, { n: 5 }); crateStack(b, -49.5, 75.5, { ry: 0.3 });
   // Traktor im Schuppen (rot, Blick zum Tor im Osten; auf dem Hallenboden y 0,12; ohne b.rand → Dorf-Zufall unverändert)
   traktor(b, -48.6, 72.2, { ry: Math.PI / 2, y: 0.12, color: '#a8322a', rim: '#d8d4c8' });
   // Kapelle mit Turm (Wahrzeichen)
   const kapelle = building(b, { x: -8, z: 100, w: 7, d: 13, floors: 1, fh: 5.2, mat: 'plaster_white', tint: '#f3eee4', openings: [{ side: 's', at: 0, w: 1.6, h: 2.8, kind: 'door', leaf: 'open' }, { side: 'e', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'e', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }], roof: { edge: false, mat: 'concrete', tint: '#b9ab94' }, floorMat: 'paving', interiorFactor: 0.5 });
-  pitchedRoof(b, { x: -8, z: 100, w: 7.02, d: 13.02, y: 5.18, ridge: 'z', pitch: 1.0, over: 0.45, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#5f5e5a' });
+  pitchedRoof(b, { chimney: false, x: -8, z: 100, w: 7.02, d: 13.02, y: 5.18, ridge: 'z', pitch: 1.0, over: 0.45, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#5f5e5a' });
   b.box(-8, 0, 91.6, 4.2, 15, 4.2, 'plaster_white', { tint: '#f3eee4', minimap: 'building' });
   b.box(-8, 15, 91.6, 4.4, 0.25, 4.4, 'stone_wall', { tint: '#cfc6b6', collide: false, minimap: false });
-  pitchedRoof(b, { x: -8, z: 91.6, w: 4.4, d: 4.4, y: 15.2, ridge: 'x', pitch: 2.2, over: 0.15, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#4a5048' });
+  pitchedRoof(b, { chimney: false, x: -8, z: 91.6, w: 4.4, d: 4.4, y: 15.2, ridge: 'x', pitch: 2.2, over: 0.15, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#4a5048' });
   for (const [ox, oz] of [[0, -2.12], [2.12, 0], [-2.12, 0]]) b.box(-8 + ox, 11.2, 91.6 + oz, ox ? 0.06 : 1.2, 2.0, ox ? 1.2 : 0.06, 'black', { tint: '#151515', collide: false, minimap: false, grad: false });
   b.noNav(-12, 84, -4, 108, 4.5, 60);
   // (Parkbänke in der Kapelle → Kirchenbänke mit Mittelgang, Altar: Innen.kapelleInnen)
@@ -293,7 +298,7 @@ function gehoeft(b) {
   // Scheune mit Heuboden und Geheimkammer
   const sx = -136, sz = 118, w = 16, d = 11, x0 = sx - w / 2, x1 = sx + w / 2, z0 = sz - d / 2, z1 = sz + d / 2;
   const scheune = building(b, { x: sx, z: sz, w, d, floors: 1, fh: 5.6, mat: 'wood_planks', tint: '#a8845e', openings: [{ side: 's', at: 1.5, w: 4.8, h: 4.2, kind: 'gap', frame: false }, { side: 'n', at: -5, w: 1.2, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'e', at: 2.5, w: 1.0, h: 0.9, sill: 1.6, kind: 'window' }, { side: 'w', at: 0, w: 1.0, h: 0.9, sill: 1.6, kind: 'window' }], roof: { edge: false, mat: 'wood_planks', tint: '#6a5038' }, floorMat: 'wood_planks', floorTint: '#9a8064', interiorFactor: 0.5 });
-  pitchedRoof(b, { x: sx, z: sz, w: w + 0.02, d: d + 0.02, y: 5.58, ridge: 'x', pitch: 0.7, over: 0.5, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#6c4a3a' });
+  pitchedRoof(b, { chimney: false, x: sx, z: sz, w: w + 0.02, d: d + 0.02, y: 5.58, ridge: 'x', pitch: 0.7, over: 0.5, gableMat: 'wood_planks', gableTint: '#a8845e', tint: '#6c4a3a' });
   b.noNav(x0 - 0.6, z0 - 0.6, x1 + 0.6, z1 + 0.6, 5.0, 40);
   // Heuboden (hintere Hälfte, y 3,2) + Treppe
   slab(b, x0 + 0.3, z0 + 0.3, x1 - 0.3, z0 + 4.8, 3.0, 0.2, 'wood_planks', [], { tint: '#9a8064' });
@@ -533,7 +538,13 @@ const H_Y = 15; // Plateauhöhe Funkhügel
 // ---------------------------------------------------------------------------
 // Kartenbeschreibung
 // ---------------------------------------------------------------------------
-export default {
+/** karten-voll: Ortschaft aufbauen, dann Leben an Fassaden/Fenstern (nur Optik; Starts, Flaggen, Kampagne frei). */
+function leben(b, res, stil) {
+  belebe(b, { stil, einrichten: stil === 'dorf', sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...KAMPAGNE_PUNKTE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
+  return res;
+}
+
+const GRENZLAND = {
   id: 'grenzland',
   name: 'Grenzland',
   scale: 'gross',
@@ -661,14 +672,14 @@ export default {
 
   // Ortschaften (je ein MapBuilder; Boden y = 0 bzw. Plateau)
   sites: [
-    { id: 'dorf', name: 'Dorf', bounds: { minX: -62, maxX: 52, minZ: 28, maxZ: 116 }, build: (b) => dorf(b), seeds: [[-6, 74], [-26, 58]], height: 20 },
-    { id: 'gehoeft', name: 'Gehöft', bounds: { minX: -188, maxX: -112, minZ: 78, maxZ: 140 }, build: (b) => gehoeft(b), seeds: [[-148, 106]] },
+    { id: 'dorf', name: 'Dorf', bounds: { minX: -62, maxX: 52, minZ: 28, maxZ: 116 }, build: (b) => leben(b, dorf(b), 'dorf'), seeds: [[-6, 74], [-26, 58]], height: 20 },
+    { id: 'gehoeft', name: 'Gehöft', bounds: { minX: -188, maxX: -112, minZ: 78, maxZ: 140 }, build: (b) => leben(b, gehoeft(b), 'hof'), seeds: [[-148, 106]] },
     { id: 'bruecke', name: 'Brücke', bounds: { minX: 22, maxX: 58, minZ: -58, maxZ: -4 }, clear: { minX: 26, maxX: 54, minZ: -54, maxZ: -6 }, build: (b) => bruecke(b), seeds: [[40, -30, 0.6]], height: 10, spacing: 1.8 },
-    { id: 'kieswerk', name: 'Kieswerk', bounds: { minX: 114, maxX: 192, minZ: -152, maxZ: -74 }, build: (b) => kieswerk(b), seeds: [[152, -112]], height: 18, spacing: 1.7 },
-    { id: 'muehle', name: 'Mühle', bounds: { minX: -76, maxX: -48, minZ: 4, maxZ: 26 }, build: (b) => muehle(b), seeds: [[-62, 14]], spacing: 1.6 },
-    { id: 'funkhuegel', name: 'Funkhügel', y: H_Y, bounds: { minX: -136, maxX: -104, minZ: -156, maxZ: -124 }, build: (b) => funkhuegel(b, H_Y), seeds: [[-121, -142, H_Y]], height: 12, spacing: 1.7 },
-    { id: 'hq_a', name: 'Hauptquartier A', bounds: { minX: 24, maxX: 96, minZ: 196, maxZ: 242 }, nav: true, build: (b) => hq(b, { x: 60, z: 219, side: 'A', pads: [[78, 228, 'tank'], [78, 212, 'tank'], [40, 230, 'jeep'], [40, 220, 'jeep'], [40, 210, 'jeep']] }), seeds: [[60, 212]], spacing: 2.2 },
-    { id: 'hq_b', name: 'Hauptquartier B', bounds: { minX: -56, maxX: 16, minZ: -246, maxZ: -198 }, nav: true, build: (b) => hq(b, { x: -20, z: -222, side: 'B', pads: [[-38, -213, 'tank'], [-38, -229, 'tank'], [2, -212, 'jeep'], [2, -222, 'jeep'], [2, -232, 'jeep']] }), seeds: [[-20, -215]], spacing: 2.2 },
+    { id: 'kieswerk', name: 'Kieswerk', bounds: { minX: 114, maxX: 192, minZ: -152, maxZ: -74 }, build: (b) => leben(b, kieswerk(b), 'industrie'), seeds: [[152, -112]], height: 18, spacing: 1.7 },
+    { id: 'muehle', name: 'Mühle', bounds: { minX: -76, maxX: -48, minZ: 4, maxZ: 26 }, build: (b) => leben(b, muehle(b), 'ruine'), seeds: [[-62, 14]], spacing: 1.6 },
+    { id: 'funkhuegel', name: 'Funkhügel', y: H_Y, bounds: { minX: -136, maxX: -104, minZ: -156, maxZ: -124 }, build: (b) => leben(b, funkhuegel(b, H_Y), 'militaer'), seeds: [[-121, -142, H_Y]], height: 12, spacing: 1.7 },
+    { id: 'hq_a', name: 'Hauptquartier A', bounds: { minX: 24, maxX: 96, minZ: 196, maxZ: 242 }, nav: true, build: (b) => leben(b, hq(b, { x: 60, z: 219, side: 'A', pads: [[78, 228, 'tank'], [78, 212, 'tank'], [40, 230, 'jeep'], [40, 220, 'jeep'], [40, 210, 'jeep']] }), 'militaer'), seeds: [[60, 212]], spacing: 2.2 },
+    { id: 'hq_b', name: 'Hauptquartier B', bounds: { minX: -56, maxX: 16, minZ: -246, maxZ: -198 }, nav: true, build: (b) => leben(b, hq(b, { x: -20, z: -222, side: 'B', pads: [[-38, -213, 'tank'], [-38, -229, 'tank'], [2, -212, 'jeep'], [2, -222, 'jeep'], [2, -232, 'jeep']] }), 'militaer'), seeds: [[-20, -215]], spacing: 2.2 },
     // zuletzt angehängt: Builder-Zufall der übrigen Ortschaften bleibt gleich (seed + k·101)
     { id: 'damm', name: 'Erdbrücke', bounds: { minX: -30, maxX: -6, minZ: -34, maxZ: -2 }, clear: { minX: -28, maxX: -8, minZ: -31, maxZ: -12.5 }, build: (b) => damm(b), seeds: [[-18, -9, 0.8], [-18, -27, 1.2]], height: 8, spacing: 1.5 },
   ],
@@ -676,6 +687,9 @@ export default {
   // Spielfläche (statt unsichtbarer Wand; die alte Wand bei wallMargin bleibt als Sicherheitsnetz dahinter)
   lateSites: [
     { id: 'grenze', name: 'Grenzanlage', bounds: { minX: -280, maxX: 280, minZ: -280, maxZ: 280 }, chunkSize: 80, build: (b, ctx) => grenzanlage(b, { hf: ctx.hf, roads: ctx.roads, line: grenzLinie(268, 24) }) },
+    // karten-voll (14.11.): Kulturlandschaft – Freileitungen entlang der Straßen, Fahrspuren/Pfützen auf Feldwegen,
+    // Rundballen auf Stoppelfeldern, Hochsitze an Waldrändern, Feldstellungen an Hecken (grenzland-land.js)
+    { id: 'land', name: 'Kulturlandschaft', bounds: { minX: -250, maxX: 250, minZ: -250, maxZ: 250 }, chunkSize: 80, build: (b, ctx) => landschaft(b, ctx, GRENZLAND) },
   ],
 
   // Flaggen: Eroberung A–E, Herrschaft A–C (Dorf, Mühle, Brücke)
@@ -716,3 +730,21 @@ export default {
     { id: 'grenzland-gertrud', name: 'Gertrud', hint: 'Die Scheune hat einen Stammgast.', x: -134.5, y: 0.2, z: 119.5, trigger: { type: 'proximity', radius: 3.2 } },
   ],
 };
+// gelaende (14.11., Runde 3): Kleinrelief (terrain/relief.js) – Kuppen, Senken, Feldraine und eine Bachrinne als
+// Sichtdeckung auf den freien Wiesen zwischen Dorf, Mühle, Brücke und Nordufer. Weich ausgeblendet an Flaggen,
+// Startpunkten, Fahrzeug-Stellplätzen, Ortschaften und Kampagnenpunkten; Straßen/Fluss/Bauflächen ebnen danach ein.
+GRENZLAND.terrain.relief = {
+  ...reliefAvoid(GRENZLAND, KAMPAGNE_PUNKTE.grenzland.map(([x, z]) => [x, z, 5])),
+  knolls: [
+    { x: 72, z: -2, r: 18, h: 3.0, w: 14, ry: 0.5 }, { x: -96, z: -4, r: 18, h: 3.2, w: 15, ry: -0.3 }, { x: -30, z: -84, r: 14, h: 2.4 },
+    { x: 104, z: -80, r: 12, h: 2.2, w: 9, ry: 1.1 }, { x: -24, z: 8, r: 9, h: 1.6, w: 6, ry: 0.4 }, { x: 70, z: 64, r: 12, h: 2.2, w: 8, ry: -0.6 },
+    { x: -82, z: 72, r: 12, h: 2.0, w: 8, ry: 0.9 }, { x: 96, z: 150, r: 14, h: 2.6 }, { x: -130, z: 30, r: 11, h: -1.6, w: 8 },
+  ],
+  ridges: [
+    { pts: [[58, 24], [80, 16], [98, 6]], w: 3.6, h: 1.35 }, { pts: [[-40, 18], [-30, 4], [-34, -6]], w: 3.4, h: 1.2 },
+    { pts: [[110, -60], [120, -76]], w: 3.4, h: 1.3 }, { pts: [[-60, -78], [-44, -96]], w: 3.4, h: 1.3 },
+  ],
+  sunken: [{ pts: [[-114, 66], [-98, 52], [-92, 36], [-96, 22]], w: 3.6, d: 1.5, bank: 5 }],
+  scatter: { seed: 4712, count: 75, area: { minX: -245, maxX: 245, minZ: -245, maxZ: 245 }, r: [9, 19], h: [1.2, 2.8], hollow: 0.3, gap: 6 },
+};
+export default GRENZLAND;

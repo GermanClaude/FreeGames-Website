@@ -3,7 +3,7 @@
 //
 // Die Kette selbst steckt in engine/post/pipeline.js (Aufbau je Stufe dort beschrieben):
 //   low     „lite“: Welt + Viewmodel → HDR → EIN Pass (Objektiv, FXAA-Konsole, Belichtung, AgX, LUT, Körnung …)
-//   medium+ Welt → HDR [+ GTAO ab high, dort halbe Auflösung] → Viewmodel → Belichtung → Bloom → Grade (8 Bit) → [FXAA | SMAA]
+//   medium+ Welt → HDR [+ GTAO ab high, dort halbe Auflösung] [+ Kontaktschatten high/ultra, SSR + TAA ultra] → Viewmodel → Belichtung → Bloom → Grade (8 Bit) → [FXAA | SMAA]
 //           → Objektiv (Verzeichnung, Farbsaum, RCAS bzw. FSR-EASU, Körnung, Kompression, Gehäuse) → Bild
 //   direct  low im Stil „Klassisch“ mit MSAA-Kontext: bisheriges direktes Rendern (ACES im Material,
 //           Vignette per CSS über body.np-css-vignette – main fragt `cssVignette`).
@@ -14,12 +14,12 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261113221339';
-import { estimateMemory } from './post/memory.js?v=20261113221339';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261113221339';
-import { resetFormatCache } from './post/common.js?v=20261113221339';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261113221339'; // Erweitert-Grafik (S9, ui-controls)
-import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261113221339';
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261115041504';
+import { estimateMemory } from './post/memory.js?v=20261115041504';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261115041504';
+import { resetFormatCache } from './post/common.js?v=20261115041504';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261115041504'; // Erweitert-Grafik (S9, ui-controls)
+import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261115041504';
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 
@@ -29,6 +29,9 @@ export const QUALITY_LEVELS = ['low', 'medium', 'high', 'ultra'];
 // shadowInterval: Schattenkarte höchstens jedes n-te Bild neu (1 = jedes Bild; Welt meldet Kamerasprünge
 // über invalidateShadows()). Telefone (auto → low) bekommen so Sonnenschatten bei ~⅓ der Kosten.
 // post: volle Nachbearbeitungskette (false = low: ein kombinierter Pass bzw. direktes Rendern).
+// gfx-licht (14.11.): shadowTaps/shadowSoft = weiche Sonnenschatten (Proben, Radiusfaktor; 0 = three.js-Standard),
+// contactShadows = Bildschirmraum-Kontaktschatten, ssr = Bildschirmraum-Reflexionen, taa = temporale Kantenglättung
+// (ergänzt SMAA, das weiter die Waffe glättet), dof = Tiefenschärfe beim Zielen. low/medium unverändert.
 export const QUALITY_PRESETS = Object.freeze({
   low: Object.freeze({
     id: 'low', pixelRatio: 1.5, shadows: true, shadowMapSize: 1024, shadowExtent: 24, shadowInterval: 4,
@@ -44,13 +47,40 @@ export const QUALITY_PRESETS = Object.freeze({
     id: 'high', pixelRatio: 1.5, shadows: true, shadowMapSize: 2048, shadowExtent: null, shadowInterval: 1,
     bloom: true, smaa: true, fxaa: false,
     ssao: true, aoScale: 0.5, grade: true, post: true, maxBotsVisibleShadows: 8, particleScale: 1, decals: 120, anisotropy: 16,
+    shadowTaps: 12, shadowSoft: 1, contactShadows: true, ssr: false, taa: false, dof: true,
   }),
   ultra: Object.freeze({
     id: 'ultra', pixelRatio: 2, shadows: true, shadowMapSize: 4096, shadowExtent: null, shadowInterval: 1,
     bloom: true, smaa: true, fxaa: false,
     ssao: true, aoScale: 1, grade: true, post: true, maxBotsVisibleShadows: 16, particleScale: 1.25, decals: 120, anisotropy: 16,
+    shadowTaps: 16, shadowSoft: 1.3, contactShadows: true, ssr: true, taa: true, dof: true,
   }),
 });
+
+// desktop (14.11.): Stufe „Extrem“ nur in der Desktop-App (window.nullpunktDesktop, desktop/preload.js). Technisch Ultra
+// (id bleibt 'ultra' – alle Abnehmer wählen ihre Detailstufe wie bisher), dazu extreme: true für die Zusätze:
+// 8K-Sonnenschatten, mehr Schatten von Figuren, mehr Partikel/Einschüsse; world/library.js holt 4K-Sätze (wo vorhanden),
+// bigworld.js weitere Sicht, modes.data.js limitsFor höhere Massenschlacht-Grenze (tier 'extrem').
+export const EXTREME = 'extrem';
+export const isDesktopApp = () => typeof window !== 'undefined' && !!window.nullpunktDesktop;
+export const EXTREME_PRESET = Object.freeze({
+  ...QUALITY_PRESETS.ultra, extreme: true, shadowMapSize: 8192, maxBotsVisibleShadows: 32, particleScale: 1.5, decals: 240,
+});
+/** Vorgabe zu Wunsch q (auch 'extrem') und aufgelöster Stufe. */
+const EXTREME_PRESET_4K = Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096 });
+// app (14.11.): 8K-Schatten (256 MB Tiefentextur) nur, wenn alles dafür spricht – GPU kann ≥ 16K-Texturen, ist eine
+// starke Desktop-GPU (keine Software-GL, kein iGPU-/Mobilchip), ≥ 16 GB RAM, und der letzte Spielprozess der App ist
+// nicht abgestürzt (desktop/main.js meldet lastCrash). Sonst „Extrem“ mit 4096² (wie Ultra) – der Rest bleibt Extrem.
+let extremeBigShadow = false; // vom Kontext (createRenderer)
+const BIG_GPU = new Set(['nvidia', 'amd', 'intel-arc', 'apple', 'amd-apu-hoch']);
+function bigShadowOk(maxTex, cls) {
+  const d = typeof window !== 'undefined' ? window.nullpunktDesktop : null;
+  if (!d || d.lastCrash) return false;
+  const memGB = Number(d.memoryGB) || 0;
+  return maxTex >= 16384 && BIG_GPU.has(cls) && memGB >= 15.5;
+}
+const presetFor = (q, tier) => (q === EXTREME && tier === 'ultra' && isDesktopApp()
+  ? (extremeBigShadow ? EXTREME_PRESET : EXTREME_PRESET_4K) : QUALITY_PRESETS[tier]);
 
 /** Standardwerte des Bloom (Schwelle in Bildwerten nach Belichtung, d. h. vor dem Tonemapping). */
 export const BLOOM_DEFAULTS = Object.freeze({ threshold: 3.0, strength: 0.24, radius: 0.4, maxBright: 8 });
@@ -70,6 +100,7 @@ export function isLowEndDevice() {
  */
 export function resolveQuality(q) {
   if (QUALITY_LEVELS.includes(q)) return q;
+  if (q === EXTREME && isDesktopApp()) return 'ultra'; // desktop
   if (typeof window === 'undefined') return 'high';
   return provisionalTier();
 }
@@ -132,6 +163,26 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.info.autoReset = false;
   renderer.setClearColor(0x0a0b0d, 1);
+  // Diagnose (14.11., Schwarzbild auf echten GPUs): Shader-Fehler sammeln und sichtbar einblenden, damit Spieler sie melden können
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    const log = (s) => (s && gl.getShaderInfoLog(s)) || '';
+    const msg = (gl.getProgramInfoLog(program) || '') + '\n' + log(vs) + '\n' + log(fs);
+    const list = (window.__npShaderErrors = window.__npShaderErrors || []);
+    if (list.length < 8) list.push(msg.trim().slice(0, 600));
+    console.error('NULLPUNKT Shader-Fehler:', msg);
+    try {
+      let box = document.getElementById('np-shader-err');
+      if (!box) {
+        box = document.createElement('pre');
+        box.id = 'np-shader-err';
+        box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;max-height:40vh;overflow:auto;z-index:99999;background:rgba(80,0,0,.92);color:#fff;font:11px/1.35 monospace;padding:8px;white-space:pre-wrap;pointer-events:auto';
+        box.title = 'Bitte Screenshot an den Entwickler – Klick schließt';
+        box.onclick = () => box.remove();
+        document.body.appendChild(box);
+      }
+      box.textContent = 'Grafikfehler (bitte Screenshot schicken, Klick schließt):\n' + navigator.userAgent + '\n\n' + list.join('\n-----\n');
+    } catch { /* ohne DOM */ }
+  };
   // Max. Anisotropie jetzt abfragen (three.js merkt sie sich): gl.getParameter wartet, bis die GPU alle
   // anstehenden Befehle abgearbeitet hat – beim ersten Kartenladen kostete das einen langen Hänger.
   renderer.capabilities.getMaxAnisotropy();
@@ -142,7 +193,8 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   let auto = null;
   let gpu = { name: '', cls: 'unbekannt' };
   try { const name = gpuName(renderer.getContext()); gpu = { name, cls: classifyGpu(name, deviceInfo()).cls }; } catch { /* ohne Namen */ }
-  const startAuto = !QUALITY_LEVELS.includes(quality);
+  extremeBigShadow = bigShadowOk(renderer.capabilities.maxTextureSize || 4096, gpu.cls); // desktop: Stufe Extrem
+  const startAuto = !QUALITY_LEVELS.includes(quality) && !(quality === EXTREME && isDesktopApp());
   try {
     const d = decideAuto(renderer, { bench: benchmark && startAuto });
     if (startAuto) { auto = d; initial = d.tier; }
@@ -196,7 +248,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
     auto,
     /** GPU-Name und -Klasse (engine/device.js); cls 'software' = Browser ohne GPU-Beschleunigung. */
     gpu,
-    preset: applyGraphics(QUALITY_PRESETS[initial], settings),
+    preset: applyGraphics(presetFor(quality, initial), settings),
     /** Entfällt seit der eigenen Kette (bleibt null; Kompatibilität). */
     composer: null,
     /** Nachbearbeitungskette (engine/post/pipeline.js). */
@@ -241,7 +293,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
     get mood() { return pipeline.mood.id; },
 
     setQuality(q) {
-      if (!QUALITY_LEVELS.includes(q)) {
+      if (!QUALITY_LEVELS.includes(q) && !(q === EXTREME && isDesktopApp())) {
         // „Automatisch“ erst in dieser Sitzung gewählt (Start mit fester Stufe): GPU-Test jetzt nachholen (21.10.)
         const a = autoDecision();
         if (!a || a.pending) { try { decideAuto(renderer, { bench: benchmark }); } catch (err) { console.warn('[NULLPUNKT] Geräteprofil:', err); } }
@@ -250,7 +302,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
       const next = resolveQuality(q);
       this.requested = q;
       // Stufe + erweiterte Grafikoptionen (settings gfx*, shared/graphics.data.js) = wirksame Vorgabe
-      const preset = applyGraphics(QUALITY_PRESETS[next], settings);
+      const preset = applyGraphics(presetFor(q, next), settings);
       if (next === this.quality && this._built && samePreset(preset, this.preset)) return;
       const prevShadows = this.preset.shadows;
       this.quality = next;

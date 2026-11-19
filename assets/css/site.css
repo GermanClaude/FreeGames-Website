@@ -1204,3 +1204,61 @@ html.static-type .hl { --sq: 0; }
   .go { padding-block: 6px; margin-block: -6px; }
   .tab { min-height: 44px; min-width: 44px; }
 }
+
+/* ───────────────────────────────────────────── §08 App: Herunterladen, Web-App, Desktop-App (app 14.11.) */
+
+.dl-grid { display: grid; gap: 40px; }
+@media (min-width: 900px) { .dl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px var(--gap); } }
+.dl-card { border-top: 1px solid var(--np-line-strong); padding-top: 20px; min-width: 0; }
+.dl-card > p { font-size: var(--fs-small); line-height: 1.5; color: var(--ink-2); max-width: 60ch; }
+.dl-card > p + p { margin-top: 12px; }
+.dl-card strong { color: var(--np-ink); font-weight: 600; }
+.dl-links { list-style: none; display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0 16px; padding: 0; }
+.dl-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.dl-actions:empty { display: none; }
+.dl-btn {
+  display: inline-flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 48px; padding: 8px 18px;
+  border: 1px solid var(--np-line-strong); color: var(--np-ink); text-decoration: none; font-size: 16px; font-weight: 700;
+  background: transparent; cursor: pointer; font-family: inherit; text-align: left;
+}
+.dl-btn:hover, .dl-btn:focus-visible { border-color: var(--np-ink); }
+.dl-btn.is-main { background: var(--np-ink); color: var(--np-black); border-color: var(--np-ink); }
+.dl-btn.is-main .dl-meta { color: var(--np-black-3); }
+.dl-btn[hidden] { display: none; }
+.dl-btn:disabled { opacity: .5; cursor: progress; }
+.dl-meta { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.dl-note { font-family: var(--font-mono); font-size: 12.5px !important; line-height: 1.55; color: var(--ink-2); }
+.dl-note:empty { display: none; }
+.dl-note a, .dl-inline { color: var(--np-ink); }
+.dl-share { display: inline-block; width: .9em; height: 1.05em; vertical-align: -.15em; border: 1.5px solid currentColor; border-top: 0; position: relative; margin: 0 2px; }
+.dl-share::before { content: ''; position: absolute; left: 50%; top: -.35em; width: 1.5px; height: .8em; background: currentColor; transform: translateX(-50%); }
+.dl-compare { width: 100%; margin-top: 56px; border-collapse: collapse; font-size: var(--fs-small); }
+.dl-compare caption { text-align: left; }
+.dl-compare th, .dl-compare td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); }
+.dl-compare thead th { font-family: var(--font-mono); font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+.dl-compare tbody th { font-weight: 600; color: var(--np-ink); white-space: nowrap; }
+.dl-compare td { color: var(--ink-2); }
+@media (max-width: 599px) {
+  .dl-compare, .dl-compare tbody, .dl-compare tr, .dl-compare th, .dl-compare td { display: block; }
+  .dl-compare thead { display: none; }
+  .dl-compare tbody tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .dl-compare th, .dl-compare td { border: 0; padding: 2px 0; white-space: normal; }
+  .dl-compare td:nth-of-type(1)::before { content: 'Web: '; color: var(--np-ink); }
+  .dl-compare td:nth-of-type(2)::before { content: 'PC-App: '; color: var(--np-ink); }
+  .dl-compare td[colspan]::before { content: ''; }
+}
+/* Handy/Tablet: Web-App und Handy zuerst, PC-App danach */
+@media (pointer: coarse) { .dl-pc { order: 3; } .dl-vr { order: 4; } }
+/* Desktop-App */
+.app-play { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin-bottom: 40px; }
+.app-sys { margin: 0 0 40px; }
+.app-feat { list-style: none; padding: 0; margin: 0 0 40px; display: grid; gap: 12px; max-width: 70ch; }
+.app-feat li { font-size: var(--fs-small); line-height: 1.5; color: var(--ink-2); padding-left: 18px; position: relative; }
+.app-feat li::before { content: ''; position: absolute; left: 0; top: .6em; width: 7px; height: 7px; background: var(--np-signal); }
+.app-feat strong { color: var(--np-ink); font-weight: 600; }
+.app-cfg { display: grid; gap: 14px; margin-bottom: 32px; }
+.app-chk { display: flex; gap: 12px; align-items: center; font-size: var(--fs-small); min-height: 32px; cursor: pointer; }
+.app-chk input { width: 18px; height: 18px; accent-color: var(--np-signal); }
+.app-acts { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+/* In der App: „Spielen.“ immer in der Statuszeile, kein „Kein Download“ */
+.js.is-desktop-app .st-play[hidden] { display: inline-flex !important; }

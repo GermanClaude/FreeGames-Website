@@ -13,13 +13,13 @@
 //     eigene Patronenbahn, meta.magExt: attach.js streckt es nicht zusätzlich).
 // Eigener Atlas (p9a-tex.js) für Schlitten und Rahmen. Detailstufen nach Budget §3.4 (Pistole): PC hoch ≤ 150 k, PC niedrig/mittel
 // ≤ 60 k, Handy ≤ 30 k, Bots ≤ 400 Dreiecke – gröberes Raster als die P-9 (die P-9 selbst bleibt unverändert).
-import { p9, P9, gripMag } from './guns-pistol.js?v=20261113221339';
-import * as R9 from './p9-ref.js?v=20261113221339';
-import * as R from './p9a-ref.js?v=20261113221339';
-import { p9aSlideUV, p9aFrameUV } from './p9a-tex.js?v=20261113221339';
-import { atlasUVTri } from './pistol-parts.js?v=20261113221339';
-import { surfaceNets, cavityColors, simplifyPoly } from './sdf.js?v=20261113221339';
-import { magRounds } from './magfill.js?v=20261113221339';
+import { p9, P9, gripMag } from './guns-pistol.js?v=20261115041504';
+import * as R9 from './p9-ref.js?v=20261115041504';
+import * as R from './p9a-ref.js?v=20261115041504';
+import { p9aSlideUV, p9aFrameUV } from './p9a-tex.js?v=20261115041504';
+import { atlasUVTri } from './pistol-parts.js?v=20261115041504';
+import { surfaceNets, cavityColors, simplifyPoly } from './sdf.js?v=20261115041504';
+import { magRounds } from './magfill.js?v=20261115041504';
 
 const { U, V, M } = R;
 const { axis: AX, front: UF, hw: HW } = P9;
@@ -81,9 +81,8 @@ function rearNotch(b) {
   const [, , [rx0, ry0], [rx1, ry1]] = R.REAR_SIGHT;   // [2018,85] → [1997,37]
   const rv = V(ry1), slope = Math.atan2((rx0 - rx1) / R.PPM, (ry0 - ry1) / R.PPM);   // Neigung der Rückfläche gegen die Senkrechte
   const ruAt = (v) => U(rx1 + (rx0 - rx1) * ((rv - v) * R.PPM) / (ry0 - ry1));
-  const uf = U(1936), o = { part: 'slide', c: 0, rx: -slope };
-  const ru = ruAt(rv - 0.0013);
-  b.box('cavity', 0.0034, 0.0026, uf - ru + 0.0008, 0, rv - 0.0011, (uf + ru) / 2, { part: 'slide', c: 0 });
+  const o = { part: 'slide', c: 0, rx: -slope };
+  // Kerbe selbst schneidet guns-pistol.js (notchSight) aus – hier nur die weiße U-Markierung (visier, 14.11.)
   for (const s of [-1, 1]) b.box('paintWhite', 0.0008, 0.0031, 0.0003, s * 0.0025, rv - 0.0016, ruAt(rv - 0.0016) - 0.00018, o);
   b.box('paintWhite', 0.0058, 0.0008, 0.0003, 0, rv - 0.0034, ruAt(rv - 0.0034) - 0.00018, o);
 }

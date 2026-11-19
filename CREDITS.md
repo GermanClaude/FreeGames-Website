@@ -9,7 +9,10 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (69)
+## Texturen (91)
+
+45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
+verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
 |---|---|---|---|---|
@@ -41,14 +44,14 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Linoleum Brown | `linoleum` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/linoleum_brown) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirty Carpet | `carpet_dirty` | Rohit Seervi | [Poly Haven](https://polyhaven.com/a/dirty_carpet) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Office Ceiling 001 | `ceiling_office` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=OfficeCeiling001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Rubber 001 | `rubber_floor` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Rubber001) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rubber Tiles | `rubber_floor` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rubber_tiles) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Asphalt 02 | `asphalt_cracked` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/asphalt_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Gravel Floor 02 | `gravel` | Jenelle van Heerden, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/gravel_floor_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dense Sand | `sand` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/dense_sand) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dirt | `dirt` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/dirt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Brown Mud 02 | `mud` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dry Ground 01 | `ground_dry_cracked` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/dry_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Grass 004 | `grass` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Grass004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Leafy Grass | `grass` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/leafy_grass) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Wood Planks | `wood_planks` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/wood_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Weathered Planks | `wood_planks_weathered` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/weathered_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dark Wooden Planks | `wood_planks_dark` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/dark_wooden_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -64,7 +67,7 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Rusty Corrugated Iron | `metal_corrugated_rusty` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/rusty_corrugated_iron) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Factory Wall | `metal_cladding_green` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/factory_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Painted Metal Shutter | `metal_shutter` | Dario Barresi, Rico Cilliers, Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/painted_metal_shutter) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
-| Metal 009 | `metal_galvanized` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Metal009) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Metal Plate 02 | `metal_galvanized` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/metal_plate_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Metal Plate | `metal_tread` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/metal_plate) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Metal Walkway 010 | `metal_grate` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=MetalWalkway010) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Fence 007 A | `chainlink` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Fence007A) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -82,6 +85,85 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Plastic 006 | `polymer_black` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Plastic006) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Lacquered Cherry Wood | `wood_stock` | Jenelle van Heerden, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/lacquered_cherry_wood) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rubber 004 | `rubber` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Rubber004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Bark Brown 02 | `bark_brown` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/bark_brown_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rock Boulder Dry | `rock_boulder` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_boulder_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Weitere Welt-Sätze (texturen, 14.11.2026)
+
+Fotoscans für Böden, Wände, Dächer und Blech (2K-Quellen, als KTX2 512/1024/2048 kodiert; Farben im Spiel kalibriert).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Concrete Floor Worn 02 | `concrete_floor_worn2` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/concrete_floor_worn_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Garage Floor | `concrete_garage` | Jenelle van Heerden | [Poly Haven](https://polyhaven.com/a/garage_floor) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Concrete Pavement | `paving_slabs` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/concrete_pavement) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Asphalt 04 | `asphalt_light` | Jenelle van Heerden, Sergej Majboroda | [Poly Haven](https://polyhaven.com/a/asphalt_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Worn Asphalt | `asphalt_dark` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/worn_asphalt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Cobblestone Pavement | `cobble_rows` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/cobblestone_pavement) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rocky Trail | `gravel_trail` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rocky_trail) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brown Mud Dry | `dirt_dry` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Plastered Wall 04 | `plaster_smooth_grey` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/plastered_wall_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rough Plaster 03 | `plaster_rough` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/rough_plaster_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Grey Plaster 02 | `plaster_stained` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/grey_plaster_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Red Bricks 04 | `brick_red_weathered` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/red_bricks_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brick Wall 09 | `brick_light` | Rob Tuytel, Matterfield | [Poly Haven](https://polyhaven.com/a/brick_wall_09) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Red Brick 03 | `brick_clinker` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/red_brick_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Clay Roof Tiles 03 | `roof_clay_red` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/clay_roof_tiles_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Roof Tiles 14 | `roof_tiles_old` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/roof_tiles_14) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Corrugated Iron 03 | `metal_corrugated_painted` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/corrugated_iron_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Worn Corrugated Iron | `metal_corrugated_worn` | Jenelle van Heerden, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/worn_corrugated_iron) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rusty Metal 04 | `metal_rust_heavy` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rusty_metal_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Weathered Brown Planks | `wood_planks_brown` | Dimitrios Savva, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/weathered_brown_planks) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Gelände-Sätze (texturen3, 14.11.2026)
+
+Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert). Außerdem haben 15 vorhandene Poly-Haven-Welt-Sätze eine 4096er-Albedo aus den 4K-Quellen derselben Scans bekommen (nur Desktop-Stufe „Extrem“; gleiche Lizenz CC0).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Forest Ground 01 | `ground_meadow` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/forrest_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Forest Ground 04 | `ground_forest` | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/forest_ground_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rocks Ground 01 | `ground_stones` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/rocks_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rock Face 03 | `rock_face` | Dario Barresi, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_face_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Laub- und Bodenatlanten (14.11.2026)
+
+`assets/lib/foliage/`: Foto-Laubatlanten (Busch, Gras, Palmwedel, Blüten, Laubbaum-Büschel) und der Atlas der
+Bodenauflage (Laub, Erde, Sand, Splitt, Pfützen-/Ölmasken, Schmutzrand, Einzelblätter) sind aus freigestellten
+Blättern/Halmen bzw. maskierten Ausschnitten dieser CC0-Scans zusammengesetzt (WebP); der Fichtenzweig ist eigen gezeichnet.
+
+| Asset | Verwendet für | Urheber:in | Quelle | Lizenz |
+|---|---|---|---|---|
+| Shrub 03 | Blätter (Busch, Laubbaum, Einzelblätter) | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Shrub 04 | Blätter (Busch, Laubbaum, Blüten, Einzelblätter) | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Grass Medium 01 | Grasbüschel | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/grass_medium_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Grass Medium 02 | Palmfiedern | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/grass_medium_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Dry Decay Leaves | Laubstreu | Amal Kumar | [Poly Haven](https://polyhaven.com/a/dry_decay_leaves) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brown Mud Dry | Erde/Schlamm | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_dry) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Coast Sand 01 | Sand-/Staubverwehung | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/coast_sand_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rocky Gravel | Splitt | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/rocky_gravel) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Dirt | Schmutzrand am Wandfuß | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/dirt) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Forest Leaves 02 | Schmutzrand am Wandfuß | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/forest_leaves_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Bäume: Zweig-Atlas und Rinden (14.11.2026, Strang „baeume“)
+
+`assets/lib/foliage/baeume.webp` (+ `baeume-1k.webp`): Zweigkarten je Baumart (Eiche, Buche, Birke, Linde, Pappel –
+Blattformen aus freigestellten Einzelblatt-Scans maskiert, umgefärbt und an gezeichnete Zweige gesetzt), Fichten- und
+Kiefernzweige, Farnwedel und Rindenstreifen, zusammengesetzt aus den folgenden CC0-Scans. Rinden-Sätze
+`assets/lib/textures/bark_*` (KTX2) aus den Poly-Haven-Rindentexturen; die Birkenrinde ist aus „Knotted Pine Bark“
+aufgehellt und mit gezeichneten Korkporen versehen.
+
+| Asset | Verwendet für | Urheber:in | Quelle | Lizenz |
+|---|---|---|---|---|
+| Island Tree 01 | Einzelblätter (alle Laubarten) | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/island_tree_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Fir Tree 01 | Fichtenzweige | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/fir_tree_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Pine Tree 01 | Kiefernzweige | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/pine_tree_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Fern 02 | Farnwedel | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/fern_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Jolcham Oak Bark 01 | `bark_eiche` | Charlotte Baglioni | [Poly Haven](https://polyhaven.com/a/jolcham_oak_bark_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Knotted Pine Bark | `bark_buche`, `bark_birke` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/knotted_pine_bark) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Bark Brown 01 | `bark_pappel` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/bark_brown_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Pine Bark | `bark_kiefer` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/pine_bark) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Bark Willow | `bark_fichte` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/bark_willow) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
 ## HDRIs (8)
 
@@ -96,7 +178,7 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Industrial Pipe & Valve 01 | `industrial_pipe_and_valve_01` | Philip Modin | [Poly Haven](https://polyhaven.com/a/industrial_pipe_and_valve_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Debris Basement Corridor | `debris_basement_corridor` | Elvis Posa | [Poly Haven](https://polyhaven.com/a/debris_basement_corridor) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
-## Modelle (57)
+## Modelle (72)
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
 |---|---|---|---|---|
@@ -149,6 +231,21 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Television 01 | `television_01` | Gabriel Radić | [Poly Haven](https://polyhaven.com/a/Television_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Wooden Bookshelf Worn | `wooden_bookshelf_worn` | Ulan Cabanilla | [Poly Haven](https://polyhaven.com/a/wooden_bookshelf_worn) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Plastic Monobloc Chair 01 | `plastic_monobloc_chair_01` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/plastic_monobloc_chair_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Can Rusted | `can_rusted` | Rahul Chaudhary | [Poly Haven](https://polyhaven.com/a/can_rusted) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Electric Stove | `electric_stove` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/electric_stove) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Garden Hose Wall Mounted 01 | `garden_hose_wall_mounted_01` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/garden_hose_wall_mounted_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Cabinet | `painted_wooden_cabinet` | Kirill Sannikov | [Poly Haven](https://polyhaven.com/a/painted_wooden_cabinet) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Chair 01 | `painted_wooden_chair_01` | Kuutti Siitonen | [Poly Haven](https://polyhaven.com/a/painted_wooden_chair_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Shelves | `painted_wooden_shelves` | Kirill Sannikov | [Poly Haven](https://polyhaven.com/a/painted_wooden_shelves) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Wooden Table | `painted_wooden_table` | Kirill Sannikov | [Poly Haven](https://polyhaven.com/a/painted_wooden_table) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Planter Box 01 | `planter_box_01` | James Ray Cock | [Poly Haven](https://polyhaven.com/a/planter_box_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rusted Spade 01 | `rusted_spade_01` | Blemonade | [Poly Haven](https://polyhaven.com/a/rusted_spade_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Security Light | `security_light` | Maximilian Schuster | [Poly Haven](https://polyhaven.com/a/security_light) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Sledgehammer 01 | `sledgehammer_01` | Dylan Guzman | [Poly Haven](https://polyhaven.com/a/sledgehammer_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Axe | `wooden_axe` | Ulan Cabanilla | [Poly Haven](https://polyhaven.com/a/wooden_axe) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Bucket 01 | `wooden_bucket_01` | James Ray Cock | [Poly Haven](https://polyhaven.com/a/wooden_bucket_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Crate 01 | `wooden_crate_01` | James Ray Cock | [Poly Haven](https://polyhaven.com/a/wooden_crate_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Wooden Picnic Table | `wooden_picnic_table` | Ulan Cabanilla | [Poly Haven](https://polyhaven.com/a/wooden_picnic_table) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Old Bed Frame | `old_bed_frame` | Luca B | [Poly Haven](https://polyhaven.com/a/old_bed_frame) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Wet Floor Sign 01 | `wetfloorsign_01` | Fran Calvente | [Poly Haven](https://polyhaven.com/a/WetFloorSign_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Dead Tree Trunk 02 | `dead_tree_trunk_02` | Jenelle van Heerden, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/dead_tree_trunk_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
@@ -157,6 +254,16 @@ Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 | Potted Plant 02 | `potted_plant_02` | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/potted_plant_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Shrub 04 | `shrub_04` | Rico Cilliers | [Poly Haven](https://polyhaven.com/a/shrub_04) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Weed Plant 02 | `weed_plant_02` | Rob Tuytel, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/weed_plant_02) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+## Soldatenköpfe
+
+Die Köpfe der Soldaten (Nahansicht und Zwischensequenzen) beruhen auf dem Grundnetz **hm08** und den Form-Zielen
+(Alter, Herkunft, Statur, Kiefer, Kinn, Nase, Wangen, Lippen, Augen …) von **MakeHuman**
+([makehumancommunity/makehuman](https://github.com/makehumancommunity/makehuman), Assets seit 09/2020
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de); Urheber: Manuel Bastioni und das MakeHuman-Team,
+Data Collection AB, Joel Palmius, Jonas Hauquier). Von uns auf Kopf + Hals zugeschnitten, neu UV-gepackt und um
+Mimik-Ziele ergänzt (`assets/lib/models/kopf/`, ebenfalls CC0). Hauttexturen, Bart, Brauen, Augen und Zähne sind
+prozedural erzeugt (keine Bilddateien).
 
 ## Klänge
 

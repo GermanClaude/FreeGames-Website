@@ -5,14 +5,18 @@
 // Platzierung nach dem Weltaufbau per Strahltest gegen die Kugel-BVH (world.raycast): auf einem gestreuten Raster
 // werden waagerechte Strahlen geschossen; senkrechte Treffer bekommen je nach Material (Container, Wellblech, Beton,
 // Putz, Ziegel) ein passendes Decal, wenn die ganze Fläche des Decals auf derselben Wand liegt (4 Eckstrahlen).
-// Gesät über die Kartenkennung → jedes Laden gleich. Je Zelle (64/44/32 m) ein InstancedMesh (Culling), Ausblenden
+// Gesät über die Kartenkennung → jedes Laden gleich. karten-voll (14.11.): zweite Atlashälfte (1024×1024) mit
+// Einschüssen, MG-Garben, Splitterwurf, Brandflecken, Kreidezeichen, zweitem Plakat, Graffiti und Algensockeln. Je Zelle (64/44/32 m) ein InstancedMesh (Culling), Ausblenden
 // ab ≈ 34–48 m im Shader. Höchstens 140/220/300 Decals (medium/high/ultra).
 //
 // placeLookDecals(world, group, { quality, seed, def }) → { count, meshes, ms }
 import * as THREE from 'three';
 
-export const LOOK_DECAL = { rust: 0, water: 1, grime: 2, cracks: 3, leak: 4, poster: 5, tag: 6, soot: 7 };
-const CAP = { medium: 140, high: 220, ultra: 300 };
+export const LOOK_DECAL = { rust: 0, water: 1, grime: 2, cracks: 3, leak: 4, poster: 5, tag: 6, soot: 7,
+  // karten-voll (14.11.): Kriegsspuren und mehr Stadtleben (zweite Atlashälfte, 1024×1024)
+  einschuss: 8, splitter: 9, brand: 10, plakat: 11, graffiti: 12, garbe: 13, kreide: 14, algen: 15 };
+const ROWS = 4;
+const CAP = { medium: 180, high: 300, ultra: 420 }; // karten-voll: vorher 140/220/300
 /** Zellgröße der Instanz-Gruppen (m): größer = weniger Draw Calls, kleiner = besseres Frustum-Culling. */
 const CELL = { medium: 64, high: 44, ultra: 32 };
 
@@ -96,12 +100,82 @@ function drawAtlas(ctx) {
   cell(7, () => {
     for (let i = 0; i < 14; i++) { const y = 256 - i * 16, x = 128 + (r() - 0.5) * 30, rr = 30 + i * 6; const g = ctx.createRadialGradient(x, y, 0, x, y, rr); g.addColorStop(0, `rgba(14,12,10,${0.28 - i * 0.012})`); g.addColorStop(1, 'rgba(14,12,10,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256); }
   });
+  // --- karten-voll (14.11.): zweite Atlashälfte ---
+  // Einschuss: Loch mit dunklem Kanal, hellem Abplatzkrater und Splitterstrahlen
+  const hole = (x, y, rr) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, rr * 3.2);
+    g.addColorStop(0, 'rgba(232,226,212,0.75)'); g.addColorStop(0.45, 'rgba(210,202,186,0.45)'); g.addColorStop(1, 'rgba(210,202,186,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rr * 3.2, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,36,30,0.5)'; ctx.lineWidth = 0.8;
+    for (let k = 0; k < 7; k++) { const a = r() * 7, l = rr * (1.4 + r() * 2.4); ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); ctx.stroke(); }
+    const h = ctx.createRadialGradient(x, y, 0, x, y, rr * 1.25);
+    h.addColorStop(0, 'rgba(8,7,6,1)'); h.addColorStop(0.7, 'rgba(22,20,18,0.95)'); h.addColorStop(1, 'rgba(60,54,46,0)');
+    ctx.fillStyle = h; ctx.beginPath(); ctx.arc(x, y, rr * 1.25, 0, 7); ctx.fill();
+  };
+  cell(8, () => { for (let i = 0; i < 9; i++) hole(128 + (r() - 0.5) * 150, 128 + (r() - 0.5) * 150, 3.5 + r() * 3); });
+  // Splitterwurf: viele kleine Krater, nach außen dünner
+  cell(9, () => {
+    const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 120); g.addColorStop(0, 'rgba(20,18,16,0.35)'); g.addColorStop(1, 'rgba(20,18,16,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 70; i++) { const a = r() * 7, d = Math.pow(r(), 0.7) * 118; hole(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, 0.8 + r() * 2.2 * (1 - d / 140)); }
+  });
+  // Brandfleck (Explosion/Feuer): schwarzer Kern, verrußter Rand, nach oben gezogen
+  cell(10, () => {
+    for (let i = 0; i < 16; i++) { const x = 128 + (r() - 0.5) * 60, y = 150 - r() * 90, rr = 40 + r() * 60; const g = ctx.createRadialGradient(x, y, 0, x, y, rr); g.addColorStop(0, `rgba(10,9,8,${0.3 + r() * 0.25})`); g.addColorStop(1, 'rgba(10,9,8,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256); }
+    ctx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 160; i++) { ctx.globalAlpha = r() * 0.4; ctx.beginPath(); ctx.arc(r() * 256, r() * 256, 1 + r() * 4, 0, 7); ctx.fill(); }
+  });
+  // Plakat 2 (Veranstaltung, frei erfunden) – verblichen, halb abgerissen
+  cell(11, () => {
+    ctx.fillStyle = '#e6dcc0'; ctx.fillRect(34, 10, 190, 236);
+    ctx.fillStyle = '#2d5a6a'; ctx.fillRect(34, 10, 190, 120);
+    ctx.fillStyle = '#f0c040'; ctx.beginPath(); ctx.arc(128, 70, 40, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1e2a30'; ctx.font = '700 30px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('SOMMERFEST', 128, 162);
+    ctx.font = '600 18px sans-serif'; ctx.fillText('AM BRUNNEN · 20 UHR', 128, 190);
+    ctx.fillStyle = '#7a2a20'; ctx.fillRect(54, 210, 150, 14);
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath(); ctx.moveTo(34, 160); ctx.lineTo(90, 246); ctx.lineTo(34, 246); ctx.fill();
+    for (let i = 0; i < 50; i++) { ctx.globalAlpha = 0.4 + r() * 0.6; ctx.beginPath(); ctx.arc(34 + r() * 190, r() < 0.5 ? 10 : 246, 3 + r() * 9, 0, 7); ctx.fill(); }
+    ctx.globalCompositeOperation = 'source-atop'; ctx.globalAlpha = 1;
+    for (let i = 0; i < 10; i++) { const x = r() * 256, y = r() * 256, rr = 20 + r() * 50; const g = ctx.createRadialGradient(x, y, 0, x, y, rr); g.addColorStop(0, 'rgba(90,76,50,0.35)'); g.addColorStop(1, 'rgba(90,76,50,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256); }
+  });
+  // Graffiti: freihändige Schriftzüge (Kringel, keine echten Zeichen/Marken)
+  cell(12, () => {
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const [col, w] of [['rgba(30,30,34,0.9)', 11], ['rgba(200,60,50,0.85)', 6]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath();
+      let x = 30, y = 140; ctx.moveTo(x, y);
+      for (let i = 0; i < 26; i++) { x += 7; y = 140 + Math.sin(i * 1.3) * 34 + (r() - 0.5) * 12; ctx.quadraticCurveTo(x - 4, y - 30 * Math.sign(Math.sin(i)), x, y); }
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 400; i++) { ctx.globalAlpha = r() * 0.5; ctx.fillRect(r() * 256, r() * 256, 1 + r() * 2, 1 + r() * 2); }
+  });
+  // MG-Garbe: Einschussreihe schräg über die Wand
+  cell(13, () => { for (let i = 0; i < 12; i++) hole(20 + i * 19 + (r() - 0.5) * 8, 170 - i * 9 + (r() - 0.5) * 18, 3 + r() * 2.5); });
+  // Kreidemarkierung (Durchsuchungszeichen: Kreuz im Kreis, Strich, Pfeil)
+  cell(14, () => {
+    ctx.strokeStyle = 'rgba(238,236,228,0.85)'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(110, 110, 62, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(66, 66); ctx.lineTo(154, 154); ctx.moveTo(154, 66); ctx.lineTo(66, 154); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(60, 214); ctx.lineTo(200, 214); ctx.lineTo(182, 198); ctx.moveTo(200, 214); ctx.lineTo(182, 230); ctx.stroke();
+    ctx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 600; i++) { ctx.globalAlpha = r() * 0.6; ctx.fillRect(r() * 256, r() * 256, 1 + r() * 3, 1); }
+  });
+  // Algen/Moos vom Boden aufsteigend (feuchte Sockel)
+  cell(15, () => {
+    const g = ctx.createLinearGradient(0, 256, 0, 60); g.addColorStop(0, 'rgba(52,70,34,0.6)'); g.addColorStop(0.5, 'rgba(60,76,40,0.28)'); g.addColorStop(1, 'rgba(60,76,40,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 300; i++) { const y = 256 - Math.pow(r(), 1.8) * 170; ctx.fillStyle = `rgba(${40 + r() * 30},${60 + r() * 30},${24 + r() * 16},${0.15 + r() * 0.35})`; ctx.beginPath(); ctx.arc(r() * 256, y, 1 + r() * 4, 0, 7); ctx.fill(); }
+    ctx.globalCompositeOperation = 'destination-in';
+    const s = ctx.createLinearGradient(0, 0, 256, 0); s.addColorStop(0, 'rgba(0,0,0,0)'); s.addColorStop(0.15, 'rgba(0,0,0,1)'); s.addColorStop(0.85, 'rgba(0,0,0,1)'); s.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = s; ctx.fillRect(0, 0, 256, 256);
+  });
 }
 
 function getAtlas() {
   if (atlas) return atlas;
   const c = document.createElement('canvas');
-  c.width = 1024; c.height = 512;
+  c.width = 1024; c.height = 256 * ROWS;
   drawAtlas(c.getContext('2d'));
   atlas = new THREE.CanvasTexture(c);
   atlas.colorSpace = THREE.SRGBColorSpace;
@@ -131,8 +205,18 @@ const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vect
 const _col = new THREE.Color();
 
 /** Welches Decal passt zu einer Wand? → [Zelle, Breite, Höhe, Mittenhöhe über Boden] | null */
-function pick(name, r) {
+function pick(name, r, krieg = 0.12) {
   const n = name || '';
+  // karten-voll: Kriegsspuren (Einschüsse, Garben, Splitter, Brand) an festen Wänden – Anteil je Karte (def.lookDecals.krieg)
+  if (!/container/.test(n) && r() < krieg) {
+    const w = r();
+    return w < 0.4 ? [LOOK_DECAL.einschuss, 0.7 + r() * 0.6, 0.7 + r() * 0.6, 1.0 + r() * 1.2] : w < 0.62 ? [LOOK_DECAL.garbe, 1.4 + r() * 0.8, 0.9 + r() * 0.4, 1.3 + r() * 0.6]
+      : w < 0.82 ? [LOOK_DECAL.splitter, 1.2 + r() * 0.9, 1.2 + r() * 0.9, 1.0 + r() * 0.8] : w < 0.93 ? [LOOK_DECAL.brand, 1.6 + r() * 1.2, 1.8 + r() * 1.2, 1.4] : [LOOK_DECAL.kreide, 0.8, 0.8, 1.5];
+  }
+  if (/plaster|brick|stone/.test(n) && r() < 0.18) {
+    const w = r();
+    return w < 0.35 ? [LOOK_DECAL.plakat, 0.62, 0.8, 1.55] : w < 0.7 ? [LOOK_DECAL.graffiti, 1.4 + r() * 0.8, 0.8 + r() * 0.3, 1.2 + r() * 0.4] : [LOOK_DECAL.algen, 1.6 + r() * 1.6, 0.8, 0.4];
+  }
   const k = r();
   if (/container/.test(n)) return k < 0.65 ? [LOOK_DECAL.rust, 0.5 + r() * 0.8, 1.0 + r() * 0.9, 2.59 - 0.5] : k < 0.85 ? [LOOK_DECAL.water, 0.8 + r(), 1.4 + r(), 1.6] : [LOOK_DECAL.tag, 0.9, 0.9, 1.3 + r() * 0.4];
   if (/corrugated|cladding|shutter|metal_rust/.test(n)) return k < 0.55 ? [LOOK_DECAL.rust, 0.6 + r() * 0.9, 1.2 + r() * 1.2, 2.2] : k < 0.8 ? [LOOK_DECAL.grime, 1.6 + r() * 1.6, 0.7, 0.35] : [LOOK_DECAL.water, 1 + r(), 1.6 + r(), 1.8];
@@ -165,7 +249,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
     const h = world.raycast(_o, _d, 3.2);
     if (!h || Math.abs(h.normal.y) > 0.12 || h.distance < 0.25) continue;
     const name = h.object?.name || h.object?.material?.name || h.surface || '';
-    const sel = pick(name, r);
+    const sel = pick(name, r, opt.krieg ?? 0.12);
     if (!sel) continue;
     let [cell, w, hh, cy] = sel;
     // Normale zur Strahlquelle drehen (die BVH liefert die Dreiecksnormale ohne Ausrichtung)
@@ -176,7 +260,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
     // Container: Rost von der Oberkante (Höhe aus Strahl nach oben suchen wäre teuer → Containerhöhe)
     let py = baseY + cy;
     if (cell === LOOK_DECAL.rust || cell === LOOK_DECAL.water || cell === LOOK_DECAL.soot || cell === LOOK_DECAL.leak) py = baseY + cy - hh / 2 + 0.3;
-    if (cell === LOOK_DECAL.grime) py = baseY + hh / 2 - 0.02;
+    if (cell === LOOK_DECAL.grime || cell === LOOK_DECAL.algen) py = baseY + hh / 2 - 0.02;
     _p.copy(h.point).setY(py);
     const k = key(_p.x, _p.y, _p.z);
     if (taken.has(k)) continue;
@@ -212,7 +296,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
       _m.compose(_p.set(it.x, it.y, it.z), _q, _s.set(it.w, it.h, 1));
       mesh.setMatrixAt(i, _m);
       mesh.setColorAt(i, _col.setScalar(it.tint));
-      cellAttr.set([(it.cell % 4) * 0.25, (1 - Math.floor(it.cell / 4)) * 0.5, 0.25, 0.5], i * 4);
+      cellAttr.set([(it.cell % 4) * 0.25, (ROWS - 1 - Math.floor(it.cell / 4)) / ROWS, 0.25, 1 / ROWS], i * 4);
     });
     g.setAttribute('aCell', new THREE.InstancedBufferAttribute(cellAttr, 4));
     mesh.computeBoundingSphere();
