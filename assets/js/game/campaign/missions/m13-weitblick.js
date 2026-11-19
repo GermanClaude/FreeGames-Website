@@ -111,7 +111,9 @@ function toRoof(m, p) {
 function crowd(m) {
   const list = m.get('crowd') || [];
   for (const x of list) if (x && !x.removed) x.remove();
-  const out = CROWD.map((c, i) => walker(m, `ziv${i}`, { route: c.route, variant: c.variant, name: 'Passant', speed: 1.0 + (i % 3) * 0.15, pause: 1.5 + (i % 4) }));
+  // Handy (quality low): weniger Menschen auf dem Platz (jede Figur ist ein volles Soldaten-Rig)
+  const lowQ = m.G.renderer && m.G.renderer.quality === 'low';
+  const out = CROWD.slice(0, lowQ ? 5 : CROWD.length).map((c, i) => walker(m, `ziv${i}`, { route: c.route, variant: c.variant, name: 'Passant', speed: 1.0 + (i % 3) * 0.15, pause: 1.5 + (i % 4) }));
   m.set('crowd', out);
   return out;
 }
