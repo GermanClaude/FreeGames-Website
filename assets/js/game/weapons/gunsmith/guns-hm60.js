@@ -5,10 +5,10 @@
 // Gurtzuführung links, Leitervisier hinten, Abzugsgruppe mit langem Bügel, Griff, Schaft mit Schulterstütze, gerippter
 // Vorderschaft um den Gaszylinder, Lauf mit Tragegriff, Gaszylinder mit Zweibein (eingeklappt), Korn, Feuerdämpfer;
 // Munitionskasten links mit Deckel (hüpft beim Rückstoß, viewmodel.js _animLid) und Gurt (magfill.js, Glied je Patrone).
-import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261115041504';
-import { magRounds } from './magfill.js?v=20261115041504';
-import { apertureSight } from './pistol-parts.js?v=20261115041504';   // Lochkimme mit Durchblick (visier, 14.11.)
-import { schrift } from './schrift.js?v=20261115041504';   // Gravuren (14.11., gfx-waffen)
+import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261119182451';
+import { magRounds } from './magfill.js?v=20261119182451';
+import { apertureSight } from './pistol-parts.js?v=20261119182451';   // Lochkimme mit Durchblick (visier, 14.11.)
+import { schrift } from './schrift.js?v=20261119182451';   // Gravuren (14.11., gfx-waffen)
 const MARK_HM60 = schrift('hm60').mark;
 
 const AXIS = 0.082;

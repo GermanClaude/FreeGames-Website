@@ -8,8 +8,8 @@
 // Koordinaten je Karte (COORDS): „stadtkern“ (Strang karten-neu) nur, wenn die Karte existiert UND Koordinaten hat.
 
 import * as THREE from 'three';
-import { actor } from './cast.js?v=20261115041504';
-import { mapFor, purgeDead, prop, ostbund, guardZone, stopGuard } from './hilfen-b.js?v=20261115041504';
+import { actor } from './cast.js?v=20261119182451';
+import { mapFor, purgeDead, prop, ostbund, guardZone, stopGuard } from './hilfen-b.js?v=20261119182451';
 
 const COORDS = {
   // Stadtkern „Lindenplatz“ (karten-neu): Team A Süd (+z, Hinterstraße z ≈ 51), Lindenallee bei z 0, Kaufhaus Nord

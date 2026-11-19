@@ -8,9 +8,9 @@
 // „NEU“ im Menü). syncNew() gleicht mit den spielbaren Kapiteln ab: Wer die Kampagne schon kannte (Missionen gespielt),
 // bekommt Kapitel mit since > Ausgangsstand als „neu“ gemeldet (Lobby-Hinweis, einmal); neue Spieler kennen alles.
 
-import { profile } from '../../shared/profile.js?v=20261115041504';
-import { READING_SPEEDS } from './lipsync.js?v=20261115041504';
-import { OUTLINE, CAMPAIGN_BASE_BUILD } from './outline.js?v=20261115041504';
+import { profile } from '../../shared/profile.js?v=20261119182451';
+import { READING_SPEEDS } from './lipsync.js?v=20261119182451';
+import { OUTLINE, CAMPAIGN_BASE_BUILD } from './outline.js?v=20261119182451';
 
 const DIFF_RANK = { rekrut: 0, regulaer: 1, veteran: 2, elite: 3 };
 const stamp = (s) => String(s || '').replace(/\D/g, '').padEnd(14, '0').slice(0, 14);

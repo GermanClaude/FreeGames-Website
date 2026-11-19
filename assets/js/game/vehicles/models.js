@@ -15,12 +15,12 @@
 // Luken und Innenraum liegen außerhalb der LOD-Stufen (eigene Netze; der Innenraum nur für den lokalen Insassen).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boxUV } from '../engine/textures.js?v=20261115041504';
-import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261115041504';
-import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261115041504';
-import { CIVIL_BUILDERS } from './models-civil.js?v=20261115041504';
-import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261115041504';
-import { attachCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261115041504';
+import { boxUV } from '../engine/textures.js?v=20261119182451';
+import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261119182451';
+import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261119182451';
+import { CIVIL_BUILDERS } from './models-civil.js?v=20261119182451';
+import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261119182451';
+import { attachCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261119182451';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const PI = Math.PI, HP = PI / 2;

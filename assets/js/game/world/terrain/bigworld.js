@@ -7,38 +7,38 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261115041504';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261115041504';
-import { createWorldAssets } from '../library.js?v=20261115041504';
-import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261115041504';
-import { createLighting } from '../lighting.js?v=20261115041504';
-import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261115041504';
-import { createAtmosphere } from '../atmos.js?v=20261115041504';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261115041504';
-import { createWater } from '../water.js?v=20261115041504';
-import { TriangleBVH } from '../bvh.js?v=20261115041504';
-import { makeTests } from '../navbuild.js?v=20261115041504';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261115041504';
-import { Heightfield } from './heightfield.js?v=20261115041504';
-import { makeCoarse } from './generate.js?v=20261115041504';
-import { CompositeBVH } from './composite.js?v=20261115041504';
-import { TerrainCollider } from './collide.js?v=20261115041504';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261115041504';
-import { createTerrainMaterial } from './splat.js?v=20261115041504';
-import { Vegetation } from './vegetation.js?v=20261115041504';
-import { loadTreeAtlas, TREE_BARKS } from './trees.js?v=20261115041504';
-import { Deadwood } from './deadwood.js?v=20261115041504';
-import { Litter } from './litter.js?v=20261115041504';
-import { RoadNetwork } from './roads.js?v=20261115041504';
-import { bigNavFromData } from './bignav.js?v=20261115041504';
-import { createBigMinimap } from './bigminimap.js?v=20261115041504';
-import { terrainJob, worldJob } from './bigjob.js?v=20261115041504';
+import { MAPS } from '../../../shared/maps.data.js?v=20261119182451';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261119182451';
+import { createWorldAssets } from '../library.js?v=20261119182451';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261119182451';
+import { createLighting } from '../lighting.js?v=20261119182451';
+import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261119182451';
+import { createAtmosphere } from '../atmos.js?v=20261119182451';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261119182451';
+import { createWater } from '../water.js?v=20261119182451';
+import { TriangleBVH } from '../bvh.js?v=20261119182451';
+import { makeTests } from '../navbuild.js?v=20261119182451';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261119182451';
+import { Heightfield } from './heightfield.js?v=20261119182451';
+import { makeCoarse } from './generate.js?v=20261119182451';
+import { CompositeBVH } from './composite.js?v=20261119182451';
+import { TerrainCollider } from './collide.js?v=20261119182451';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261119182451';
+import { createTerrainMaterial } from './splat.js?v=20261119182451';
+import { Vegetation } from './vegetation.js?v=20261119182451';
+import { loadTreeAtlas, TREE_BARKS } from './trees.js?v=20261119182451';
+import { Deadwood } from './deadwood.js?v=20261119182451';
+import { Litter } from './litter.js?v=20261119182451';
+import { RoadNetwork } from './roads.js?v=20261119182451';
+import { bigNavFromData } from './bignav.js?v=20261119182451';
+import { createBigMinimap } from './bigminimap.js?v=20261119182451';
+import { terrainJob, worldJob } from './bigjob.js?v=20261119182451';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261115041504'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261115041504'),
-  brandwald: () => import('../maps/brandwald.js?v=20261115041504'),
-  flugplatz: () => import('../maps/flugplatz.js?v=20261115041504'), // karten-neu: Fliegerhorst mit Startbahn
+  grenzland: () => import('../maps/grenzland.js?v=20261119182451'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261119182451'),
+  brandwald: () => import('../maps/brandwald.js?v=20261119182451'),
+  flugplatz: () => import('../maps/flugplatz.js?v=20261119182451'), // karten-neu: Fliegerhorst mit Startbahn
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -60,7 +60,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261115041504', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261119182451', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -220,7 +220,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   group.name = 'world:' + id;
   const tM = performance.now();
   const tLib = performance.now();
-  const tmat = await createTerrainMaterial({ hf, quality, lib, libOk, getMaterial, tier: lib.stats?.tier?.texture, look: def.terrainLook || null });
+  const tmat = await createTerrainMaterial({ hf, quality, lib, libOk, getMaterial, maxTex: renderer?.capabilities?.maxTextures, tier: lib.stats?.tier?.texture, look: def.terrainLook || null });
   ms.terrainLib = Math.round(performance.now() - tLib);
   const chunks = new TerrainChunks(hf, tmat.material, { steps: tier.steps, dists: tier.dists, chunk: 128 });
   await chunks.build((p) => progress(0.55 + p * 0.05, 'Gelände-Kacheln'));

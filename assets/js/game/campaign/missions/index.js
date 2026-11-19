@@ -1,21 +1,21 @@
 // NULLPUNKT — Kampagne: Verzeichnis der spielbaren Missionen. Die Reihenfolge der Kampagne kommt aus ../outline.js
 // (OUTLINE); hier stehen nur die vorhandenen Missionsdateien. Neue Mission: EINE Import-Zeile und EINE Zeile in EXTRA.
 
-import { SPEAKERS } from './cast.js?v=20261115041504';
-import { OUTLINE } from '../outline.js?v=20261115041504';
-import { MISSION_0 } from './m0-ausbildung.js?v=20261115041504';
-import { MISSION_1 } from './m1-funkstille.js?v=20261115041504';
-import { MISSION_2 } from './m2-werk.js?v=20261115041504';
-import { MISSION_3 } from './m3-fluss.js?v=20261115041504';
-import { MISSION_4 } from './m4-hafennacht.js?v=20261115041504';
-import { MISSION_5 } from './m5-archiv.js?v=20261115041504';
-import { MISSION_6 } from './m6-feuerlinie.js?v=20261115041504';
+import { SPEAKERS } from './cast.js?v=20261119182451';
+import { OUTLINE } from '../outline.js?v=20261119182451';
+import { MISSION_0 } from './m0-ausbildung.js?v=20261119182451';
+import { MISSION_1 } from './m1-funkstille.js?v=20261119182451';
+import { MISSION_2 } from './m2-werk.js?v=20261119182451';
+import { MISSION_3 } from './m3-fluss.js?v=20261119182451';
+import { MISSION_4 } from './m4-hafennacht.js?v=20261119182451';
+import { MISSION_5 } from './m5-archiv.js?v=20261119182451';
+import { MISSION_6 } from './m6-feuerlinie.js?v=20261119182451';
 // --- kampagne-b: Importe M7–M11 hier (je eine Zeile) ---
-import { MISSION_7 } from './m7-niemandsland.js?v=20261115041504';
-import { MISSION_8 } from './m8-geleit.js?v=20261115041504';
-import { MISSION_9 } from './m9-glockenschlag.js?v=20261115041504';
-import { MISSION_10 } from './m10-rollfeld.js?v=20261115041504';
-import { MISSION_11 } from './m11-stadtkern.js?v=20261115041504';
+import { MISSION_7 } from './m7-niemandsland.js?v=20261119182451';
+import { MISSION_8 } from './m8-geleit.js?v=20261119182451';
+import { MISSION_9 } from './m9-glockenschlag.js?v=20261119182451';
+import { MISSION_10 } from './m10-rollfeld.js?v=20261119182451';
+import { MISSION_11 } from './m11-stadtkern.js?v=20261119182451';
 
 const LIST = [
   MISSION_0, MISSION_1, MISSION_2, MISSION_3, MISSION_4, MISSION_5, MISSION_6,

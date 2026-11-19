@@ -3,7 +3,7 @@
 // drei Angriffswellen (Süden durch die Halle, Westhof, beides), bis der letzte Lkw draußen ist. Die Stellung fällt,
 // wenn Angreifer das Tor 15 s lang ohne Verteidiger halten. Checkpoints: start, welle1, welle2, welle3.
 
-import { actor } from './cast.js?v=20261115041504';
+import { actor } from './cast.js?v=20261119182451';
 
 const SOUTH = [[0, -42], [-9, -44], [9, -44], [-17, -39], [17, -39]];
 const WEST = [[-60, 8], [-64, -6], [-58, 22], [-70, 0], [-56, -18]];

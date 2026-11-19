@@ -12,7 +12,7 @@
 //           (Flaggen, Startpunkte, Kampagnen-Stellpunkte, Ortschaften mit fester Bodenhöhe). reliefAvoid() sammelt sie.
 // Steigungen bleiben ≤ ≈ 27° (h/r ≤ 0,3), damit Spieler, Fahrzeuge und Bots (Gelände-Navigation: Normale y ≥ 0,74)
 // überall hinauf kommen. Alles deterministisch aus den Kartendaten (Mehrspieler: jeder Rechner baut dasselbe Gelände).
-import { smoothstep } from './noise.js?v=20261115041504';
+import { smoothstep } from './noise.js?v=20261119182451';
 
 const FADE = 10; // m weicher Übergang am Rand der Sperrflächen
 

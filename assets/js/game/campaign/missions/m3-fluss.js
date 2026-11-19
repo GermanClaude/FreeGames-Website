@@ -3,7 +3,7 @@
 // schaltet die feindlichen Panzer an der Flussbrücke aus und hält die Brücke, bis die Pioniere Kessars Sprengladungen
 // entfernt haben. Checkpoints: start, dorf, bruecke.
 
-import { actor } from './cast.js?v=20261115041504';
+import { actor } from './cast.js?v=20261119182451';
 
 const TANK_AT = [13.5, 121];
 const TANK_YAW = 0.12; // Blick die Straße hinunter (Süden, −Z)

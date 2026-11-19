@@ -4,12 +4,12 @@
 // (Oliv) mit eingebautem optischen Visier im Tragebügel und Picatinny-Schiene obenauf; Laufgruppe (Stahl) mit Gaszylinder,
 // Spannhebel links und klappbarem Vordergriff; Quer-Sicherung über dem Griff; Auswurffenster rechts, Abdeckung links;
 // durchscheinendes Magazin mit Waffelmuster. Umrisse aus dem Foto (photo-kit.js), Rundteile gedreht, Kleinteile von Hand.
-import * as R from './bx20-ref.js?v=20261115041504';
-import { calib, slab, pocket, rib, barrel, pins, screwHead, slottedHider, STEEL, POLY, ALU } from './photo-kit.js?v=20261115041504';
-import { sdRoundRect } from './sdfkit.js?v=20261115041504';
-import { swapOptic } from './parts.js?v=20261115041504';
-import { magRounds } from './magfill.js?v=20261115041504';
-import { schrift } from './schrift.js?v=20261115041504';
+import * as R from './bx20-ref.js?v=20261119182451';
+import { calib, slab, pocket, rib, barrel, pins, screwHead, slottedHider, STEEL, POLY, ALU } from './photo-kit.js?v=20261119182451';
+import { sdRoundRect } from './sdfkit.js?v=20261119182451';
+import { swapOptic } from './parts.js?v=20261119182451';
+import { magRounds } from './magfill.js?v=20261119182451';
+import { schrift } from './schrift.js?v=20261119182451';
 
 const C = calib(R.PPM, R.XG, R.YG, R.YA);
 const { U, V, M, AXIS: AX } = C;

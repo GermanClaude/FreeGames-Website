@@ -8,8 +8,8 @@
 //
 // autoWrack(b, x, y, z, ry, { seed, color, style, burnt }) – ry wie Requisiten (lokal +z = Front).
 import * as THREE from 'three';
-import { bodyLoft, surface, tube, steelRim, alloyRim, merge } from '../vehicles/bodykit.js?v=20261115041504';
-import { pkwShape, pkwGreenhouse } from '../vehicles/models-car.js?v=20261115041504';
+import { bodyLoft, surface, tube, steelRim, alloyRim, merge } from '../vehicles/bodykit.js?v=20261119182451';
+import { pkwShape, pkwGreenhouse } from '../vehicles/models-car.js?v=20261119182451';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;

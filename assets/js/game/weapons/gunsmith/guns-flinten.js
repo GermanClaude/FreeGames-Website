@@ -10,9 +10,9 @@
 //     vorderen Gehäuseteil, Gasblock mit 3-Stellungs-Regler, Gasrohr mit Handschutz oben, Polymer-Handschutz unten,
 //     Kornfuß mit Schutzbügel, Polymer-Griff und -Schaft mit Schaftkappe, gebogenes 8-Schuss-Kastenmagazin mit Rastnase.
 // Anker und Teile wie bei den Vorgängern (Pump, Ladehebel, Magazin, Patrone) – Hände/Animationen bleiben.
-import { ejectionPort, engrave, triggerGuard, roundRect, qdCup } from './parts.js?v=20261115041504';
-import { magRounds } from './magfill.js?v=20261115041504';
-import { schrift } from './schrift.js?v=20261115041504';   // Gravuren (14.11., gfx-waffen)
+import { ejectionPort, engrave, triggerGuard, roundRect, qdCup } from './parts.js?v=20261119182451';
+import { magRounds } from './magfill.js?v=20261119182451';
+import { schrift } from './schrift.js?v=20261119182451';   // Gravuren (14.11., gfx-waffen)
 const MARK_BULLDOG = schrift('bulldog').mark;
 const MARK_HAGEL = schrift('hagel').mark;
 

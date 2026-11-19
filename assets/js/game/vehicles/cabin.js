@@ -30,9 +30,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { boxUV } from '../engine/textures.js?v=20261115041504';
-import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261115041504';
-import { driverCabin, vehicleWeapon } from './data.js?v=20261115041504';
+import { boxUV } from '../engine/textures.js?v=20261119182451';
+import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261119182451';
+import { driverCabin, vehicleWeapon } from './data.js?v=20261119182451';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
