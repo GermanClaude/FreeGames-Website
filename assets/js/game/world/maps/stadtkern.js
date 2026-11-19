@@ -6,7 +6,7 @@
 // Hinterhöfe, das Kaufhaus am Platz mit Dachterrasse, Hinterhäuser, eine Hinterstraße (Startbereich) und Querstraßen.
 // Vertikales Spiel: Dächer (verbunden über die Brüstungen), Balkone, U-Bahn. Alle Namen frei erfunden.
 import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261115041504';
-import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01 } from '../props.js?v=20261115041504';
+import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261115041504';
 import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261115041504';
 
 const PI = Math.PI, Q = PI / 2;
@@ -72,6 +72,8 @@ function haelfte(b, s, zones) {
   haltestelle(b, 30, Z(7.8), s);
   b.model('fire_hydrant', -30, 0, Z(8.2), { ry: s > 0 ? PI : 0, collide: false });
   b.box(-30, 0, Z(8.2), 0.4, 0.8, 0.4, 'black', { visual: false, minimap: 'prop' });
+  // platz (19.11.): Poller an der Bordsteinkante vor dem Platz (Kommentar oben versprach sie, es gab keine) – Abstand 2,5 m
+  for (let x = -12.5; x <= 12.6; x += 2.5) bollard(b, x, Z(6.45), { tint: '#3d4247' });
   // Hinterstraße (Startbereich): Autos, Container, Absperrung
   car(b, -26, Z(52.5), { ry: Q, color: '#6a7a52' });
   car(b, 12, Z(52.5), { ry: -Q, color: '#8c2b24' });
@@ -107,7 +109,8 @@ function allee(b, zones) {
   for (const [x, z, r] of [[-30, 3.2, 1.3], [30, -3.2, 1.3], [0, 4.6, 0.9], [0, -4.6, 0.9], [-44, -3.5, 1.0], [44, 3.5, 1.0]]) {
     b.decal(x, 0.012, z, r * 3.4, r * 3.4, 'cracks', { opacity: 0.9 });
     b.decal(x, 0.014, z, r * 2.2, r * 2.2, 'soot', { opacity: 0.7 });
-    rubble(b, x + r * 0.9, z, r * 0.7, { mat: 'asphalt', tint: '#5a5854' });
+    // platz (19.11.): Auswurf aus Erde/Schotter mit hellen Asphaltschollen statt schwarzem Asphaltkegel (QA: „schwarzer Klotz“)
+    rubble(b, x + r * 0.9, z, r * 0.7, { mat: 'dirt', tint: '#8f8270', chunkMat: 'asphalt', chunkTint: '#b4aea4' });
   }
   // Barrikaden auf der Allee (versetzt, beidseits gleich)
   for (const s of [-1, 1]) {

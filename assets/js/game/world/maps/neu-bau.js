@@ -185,8 +185,9 @@ export function rubble(b, x, z, r = 1.6, o = {}) {
   for (let i = 0; i < n; i++) {
     const a = hash01(x + i, z, 31) * Math.PI * 2, d = Math.sqrt(hash01(x, z + i, 32)) * r;
     const s = 0.15 + hash01(x - i, z + i, 33) * 0.45 * (1 - d / (r + 0.01)) + 0.08;
-    const m = hash01(x + i * 3, z - i, 34) < 0.35 ? (o.brick ? 'brick' : 'concrete') : mat;
-    b.box(x + Math.cos(a) * d, y - 0.05, z + Math.sin(a) * d, s * 1.4, s * 0.8, s, m, { ry: a * 2, rx: (hash01(i, x, 35) - 0.5) * 0.6, rz: (hash01(i, z, 36) - 0.5) * 0.6, tint: m === 'brick' ? undefined : tint, ...VG });
+    // platz (19.11.): Brocken optional aus anderem Material (o.chunkMat/chunkTint, z. B. Asphaltschollen auf Erdaushub)
+    const m = hash01(x + i * 3, z - i, 34) < 0.35 ? (o.brick ? 'brick' : 'concrete') : (o.chunkMat || mat);
+    b.box(x + Math.cos(a) * d, y - 0.05, z + Math.sin(a) * d, s * 1.4, s * 0.8, s, m, { ry: a * 2, rx: (hash01(i, x, 35) - 0.5) * 0.6, rz: (hash01(i, z, 36) - 0.5) * 0.6, tint: m === 'brick' ? undefined : m === o.chunkMat ? (o.chunkTint || tint) : tint, ...VG });
   }
   // flacher Schutthügel (begehbar, Kugeln stoppen)
   b.cyl(x, y - 0.05, z, r * 0.95, Math.min(0.75, r * 0.35), mat, { r1: r * 0.35, seg: 10, tint, minimap: o.minimap ?? 'cover' });

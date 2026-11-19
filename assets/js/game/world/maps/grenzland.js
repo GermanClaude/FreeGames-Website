@@ -201,7 +201,7 @@ function dorf(b) {
   // Traktor im Schuppen (rot, Blick zum Tor im Osten; auf dem Hallenboden y 0,12; ohne b.rand → Dorf-Zufall unverändert)
   traktor(b, -48.6, 72.2, { ry: Math.PI / 2, y: 0.12, color: '#a8322a', rim: '#d8d4c8' });
   // Kapelle mit Turm (Wahrzeichen)
-  const kapelle = building(b, { x: -8, z: 100, w: 7, d: 13, floors: 1, fh: 5.2, mat: 'plaster_white', tint: '#f3eee4', openings: [{ side: 's', at: 0, w: 1.6, h: 2.8, kind: 'door', leaf: 'open' }, { side: 'e', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'e', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }], roof: { edge: false, mat: 'concrete', tint: '#b9ab94' }, floorMat: 'paving', interiorFactor: 0.5 });
+  const kapelle = building(b, { x: -8, z: 100, w: 7, d: 13, floors: 1, fh: 5.2, mat: 'plaster_white', nutzung: 'kapelle', tint: '#f3eee4', openings: [{ side: 's', at: 0, w: 1.6, h: 2.8, kind: 'door', leaf: 'open' }, { side: 'e', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'e', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }], roof: { edge: false, mat: 'concrete', tint: '#b9ab94' }, floorMat: 'paving', interiorFactor: 0.5 });
   pitchedRoof(b, { chimney: false, x: -8, z: 100, w: 7.02, d: 13.02, y: 5.18, ridge: 'z', pitch: 1.0, over: 0.45, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#5f5e5a' });
   b.box(-8, 0, 91.6, 4.2, 15, 4.2, 'plaster_white', { tint: '#f3eee4', minimap: 'building' });
   b.box(-8, 15, 91.6, 4.4, 0.25, 4.4, 'stone_wall', { tint: '#cfc6b6', collide: false, minimap: false });
@@ -320,7 +320,7 @@ function gehoeft(b) {
   b.sign(sx + 1.5, 3.2, z0 + 0.34, 2.0, 0.5, 'gertrud', { ry: 0 });
   crateStack(b, x0 + 3.5, z1 - 1.4, { ry: 0.1 }); tires(b, x1 - 1.4, z1 - 1.6, { n: 3 });
   // Stall, Silo, Strohrollen, Zäune
-  const stall = building(b, { x: -178, z: 92, w: 6, d: 12, floors: 1, fh: 3.0, mat: 'brick', tint: '#c2a08a', openings: [{ side: 'e', at: -2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'e', at: 2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'w', at: 0, w: 1.0, h: 0.8, sill: 1.5, kind: 'window' }], roof: { edge: false, mat: 'concrete', tint: '#9a8c78' }, floorMat: 'concrete' });
+  const stall = building(b, { x: -178, z: 92, w: 6, d: 12, floors: 1, fh: 3.0, mat: 'brick', nutzung: 'stall', tint: '#c2a08a', openings: [{ side: 'e', at: -2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'e', at: 2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'w', at: 0, w: 1.0, h: 0.8, sill: 1.5, kind: 'window' }], roof: { edge: false, mat: 'concrete', tint: '#9a8c78' }, floorMat: 'concrete' });
   pitchedRoof(b, { x: -178, z: 92, w: 6.02, d: 12.02, y: 2.98, ridge: 'z', pitch: 0.6, over: 0.4, gableMat: 'brick', gableTint: '#c2a08a', tint: '#6f6a5e' });
   b.noNav(-182, 85, -174, 99, 2.4, 40);
   b.cyl(-124, 0, 90, 2.3, 9.5, 'metal_galvanized', { seg: 18, minimap: 'pillar' });

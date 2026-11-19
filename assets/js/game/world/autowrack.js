@@ -64,7 +64,8 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   const SH = pkwShape(st), { G } = SH;
   const yaw = ry + PI; // Fahrzeugraum: vorn −z
   // Wrack sitzt tiefer (Reifen weg) und schief: eine Seite tiefer
-  const drop = -0.2, roll = (r() - 0.5) * 0.08, pitch = (r() - 0.5) * 0.05;
+  // platz (19.11., QA „Wrack schwebt“): 2 cm tiefer, Felgen drücken in die Reifenreste (siehe unten)
+  const drop = -0.22, roll = (r() - 0.5) * 0.08, pitch = (r() - 0.5) * 0.05;
   const place = (geom, mat, tint = '#ffffff') => {
     geom.translate(0, drop, 0);
     geom.rotateZ(roll); geom.rotateX(pitch);
@@ -111,4 +112,11 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     rims.push(new THREE.TorusGeometry(ri * 1.08, 0.006, 3, 18).rotateY(HP).translate(sx * 0.78, ri + 0.2, wz));
   }
   place(burn(merge(rims), seedN + 6, '#3a2a20', { dent: 0.003, keepPaint: 0 }), 'metal_rust');
+  // platz: geschmolzene Reifenreste als flache Wülste auf dem Boden unter jeder Felge (Bodenkontakt sichtbar)
+  const reste = [];
+  for (const wz of [-1.38, 1.43]) for (const sx of [-1, 1]) {
+    reste.push(new THREE.CylinderGeometry(0.3, 0.36, 0.035, 12).translate(sx * 0.78, 0.0175 - drop, wz));
+    reste.push(new THREE.TorusGeometry(0.2, 0.03, 4, 12).rotateX(HP).translate(sx * 0.78 + (r() - 0.5) * 0.1, 0.03 - drop, wz + (r() - 0.5) * 0.1));
+  }
+  place(merge(reste), 'rubber', '#2a2826');
 }

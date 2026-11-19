@@ -444,7 +444,7 @@ export function building(b, o) {
   // Antennen, Lüfterrohre, Klimageräte (nur Optik)
   if (o.roof && (o.roof.parapet || o.roof.edge !== false) && o.roofDeko !== false) (b._flachdaecher || (b._flachdaecher = [])).push({ x, z, x0, x1, z0, z1, y: roofY, inset: o.roof.parapet ? (o.roof.parapetT ?? 0.22) : 0.15 });
   // karten-voll: Gebäude für die automatische Einrichtung leerer Räume merken (world/kleinkram.js einrichten())
-  (b._gebaeude || (b._gebaeude = [])).push({ x, z, w, d, t, fh, y0, levels, roofY, openings: o.openings || [], holes: o.holes || [], interior: o.interior !== false, mat, skip: o.skipWalls || [] });
+  (b._gebaeude || (b._gebaeude = [])).push({ x, z, w, d, t, fh, y0, levels, roofY, openings: o.openings || [], holes: o.holes || [], interior: o.interior !== false, mat, skip: o.skipWalls || [], nutzung: o.nutzung || null }); // platz: nutzung ('wohn'|'kapelle'|'stall'|…) für Fensterdeko
   // Footprint für die Minikarte (Gebäude als Block)
   b.footprints.push({ x, z, hw: w / 2, hd: d / 2, ry: 0, y0, y1: roofY, kind: 'building' });
   return { x0, x1, z0, z1, levels, roofY, fh, t };

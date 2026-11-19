@@ -10,7 +10,7 @@ const CSS = `
 #psim{position:absolute;inset:0;pointer-events:none;font-family:"Barlow Condensed","Roboto Condensed",system-ui,sans-serif;color:#e8e4d6;z-index:6}
 #psim [hidden]{display:none!important}
 .ps-sub{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:min(760px,92vw);display:flex;flex-direction:column;gap:4px;align-items:center}
-.ps-line{background:rgba(8,10,8,.72);border-left:3px solid #9fb07a;padding:5px 12px;font-size:clamp(15px,1.7vw,20px);letter-spacing:.02em;max-width:100%;transition:opacity .4s}
+.ps-line{background:rgba(8,10,8,.72);border-left:3px solid #9fb07a;padding:4px 10px;font-size:clamp(13px,1.35vw,17px);letter-spacing:.02em;max-width:100%;transition:opacity .4s}
 .ps-line b{color:#c9d79f;font-weight:600;margin-right:8px;text-transform:uppercase;font-size:.8em;letter-spacing:.08em}
 .ps-line.is-funk{border-left-color:#d8a64a}.ps-line.is-funk b{color:#e7c27a}
 .ps-line.is-me{border-left-color:#6fa8dc}.ps-line.is-me b{color:#9cc6ee}
