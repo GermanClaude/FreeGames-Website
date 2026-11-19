@@ -490,7 +490,7 @@ main { position: relative; z-index: 1; padding-bottom: var(--bar-h); }
 .map-links .play-link { white-space: nowrap; }
 .map-links .play-link .o { color: inherit; }
 .map-tabs { margin-bottom: 40px; }
-.map-info { display: grid; gap: 24px; align-content: start; }
+.map-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-content: start; }
 .map-plan { display: grid; gap: 16px; align-content: start; }
 .map-name { font-size: var(--fs-ds); font-weight: 700; line-height: 1; }
 .map-sub { font-family: var(--font-mono); font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin-top: 8px; }

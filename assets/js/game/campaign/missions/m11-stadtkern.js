@@ -136,7 +136,7 @@ const CUT_OUTRO = (m) => {
         say: { who: 'kranich', text: 'Kessar ist gescheitert. Das war vorhersehbar. Phase zwei beginnt.' } },
       { cam: { close: 'brandt', side: -0.3, dist: 0.85 },
         say: { who: 'brandt', text: 'Wer spricht da? Melden Sie sich!', expr: 'fragend' }, fadeOut: 1.6 },
-      { cam: { from: cam([sx + 6, 6, sz + 10]), to: cam([sx + 8, 12, sz + 16]), look: cam([sx, 1.5, sz]) }, card: ['Ende von Akt II · Feuer im Tal', 'Die Geschichte geht weiter', 'Akt III erscheint mit einem kommenden Update.'], dur: 6, fadeIn: 1.2 },
+      { cam: { from: cam([sx + 6, 6, sz + 10]), to: cam([sx + 8, 12, sz + 16]), look: cam([sx, 1.5, sz]) }, card: ['Ende von Akt II · Feuer im Tal', 'Die Geschichte geht weiter', 'Akt III · Phase zwei – Mission 12 „Nachtsicht“'], dur: 6, fadeIn: 1.2 },
     ],
   };
 };

@@ -74,7 +74,8 @@ const BRANDWALD = {
   climbMax: 2.8, // Gräben ≈ 2–2,7 m bis zur Brustwehr: Ausstieg per Klettern (27.10.)
   defaultSurface: 'dirt',
   wallMargin: 35,
-  assets: { hdri: 'np_sky_vormittag_bewoelkt' },
+  assets: { hdri: 'np_sky_vormittag_bewoelkt', // tex4: Verschalung/Roste aus verwittertem Bretterscan (statt lackiertem Dielenboden)
+    materials: { wood_planks: { id: 'wood_planks_weathered', color: [2.6, 2.5, 2.5], roughness: 1.1 } } },
   lighting: {
     // heller, gleichmäßig bedeckter Himmel (fast weiß), Sonne nur angedeutet; Dunst lässt die fernen Stämme verblassen
     sun: { elevation: 48, azimuth: 205, color: '#e4e0d8', intensity: 0.9 },

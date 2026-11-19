@@ -9,55 +9,46 @@
 //   • ringXY/ringZY/… : Hilfen für Querschnitte (Grundriss je Höhe, Seitenprofil je Breite).
 // Lage wie alle Fahrzeuge: vorwärts −z, x rechts, y oben.
 import * as THREE from 'three';
-import { subdivide, cornerNormals, vertexNormals, toGeometry, edgeKey } from '../engine/subdiv.js?v=20261115041504';
+import { subdivide, triangulate } from '../engine/subdiv.js?v=20261115041504';
 
 const PI = Math.PI;
 
-/**
- * Querschnitt-Ringe (gerade Punktzahl) → Viereck-Käfig { P, Q, F } für engine/subdiv.js: Vierecke zwischen den Ringen,
- * Deckel als Fächer aus Vierecken um eine Mittelecke (je drei Randecken + Mitte, ohne T-Stöße). Wicklung nach außen.
- */
+/** Querschnitt-Ringe → Käfig { pos, faces, crease } (Vierecke zwischen den Ringen, Deckel als Vieleck), Umlauf nach außen. */
 export function loftCage(rings, { capStart = true, capEnd = true } = {}) {
-  const m = rings[0].length, n = rings.length, P = [], Q = [];
-  for (const r of rings) for (const p of r) P.push(p[0], p[1], p[2]);
-  for (let i = 0; i < n - 1; i++) for (let j = 0; j < m; j++) Q.push(i * m + j, i * m + ((j + 1) % m), (i + 1) * m + ((j + 1) % m), (i + 1) * m + j);
-  const cap = (ri, rev) => {
-    let cx = 0, cy = 0, cz = 0;
-    for (const p of rings[ri]) { cx += p[0]; cy += p[1]; cz += p[2]; }
-    const c = P.length / 3;
-    P.push(cx / m, cy / m, cz / m);
-    for (let j = 0; j < m; j += 2) {
-      const a = ri * m + j, b = ri * m + ((j + 1) % m), d = ri * m + ((j + 2) % m);
-      if (rev) Q.push(c, d, b, a); else Q.push(c, a, b, d);
-    }
-  };
-  if (capStart) cap(0, true);
-  if (capEnd) cap(n - 1, false);
+  const m = rings[0].length, n = rings.length, pos = [], faces = [];
+  for (const r of rings) for (const p of r) pos.push(p[0], p[1], p[2]);
+  for (let i = 0; i < n - 1; i++) for (let j = 0; j < m; j++) faces.push([i * m + j, i * m + ((j + 1) % m), (i + 1) * m + ((j + 1) % m), (i + 1) * m + j]);
+  if (capStart) { const f = []; for (let j = m - 1; j >= 0; j--) f.push(j); faces.push(f); }
+  if (capEnd) { const f = []; for (let j = 0; j < m; j++) f.push((n - 1) * m + j); faces.push(f); }
   let vol = 0;
-  for (let f = 0; f < Q.length / 4; f++) for (const [i, j, k] of [[0, 1, 2], [0, 2, 3]]) {
-    const a = Q[f * 4 + i] * 3, b = Q[f * 4 + j] * 3, c = Q[f * 4 + k] * 3;
-    vol += P[a] * (P[b + 1] * P[c + 2] - P[b + 2] * P[c + 1]) - P[a + 1] * (P[b] * P[c + 2] - P[b + 2] * P[c]) + P[a + 2] * (P[b] * P[c + 1] - P[b + 1] * P[c]);
+  for (const f of faces) for (let k = 1; k < f.length - 1; k++) {
+    const a = f[0] * 3, b = f[k] * 3, c = f[k + 1] * 3;
+    vol += pos[a] * (pos[b + 1] * pos[c + 2] - pos[b + 2] * pos[c + 1]) - pos[a + 1] * (pos[b] * pos[c + 2] - pos[b + 2] * pos[c]) + pos[a + 2] * (pos[b] * pos[c + 1] - pos[b + 1] * pos[c]);
   }
-  if (vol < 0) for (let f = 0; f < Q.length / 4; f++) { const t = Q[f * 4 + 1]; Q[f * 4 + 1] = Q[f * 4 + 3]; Q[f * 4 + 3] = t; }
-  return { P, Q, F: new Array(Q.length / 4).fill(0), crease: new Map(), corner: new Set() };
+  if (vol < 0) for (const f of faces) f.reverse();
+  return { pos, faces, crease: new Map() };
 }
 
-/** Wölbung je Ecke: Abstand vor der Ebene der Nachbarn / mittlere Kantenlänge (> 0 Außenkante, < 0 Kehle). */
-function convexity(M, VN) {
-  const { P, Q } = M, nV = P.length / 3;
-  const sx = new Float64Array(nV), sy = new Float64Array(nV), sz = new Float64Array(nV), sl = new Float64Array(nV), cnt = new Float64Array(nV);
-  for (let f = 0; f < Q.length / 4; f++) for (let i = 0; i < 4; i++) {
-    const a = Q[f * 4 + i], b = Q[f * 4 + ((i + 1) & 3)];
-    for (const [u, w] of [[a, b], [b, a]]) {
-      sx[u] += P[w * 3]; sy[u] += P[w * 3 + 1]; sz[u] += P[w * 3 + 2];
-      sl[u] += Math.hypot(P[w * 3] - P[u * 3], P[w * 3 + 1] - P[u * 3 + 1], P[w * 3 + 2] - P[u * 3 + 2]); cnt[u]++;
+/** Wölbung je Ecke: Abstand vor dem Schwerpunkt der Nachbarn längs der Eckennormale / mittlere Kantenlänge. */
+function bulge(sub) {
+  const P = sub.pos, nV = P.length / 3, N = new Float64Array(nV * 3), nb = Array.from({ length: nV }, () => new Set());
+  for (const f of sub.faces) {
+    let x = 0, y = 0, z = 0;
+    for (let i = 0; i < f.length; i++) {
+      const a = f[i] * 3, b = f[(i + 1) % f.length] * 3;
+      x += (P[a + 1] - P[b + 1]) * (P[a + 2] + P[b + 2]); y += (P[a + 2] - P[b + 2]) * (P[a] + P[b]); z += (P[a] - P[b]) * (P[a + 1] + P[b + 1]);
+      nb[f[i]].add(f[(i + 1) % f.length]); nb[f[(i + 1) % f.length]].add(f[i]);
     }
+    for (const v of f) { N[v * 3] += x; N[v * 3 + 1] += y; N[v * 3 + 2] += z; }
   }
   const out = new Float32Array(nV);
   for (let v = 0; v < nV; v++) {
-    if (!cnt[v]) continue;
-    const k = 1 / cnt[v];
-    out[v] = ((P[v * 3] - sx[v] * k) * VN[v * 3] + (P[v * 3 + 1] - sy[v] * k) * VN[v * 3 + 1] + (P[v * 3 + 2] - sz[v] * k) * VN[v * 3 + 2]) / Math.max(1e-6, sl[v] * k);
+    const s = nb[v];
+    if (!s.size) continue;
+    let cx = 0, cy = 0, cz = 0, L = 0;
+    for (const u of s) { cx += P[u * 3]; cy += P[u * 3 + 1]; cz += P[u * 3 + 2]; L += Math.hypot(P[u * 3] - P[v * 3], P[u * 3 + 1] - P[v * 3 + 1], P[u * 3 + 2] - P[v * 3 + 2]); }
+    const k = 1 / s.size, l = Math.hypot(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]) || 1;
+    out[v] = ((P[v * 3] - cx * k) * N[v * 3] + (P[v * 3 + 1] - cy * k) * N[v * 3 + 1] + (P[v * 3 + 2] - cz * k) * N[v * 3 + 2]) / l / Math.max(1e-6, L * k);
   }
   return out;
 }
@@ -106,8 +97,7 @@ export const ringZY = (poly2, x) => poly2.map(([u, y]) => [x, y, -u]);
 
 /**
  * Seitenprofil-Wanne mit gerundeten Kanten (ersetzt sideExtrude): Profil prof [[u, y], …] (u = vorwärts), Breite w;
- * Kantenradius r im Profil, rs an den Seitenkanten; top: optional schmaleres Profil-Oben (Seitenplatten oben
- * eingezogen um tuck m). → Ringe für armorShell
+ * Kantenradius r im Profil, rs an den Seitenkanten; tuck: Seitenplatten nach oben um tuck m eingezogen (geneigt, eben). → Ringe für armorShell
  */
 export function sideHullRings(prof, w, { r = 0.04, rs = 0.04, tuck = 0, soft = null } = {}) {
   const ring = plateRing(prof, r, soft);
@@ -117,7 +107,8 @@ export function sideHullRings(prof, w, { r = 0.04, rs = 0.04, tuck = 0, soft = n
     // obere Hälfte des Profils einziehen (geneigte Seitenplatten)
     let y0 = Infinity, y1 = -Infinity;
     for (const q of prof) { y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
-    const k = Math.max(0, (p[1] - (y0 + y1) / 2) / ((y1 - y0) / 2));
+    // linear über die ganze Höhe → Seitenplatte bleibt eben (gekrümmte Deckel würden zur Beule geglättet)
+    const k = (p[1] - y0) / Math.max(1e-6, y1 - y0);
     return Math.sign(x) * (Math.abs(x) - tuck * k);
   };
   const mk = (x, inset) => (inset ? plateRing(insetPoly(prof, inset), r, soft) : ring).map((p) => [tk(x, p), p[1], -p[0]]);
@@ -156,34 +147,37 @@ function vnoise(x, y, z) {
 
 /**
  * Ringe → BufferGeometry (Unterteilungsfläche). opts: levels (Stufen), cast (Gussnarben + Gussflag), castAmp (m), caps,
- * smoothAngle (Grad), wear (Kantenabnutzung aus der Wölbung), crease: [[ringA, idxA, ringB, idxB, s]] – scharfe
+ * smoothAngle (rad), wear (Kantenabnutzung aus der Wölbung), crease: [[ringA, idxA, ringB, idxB, s]] – scharfe
  * Käfigkanten (z. B. Stoßkante am Turmdach).
  */
-export function armorShell(rings, { levels = 2, cast = false, castAmp = 0.006, caps = [true, true], smoothAngle = 40, wear = true, crease = null } = {}) {
+export function armorShell(rings, { levels = 2, cast = false, castAmp = 0.006, caps = [true, true], smoothAngle = 0.7, wear = true, crease = null } = {}) {
   const cage = loftCage(rings, { capStart: caps[0], capEnd: caps[1] });
   const m = rings[0].length;
-  if (crease) for (const [ra, ia, rb, ib, s] of crease) cage.crease.set(edgeKey(ra * m + ((ia + m) % m), rb * m + ((ib + m) % m)), s);
-  const M = subdivide(cage, levels);
-  const VN = vertexNormals(M);
-  if (cast && levels > 0) {
-    const P = M.P;
-    for (let v = 0; v < P.length / 3; v++) {
-      const x = P[v * 3], y = P[v * 3 + 1], z = P[v * 3 + 2];
-      const d = (vnoise(x * 9, y * 9, z * 9) - 0.5) * castAmp + (vnoise(x * 23 + 5, y * 23, z * 23) - 0.5) * castAmp * 0.45;
-      P[v * 3] += VN[v * 3] * d; P[v * 3 + 1] += VN[v * 3 + 1] * d; P[v * 3 + 2] += VN[v * 3 + 2] * d;
-    }
-  }
-  let attrs = null;
+  if (crease) for (const [ra, ia, rb, ib, s] of crease) { const a = ra * m + ((ia + m) % m), b = rb * m + ((ib + m) % m); cage.crease.set(a < b ? `${a}|${b}` : `${b}|${a}`, s); }
+  const sub = subdivide(cage, levels);
+  const disp = cast && levels > 0 ? (x, y, z) => (vnoise(x * 9, y * 9, z * 9) - 0.5) * castAmp + (vnoise(x * 23 + 5, y * 23, z * 23) - 0.5) * castAmp * 0.45 : null;
+  const { position, normal } = triangulate(sub, { smoothAngle, disp });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(position, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
   if (wear) {
-    // Wölbung → „Abstand zur Kante“ für den Lack-Shader (klein = abgeschabt); Gussflag als +100 in z
-    const cv = convexity(M, VN), nV = M.P.length / 3, E = new Float32Array(nV * 3), kk = levels >= 2 ? 0.07 : 0.14;
-    for (let v = 0; v < nV; v++) {
-      const c = cv[v], d = c > 0.006 ? Math.max(0, 0.03 * (1 - c / kk)) : 9;
-      E[v * 3] = d; E[v * 3 + 1] = d; E[v * 3 + 2] = d + (cast ? 100 : 0);
+    // Wölbung → „Abstand zur Kante“ für den Lack-Shader (klein = abgeschabt); Gussflag als +100 in z.
+    // Ecken der Dreiecke in derselben Reihenfolge wie triangulate (je Fläche nacheinander) → nächste Flächenecke
+    const cv = bulge(sub), P = sub.pos, E = new Float32Array(position.length), kk = levels >= 2 ? 0.07 : 0.14;
+    let o = 0;
+    for (const f of sub.faces) {
+      for (let t = 0; t < (f.length - 2) * 3; t++) {
+        const px = position[o], py = position[o + 1], pz = position[o + 2];
+        let best = f[0], bd = Infinity;
+        for (const v of f) { const d = (P[v * 3] - px) ** 2 + (P[v * 3 + 1] - py) ** 2 + (P[v * 3 + 2] - pz) ** 2; if (d < bd) { bd = d; best = v; } }
+        const c = cv[best], d = c > 0.03 ? Math.max(0, 0.03 * (1 - (c - 0.03) / kk)) : 9;
+        E[o] = d; E[o + 1] = d; E[o + 2] = d + (cast ? 100 : 0);
+        o += 3;
+      }
     }
-    attrs = { aVehE: { size: 3, perVertex: E } };
+    g.setAttribute('aVehE', new THREE.BufferAttribute(E, 3));
   }
-  return toGeometry(M, () => true, { normals: cornerNormals(M, smoothAngle), attrs });
+  return g;
 }
 
 /** Schweißraupe: geriffelte Wulst entlang points ([x,y,z]…), Radius r, Riefen alle pitch m. */

@@ -1261,9 +1261,10 @@ function buildTurret(D, C, det, era, cab, A) {
 /* ===================================================================== Vorlage, Anbau, Takt */
 
 const TPL = new Map();
-function eraOf(D) { return D.era === 'wk2' ? 'wk2' : D.era === 'wk1' ? 'wk1' : 'modern'; }
+// Kalter Krieg (kk): analoge Instrumente und heller Innenanstrich wie im 2. WK (keine Bildschirme)
+function eraOf(D) { return D.era === 'wk2' || D.era === 'kk' ? 'wk2' : D.era === 'wk1' ? 'wk1' : 'modern'; }
 /** Hülse je Panzer: modern nur der Hülsenboden (verbrennbare Hülse), sonst Messinghülse (Länge, Radius in m). */
-const CASE = { mbt: null, wk2: [0.36, 0.042], wk2h: [0.57, 0.052], wk1: [0.3, 0.034], wk1l: [0.2, 0.024] };
+const CASE = { mbt: null, wk2: [0.36, 0.042], wk2h: [0.57, 0.052], wk1: [0.3, 0.034], wk1l: [0.2, 0.024], spz: [0.17, 0.018], kk: [0.6, 0.062], wk2m: [0.5, 0.05], wk2j: [0.45, 0.045] };
 
 function buildTemplate(D, C, det) {
   const era = eraOf(D);

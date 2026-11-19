@@ -378,10 +378,14 @@ export class HostSync {
     if (G.doors) for (const d of G.doors.snapshot()) this.net.send(id, { t: 'ev', e: 'dr', ...d }); // Türen/Tore (doors.js)
     if (G.trees) for (const t of G.trees.snapshot()) this.net.send(id, { t: 'ev', e: 'tf', ...t, now: 1 }); // gefallene Bäume
     if (G.holes && typeof G.holes.breachState === 'function') for (const b of G.holes.breachState()) this.net.send(id, { t: 'ev', e: 'br', ...b, now: 1 }); // Panzerbreschen
+    { const pb = G.destruction && G.destruction.breakables; if (pb && pb.active) { const ids = pb.snapshot(); if (ids.length) this.net.send(id, { t: 'ev', e: 'pb', i: ids, now: 1 }); } } // zerbrochene Kisten/Zaunfelder (breakables.js)
   }
 
   /** Bresche (Panzergranate/Rammen, bullet-holes.js breach): vollständige Form an alle ('ev' br). */
   relayBreach(msg) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'br', ...msg }); }
+
+  /** Zerbrochene Requisiten ('ev' pb, breakables.js): Ids. */
+  relayProps(ids) { if (this.active && this.net.online && ids && ids.length) this.net.send('all', { t: 'ev', e: 'pb', i: ids }); }
 
   /** Baum gefallen ('ev' tf, treefall.js). */
   relayTree(msg) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'tf', ...msg }); }

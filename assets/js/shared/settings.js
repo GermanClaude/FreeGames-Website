@@ -156,7 +156,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   // Bild (core-render; Bedeutung im Changelog „core-render“)
   colorLook: {
     type: 'enum', label: 'Farbstimmung', group: 'grafik',
-    options: ['natuerlich', 'video'], labels: { natuerlich: 'Natürlich', video: 'Video-Look (grau, wie die Vorlage)' },
+    options: ['natuerlich', 'video'], labels: { natuerlich: 'Natürlich', video: 'Video-Look (grau)' },
   },
   lensStyle: {
     type: 'enum', label: 'Bildstil', group: 'grafik',

@@ -17,6 +17,7 @@ import { createAtmosphere } from '../atmos.js?v=20261115041504';
 import { resolveConditions, applyConditions } from '../weather.js?v=20261115041504';
 import { createWater } from '../water.js?v=20261115041504';
 import { TriangleBVH } from '../bvh.js?v=20261115041504';
+import { breakableAccess, mergeAccess } from '../bruch.js?v=20261115041504'; // zerbrechliche Requisiten (game/breakables.js)
 import { makeTests } from '../navbuild.js?v=20261115041504';
 import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261115041504';
 import { Heightfield } from './heightfield.js?v=20261115041504';
@@ -319,6 +320,9 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   for (const s of sites) {
     const off = objects.length;
     for (const o of s.built.objects) objects.push(o);
+    // Ursprungsindizes der Ortsdreiecke in den gemeinsamen BVHs (Kisten/Zaunfelder zerbrechen: world.breakables)
+    s.colStart = colList.reduce((n, a) => n + a.length / 9, 0);
+    s.bulStart = bulList.reduce((n, a) => n + a.length / 9, 0);
     colList.push(s.built.colTris);
     bulList.push(s.built.bulletTris);
     albList.push(s.built.bulletAlbedo || albFill(s.built.bulletTris.length / 9, 90, 90, 90));
@@ -493,6 +497,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     emplacements: sites.flatMap((st) => st.b.emplacements || []), // benutzbare MG-Stellungen (game/mappoints.js)
     doors: sites.flatMap((st) => st.b.doors || []), gates: sites.flatMap((st) => st.b.gates || []), windows: sites.flatMap((st) => st.b.windows || []), // game/doors.js
     destructibles: sites.flatMap((st) => (st.b.destructibles || []).filter((d) => d.mesh)), // game/destruction.js
+    breakables: mergeAccess(sites.map((st) => breakableAccess(st.b.breakables, { cbvh: colBVH, bvh: bulBVH, colOff: st.colStart || 0, bulOff: st.bulStart || 0 }))), // game/breakables.js
     viewDistance: tier.view,
     mapImage: minimap.canvas,
     stats: {

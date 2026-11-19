@@ -15,7 +15,7 @@ const icon = (body) =>
 
 /* ------------------------------------------------------------------ Modi */
 
-export const MODE_ORDER = ['tdm', 'ult', 'dom', 'hp', 'cq', 'kc', 'ffa', 'inf', 'messer', 'gun', 'training'];
+export const MODE_ORDER = ['tdm', 'ult', 'dom', 'hp', 'cq', 'kc', 'ffa', 'inf', 'messer', 'gun', 'training', 'panzer'];
 
 /*
  * Modus-Daten B6 (26.10.): online: true = im Mehrspieler wählbar (eine Quelle für net/index.js und ui/net-menus.js,
@@ -266,7 +266,7 @@ export const MODES = {
     lethals: true,
     campaign: true,
     // Karte je Mission (main.js normalizeConfig; Quelle: game/campaign/outline.js); Liste = Karte und Rückfall, falls sie fehlt
-    missionMaps: { m0: 'range', m1: 'altstadt', m2: 'werk', m3: 'grenzland', m4: 'hafen', m5: 'bibliothek', m6: 'brandwald', m7: 'niemandsland', m8: 'grenzland', m9: 'altstadt', m10: ['flugplatz', 'grenzland'], m11: ['stadtkern', 'altstadt'] },
+    missionMaps: { m0: 'range', m1: 'altstadt', m2: 'werk', m3: 'grenzland', m4: 'hafen', m5: 'bibliothek', m6: 'brandwald', m7: 'niemandsland', m8: 'grenzland', m9: 'altstadt', m10: ['flugplatz', 'grenzland'], m11: ['stadtkern', 'altstadt'], m12: 'grenzland', m13: 'stadtkern', m14: 'niemandsland', m15: 'flugplatz' },
   },
   cq: {
     id: 'cq',
@@ -445,6 +445,48 @@ export const MODES = {
     objective: { loadout: { primary: 'knife', secondary: null, lethal: null, tactical: null } },
     recommendedMaps: ['werk', 'altstadt', 'hafen'],
     icon: icon('<path d="M4 20l7.5-7.5"/><path d="M11.5 12.5L19.5 4.5c.6 2.8-.2 5.6-2.6 8l-2.4 2.4"/><path d="M9.5 10.5l4 4"/>'),
+  },
+
+  // Panzersimulation (Strang panzersim, 15.11.; modes/panzer.js + vehicles/psim/*): eine Rolle in der Besatzung, KI für die
+  // übrigen Plätze, Feindpanzer/Pak/Bunker/Infanterie. Nur Einzelspieler (online: false). Optionen mit labels (Anzeige).
+  panzer: {
+    id: 'panzer',
+    name: 'Panzer',
+    short: 'PZR',
+    tagline: 'Eine Besatzung, ein Auftrag. Du bist einer von vier.',
+    description:
+      'Panzersimulation: Du übernimmst einen Platz – Fahrer, Richtschütze, Ladeschütze oder Kommandant – die KI-Besatzung den Rest. Motor anlassen, Gang einlegen, Waffe scharf schalten, laden und entsichern, Ziele ansprechen: in der Simulation machst du jeden Handgriff selbst. Wucht, Hohlladung, Spreng und Kanister wirken je nach Panzerung und Auftreffwinkel. Im Arcade-Stil fährst und schießt du allein.',
+    sizeRule: 'Deine Besatzung gegen {enemies} Infanteristen, Panzer und Stellungen',
+    rules: [
+      'Spielart Simulation (alle Handgriffe) oder Arcade (fahren und schießen)',
+      'Rolle frei wählbar, KI-Besatzung für die übrigen Plätze',
+      'Gegner: Panzer, Pak-Stellungen, Bunker und Infanterie',
+      'Durchschlag nach Panzerung, Winkel und Munition, Modul- und Besatzungsschäden',
+      'Kein Wiedereinstieg – fällt der Panzer aus, ist der Auftrag gescheitert',
+    ],
+    hudObjective: 'Vernichte Feindpanzer und Stellungen',
+    scoreUnit: 'Punkte',
+    scoreLimit: 0,
+    timeLimit: 1800,
+    teams: true,
+    defaultAllies: 0,
+    defaultEnemies: 10,
+    limits: { allies: [0, 8], enemies: [0, 30] },
+    respawnDelay: 99,
+    streaks: false,
+    lethals: true,
+    vehicles: true,
+    online: false,
+    scales: ['gross'],
+    options: [
+      { id: 'stil', label: 'Spielart', values: ['simulation', 'arcade'], labels: { simulation: 'Simulation', arcade: 'Arcade' }, def: 'simulation', hint: 'Simulation: jeder Handgriff selbst, keine Außenansicht. Arcade: du fährst und schießt allein, Automatiklader.' },
+      { id: 'rolle', label: 'Rolle', values: ['kommandant', 'richtschuetze', 'fahrer', 'ladeschuetze'], labels: { kommandant: 'Kommandant', richtschuetze: 'Richtschütze', fahrer: 'Fahrer', ladeschuetze: 'Ladeschütze' }, def: 'kommandant', hint: 'Nur Simulation. Panzer ohne diesen Platz (LK-17: zwei Mann) setzen dich an den nächsten.' },
+      { id: 'panzer', label: 'Panzer', values: ['karte', 'mbt', 'spz', 'kk', 'wk2', 'wk2m', 'wk2h', 'wk2j', 'wk1', 'wk1l'], labels: { karte: 'Nach Karte', mbt: 'KP-1 Mammut', spz: 'SZ-8 Igel', kk: 'KP-68 Auerochs', wk2: 'MP-4 Bison', wk2m: 'MP-43 Elch', wk2h: 'SP-6 Moloch', wk2j: 'JP-44 Stier', wk1: 'SK-18 Koloss', wk1l: 'LK-17 Libelle' }, def: 'karte', hint: 'Moderne Panzer mit Wärmebild und Restlicht, Weltkriegspanzer nur mit Optik und Winkelspiegeln.' },
+      { id: 'gegner', label: 'Feindkräfte', values: ['leicht', 'mittel', 'schwer'], labels: { leicht: 'Leicht', mittel: 'Mittel', schwer: 'Schwer' }, def: 'mittel', hint: 'Leicht: 2 Panzer, 1 Pak, 1 Bunker · Mittel: 3/2/2 · Schwer: 5/3/2' },
+      { id: 'stimme', label: 'Bordsprech-Stimme', values: ['aus', 'an'], labels: { aus: 'Aus', an: 'An' }, def: 'aus', hint: 'Sprachausgabe des Browsers (falls eine deutsche Stimme vorhanden ist); Untertitel immer.' },
+    ],
+    recommendedMaps: ['grenzland', 'niemandsland', 'flugplatz', 'brandwald'],
+    icon: icon('<path d="M3 15.5h18l-1.6 3.2H4.6z"/><path d="M5 15.5l1-3.5h9.5l1.2 3.5"/><path d="M9 12V9.5h5V12"/><path d="M14 10.6h7"/><circle cx="7" cy="17.1" r=".6"/><circle cx="12" cy="17.1" r=".6"/><circle cx="17" cy="17.1" r=".6"/>'),
   },
 
 };
@@ -835,6 +877,7 @@ export function modeOptionDiff(modeId, raw, { skipLimits = false } = {}) {
 
 /** Anzeigetext eines Werts („60 s“). */
 export function modeOptionText(opt, v) {
+  if (opt && opt.labels && opt.labels[v] != null) return opt.labels[v]; // Wortoptionen (Panzer: Spielart, Rolle …)
   return `${v}${(opt && opt.suffix) || ''}`;
 }
 

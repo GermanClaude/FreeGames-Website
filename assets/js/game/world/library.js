@@ -35,11 +35,11 @@ export const LIB_MATERIALS = {
   concrete_painted: { id: 'concrete_painted_peeling', color: 1.0 },
   asphalt: { id: 'asphalt_cracked', color: 0.85, macro: [0.18, 0.1, 0.14] },
   plaster_warm: { id: 'plaster_beige', color: [1.95, 2.1, 2.4] }, // textures-2: weniger lachsfarben (Scan Ø #836f56 × 2,1 war R/B 2,4)
-  plaster_white: { id: 'plaster_smooth_grey', color: [2.55, 2.62, 2.6] }, // texturen 14.11.: Fotoscan-Glattputz (vorher v_plaster, Video-Putz ohne Struktur)
+  plaster_white: { id: 'plaster_stucco', color: [1.0, 1.04, 1.07], normalScale: 1.25, aoMapIntensity: 0.6 }, // tex4: Kratzputz-Fotoscan (white_stucco) – Glattputz las sich aus der Nähe wie Papier (vorher plaster_smooth_grey × 2,6) // texturen 14.11.: Fotoscan-Glattputz (vorher v_plaster, Video-Putz ohne Struktur)
   plaster_peeling: { id: 'plaster_white_peeling', color: 1.15, roughness: 1.5 }, // textures-2: Putz matt (Ø 0,52 → 0,78)
   plaster_blue: { id: 'plaster_blue_weathered', color: 1.05 },
   plaster_damaged: { id: 'plaster_damaged_brick', color: 1.1 },
-  plaster_patched: { id: 'plaster_worn_patched', color: 1.3 },
+  plaster_patched: { id: 'plaster_white', color: [0.64, 0.57, 0.47] }, // tex4: feiner Altputz (white_stucco_02) – der Flicken-Scan worn_plaster_wall hatte eine senkrechte Fallrohr-Naht → Streifen alle 1,8 m und Tarnfleck-Muster
   brick: { id: 'brick_red_weathered', color: [1.02, 0.9, 1.0], macro: [0.2, 0.1, 0.12] }, // texturen 14.11.: Fotoscan (vorher vw_ziegel × [0,8 1,04 1,04], Video-Ziegel)
   // brick_alt: { id: 'vw_ziegel', color: [0.8, 1.04, 1.04] }, // 16.10.: Video-Ziegel weniger knallrot (gemessen sat 0,48, bei uns 0,68) // Grafik-Vorlage 15.10.: echte Ziegel aus dem Video (Walzhalle), neu verlegt (vorher v_brick)
   brick_dark: { id: 'brick_dark', color: 2.0 },
@@ -97,7 +97,7 @@ export const LIB_MATERIALS = {
   ctr_rot: { id: 'vh_ctr_rot_seite', color: 1.0, macro: [0.08, 0.05, 0.1] },
   ctr_gruen: { id: 'vh_ctr_gruen_seite', color: 1.0, macro: [0.08, 0.05, 0.1] },
   ctr_grau: { id: 'vh_ctr_grau_seite', color: 1.0, macro: [0.08, 0.05, 0.1] },
-  ctr_lack: { id: 'ctr_lack', color: 1.0, macro: [0.08, 0.05, 0.1] }, // 16.10. abends: 3D-Wellwände (Sicken als Geometrie), Farbe per Tönung
+  ctr_lack: { id: 'ctr_lack', color: 1.0, roughness: 0.78, macro: [0.1, 0.06, 0.1] }, // tex4: Lack/Rostläufer/Dellen aus Fotoscan (rusty_painted_metal, Wellung herausgerechnet), Lack seidenmatt // 16.10. abends: 3D-Wellwände (Sicken als Geometrie), Farbe per Tönung
   ctr_blau_tuer: { id: 'vh_ctr_blau_tuer', color: 1.0, repeat: 1, macro: false },
   ctr_rost_tuer: { id: 'vh_ctr_rost_tuer', color: 1.0, repeat: 1, macro: false },
   ctr_rot_tuer: { id: 'vh_ctr_rot_tuer', color: 1.0, repeat: 1, macro: false },
@@ -115,7 +115,8 @@ export const LIB_MATERIALS = {
   tiles_pattern: { id: 'tiles_checker', color: 2.1 },
   tiles_white: { id: 'tiles_white_wall', color: 1.0, macro: [0.06, 0.04, 0.06] },
   linoleum: { id: 'linoleum', color: 1.0 },
-  sandbag: { id: 'burlap', color: 1.35, roughness: 1.45, metalness: 0, macro: false, normalScale: 1.2, aoMapIntensity: 1.25 }, // LV-7: Gewebe sichtbar (vorher 0,6: „glattes Brot“)
+  sandbag: { id: 'burlap', color: [1.2, 1.62, 3.1], // tex4: Weißabgleich – Scan × Jute-Tönung war leuchtend orange („Brot“), jetzt Khaki wie echtes Sackleinen
+     roughness: 1.45, metalness: 0, macro: false, normalScale: 1.2, aoMapIntensity: 1.25 }, // LV-7: Gewebe sichtbar (vorher 0,6: „glattes Brot“)
   tarp: { id: 'canvas', color: 1.0, macro: false },
   rubber: { id: 'rubber', color: 0.6, macro: false },
   rubber_floor: { id: 'rubber_floor', color: 1.6 },
@@ -127,7 +128,8 @@ export const LIB_MATERIALS = {
   concrete_hall: { id: 'concrete_garage', color: [1.45, 1.65, 2.0] },
   paving_slabs: { id: 'paving_slabs', color: [1.5, 1.6, 1.7] },
   asphalt_light: { id: 'asphalt_light', color: 1.0, macro: [0.16, 0.08, 0.12] },
-  asphalt_dark: { id: 'asphalt_dark', color: [1.9, 2.3, 2.6], macro: [0.16, 0.08, 0.12] },
+  asphalt_dark: { id: 'asphalt_dark', color: [1.4, 2.1, 2.95], // tex4: neutral dunkelgrau (Scan worn_asphalt rotbraun → wirkte wie Gummimulch)
+    macro: [0.16, 0.08, 0.12] },
   cobble_rows: { id: 'cobble_rows', color: [1.9, 2.05, 2.1], macro: [0.1, 0.05, 0.12] },
   gravel_trail: { id: 'gravel_trail', color: 0.9, macro: [0.18, 0.1, 0.12] },
   dirt_dry: { id: 'dirt_dry', color: 1.05, roughness: 1.5, macro: [0.2, 0.1, 0.1] },
@@ -143,11 +145,22 @@ export const LIB_MATERIALS = {
   metal_corrugated_worn: { id: 'metal_corrugated_worn', color: 1.0 },
   metal_rust_heavy: { id: 'metal_rust_heavy', color: 1.0 },
   wood_planks_brown: { id: 'wood_planks_brown', color: 1.35 },
+  // tex4 (15.11.): Brandwald-Sätze als Fotoscans statt gemalter Eigensätze (Poly Haven CC0: excavated_soil_wall,
+  // burned_ground_01, brown_mud_03; Borke aus pine_bark/knotted_pine_bark). Farbe auf die Helligkeit der bisherigen
+  // prozeduralen Sätze kalibriert (Weißabgleich weg vom Orange des Lehmscans, verkohlt ≈ Holzkohle).
+  grabenlehm: { id: 'soil_wall', color: [0.42, 0.56, 1.05], roughness: 1.05, macro: [0.2, 0.1, 0.08] },
+  grabenlehm_hell: { id: 'soil_wall', color: [1.45, 2.2, 4.2], macro: [0.2, 0.1, 0.08] },
+  brandboden: { id: 'burned_ground', color: [0.2, 0.21, 0.24], macro: [0.2, 0.1, 0.1] },
+  brandboden_hell: { id: 'burned_ground', color: [0.46, 0.54, 0.66], macro: [0.2, 0.1, 0.1] },
+  asche: { id: 'burned_ground', color: [0.55, 0.66, 0.84], roughness: 1.3, macro: [0.18, 0.08, 0.08] },
+  schlamm: { id: 'mud_wet', color: [0.3, 0.29, 0.32], roughness: 0.8, macro: [0.16, 0.08, 0.12] },
+  borke_verkohlt: { id: 'bark_kiefer', color: [0.2, 0.28, 0.44], roughness: 1.1, macro: false },
+  totholz: { id: 'bark_kiefer', color: [0.9, 1.27, 1.95], macro: false }, // gleicher Satz wie die Brandborke, entrindet grau (kein Zusatz-Download)
 };
 
 // env-look (medium+, nie low): Nahdetail je Materialklasse – detail (Stärke der Detailnormalen), ds (Maßstab 1/m),
 // anti (gedrehte zweite Albedo-Abtastung gegen Kachelwiederholung; nur bei ungerichteten Mustern, nie bei Ziegeln,
-// Fliesen, Planken, Wellblech), pom (Parallaxe-Tiefe in m, nur ultra; Höhe = AO-Kanal). textures.js applyLook().
+// Fliesen, Planken, Wellblech), pom (Parallaxe-Tiefe in m, ab high (tex4; vorher nur ultra); Höhe = AO-Kanal). textures.js applyLook().
 // hex (texturen 14.11., nur high/ultra): Kachel-Auflösung nach Mikkelsen (engine/surface.js) – Kontrast 0..1, hexScale
 // (Zellen je Texturwiederholung), hexRot (Drehung 0..1: nur ungerichtete Böden; Wände ohne, wegen Laufspuren). Ersetzt dort „anti“.
 // texturen3 (14.11.): hexEq/eq – großräumige Flecken des Scans per grober Mip-Stufe herausrechnen (gegen das Dreiecks-
@@ -183,6 +196,9 @@ export const LIB_LOOK = {
   roof_clay: { ...LOOK_MASONRY, pom: 0.03 }, roof_old: { ...LOOK_MASONRY, pom: 0.03 },
   metal_corrugated_painted: LOOK_METAL, metal_corrugated_worn: LOOK_METAL, metal_rust_heavy: { ...LOOK_METAL, detail: 0.16, hex: 0.5, hexScale: 1.2 },
   wood_planks_brown: LOOK_WOOD,
+  // tex4: Brandwald
+  grabenlehm: { ...LOOK_WALL, hexRot: 0.15, weather: null }, grabenlehm_hell: { ...LOOK_WALL, hexRot: 0.15, weather: null },
+  brandboden: LOOK_GROUND, brandboden_hell: LOOK_GROUND, asche: LOOK_GROUND, schlamm: LOOK_GROUND,
 };
 
 // textures-2: low (Telefon) bekommt auf den großen, flach gesehenen Flächen (Böden, Wände, Mauerwerk) eine günstige
@@ -217,9 +233,25 @@ const hdr = () => (hdrLoader ||= new HDRLoader().setDataType(THREE.HalfFloatType
 const fileBytes = (f, k) => f?.sizes?.[k] || 0;
 // Texturqualität (Einstellung gfxTextures, 13.11.): eigene Stufe für die Fotoscan-Sätze, sonst aus der Qualitätsstufe
 const TEX_SETTING_TIER = { niedrig: 512, mittel: 1024, ultra: 2048 };
+// tex4 (15.11.): „Helden-Sätze“ je Karte – die zwei, drei Flächen, die aus Augenhöhe den größten Bildanteil haben
+// (Rasterauszählung der Blicke, scratchpad tex4-audit) – laden auf high die 2048er-Stufe (≈ 2× Texel je Meter in der
+// Nähe), alle übrigen bleiben 1024. Budget: ≤ +25 % Download je Karte auf high; nie auf Telefonen/low/medium.
+export const HERO_SETS = {
+  hafen: ['concrete', 'ctr_lack'],
+  werk: ['asphalt', 'brick'],
+  altstadt: ['cobble', 'plaster_white'],
+  grenzland: ['plaster_white'],
+  stadtkern: ['asphalt_dark', 'plaster_patched'],
+  // brandwald: keine (die Brandwald-Sätze sind neu im Download, +18 % schon ohne 2K)
+};
+function isPhone() {
+  try { const d = deviceInfo(); return !!d.touch && d.short > 0 && d.short < 900; } catch { return false; }
+}
+function texSetting(G) {
+  try { return G.settings && typeof G.settings.get === 'function' ? G.settings.get('gfxTextures') : 'auto'; } catch { return 'auto'; }
+}
 function textureTier(G, q) {
-  let v = 'auto';
-  try { v = G.settings && typeof G.settings.get === 'function' ? G.settings.get('gfxTextures') : 'auto'; } catch { v = 'auto'; }
+  const v = texSetting(G);
   let t = TEX_SETTING_TIER[v] || tierFor(q, 'texture');
   if (!TEX_SETTING_TIER[v] && G.renderer?.preset?.extreme) return 4096; // desktop „Extrem“: größte vorhandene Stufe (2K/4K)
   // 2048er-Scans nur auf Hoch/Ultra und nie auf Telefonen (Touch + kurze Bildschirmkante < 900 px): Grafikspeicher/Ladezeit
@@ -288,20 +320,24 @@ export function createWorldAssets(G, def, quality) {
       else if (over[name]) spec = { ...(LIB_MATERIALS[name] || {}), ...over[name] };
       const e = man?.textures?.[spec.id];
       if (!e) continue;
-      const tier = pickTier(e.tiers, stats.tier.texture);
+      // tex4: Helden-Sätze der Karte auf high (Automatik, kein Telefon) eine Stufe höher
+      const hero = q === 'high' && stats.tier.texture === 1024 && !TEX_SETTING_TIER[texSetting(G)] && (cfg.hero || HERO_SETS[def.id] || []).includes(name) && !isPhone();
+      const tier = pickTier(e.tiers, hero ? 2048 : stats.tier.texture);
       const calib = JSON.stringify([spec.color, spec.roughness, spec.metalness, spec.normalScale, spec.repeat, spec.macro, spec.aoMapIntensity, spec.envMapIntensity]);
       // low (Handy): Weltraum-Variation + günstiges Nahdetail nur auf Böden/Wänden (LOW_LOOK, textures-2), sonst aus
       const lowLit = q === 'low' && LOW_LOOK.has(name);
       if (q === 'low') spec = { ...spec, macro: lowLit && spec.macro !== false ? (spec.macro || LOW_MACRO) : false };
-      // env-look: Nahdetail ab medium (Kartenzuordnung kann look: false oder eigene Werte setzen), Parallaxe nur ultra
+      // env-look: Nahdetail ab medium (Kartenzuordnung kann look: false oder eigene Werte setzen), Parallaxe ab high
       let look = spec.look === false ? null : (spec.look || LIB_LOOK[name] || null);
       if (q === 'low') look = look && lowLit ? lowLook(look) : null;
-      else if (look && q !== 'ultra' && look.pom) look = { ...look, pom: 0 };
+      else if (look && q !== 'ultra' && q !== 'high' && look.pom) look = { ...look, pom: 0 }; // tex4: Parallaxe (Mauerwerk/Pflaster/Dach) ab high (vorher nur ultra)
       // texturen 14.11.: Hex-Kachelung (≈ 2× Texturabfragen) nur high/ultra; dort ersetzt sie die Gegen-Kachelung „anti“
       if (look && look.hex) look = q === 'high' || q === 'ultra' ? { ...look, anti: 0 } : { ...look, hex: 0, eq: look.eq ?? look.hexEq ?? 0 };
       const lk = look ? ':L' + JSON.stringify(look) : '';
       // sizeM in der Zuordnung: abweichender Weltmaßstab der Textur (z. B. kleinere Pflastersteine)
-      plan.set(name, { ...spec, look, tier, sizeM: spec.sizeM ?? e.sizeM?.[0], key: `${spec.id}@${tier}:${calib}${spec.sizeM ? ':s' + spec.sizeM : ''}${q === 'low' ? ':lo' : ''}${lk}` });
+      // tex4: Mikroschatten aus der AO-Karte auch im direkten Licht (engine/textures.js applyCavity), ab medium
+      const cavity = q === 'low' ? 0 : (spec.cavity ?? 0.6);
+      plan.set(name, { ...spec, look, tier, cavity, sizeM: spec.sizeM ?? e.sizeM?.[0], key: `${spec.id}@${tier}:${calib}${spec.sizeM ? ':s' + spec.sizeM : ''}${q === 'low' ? ':lo' : ''}${lk}` });
     }
     return plan;
   }

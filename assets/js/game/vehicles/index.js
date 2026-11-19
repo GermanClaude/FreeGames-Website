@@ -329,16 +329,16 @@ export class VehicleSystem {
   }
 
   /** Panzer dieser Runde je Team: Einstellung „Panzer-Generation“ (online Raum, offline Lobby; ?panzer=… für Tests). */
-  tankTypeFor(team = 'A') {
+  tankTypeFor(team = 'A', slot = 0) {
     const G = this.G, M = G.match || {};
     let era = null;
     try { era = G.params && typeof G.params.get === 'function' ? G.params.get('panzer') : null; } catch { era = null; }
     if (!era) era = (M.net && M.net.tankEra) || M.tankEra || 'karte';
-    return tankTypeFor(era, M.mapId || (this.world && this.world.id), team);
+    return tankTypeFor(era, M.mapId || (this.world && this.world.id), team, slot);
   }
   get tankType() { return this.tankTypeFor('A'); }
   /** Beide Panzer der Runde (Team A, Team B; ohne Doppelte). */
-  get tankTypes() { return [...new Set([this.tankTypeFor('A'), this.tankTypeFor('B')])]; }
+  get tankTypes() { return [...new Set([this.tankTypeFor('A'), this.tankTypeFor('B'), this.tankTypeFor('A', 1), this.tankTypeFor('B', 1)])]; }
 
   /**
    * Zivile Stellplätze der Karte (world.civilVehicles; ?vehicles=0 schaltet auch sie ab) – reihum je Typ geordnet, damit
@@ -377,9 +377,12 @@ export class VehicleSystem {
     if (civil.length) { this._prepareCivil(civil.slice(0, CIV_CAP[this.quality] || 16)); for (const e of civil) this.registerSpawn(e); }
     if (!entries || !entries.length) return;
     // Panzergeneration (Raum/Lobby „Panzer“): Kampfpanzer-Plätze der Karte bekommen den Panzer der gewählten Epoche
+    const slots = new Map(); // je Team: n-ter Kampfpanzer-Stellplatz (zweiter → zweites Fahrzeug der Epoche)
     entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret).map((e) => {
       if (e.type !== 'mbt') return e;
-      const tank = this.tankTypeFor(e.team);
+      const k = e.team ?? null, n = slots.get(k) || 0;
+      slots.set(k, n + 1);
+      const tank = this.tankTypeFor(e.team, n);
       return tank !== 'mbt' ? { ...e, type: tank } : e;
     });
     // Reihum je Team anmelden: bei der Stufen-Obergrenze (Handy) bekommen beide Seiten gleich viele Fahrzeuge

@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { caliberOf, penetrationDepth } from '../shared/calibers.js?v=20261115041504';
 import { hdrTarget } from './engine/post/common.js?v=20261115041504';
 import { CUTS, CUT_MAX, CUT_STRIDE, CUT_K, cutGLSL, setCutCount } from './world/shading.js?v=20261115041504';
+import { BreachDetail } from './breach-detail.js?v=20261115041504'; // Bewehrung, fallende Brocken, Schuttkegel (zerstoerung 15.11.)
 
 const MAX = 700;
 // Durchblick: kleine Ansichten aus Durchschüssen (Atlas 4 × 4 Felder), was hinter der Wand liegt – mit Gegnern
@@ -51,8 +52,8 @@ const JAG = [0.14, 0.1, 0.12, 0.05, 0.12, 0.1, 0.1, 0.12];
 // Aufweitung zur Rückseite (Austritt bricht weiter aus): Holz splittert, Mauerwerk platzt, Blech kaum
 const KB = [1.25, 1.15, 1.15, 1.0, 1.0, 1.0, 1.0, 1.18];
 // Explosionen: Ladung relativ zur Splittergranate (Druck auf nahe Flächen) und Zahl der Splitter, die Wände pocken
-const BLAST_Q = { frag: 1, semtex: 1.5, impact: 0.8, rocket: 2.6, shell_he: 3.2, shell_ap: 1.2, drone: 1.1, strike: 3, c4: 3.5, sentry: 0.15 };
-const FRAG_N = { frag: 16, impact: 9, semtex: 6, rocket: 10, shell_he: 18, drone: 7, strike: 12, sentry: 2 };
+const BLAST_Q = { frag: 1, semtex: 1.5, impact: 0.8, rocket: 2.6, shell_he: 3.2, shell_heat: 2.2, shell_ap: 1.2, drone: 1.1, strike: 3, c4: 3.5, sentry: 0.15 };
+const FRAG_N = { frag: 16, impact: 9, semtex: 6, rocket: 10, shell_he: 18, shell_heat: 8, drone: 7, strike: 12, sentry: 2 };
 // Widerstand gegen Druck je Stil (Holz, Beton, Putz, Blech, Glas, Erde, Stoff, Ziegel): Putzwand bricht, Beton kaum
 const RESIST = [0.4, 1, 0.45, 2.5, 0, 0.6, 0.3, 0.85];
 /** Zufallsfolge aus dem Explosionsort: alle Geräte rechnen dieselbe Bruchform. */
@@ -165,6 +166,7 @@ export class BulletHoles {
     this._rubble.setColorAt(0, new THREE.Color(1, 1, 1)); // Instanzfarben anlegen (Programm mit Farbe)
     this._rubbleN = 0;
     if (G.scene) G.scene.add(this._rubble);
+    try { this.detail = new BreachDetail(this); } catch (err) { console.warn('[holes] Breschen-Details:', err); this.detail = null; }
     this._fxBudget = 6;
     setCutCount(0);
     const W = G.world;
@@ -199,7 +201,7 @@ export class BulletHoles {
     const rnd = rngAt(o);
     const reach = 0.6 + Q * 0.9;
     // Panzergranaten: Breschen in Wänden verteilt der Host (vehicles/breach.js) – hier nur Krater und Pocken
-    const cutOk = e.type !== 'shell_he' && e.type !== 'shell_ap';
+    const cutOk = e.type !== 'shell_he' && e.type !== 'shell_ap' && e.type !== 'shell_heat';
     const planes = [];
     const dir = new THREE.Vector3();
     const N = 14;
@@ -312,6 +314,8 @@ export class BulletHoles {
         this._sizeCut(h);
         this._cutDirty = true;
         this._absorb(h);
+        // Schutt (fällt aus dem Rand) und ab 0,6 m² ein Kegel als Deckung – aus dem Ereignis, auf allen Geräten gleich
+        this._rubblePile(h, false);
       } else {
         h.r = Math.max(h.r, Math.min(MAXR[style][0] * 1.5, rb * 0.5));
         h.rc = Math.max(h.rc, h.r * 1.5);
@@ -398,6 +402,9 @@ export class BulletHoles {
     h.r = m;
     h.rc = m * (1 + JAG[h.style]) * 1.12 + 0.08;
     this._syncExit(h);
+    if (this.detail) this.detail.touch(h);
+    // groß genug für einen Menschen? → Navigation prüft (destruction.js _navLink)
+    if (m > 0.42 && !(h._navR >= m - 0.15)) { h._navR = m; this.G.events?.emit?.('wall:cut', { position: h.pos.clone(), r: m }); }
   }
 
   _syncExit(h) {
@@ -1070,6 +1077,7 @@ export class BulletHoles {
   update(dt) {
     this._time += dt;
     this._fxBudget = Math.min(6, this._fxBudget + dt * 6);
+    if (this.detail) this.detail.update(dt);
     if (this._relayPend.size) for (const [id, m] of [...this._relayPend]) if (this._time - (this._relayAt.get(id) ?? -9) >= 0.2) this._relayBreach(m, true);
     // Splitter kommen an: Pocke + kleiner Einschlag (Staub/Funke je Werkstoff)
     if (this._fragQ.length) {
@@ -1233,6 +1241,7 @@ export class BulletHoles {
       if (!pred(h)) { keep.push(h); continue; }
       h.dead = true;
       if (h.cut) this._cutDirty = true;
+      if (h._rb && this.detail) this.detail.drop(h);
       if (h.viewSlot != null) this._slots[h.viewSlot] = null;
       _m.makeScale(0, 0, 0).toArray(this.mesh.instanceMatrix.array, h.slot * 16);
       this.mesh.instanceMatrix.addUpdateRange(h.slot * 16, 16);
@@ -1602,7 +1611,7 @@ export class BulletHoles {
     this._sizeCut(h);
     this._cutDirty = true;
     this._absorb(h);
-    this._rubblePile(h);
+    this._rubblePile(h, quiet);
     this._queueProbe(h);
     if (h.exitHole) { this._syncExit(h); this._queueProbe(h.exitHole); this._write(h.exitHole); }
     this._write(h);
@@ -1621,11 +1630,12 @@ export class BulletHoles {
    * meist nach innen (Granate und Panzer drücken die Wand hinein), dicht an der Wand mehr. Zufall aus Mitte und Fläche –
    * dieselbe Nachricht ergibt auf jedem Gerät denselben Haufen. Nur Optik (keine Kollision).
    */
-  _rubblePile(h) {
+  _rubblePile(h, quiet = true) {
     const M = this._rubble;
-    if (!M || !this._ray0 || !h.sprof) return;
+    const prof = h.sprof || h.prof;
+    if (!M || !this._ray0 || !prof) return;
     let A = 0;
-    for (let k = 0; k < CUT_K; k++) A += h.sprof[k] * h.sprof[k];
+    for (let k = 0; k < CUT_K; k++) A += prof[k] * prof[k];
     A *= Math.PI / CUT_K; // Fläche des Umrisses (Sektoren)
     const add = A - (h._pileA || 0);
     if (add < 0.08) return;
@@ -1636,12 +1646,22 @@ export class BulletHoles {
     this._frame(h.n, _tx, _ty);
     const core = ALBEDO[h.style] || ALBEDO[1], skin = h.alb || core;
     const cap = M.instanceMatrix.count;
+    // Schuttkegel (Deckung, breach-detail.js): Bodenhöhe innen unter der Bresche
+    let cone = null;
+    if (this.detail && A >= 0.6) {
+      _wo.copy(h.pos).addScaledVector(h.n, -(h.tn + 0.45)).addScaledVector(_ty, -Math.min(1.2, h.r * 0.5));
+      const g = this._ray0(_wo, DOWN, 4);
+      if (g && !g.vehicle && g.normal.y > 0.6) cone = this.detail.cover(h, g.point.y, A);
+    }
+    const p0 = new THREE.Vector3();
     for (let i = 0; i < n; i++) {
       // Punkt auf der unteren Hälfte des Umrisses, dann vor oder hinter die Wand und abwärts auf den Boden
       const th = Math.PI * (1.05 + 0.9 * rnd()), u = (th * CUT_K) / (Math.PI * 2);
       const k0 = Math.floor(u) % CUT_K, k1 = (k0 + 1) % CUT_K, t = u - Math.floor(u);
-      const R = (h.sprof[k0] + (h.sprof[k1] - h.sprof[k0]) * t) * (0.6 + 0.4 * rnd());
+      const R = (prof[k0] + (prof[k1] - prof[k0]) * t) * (0.6 + 0.4 * rnd());
       const inside = rnd() < 0.65, d = 0.08 + 1.4 * rnd() * rnd();
+      // Bruchstelle am Rand (Wandmitte) – dort beginnt der Fall
+      p0.copy(h.pos).addScaledVector(_tx, Math.cos(th) * R).addScaledVector(_ty, Math.sin(th) * R).addScaledVector(h.n, -h.tn * 0.5);
       _wo.copy(h.pos).addScaledVector(_tx, Math.cos(th) * R + (rnd() - 0.5) * 0.4).addScaledVector(_ty, Math.sin(th) * R * 0.5)
         .addScaledVector(h.n, inside ? -(h.tn + d) : d);
       const f = this._ray0(_wo, DOWN, 4);
@@ -1649,9 +1669,12 @@ export class BulletHoles {
       const s = 0.05 + (0.06 + 0.3 * tn) * rnd() * (d < 0.5 ? 1 : 0.7);
       _q.setFromEuler(_eu.set(rnd() * 6.283, rnd() * 6.283, rnd() * 6.283));
       _s.set(s * (0.8 + 0.5 * rnd()), s * (0.45 + 0.35 * rnd()), s * (0.8 + 0.5 * rnd()));
-      _m.compose(_v.copy(f.point).addScaledVector(UPV, _s.y * 0.55), _q, _s);
+      _v.copy(f.point).addScaledVector(UPV, _s.y * 0.55);
+      // im Kegel gestapelt: innen nahe der Wand höher (Form folgt dem Deckungsquader)
+      if (cone && inside && d < cone.depth + 0.1) _v.y += cone.hh * (1 - d / (cone.depth + 0.1)) * (0.45 + 0.55 * rnd());
+      _m.compose(_v, _q, _s);
       const slot = this._rubbleN % cap;
-      M.setMatrixAt(slot, _m);
+      if (quiet || !this.detail || !this.detail.fall(M, slot, p0, _v, _q, _s, rnd() * 0.25)) M.setMatrixAt(slot, _m);
       const c = rnd() < 0.6 ? core : skin, b = 0.75 + 0.3 * rnd();
       M.setColorAt(slot, _col.setRGB(c[0] * b, c[1] * b, c[2] * b));
       this._rubbleN++;
@@ -1733,6 +1756,7 @@ export class BulletHoles {
       if (this._tci.own) this._tci.col.triangleCapsuleIntersect = this._tci.tci0; else delete this._tci.col.triangleCapsuleIntersect;
     }
     this._cutList = [];
+    if (this.detail) { this.detail.dispose(); this.detail = null; }
     if (this.mesh.parent) this.mesh.parent.remove(this.mesh);
     if (this.mesh2.parent) this.mesh2.parent.remove(this.mesh2);
     if (this._rubble) {

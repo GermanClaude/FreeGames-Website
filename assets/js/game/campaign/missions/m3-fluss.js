@@ -4,6 +4,11 @@
 // entfernt haben. Checkpoints: start, dorf, bruecke.
 
 import { actor } from './cast.js?v=20261115041504';
+import { arm } from './hilfen-c.js?v=20261115041504';
+
+// kamp3 (15.11.): vertieft – Panzerabwehrtrupps am Ortsrand (Raketenwerfer gegen Eisen 2) und ein Gegenstoß über die
+// Brücke mit zwei Geländewagen, nachdem die Pioniere fertig sind.
+const AT_TEAMS = [[-30, 94], [-48, 72], [24, 95]];
 
 const TANK_AT = [13.5, 121];
 const TANK_YAW = 0.12; // Blick die Straße hinunter (Süden, −Z)
@@ -140,6 +145,14 @@ export const MISSION_3 = {
         yield village;
         m.say('lenz', 'Dorf ist sauber. Ein paar Leute im Keller der Kapelle – denen geht es gut.');
         yield 1.5;
+        // Panzerabwehrtrupps in den Gehöften am Ortsrand
+        m.wave('pak', { count: 3, scale: false, at: AT_TEAMS, hold: true });
+        for (const b of m.waves.get('pak').bots) arm(b, 'at_donner');
+        m.say('roth', 'Achtung, Falke: Raketenwerfer! Drei Trupps in den Häusern am Ortsrand. Bleib in Bewegung und zeig ihnen nie die Seite.', { radio: true, expr: 'angespannt' });
+        m.tip('Sprenggranate gegen Häuser und Deckung, MG gegen Infanterie im Freien.', 5);
+        yield m.killObjective('pakk', 'Schalte die Panzerabwehrtrupps am Ortsrand aus', 'pak');
+        m.say('lenz', 'Danke. Ohne dich hätten sie Eisen 2 von der Straße geholt.', { radio: true });
+        yield 1;
       },
     },
     {
@@ -163,9 +176,26 @@ export const MISSION_3 = {
         m.say('lenz', 'Pioniere vor! Falke, deck sie auf der Brücke.');
         yield m.holdZone('sichern', 'Sichere die Brücke für die Pioniere', { at: BRIDGE, r: 14, secs: 20, label: 'Brücke', action: 'Pioniere arbeiten' });
         yield m.killObjective('wache', 'Schalte die Brückenwache aus', 'wache');
+        // Gegenstoß: zwei Geländewagen und Infanterie von der Werkstraße
+        m.say('roth', 'Staub auf der Werkstraße. Zwei Geländewagen mit schweren MGs – sie wollen die Pioniere von der Brücke holen!', { radio: true, expr: 'angespannt' });
+        const j1 = m.scriptTank('gj1', { type: 'jeep', at: [62, -78], yaw: 0.6, route: [[52, -52], [44, -40]], range: 90, fireEvery: 2.5 });
+        const j2 = m.scriptTank('gj2', { type: 'jeep', at: [24, -78], yaw: -0.4, route: [[32, -54], [38, -42]], range: 90, fireEvery: 2.5 });
+        m.wave('gs', { count: 4, at: [[44, -60], [56, -64], [30, -62], [40, -70]], attack: BRIDGE, radius: 10 });
+        const ok = (s2) => !!(s2 && s2.v && s2.v.alive && !s2.v.wreck && s2.bot && s2.bot.alive);
+        m.objective('gj', 'Wehre den Gegenstoß an der Brücke ab', { pos: () => { const x = [j1, j2].find(ok); return x ? x.v.position : null; }, label: 'Geländewagen', total: 2 });
+        yield m.until(() => { const n = [j1, j2].filter((x) => !ok(x)).length; m.progress('gj', n, 2); return n >= 2; });
+        m.done('gj');
+        yield m.killObjective('gsk', 'Schalte die Infanterie am Südufer aus', 'gs');
         yield 1.5;
         m.complete();
       },
     },
   ],
+
+  /** Testlauf (run.js): in den Panzer setzen. */
+  _test(d) {
+    const t = d.get('tank'), G = d.G;
+    if (t && t.alive && G.player.alive && G.player.vehicle !== t && d.objs.some((o) => o.id === 'aufsitzen' && !o.done)) { try { G.vehicles.enter(G.player, t); } catch { /* */ } }
+  },
 };
+

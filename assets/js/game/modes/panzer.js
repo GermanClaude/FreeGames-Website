@@ -1,0 +1,945 @@
+// NULLPUNKT — Modus „Panzer“ (Panzersimulation, Nutzer 15.11.): du bist Fahrer, Richtschütze, Ladeschütze oder Kommandant
+// eines Panzers; die übrigen Plätze besetzt eine KI-Besatzung (vehicles/psim/crew-ai.js). Gegner: Feindpanzer mit KI,
+// Pak-Stellungen, Feldbunker (vehicles/psim/emplacement.js) und Infanterie (Lobby-Gegner). Ziel: alle Panzer und
+// Stellungen ausschalten; verloren, wenn der eigene Panzer ausfällt oder du fällst. Nur Einzelspieler (online: false).
+//
+// Spielart (Option „stil“):
+//   simulation  alles selbst: Motor anlassen (Hauptschalter, Anlasser), Wahlhebel, Feststellbremse; Waffe scharf schalten,
+//               Turmantrieb/Notbetrieb, Rechner-Munitionswahl, Laser; Lader: greifen → einschieben → schließen → entsichern;
+//               Kommandant: Befehle an Fahrer/Richtschütze/Lader, Luke, Übergabe. Keine Außenansicht.
+//   arcade      eine Person fährt (W/A/S/D) und richtet/schießt (Maus) zugleich, Munition per Taste 1–4, Automatiklader,
+//               Außenansicht erlaubt.
+// Debug-URL: spielen.html?debug=1&autostart=1&mode=panzer&map=grenzland&rolle=<fahrer|richtschuetze|lader|kommandant>
+//            &sim=<1|0>&tank=<mbt|wk2|wk2h|wk1|wk1l|…>&gegner=<leicht|mittel|schwer>&enemies=N (Infanterie)
+// Konsole: __game.panzer → { mode, tank, crew, order(cmd), ammo(kind), fire(), state }
+import * as THREE from 'three';
+import { BaseMode } from './base.js?v=20261115041504';
+import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261115041504';
+import { VEHICLES, VEHICLE_WEAPONS, TANK_ERAS, tankTypeFor } from '../vehicles/data.js?v=20261115041504';
+import { prepareVehicleModels } from '../vehicles/models.js?v=20261115041504';
+import { projectToScreen } from '../vehicles/hud.js?v=20261115041504';
+import { viewOf, viewsOf, viewLookDir } from '../vehicles/views.js?v=20261115041504';
+import { gunSeat, loaderSeat } from '../vehicles/crew.js?v=20261115041504';
+import { equipTank, registerAmmo, KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from '../vehicles/psim/ammo.js?v=20261115041504';
+import { installHooks } from '../vehicles/psim/hooks.js?v=20261115041504';
+import { TankCrew, EnemyTank, TARGET_LABEL, targetPoint, bearingWord, roundRange } from '../vehicles/psim/crew-ai.js?v=20261115041504';
+import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplacement.js?v=20261115041504';
+import { SimControls } from '../vehicles/psim/sim.js?v=20261115041504';
+import { PanzerHUD, Radio, ammoRows } from '../vehicles/psim/hud.js?v=20261115041504';
+import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261115041504';
+
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const ROLE = { fahrer: 'Fahrer', richtschuetze: 'Richtschütze', ladeschuetze: 'Ladeschütze', kommandant: 'Kommandant' };
+const ROLE_ALIAS = { fahrer: 'fahrer', driver: 'fahrer', richtschuetze: 'richtschuetze', rs: 'richtschuetze', gunner: 'richtschuetze', schuetze: 'richtschuetze', lader: 'ladeschuetze', ladeschuetze: 'ladeschuetze', loader: 'ladeschuetze', kommandant: 'kommandant', kdt: 'kommandant', commander: 'kommandant' };
+const AMMO_KEYS = ['slot1', 'slot2', 'streak1', 'streak2'];
+const CREW_NAMES = ['Uffz. Brandt', 'Gefr. Keller', 'OGefr. Vogt', 'Fw. Lorenz', 'Gefr. Sommer', 'Uffz. Hartwig'];
+const FORCES = { leicht: { tanks: 2, pak: 1, bunker: 1 }, mittel: { tanks: 3, pak: 2, bunker: 2 }, schwer: { tanks: 5, pak: 3, bunker: 2 } };
+
+export class PanzerMode extends BaseMode {
+  constructor(G, modeId, opts = {}) {
+    super(G, modeId, opts);
+    this.teams = true;
+    this.scores = { A: 0, B: 0 };
+    this.respawnDelay = 99;
+    // Optionen: Lobby (settings.modeOptions.panzer) + ?mopt= + eigene URL-Parameter
+    let raw = {};
+    try { raw = { ...((G.settings.get('modeOptions') || {})[modeId] || {}) }; } catch { raw = {}; }
+    const P = G.params && typeof G.params.get === 'function' ? G.params : null;
+    if (P && P.get('mopt')) raw = { ...raw, ...parseModeOptions(P.get('mopt')) };
+    const o = modeOptionValues(modeId, raw);
+    if (P) {
+      if (P.get('sim') === '1') o.stil = 'simulation'; else if (P.get('sim') === '0' || P.get('arcade') === '1') o.stil = 'arcade';
+      const r = ROLE_ALIAS[(P.get('rolle') || '').toLowerCase()]; if (r) o.rolle = r;
+      const t = P.get('tank') || P.get('panzer'); if (t && VEHICLES[t] && VEHICLES[t].drive === 'tracked' && !VEHICLES[t].civil) o.panzer = t;
+      const g = P.get('gegner'); if (g && FORCES[g]) o.gegner = g;
+      if (P.get('stimme') === '1') o.stimme = 'an';
+    }
+    this.cfg = o;
+    this.arcade = o.stil === 'arcade';
+    this.sim = !this.arcade;
+    this.role = this.arcade ? 'richtschuetze' : ROLE_ALIAS[o.rolle] || 'kommandant';
+    this.tank = null; this.crew = null; this.enemies = []; this.empl = []; this.targetsTotal = 0;
+    this.playerSeat = -1;
+    this.state = {
+      battery: !this.sim, engine: this.sim ? 'aus' : 'an', crankT: 0, cranking: false, engineWanted: false,
+      parkBrake: this.sim, selector: 'N', lights: 'kampf', armed: !this.sim, hydraulics: true, safe: false, shiftQ: 0, extCharges: 2, burnT: 0, trackRepairT: 0,
+    };
+    this.marker = null; this.driverOrder = null;
+    this._unhook = null; this._wheel = null; this._endAt = null; this._outcome = null; this._msgT = 0;
+  }
+
+  get deployMap() { return false; }
+  allowOvertime() { return false; }
+  roleLabel() { return ROLE[this.role]; }
+  vehicleRules() { return { thirdPerson: this.arcade, reload: this.arcade ? 'automatisch' : 'manuell' }; }
+  exitAllowed() { return !!(this.tank && (!this.tank.alive || modsOf(this.tank).brand > 0)); }
+  engineOff() { return this.state.engine !== 'an'; }
+  hint(text) { this.radio && this.radio.say('Hinweis', text, { tone: 'warn', quiet: true }); }
+
+  /* ------------------------------------------------------------ Lebenszyklus */
+
+  onAttach(s) {
+    const G = this.G;
+    this.hud = new PanzerHUD(this);
+    this.radio = new Radio(this, this.hud.el.sub);
+    this.radio.voice = this.cfg.stimme === 'an';
+    this.simc = new SimControls(this);
+    this.optics = new PanzerOptics(this);
+    document.body.classList.add('psim-on');
+    if (!document.getElementById('psim-css2')) { const st = document.createElement('style'); st.id = 'psim-css2'; st.textContent = '.psim-on .vh-rack,.psim-on .vh-seats{display:none!important}'; document.head.appendChild(st); }
+    G.panzer = { mode: this, get tank() { return G.mode && G.mode.tank; }, order: (c, a) => this.crew && this.crew.order(c, a), ammo: (k) => this.crew && this.crew.orderAmmo(k), fire: () => this.crew && this.crew.fire(), designate: () => this._designate(), sim: (id, d = 1) => this.simAction(id, d), rolle: (r) => this.switchRole(r), get state() { return G.mode && G.mode.state; } };
+    if (!s) return;
+    s.on('vehicle:loaded', (e) => this._onLoaded(e));
+    s.on('vehicle:destroyed', (e) => this._onDestroyed(e));
+    s.on('vehicle:crit', (e) => this._onCrit(e));
+    s.on('vehicle:hit', (e) => this._onHit(e));
+    s.on('vehicle:ricochet', (e) => { if (e.vehicle === this.tank) this.radio.say('Richtschütze', 'Abpraller an uns!', { tone: 'warn' }); });
+    s.on('kill', (e) => this._onKillEv(e));
+    s.on('vehicle:gear', (e) => { if (e.vehicle === this.tank && e.blocked && this.role === 'fahrer') this.hint('Getriebe sperrt – erst anhalten'); });
+  }
+
+  onDetach() {
+    const G = this.G;
+    if (this._unhook) { this._unhook(); this._unhook = null; }
+    if (this.tank && this.tank.body && this.tank.body.drivetrain && this.tank.body.drivetrain._psimRun) { this.tank.body.drivetrain.run = this.tank.body.drivetrain._psimRun; }
+    this.simc?.dispose(); this.optics?.dispose(); this.radio?.clear(); this.hud?.dispose();
+    this.simc = this.optics = this.radio = this.hud = null;
+    if (G.input && G.input.wheel && G.input.wheel.open && this._wheel) G.input.closeWheel();
+    document.body.classList.remove('psim-on');
+    if (G.panzer && G.panzer.mode === this) G.panzer = null;
+  }
+
+  onStart() {
+    const G = this.G;
+    try { this._setup(); } catch (err) { console.error('[Panzer] Aufbau fehlgeschlagen', err); }
+    void G;
+  }
+
+  _setup() {
+    const G = this.G, sys = G.vehicles, W = G.world;
+    if (!sys) return;
+    if (!sys.attached) sys.attach(G);
+    if (!sys.attached) return;
+    sys.civilOnly = false;
+    registerEmplacements();
+    // Kartenpanzer entfernen (Stellplätze ohne Wiedererscheinen) – der Modus stellt seine eigenen Kräfte
+    sys.spawns = (sys.spawns || []).filter((sp) => VEHICLES[sp.type] && VEHICLES[sp.type].civil);
+    for (const v of [...sys.list]) if (!v.def.civil) { try { sys.removeVehicle(v); } catch { /* */ } }
+    // Typen
+    const era0 = this.cfg.panzer && this.cfg.panzer !== 'karte' ? null : (G.match && G.match.tankEra) || 'karte';
+    const type = this.cfg.panzer && this.cfg.panzer !== 'karte' && VEHICLES[this.cfg.panzer] ? this.cfg.panzer : tankTypeFor(era0, G.match && G.match.mapId, 'A');
+    const era = eraOf(VEHICLES[type]);
+    const E = TANK_ERAS[era] || TANK_ERAS.modern;
+    const foeTypes = [...new Set([E.B, E.B2, E.A, E.A2])].filter((t) => t && VEHICLES[t] && VEHICLES[t].drive === 'tracked' && t !== 'spz');
+    try { prepareVehicleModels([...new Set([type, ...foeTypes])], ['A', 'B'], sys.quality); } catch (err) { console.warn('[Panzer] Modelle', err); }
+    // Aufstellung: eigene Basis (Team A) und Feindlinie zwischen den Basen
+    const avg = (list) => { const p = new THREE.Vector3(); if (!list || !list.length) return null; for (const s of list) p.add(s.position); return p.multiplyScalar(1 / list.length); };
+    const center = W.bounds ? W.bounds.getCenter(new THREE.Vector3()) : new THREE.Vector3();
+    const A = avg(W.spawns && W.spawns.A) || center.clone().add(_a.set(-150, 0, 0));
+    const B = avg(W.spawns && W.spawns.B) || center.clone().add(_a.set(150, 0, 0));
+    this.baseA = A; this.baseB = B;
+    const spot = sys.findSpot(A, type, { avoidSpawns: true, toward: B, maxR: 60 }) || { position: A.clone(), yaw: Math.atan2(-(B.x - A.x), -(B.z - A.z)) };
+    const tank = sys.spawnVehicle(type, spot.position, spot.yaw, 'A');
+    if (!tank) { console.warn('[Panzer] Panzer konnte nicht erscheinen'); return; }
+    this.tank = tank;
+    equipTank(tank);
+    // Besatzung (Bots) in alle Plätze außer dem des Spielers
+    this.playerSeat = this._seatFor(tank, this.role);
+    const others = tank.seats.filter((s) => s.index !== this.playerSeat);
+    const bots = G.bots.spawnBots({ allies: others.length, enemies: 0, difficulty: G.match.difficulty, modeId: 'panzer' }) || [];
+    others.forEach((s, i) => {
+      const b = bots[i];
+      if (!b) return;
+      b._psim = { crew: true, role: s.def.id };
+      b.name = CREW_NAMES[i % CREW_NAMES.length];
+      try { const pl = G.bots._plates && G.bots._plates.get(b); if (pl && pl.setName) pl.setName(b.name); } catch { /* */ }
+      if (!G.actors.includes(b)) G.actors.push(b);
+      G.spawnActor(b, { position: tank.position.clone().add(_a.set(3 + i, 0, 2)), yaw: 0 });
+      try { sys.enter(b, tank, s.index); } catch (err) { console.warn('[Panzer] Besatzung', err); }
+    });
+    this.crew = new TankCrew(this, tank);
+    this.crew.arcade = this.arcade;
+    if (this.sim) {
+      // Motor aus bis zum Anlassen; Turmantrieb/Schwenkgeschwindigkeit je Fahrzeug (eigene Datenkopie)
+      const dt = tank.body.drivetrain;
+      if (dt) {
+        dt._psimRun = dt.run;
+        const self = this;
+        dt.run = function run() { if (self.state.engine === 'an') return dt._psimRun.call(dt); this.offT = 0; if (this.engineOn) { this.engineOn = false; const s = this.state; s.rpm = 0; s.rpmNorm = 0; s.throttle = 0; this.Te = 0; } };
+      }
+      if (this.role !== 'fahrer') { this.state.battery = true; this.state.parkBrake = false; this.state.engineWanted = true; }
+      if (this.role !== 'richtschuetze') this.state.armed = true;
+    }
+    this._ownDef(tank);
+    // Spieler einsetzen
+    this._enterPlayer();
+    // Feindkräfte
+    const F = { ...(FORCES[this.cfg.gegner] || FORCES.mittel) };
+    if (sys.quality === 'low') { F.tanks = Math.min(F.tanks, 2); F.pak = Math.min(F.pak, 1); F.bunker = Math.min(F.bunker, 1); }
+    const dir = _b.copy(B).sub(A).setY(0);
+    const L = Math.max(80, dir.length()); dir.normalize();
+    const side = new THREE.Vector3(-dir.z, 0, dir.x);
+    const place = (t, lat, kind) => {
+      const p = A.clone().addScaledVector(dir, L * t).addScaledVector(side, lat);
+      const s2 = sys.findSpot(p, kind, { avoid: [...this.empl.map((e) => e.position), ...this.enemies.map((e) => e.v.position)], toward: A, maxR: 50 });
+      return s2 || { position: p, yaw: Math.atan2(-(A.x - p.x), -(A.z - p.z)) };
+    };
+    const lat = (i, n, w) => (n <= 1 ? 0 : (i / (n - 1) - 0.5) * w) + (Math.random() - 0.5) * 20;
+    const wk1 = era === 'wk1';
+    const width = Math.min(260, L * 0.8);
+    for (let i = 0; i < F.pak; i++) {
+      const s2 = place(wk1 ? 0.62 : 0.7 + Math.random() * 0.08, lat(i, F.pak, width), 'psim_pak');
+      const e = spawnEmplacement(sys, 'psim_pak', s2.position, s2.yaw, 'B', { ammoId: registerAmmo(foeTypes[0])[0] });
+      this._emplCrew(e);
+      this.empl.push(e);
+    }
+    for (let i = 0; i < F.bunker; i++) {
+      const s2 = place(0.78 + Math.random() * 0.08, lat(i, F.bunker, width * 0.7), 'psim_bunker');
+      const e = spawnEmplacement(sys, 'psim_bunker', s2.position, s2.yaw, 'B');
+      this._emplCrew(e);
+      this.empl.push(e);
+    }
+    for (let i = 0; i < F.tanks; i++) {
+      const ft = foeTypes[i % foeTypes.length];
+      const s2 = place(0.82 + Math.random() * 0.12, lat(i, F.tanks, width), ft);
+      const v = sys.spawnVehicle(ft, s2.position, s2.yaw, 'B');
+      if (!v) continue;
+      equipTank(v);
+      this._ownDef(v);
+      crewOf(v);
+      const [bot] = G.bots.spawnBots({ allies: 0, enemies: 1, difficulty: G.match.difficulty, modeId: 'panzer' }) || [];
+      if (!bot) continue;
+      bot._psim = { tankCrew: true };
+      if (!G.actors.includes(bot)) G.actors.push(bot);
+      G.spawnActor(bot, { position: v.position.clone().add(_a.set(3, 0, 0)), yaw: 0 });
+      try { sys.enter(bot, v, 0); } catch (err) { console.warn('[Panzer] Feindbesatzung', err); }
+      this.enemies.push(new EnemyTank(this, v, bot, { post: s2.position.clone() }));
+    }
+    this.targetsTotal = this.enemies.length + this.empl.length;
+    // Verteidigungsposten der Infanterie (Lobby-Gegner) an den Stellungen
+    this.posts = this.empl.map((e) => e.position.clone().addScaledVector(_c.set(Math.sin(e.yaw), 0, Math.cos(e.yaw)), 6));
+    this._hooks();
+    this._intro();
+  }
+
+  /** Datenkopie je Fahrzeug (Schwenkgeschwindigkeit nach Turmantrieb/Schaden), Rest über den Prototyp. */
+  _ownDef(v) {
+    if (v._psimBase) return;
+    v._psimBase = v.def;
+    v.def = Object.create(v.def);
+  }
+
+  _emplCrew(e) {
+    const G = this.G;
+    const [bot] = G.bots.spawnBots({ allies: 0, enemies: 1, difficulty: G.match.difficulty, modeId: 'panzer' }) || [];
+    if (!bot) return;
+    const post = e.body.toWorld(_a.set(e.kind === 'pak' ? 0.9 : 0, 0, e.kind === 'pak' ? 2.4 : 3.2), new THREE.Vector3());
+    const h = G.world && G.world.groundHeight ? G.world.groundHeight(post.x, post.z, post.y + 5) : null;
+    if (h != null) post.y = h;
+    bot._psim = { post, empl: e };
+    if (!G.actors.includes(bot)) G.actors.push(bot);
+    G.spawnActor(bot, { position: post.clone(), yaw: e.yaw });
+    e.crew = bot;
+  }
+
+  _seatFor(v, role) {
+    const S = v.seats;
+    const by = (fn) => { const s = S.find(fn); return s ? s.index : -1; };
+    const gs = gunSeat(v), ls = loaderSeat(v);
+    let i = -1;
+    if (role === 'fahrer') i = by((s) => s.def.drive);
+    else if (role === 'richtschuetze') i = gs ? gs.index : -1;
+    else if (role === 'ladeschuetze') i = ls ? ls.index : -1;
+    else if (role === 'kommandant') i = by((s) => s.def.id === 'commander');
+    if (i < 0) {
+      // Panzer ohne diesen Platz (z. B. LK-17: zwei Mann): nächstliegende Rolle
+      if (role === 'ladeschuetze' || role === 'kommandant') { i = gs ? gs.index : by((s) => s.def.id === 'commander'); this.role = gs && i === gs.index ? 'richtschuetze' : 'kommandant'; }
+      if (i < 0) { i = 0; this.role = 'fahrer'; }
+    }
+    return i;
+  }
+
+  _enterPlayer() {
+    const G = this.G, P = G.player, v = this.tank, sys = G.vehicles;
+    if (!P || !v || !P.alive) return false;
+    if (P.vehicle === v) return true;
+    if (P.vehicle) sys.removeFromSeat(P, { teleport: false });
+    const r = sys.enter(P, v, this.playerSeat);
+    if (r < 0) return false;
+    const seat = v.seats[this.playerSeat];
+    // Startsicht: Simulation in der Innensicht (Handgriffe), Arcade außen
+    const list = viewsOf(seat.def);
+    let vi = this.arcade ? list.findIndex((x) => x.tp) : list.findIndex((x) => x.interior);
+    if (this.sim && this.role === 'kommandant') vi = list.findIndex((x) => x.overlay === 'peri');
+    if (vi < 0) vi = list.findIndex((x) => !x.tp);
+    sys.setSeatView(P, vi);
+    seat.look.yaw = v.yaw; seat.look.pitch = 0; seat.look.relYaw = 0; seat.look.relPitch = this.role === 'fahrer' ? -0.25 : 0;
+    this.simc.build(v, this.role);
+    return true;
+  }
+
+  /** Rolle wechseln (Konsole/Tests: __game.panzer.rolle('fahrer')): Platz mit dem Bot dieser Rolle tauschen. */
+  switchRole(role) {
+    const G = this.G, v = this.tank, sys = G.vehicles, P = G.player;
+    role = ROLE_ALIAS[role] || role;
+    if (!v || !v.alive || !P || !ROLE[role]) return false;
+    const old = this.playerSeat, oldRole = this.role;
+    this.role = role;
+    const idx = this._seatFor(v, role);
+    if (idx === old) { this.role = oldRole; return true; }
+    const bot = v.seats[idx].actor;
+    sys.removeFromSeat(P, { teleport: false });
+    if (bot) { sys.removeFromSeat(bot, { teleport: false }); sys.enter(bot, v, old); if (bot._psim) bot._psim.role = v.seats[old].def.id; }
+    this.playerSeat = idx;
+    this.simc.dispose();
+    this._enterPlayer();
+    return true;
+  }
+
+  _hooks() {
+    if (this._unhook) return;
+    this._unhook = installHooks(this.G.vehicles, this);
+  }
+
+  _intro() {
+    const R = this.radio, t = this.tank;
+    if (!R || !t) return;
+    const n = this.targetsTotal;
+    R.say('Funk', `Kompanie an ${t.def.name}: Feindstellung voraus – ${this.enemies.length} Panzer, ${this.empl.filter((e) => e.kind === 'pak').length} Pak, ${this.empl.filter((e) => e.kind === 'bunker').length} Bunker. Angreifen und vernichten!`);
+    void n;
+    if (this.sim) {
+      const t2 = { fahrer: 'Du bist Fahrer. Hauptschalter, Anlasser, Feststellbremse lösen, Gang einlegen.', richtschuetze: 'Du bist Richtschütze. Waffe scharf schalten, dann in die Hauptzieloptik (Sicht wechseln).', ladeschuetze: 'Du bist Ladeschütze. Befohlene Munition laden und entsichern.', kommandant: 'Du bist Kommandant. Führe deine Besatzung.' }[this.role];
+      setTimeout(() => this.radio && this.radio.say('Hinweis', t2, { tone: 'warn', quiet: true }), 1500);
+    }
+  }
+
+  /* ------------------------------------------------------------ Spawns/Bots/Ergebnis */
+
+  canRespawn() { return false; }
+
+  objectiveFor(bot) {
+    const k = bot._psim;
+    if (k && k.post) return { id: `psim:post:${bot.id}`, position: k.post, radius: 1.2, kind: 'capture' };
+    if (k) return null;
+    const T = this.tank;
+    if (bot.team === 'A') {
+      if (!T || !T.alive) return null;
+      const back = _a.set(Math.sin(T.yaw), 0, Math.cos(T.yaw)).multiplyScalar(14).add(T.position);
+      return { id: 'psim:folgen', position: back.clone(), radius: 10, kind: 'capture' };
+    }
+    // Feindinfanterie: Posten an den Stellungen, angreifen, wenn der Panzer nahe ist
+    if (!this.posts || !this.posts.length) return null;
+    const hid = Math.abs(hash(String(bot.id)));
+    if (T && T.alive && bot.position.distanceTo(T.position) < 220 && hid % 3 === 0) return null;
+    const i = hid % this.posts.length;
+    return { id: `psim:def:${i}`, position: this.posts[i], radius: 9, kind: 'capture' };
+  }
+
+  decide() { return { winner: this._outcome === 'win' ? 'A' : this._outcome === 'loss' ? 'B' : (this.scores.A >= this.scores.B ? 'A' : 'B') }; }
+
+  onKillScored(killer, victim) { if (killer && killer.team && killer.team !== victim.team) this.addTeamScore(killer.team, 1); }
+
+  resultExtra() {
+    const left = this.enemies.filter((e) => e.v.alive).length + this.empl.filter((e) => e.alive).length;
+    return { panzer: { ziele: this.targetsTotal, vernichtet: this.targetsTotal - left, rolle: ROLE[this.role], stil: this.arcade ? 'Arcade' : 'Simulation' } };
+  }
+
+  _finish(outcome, text) {
+    if (this._outcome) return;
+    this._outcome = outcome;
+    this._banner = text;
+    this._endAt = this.G.time.elapsed + 4;
+    this.radio && this.radio.say('Funk', outcome === 'win' ? 'Alle Ziele vernichtet – gut gemacht. Sammeln!' : 'Verbindung verloren …', { tone: outcome === 'win' ? 'funk' : 'warn' });
+  }
+
+  /* ------------------------------------------------------------ Ereignisse */
+
+  _onLoaded(e) {
+    if (!e || e.vehicle !== this.tank) return;
+    const k = kindOf(e.ammo);
+    const call = k ? KINDS[k].call : '';
+    if (this.role === 'ladeschuetze' && this.sim) { this.state.safe = true; this.hint('Kanone geladen – Sicherung entsichern (Hotspot oder R)'); }
+    else this.radio.say('Ladeschütze', `${call} geladen!`, { key: 'geladen', quiet: this.role === 'ladeschuetze' });
+  }
+
+  _onDestroyed(e) {
+    const v = e && e.vehicle;
+    if (!v) return;
+    if (v === this.tank) { this._finish('loss', v._psimKo === 'Munition' || v._ammoRack ? 'Munition gezündet – Panzer verloren' : 'Panzer verloren'); return; }
+    const isT = this.enemies.some((x) => x.v === v) || this.empl.includes(v);
+    if (!isT) return;
+    this.addTeamScore('A', 5);
+    if (e.by && e.by !== this.G.player && e.by.vehicle === this.tank && this.G.player) this.award(this.G.player, 'vehicle', 150);
+    const label = v.isEmplacement ? (v.kind === 'pak' ? 'Pak' : 'Bunker') : 'Panzer';
+    this.radio.say(this.role === 'kommandant' ? 'Richtschütze' : 'Kommandant', `${label} vernichtet!${v._psimKo === 'Besatzung' ? ' Besatzung ausgeschaltet.' : v._ammoRack ? ' Munition hochgegangen!' : ''}`, { key: 'kill' });
+    const left = this.enemies.filter((x) => x.v.alive).length + this.empl.filter((x) => x.alive).length;
+    if (left === 0) this._finish('win', 'Auftrag erfüllt');
+    else if (left <= 2) setTimeout(() => this.radio && this.radio.say('Funk', `Noch ${left} Ziel${left === 1 ? '' : 'e'}.`), 2200);
+  }
+
+  _onCrit(e) {
+    if (!e || !e.notes || !e.notes.length) return;
+    if (e.vehicle === this.tank) this.radio.say('Kommandant', `Wir sind getroffen! ${e.notes.join(' – ')}`, { tone: 'warn' });
+    else if (e.attacker && e.attacker.vehicle === this.tank) this.radio.say('Kommandant', `Durchschlag! ${e.notes.slice(0, 2).join(' – ')}`, { key: 'crit' });
+  }
+
+  _onHit(e) {
+    if (!e || e.vehicle !== this.tank) return;
+    const now = this.G.time.elapsed;
+    if (now - (this._hitSaid || -9) < 2) return;
+    this._hitSaid = now;
+    const who = e.attacker && e.attacker.vehicle ? 'Panzer' : 'Feind';
+    void who;
+  }
+
+  _onKillEv(e) {
+    const v = e && e.victim;
+    if (!v) return;
+    if (v === this.G.player) { this._finish('loss', 'Gefallen'); return; }
+    if (v._psim && v._psim.crew) this.radio.say('Kommandant', `${ROLE[{ driver: 'fahrer', gunner: 'richtschuetze', loader: 'ladeschuetze', commander: 'kommandant' }[v._psim.role]] || 'Besatzung'} ausgefallen!`, { tone: 'warn' });
+  }
+
+  /** Granate abgefeuert (hooks.js). */
+  onShot(v, def, origin, dir, shell) {
+    void origin; void dir; void def;
+    if (v !== this.tank || !shell) return;
+    shell._psimOwn = true;
+    shell._psimTarget = this.crew && this.crew.gun.target ? this.crew.gun.target : this.crew && this.crew.cmd.target;
+  }
+
+  /** Granate am Ende (hooks.js): Beobachtung des Kommandanten (Treffer/Kurz/Weit/Abpraller). */
+  onShellEnd(s, hit, info) {
+    if (!s._psimOwn || !this.radio) return;
+    const from = this.role === 'kommandant' ? 'Richtschütze' : 'Kommandant';
+    if (info && info.vehicle) {
+      if (info.ricochet) this.radio.say(from, 'Abpraller!');
+      else if (info.killed) { /* Meldung über vehicle:destroyed */ }
+      else if (info.res && !info.res.penetrated) this.radio.say(from, info.emplacement ? 'Treffer!' : 'Treffer – kein Durchschlag!');
+      else if (info.res && info.res.penetrated) this.radio.say(from, 'Treffer – Durchschlag!');
+      else this.radio.say(from, 'Treffer!');
+      return;
+    }
+    const t = s._psimTarget;
+    if (!t || !t.ent || !t.ent.alive || !hit || !hit.point) return;
+    const tp = targetPoint(t, _a);
+    const o = s.from || this.tank.position;
+    const dT = tp.distanceTo(o), dH = hit.point.distanceTo(o);
+    if (hit.point.distanceTo(tp) < 6) return; // naher Einschlag – Splitter
+    const lat = _b.copy(tp).sub(o).normalize().cross(_c.set(0, 1, 0));
+    const side = _d.copy(hit.point).sub(tp).dot(lat);
+    this.radio.say(from, dH < dT - 15 ? 'Kurz!' : dH > dT + 15 ? 'Weit!' : side > 0 ? 'Rechts vorbei!' : 'Links vorbei!');
+  }
+
+  /* ------------------------------------------------------------ Simulation: Handgriffe */
+
+  gearText() {
+    const v = this.tank;
+    if (!v) return 'N';
+    if (eraOf(v.def) === 'modern') return { R: 'R (rückwärts)', N: 'N (neutral)', D: 'D (fahren)' }[this.state.selector];
+    const g = v.body.drive ? v.body.drive.targetGear | 0 : 0;
+    return g === 0 ? 'Leerlauf' : g > 0 ? `${g}. Gang` : `${-g}. Rückwärtsgang`;
+  }
+
+  selectedAmmoLabel() {
+    const v = this.tank, gs = v && gunSeat(v);
+    const w = gs && gs.weapons[gs.weaponIndex];
+    const id = w && w.def.kind === 'shell' ? w.def.id : gs && gs._shellWish;
+    const k = kindOf(id);
+    return k ? KINDS[k].label : '–';
+  }
+
+  loaderLabel(which) {
+    const g = this.tank && this.tank.gun;
+    if (!g) return '';
+    const sel = KINDS[kindOf(g.select)] ? KINDS[kindOf(g.select)].label : '';
+    if (which === 'gestell') {
+      if (g.busy > 0) return 'beschäftigt …';
+      if (g.step === 'leer' && this.tank.def.interior && this.tank.def.interior.blastDoor) return `Munitionsbunker – Tür öffnen (${sel})`;
+      if (g.step === 'leer' || g.step === 'offen') return `Gestell – ${sel} greifen (Mausrad/1–4: Art)`;
+      return 'Gestell';
+    }
+    if (g.step === 'gegriffen') return 'Verschluss – Granate einschieben';
+    if (g.step === 'eingeschoben') return 'Verschluss – schließen';
+    if (g.step === 'geladen') return this.state.safe ? 'Verschluss zu – Sicherung entsichern' : 'Kanone geladen – bereit';
+    return 'Verschluss offen';
+  }
+
+  simAction(id, d = 1) {
+    const G = this.G, st = this.state, v = this.tank, sys = G.vehicles, P = G.player;
+    if (!v || !v.alive) return;
+    switch (id) {
+      case 'batterie':
+        st.battery = d > 0 ? !st.battery : false;
+        if (!st.battery && st.engine !== 'aus') { st.engine = 'aus'; this.hint('Motor aus'); }
+        this._click();
+        break;
+      case 'anlasser':
+        if (d < 0) { if (st.engine !== 'aus') { st.engine = 'aus'; this.hint('Motor abgestellt'); } break; }
+        if (!st.battery) { this.hint('Kein Strom – erst den Hauptschalter einschalten'); break; }
+        this.crankEngine(null);
+        break;
+      case 'licht': st.lights = d > 0 ? { kampf: 'arbeit', arbeit: 'aus', aus: 'kampf' }[st.lights] : { kampf: 'aus', aus: 'arbeit', arbeit: 'kampf' }[st.lights]; this._click(); break;
+      case 'bremse': st.parkBrake = !st.parkBrake; this._click(); if (!st.parkBrake) this.hint('Feststellbremse gelöst'); break;
+      case 'gang':
+        if (eraOf(v.def) === 'modern') {
+          const L = ['R', 'N', 'D'];
+          const i = clamp(L.indexOf(st.selector) + (d > 0 ? 1 : -1), 0, 2);
+          if (Math.abs(v.body.speed) > 1.5 && ((L[i] === 'R' && v.body.speed > 0) || (L[i] === 'D' && v.body.speed < 0))) { this.hint('Erst anhalten'); break; }
+          st.selector = L[i];
+        } else st.shiftQ += d > 0 ? 1 : -1;
+        this._click();
+        break;
+      case 'waffe': st.armed = d > 0 ? !st.armed : false; this._click(); this.hint(st.armed ? 'Waffe scharf' : 'Waffe gesichert'); break;
+      case 'antrieb': st.hydraulics = !st.hydraulics; this._click(); this.hint(st.hydraulics ? 'Turmantrieb elektrisch' : 'Notbetrieb – Handräder'); break;
+      case 'rechner': {
+        const gs = gunSeat(v);
+        const shells = gs.weapons.map((w, i) => (w.def.kind === 'shell' ? i : -1)).filter((i) => i >= 0);
+        const cur = Math.max(0, shells.indexOf(gs.weaponIndex));
+        gs.intent.weapon = shells[(cur + (d > 0 ? 1 : shells.length - 1)) % shells.length];
+        this._click();
+        break;
+      }
+      case 'laser': {
+        const gs = gunSeat(v);
+        v.muzzle(gs.index, _a, _b, true);
+        sys._ignore = v;
+        const h = G.world.raycast(_a, _b, 4000);
+        sys._ignore = null;
+        sys._range = { text: h ? `E ${Math.round(h.distance)} m` : 'E ––– m', until: G.time.elapsed + 4 };
+        v._laserRange = h ? h.distance : NaN;
+        this.hint(h ? `Laser: ${Math.round(h.distance)} m` : 'Laser: kein Echo');
+        break;
+      }
+      case 'gestell': this._load(P, 'greifen'); break;
+      case 'verschluss': { const g = v.gun; this._load(P, g.step === 'eingeschoben' ? 'schliessen' : 'einschieben'); break; }
+      case 'sicherung': if (v.gun.step === 'geladen' && st.safe) { st.safe = false; this.radio.say('Ladeschütze', `${KINDS[kindOf(v.gun.loaded)].call} geladen!`, { quiet: true }); this._click(); } else this.hint(st.safe ? 'Erst laden' : 'Bereits entsichert'); break;
+      case 'luke': {
+        const seat = v.seats[this.playerSeat];
+        const list = viewsOf(seat.def);
+        const cur = viewOf(seat);
+        const idx = cur.hatch ? list.findIndex((x) => x.overlay === 'peri' || (x.interior && !x.hatch)) : list.findIndex((x) => x.hatch);
+        if (idx >= 0) sys.setSeatView(P, idx);
+        break;
+      }
+      case 'funk': {
+        const left = this.enemies.filter((x) => x.v.alive).length + this.empl.filter((x) => x.alive).length;
+        this.radio.say('Kommandant', `${v.def.name} an Kompanie: Kämpfe – ${left} Ziel${left === 1 ? '' : 'e'} erkannt.`, { quiet: true });
+        setTimeout(() => this.radio && this.radio.say('Funk', left ? 'Verstanden. Weiter vorgehen.' : 'Verstanden. Sammeln.'), 1400);
+        break;
+      }
+      default: break;
+    }
+  }
+
+  _load(P, action, ammo = null) {
+    const sys = this.G.vehicles, v = this.tank;
+    const r = sys.requestLoad(P, v, action, ammo);
+    if (r && r.ok === false && r.why) this.hint({ schritt: 'Falscher Schritt', blick: 'Erst hinsehen (Gestell/Verschluss)', leer: 'Keine Granate dieser Sorte', busy: 'Noch beschäftigt', sitz: 'Nur als Ladeschütze' }[r.why] || r.why);
+  }
+
+  crankEngine(who) {
+    const st = this.state;
+    if (st.engine !== 'aus' || st.cranking) return;
+    if (modsOf(this.tank).motor <= 0) { this.hint('Motor springt nicht an – zerstört'); return; }
+    st.engine = 'start'; st.cranking = true; st.crankT = 2.0 + Math.random() * 0.8; st.battery = true;
+    this._starterSound();
+    if (who) this.radio.say(who, 'Motor wird angelassen!', { quiet: true });
+  }
+
+  _starterSound() {
+    const A = this.G.vehicles && this.G.vehicles.audio;
+    const ctx = A && A._ctx, dest = A && A._dest && A._dest();
+    if (!ctx || !dest) return;
+    try {
+      const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = 38;
+      lfo.frequency.value = 7; lg.gain.value = 9; lfo.connect(lg); lg.connect(o.frequency);
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 520;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.15); g.gain.setValueAtTime(0.22, t + 1.9); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+      o.connect(f); f.connect(g); g.connect(dest);
+      o.start(t); lfo.start(t); o.stop(t + 2.5); lfo.stop(t + 2.5);
+    } catch { /* */ }
+  }
+
+  _click() { try { this.G.vehicles.audio.loadSound('munition', 0.6); } catch { /* */ } }
+
+  gunBlocked() {
+    const v = this.tank;
+    if (!v) return true;
+    const m = modsOf(v);
+    return !this.state.armed || this.state.safe || m.rohr <= 0;
+  }
+
+  setMarker(p) { this.marker = p ? p.clone() : null; }
+
+  nextObjective() {
+    const T = this.tank;
+    if (!T) return null;
+    let best = null, bd = Infinity;
+    for (const e of [...this.enemies.map((x) => x.v), ...this.empl]) {
+      if (!e.alive) continue;
+      const d = e.position.distanceTo(T.position);
+      if (d < bd) { bd = d; best = e.position; }
+    }
+    return best;
+  }
+
+  /* ------------------------------------------------------------ Eingaben (vor dem Spieler-Takt) */
+
+  preUpdate(dt) {
+    super.preUpdate(dt);
+    const G = this.G, I = G.input, P = G.player, v = this.tank;
+    if (!I || !v || !P || P.vehicle !== v || G.match.state !== 'playing') { this._closeWheel(); return; }
+    const sys = G.vehicles, seat = v.seats[this.playerSeat];
+    const crew = this.crew;
+    const take = (a) => { const p = I.pressed(a); if (p) I.consume(a); return p; };
+    // Sitzwechsel-Tasten gehören hier der Munition
+    const ammoKey = AMMO_KEYS.findIndex((a) => I.pressed(a));
+    for (const a of AMMO_KEYS) I.consume(a);
+    // Befehlsrad (Kommandant; Arcade: alle)
+    if (I.pressed('befehl')) { I.consume('befehl'); if (this.role === 'kommandant' || this.arcade) this._openWheel(); }
+    if (this._wheel) { this._updWheel(I); return; }
+    // Hotspot im Blick (Simulation, Innensicht): LMT/F bedienen, RMT zurück, Mausrad = Wahlhebel/Rechner
+    const hot = this.sim && this.simc ? this.simc.hot : null;
+    this._hotUsed = false;
+    if (hot) {
+      if (I.pressed('fire') || I.pressed('interact')) { I.consume('fire'); I.consume('interact'); hot.use(1); this._hotUsed = true; }
+      else if (I.pressed('ads')) { I.consume('ads'); hot.use(-1); this._hotUsed = true; }
+      else if ((hot.id === 'gang' || hot.id === 'rechner') && I.pressed('swap')) { I.consume('swap'); hot.use(1); this._hotUsed = true; }
+    } else if (I.pressed('interact')) I.consume('interact'); // kein Aussteigen
+    // Sichtgeräte: N = Polarität / Restlicht (moderne Panzer)
+    if (take('verband')) { const t = this.optics.cycle(v, viewOf(seat)); sys._viewLabel = { text: t, until: G.time.elapsed + 1.6 }; }
+    const role = this.role;
+    if (role === 'kommandant' && !this.arcade) {
+      const D = crew.drive;
+      if (take('move_forward')) crew.order('vor');
+      if (take('move_back')) crew.order(D.cmd === 'halt' && Math.abs(v.body.speed) < 0.6 ? 'zurueck' : 'halt');
+      for (const [a, c] of [['move_left', 'links'], ['move_right', 'rechts']]) {
+        if (I.pressed(a)) { I.consume(a); crew.order(c, { hold: true }); this._turnKey = a; }
+        else if (this._turnKey === a && !I.down(a)) { this._turnKey = null; crew.order('gerade', null, { quiet: D.cmd === 'halt' }); }
+      }
+      if (take('tactical')) crew.order('rumpf', v.body.yaw() + v.mount.turretYaw);
+      if (take('prone')) crew.order('deckung');
+      if (take('gadget')) this._markAndGo();
+      if (take('squad_order')) this._designate();
+      if (take('jump')) crew.fire();
+      if (take('melee')) crew.toggleFireFree();
+      if (ammoKey >= 0) { const id = v._psimAmmo[ammoKey]; if (id) crew.orderAmmo(kindOf(id)); }
+    } else if (role === 'richtschuetze' || this.arcade) {
+      if (ammoKey >= 0) {
+        const id = v._psimAmmo[ammoKey];
+        if (id) { const wi = gunSeat(v).weapons.findIndex((w) => w.def.id === id); if (wi >= 0) seat.intent.weapon = wi; crew.ammoOrder = id; this.radio.say(ROLE[role], `${KINDS[kindOf(id)].call}!`, { quiet: true }); }
+      }
+      if (this.arcade && take('squad_order')) this._designate();
+      for (const a of ['gadget', 'tactical', 'melee', 'squad_order']) I.consume(a);
+    } else if (role === 'ladeschuetze') {
+      if (ammoKey >= 0) { const id = v._psimAmmo[ammoKey]; if (id) this._load(P, 'munition', id); }
+      // R bei geladener, gesicherter Kanone = entsichern
+      if (this.sim && v.gun && v.gun.step === 'geladen' && this.state.safe && I.pressed('reload')) { I.consume('reload'); this.simAction('sicherung', 1); }
+      for (const a of ['gadget', 'tactical', 'melee', 'squad_order', 'jump']) I.consume(a);
+    } else if (role === 'fahrer') {
+      if (this.sim) {
+        if (I.pressed('swap')) { I.consume('swap'); this.simAction('gang', 1); }
+        if (take('gadget')) this.simAction('bremse', 1);
+        if (take('tactical')) this.simAction(this.state.engine === 'aus' ? 'anlasser' : 'anlasser', this.state.engine === 'aus' ? 1 : -1);
+      }
+      for (const a of ['melee', 'squad_order']) I.consume(a);
+    }
+  }
+
+  _markAndGo() {
+    const G = this.G, v = this.tank, seat = v.seats[this.playerSeat];
+    const dir = viewLookDir(v, seat, viewOf(seat), _d);
+    G.vehicles._ignore = v;
+    const h = G.world.raycast(G.camera.position, dir, 1500);
+    G.vehicles._ignore = null;
+    if (!h || !h.point) { this.hint('Kein Punkt markiert – auf den Boden zielen'); return; }
+    this.setMarker(h.point);
+    this.crew.order('markierung', h.point);
+  }
+
+  _designate() {
+    const G = this.G, v = this.tank, seat = v.seats[this.playerSeat];
+    const dir = viewLookDir(v, seat, viewOf(seat), _d).clone();
+    const t = this.crew.designate(dir);
+    if (t) this._designated = { t, until: G.time.elapsed + 6 };
+  }
+
+  _openWheel() {
+    const I = this.G.input;
+    if (!I || typeof I.openWheel !== 'function') return;
+    I.openWheel();
+    this._wheel = { sel: -1, t: this.G.time.elapsed };
+  }
+
+  _closeWheel() {
+    if (!this._wheel) return;
+    this._wheel = null;
+    const I = this.G.input;
+    if (I && I.wheel && I.wheel.open) I.closeWheel();
+    this.hud && this.hud.setWheel(false);
+  }
+
+  _updWheel(I) {
+    const W = I.wheel || { x: 0, y: 0 };
+    const n = this.hud.wheelItems.length;
+    const m = Math.hypot(W.x || 0, W.y || 0);
+    let sel = -1;
+    if (m > 0.34) { let a = Math.atan2(W.x, -W.y); if (a < 0) a += Math.PI * 2; sel = Math.round(a / (Math.PI * 2 / n)) % n; }
+    this._wheel.sel = sel;
+    this.hud.setWheel(true, sel);
+    const done = !I.down('befehl') || I.pressed('fire');
+    if (!done) return;
+    if (I.pressed('fire')) I.consume('fire');
+    this._closeWheel();
+    if (sel < 0) return;
+    const id = this.hud.wheelItems[sel].id, c = this.crew, v = this.tank;
+    if (id === 'feuer') c.fire();
+    else if (id === 'feuerfrei') c.toggleFireFree();
+    else if (id === 'uebergabe') this._designate();
+    else if (id === 'markierung') this._markAndGo();
+    else if (id === 'ammo') { const ids = v._psimAmmo; const cur = ids.indexOf(c.ammoOrder || v.gun.select); c.orderAmmo(kindOf(ids[(cur + 1) % ids.length])); }
+    else if (id === 'rumpf') c.order('rumpf', v.body.yaw() + v.mount.turretYaw);
+    else c.order(id);
+  }
+
+  /* ------------------------------------------------------------ Vorlauf (nach den Spielereingaben, vor dem Fahrzeugtakt) */
+
+  preVehicles(dt) {
+    const G = this.G, v = this.tank;
+    if (!v || !v.alive || !this.started) return;
+    const st = this.state, mods = modsOf(v), now = G.time.elapsed, I = G.input;
+    // Anlasser
+    if (st.engine === 'start') { st.crankT -= dt; if (st.crankT <= 0) { st.engine = 'an'; st.cranking = false; this.radio.say(this.role === 'fahrer' ? 'Hinweis' : 'Fahrer', 'Motor läuft!', { quiet: true, tone: this.role === 'fahrer' ? 'warn' : null }); } }
+    if (mods.motor <= 0 && st.engine !== 'aus') { st.engine = 'aus'; st.cranking = false; }
+    // Module → Fahrzeugwerte
+    const base = v._psimBase || v.def;
+    const turm = (this.sim && !st.hydraulics) || mods.turm <= 0 ? 0.15 : mods.turm < 1 ? 0.5 : 1;
+    if (v.def !== base) { v.def.traverse = Math.min(base.traverse, turm < 1 ? Math.max(base.traverse * turm, 0.105) : base.traverse); v.def.elevate = base.elevate * (turm < 0.2 ? 0.25 : 1); }
+    if (mods.ketten <= 0) v.trackDownUntil = now + 0.5;
+    if (v.zones.engine && mods.motor < 1 && v.zones.engine.hp > 0 && mods.motor <= 0.5) v.zones.engine.hp = 0;
+    // Fahrersitz
+    const ds = v.seats.find((s) => s.def.drive);
+    const P = G.player;
+    if (ds) {
+      const it = ds.intent;
+      const human = ds.actor === P;
+      if (this.arcade && this.crew && ds.actor && !human) {
+        // Arcade: der Spieler fährt über den Bot-Fahrer
+        const live = G.match.state === 'playing';
+        it.gearbox = 'auto'; it.path = it.moveTo = null;
+        it.throttle = live ? clamp(I.move.y || 0, -1, 1) : 0;
+        it.steer = live ? clamp(I.move.x || 0, -1, 1) : 0;
+        it.brake = live && I.down('jump') ? 1 : 0;
+        it.handbrake = false;
+      } else if (human && this.sim) {
+        const modern = eraOf(v.def) === 'modern';
+        if (st.engine !== 'an') { it.throttle = 0; it.brake = 1; it.shiftUp = it.shiftDown = 0; }
+        else if (modern) {
+          it.gearbox = 'auto';
+          const pedal = clamp(I.move.y || 0, 0, 1);
+          const br = (I.move.y || 0) < -0.2 || I.down('jump');
+          it.throttle = st.selector === 'D' ? pedal : st.selector === 'R' ? -pedal : 0;
+          it.brake = br ? 1 : 0;
+          it.shiftUp = it.shiftDown = 0;
+        } else {
+          it.gearbox = 'hold';
+          it.shiftUp = st.shiftQ > 0 ? st.shiftQ : 0; it.shiftDown = st.shiftQ < 0 ? -st.shiftQ : 0; st.shiftQ = 0;
+          it.throttle = (I.move.y || 0) > 0.3 ? 1 : 0;
+          it.brake = (I.move.y || 0) < -0.3 || I.down('jump') ? 1 : 0;
+        }
+        if (st.parkBrake) { it.brake = 1; it.handbrake = true; }
+      } else if (this.sim && st.engine !== 'an') { it.throttle = 0; it.brake = 1; }
+    }
+    // Waffe: Sperren (nicht scharf, gesichert, Rohr zerstört) und Hotspot-Klick
+    const gs = gunSeat(v);
+    if (gs) {
+      const it = gs.intent;
+      const w = gs.weapons[gs.weaponIndex];
+      if (w && w.def.kind === 'shell' && this.gunBlocked() && (it.firePressed)) {
+        it.firePressed = false; it.fire = false;
+        if (gs.actor === P && now - this._msgT > 1.2) { this._msgT = now; this.hint(mods.rohr <= 0 ? 'Rohr zerstört – Kanone fällt aus' : !st.armed ? 'Waffe nicht scharf – Hauptschalter Waffe' : 'Kanone gesichert – Ladeschütze muss entsichern'); }
+      }
+      if (this._hotUsed && gs.actor === P) { it.fire = false; it.firePressed = false; }
+    }
+    // Brand: Löschanlage, sonst ausbooten
+    if (mods.brand > 0) {
+      st.burnT += dt;
+      if (st.burnT > 3 && st.extCharges > 0 && !st._extTried) {
+        st._extTried = true; st.extCharges--;
+        if (Math.random() < 0.72) { mods.brand = 0; st.burnT = 0; st._extTried = false; this.radio.say('Fahrer', 'Feuerlöschanlage ausgelöst – Brand gelöscht!', { tone: 'warn' }); }
+        else this.radio.say('Fahrer', 'Löschanlage versagt – es brennt weiter!', { tone: 'warn' });
+      }
+      if (st.burnT > 3 && st._extTried && st.extCharges > 0 && st.burnT > 9) { st._extTried = false; }
+      if (st.burnT > 22) { this.radio.say('Kommandant', 'Ausbooten! Ausbooten!', { tone: 'warn' }); v.destroy(v.lastAttacker, v.lastWeaponId); }
+      if (G.effects && (this._fireFx = (this._fireFx || 0) - dt) <= 0) { this._fireFx = 0.25; G.effects.smoke?.(_a.copy(v.body.pos).setY(v.body.pos.y + 1.6), { count: 1, color: 0x221d18, size: 1.4, life: 2.6, rise: 2, alpha: 0.5 }); }
+    } else st.burnT = 0;
+    // Kette: Besatzung repariert im Stand (~25 s)
+    if (mods.ketten <= 0) {
+      if (Math.abs(v.body.speed) < 0.3) st.trackRepairT += dt; else st.trackRepairT = 0;
+      if (st.trackRepairT > 25) { mods.ketten = 0.5; st.trackRepairT = 0; v.zones.tracks && (v.zones.tracks.hp = v.zones.tracks.max * 0.4); this.radio.say('Fahrer', 'Kette notdürftig geflickt – fahrbereit!'); }
+      else if (st.trackRepairT > 0 && !st._trackSaid) { st._trackSaid = true; this.radio.say('Fahrer', 'Kette gerissen – wir flicken!', { tone: 'warn' }); }
+    } else st._trackSaid = false;
+    // Feindpanzer: Module
+    for (const e of this.enemies) {
+      const m = e.v._psimMods;
+      if (!m || !e.v.alive) continue;
+      const b = e.v._psimBase || e.v.def;
+      if (e.v.def !== b) e.v.def.traverse = b.traverse * (m.turm <= 0 ? 0.15 : m.turm < 1 ? 0.5 : 1);
+      if (m.ketten <= 0) e.v.trackDownUntil = now + 0.5;
+      if (m.brand > 0) { e.v._burnT = (e.v._burnT || 0) + dt; if (e.v._burnT > 14) e.v.destroy(e.v.lastAttacker, e.v.lastWeaponId); }
+    }
+  }
+
+  /* ------------------------------------------------------------ Takt (nach dem Fahrzeugtakt) */
+
+  postVehicles(dt) {
+    const G = this.G, v = this.tank, P = G.player;
+    if (!v) return;
+    const seat = v.seats[this.playerSeat];
+    const mine = P && P.vehicle === v && seat && seat.actor === P;
+    const cv = G.vehicles.camera && G.vehicles.camera.view;
+    const inside = !!(mine && cv && cv.interior && v.alive);
+    // Innenlicht (Schalter, Batterie)
+    const cab = v.model && v.model.cabin;
+    if (cab && cab.lamps) {
+      const st = this.state;
+      const f = !st.battery ? 0.03 : st.lights === 'aus' ? 0.05 : st.lights === 'arbeit' ? 1.8 : 1;
+      for (const L of cab.lamps) {
+        if (!L._base) L._base = L.col.clone();
+        const day = L._base.b > L._base.r && L._base.g < 0.3; // Tageslicht durch die Spiegel bleibt
+        if (st.lights === 'arbeit' && st.battery && !day) L.col.setRGB(1, 0.92, 0.78).multiplyScalar(Math.max(0.35, (L._base.r + L._base.g + L._base.b) / 3) * f);
+        else L.col.copy(L._base).multiplyScalar(day ? 1 : f);
+      }
+    }
+    const hot = this.sim && mine ? this.simc.frame(dt, v, inside) : null;
+    const label = mine ? this.optics.update(dt, v, cv, inside) : '';
+    this.radio.update();
+    // HUD
+    const proj = (p) => projectToScreen(G, p, { x: 0, y: 0, on: false });
+    const S = { visible: !!mine && G.match.state !== 'ended', vehicle: v };
+    if (mine) {
+      S.crew = this._crewRows();
+      const keyOf = this.role === 'fahrer' ? null : (i) => G.input.label(AMMO_KEYS[i]) || String(i + 1);
+      S.ammo = ammoRows(v, keyOf, this.crew ? this.crew.ammoOrder || v.gun.select : null);
+      S.loadText = this._loadText();
+      S.hot = hot ? this.simc.screen(v, proj) : null;
+      S.hotLabel = hot ? `${hot.label()} <kbd>${G.input.label('fire') || 'LMT'}</kbd>` : '';
+      S.dot = inside && this.sim;
+      S.crack = cv && cv.overlay === 'optic' && modsOf(v).optik <= 0;
+      S.vision = label;
+      if (this.marker) S.mark = proj(this.marker);
+      const ds = this._designated;
+      const tt = ds && G.time.elapsed < ds.until ? ds.t : this.crew && this.role !== 'kommandant' && this.crew.cmd.target ? this.crew.cmd.target : null;
+      if (tt && tt.ent && tt.ent.alive && !(cv && cv.interior)) { S.target = proj(targetPoint(tt, _a)); S.targetLabel = `${TARGET_LABEL[tt.kind]} ${roundRange(tt.pos.distanceTo(v.position))} m`; }
+      S.order = this._orderText();
+      S.steps = this.sim ? this._steps() : null;
+      S.help = this._helpText();
+    }
+    if (this._banner) S.banner = this._banner;
+    this.hud.update(dt, S);
+  }
+
+  _crewRows() {
+    const v = this.tank, rows = [];
+    const P = this.G.player;
+    const map = { driver: 'Fahrer', gunner: 'Richtschütze', loader: 'Ladeschütze', commander: 'Kommandant' };
+    for (const s of v.seats) {
+      const a = s.actor;
+      const me = a === P;
+      let state = a ? (a.alive ? (a.health < (a.maxHealth || 100) * 0.6 ? 'verwundet' : 'bereit') : 'ausgefallen') : 'ausgefallen';
+      let cls = !a || !a.alive ? 'ps-dead' : state === 'verwundet' ? 'ps-hurt' : 'ps-ok';
+      if (a && a.alive && !me) {
+        if (s.def.loader && v.gun && v.gun.auto) state = `lädt ${(v.gun.autoT || 0).toFixed(1).replace('.', ',')} s`;
+        if (s.def.drive && this.crew) state = { vor: 'fährt', halt: 'hält', zurueck: 'zurück', markierung: 'fährt an', deckung: 'Deckung', rumpf: 'dreht' }[this.crew.drive.cmd] || state;
+        if (s.def.mount === 'gun' && this.crew && this.crew.gun.target) state = 'richtet';
+      }
+      if (me) state = 'du';
+      rows.push({ role: map[s.def.id] || s.def.label, state, cls, me });
+    }
+    return rows;
+  }
+
+  _loadText() {
+    const g = this.tank.gun;
+    if (!g) return '';
+    if (g.step === 'geladen') return `Im Rohr: ${KINDS[kindOf(g.loaded)] ? KINDS[kindOf(g.loaded)].label : '–'}${this.state.safe ? ' (gesichert)' : ''}`;
+    if (g.auto) return `Lade ${KINDS[kindOf(g.select)] ? KINDS[kindOf(g.select)].label : ''} …`;
+    return 'Kanone leer';
+  }
+
+  _orderText() {
+    const o = this.driverOrder, now = this.G.time.elapsed;
+    if (this.role !== 'fahrer' || !o || now - o.at > 6) return null;
+    const t = { vor: '▲ Marsch', halt: '■ Halt', links: '◀ Links', rechts: 'Rechts ▶', zurueck: '▼ Zurück', markierung: '◆ Markierung anfahren', deckung: '▼ Deckung – zurück', rumpf: '⟲ Front zum Ziel' }[o.cmd];
+    return t ? `${t}<small>Befehl des Kommandanten</small>` : null;
+  }
+
+  _steps() {
+    const st = this.state, v = this.tank, g = v.gun;
+    const k = (a, fb) => `<kbd>${this.G.input.label(a) || fb}</kbd>`;
+    switch (this.role) {
+      case 'fahrer': {
+        const modern = eraOf(v.def) === 'modern';
+        return [
+          { html: 'Hauptschalter EIN', done: st.battery },
+          { html: `Anlasser drücken ${k('tactical', 'X')}`, done: st.engine === 'an' },
+          { html: `Feststellbremse lösen ${k('gadget', 'B')}`, done: !st.parkBrake },
+          { html: `${modern ? 'Wahlhebel auf D' : 'Gang einlegen'} ${k('swap', 'Mausrad')}`, done: modern ? st.selector === 'D' || st.selector === 'R' : !!(v.body.drive && v.body.drive.targetGear) },
+          { html: `Fahren ${k('move_forward', 'W')} · Bremse ${k('move_back', 'S')}`, done: Math.abs(v.body.speed) > 2 },
+        ];
+      }
+      case 'richtschuetze':
+        return [
+          { html: 'Hauptschalter Waffe: SCHARF', done: st.armed },
+          { html: `Hauptzieloptik ${k('crouch', 'C')}`, done: viewOf(v.seats[this.playerSeat]).overlay === 'optic' },
+          { html: `Munition wählen ${k('swap', 'Mausrad')} / 1–4`, done: true },
+          ...(v.def.noThermal ? [] : [{ html: `Wärmebild ${k('grenade', 'G')} · Restlicht ${k('verband', 'N')}`, done: !!(this.G.vehicles.thermal && this.G.vehicles.thermal.on) }]),
+          { html: `Laser ${k('light', 'T')} · Feuer ${k('fire', 'LMT')}`, done: false },
+        ];
+      case 'ladeschuetze': {
+        const s = g ? g.step : 'leer';
+        const bunker = !!(v.def.interior && v.def.interior.blastDoor);
+        return [
+          ...(bunker ? [{ html: `Bunkertür öffnen ${k('reload', 'R')}`, done: s !== 'leer' || g.busyKind === 'tuer' }] : []),
+          { html: `Granate greifen ${k('reload', 'R')}`, done: s === 'gegriffen' || s === 'eingeschoben' || s === 'geladen' },
+          { html: `Einschieben ${k('fire', 'LMT')}`, done: s === 'eingeschoben' || s === 'geladen' },
+          { html: `Verschluss schließen ${k('reload', 'R')}`, done: s === 'geladen' },
+          { html: `Entsichern ${k('reload', 'R')}`, done: s === 'geladen' && !st.safe },
+        ];
+      }
+      default: return null;
+    }
+  }
+
+  _helpText() {
+    if (this.G.time.elapsed - (this._startT || (this._startT = this.G.time.elapsed)) > 40 && !this.G.input.down('scoreboard')) return null;
+    const k = (a, fb) => `<kbd>${this.G.input.label(a) || fb}</kbd>`;
+    const sv = `${k('crouch', 'C')} Sicht · `;
+    if (this.arcade) return `<h4>Arcade</h4><p>${k('move_forward', 'W')}${k('move_left', 'A')}${k('move_back', 'S')}${k('move_right', 'D')} fahren · Maus richten · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom</p><p>1–4 Munition · ${sv}${k('grenade', 'G')} Wärmebild · ${k('befehl', 'Y')} Befehlsrad</p>`;
+    switch (this.role) {
+      case 'kommandant': return `<h4>Kommandant – Befehle</h4><p>${k('move_forward', 'W')} Marsch/schneller · ${k('move_back', 'S')} Halt (2×: zurück) · ${k('move_left', 'A')}/${k('move_right', 'D')} links/rechts</p><p>${k('gadget', 'B')} zur Markierung · ${k('prone', 'Z')} Deckung · ${k('tactical', 'X')} Front zum Ziel</p><p>${k('squad_order', 'H')} Ziel übergeben · ${k('jump', 'Leertaste')} Feuer! · ${k('melee', 'V')} Feuer frei · 1–4 Munition</p><p>${k('befehl', 'Y')} Befehlsrad · ${sv}${k('verband', 'N')} Restlicht · Q/E/Z Kopf</p>`;
+      case 'richtschuetze': return `<h4>Richtschütze</h4><p>Maus richten · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom · ${k('swap', 'Mausrad')}/1–4 Munition</p><p>${k('light', 'T')} Laser · ${k('grenade', 'G')} Wärmebild · ${k('verband', 'N')} Polarität/Restlicht · ${sv}</p><p>Der Kommandant weist Ziele zu und befiehlt „Feuer!“.</p>`;
+      case 'ladeschuetze': return `<h4>Ladeschütze</h4><p>Zum Gestell drehen · ${k('reload', 'R')} greifen · zum Verschluss · ${k('fire', 'LMT')} einschieben · ${k('reload', 'R')} schließen${this.sim ? ` · ${k('reload', 'R')} entsichern` : ''}</p><p>${k('swap', 'Mausrad')}/1–4 Munitionsart · ${sv}Q/E/Z Kopf neigen</p>`;
+      case 'fahrer': return `<h4>Fahrer</h4><p>${k('move_forward', 'W')} Gas · ${k('move_back', 'S')}/${k('jump', 'Leertaste')} Bremse · ${k('move_left', 'A')}/${k('move_right', 'D')} Lenkhebel</p><p>${k('swap', 'Mausrad')} Wahlhebel · ${k('gadget', 'B')} Feststellbremse · ${k('tactical', 'X')} Anlasser · ${k('light', 'T')} Licht</p><p>${sv}Befehle des Kommandanten oben im Bild.</p>`;
+      default: return null;
+    }
+  }
+
+  /* ------------------------------------------------------------ Modus-Takt */
+
+  tick(dt) {
+    const G = this.G;
+    if (!this.tank) return;
+    if (G.player && G.player.alive && this.tank.alive && G.player.vehicle !== this.tank) this._enterPlayer();
+    if (G.match.state === 'playing') {
+      try { this.crew && this.crew.update(dt); } catch (err) { console.warn('[Panzer] Besatzung', err); }
+      for (const e of this.enemies) { try { e.update(dt); } catch (err) { console.warn('[Panzer] Feindpanzer', err); } }
+    }
+    if (this._endAt != null && G.time.elapsed >= this._endAt && !this.isOver) this.end(this._outcome === 'win' ? 'mission' : 'failed');
+  }
+}
+
+function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0; return h; }
+void VEHICLE_WEAPONS; void idFor; void bearingWord;

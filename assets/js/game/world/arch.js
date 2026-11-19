@@ -3,6 +3,13 @@
 
 const SIDE_DIR = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 
+// tex4: Farbumrechnung ohne three (Rückwand der Lamellenläden = Ladenfarbe abgedunkelt)
+class ShadeHex {
+  constructor(hex) { const v = parseInt(String(hex).replace('#', ''), 16) || 0; this.r = (v >> 16) & 255; this.g = (v >> 8) & 255; this.b = v & 255; }
+  multiplyScalar(k) { this.r = Math.round(this.r * k); this.g = Math.round(this.g * k); this.b = Math.round(this.b * k); return this; }
+  getStyle() { return '#' + [this.r, this.g, this.b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join(''); }
+}
+
 /**
  * Wand von (x0,z0) nach (x1,z1). Öffnungen: [{ at (Mitte, m ab Start), w, h, sill=0, kind:'door'|'window'|'gap',
  * glass, frame=true, shutters:'#hex', leaf:'open'|'closed', bars }]
@@ -124,7 +131,26 @@ function openingDetails(b, o, op, g) {
   }
   if (op.closed) {
     // geschlossene Fensterläden (massiv)
-    at(op.at, y + sill + 0.01, op.w - fw * 2 + 0.02, top - sill - fw - 0.01, Math.min(0.08, t * 0.5), 'wood_painted', { tint: op.closed === true ? (o.shutterTint || '#2f6f9a') : op.closed, collide: true });
+    const sw = op.w - fw * 2 + 0.02, sh = top - sill - fw - 0.01, sd = Math.min(0.08, t * 0.5);
+    const stint = op.closed === true ? (o.shutterTint || '#2f6f9a') : op.closed;
+    if (b.lookQuality && b.lookQuality !== 'low' && sh > 0.5 && sw > 0.4) {
+      // tex4 (15.11.): Lamellenläden als Form (ab medium) statt bemalter Platte – zwei Flügel mit Rahmen und schräg
+      // gestellten Lamellen vor einer dunklen Rückwand. Kollision und Kugeltreffer wie vorher (Rückwand = volle Fläche,
+      // Holz; Lamellen ohne Kugel-Dreiecke), daher gleich auf allen Stufen.
+      const y0 = y + sill + 0.01, dark = new ShadeHex(stint).multiplyScalar(0.28).getStyle();
+      at(op.at, y0, sw, sh, 0.012, 'wood_painted', { tint: dark, collide: false });
+      at(op.at, y0, sw, sh, sd, 'black', { visual: false, collide: true });
+      const lw = sw / 2, st = 0.055, rail = 0.075, P = { tint: stint, collide: false, bullet: false };
+      for (const c of [op.at - lw / 2, op.at + lw / 2]) {
+        at(c - lw / 2 + st / 2, y0, st, sh, sd, 'wood_painted', P);
+        at(c + lw / 2 - st / 2, y0, st, sh, sd, 'wood_painted', P);
+        at(c, y0, lw - st * 2, rail, sd * 0.9, 'wood_painted', P);
+        at(c, y0 + sh - rail, lw - st * 2, rail, sd * 0.9, 'wood_painted', P);
+        const n = Math.max(3, Math.floor((sh - rail * 2) / 0.052));
+        const pitch = (sh - rail * 2) / n;
+        for (let i = 0; i < n; i++) at(c, y0 + rail + (i + 0.5) * pitch - 0.028, lw - st * 2, 0.062, 0.011, 'wood_painted', { ...P, rx: 0.75, ao: false });
+      }
+    } else at(op.at, y + sill + 0.01, sw, sh, sd, 'wood_painted', { tint: stint, collide: true });
   }
   if (op.bars) {
     const n = Math.max(2, Math.round(op.w / 0.14));

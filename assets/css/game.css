@@ -1490,6 +1490,10 @@ body[data-input-mode="touch"] .m-btn kbd { display: none; }
 .lb-map:hover .lb-map-art { transform: scale(1.04); }
 .lb-map-txt { position: absolute; left: 10px; right: 10px; bottom: 8px; display: flex; flex-direction: column; min-width: 0; }
 .lb-map-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  font-weight: 900; font-stretch: 115%; font-size: 17px; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
+/* qa (16.11.): schmale Karten (Handy) – lange Namen wie „Niemandsland“ verkleinern statt abschneiden */
+.lb-map { container-type: inline-size; }
+@supports (font-size: 1cqw) { .lb-map-txt b { font-size: min(17px, calc(9cqw - 1px)); } }
+@container (max-width: 200px) { .lb-map-txt b { font-stretch: 100%; } }
 .lb-map-txt small { font: 500 12px var(--font-hud); color: var(--np-ink-2); letter-spacing: .06em; }
 .lb-map[aria-pressed="true"] { border-color: var(--np-signal); box-shadow: inset 0 0 0 1px var(--np-signal); }
 .lb-map[aria-pressed="true"]::after { content: ""; position: absolute; right: 8px; top: 8px; width: 9px; height: 9px; background: var(--np-signal); }

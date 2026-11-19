@@ -35,7 +35,8 @@ body[data-quality="low"] #kc-night.on::after { animation: none; }
 body[data-cutscene="1"] #kc-nvg-btn { display: none; }
 `;
 
-const FILTER_DARK = (k) => `brightness(${k}) saturate(.42) contrast(1.06)`;
+// Nachtbild: dunkel, entsättigt, leicht ins Blaue (Sepia + Farbdrehung ≈ Mondlicht)
+const FILTER_DARK = (k) => `brightness(${k}) saturate(.5) sepia(.32) hue-rotate(185deg) contrast(1.08)`;
 // Restlichtverstärker: Graustufen → grünes Phosphorbild, hell, etwas Kontrast
 const FILTER_NVG = 'grayscale(1) brightness(1.7) contrast(1.22) sepia(1) hue-rotate(58deg) saturate(2.6)';
 
@@ -74,7 +75,8 @@ export function night(m, { dark = 0.34, vis = 0.45, nvg = true, start = false } 
     const cine = !!m.cutscene;
     const on = st.on && !m.finished;
     const nv = on && st.nvg && !cine;
-    if (canvas) canvas.style.filter = !on ? '' : nv ? FILTER_NVG : FILTER_DARK(dark);
+    // Sequenzen etwas heller (Gesichter sollen lesbar bleiben), sonst das Nachtbild bzw. die Nachtsicht
+    if (canvas) canvas.style.filter = !on ? '' : nv ? FILTER_NVG : FILTER_DARK(cine ? Math.max(dark, 0.55) : dark);
     if (layer) layer.classList.toggle('on', nv);
     if (G.world) G.world.nightVis = on ? vis : 1;
   };
@@ -128,12 +130,12 @@ export function night(m, { dark = 0.34, vis = 0.45, nvg = true, start = false } 
 export function scopeMark(m, id, text, list, { secs = 1.2, cone = 0.035, needAds = true, range = 260, label = 'Markieren' } = {}) {
   const G = m.G;
   const marked = new Set();
-  m.objective(id, text, { total: list.length, quiet: false });
+  const ob = m.objective(id, text, { total: list.length, quiet: false });
   m.progress(id, 0, list.length);
   let cur = null, t = 0;
-  const h = m.until(() => marked.size >= list.length);
+  const h = m.until(() => marked.size >= list.length || ob.done); // ob.done: Tests/Skript erledigen das Ziel direkt
   m.every((dt) => {
-    if (marked.size >= list.length) { if (m.ui) m.ui.hold(null); m.done(id); return true; }
+    if (marked.size >= list.length || ob.done) { if (m.ui) m.ui.hold(null); m.done(id); return true; }
     const P = G.player, cam = G.camera;
     if (!P || !P.alive || !cam) return false;
     const ads = !needAds || !!(P.weapon && P.weapon.ads) || !!P.vehicle;
@@ -301,4 +303,27 @@ export function circuit(m, v, pts, { speed = 30, reach = 60, loop = true } = {})
   });
   st.stop = () => { st.on = false; };
   return st;
+}
+
+/** Bot eine bestimmte Hauptwaffe geben (z. B. Scharfschützengewehr). */
+export function arm(bot, id) {
+  if (!bot || !bot.weapon) return false;
+  try {
+    const W = bot.G && bot.G.data && bot.G.data.WEAPONS;
+    const def = W && W[id];
+    if (!def) return false;
+    // Werfer/Pistolen auf den Zweitplatz – und gleich in die Hand (der Bot benutzt die Waffe in der Hand)
+    const second = def.slot === 'secondary';
+    bot.loadout = { ...(bot.loadout || {}), [second ? 'secondary' : 'primary']: id };
+    bot.weapon.setLoadout(bot.loadout);
+    if (second && Array.isArray(bot.weapon.slots)) { const i = bot.weapon.slots.findIndex((x) => x && x.id === id); if (i >= 0) { bot.weapon.index = i; if (typeof bot.weapon._refreshStatic === 'function') bot.weapon._refreshStatic(); } }
+    if (typeof bot._syncGun === 'function') bot._syncGun(true);
+    return true;
+  } catch (err) { console.warn('[Kampagne] Waffe für Bot', err); return false; }
+}
+
+/** Höhe der obersten Standfläche bei (x, z) (Dach) – world.groundHeight von oben; Rückfall 0. */
+export function roofY(m, x, z, from = 60) {
+  const W = m.G.world;
+  try { const y = W && W.groundHeight ? W.groundHeight(x, z, from) : null; return Number.isFinite(y) ? y : 0; } catch { return 0; }
 }

@@ -843,12 +843,14 @@ export class Director {
    */
   say(who, text, { expr = null, radio = null, minor = false } = {}) {
     const h = new Handle(null);
-    this.lines.push({ who, text, expr, radio, h, minor });
+    this.lines.push({ who, text, expr, radio, h, minor, at: this.elapsed });
     // Warteschlange (kamp3, 15.11.): früher fielen ab drei wartenden Zeilen die ältesten weg – auch Story-Zeilen. Jetzt
     // entfallen zuerst Nebenzeilen (minor: true, z. B. Zurufe im Gefecht); Story-Zeilen bleiben, solange höchstens sechs
     // warten (lange Warteschlangen werden schneller abgespielt, siehe _updateLines).
     while (this.lines.length > 3) {
-      const i = this.lines.findIndex((l) => l.minor);
+      // zuerst Nebenzeilen, dann Zeilen, die schon über 25 s warten (das Geschehen ist weiter)
+      let i = this.lines.findIndex((l) => l.minor);
+      if (i < 0) i = this.lines.findIndex((l) => this.elapsed - l.at > 25);
       if (i >= 0) { this.lines.splice(i, 1)[0].h.finish(); continue; }
       if (this.lines.length > 6) { this.lines.shift().h.finish(); continue; }
       break;

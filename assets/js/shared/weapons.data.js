@@ -237,6 +237,15 @@ const ICONS = {
   donner: gunIcon(
     'M4 13H70V18H4Z M70 11.5L80 9V22L70 19.5 M80 10L92 15.5L80 21 M26 18L24 27H30L32 18 M46 18L45 26H50L51 18 ' +
     'M34 13V8H42V13 M12 12V19'),
+  // qa (16.11.): Granatwerfer hatten kein Symbol (Waffenkammer/Abschussmeldung leer)
+  // GW-40 Hammer: kurzer Kipplauf-Werfer, dicker Lauf, Pistolengriff, Klappvisier
+  hammer: gunIcon(
+    'M8 13H22V19H12L8 17Z M22 11H34V19H22Z M26 19L24 27H30L32 19 M34 9.5H70V20.5H34Z M70 10.5H74V19.5H70 ' +
+    'M40 9.5V6H46V9.5 M58 20.5V24'),
+  // GW-6 Trommel: Klappschaft, große Trommel hinter dem Griff, kurzer Lauf mit Vordergriff
+  trommel: gunIcon(
+    'M4 13H20V18H8L4 16Z M20 11H30V19H20Z M24 19L22 27H28L30 19 M30 8H50V24H30Z M34 8V24 M40 8V24 M46 8V24 ' +
+    'M50 11.5H80V18.5H50Z M80 12.5H84V17.5H80 M62 18.5L60 26H66L67 18.5 M54 11.5V8H60V11.5'),
   karambit: gunIcon(
     'M30 13H52Q55 13 55 16V18Q55 20 52 20H30Q27 20 27 17Q27 13 30 13Z M25 16.5A3.5 3.5 0 1 0 25 16.6 ' +
     'M55 12V21 M55 15Q70 12 76 20Q71 18 62 19Q58 19 55 18'),
@@ -1304,7 +1313,7 @@ export const CLASS_LOOKS = {
   sturm: { id: 'sturm', name: 'Sturm', glove: '#303236', sleeve: '#d8d8d8', accessory: 'pads' },
   sanitaeter: { id: 'sanitaeter', name: 'Sanitäter', glove: '#c9b48d', sleeve: '#ffffff', accessory: 'armband' },
   pionier: { id: 'pionier', name: 'Pionier', glove: '#7a5a3c', sleeve: '#c9c2b0', sleeveCamo: 'neutral', accessory: 'cuffs' },
-  aufklaerer: { id: 'aufklaerer', name: 'Aufklärer', glove: '#59614a', sleeve: '#b9c4a6', sleeveCamo: 'wood', accessory: 'wraps' },
+  aufklaerer: { id: 'aufklaerer', name: 'Aufklärer', glove: '#59614a', sleeve: '#b9c4a6', sleeveCamo: 'wood', accessory: 'wraps', openTips: true }, // Schießhandschuh mit offenen Kuppen
   besatzung: { id: 'besatzung', name: 'Besatzung', glove: '#2b2a27', sleeve: '#5a5c4c', accessory: 'none' },
   unterstuetzung: { id: 'unterstuetzung', name: 'Unterstützung', glove: '#3f4434', sleeve: '#e0dccd', accessory: 'pads' },
 };

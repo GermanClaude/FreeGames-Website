@@ -2,6 +2,7 @@
 // loadWorld(G, mapId, { onProgress }) → World (siehe docs/ARCHITECTURE.md §6)
 import * as THREE from 'three';
 import { buildColliderOctreeAsync } from './collider.js?v=20261115041504';
+import { breakableAccess } from './bruch.js?v=20261115041504'; // zerbrechliche Requisiten (game/breakables.js)
 import { TriangleBVH } from './bvh.js?v=20261115041504';
 import { MAPS } from '../../shared/maps.data.js?v=20261115041504';
 import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../engine/textures.js?v=20261115041504';
@@ -428,6 +429,7 @@ export async function loadWorld(G, mapId, opts = {}) {
     civilVehicles: civilList([...(res.civilVehicles || []), ...(b.civilSpots || [])]), // fahrbare Zivilfahrzeuge (vehicles/)
     doors: b.doors || [], gates: b.gates || [], windows: b.windows || [], // bewegliche Türen und Tore (game/doors.js)
     destructibles: (b.destructibles || []).filter((d) => d.mesh), // zerstörbare Wandpaneele (game/destruction.js)
+    breakables: breakableAccess(b.breakables, { cbvh, bvh, octree: collider }), // Kisten, Paletten, Zaunfelder (game/breakables.js)
     lighting: light.lighting,
     /** Farbstimmung/Belichtung für core-render (`renderer.setMood(world.grade || mapId)`): Karten-`grade` über der Stimmung der Karte. */
     grade: def.grade ? { mood: id, ...def.grade } : undefined,

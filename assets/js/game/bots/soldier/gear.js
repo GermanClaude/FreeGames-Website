@@ -2,7 +2,8 @@
 // Rucksack, Ärmel, Knieschoner, Holster …) × 3 Detailstufen → eine geteilte, gecachte Geometrie.
 // Farben kommen über Palettenplätze aus dem Material (Farbschema) → dieselbe Geometrie für alle Schemata.
 // Koordinaten: Modellraum der Bindepose (Füße im Ursprung, Blick −Z, rechts +X, Arme hängen).
-// Körper (21.10.): ein durchgehendes, weich gehäutetes Netz aus tools/assets/soldier/build-body.mjs (body-mesh.js) –
+// Körper (15.11., soldier-body-v2): ein durchgehendes, weich gehäutetes Netz aus tools/assets/soldier/build_body.py
+// (MakeHuman-Grundnetz, CC0; body-mesh.js) mit Kleidungshülle; zivile Ausführungen bekommen einen eigenen, schmaleren Körper –
 // Muskeln, Uniform mit Falten/Taschen, Stiefel, Handschuhe, Kopf; Bereiche → Materialien je Ausführung.
 // Ausrüstung aus abgerundeten Quadern; auf Stufe 2 nur noch die Silhouette tragenden Teile.
 // Gesichter sind verdeckt (Realismus-Plan C1: Sturmhaube, Halstuch, Shemagh, Gasmaske + Schutzbrillen) – wie Bodycam,
@@ -68,9 +69,10 @@ function b64(str, T) {
   for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
   return new T(u.buffer);
 }
-function bodyMesh(lod) {
-  if (bodyCache[lod]) return bodyCache[lod];
-  const E = BODY_MESH.lods[lod];
+function bodyMesh(lod, civil = false) {
+  const ck = civil && BODY_MESH.civil ? lod + 3 : lod;   // soldier-body-v2: eigener Zivilkörper (schmaler, ohne Uniform)
+  if (bodyCache[ck]) return bodyCache[ck];
+  const E = (ck > 2 ? BODY_MESH.civil : BODY_MESH.lods)[lod];
   const P = b64(E.pos, Uint16Array), N = b64(E.nrm, Int8Array), U = b64(E.uv, Int16Array);
   const pos = new Float32Array(E.n * 3), nrm = new Float32Array(E.n * 3), uv = new Float32Array(E.n * 2);
   for (let v = 0; v < E.n; v++) {
@@ -78,7 +80,7 @@ function bodyMesh(lod) {
     uv[v * 2] = U[v * 2] / 16000; uv[v * 2 + 1] = U[v * 2 + 1] / 16000;
   }
   const D0 = { n: E.n, pos, nrm, uv, idx: b64(E.idx, Uint16Array), ski: b64(E.ski, Uint8Array), skw: b64(E.skw, Uint8Array), reg: b64(E.reg, Uint8Array), ao: b64(E.ao, Uint8Array) };
-  bodyCache[lod] = D0;
+  bodyCache[ck] = D0;
   return D0;
 }
 
@@ -162,7 +164,11 @@ function bulkTable() {
   // geschriebenen Ausrüstungsteile am Rumpf (Weste, Gürtel, Taschen, Rucksack sitzen so auf dem kräftigeren Rumpf).
   const T = {};
   const set = (name, o) => { T[BONE[name]] = { cx: 0, cz: 0, sx: 1, sz: 1, tx: 0, ...o }; };
-  for (const n of ['hips', 'spine', 'chest']) set(n, { cz: 0.006, sx: 1.17, sz: 1.22 });
+  // 15.11. (soldier-body-v2, MakeHuman-Körper): Rumpf schlanker und in der Tiefe nach vorn verlagert (Rücken flacher als
+  // der alte Kastenrumpf) → Querschnitte je Höhe neu gemessen (build_body.py) und die Faktoren/Versätze daran angepasst
+  set('hips', { cz: 0.006, sx: 1.107, sz: 1.114, tz: -0.0376 });
+  set('spine', { cz: 0.006, sx: 1.095, sz: 1.047, tz: -0.0344 });
+  set('chest', { cz: 0.006, sx: 1.106, sz: 1.082, tz: -0.0193 });
   set('neck', { cz: 0.012, sx: 1.22, sz: 1.22 });
   return T;
 }
@@ -314,7 +320,7 @@ function buildSoldier(V, lod) {
     }
   };
   // zivil: Uniform-Brusttaschen gehören zum Oberteil (Bereich POCKET gilt sonst für Hosentaschen)
-  let BM = bodyMesh(lod);
+  let BM = bodyMesh(lod, !!V.civil);
   if (civ) {
     const reg = BM.reg.slice();
     for (let i = 0; i < BM.n; i++) if (reg[i] === RG.POCKET && BM.pos[i * 3 + 1] > 1.0) reg[i] = RG.SHIRT;
@@ -322,9 +328,10 @@ function buildSoldier(V, lod) {
   }
   B.addMesh(BM, bodyMat, L0 ? new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]) : null);
   if (V.holster && !FAR) {
-    add(R(0.06, 0.17, 0.1, 0.022, { p: [0.238, 0.72, 0.022], r: [0.08, 0, -0.03] }), 'thighR', C.gear2);
-    add(R(0.03, 0.075, 0.04, 0.008, { p: [0.24, 0.825, 0.055], r: [0.25, 0, -0.03] }), 'thighR', C.plastic);
-    if (L01) add(torus(0.11, 0.008, 3, q.cs + 2, { p: [0.1, 0.62, 0.006], r: [Math.PI / 2, 0, 0], s: [1, 1.08, 1] }), 'thighR', C.strap);
+    // 15.11.: an den schlankeren Oberschenkel des MakeHuman-Körpers (Außenseite x ≈ 0,186, Mitte z ≈ −0,02) gerückt
+    add(R(0.06, 0.17, 0.1, 0.022, { p: [0.214, 0.72, -0.004], r: [0.08, 0, -0.03] }), 'thighR', C.gear2);
+    add(R(0.03, 0.075, 0.04, 0.008, { p: [0.216, 0.825, 0.029], r: [0.25, 0, -0.03] }), 'thighR', C.plastic);
+    if (L01) add(torus(0.093, 0.008, 3, q.cs + 2, { p: [0.098, 0.62, -0.019], r: [Math.PI / 2, 0, 0], s: [1, 1.03, 1] }), 'thighR', C.strap);
   }
   // Knie-/Ellbogenschoner (sol 15.11.): gewölbte Hartschalen-Kissen um Knie bzw. Ellbogen gebogen, Haltegurte rundum
   const ring = (cx, y, cz, rx, rz, bone, mat, w = 0.012, n = 14) => {
@@ -352,18 +359,18 @@ function buildSoldier(V, lod) {
     if (L0) {
       const ep = pad({ ...PKs, w: 0.072, h: 0.092, d: 0.022, rb: 0.009, rc: 0.024, puff: L0 ? 0.005 : 0.003, bend: [10, 3] });
       place(ep, { r: [0, Math.PI, 0] });
-      place(ep, { p: [-DIM.shoulderX - 0.012, 1.15, 0.083], r: [0.08, 0, 0] });
+      place(ep, { p: [-DIM.shoulderX - 0.006, 1.15, 0.066], r: [0.08, 0, 0] });
       pair(ep, 'foreArmL', 'foreArmR', C.knee);
-      if (L0) ring(-DIM.shoulderX - 0.012, 1.115, 0.006, 0.058, 0.072, 'foreArmL', C.strap, 0.01, 12);
+      if (L0) ring(-DIM.shoulderX - 0.006, 1.115, -0.004, 0.061, 0.062, 'foreArmL', C.strap, 0.01, 12);
     }
   }
   // Stiefel: Schnürung über Kreuz mit Ösen, Schleife oben
-  if (L0) for (let i = 0; i < 4; i++) {
+  if (L0 && !civ) for (let i = 0; i < 4; i++) {
     const y = 0.105 + i * 0.026;
-    for (const sg of [-1, 1]) pair(rbox(0.04, 0.0035, 0.004, 0, 0, { p: [-0.1, y + 0.013, -0.07], r: [0, 0, sg * 0.55] }), 'shinL', 'shinR', { color: '#1d1b18', detail: 0.8, cls: 'cloth' });
-    for (const sx of [-1, 1]) pair(cyl(0.0035, 0.0035, 0.004, 6, { p: [-0.1 + sx * 0.019, y, -0.069], r: [Math.PI / 2, 0, 0] }), 'shinL', 'shinR', C.metal);
+    for (const sg of [-1, 1]) pair(rbox(0.036, 0.0035, 0.004, 0, 0, { p: [-0.105, y + 0.013, -0.059], r: [0, 0, sg * 0.55] }), 'shinL', 'shinR', { color: '#1d1b18', detail: 0.8, cls: 'cloth' });
+    for (const sx of [-1, 1]) pair(cyl(0.0035, 0.0035, 0.004, 6, { p: [-0.105 + sx * 0.017, y, -0.058], r: [Math.PI / 2, 0, 0] }), 'shinL', 'shinR', C.metal);
   }
-  if (L0) pair(torus(0.009, 0.0025, 3, 8, { p: [-0.1, 0.214, -0.071], r: [0, 0, 0], s: [1.4, 0.8, 1] }), 'shinL', 'shinR', { color: '#1d1b18', detail: 0.8, cls: 'cloth' });
+  if (L0 && !civ) pair(torus(0.009, 0.0025, 3, 8, { p: [-0.105, 0.214, -0.06], r: [0, 0, 0], s: [1.4, 0.8, 1] }), 'shinL', 'shinR', { color: '#1d1b18', detail: 0.8, cls: 'cloth' });
 
   if (civ) {
     // Rumpf-Ausrüstung wird quer skaliert (BULK) → Maße hier vor der Skalierung: x / 1,17, z um 0,006 / 1,22
@@ -910,18 +917,19 @@ function buildSoldier(V, lod) {
   /* ------------------------------------------------------------ Arme (Arme/Hände selbst: body-mesh.js) */
   const AX = -DIM.shoulderX; // Armachse links (rechts gespiegelt)
   // Armbinde in Teamfarbe rund um den Oberarm (auch aus der Ferne und von hinten sichtbar)
-  if (!civ) pair(cyl(0.081, 0.078, 0.055, q.cs, { p: [AX, 1.25, 0.0], s: [0.88, 1, 1.02] }, true), 'upperArmL', 'upperArmR', C.band);
-  if (L0 && !civ) pair(rbox(0.006, 0.044, 0.05, 0, 0, { p: [AX - 0.084, 1.35, -0.002] }), 'upperArmL', 'upperArmR', C.patch); // Klett auf der Ärmeltasche
+  // 15.11.: Maße am schlankeren MakeHuman-Oberarm (Halbachsen ≈ 0,06 × 0,066) gemessen
+  if (!civ) pair(cyl(0.07, 0.068, 0.055, q.cs, { p: [AX, 1.25, -0.003], s: [0.97, 1, 1.03] }, true), 'upperArmL', 'upperArmR', C.band);
+  if (L0 && !civ) pair(rbox(0.006, 0.044, 0.05, 0, 0, { p: [AX - 0.066, 1.3, -0.003] }), 'upperArmL', 'upperArmR', C.patch); // Klett auf der Ärmeltasche
   if (V.armband === 'medic') {
     // Armbinde Sanitäter (weiß, rotes Kreuz außen) unter dem Teamband
-    pair(cyl(0.077, 0.074, 0.065, q.cs, { p: [AX, 1.19, 0.0], s: [0.88, 1, 1.0] }, true), 'upperArmL', 'upperArmR', C.medWhite);
-    pair(rbox(0.006, 0.044, 0.014, 0, 0, { p: [AX - 0.069, 1.19, 0.0] }), 'upperArmL', 'upperArmR', C.medRed);
-    pair(rbox(0.006, 0.014, 0.044, 0, 0, { p: [AX - 0.069, 1.19, 0.0] }), 'upperArmL', 'upperArmR', C.medRed);
+    pair(cyl(0.067, 0.065, 0.065, q.cs, { p: [AX, 1.19, -0.003], s: [0.97, 1, 1.02] }, true), 'upperArmL', 'upperArmR', C.medWhite);
+    pair(rbox(0.006, 0.044, 0.014, 0, 0, { p: [AX - 0.066, 1.19, -0.003] }), 'upperArmL', 'upperArmR', C.medRed);
+    pair(rbox(0.006, 0.014, 0.044, 0, 0, { p: [AX - 0.066, 1.19, -0.003] }), 'upperArmL', 'upperArmR', C.medRed);
   }
   if (V.pauldrons) pair(E(0.102, 0.078, 0.108, { p: [AX - 0.018, 1.44, 0.0] }, { thetaLength: Math.PI * 0.5 }), 'upperArmL', 'upperArmR', C.gear);
   // hochgekrempelte Ärmel: Wulst unter dem Ellbogen
   if (rolled) pair(torus(0.063, 0.016, 4, q.cs, { p: [AX, 1.1, 0.0], r: [Math.PI / 2, 0, 0], s: [0.9, 1.04, 1] }), 'foreArmL', 'foreArmR', civ ? civ.top : C.top);
-  if (L0) add(R(0.014, 0.024, 0.032, 0.004, { p: [AX - 0.046, 0.965, 0] }), 'foreArmL', C.plastic); // Uhr
+  if (L0) add(R(0.014, 0.024, 0.032, 0.004, { p: [AX - 0.041, 0.965, 0] }), 'foreArmL', C.plastic); // Uhr
 
   const geo = B.build();
   geo.userData.variant = V.id;

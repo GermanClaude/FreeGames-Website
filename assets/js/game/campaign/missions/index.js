@@ -16,6 +16,11 @@ import { MISSION_8 } from './m8-geleit.js?v=20261115041504';
 import { MISSION_9 } from './m9-glockenschlag.js?v=20261115041504';
 import { MISSION_10 } from './m10-rollfeld.js?v=20261115041504';
 import { MISSION_11 } from './m11-stadtkern.js?v=20261115041504';
+// --- kamp3: Akt III (M12–M15) ---
+import { MISSION_12 } from './m12-nachtsicht.js?v=20261115041504';
+import { MISSION_13 } from './m13-weitblick.js?v=20261115041504';
+import { MISSION_14 } from './m14-grabenlinie.js?v=20261115041504';
+import { MISSION_15 } from './m15-kranichflug.js?v=20261115041504';
 
 const LIST = [
   MISSION_0, MISSION_1, MISSION_2, MISSION_3, MISSION_4, MISSION_5, MISSION_6,
@@ -27,6 +32,10 @@ const EXTRA = [
   MISSION_9,
   MISSION_10,
   MISSION_11,
+  MISSION_12,
+  MISSION_13,
+  MISSION_14,
+  MISSION_15,
 ];
 
 export const MISSIONS = {};

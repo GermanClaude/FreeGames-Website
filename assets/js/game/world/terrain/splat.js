@@ -184,7 +184,14 @@ export async function createTerrainMaterial(o) {
   // ({ layers: { grass: 'brandboden', … }, sizes: { grass: 3.4 }, meadow: false, rockTint: [r, g, b] }) – ersetzte
   // Schichten nehmen keinen Fotoscan aus der Bibliothek; ohne Wiesenfarbe (meadow: false) bleibt die Grundschicht neutral
   const look = o.look || null;
-  const LAYERS = TERRAIN_LAYERS.map(l => (look?.layers?.[l.key] ? { ...l, lib: null, proc: look.layers[l.key], size: look.sizes?.[l.key] ?? l.size } : l));
+  // tex4 (15.11.): hat der Ersatzsatz eine Bibliothekszuordnung (LIB_MATERIALS, z. B. brandboden → Fotoscan), lädt die
+  // Schicht diesen Scan (Kalibrierung aus der Zuordnung), sonst wie bisher prozedural
+  const LAYERS = TERRAIN_LAYERS.map(l => {
+    const name = look?.layers?.[l.key];
+    if (!name) return l;
+    const lm = LIB_MATERIALS[name];
+    return { ...l, lib: lm?.id || null, cal: lm?.color, proc: name, size: look.sizes?.[l.key] ?? l.size };
+  });
   const meadow = look?.meadow !== false;
   const rockTint = look?.rockTint || [0.62, 0.6, 0.56];
   // Texturen: Bibliothek (KTX2) oder prozedural

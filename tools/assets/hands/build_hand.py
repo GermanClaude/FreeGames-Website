@@ -112,14 +112,14 @@ for c in range(5):
     SRC.append(J)
 
 
-def chain_frames(J, dorsal_hint):
+def chain_frames(J, dorsal_hint, pure=False):
     """Gliedrahmen der Quelle: z = −Gliedrichtung, y = Rücken (von der Krümmung weg, zur Hand-Rückseite), x = y × z."""
     Rs = []
     chord = J[3] - J[0]; chord /= np.linalg.norm(chord)
     mid = (J[1] + J[2]) * 0.5 - J[0]
     off = mid - chord * (mid @ chord)
     con = off / (np.linalg.norm(off) + 1e-9)          # zur Krümmungsmitte (Handfläche)
-    up = -con * 0.6 + dorsal_hint * 0.4
+    up = dorsal_hint if pure else -con * 0.6 + dorsal_hint * 0.4
     for s in range(3):
         z = -(J[s + 1] - J[s]); z /= np.linalg.norm(z)
         y = up - z * (up @ z); y /= np.linalg.norm(y)
@@ -127,7 +127,22 @@ def chain_frames(J, dorsal_hint):
     return Rs
 
 
-SRC_R = [chain_frames(SRC[c], np.array([0, 1.0, 0]) if c < 4 else np.array([-0.6, 0.6, 0.2])) for c in range(5)]
+
+
+def thumb_nail_dir():
+    """Daumennagel-Richtung der Quelle: schmale Querachse des Endglieds (Nagel/Ballen), zur Handaußenseite (−x)."""
+    J = SRC[4]
+    ax = (J[3] - J[2]) / np.linalg.norm(J[3] - J[2])
+    rel = PS - J[2]
+    t = rel @ ax / np.linalg.norm(J[3] - J[2])
+    rad = rel - np.outer(rel @ ax, ax)
+    m = (np.linalg.norm(rad, axis=1) < 0.012) & (t > 0.3) & (t < 0.7)
+    w, v = np.linalg.eigh(rad[m].T @ rad[m])
+    thin = v[:, 1]
+    return thin if thin[0] < 0 else -thin
+
+
+SRC_R = [chain_frames(SRC[c], np.array([0, 1.0, 0])) for c in range(4)] + [chain_frames(SRC[4], thumb_nail_dir(), True)]
 
 # ------------------------------------------------------------------ Gewichte (Quellraum)
 
@@ -189,8 +204,59 @@ def weights(p):
 
 WS = weights(PS)
 
+# Natürliche Haltung der Quelle im Pose-Format des Rigs (→ Bindehaltung in handdims.js: dann bildet die Umzielung die
+# Glieder nur noch ab, ohne sie zu drehen – keine Falten an Knöcheln/Daumenballen). Ausgabe zum Abgleich.
+def natural_pose():
+    res = {'splay': [], 'curl': []}
+    for c in range(4):
+        J = SRC[c]
+        d0 = (J[1] - J[0]) / np.linalg.norm(J[1] - J[0])
+        s = math.asin(-d0[0]); c0 = math.atan2(-d0[1], -d0[2])
+        R = rx(-c0) @ ry(s)
+        cur = [c0]
+        for k in (1, 2):
+            dk = (J[k + 1] - J[k]) / np.linalg.norm(J[k + 1] - J[k])
+            dl = R.T @ dk
+            ck = math.atan2(-dl[1], -dl[2])
+            cur.append(ck)
+            R = R @ rx(-ck)
+        res['splay'].append(round(s, 3)); res['curl'].append([round(x, 3) for x in cur])
+    J = SRC[4]
+    F = (J[1] - J[0]) / np.linalg.norm(J[1] - J[0])
+    Bv = SRC_R[4][0][:, 1]
+    R = basis(F, Bv)
+    fl = []
+    for k in (1, 2):
+        dk = (J[k + 1] - J[k]) / np.linalg.norm(J[k + 1] - J[k])
+        dl = R.T @ dk
+        ck = math.atan2(-dl[1], -dl[2]); fl.append(round(ck, 3))
+        R = R @ rx(-ck)
+    res['thumbF'] = [round(x, 3) for x in F]; res['thumbB'] = [round(x, 3) for x in Bv]; res['thumbFlex'] = fl
+    return res
+
+
+NAT = natural_pose()
+print('Natürliche Haltung (für handdims.js):', json.dumps(NAT))
+# Quellrahmen in derselben Konvention wie das Rig (Euler-Kette bzw. Daumenbasis + Beugungen) → Abbildung = reine Skalierung
+for c in range(4):
+    R = rx(-NAT['curl'][c][0]) @ ry(NAT['splay'][c])
+    fr = []
+    for k in range(3):
+        if k:
+            R = R @ rx(-NAT['curl'][c][k])
+        fr.append(R.copy())
+    SRC_R[c] = fr
+R = basis(NAT['thumbF'], NAT['thumbB'])
+fr = [R.copy()]
+for k in range(2):
+    R = R @ rx(-NAT['thumbFlex'][k]); fr.append(R.copy())
+SRC_R[4] = fr
+if os.environ.get('HAND_NAT_ONLY'):
+    sys.exit(0)
+
+
 # ------------------------------------------------------------------ Abbildungen Quelle → Ziel
-Z_WRIST = 0.014   # Handgelenk der Quelle (Gelenkmitte) liegt 1,4 cm hinter dem Rig-Ursprung (Handwurzel)
+Z_WRIST = 0.022   # Handgelenk der Quelle (Gelenkmitte) liegt 1,4 cm hinter dem Rig-Ursprung (Handwurzel)
 src_land = np.array([[0, 0, 0]] + [SRC[c][0] for c in range(4)] + [SRC[4][0]])
 tgt_land = np.array([[0, -0.001, Z_WRIST]] + [TG[c]['p'][0] for c in range(4)] + [TG[4]['p'][0]])
 A = np.zeros((4, 4)); A[3, 3] = 1
@@ -202,54 +268,106 @@ for k in (0, 2):
 A[1, 1] = (sc[0] + sc[1]) * 0.5 * 1.04
 A[1, 3] = np.mean(tgt_land[:, 1] - A[1, 1] * src_land[:, 1])
 PALM = A
+RES = tgt_land - (src_land @ A[:3, :3].T + A[:3, 3])
+print('Restfehler Handflächen-Abbildung (mm):', np.round(np.linalg.norm(RES, axis=1) * 1000, 1))
 print('Handfläche: Maßstab x %.3f y %.3f z %.3f' % (A[0, 0], A[1, 1], A[2, 2]))
 
 
-def frame_map(Rs, ps, Rt, pt, sz, sr):
-    """Quelle (Rahmen Rs, Ursprung ps) → Ziel (Rt, pt), lokal skaliert (sr quer, sz längs)."""
-    M = np.eye(4)
-    L = Rt @ np.diag([sr, sr, sz]) @ Rs.T
-    M[:3, :3] = L
-    M[:3, 3] = pt - L @ ps
-    return M
+def frame_map(Rs, ps, Rt, pt, sz, sr, sz0, sr0, h=0.004):
+    """Quelle (Rahmen Rs, Ursprung ps) → Ziel (Rt, pt). Längs: Steigung sz0 vor dem Gelenk (wie das Elternglied), sz
+    dahinter, weich übergeblendet (h) – sonst falten sich die Mischzonen, wo Glieder unterschiedlich gestreckt werden.
+    Quer ebenso sr0 → sr."""
+    def f(p):
+        l = (p - ps) @ Rs                      # lokale Koordinaten (Spalten von Rs = Achsen)
+        a = -l[:, 2]
+        sp = h * np.logaddexp(0, a / h)        # weiches max(a, 0)
+        sg = 1 / (1 + np.exp(-a / h))
+        a2 = sz0 * a + (sz - sz0) * sp
+        rs = sr0 + (sr - sr0) * sg
+        q = np.stack([l[:, 0] * rs, l[:, 1] * rs, -a2], 1)
+        return pt + q @ Rt.T
+    return f
+
+
+def affine_map(M):
+    # + weiche Korrektur an den Stützpunkten (Grundgelenke, Daumenwurzel, Handgelenk liegen exakt auf dem Rig)
+    def f(p):
+        q = p @ M[:3, :3].T + M[:3, 3]
+        for L, r in zip(src_land, RES):
+            q += np.exp(-np.sum((p - L) ** 2, 1) / (2 * 0.014 ** 2))[:, None] * r
+        return q
+    return f
 
 
 MAPS = [None] * 17
-MAPS[0] = PALM
-MAPS[16] = PALM
+MAPS[0] = affine_map(PALM)
+MAPS[16] = MAPS[0]
 GLOVE_T = {'finger': 0.0009}
+# nächste Kette je Ecke (Querschnittsmessung ohne Nachbarfinger/Schwimmhaut)
+NEAR = np.argmin(np.stack([chain_weights(PS, c)[0] for c in range(5)], 1), 1)
+RIG_R = []   # sichtbare Radien der Glieder nach der Umzielung (→ Kapselradien r = sichtbar / 1,04 in handdims.js)
 for c in range(5):
     J, Rs = SRC[c], SRC_R[c]
     T = TG[c]
+    # Querschnitt je Glied: Median-Abstand der Ecken in der Gliedmitte (30–70 %) von der Achse
+    rr = []
+    for s in range(3):
+        Ls = np.linalg.norm(J[s + 1] - J[s]); ax = (J[s + 1] - J[s]) / Ls
+        rel = PS - J[s]; tt = rel @ ax / Ls
+        rad = np.linalg.norm(rel - np.outer(rel @ ax, ax), axis=1)
+        lo_, hi_ = ((0.62, 0.78), (0.4, 0.6), (0.3, 0.5))[s]
+        m = (tt > lo_) & (tt < hi_) & (rad < 0.016) & (NEAR == c)
+        rr.append(float(np.mean(rad[m])) if m.sum() > 3 else float('nan'))
+    # ein Querschnitts-Maßstab je Finger (natürliche Verjüngung der Quelle bleibt), Grundglied = Rig-Kapsel
+    # Verjüngung der Quelle (gemittelt über die Finger: Mittel-/Endglied ≈ 0,82/0,59 des Grundglieds) leicht
+    # zurücknehmen (Handschuh polstert die Kuppen auf) → Maßstab je Glied [1, 1,06, 1,2] × Grundglied-Maßstab
+    want0 = T['r'][0] * 1.04 - GLOVE_T['finger']
+    if c < 4:
+        r0 = rr[0]
+        model = [r0, r0 * 0.82, r0 * 0.59]
+        srl = [want0 / r0 * k for k in (1.0, 1.06, 1.2)]
+    else:
+        r0 = rr[1]
+        model = [r0 * 1.25, r0, r0 * 0.8]
+        srl = [PALM[0, 0] * 0.97, (T['r'][1] * 1.04 - GLOVE_T['finger']) / r0, (T['r'][1] * 1.04 - GLOVE_T['finger']) / r0 * 1.08]
+    RIG_R.append([round((srl[k] * model[k] + GLOVE_T['finger']) / 1.04, 4) for k in range(3)])
     for s in range(3):
         b = BONE(c, s)
         Ls = np.linalg.norm(J[s + 1] - J[s])
         Lt = T['len'][s] + (0.55 * T['r'][2] if s == 2 else 0)
-        # Querschnitt: mittlerer Abstand der Ecken dieses Glieds von seiner Achse → Zielradius (sichtbar ≈ 1,04·r)
-        m = WS[:, b] > 0.85
-        ax = (J[s + 1] - J[s]) / Ls
-        rel = PS[m] - J[s]
-        rr = np.linalg.norm(rel - np.outer(rel @ ax, ax), axis=1).mean() if m.sum() > 5 else T['r'][s]
-        want = T['r'][s] * 1.04 - GLOVE_T['finger']
-        sr = want / rr if not (c == 4 and s == 0) else 0.5 * (want / rr + PALM[0, 0])
-        MAPS[b] = frame_map(Rs[s], J[s], T['R'][s], T['p'][s], Lt / Ls, sr)
-        print('Kette %d Glied %d: Länge %.3f (×%.2f), Radius %.4f → %.4f (×%.2f)' % (c, s, Lt, Lt / Ls, rr, want, sr))
+        srs = srl[s]
+        if s == 0:
+            sz0, sr0 = PALM[2, 2], PALM[0, 0]
+        else:
+            Lp = np.linalg.norm(J[s] - J[s - 1])
+            sz0, sr0 = T['len'][s - 1] / Lp, srl[s - 1]
+        MAPS[b] = frame_map(Rs[s], J[s], T['R'][s], T['p'][s], Lt / Ls, srs, sz0, sr0, 0.006 if s == 0 else 0.003)
+        print('Kette %d Glied %d: Länge %.3f (×%.2f), Radius %.4f → %.4f (×%.2f)' % (c, s, Lt, Lt / Ls, model[s], model[s] * srs, srs))
+print('Kapselradien passend zum Netz (handdims.js r):', json.dumps(RIG_R))
 
 # Gemischte Abbildung je Ecke (lineare Mischung der Matrizen, wie Hautverformung)
 
 
 def apply_maps(p, w):
     out = np.zeros_like(p)
-    ph = np.concatenate([p, np.ones((len(p), 1))], 1)
     for b in range(17):
         m = w[:, b] > 0
         if m.any():
-            out[m] += w[m, b:b + 1] * (ph[m] @ MAPS[b].T)[:, :3]
+            out[m] += w[m, b:b + 1] * MAPS[b](p[m])
     return out
 
 
 PT = apply_maps(PS, WS)
 WT = WS.copy()
+
+# Unterarm im Ärmel: Querschnitt hinter dem Handgelenk auf die Ärmelöffnung begrenzen (Ellipse 2,55 × 1,95 cm Halbachsen
+# + Handschuh), sonst sticht der kräftige MakeHuman-Unterarm (Beugermuskeln) innen durch den Ärmelsaum
+cy_ = -0.0015
+e_ = np.hypot(PT[:, 0] / 0.0255, (PT[:, 1] - cy_) / 0.0195)
+k_ = smoothstep(0.012, 0.03, PT[:, 2])
+f_ = np.where(e_ > 1, 1 / e_, 1.0) * k_ + (1 - k_)
+PT[:, 0] *= f_
+PT[:, 1] = cy_ + (PT[:, 1] - cy_) * f_
 
 # Unterarm-Knochen: hinter dem Handgelenk folgt das Bündchen dem Ärmel
 fore = smoothstep(-0.004, 0.026, PT[:, 2])
@@ -303,13 +421,19 @@ def laplace(X, lam, it, mask=None):
     return X
 
 
-# nur, wo Glieder mit unterschiedlicher Abbildung zusammenkommen (Mischzonen), sanft glätten – Taubin (ohne Schrumpfen)
-mixz = 1 - WT.max(1)
-mk = np.clip(mixz * 3, 0, 1) * (~isb)
-for _ in range(3):
-    PT = laplace(PT, 0.45, 1, mk)
-    PT = laplace(PT, -0.47, 1, mk)
-
+# Verformungsfeld glätten (nicht die Form): Δ = Ziel − Handflächen-Abbildung der Quelle. Wo die Glied-Abbildungen
+# (Fingerglieder gestreckt/schlanker, Daumen gedreht) in die Handfläche übergehen, entstehen sonst Falten an Knöcheln,
+# Schwimmhäuten und Daumenballen; das geglättete Feld verteilt den Übergang, Details (Knöchel, Sehnen) bleiben aus PS.
+PP = (np.concatenate([PS, np.ones((len(PS), 1))], 1) @ PALM.T)[:, :3]
+DL = PT - PP
+wp = WS[:, 0]
+zone = np.clip(4 * wp * (1 - wp) * 1.4, 0, 1)                      # Übergang Handfläche ↔ Grundglieder/Daumen
+zone = np.maximum(zone, 0.6 * np.exp(-np.sum(((PT - TG[4]['p'][0]) / np.array([0.02, 0.02, 0.025])) ** 2, 1)))
+zone *= (~isb)
+for _ in range(20):
+    avg = np.array([DL[nn].mean(0) for nn in nb])
+    DL += 0.6 * (avg - DL) * zone[:, None]
+PT = PP + DL
 # ------------------------------------------------------------------ Glied-Lokalkoordinaten im Ziel (für Masken/Polster)
 main = np.argmax(WT[:, :16], 1)
 NT = vertex_normals(PT, Qh)

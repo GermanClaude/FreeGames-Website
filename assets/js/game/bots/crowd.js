@@ -194,7 +194,8 @@ function poseGeometry(pose) {
   box(out, 0, hipY + 0.03, 0, 0.34, 0.18, 0.22, C_PANTS);
   const tl = 0.54;
   const ty = hipY + 0.1 + Math.cos(lean) * tl / 2, tz = -Math.sin(lean) * tl / 2;
-  limb(out, 0, hipY + 0.08, 0, 0, hipY + 0.1 + Math.cos(lean) * tl, -Math.sin(lean) * tl, 0.15, 0.19, C_UNI);
+  // Rumpf nach dem Körper aus body-mesh.js (soldier-body-v2: Taille ≈ 0,14, Brust/Schultern ≈ 0,175 Halbbreite)
+  limb(out, 0, hipY + 0.08, 0, 0, hipY + 0.1 + Math.cos(lean) * tl, -Math.sin(lean) * tl, 0.14, 0.175, C_UNI);
   box(out, 0, ty - 0.02, tz - 0.07, 0.36, tl * 0.66, 0.16, C_GEAR, -lean);
   box(out, 0, ty + 0.02, tz + 0.14, 0.3, tl * 0.6, 0.14, C_GEAR, -lean);
   const shY = hipY + 0.1 + Math.cos(lean) * tl, shZ = -Math.sin(lean) * tl;

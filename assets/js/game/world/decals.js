@@ -47,7 +47,8 @@ function drawAtlas(ctx) {
   // 0 Rostlauf (von oben, orange-braun, Tropfnasen)
   cell(0, () => { streaks(20, '108,62,32', 0.4, 250, 8, true); streaks(12, '66,40,22', 0.36, 200, 4, true); });
   // 1 Wasser-/Kalkfahne (grau-dunkel, breit, weich)
-  cell(1, () => { streaks(10, '28,28,26', 0.32, 256, 34, false); streaks(6, '205,200,188', 0.18, 200, 20, false); });
+  // tex4: helle Kalkfahnen deutlich schwächer (× 2,1 im Shader → wirkten auf dunklem Putz wie glänzende Folienstreifen)
+  cell(1, () => { streaks(10, '28,28,26', 0.3, 256, 34, false); streaks(6, '190,186,176', 0.07, 200, 26, false); });
   // 2 Schmutzsockel (unten dunkel, Spritzer, nach oben auslaufend)
   cell(2, () => {
     const g = ctx.createLinearGradient(0, 256, 0, 40);
@@ -63,12 +64,19 @@ function drawAtlas(ctx) {
   // 3 Wandrisse (verästelt, mit hellem Kantenausbruch)
   cell(3, () => {
     ctx.lineCap = 'round';
+    // tex4 (15.11.): feiner (vorher 2,2 px tiefschwarz = 1–2 cm breite „Filzstift“-Linien); Haarriss mit weichem
+    // Schmutzsaum und hellem Kantenausbruch daneben, Breite schwankt entlang des Risses
+    const pts = [];
     const crack = (x, y, a, len, w) => {
-      ctx.strokeStyle = 'rgba(18,16,14,0.85)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y);
-      for (let i = 0; i < len; i++) { a += (r() - 0.5) * 0.9; x += Math.cos(a) * 5; y += Math.sin(a) * 5; ctx.lineTo(x, y); if (r() < 0.07 && w > 0.7) { ctx.stroke(); crack(x, y, a + (r() - 0.5) * 2.2, len * 0.45, w * 0.6); ctx.strokeStyle = 'rgba(18,16,14,0.85)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y); } }
-      ctx.stroke();
+      const path = [[x, y, w]];
+      for (let i = 0; i < len; i++) { a += (r() - 0.5) * 0.9; x += Math.cos(a) * 4; y += Math.sin(a) * 4; path.push([x, y, w * (0.6 + r() * 0.5)]); if (r() < 0.07 && w > 0.5) crack(x, y, a + (r() - 0.5) * 2.2, len * 0.45, w * 0.6); }
+      pts.push(path);
     };
-    crack(128, 20, Math.PI / 2 + 0.2, 34, 2.2); crack(128, 128, 0.3, 18, 1.6);
+    crack(128, 18, Math.PI / 2 + 0.2, 44, 1.25); crack(128, 128, 0.3, 22, 0.9);
+    const draw = (col, k, dx, dy) => { for (const path of pts) for (let i = 1; i < path.length; i++) { ctx.strokeStyle = col; ctx.lineWidth = path[i][2] * k; ctx.beginPath(); ctx.moveTo(path[i - 1][0] + dx, path[i - 1][1] + dy); ctx.lineTo(path[i][0] + dx, path[i][1] + dy); ctx.stroke(); } };
+    draw('rgba(40,34,28,0.16)', 4.5, 0, 1.5);   // Schmutzsaum (Wasser zieht in den Riss)
+    draw('rgba(236,230,218,0.35)', 1.2, -0.9, -0.9); // Kantenausbruch hell
+    draw('rgba(22,19,16,0.72)', 1, 0, 0);
   });
   // 4 Leckfleck (dunkler Fleck mit Läufen nach unten)
   cell(4, () => {
@@ -140,15 +148,29 @@ function drawAtlas(ctx) {
   });
   // Graffiti: freihändige Schriftzüge (Kringel, keine echten Zeichen/Marken)
   cell(12, () => {
+    // tex4 (15.11.): Sprühdose statt Comic-Zickzack – erfundene, schnell gesprühte Buchstabenzüge (keine echten Zeichen)
+    // mit weichem Sprühnebel (Unschärfe), Laufnasen, verblasst und teils übergestrichen
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    for (const [col, w] of [['rgba(30,30,34,0.9)', 11], ['rgba(200,60,50,0.85)', 6]]) {
-      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath();
-      let x = 30, y = 140; ctx.moveTo(x, y);
-      for (let i = 0; i < 26; i++) { x += 7; y = 140 + Math.sin(i * 1.3) * 34 + (r() - 0.5) * 12; ctx.quadraticCurveTo(x - 4, y - 30 * Math.sign(Math.sin(i)), x, y); }
-      ctx.stroke();
+    const strokes = [];
+    let x = 34;
+    for (let g = 0; g < 5; g++) { // fünf „Zeichen“: je ein Bogen/Haken aus 3–5 Stützpunkten
+      const n = 3 + Math.floor(r() * 3), pts = [];
+      for (let i = 0; i < n; i++) pts.push([x + r() * 30, 92 + r() * 74]);
+      strokes.push(pts); x += 34 + r() * 8;
     }
+    const spray = (col, w, blur) => {
+      ctx.shadowColor = col; ctx.shadowBlur = blur; ctx.strokeStyle = col; ctx.lineWidth = w;
+      for (const p of strokes) { ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]); for (let i = 1; i < p.length; i++) { const m = [(p[i - 1][0] + p[i][0]) / 2, (p[i - 1][1] + p[i][1]) / 2]; ctx.quadraticCurveTo(p[i - 1][0], p[i - 1][1], m[0], m[1]); } ctx.stroke(); }
+      ctx.shadowBlur = 0;
+    };
+    const hue = r() < 0.5 ? '38,40,46' : '58,74,92';
+    spray(`rgba(${hue},0.55)`, 10, 6); // Umriss
+    spray(r() < 0.5 ? 'rgba(168,64,52,0.6)' : 'rgba(198,182,150,0.55)', 5, 3);
+    // Laufnasen unter dicken Stellen
+    for (const p of strokes) if (r() < 0.6) { const q = p[Math.floor(r() * p.length)], len = 10 + r() * 30; const g2 = ctx.createLinearGradient(0, q[1], 0, q[1] + len); g2.addColorStop(0, `rgba(${hue},0.45)`); g2.addColorStop(1, `rgba(${hue},0)`); ctx.fillStyle = g2; ctx.fillRect(q[0] - 1, q[1], 2, len); }
     ctx.globalCompositeOperation = 'destination-out';
-    for (let i = 0; i < 400; i++) { ctx.globalAlpha = r() * 0.5; ctx.fillRect(r() * 256, r() * 256, 1 + r() * 2, 1 + r() * 2); }
+    for (let i = 0; i < 900; i++) { ctx.globalAlpha = r() * 0.55; ctx.fillRect(r() * 256, r() * 256, 1 + r() * 2.5, 1 + r() * 2.5); } // abgewittert
+    ctx.globalAlpha = 0.35; ctx.fillRect(0, 150 + r() * 40, 256, 60); // teils überstrichen/verblasst
   });
   // MG-Garbe: Einschussreihe schräg über die Wand
   cell(13, () => { for (let i = 0; i < 12; i++) hole(20 + i * 19 + (r() - 0.5) * 8, 170 - i * 9 + (r() - 0.5) * 18, 3 + r() * 2.5); });

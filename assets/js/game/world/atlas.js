@@ -299,6 +299,23 @@ export function createDecalMaterials(quality = 'high') {
       #endif`);
   };
   decalMats.light.customProgramCacheKey = () => 'decal-light-v1';
+  // tex4 (15.11.): Fahrbahn-/Bodenmarkierungen abgefahren – Farbe bricht in Weltkoordinaten körnig auf (Splitt schaut
+  // durch, Ränder ausgefranst), leicht rauer; vorher deckend glatt wie ein aufgeklebtes Brett
+  decalMats.paint.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vNpPw;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\n{ vec4 npW = vec4( transformed, 1.0 );\n#ifdef USE_INSTANCING\nnpW = instanceMatrix * npW;\n#endif\nvNpPw = ( modelMatrix * npW ).xyz; }');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec3 vNpPw;
+      float npPh( vec2 p ) { return fract( sin( dot( floor( p ), vec2( 127.1, 311.7 ) ) ) * 43758.5453 ); }
+      float npPn( vec2 p ) { vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3.0 - 2.0 * f ); return mix( mix( npPh( i ), npPh( i + vec2( 1, 0 ) ), f.x ), mix( npPh( i + vec2( 0, 1 ) ), npPh( i + vec2( 1, 1 ) ), f.x ), f.y ); }`)
+      .replace('#include <alphamap_fragment>', `#include <alphamap_fragment>
+      {
+        vec2 npQ = vNpPw.xz;
+        float npWear = npPn( npQ * 1.3 ) * 0.5 + npPn( npQ * 7.0 ) * 0.3 + npPn( npQ * 41.0 ) * 0.2;
+        diffuseColor.a *= smoothstep( 0.28, 0.5, npWear ) * ( 0.75 + 0.25 * npPh( npQ * 160.0 ) );
+      }`);
+  };
+  decalMats.paint.customProgramCacheKey = () => 'decal-paint-wear-1';
   // Pfützen: Himmelsspiegelung dämpfen (sonst flach gesehen ein gleichmäßig helles Oval statt dunklem Wasserfilm)
   decalMats.wet.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <aomap_fragment>', '#include <aomap_fragment>\n\treflectedLight.indirectSpecular *= 0.25;');

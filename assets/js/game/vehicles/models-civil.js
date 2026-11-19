@@ -17,7 +17,9 @@ import * as THREE from 'three';
 import { VEHICLES } from './data.js?v=20261115041504';
 import { civilPaint } from './materials.js?v=20261115041504';
 import { pkwBodyHQ, plateMaterial } from './models-car.js?v=20261115041504';
-import { tire, alloyRim, steelRim, brakeDisc, bodyLoft, roundPlate } from './bodykit.js?v=20261115041504';
+import { vanBodyHQ, cabBodyHQ } from './models-utility.js?v=20261115041504';
+import { softBox } from './carbody.js?v=20261115041504';
+import { tire, alloyRim, steelRim, brakeDisc, bodyLoft, roundPlate, tube } from './bodykit.js?v=20261115041504';
 
 const PI = Math.PI, HP = PI / 2;
 const _q = new THREE.Quaternion(), _e = new THREE.Euler(), _d = new THREE.Vector3(), AZ = new THREE.Vector3(0, 0, 1);
@@ -200,6 +202,7 @@ function seatedFigure(K, S, idx, hip, floor, hands = null) {
 
 /** Sitz: Polster (gerundet ab Stufe 0), Lehne geneigt, Kopfstütze, Gestell. */
 function seat(K, B, S, lod, x, yTop, z, w = 0.5, { back = 0.66, tilt = 0.18, base = 0.16, head = true } = {}) {
+  if (lod === 0 && K.HQ && K.DET >= 2) { seatHQ(K, B, S, x, yTop, z, w, { back, tilt, base, head }); return; }
   const cushion = (ww, hh, dd, pos, rot) => {
     if (lod === 0) {
       const g = K.topExtrude([[-ww / 2 + 0.04, dd / 2 - 0.04], [ww / 2 - 0.04, dd / 2 - 0.04], [ww / 2 - 0.04, -dd / 2 + 0.04], [-ww / 2 + 0.04, -dd / 2 + 0.04]], hh - 0.08, true);
@@ -212,6 +215,41 @@ function seat(K, B, S, lod, x, yTop, z, w = 0.5, { back = 0.66, tilt = 0.18, bas
   cushion(w, back, 0.12, [x, yTop + back / 2 - 0.02, bz], [tilt, 0, 0]);
   if (head) B.add(K.box(Math.min(0.27, w * 0.55), 0.17, 0.1), S.seat, [x, yTop + back + 0.1, bz + Math.sin(tilt) * (back / 2 + 0.08)], [tilt, 0, 0]);
   if (base > 0) B.add(K.box(w * 0.75, base, 0.4), S.dark, [x, yTop - 0.12 - base / 2, z]);
+}
+
+/**
+ * Sitz high/ultra (Nutzer 15.11.: „Sitze mit Nähten“): gepolsterte Unterteilungs-Kissen – Sitzfläche mit Mittelbahn und
+ * Seitenwangen, Lehne mit Wangen und Querbahnen, Kopfstütze an Bügeln, Nähte als helle Ziernaht-Linien, Sitzschiene.
+ */
+function seatHQ(K, B, S, x, yTop, z, w, { back, tilt, base, head }) {
+  const bench = w > 0.8, wing = bench ? 0 : 0.085, mid = w - wing * 2;
+  // Sitzfläche: Mittelbahn (leicht gewölbt) + Wangen (höher)
+  B.add(softBox(mid, 0.11, 0.5, { crease: 1, bulge: 0.012 }), S.seat, [x, yTop - 0.055, z]);
+  if (wing) for (const s of [-1, 1]) B.add(softBox(wing + 0.01, 0.15, 0.5, { crease: 1 }), S.seat, [x + s * (w / 2 - wing / 2), yTop - 0.045, z + 0.005], [0, 0, -s * 0.12]);
+  const seamM = S.stitch || S.trim;
+  const line = (pts) => B.add(tube(pts, 0.0028, 3, 1), seamM);
+  for (const s of bench ? [-0.3, 0, 0.3] : [-1, 1]) {
+    const xx = bench ? x + s * w : x + s * (mid / 2 - 0.006);
+    line([[xx, yTop + 0.002, z - 0.23], [xx, yTop + 0.006, z], [xx, yTop + 0.002, z + 0.23]]);
+  }
+  line([[x - mid / 2 + 0.02, yTop + 0.004, z - 0.06], [x + mid / 2 - 0.02, yTop + 0.004, z - 0.06]]);
+  // Lehne (geneigt): Mittelbahn mit Querbahnen, Wangen
+  const bz = z + 0.3 + Math.sin(tilt) * back / 2, by = yTop + back / 2 - 0.02;
+  const R = (dx, dy, dz) => { const c = Math.cos(tilt), s = Math.sin(tilt); return [x + dx, by + dy * c - dz * s, bz + dy * s + dz * c]; };
+  B.add(softBox(mid, back, 0.11, { crease: 1, bulge: 0 }), S.seat, R(0, 0, 0), [tilt, 0, 0]);
+  if (wing) for (const s of [-1, 1]) B.add(softBox(wing + 0.01, back * 0.9, 0.15, { crease: 1 }), S.seat, R(s * (w / 2 - wing / 2), -back * 0.04, -0.02), [tilt, s * 0.2, 0]);
+  for (const f of [-0.15, 0.12]) line([R(-mid / 2 + 0.02, back * f, -0.058), R(0, back * f, -0.062), R(mid / 2 - 0.02, back * f, -0.058)]);
+  if (!bench) for (const s of [-1, 1]) line([R(s * (mid / 2 - 0.006), -back * 0.45, -0.057), R(s * (mid / 2 - 0.006), back * 0.45, -0.057)]);
+  if (head) {
+    const hw = Math.min(0.27, w * 0.55);
+    const hp = R(0, back / 2 + 0.12, 0.01);
+    B.add(softBox(hw, 0.17, 0.1, { crease: 0 }), S.seat, hp, [tilt, 0, 0]);
+    for (const s of [-1, 1]) B.add(K.cyl(0.006, 0.006, 0.08, 6), S.chrome, R(s * hw * 0.3, back / 2 + 0.02, 0.01), [tilt, 0, 0]);
+  }
+  if (base > 0) {
+    B.add(K.box(w * 0.75, base, 0.4), S.dark, [x, yTop - 0.12 - base / 2, z]);
+    for (const s of [-1, 1]) B.add(K.box(0.03, 0.025, 0.56), S.steel, [x + s * w * 0.3, yTop - 0.12 - base + 0.012, z]);
+  }
 }
 
 /** Instrumente: Rundinstrumente (leicht leuchtend) mit Zeiger, zum Fahrer geneigt. */
@@ -287,17 +325,18 @@ function buildPkw(lod, S, K, variant) {
   // Innenraum
   if (lod < 2) {
     const P = S.plastic;
+    const SB = (w, h, d) => (hq && lod === 0 && K.DET >= 2 ? softBox(w, h, d, { crease: 1 }) : K.box(w, h, d));
     B.add(K.box(hq ? 1.54 : 1.66, 0.04, 2.02), S.interior, [0, 0.31, 0.0]);                      // Teppich
     B.add(K.box(hq ? 1.5 : 1.66, 0.58, 0.03), P, [0, 0.62, -0.985]);                            // Stirnwand
-    B.add(K.box(hq ? 1.54 : 1.7, 0.2, 0.36), P, [0, 0.85, -0.8]);                                // Armaturenbrett
-    B.add(K.box(hq ? 1.56 : 1.7, 0.04, 0.5), P, [0, 0.975, -0.78], [-0.14, 0, 0]);
-    B.add(K.box(0.44, 0.07, 0.18), P, [-0.38, 1.02, -0.66], [-0.1, 0, 0]);           // Instrumentenhutze
-    B.add(K.box(0.26, 0.28, 0.8), P, [0, 0.47, -0.28]);                              // Mittelkonsole
+    B.add(SB(hq ? 1.54 : 1.7, 0.2, 0.36), P, [0, 0.85, -0.8]);                                // Armaturenbrett
+    B.add(SB(hq ? 1.56 : 1.7, 0.05, 0.5), P, [0, 0.975, -0.78], [-0.14, 0, 0]);
+    B.add(SB(0.44, 0.08, 0.18), P, [-0.38, 1.02, -0.66], [-0.1, 0, 0]);           // Instrumentenhutze
+    B.add(SB(0.26, 0.28, 0.8), P, [0, 0.47, -0.28]);                              // Mittelkonsole
     B.add(K.box(hq ? 1.42 : 1.5, 0.02, 0.84), P, [0, 1.005, 1.46]);                              // Hutablage
-    B.add(K.box(1.52, 0.02, 1.4), S.trim, [0, 1.39, 0.44]);                          // Himmel
+    if (!hq) B.add(K.box(1.52, 0.02, 1.4), S.trim, [0, 1.39, 0.44]);                 // Himmel (HQ: Innenhaut)
     for (const sx of [-1, 1]) {
       B.add(K.box(0.02, 0.56, 2.0), S.trim, [sx * 0.845, 0.66, 0.0]);               // Türverkleidung
-      B.add(K.box(0.07, 0.05, 0.7), P, [sx * (hq ? 0.75 : 0.81), 0.72, -0.05]);                    // Armlehne
+      B.add(SB(0.07, 0.05, 0.7), P, [sx * (hq ? 0.75 : 0.81), 0.72, -0.05]);                    // Armlehne
       B.add(K.box(0.36, 0.02, 0.16), S.trim, [sx * 0.38, 1.37, -0.2], [0.12, 0, 0]); // Sonnenblende
     }
     B.add(K.box(0.22, 0.06, 0.02), P, [0, 1.33, -0.3]);                              // Innenspiegel
@@ -349,6 +388,10 @@ function buildTransporter(lod, S, K, variant) {
   const hull = new THREE.Group();
   const B = new K.Bucket(), GB = new K.Bucket(), LB = new K.Bucket();
   const step = [0.04, 0.08, 0.16][lod], seg = [20, 12, 7][lod];
+  // Nutzer 15.11.: Karosserie als Unterteilungsfläche (models-utility.js) ab medium in den Nahstufen
+  const hq = K.HQ && lod < 2;
+  if (hq) vanBodyHQ(K, S, B, GB, LB, lod, paint, variant);
+  else {
   const arches = [{ u: 1.75, y: 0.36, R: 0.44 }, { u: -1.55, y: 0.36, R: 0.44 }];
   const low = lowLine(lin([[-2.62, 0.5], [-2.5, 0.46], [2.5, 0.46], [2.64, 0.52]]), arches);
   const topCargo = lin([[-2.62, 2.28], [-2.55, 2.39], [-2.45, 2.42], [-0.1, 2.42]]);
@@ -417,16 +460,17 @@ function buildTransporter(lod, S, K, variant) {
     B.add(K.box(0.02, 0.04, 0.2), S.plastic, [1.02, 1.2, 0.35]);
     if (lod === 0) for (const sx of [-1, 1]) bar(K, B, S.plastic, [sx * 0.75, 1.34, -1.8], [sx * 0.08, 1.37, -1.77], 0.016, 0.012);
   }
+  }
   // Innenraum
   if (lod < 2) {
     const P = S.plastic;
     B.add(K.box(1.88, 0.05, 1.9), S.interior, [0, 0.64, -0.85]);                         // Boden
     for (const sx of [-1, 1]) B.add(K.box(0.36, 0.3, 0.82), P, [sx * 0.78, 0.78, -1.72]); // Radkästen
-    B.add(K.box(1.9, 1.76, 0.03), S.trim, [0, 1.52, 0.085]);                             // Trennwand
+    B.add(K.box(hq ? 1.8 : 1.9, hq ? 1.66 : 1.76, 0.03), S.trim, [0, hq ? 1.48 : 1.52, 0.085]);   // Trennwand
     B.add(K.box(1.9, 0.32, 0.45), P, [0, 1.12, -1.6]);                                   // Armaturenbrett
     B.add(K.box(1.9, 0.04, 0.5), P, [0, 1.3, -1.6], [-0.12, 0, 0]);
     B.add(K.box(0.44, 0.08, 0.18), P, [-0.5, 1.36, -1.42], [-0.1, 0, 0]);
-    B.add(K.box(1.86, 0.02, 1.3), S.trim, [0, 2.39, -0.58]);                              // Himmel
+    if (!hq) B.add(K.box(1.86, 0.02, 1.3), S.trim, [0, 2.39, -0.58]);                     // Himmel (HQ: Innenhaut)
     for (const sx of [-1, 1]) {
       B.add(K.box(0.02, 0.62, 1.7), S.trim, [sx * 0.945, 1.04, -0.9]);
       B.add(K.box(0.4, 0.02, 0.18), S.trim, [sx * 0.5, 2.34, -1.1], [0.15, 0, 0]);
@@ -443,11 +487,13 @@ function buildTransporter(lod, S, K, variant) {
       B.add(K.box(0.22, 0.06, 0.02), P, [0, 2.3, -1.16]);
     }
   } else B.add(K.box(1.8, 0.7, 1.7), S.interior, [0, 1.1, -0.9]);
+  if (!hq) {
   // Scheiben (Front, Seitenfenster, Heckfenster)
   bar(K, GB, S.glass, [0, 1.33, -1.79], [0, 2.24, -1.21], 1.8, 0.012);
   for (const sx of [-1, 1]) {
     sidePanel(K, GB, S.glass, [[-0.04, 1.39], [1.76, 1.39], [1.3, 2.2], [-0.04, 2.2]], sx * 0.975);
     GB.add(K.box(0.7, 0.5, 0.01), S.glass, [sx * 0.45, 1.86, 2.652]);
+  }
   }
   B.build(hull, { shadow: true });
   GB.build(hull, { shadow: false });
@@ -476,6 +522,10 @@ function buildZugmaschine(lod, S, K, variant) {
   const step = [0.05, 0.1, 0.2][lod], seg = [22, 12, 8][lod];
   const lowCab = lowLine(lin([[0.95, 0.95], [3.1, 0.95], [3.22, 1.08]]), [{ u: 2.2, y: 0.52, R: 0.62 }]);
   const belt = lin([[0.95, 1.72], [3.12, 1.7]]);
+  // Nutzer 15.11.: Fahrerhaus als Unterteilungsfläche (models-utility.js) ab medium in den Nahstufen
+  const hq = K.HQ && lod < 2;
+  if (hq) cabBodyHQ(K, S, B, GB, LB, lod, paint, variant, paint2);
+  else {
   // Kabine unten: Seitenwände (Radlauf vorn), Bug als Körper, Rückwand, Unterseite
   for (const sx of [-1, 1]) B.add(K.sideExtrude(sideBlock(0.95, 3.0, belt, lowCab, step), 0.05), paint, [sx * 1.2, 0, 0]);
   B.add(K.sideExtrude(sideBlock(2.95, 3.22, lin([[2.95, 1.7], [3.18, 1.7], [3.22, 1.6]]), lin([[2.95, 0.95], [3.1, 0.95], [3.22, 1.08]]), 0.05), lod < 2 ? 2.39 : 2.45, lod < 2), paint);
@@ -501,6 +551,7 @@ function buildZugmaschine(lod, S, K, variant) {
     LB.add(K.box(0.36, 0.18, 0.03), S.lensOff, [sx * 0.9, 0.8, -3.345], null, null, { tag: { lens: true } });
     B.add(K.box(0.1, 0.16, 0.03), S.amber, [sx * 1.15, 0.8, -3.342]);
   }
+  }
   // Fahrgestell: Längsträger, Sattelkupplung, Tanks, Luftkessel, Auspuff, Kotflügel, Schmutzfänger, Heckträger
   B.add(K.box(0.9, 0.3, 6.1), S.dark, [0, 0.77, 0.0]);
   B.add(K.box(1.3, 0.1, 1.1), S.dark, [0, 0.97, 1.4]);
@@ -518,7 +569,7 @@ function buildZugmaschine(lod, S, K, variant) {
     B.add(K.box(0.3, 0.12, 0.04), S.rearLamp, [sx * 0.95, 0.75, 3.08]);
   }
   B.add(K.box(2.3, 0.15, 0.1), S.dark, [0, 0.75, 3.02]);
-  if (lod < 2) {
+  if (lod < 2 && !hq) {
     for (const sx of [-1, 1]) {
       bar(K, B, S.plastic, [sx * 1.2, 2.38, -2.95], [sx * 1.42, 2.38, -2.98], 0.04, 0.04);
       bar(K, B, S.plastic, [sx * 1.2, 1.72, -2.95], [sx * 1.42, 1.72, -2.98], 0.04, 0.04);
@@ -539,7 +590,7 @@ function buildZugmaschine(lod, S, K, variant) {
     B.add(K.box(2.3, 0.4, 0.45), P, [0, 1.86, -2.82]);                                  // Armaturenbrett
     B.add(K.box(2.3, 0.04, 0.5), P, [0, 2.06, -2.8], [-0.12, 0, 0]);
     B.add(K.box(0.5, 0.08, 0.2), P, [-0.55, 2.13, -2.6], [-0.1, 0, 0]);
-    B.add(K.box(2.3, 1.6, 0.03), S.trim, [0, 2.1, -1.0]);                               // Rückwand innen
+    B.add(K.box(hq ? 2.2 : 2.3, 1.6, 0.03), S.trim, [0, 2.1, hq ? -1.07 : -1.0]);                  // Rückwand innen
     B.add(K.box(2.3, 0.02, 1.9), S.trim, [0, 2.86, -1.96]);                             // Himmel
     B.add(K.box(2.2, 0.12, 0.7), S.seat, [0, 1.75, -1.32]);                             // Liege
     for (const sx of [-1, 1]) B.add(K.box(0.02, 0.4, 1.9), S.trim, [sx * 1.17, 1.5, -1.95]);
@@ -553,9 +604,11 @@ function buildZugmaschine(lod, S, K, variant) {
       B.add(K.sph(0.035, 8), P, [-0.12, 1.85, -2.4]);
     }
   } else B.add(K.box(2.2, 0.9, 1.8), S.interior, [0, 1.75, -1.95]);
+  if (!hq) {
   // Scheiben
   bar(K, GB, S.glass, [0, 1.72, -3.18], [0, 2.6, -3.04], 2.24, 0.012);
   for (const sx of [-1, 1]) sidePanel(K, GB, S.glass, [[1.97, 1.74], [3.1, 1.74], [3.0, 2.54], [1.97, 2.54]], sx * 1.19);
+  }
   B.build(hull, { shadow: true });
   GB.build(hull, { shadow: false });
   LB.build(hull, { shadow: false });

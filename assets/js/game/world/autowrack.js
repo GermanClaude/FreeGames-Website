@@ -1,6 +1,6 @@
 // NULLPUNKT — Ausgebrannte Autowracks als echte Karosserie (Nutzer 14.11.: „das zivile Auto im Stadtkern ist ein grober
-// Quader mit Scheibenrädern“). Gleiche Form wie die fahrbaren Limousinen (vehicles/models-car.js: Querschnitts-Loft,
-// Dachaufbau), aber ausgebrannt: Blech verbeult und eingesackt, Dach eingedrückt, keine Scheiben (nur Säulen und Gummireste),
+// Quader mit Scheibenrädern“; 15.11.: Karosserien als Unterteilungsfläche). Dasselbe Netz wie die fahrbaren Pkw
+// (vehicles/carbody.js, eine Unterteilungsstufe), verformt je Ecke: Blech verbeult und eingesackt, Dach eingedrückt, keine Scheiben (nur Säulen und Gummireste),
 // Reifen abgebrannt (das Wrack sitzt auf den Felgen, schief), Innenraum als verkohlte Sitzgestelle mit Federn, Lenkrad-
 // Skelett, Motorhaube aufgebogen. Farbe je Ecke (Vertexfarben × Tönung): verkohlt schwarz, Rost, Asche, an der Unterkante
 // und hinten Lackreste des ursprünglichen Farbtons. Statische Weltgeometrie (MapBuilder.geom) → Welt-Shading wie die
@@ -8,8 +8,9 @@
 //
 // autoWrack(b, x, y, z, ry, { seed, color, style, burnt }) – ry wie Requisiten (lokal +z = Front).
 import * as THREE from 'three';
-import { bodyLoft, surface, tube, steelRim, alloyRim, merge } from '../vehicles/bodykit.js?v=20261115041504';
-import { pkwShape, pkwGreenhouse } from '../vehicles/models-car.js?v=20261115041504';
+import { tube, steelRim, alloyRim, merge } from '../vehicles/bodykit.js?v=20261115041504';
+import { pkwSub, pkwShape, TAG } from '../vehicles/carbody.js?v=20261115041504';
+import { vertexNormals, cornerNormals, toGeometry } from '../engine/subsurf.js?v=20261115041504';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -28,17 +29,18 @@ function vnoise(x, y, z) {
 function burn(g, seed, paint, { dent = 0.03, sag = 0, roofY = 9, keepPaint = 0.35 } = {}) {
   const ng = g.index ? g.toNonIndexed() : g;
   if (ng !== g) g.dispose();
-  ng.computeVertexNormals();
+  const deform = dent > 0 || sag > 0;
+  if (deform || !ng.attributes.normal) ng.computeVertexNormals();
   const P = ng.attributes.position, N = ng.attributes.normal, n = P.count;
   const o = seed * 1.37;
-  for (let i = 0; i < n; i++) {
+  if (deform) for (let i = 0; i < n; i++) {
     const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
     const d = (vnoise(x * 3.1 + o, y * 3.1, z * 3.1) - 0.5) * 2 * dent + (vnoise(x * 9 + o, y * 9, z * 9) - 0.5) * dent * 0.35;
     let yy = y + N.getY(i) * d;
     if (y > roofY) yy -= sag * (1 - Math.min(1, Math.abs(x) / 0.7) ** 2) * Math.sin(Math.min(1, Math.max(0, (z + 0.3) / 1.4)) * PI);
     P.setXYZ(i, x + N.getX(i) * d, yy, z + N.getZ(i) * d);
   }
-  ng.computeVertexNormals();
+  if (deform) ng.computeVertexNormals();
   const C = new Float32Array(n * 3), pc = new THREE.Color(paint), c = new THREE.Color();
   const CHAR = new THREE.Color(0.07, 0.062, 0.056), RUST = new THREE.Color(0.42, 0.22, 0.11), ASH = new THREE.Color(0.38, 0.36, 0.33);
   for (let i = 0; i < n; i++) {
@@ -59,7 +61,7 @@ function burn(g, seed, paint, { dent = 0.03, sag = 0, roofY = 9, keepPaint = 0.3
 export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style = null } = {}) {
   const r = rng(Math.abs(seed) * 1000 + 7);
   const st = style ?? Math.floor(r() * 3);
-  const SH = pkwShape(st), { at, G } = SH;
+  const SH = pkwShape(st), { G } = SH;
   const yaw = ry + PI; // Fahrzeugraum: vorn −z
   // Wrack sitzt tiefer (Reifen weg) und schief: eine Seite tiefer
   const drop = -0.2, roll = (r() - 0.5) * 0.08, pitch = (r() - 0.5) * 0.05;
@@ -68,31 +70,23 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     geom.rotateZ(roll); geom.rotateX(pitch);
     b.geom(geom, x, y, z, mat, { ry: yaw, tint, collide: false, minimap: false });
   };
-  const zs = (a, c, step) => { const o = []; for (let v = a; v < c - 1e-4; v += step) o.push(+v.toFixed(3)); o.push(c); return o; };
   const seedN = seed * 3.7 + 1;
-  // Karosserie (verbeult), Dach eingesackt, Haube aufgebogen
-  const body = merge([
-    bodyLoft(zs(-2.36, -0.99, 0.1), at, { q: 2 }),
-    bodyLoft(zs(-0.99, 1.05, 0.14), at, { q: 2, open: true, thick: 0.03 }),
-    bodyLoft(zs(1.05, 2.36, 0.1), at, { q: 2 }),
-  ]);
-  place(burn(body, seedN, color, { dent: 0.025 }), 'metal_rust');
-  const ghs = (z0, z1, t0, t1, nu, nv, thick) => surface((u, v) => pkwGreenhouse(SH, lerp(z0, z1, v), lerp(t0, t1, u)), nu, nv, { thick });
-  const roof = ghs(G.zA1 - 0.01, G.zC1 + 0.01, -0.5, 0.5, 6, 6, 0.02);
-  place(burn(roof, seedN + 2, color, { dent: 0.03, sag: 0.09 + r() * 0.08, roofY: 1.2, keepPaint: 0 }), 'metal_rust');
-  const edge = (z0, z1, t, n) => { const p = []; for (let i = 0; i <= n; i++) { const q = pkwGreenhouse(SH, lerp(z0, z1, i / n), t); p.push([q[0], q[1], q[2]]); } return p; };
-  const pillars = [];
-  for (const sg of [-1, 1]) {
-    pillars.push(tube(edge(G.zA0, G.zA1, sg * 0.5, 5), 0.028, 4, 2));
-    pillars.push(tube(edge(G.zC1, G.zC0, sg * 0.5, 5), 0.03, 4, 2));
-    pillars.push(tube(edge(G.zA1, G.zC1, sg * 0.5, 5), 0.02, 4, 2));
-    pillars.push(tube([pkwGreenhouse(SH, G.zB, sg * 0.98), pkwGreenhouse(SH, G.zB, sg * 0.5)], 0.03, 4, 2));
+  // Karosserie: Unterteilungsnetz (Stufe 1), Beulen längs der Normalen, Dach eingesackt, Haube aufgebogen; Scheiben fehlen
+  const M = pkwSub(st, 1), P = M.P, VN = vertexNormals(M), o = seedN * 1.37, sag = 0.08 + r() * 0.09, hoodUp = 0.04 + r() * 0.08;
+  for (let i = 0; i < P.length / 3; i++) {
+    const px = P[i * 3], py = P[i * 3 + 1], pz = P[i * 3 + 2];
+    const d = (vnoise(px * 3.1 + o, py * 3.1, pz * 3.1) - 0.5) * 0.05 + (vnoise(px * 9 + o, py * 9, pz * 9) - 0.5) * 0.012;
+    let yy = py + VN[i * 3 + 1] * d;
+    if (py > 1.15) yy -= sag * (1 - Math.min(1, Math.abs(px) / 0.75) ** 2) * Math.sin(Math.min(1, Math.max(0, (pz - G.zA1 + 0.2) / (G.zC1 - G.zA1 + 0.4))) * PI);
+    // Haube: hinten aufgebogen (Spalt an der Haubenfuge)
+    if (pz < G.zA0 - 0.05 && py > 0.7 && Math.abs(px) < 0.72) yy += hoodUp * Math.max(0, Math.min(1, (pz + 2.2) / 1.2)) * (1 - (px / 0.72) ** 4);
+    P[i * 3] = px + VN[i * 3] * d; P[i * 3 + 1] = yy; P[i * 3 + 2] = pz + VN[i * 3 + 2] * d;
   }
-  place(burn(merge(pillars), seedN + 3, color, { dent: 0.01, keepPaint: 0 }), 'metal_rust');
-  // Haube: aufgebogen (Spalt vorn), Kotflügelkanten
-  const hood = surface((u, v) => { const zz = lerp(-2.2, -1.02, v), s = at(zz), xx = lerp(-s.wt + 0.12, s.wt - 0.12, u); return [xx, s.yt + 0.035 + (1 - v) * 0.09, zz]; }, 6, 5, { thick: 0.015 });
-  hood.rotateX(-0.04);
-  place(burn(hood, seedN + 4, color, { dent: 0.02, keepPaint: 0.1 }), 'metal_rust');
+  const solid = new Set([TAG.PAINT, TAG.TRIM, TAG.PLASTIC, TAG.GRILLE, TAG.LAMP, TAG.RLAMP, TAG.FRIT]);
+  const CN = cornerNormals(M, 50);
+  const skin = toGeometry(M, solid, { normals: CN });
+  const back = toGeometry(M, solid, { normals: CN, offset: 0.025, flip: true });
+  place(burn(merge([skin, back]), seedN, color, { dent: 0 }), 'metal_rust');
   // Innenraum: Sitzgestelle mit Federn, Lenkrad-Skelett, Rest des Armaturenträgers
   const frames = [];
   for (const sx of [-0.38, 0.38]) {

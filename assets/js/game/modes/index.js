@@ -18,8 +18,9 @@ import { UltimateMode } from './ultimate.js?v=20261115041504';
 import { KnifeMode } from './knife.js?v=20261115041504';
 import { HoldPointMode } from './hp.js?v=20261115041504';
 import { CampaignMode, campaignConditions } from '../campaign/mode.js?v=20261115041504'; // Kampagne „Stille Grenze“ (game/campaign/*)
+import { PanzerMode } from './panzer.js?v=20261115041504'; // Panzersimulation (vehicles/psim/*)
 
-export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode, messer: KnifeMode, ult: UltimateMode, hp: HoldPointMode, kampagne: CampaignMode };
+export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode, messer: KnifeMode, ult: UltimateMode, hp: HoldPointMode, kampagne: CampaignMode, panzer: PanzerMode };
 
 export function createMode(G, modeId, opts = {}) {
   const Cls = MODE_CLASSES[modeId];

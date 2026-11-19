@@ -126,6 +126,18 @@ Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert). Außerdem haben
 | Rocks Ground 01 | `ground_stones` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/rocks_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rock Face 03 | `rock_face` | Dario Barresi, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_face_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
+### Brandwald- und Containersätze (tex4, 15.11.2026)
+
+Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Excavated Soil Wall | `soil_wall` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/excavated_soil_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Burned Ground 01 | `burned_ground` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/burned_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brown Mud 03 | `mud_wet` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| White Stucco | `plaster_stucco` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/white_stucco) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rusty Painted Metal (Wellung herausgerechnet, Albedo als einfärbbare Verschleißkarte) | `ctr_lack` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rusty_painted_metal) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
 ### Laub- und Bodenatlanten (14.11.2026)
 
 `assets/lib/foliage/`: Foto-Laubatlanten (Busch, Gras, Palmwedel, Blüten, Laubbaum-Büschel) und der Atlas der
@@ -267,6 +279,11 @@ Die Köpfe der Soldaten (Nahansicht und Zwischensequenzen) beruhen auf dem Grund
 Data Collection AB, Joel Palmius, Jonas Hauquier). Von uns auf Kopf + Hals zugeschnitten, neu UV-gepackt und um
 Mimik-Ziele ergänzt (`assets/lib/models/kopf/`, ebenfalls CC0). Hauttexturen, Bart, Brauen, Augen und Zähne sind
 prozedural erzeugt (keine Bilddateien).
+
+Ebenfalls aus dem MakeHuman-Grundnetz hm08 (CC0) stammen seit 15.11. die **Soldaten- und Zivilkörper**
+(`assets/js/game/bots/soldier/body-mesh.js`, Werkzeug `tools/assets/soldier/build_body.py`: auf unser Skelett umgezielt,
+Kleidungshülle, Detailstufen) und die **Ego-Hände** (`assets/js/game/weapons/gunsmith/glove-mesh.js`, Werkzeug
+`tools/assets/hands/build_hand.py`: Hand auf das Griff-Rig umgezielt, Handschuh mit Polstern und Bündchen).
 
 ## Klänge
 

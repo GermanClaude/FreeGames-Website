@@ -11,66 +11,48 @@
 //
 // jeepBodyHQ(J, S, paint, lod) – J = { B (Lack/Kleinteile), box, cyl, sideExtrude }; jeepWheelHQ(R, J, S, paint, r, sx, lod)
 import * as THREE from 'three';
-import { bodyLoft, curve, withArches, surface, ribbon, tube, roundPlate, tire, steelRim, sideX } from './bodykit.js?v=20261115041504';
+import { tube, roundPlate, tire, steelRim } from './bodykit.js?v=20261115041504';
+import { jeepBody } from './carbody.js?v=20261115041504';
+import { addCarBody, surfaceProbe } from './models-car.js?v=20261115041504';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;
 
-/** Haube: Station (kantige Militärform: kleiner Schulterradius, flache Wölbung). */
-const hoodAt = (z) => {
-  const t = (z + 2.38) / 1.46; // 0 vorn … 1 Spritzwand
-  return { yb: 0.66, ys: lerp(1.02, 1.1, t), yt: lerp(1.11, 1.2, t), w: 0.86, wt: 0.84, rb: 0.03, rs: 0.07, crown: 0.025, bulge: 0 };
-};
-/** Wanne: offenes U (Seitenwände bis 1,36 m), hinten Radkasten-Ausschnitt. */
-const tubYb = withArches(curve([[-0.92, 0.84], [2.2, 0.84]]), [{ z: 1.38, y: 0.42, R: 0.53 }]);
-const tubAt = (z) => ({ yb: Math.min(tubYb(z), 1.12), ys: 1.36, w: 0.94, wt: 0.93, rb: 0.05, bulge: 0 });
 
 export function jeepBodyHQ(J, S, paint, lod) {
   const { B, box, cyl } = J;
-  const fine = lod === 0, q = fine ? 3 : 2;
+  const fine = lod === 0;
+  // Nutzer 15.11.: Blech als Unterteilungsfläche (carbody.js jeepBody): Haube mit Sicke, ausgestellte Kotflügel,
+  // offene Wanne mit Bördelrand und Innenwand, Windlauf, senkrechtes Heck – gekantete Radien statt Lofts/Quadern
+  const R = jeepBody(fine ? 2 : 1);
+  const probe = surfaceProbe([...R.parts.values()], `jeep:${fine ? 2 : 1}`);
+  const onHood = (x, z) => { const q = probe([x, 3, z], [0, -1, 0]); return q ? q.p[1] : 1.2; };
   // Leiterrahmen + Querträger
   for (const sx of [-1, 1]) B.add(box(0.1, 0.16, 4.5), S.dark, [sx * 0.48, 0.56, 0]);
   for (const z of [-2.1, -0.9, 0.4, 1.9]) B.add(box(0.9, 0.1, 0.1), S.dark, [0, 0.56, z]);
-  // Motorhaube (Loft), Spritzwand-Abdeckung, Scharnierleiste, Verschlüsse, Lüftungsschlitze
-  const hz = []; for (let z = -2.38; z <= -0.92 + 1e-4; z += fine ? 0.1 : 0.25) hz.push(+z.toFixed(3)); if (hz[hz.length - 1] < -0.921) hz.push(-0.92);
-  B.add(bodyLoft(hz, hoodAt, { q }), paint);
-  // Kühlergrill: Rahmen + senkrechte Schlitze (dunkel), Scheinwerfer-Topf
-  B.add(roundPlate(1.62, 0.44, 0.04, 0.03), paint, [0, 0.88, -2.395]);
-  B.add(box(1.24, 0.34, 0.04), S.dark, [0, 0.9, -2.405]);
+  // Kühlergrill: senkrechte Stege (Wagenfarbe) vor den Grillflächen
   const slots = fine ? 9 : 5;
-  for (let i = 0; i < slots; i++) B.add(box(0.06, 0.3, 0.03), paint, [-0.5 + (i / (slots - 1)) * 1.0, 0.9, -2.425]);
+  for (let i = 0; i < slots; i++) { const x = -0.5 + (i / (slots - 1)) * 1.0, q = probe([x, 0.84, -4], [0, 0, 1]); B.add(roundPlate(0.05, 0.28, 0.03, 0.012), paint, [x, 0.84, (q ? q.p[2] : -2.39) - 0.012]); }
   if (fine) {
     // Haubenverschlüsse (Gummispanner), Scharniere an der Spritzwand, Lüftungsschlitze, Fuge
     for (const sx of [-1, 1]) {
-      B.add(box(0.05, 0.12, 0.03), S.rubber, [sx * 0.87, 1.02, -1.75]);
-      B.add(box(0.04, 0.03, 0.06), S.dark, [sx * 0.87, 1.09, -1.75]);
+      B.add(box(0.05, 0.12, 0.03), S.rubber, [sx * 0.9, 1.04, -1.75]);
+      B.add(box(0.04, 0.03, 0.06), S.dark, [sx * 0.9, 1.11, -1.75]);
+      for (let k = 0; k < 6; k++) { const z = -1.62 + k * 0.07; B.add(box(0.26, 0.012, 0.03), S.dark, [sx * 0.42, onHood(sx * 0.42, z) + 0.004, z], [-0.08, 0, 0]); }
       for (let k = 0; k < 6; k++) B.add(box(0.26, 0.012, 0.03), S.dark, [sx * 0.42, 1.165 + k * 0.004, -1.6 + k * 0.07], [-0.08, 0, 0]);
     }
-    B.add(cyl(0.018, 0.018, 1.5, 8), S.dark, [0, 1.2, -0.95], [0, 0, HP]);
-    for (const sx of [-1, 1]) {
-      const pts = [];
-      for (let i = 0; i <= 10; i++) { const z = lerp(-2.36, -0.95, i / 10), st = hoodAt(z); pts.push([sx * (st.wt - 0.12), st.yt + st.crown * 0.55, z]); }
-      B.add(ribbon(pts, 0.005, [0, 1, 0], 0.003), S.dark);
-    }
+    B.add(cyl(0.018, 0.018, 1.5, 8), S.dark, [0, 1.29, -0.95], [0, 0, HP]);
   }
-  // Kotflügel vorn (Profil mit Radbogen) + Radhausschale
+  // Radhausschalen (vorn/hinten)
   for (const sx of [-1, 1]) {
-    const n = fine ? 24 : 10, prof = [[-2.36, 0.92], [-2.18, 1.02], [-0.92, 1.03]];
-    for (let i = 0; i <= n; i++) { const z = lerp(-0.92, -2.36, i / n), d = Math.abs(z + 1.45); prof.push([z, Math.max(0.8, d < 0.54 ? 0.42 + Math.sqrt(0.54 * 0.54 - d * d) : 0)]); }
-    B.add(J.sideExtrude(prof.map(([z, y]) => [-z, y]), 0.3, fine), paint, [sx * 0.95, 0, 0]);
-    const g = new THREE.CylinderGeometry(0.55, 0.55, 0.32, fine ? 18 : 9, 1, true, 0, PI);
+    const g = new THREE.CylinderGeometry(0.53, 0.53, 0.32, fine ? 18 : 9, 1, true, 0, PI);
     const ix = g.index.array; for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; }
     g.computeVertexNormals();
-    B.add(g, S.dark, [sx * 0.92, 0.42, -1.45], [0, 0, HP]);
-    B.add(g.clone(), S.dark, [sx * 0.92, 0.42, 1.38], [0, 0, HP]);
+    B.add(g, S.dark, [sx * 0.76, 0.42, -1.45], [0, 0, HP]);
+    B.add(g.clone(), S.dark, [sx * 0.76, 0.42, 1.38], [0, 0, HP]);
   }
-  // Wanne (offenes U mit Wandstärke), Heckklappe, Spritzwand mit Armaturenbrett
-  const tz = []; for (let z = -0.92; z <= 2.2 + 1e-4; z += fine ? 0.08 : 0.2) tz.push(+z.toFixed(3)); if (tz[tz.length - 1] < 2.199) tz.push(2.2);
-  B.add(bodyLoft(tz, tubAt, { open: true, thick: 0.035, q }), paint);
-  B.add(roundPlate(1.86, 0.52, 0.05, 0.04), paint, [0, 1.1, 2.18]);                           // Heckklappe
-  B.add(box(1.86, 0.5, 0.06), paint, [0, 1.05, -0.9]);                                          // Spritzwand
-  B.add(box(1.8, 0.06, 0.32), S.interior, [0, 1.28, -0.75]);
-  B.add(box(1.8, 0.04, 3.04), paint, [0, 0.9, 0.63]);                                           // Wannenboden                                   // Armaturenbrett (Ego-Cockpit: cabin.js)
+  // Armaturenbrett (Ego-Cockpit: cabin.js hängt an cockpit.dash/floor – unverändert)
+  B.add(box(1.8, 0.06, 0.32), S.interior, [0, 1.28, -0.75]);                                           // Wannenboden                                   // Armaturenbrett (Ego-Cockpit: cabin.js)
   if (fine) {
     for (const sx of [-1, 1]) for (const yy of [0.95, 1.25]) B.add(new THREE.TorusGeometry(0.03, 0.008, 4, 8), S.dark, [sx * 0.62, yy, 2.215], [0, 0, 0]); // Klappenhaken
     for (const sx of [-1, 1]) B.add(tube([[sx * 0.9, 1.33, 2.17], [sx * 0.9, 1.25, 2.3], [sx * 0.88, 1.12, 2.23]], 0.006, 4, 3), S.steel); // Ketten
@@ -137,7 +119,7 @@ export function jeepBodyHQ(J, S, paint, lod) {
     // Haubenfuge/Wannenkante: Kantenschutz
     for (const sx of [-1, 1]) B.add(tube([[sx * 0.935, 1.365, -0.9], [sx * 0.935, 1.365, 2.18]], 0.012, 4, 1), S.dark);
   }
-  void surface; void sideX;
+  addCarBody(R, S, B, B, B, paint);
 }
 
 /** Geländerad: Stollenreifen, Stahlfelge mit Lochkranz, Beadlock-Ring mit Schrauben, Nabe. R = Bucket des Rads. */

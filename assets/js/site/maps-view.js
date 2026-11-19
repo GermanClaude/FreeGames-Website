@@ -23,7 +23,7 @@ const svg = (tag, attrs = {}) => {
 };
 const idle = (fn) => (window.requestIdleCallback ? window.requestIdleCallback(fn, { timeout: 600 }) : setTimeout(fn, 60));
 const MIN_PX = 9; // kleiner gesetzt wird kein Wort
-const STILLS = new Set(['hafen', 'altstadt', 'werk', 'range', 'flugplatz']);
+const STILLS = new Set(['hafen', 'altstadt', 'werk', 'bibliothek', 'range', 'grenzland', 'niemandsland', 'brandwald', 'flugplatz', 'stadtkern']);
 let uid = 0;
 
 /** Baut den SVG-Plan einer Karte (einmal pro Karte, danach wiederverwendet). */
@@ -333,8 +333,8 @@ export async function init(sec, D, ctx = {}) {
     const dims = dx && dz ? `${num(dx)} × ${num(dz)}${NNBSP}m` : '';
     if (map.size || dims) parts.push([map.size ? `GRÖSSE ${up(map.size)}` : 'GRÖSSE', dims]);
     const modeShorts = (map.modes || []).map((m) => D.M.MODES[m]?.short || up(m)).join(', ');
-    if (modeShorts) parts.push([`MODI ${modeShorts}`]);
-    return parts.flatMap(([t, d], i) => [i ? ' · ' : null, h('span.nw', {}, t, d ? [h('span', {}, ', '), h('span.lc', {}, d)] : null)]).filter(Boolean);
+    if (modeShorts) parts.push([`MODI ${modeShorts}`, null, true]); // qa: lange Modusliste darf umbrechen (sonst ragt die Spalte in den Plan)
+    return parts.flatMap(([t, d, wrap], i) => [i ? ' · ' : null, h(wrap ? 'span' : 'span.nw', {}, t, d ? [h('span', {}, ', '), h('span.lc', {}, d)] : null)]).filter(Boolean);
   }
 
   function setDurch(id, map) {

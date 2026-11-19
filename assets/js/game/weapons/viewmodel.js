@@ -461,6 +461,7 @@ export class ViewModel {
     const T = SKIN_TIERS[tier] || SKIN_TIERS.standard;
     const m = this.arms.mats;
     this.arms.setGlove(T.glove || look.glove || '#ffffff');   // taktischer Mittelton (nie fast schwarz), siehe arms.js gloveTone
+    this.arms.setOpenTips(!!look.openTips);   // hands-v4: offene Fingerkuppen (Haut, Nägel)
     m.sleeve.color.set(T.sleeve || look.sleeve || '#ffffff');
     this.arms.setCamo(look.sleeveCamo || sleeveCamo(this._scheme));
     const key = lookId + ':' + (T.id || 'standard');

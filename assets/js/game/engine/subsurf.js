@@ -223,19 +223,15 @@ export function seamGeometry(M, tags, w = 0.004, lift = 0.0012, normalsPerVertex
     const ex = tx * 0.04, ey = ty * 0.04, ez = tz * 0.04;
     const A0 = [ax - ex + sx + lx, ay - ey + sy + ly, az - ez + sz + lz], A1 = [ax - ex - sx + lx, ay - ey - sy + ly, az - ez - sz + lz];
     const B0 = [bx + ex + sx + lx, by + ey + sy + ly, bz + ez + sz + lz], B1 = [bx + ex - sx + lx, by + ey - sy + ly, bz + ez - sz + lz];
-    pos.push(...A0, ...A1, ...B0, ...A1, ...B1, ...B0);
+    // Umlauf so, dass die Bandnormale zur Fläche zeigt
+    const ux = A1[0] - A0[0], uy = A1[1] - A0[1], uz = A1[2] - A0[2], vx = B0[0] - A0[0], vy = B0[1] - A0[1], vz = B0[2] - A0[2];
+    const ok = (uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz > 0;
+    if (ok) pos.push(...A0, ...A1, ...B0, ...A1, ...B1, ...B0); else pos.push(...A0, ...B0, ...A1, ...A1, ...B0, ...B1);
   }
   if (!pos.length) return null;
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.computeVertexNormals();
-  // Normalen nach außen (Bandebene kann je Umlauf kippen): an der Flächennormale ausrichten
-  const N = g.attributes.normal, Pp = g.attributes.position;
-  for (let i = 0; i < Pp.count; i += 3) {
-    let k2 = 0;
-    void k2;
-  }
-  void N;
   return g;
 }
 
