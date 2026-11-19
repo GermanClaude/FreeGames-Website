@@ -207,7 +207,10 @@ export async function createTerrainMaterial(o) {
   const libIds = [];
   // texturen3: Hex-Kachelung (drei gedrehte Abtastungen, Höhen-Überblendung) ab high – ersetzt dort UV-Verzerrung und
   // Zweifach-Abtastung („verwirbeltes“ Gras in der Nähe)
-  const hex = quality === 'high' || quality === 'ultra';
+  // Hotfix 19.11.: Hex braucht eine 4. Normalen-Karte → das Boden-Programm kam auf 17 Texturen; viele echte Grafikkarten
+  // erlauben nur 16 je Shader (Programm wird verworfen → Boden unsichtbar). Hex nur, wenn die Karte mehr als 16 kann.
+  const maxTex = Number.isFinite(o.maxTex) ? o.maxTex : 16;
+  const hex = (quality === 'high' || quality === 'ultra') && maxTex > 16;
   if (o.libOk && o.lib) {
     const plan = new Map(LAYERS.filter(l => l.lib).map(l => ['gelaende:' + l.key, { id: l.lib, tier: o.tier || 1024 }]));
     try {
