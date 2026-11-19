@@ -10,8 +10,8 @@
 // meadowTintAt) für die Grashalme (vegetation.js): Halme tragen die Wiesenfarbe des Bodens an ihrer Stelle, ferne
 // Halme gehen nahtlos in den Boden über.
 import * as THREE from 'three';
-import { LIB_MATERIALS } from '../library.js?v=20261115041504';
-import { getDetailNormalTexture } from '../../engine/textures.js?v=20261115041504';
+import { LIB_MATERIALS } from '../library.js?v=20261119182451';
+import { getDetailNormalTexture } from '../../engine/textures.js?v=20261119182451';
 
 /** Schichten: Bibliotheks-ID, prozeduraler Ersatz, Kachelgröße (m), Rauheit, Normalen-Rang (−1 = keine; 3 nur mit
  * Hex-Kachelung, high/ultra), cal: Kalibrierung der Fotoscan-Albedo (linear, je Kanal; Ø-Helligkeit wie die früheren
@@ -200,7 +200,10 @@ export async function createTerrainMaterial(o) {
   const libIds = [];
   // texturen3: Hex-Kachelung (drei gedrehte Abtastungen, Höhen-Überblendung) ab high – ersetzt dort UV-Verzerrung und
   // Zweifach-Abtastung („verwirbeltes“ Gras in der Nähe)
-  const hex = quality === 'high' || quality === 'ultra';
+  // Hotfix 19.11.: Hex braucht eine 4. Normalen-Karte → das Boden-Programm kam auf 17 Texturen; viele echte Grafikkarten
+  // erlauben nur 16 je Shader (Programm wird verworfen → Boden unsichtbar). Hex nur, wenn die Karte mehr als 16 kann.
+  const maxTex = Number.isFinite(o.maxTex) ? o.maxTex : 16;
+  const hex = (quality === 'high' || quality === 'ultra') && maxTex > 16;
   if (o.libOk && o.lib) {
     const plan = new Map(LAYERS.filter(l => l.lib).map(l => ['gelaende:' + l.key, { id: l.lib, tier: o.tier || 1024 }]));
     try {

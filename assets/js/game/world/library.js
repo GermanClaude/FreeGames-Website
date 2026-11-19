@@ -12,9 +12,9 @@
 //   handle.stats                         → { download, gpu, sets, models, hdri, ms, failed, tier }
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261115041504';
-import { deviceInfo } from '../engine/device.js?v=20261115041504';
-import { textureAnisotropy } from '../engine/textures.js?v=20261115041504';
+import { assets, tierFor, pickTier } from '../../../lib/loader.js?v=20261119182451';
+import { deviceInfo } from '../engine/device.js?v=20261119182451';
+import { textureAnisotropy } from '../engine/textures.js?v=20261119182451';
 
 // ---------------------------------------------------------------------------
 // Zuordnung Spielmaterial → Bibliothekssatz

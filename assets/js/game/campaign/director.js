@@ -15,12 +15,12 @@
 // Wiedereinstieg am Checkpoint k: mission.prepare(m) (gemeinsam, z. B. Verbündete), stages[k].setup(m), dann ab k.
 
 import * as THREE from 'three';
-import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261115041504';
-import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261115041504';
-import { prepareVehicleModels } from '../vehicles/models.js?v=20261115041504';
-import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261115041504';
-import { createFaceRig, FaceDriver } from './face.js?v=20261115041504';
-import { issueCommand } from '../bots/ai/orders.js?v=20261115041504';
+import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261119182451';
+import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261119182451';
+import { prepareVehicleModels } from '../vehicles/models.js?v=20261119182451';
+import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261119182451';
+import { createFaceRig, FaceDriver } from './face.js?v=20261119182451';
+import { issueCommand } from '../bots/ai/orders.js?v=20261119182451';
 
 const _v = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

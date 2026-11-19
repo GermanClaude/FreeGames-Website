@@ -11,7 +11,7 @@
 //
 // pkwBodyHQ(K, S, B, GB, LB, lod, paint, variant) füllt die Buckets (Lack/Kleinteile B, Glas GB, Scheinwerfer LB).
 import * as THREE from 'three';
-import { bodyLoft, curve, withArches, sideX, surface, ribbon, tube, roundPlate, merge } from './bodykit.js?v=20261115041504';
+import { bodyLoft, curve, withArches, sideX, surface, ribbon, tube, roundPlate, merge } from './bodykit.js?v=20261119182451';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;

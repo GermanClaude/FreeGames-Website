@@ -3,7 +3,7 @@
 // Funkrelais des Tals abgeschaltet haben. Ziele: Marktgasse → Wachposten → Torhaus (Funkunterlagen) → Brunnenplatz →
 // Glockenturm (Relais neu starten, Gegenstoß abwehren). Checkpoints: start, torhaus, turm.
 
-import { actor } from './cast.js?v=20261115041504';
+import { actor } from './cast.js?v=20261119182451';
 
 const CUT_INTRO = {
   location: ['Sant Aurel · Altstadt', '05:52 Uhr · Tag 21 der Waffenruhe'],

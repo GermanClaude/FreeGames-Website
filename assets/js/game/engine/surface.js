@@ -25,7 +25,7 @@
 // sich die Haken mit allen anderen, die hinter denselben Einschlüssen Code anhängen (Makro-Variation, Detailnormalen,
 // Einschusslöcher …), unabhängig von der Reihenfolge.
 import * as THREE from 'three';
-import { addShaderPatch, removeShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261115041504';
+import { addShaderPatch, removeShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261119182451';
 
 const HEX_FN = /* glsl */`
 uniform vec4 npSurf; // x: Hex-Kontrast, y: Hex-Zellen je Texturwiederholung, z: Drehung (0..1), w: Tiefen-Angleich (0..1, NP_HEXEQ)

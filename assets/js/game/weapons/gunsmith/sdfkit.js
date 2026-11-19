@@ -2,9 +2,9 @@
 // an einer Stelle statt kopiert in jeder Waffe. Bauteile als Distanzfeld (Fotoumriss × eigene Breite, weich vereinigt,
 // Fenster/Nuten/Schächte abgezogen), flache Teile als Profil-Extrusion, Kanten-/Muldenfarbe am PC.
 // Koordinaten wie im Bauplan: x quer (rechts +), v hoch, u nach vorn; Maße in Metern (waffen-bauanleitung.md 2.3–2.5).
-import { sdPolygon, surfaceNets, grid2D, contours2D, cavityColors } from './sdf.js?v=20261115041504';
-import { shapeFrom } from './builder.js?v=20261115041504';
-import { atlasUV } from './p9-tex.js?v=20261115041504';
+import { sdPolygon, surfaceNets, grid2D, contours2D, cavityColors } from './sdf.js?v=20261119182451';
+import { shapeFrom } from './builder.js?v=20261119182451';
+import { atlasUV } from './p9-tex.js?v=20261119182451';
 
 export { atlasUV };
 

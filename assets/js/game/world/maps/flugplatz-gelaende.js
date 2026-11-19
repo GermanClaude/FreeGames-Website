@@ -9,10 +9,10 @@
 // Startbahn (z 40 ± 22,5 + 20 m Sicherheitsstreifen), Rollweg A (z −35 ± 10) samt Abrollwegen (x ±150, ±400), An-/Abflug-
 // schneisen (|x| > 420) und alle Flaggen/Startpunkte/Fahrzeug-Stellplätze bleiben frei (Prüfung je Teil, sonst entfällt
 // es mitsamt dem Gegenstück). Spiegelgleich in x (Team A West, Team B Ost). Höhe je Teil aus dem Gelände (ctx.hf).
-import { container, crateStack, palletStack, barrelGroup, sandbags, hash01 } from '../props.js?v=20261115041504';
-import { armeeLkw } from './flugplatz-bau.js?v=20261115041504';
-import { freiPruefer, sperrKreise, platzFrei, erdwall } from '../gelaende.js?v=20261115041504';
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
+import { container, crateStack, palletStack, barrelGroup, sandbags, hash01 } from '../props.js?v=20261119182451';
+import { armeeLkw } from './flugplatz-bau.js?v=20261119182451';
+import { freiPruefer, sperrKreise, platzFrei, erdwall } from '../gelaende.js?v=20261119182451';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261119182451';
 
 /** Sperrflächen: Bahn, Rollweg, Abrollwege, Schneisen, Straßen als Rechtecke [x0, z0, x1, z1]. */
 const SPERR_RECHTECKE = [

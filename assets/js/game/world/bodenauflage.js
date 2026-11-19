@@ -14,7 +14,7 @@
 //
 // placeGroundDressing(world, group, { quality, seed, def }) → { count, wall, tufts, meshes, ms }
 import * as THREE from 'three';
-import { createFoliage } from './atlas.js?v=20261115041504';
+import { createFoliage } from './atlas.js?v=20261119182451';
 
 export const GROUND_CELL = { laub: 0, erde: 1, sand: 2, splitt: 3, oel: 4, pfuetze: 5, wandfuss: 6, blaetter: 7 };
 const CAP = { medium: 360, high: 720, ultra: 1000 };

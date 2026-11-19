@@ -4,17 +4,17 @@
 // Flaggen (Eroberung): A Gehöft · B Dorf · C Brücke · D Kieswerk · E Funkhügel; HQ A im Süden, HQ B im Norden.
 // Geladen von world/terrain/bigworld.js (Ortschaften je eigener MapBuilder, Boden y = 0 bzw. Plateauhöhe).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261115041504';
-import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261115041504';
-import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261115041504';
-import * as Innen from './grenzland-innen.js?v=20261115041504';
-import { mgNest } from './grenzland-stellungen.js?v=20261115041504';
-import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261115041504';
+import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261119182451';
+import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261119182451';
+import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261119182451';
+import * as Innen from './grenzland-innen.js?v=20261119182451';
+import { mgNest } from './grenzland-stellungen.js?v=20261119182451';
+import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261119182451';
 // karten-voll (14.11.): Kleinkram an Häusern/Höfen, Freileitungen, Fahrspuren, Hochsitze, Feldstellungen
-import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261115041504';
-import { landschaft } from './grenzland-land.js?v=20261115041504';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261115041504'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261119182451';
+import { landschaft } from './grenzland-land.js?v=20261119182451';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261119182451'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261119182451';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 // Grafik-Vorlage (Video-Dorfplatz bild-7_8s): hellgrau-weißer Putz, Tonziegel rot-orange (Farbe aus der Textur v_roof,

@@ -3,8 +3,8 @@
 // data-v (Wert); die Aufrufer setzen den Wert (Lobby: settings.modeOptions, Raum: room.settings.modeOpts).
 // Optionen mit limit (z. B. 'scoreLimit') lässt das Raum-Menü weg – dort gibt es den allgemeinen Regler schon.
 
-import { esc } from './dom.js?v=20261115041504';
-import { modeOptionValues, modeOptionText } from '../../shared/modes.data.js?v=20261115041504';
+import { esc } from './dom.js?v=20261119182451';
+import { modeOptionValues, modeOptionText } from '../../shared/modes.data.js?v=20261119182451';
 
 /** Sichtbare Optionen eines Modus (skipLimits: ohne die allgemeinen Limits). */
 export function modeOptionList(mode, { skipLimits = false } = {}) {
