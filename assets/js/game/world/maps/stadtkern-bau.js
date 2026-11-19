@@ -409,7 +409,7 @@ export function hofAusstattung(b, x0, z0, x1, z1, s) {
   tires(b, sx + outer * 0.8, sz + 1.2, { n: 3, y: 0.12 });
   // Linde mit Bank
   tree(b, cx, cz + s * 1, { kind: 'tree', h: 4.2, s: 1.35 });
-  bench(b, cx, cz + s * 3.0, { ry: s > 0 ? PI : 0 });
+  bench(b, cx, cz + s * 2.6, { ry: s > 0 ? 0 : PI }); // platz (19.11.): Lehne zum Stamm, Blick in den Hof (vorher Blick 2 m vor den Stamm)
   // Schutt, Kisten (Deckung), Müllcontainer
   rubble(b, cx + outer * 9, z0 + s * 5, 1.3, { mat: 'plaster_damaged', brick: true });
   crateStack(b, cx - outer * 7, cz + s * 3, { ry: 0.3 });
