@@ -1,9 +1,9 @@
-// NULLPUNKT — Karte „Bibliothek“: alte Zauberbibliothek im Stil einer Schloss-Internatsbibliothek (x −38..38, z −27..27,
+// NULLPUNKT — Karte „Bibliothek“: alte Gelehrtenbibliothek in einem Bergkloster (x −38..38, z −27..27,
 // 13 m hoch). Mittelgang mit langen Lesetischen und einer Rotunde (schwebender Himmelsglobus); links und rechts hohe,
 // dunkle Regale: Reihen quer zum Gang bilden halb geschlossene Lesenischen, außen schräge Fischgrät-Gassen und
 // Querriegel – verwinkelt, kurze Sichtlinien, Leitern an den Regalen. Galerien an den Längswänden (4,4 m) mit Treppen in
 // allen vier Ecken, zwei Holzbrücken quer über die Halle. Norden: Eingangshalle mit Ausleihtheken (Team A), Süden:
-// Verbotene Abteilung hinter Eisengittern mit drei Durchgängen (Team B). Beide Hälften punktsymmetrisch (fair).
+// Versiegeltes Archiv hinter Eisengittern mit drei Durchgängen (Team B). Beide Hälften punktsymmetrisch (fair).
 // Magie: fliegende Bücher, schwebende Kerzen, schwebende Armillarsphäre (ohne Kollision, über Kopfhöhe). (Owner: world)
 import * as THREE from 'three';
 import { wall, slab, stairs, railing } from '../arch.js?v=20261115041504';
@@ -157,7 +157,7 @@ export default {
     }
     b.box(0, 0, Z - 0.5, 6, 6, 0.4, 'wood_dark', { tint: '#4a2e1a', minimap: false }); // Portal (geschlossen)
     zones.push({ x0: -GAL, z0: 20, x1: GAL, z1: Z, kind: 'plaza' });
-    // ------------------------------------------------------------------ Verbotene Abteilung (Süden, Team B)
+    // ------------------------------------------------------------------ Versiegeltes Archiv (Süden, Team B)
     for (const [xa, xb] of [[-X + 0.4, -19], [-14, -4], [4, 14], [19, X - 0.4]]) bars(b, xa, -20, xb, -20, 3.4);
     for (let x = -30; x <= 30; x += 7.5) shelf(b, x, -Z + 0.85, 6.5, 4.6, 500 + x, { ry: 0, face: 1, tint: WOOD_D });
     for (const s of [-1, 1]) shelf(b, s * 9, -23.6, 5, 2.2, 700 + s, { ry: 0, tint: WOOD_D });
