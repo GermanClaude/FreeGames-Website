@@ -250,7 +250,7 @@ const NIEMANDSLAND = {
       [118, 68, 18, 1.3], [-118, -68, 18, 1.3], [-238, 66, 16, 1.1], [238, -66, 16, 1.1]],
     clearings: [[0, 0, 26], [-62, 46, 7.5], [88, -58, 7.5], [-188, -30, 6], [196, 34, 6]], // Mitte, Wracks (niemandsland-leben.js)
   },
-  litter: { seed: 1917, twigs: 0.1, sticks: 0.05, branches: 0.006, bark: 0.03, coals: 0.035, stones: 0.24 },
+  litter: { seed: 1917, twigs: 0.12, sticks: 0.12, branches: 0.012, bark: 0.05, stones: 0.05 }, // ohne Holzkohle (wirkte als schwarze Klumpen)
   clearings: [[0, 0, 40]],
 
   sites: [
