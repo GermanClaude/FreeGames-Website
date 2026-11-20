@@ -1185,7 +1185,7 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
     if (det) harness(B, C, [F.w([0, 0.07, -0.05]), [mid[0] + 0.05, 0.72, mid[2] + 0.05], [Math.min(1.1, mid[0] + 0.4), 0.71, mid[2] + 0.3]], det, 2);
   }
   // ---- Ladeschütze: Munitionswahl neben dem Gestell bzw. der Bunkertür
-  if (l && A.I.rack && !wk1) {
+  if (l && A.I.rack) {
     const I = A.I, rw = I.rackGrid ? I.rackGrid[0] * 0.155 + 0.07 : 1.62, rr = I.rackRot || [0, 0];
     const loc = new THREE.Vector3(rw / 2 + 0.1, 0.12, -0.36 - 0.3).applyEuler(new THREE.Euler(rr[0], rr[1], 0, 'YXZ')).add(V3(I.rack));
     simSwitch(grp, B, C, det, era, 'wahl', loc.toArray(), l, 'p_wahl');
@@ -1449,7 +1449,7 @@ function buildTurret(D, C, det, era, cab, A) {
 
   // ---------------------------------------------------------------- Ladeschütze, Koaxial-MG
   const l = A.load;
-  if (!wk1) {
+  if (l) { // alle Generationen (1. WK: an der Kampfraumwand rechts)
     // Sicherung (Simulation 'sw:sicherung'): Schalter unter Bügel an der rechten Wand, darüber die Feuerbereit-Leuchte
     const sp = [1.15, l[1] - 0.12, l[2] - 0.45];
     B.add(rbox(0.03, 0.2, 0.2, 0.008), C.black, [1.2, sp[1] + 0.02, sp[2]]);

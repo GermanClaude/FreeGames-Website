@@ -275,19 +275,21 @@ export function breechParts(MB, C, det, era) {
   }
   // Rücklaufschutz: Rohrrahmen (gelb/schwarz gestreift), Seitenbleche mit Erleichterungslöchern, Hülsenabweiser
   const yR = -0.12, z0 = 0.15, z1 = 0.9;
+  // modern gelb/schwarz gestreift, Weltkriegs-/Kalter-Krieg-Panzer schlichter Stahlrahmen
+  const GA = modern ? C.yellow : C.metal, GB2 = modern ? C.black : C.steel;
   for (const sx of [-1, 1]) {
     const n = det > 1 ? 9 : 3;
     for (let i = 0; i < n; i++) {
       const a = z0 + (z1 - z0) * i / n, b = z0 + (z1 - z0) * (i + 1) / n;
-      B.rod(i % 2 ? C.black : C.yellow, [sx * 0.33, yR, a], [sx * 0.33, yR, b], 0.019, 10);
+      B.rod(i % 2 ? GB2 : GA, [sx * 0.33, yR, a], [sx * 0.33, yR, b], 0.019, 10);
     }
-    B.rod(C.yellow, [sx * 0.33, yR, z1], [sx * 0.33, -0.44, z1], 0.019, 10);
+    B.rod(GA, [sx * 0.33, yR, z1], [sx * 0.33, -0.44, z1], 0.019, 10);
     B.add(box(0.012, 0.24, 0.62), W, [sx * 0.335, yR - 0.14, (z0 + z1) / 2 + 0.03]);
     if (det) for (let i = 0; i < 3; i++) B.add(cyl(0.04, 0.04, 0.014, 14), C.black, [sx * 0.335, yR - 0.14, z0 + 0.17 + i * 0.2], [0, 0, HP]);
     B.add(box(0.05, 0.06, 0.06), C.metal, [sx * 0.3, yR, z0 - 0.02]);
   }
-  B.rod(C.yellow, [-0.33, yR, z1], [0.33, yR, z1], 0.019, 10);
-  B.rod(C.black, [-0.33, -0.44, z1], [0.33, -0.44, z1], 0.017, 8);
+  B.rod(GA, [-0.33, yR, z1], [0.33, yR, z1], 0.019, 10);
+  B.rod(GB2, [-0.33, -0.44, z1], [0.33, -0.44, z1], 0.017, 8);
   B.add(box(0.62, 0.28, 0.012), W, [0, -0.29, z1 - 0.02], [0.15, 0, 0]); // Hülsenabweiser
   return { B };
 }
