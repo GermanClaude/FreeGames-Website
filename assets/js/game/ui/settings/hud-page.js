@@ -31,7 +31,7 @@ export function hudPage(P) {
   const S = P.settings;
   let host = null;
   let off = null;
-  const ROWS = ['crosshairStyle', 'crosshairColor', 'reticleSize', 'bodycamStamp', 'showFps'];
+  const ROWS = ['crosshairStyle', 'crosshairColor', 'reticleSize', 'bodycamStamp', 'showFps', 'tvMode', 'uiScale'];
 
   function sync() {
     if (!host) return;
@@ -65,7 +65,10 @@ export function hudPage(P) {
         ${rowHtml(P, 'reticleSize', { hint: 'Größe des Leuchtpunkts in Leuchtpunkt- und Holo-Visieren (beim Holo nur der Mittelpunkt, der Ring bleibt).' })}
         ${headHtml('Anzeigen')}
         ${rowHtml(P, 'bodycamStamp', { hint: HINTS.bodycamStamp })}
-        ${rowHtml(P, 'showFps', { hint: HINTS.showFps })}`;
+        ${rowHtml(P, 'showFps', { hint: HINTS.showFps })}
+        ${headHtml('Oberfläche')}
+        ${rowHtml(P, 'tvMode', { hint: 'Für Fernseher und Konsolen: größere Schrift und Knöpfe, Abstand zum Bildschirmrand. Automatisch an im Xbox- und PlayStation-Browser und auf Fernsehern.' })}
+        ${rowHtml(P, 'uiScale', { hint: 'Größe von Menüs und HUD-Anzeigen. Automatisch: 130 % im TV-Modus, sonst 100 %.' })}`;
       off = bindRows(host, { ...P, after: sync });
       host.addEventListener('click', onClick);
       sync();

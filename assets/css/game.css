@@ -3407,3 +3407,17 @@ body[data-drone="1"] #touch-ui :is(.tc-btn:not(.tc-pause):not(.tc-score), .tc-st
 @media (prefers-reduced-motion: reduce) { .tr-toast { animation: none; } }
 .tr-toast.in-hud { position: absolute; }
 .h-root[data-input="touch"] .tr-toast { top: 64px; right: 12px; }
+
+/* ===================================================== Plattform (19.11.): Controller-Fokus, Nintendo-Symbole, TV-Modus */
+/* Controller-Bedienung: Fokusrahmen immer sichtbar (programmatisches focus() zeigt nach Mausklick kein :focus-visible) */
+body.np-pad-nav .m-screen :is(button, [tabindex="0"], input, select):focus,
+body.np-pad-nav #hud-top :is(button, [tabindex="0"]):focus { outline: 3px solid var(--np-signal); outline-offset: 2px; box-shadow: 0 0 0 6px rgba(255, 91, 31, .22); }
+kbd.kb-pad[data-pad="0"][data-ps="2"], kbd.kb-pad[data-pad="1"][data-ps="2"], kbd.kb-pad[data-pad="2"][data-ps="2"], kbd.kb-pad[data-pad="3"][data-ps="2"] { color: var(--np-ink); }
+/* TV-/Konsolen-Modus (ui/tv-mode.js): Menüs und feste HUD-Blöcke größer, Rand für Überscan */
+body.np-ui-zoomed .m-screen { zoom: var(--np-ui-zoom, 1); }
+body.np-ui-zoomed .h-tl, body.np-ui-zoomed .h-top, body.np-ui-zoomed .h-feed, body.np-ui-zoomed .h-health, body.np-ui-zoomed .h-weapon,
+body.np-ui-zoomed .h-notices, body.np-ui-zoomed .h-center, body.np-ui-zoomed .h-popups, body.np-ui-zoomed .h-ammo-hint,
+body.np-ui-zoomed .h-capture, body.np-ui-zoomed .h-death, body.np-ui-zoomed .h-medal { zoom: var(--np-ui-zoom, 1); }
+body.np-tv .h-root { --pad-l: max(3vw, env(safe-area-inset-left)); --pad-r: max(3vw, env(safe-area-inset-right)); --pad-t: max(3vh, env(safe-area-inset-top)); --pad-b: max(3vh, env(safe-area-inset-bottom)); }
+body.np-tv .m-screen { --mp-l: max(3vw, env(safe-area-inset-left)); --mp-r: max(3vw, env(safe-area-inset-right)); --mp-t: max(3vh, env(safe-area-inset-top)); --mp-b: max(3vh, env(safe-area-inset-bottom)); }
+body.np-tv .m-screen :is(button, [tabindex="0"], input, select):focus-visible { outline-width: 4px; }

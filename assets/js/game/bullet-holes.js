@@ -2048,7 +2048,9 @@ vec3 npSunL() {
       float k = clamp( zOut / D, 0.0, 1.0 );
       float stri = 0.8 + 0.4 * npN2( vec2( atan( uw.y, uw.x ) * 4.0, zOut * 30.0 ) + npSeed );
       vec3 cc = npCell( uw * 9.0 + vec2( zOut * 11.0 ) + npSeed );
-      col = ( npSt == 2 && zOut > 0.025 ? npBrickCol() : fresh ) * mix( 0.9, 0.35, k ) * stri * ( 0.85 + 0.3 * cc.y );
+      // zer2: Bruchwand kantig – Brocken (Zellen) mit dunklen Fugen/Spalten dazwischen, insgesamt dunkler als die Fläche
+      float gap = 1.0 - smoothstep( 0.0, 0.07, cc.z );
+      col = ( npSt == 2 && zOut > 0.025 ? npBrickCol() : fresh * ( npSt == 0 ? 1.0 : 0.8 ) ) * mix( 0.8, 0.3, k ) * stri * ( 0.65 + 0.55 * cc.y ) * ( 1.0 - 0.65 * gap );
       npAO = mix( 0.6, 0.1, k );
       npSun = 0.0;
       npHoleN = vec3( -uw / max( length( uw ), 1e-4 ), 0.25 );
@@ -2091,6 +2093,7 @@ vec3 npSunL() {
         float grain = npSt == 0 ? 0.75 + 0.5 * npN2( vec2( q.x * 3.0, q.y * 40.0 ) + npSeed ) : 0.86 + 0.28 * c.y * ( 0.6 + 0.4 * npN2( q * 23.0 + npSeed ) );
         float crack = npSt == 5 || npSt == 3 ? 1.0 : mix( 0.8, 1.0, smoothstep( 0.0, 0.05, c.z ) * ( 0.6 + 0.4 * npN2( q * 13.0 + npSeed ) ) + 0.3 * step( 0.5, npN2( npC( q ) * 4.0 + npSeed * 2.0 ) ) );
         col = fresh * mix( 1.0, 0.75, 1.0 - cav ) * grain * crack;
+        if ( npIsCut ) col *= ( 0.62 + 0.5 * c.y ) * ( 1.0 - 0.5 * ( 1.0 - smoothstep( 0.0, 0.06, c.z ) ) ); // zer2: Bruchsaum der Bresche schollig statt glatt
         if ( npSt == 0 ) col *= mix( 0.55, 0.95, 1.0 - cav ); // Holz: gestauchte, dunkle Fasern, zum Loch hin heller aufgerissen
         // Putz: unterhalb der Putzschicht (gezackte Grenze) der Ziegel darunter – Fugen als dunkle Bänder
         if ( npSt == 2 ) {

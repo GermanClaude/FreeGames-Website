@@ -7,7 +7,7 @@
 import { CAMPAIGN, OUTLINE, ACTS, TO_BE_CONTINUED, TOTAL_MINUTES } from './outline.js?v=20261115041504';
 import { MISSIONS, MISSION_ORDER, STORY_ORDER } from './missions/index.js?v=20261115041504';
 import { CampaignProgress } from './progress.js?v=20261115041504';
-import { CAMPAIGN_DIFF } from './director.js?v=20261115041504';
+import { CAMPAIGN_DIFF, CAMPAIGN_SIM } from './director.js?v=20261115041504';
 import { missionConfig } from './mode.js?v=20261115041504';
 import { ensureCampaignStyles } from './ui.js?v=20261115041504';
 import { textToVisemes, sampleMouth } from './lipsync.js?v=20261115041504';
@@ -211,7 +211,8 @@ export class CampaignPane {
     const done = this.store.doneCount();
     const resume = this.store.resumeTarget();
     const rm = resume ? MISSIONS[resume.id] : null;
-    const diff = CAMPAIGN_DIFF[c.diff] ? c.diff : 'regulaer';
+    const DIFFS = { ...CAMPAIGN_DIFF, simulation: CAMPAIGN_SIM }; // + Infanteriesimulation
+    const diff = DIFFS[c.diff] ? c.diff : 'regulaer';
     const sel = MISSIONS[this.sel] || null;
     const outSel = OUTLINE.find((o) => o.id === this.sel) || OUTLINE[0];
     const st = sel ? this.store.mission(sel.id) : null;
@@ -222,7 +223,7 @@ export class CampaignPane {
       const unlocked = playable && this._unlocked(o.id);
       const ms = playable ? this.store.mission(o.id) : null;
       const status = !playable ? '<span class="kc-st">In Vorbereitung</span>'
-        : ms.done ? `<span class="kc-st ok">✓ ${esc(CAMPAIGN_DIFF[ms.best] ? CAMPAIGN_DIFF[ms.best].name : 'Erledigt')}</span>`
+        : ms.done ? `<span class="kc-st ok">✓ ${esc(DIFFS[ms.best] ? DIFFS[ms.best].name : 'Erledigt')}</span>`
           : ms.checkpoint ? '<span class="kc-st cp">Checkpoint</span>'
             : unlocked ? '<span class="kc-st">Offen</span>' : '<span class="kc-st">Gesperrt</span>';
       const isNew = playable && fresh.includes(o.id) ? '<i class="kc-new">NEU</i>' : '';
@@ -260,7 +261,7 @@ export class CampaignPane {
         ${show ? `<div class="kc-show">${show}</div>` : ''}
         <ul>${(outSel.goals || []).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
         <div class="kc-opts">
-          <div><label>Schwierigkeit</label><div class="kc-seg">${Object.entries(CAMPAIGN_DIFF).map(([id, d]) => `<button type="button" data-kc-diff="${id}" aria-pressed="${id === diff}">${esc(d.name)}</button>`).join('')}</div><div class="kc-hint">${esc(CAMPAIGN_DIFF[diff].hint)}</div></div>
+          <div><label>Schwierigkeit</label><div class="kc-seg">${Object.entries(DIFFS).map(([id, d]) => `<button type="button" data-kc-diff="${id}" aria-pressed="${id === diff}">${esc(d.name)}</button>`).join('')}</div><div class="kc-hint">${esc(DIFFS[diff].hint)}</div></div>
           <div><label>Untertitel-Tempo</label><div class="kc-seg">${SPEEDS.map(([id, n]) => `<button type="button" data-kc-speed="${id}" aria-pressed="${id === c.speed}">${n}</button>`).join('')}</div>
             <div class="kc-hint kc-mouth"><svg viewBox="0 0 46 26" aria-hidden="true"><ellipse cx="23" cy="13" rx="15" ry="2" fill="#160807" stroke="#ff9a6b" stroke-width="1.4"/></svg><span>Keine Sprachausgabe: Dialoge als Untertitel, die Figuren bewegen dazu den Mund.</span></div></div>
         </div>

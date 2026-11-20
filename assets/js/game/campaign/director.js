@@ -32,6 +32,8 @@ export const CAMPAIGN_DIFF = {
   veteran: { name: 'Veteran', enemies: 1.25, lives: 5, hint: 'Mehr und härtere Gegner, 5 Wiedereinstiege je Mission.' },
   elite: { name: 'Elite', enemies: 1.5, lives: 3, hint: 'Gnadenlos: 3 Wiedereinstiege je Mission.' },
 };
+/** Infanteriesimulation als Kampagnen-Schwierigkeit (nur Infanterie-Kampagne): Gegner wie Veteran, Spielstil „Simulation“. */
+export const CAMPAIGN_SIM = { name: 'Simulation', base: 'veteran', hint: 'Alles selbst: Magazine, Durchladen, Sicherung, Verwundungen, kein HUD – Gegner wie Veteran, 5 Wiedereinstiege.' };
 
 class Handle {
   constructor(test) { this.test = test; this._done = false; }
@@ -952,7 +954,7 @@ export class Director {
   checkpoint(id, cp, { silent = false, save = true } = {}) {
     if (cp) this._setSpawn(cp);
     this.checkpointId = id;
-    if (save && this.store) { try { this.store.saveCheckpoint(this.mission.id, id, this.diffId); } catch (err) { console.error(err); } }
+    if (save && this.store) { try { this.store.saveCheckpoint(this.mission.id, id, this.G.match.sim ? 'simulation' : this.diffId); } catch (err) { console.error(err); } }
     if (!silent && this.ui) this.ui.toast('Checkpoint erreicht', 'ok', 2.2);
     this.G.events.emit('campaign:checkpoint', { mission: this.mission.id, id });
   }

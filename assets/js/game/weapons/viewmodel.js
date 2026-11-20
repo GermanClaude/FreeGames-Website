@@ -24,6 +24,7 @@ import { EXTRA_ACTIONS } from './gunsmith/actions2.js?v=20261115041504';
 import { RELOAD_ACTIONS } from './anim/reloads.js?v=20261115041504';
 import { INSPECT_ACTIONS } from './anim/inspects.js?v=20261115041504';
 import { BREAK_ACTIONS } from './anim/break.js?v=20261115041504';   // Kipplauf (26.10., ZW-12 Zwilling)
+import { SIM_ACTIONS } from './anim/simacts.js?v=20261115041504';   // Infanteriesimulation: Durchladen, Ladehemmung, Verband (isim/, 19.11.)
 import { MOVE_ACTIONS, GRENADE_LOW } from './anim/moves.js?v=20261115041504';
 import { COSMETIC } from './anim/reloads.js?v=20261115041504';
 import { BUILD_ACTIONS } from './hintergrundbau.js?v=20261115041504';
@@ -1712,6 +1713,7 @@ export class ViewModel {
       case 'ready': done = this._actReady(A, out); break;
       case 'fidget': done = this._actFidget(A, out); break;
       case 'strike': done = this._actGunStrike(A, out); break;
+      case 'sim': done = this._actSim(A, out); break;   // Infanteriesimulation (anim/simacts.js)
       default: done = true;
     }
     const f = A.cancel ? Math.max(0, A.fade) : 1;
@@ -1728,6 +1730,7 @@ export class ViewModel {
 
   _hideProps() {
     for (const p of Object.values(this.props)) p.visible = false;
+    if (this._simProps) this._simHide();
     const ch = this.cur?.chamber;
     if (ch) ch.mesh.visible = false;   // Kammer-Patrone (Inspizieren, anim/inspects.js)
   }
@@ -2021,7 +2024,7 @@ const DUST_BY_MAP = { grenzland: 0.7, niemandsland: 0.75, brandwald: 0.7, werk: 
 // Animationen 09.10.: Nachladen mit Varianten, Magazin entlang der Schachtachse (anim/reloads.js, anim/magwell.js),
 // vier Inspektionen je Mechanik mit Munitionsschätzung (anim/inspects.js), Ziehen je Klasse, Bereitmachen,
 // Leerlauf-Gesten, Bewegungsposen, Nahkampf-/Wurfvarianten (anim/moves.js)
-Object.assign(ViewModel.prototype, EXTRA_ACTIONS, RELOAD_ACTIONS, INSPECT_ACTIONS, MOVE_ACTIONS, BREAK_ACTIONS);
+Object.assign(ViewModel.prototype, EXTRA_ACTIONS, RELOAD_ACTIONS, INSPECT_ACTIONS, MOVE_ACTIONS, BREAK_ACTIONS, SIM_ACTIONS);
 // 24.10. (V1/V5): Ego-Waffen ohne Hänger – Vorrat, Bot-Fassung als Platzhalter, Neubau bei Stufenwechsel (hintergrundbau.js)
 Object.assign(ViewModel.prototype, BUILD_ACTIONS);
 

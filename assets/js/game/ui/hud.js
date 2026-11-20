@@ -640,7 +640,7 @@ export class HUD {
   _updateReadout(dt, w, def, show) {
     const el = this.el.readout;
     if (!el) return;
-    const ro = this._realAmmo && w && w.viewModel ? w.viewModel.readout : null;
+    const ro = this._realAmmo && !this.G.isim && w && w.viewModel ? w.viewModel.readout : null; // Simulation: eigene Schätzung (isim)
     if (ro && ro.seq !== this._roSeq) {
       this._roSeq = ro.seq;
       if (def && ro.weaponId === def.id) {
@@ -664,6 +664,7 @@ export class HUD {
     // Spielstil „Realistisch“: mindestens reduziertes HUD, Fadenkreuz nach Stil/Einstellung
     const fl = this._flags || {};
     if (fl.hudMin === 'reduziert' && st === 'voll') st = 'reduziert';
+    if (fl.hudMin === 'aus') st = 'aus'; // Infanteriesimulation: kein HUD (Gegenstände/Zustand zeigt isim/hud.js)
     if (this.root.dataset.xhair !== (fl.crosshair === false ? '0' : '1')) this.root.dataset.xhair = fl.crosshair === false ? '0' : '1';
     const changed = this.style !== st;
     this.style = st;
@@ -1276,7 +1277,7 @@ export class HUD {
 
     /* ---------- Punktetabelle */
     const showBoard = !!(input && input.down('scoreboard')) && G.mode;
-    const tablet = this.style === 'aus' && !!showBoard;
+    const tablet = this.style === 'aus' && !!showBoard && !G.isim; // Simulation: Karte nur als Gegenstand (isim/hud.js)
     if (tablet !== this._tablet) {
       this._tablet = tablet;
       toggle(this.root, 'is-tablet', tablet);

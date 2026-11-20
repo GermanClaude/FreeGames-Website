@@ -18,6 +18,7 @@ import { LoadoutPanel } from './loadout-panel.js?v=20261115041504';
 import { drawMapArt, rememberMinimap } from './mapart.js?v=20261115041504';
 import { NetMenus } from './net-menus.js?v=20261115041504';
 import { openFeedback } from '../../shared/feedback.js?v=20261115041504';
+import { activePad } from '../../shared/gamepad.js?v=20261115041504';
 
 // VR-Brille (Knopf „VR starten“ im Pausenmenü; Symbole in icons.js gehören zu einem anderen Bereich)
 const VR_ICON = '<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M6 16h36v16a3 3 0 0 1-3 3H31l-4-6h-6l-4 6H9a3 3 0 0 1-3-3z"/><circle cx="16" cy="24" r="3"/><circle cx="32" cy="24" r="3"/></svg>';
@@ -567,8 +568,7 @@ export class Menus {
 
   _pollPad() {
     if (!this.current || typeof navigator.getGamepads !== 'function') return;
-    let pad = null;
-    for (const p of navigator.getGamepads() || []) if (p && p.connected) { pad = p; break; }
+    const pad = activePad();
     if (!pad) return;
     const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
     const prev = this._padPrev;
@@ -579,9 +579,17 @@ export class Menus {
     if (capturing || now < this._padMute) { for (let i = 0; i < pad.buttons.length; i++) prev[i] = btn(i); this._padDir = null; return; }
     if (this.current === 'touchedit') { this.touchEditor.pollPad(pad); return; }
     const released = (i) => prev[i] && !btn(i);
-    // Richtung (Steuerkreuz oder Stick, mit Wiederholung)
+    // Sichtbarer Fokus bei Controller-Bedienung (plattform, 19.11.): programmatisches focus() zeigt nach einem Mausklick kein
+    // :focus-visible – body.np-pad-nav erzwingt den Fokusrahmen, bis Maus oder Touch wieder benutzt werden
+    let any = false;
+    for (let i = 0; i < pad.buttons.length; i++) if (btn(i)) { any = true; break; }
     const ax = pad.axes[0] || 0;
     const ay = pad.axes[1] || 0;
+    if (any || Math.abs(ax) > 0.6 || Math.abs(ay) > 0.6) this._padNav(true);
+    // Rechter Stick: lange Seiten (Einstellungen, Hilfe, Waffenkammer) scrollen
+    const ry = pad.axes[3] || 0;
+    if (Math.abs(ry) > 0.25) this._padScroll(ry);
+    // Richtung (Steuerkreuz oder Stick, mit Wiederholung)
     let dir = null;
     if (btn(12) || ay < -0.6) dir = 'up';
     else if (btn(13) || ay > 0.6) dir = 'down';
@@ -617,6 +625,30 @@ export class Menus {
     if (released(9) && this.current === 'pause') this._resume();
     if (released(4) || released(5)) this._cycleTabs(released(5) ? 1 : -1);
     for (let i = 0; i < pad.buttons.length; i++) prev[i] = btn(i);
+  }
+
+  /** Fokusrahmen für Controller-Bedienung an/aus (Maus/Touch schalten ihn ab). */
+  _padNav(on) {
+    if (typeof document === 'undefined' || !document.body) return;
+    if (on && !this._padNavHooked) {
+      this._padNavHooked = true;
+      const off = () => this._padNav(false);
+      window.addEventListener('pointerdown', off, { capture: true, passive: true });
+      window.addEventListener('mousemove', (e) => { if (Math.abs(e.movementX) + Math.abs(e.movementY) > 3) off(); }, { passive: true });
+    }
+    if (document.body.classList.contains('np-pad-nav') !== on) document.body.classList.toggle('np-pad-nav', on);
+  }
+
+  /** Nächsten scrollbaren Vorfahren des Fokus (sonst die sichtbare Seite) um den Stickausschlag verschieben. */
+  _padScroll(v) {
+    let n = document.activeElement && this.root.contains(document.activeElement) ? document.activeElement : this.root.querySelector('.m-screen:not([hidden])');
+    while (n && n !== this.root) {
+      if (n.scrollHeight > n.clientHeight + 4) {
+        const ov = getComputedStyle(n).overflowY;
+        if (ov === 'auto' || ov === 'scroll') { n.scrollTop += Math.sign(v) * (Math.abs(v) - 0.2) * 22; return; }
+      }
+      n = n.parentElement;
+    }
   }
 
   /** LB/RB: Reiter wechseln (Lobby, Einstellungen, Steuerung). */

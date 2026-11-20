@@ -70,7 +70,7 @@ void main() {
     float r2 = min(dot(vQ.xy, vQ.xy), 1.0);
     vec3 nB = vec3(vQ.xy, sqrt(1.0 - r2));
     float lam = clamp(dot(nB, uSunV.xyz) * 0.5 + 0.5, 0.0, 1.0);
-    float sh = mix(0.5, 1.22, lam) * mix(1.0, 0.82, t.a * (1.0 - lam));
+    float sh = mix(0.4, 1.3, lam) * mix(1.0, 0.75, t.a * (1.0 - lam));
     c.rgb *= mix(1.0, sh, uSunV.w);
   }
   #endif

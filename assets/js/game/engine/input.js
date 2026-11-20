@@ -21,6 +21,8 @@ import {
   TOUCH_BUTTONS, aspectBucket, resolveTouchLayout, loadKeyboardLayout,
 } from '../../shared/bindings.data.js?v=20261115041504';
 import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261115041504';
+import { activePad, padFamily, padGlyphSet } from '../../shared/gamepad.js?v=20261115041504';
+import { PAD_STICK_LABELS } from '../../shared/bindings.data.js?v=20261115041504';
 
 /** Alle Aktionen (Reihenfolge wie ACTION_DEFS; die ursprünglichen 17 sind enthalten). */
 export const ACTIONS = ACTION_IDS;
@@ -148,6 +150,12 @@ export class Input {
     this.enabled = false;
     /** Maustasten ohne Pointer-Lock zulassen (autostart/Tests). */
     this.allowUnlockedMouse = false;
+    /**
+     * Browser ohne Pointer-Lock (Konsolen-/TV-Browser, manche eingebettete Ansichten) oder mit dauerhaft abgelehnter
+     * Sperre: Umsehen per Ziehen mit gedrückter Maustaste, kein „Klicken, um weiterzuspielen“ (plattform, 19.11.).
+     */
+    this.lockUnsupported = typeof HTMLCanvasElement !== 'undefined' && !('requestPointerLock' in HTMLCanvasElement.prototype);
+    this._lockErrors = 0;
     this.lastDevice = this.mode === 'touch' ? 'touch' : 'keyboard';
     this.aimTarget = null;
     this.adsToggled = false;
@@ -389,8 +397,15 @@ export class Input {
     const pad = this._pad;
     if (!pad || this.lastDevice !== 'gamepad' || !this.G.settings.get('padVibration')) return;
     const act = pad.vibrationActuator;
-    if (!act || typeof act.playEffect !== 'function') return;
     const now = performance.now();
+    if (!act || typeof act.playEffect !== 'function') {
+      // Firefox u. a.: nur hapticActuators[].pulse (ein Motor) – plattform, 19.11.
+      const h = pad.hapticActuators && pad.hapticActuators[0];
+      if (!h || typeof h.pulse !== 'function' || now - this._lastRumble < 40) return;
+      this._lastRumble = now;
+      try { const p = h.pulse(clamp(Math.max(strong, weak), 0, 1), ms); if (p && typeof p.catch === 'function') p.catch(() => {}); } catch { /* */ }
+      return;
+    }
     if (now - this._lastRumble < 40) return;
     this._lastRumble = now;
     try {
@@ -446,9 +461,18 @@ export class Input {
     const dev = device || (this.mode === 'touch' ? 'touch' : this.lastDevice === 'gamepad' ? 'pad' : this.lastDevice === 'xr' ? 'xr' : 'kb');
     if (dev === 'touch') return '';
     const list = (this.bindings[dev] && this.bindings[dev][action]) || EMPTY;
-    const opts = { long, layout: this._kbLayout };
-    if (!list.length) return '';
+    const opts = { long, layout: this._kbLayout, pad: dev === 'pad' ? this.padStyle() : 'xbox' };
+    // Laufen liegt am Controller auf dem linken Stick (nicht belegbar) – Hinweise zeigen den Stick statt „W“ (plattform, 19.11.)
+    if (!list.length) return dev === 'pad' && PAD_STICK_LABELS[action] ? PAD_STICK_LABELS[action][long ? 1 : 0] : '';
     return all ? list.map((c) => codeLabel(c, opts)).join(' / ') : codeLabel(list[0], opts);
+  }
+
+  /** Symbolsatz des Controllers: Einstellung padIcons oder erkannt ('xbox' | 'ps' | 'nintendo'). */
+  padStyle() {
+    const v = this.G && this.G.settings ? this.G.settings.get('padIcons') : 'auto';
+    if (v === 'xbox' || v === 'ps' || v === 'nintendo') return v;
+    const p = this._pad;
+    return p ? padGlyphSet(padFamily(p.id)) : 'xbox';
   }
 
   /**
@@ -631,7 +655,7 @@ export class Input {
       if (this.mode === 'touch' || e.sourceCapabilities?.firesTouchEvents) return;
       this.lastDevice = 'mouse';
       if (!this.enabled) return;
-      if (!this.locked && !this.allowUnlockedMouse) {
+      if (!this.locked && !this.allowUnlockedMouse && !this.lockUnsupported) {
         this.requestLock();
         return;
       }
@@ -645,7 +669,7 @@ export class Input {
       const dy = e.movementY || 0;
       // Bekannter Chrome-Fehler: einzelne riesige Sprünge beim Pointer-Lock verwerfen.
       if (Math.abs(dx) > 450 || Math.abs(dy) > 450) return;
-      if (this.locked || (this.allowUnlockedMouse && e.buttons && this.enabled)) {
+      if (this.locked || ((this.allowUnlockedMouse || this.lockUnsupported) && e.buttons && this.enabled)) {
         this._mouseDX += dx;
         this._mouseDY += dy;
         this.lastDevice = 'mouse';
@@ -677,6 +701,12 @@ export class Input {
       if (was !== this.locked && G.events) G.events.emit('input:lock', { locked: this.locked });
     });
     this._on(document, 'pointerlockerror', () => {
+      // Nie gelungen und mehrfach abgelehnt (z. B. Konsolen-Browser, eingebettete Ansicht ohne Erlaubnis): Ersatzsteuerung
+      if (!this.everLocked && ++this._lockErrors >= 3 && !this.lockUnsupported) {
+        this.lockUnsupported = true;
+        console.info('[NULLPUNKT] Zeiger-Sperre nicht verfügbar – Umsehen per Ziehen mit gedrückter Maustaste.');
+        if (G.events) G.events.emit('input:mode', { mode: this.mode, device: this.lastDevice });
+      }
       if (G.events) G.events.emit('input:lock', { locked: false, error: true });
     });
 
@@ -695,7 +725,17 @@ export class Input {
     this._on(document, 'dblclick', stop);
     this._on(document, 'touchmove', (e) => { if (!isScrollable(e.target)) e.preventDefault(); }, { passive: false });
 
-    this._on(window, 'gamepadconnected', () => { this.lastDevice = 'gamepad'; });
+    this._on(window, 'gamepadconnected', (e) => {
+      this.lastDevice = 'gamepad';
+      // Hinweis im Match (plattform, 19.11.): welcher Controller und welche Symbole
+      const gp = e && e.gamepad;
+      const st = G.match && G.match.state;
+      if (gp && G.events && (st === 'playing' || st === 'countdown')) {
+        const fam = padFamily(gp.id);
+        const name = { ps: 'PlayStation', nintendo: 'Nintendo', steam: 'Steam', xbox: 'Xbox' }[fam] || 'Controller';
+        G.events.emit('injury:notice', { text: `Controller verbunden (${name})${gp.mapping === 'standard' ? '' : ' – unbekannte Tastenbelegung, ggf. unter Einstellungen → Belegung anpassen'}`, tone: 'dim' });
+      }
+    });
 
     // Touch-Oberfläche
     const root = document.getElementById('touch-ui');
@@ -866,9 +906,13 @@ export class Input {
 
   _pollGamepad(dt) {
     if (typeof navigator.getGamepads !== 'function') return;
-    let pad = null;
-    const pads = navigator.getGamepads();
-    for (const p of pads) if (p && p.connected) { pad = p; break; }
+    // Controller, mit dem gespielt wird (zuletzt benutzt; ruhende Zusatzgeräte von Steam/Windows überspringen)
+    const pad = activePad();
+    if (pad !== this._pad && this._pad && pad && pad.index !== this._pad.index) {
+      // Gerätewechsel: gehaltene Tasten des alten Controllers lösen (sonst bleibt z. B. Feuern hängen)
+      this._releaseSource('pad');
+      this._padPrev.length = 0;
+    }
     this._pad = pad;
     if (!pad) {
       if (this._padActive) { this._releaseSource('pad'); this._padActive = false; }

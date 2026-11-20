@@ -67,6 +67,7 @@ export class Injuries {
   _hit(e) {
     const a = e.target;
     if (!this._host || !a || e.killed || !(e.amount > 0) || e.weaponId === 'fall' || e.weaponId === 'world') return;
+    if (a === this.G.player && this.G.isim) return; // Infanteriesimulation: Wunden je Körperteil in isim/body.js
     const j = this.of(a);
     const G = this.G;
     let news = null;
@@ -218,7 +219,7 @@ export class Injuries {
     const inp = G.input;
     if (inp && P && !P.alive && typeof inp.pressed === 'function' && this.medicInfo() && inp.pressed('interact')) this.giveUp();
     if (inp && P && P.alive && typeof inp.pressed === 'function') {
-      if (inp.pressed('verband')) this.bandage();
+      if (inp.pressed('verband') && !G.isim) this.bandage(); // Simulation: Verband in isim/body.js
       if (this.near && inp.pressed('interact')) this.revive();
     }
     this.near = null;

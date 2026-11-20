@@ -8,7 +8,7 @@ import { modeOptionsHtml } from './mode-options.js?v=20261115041504'; // Modus-E
 import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261115041504';
 import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261115041504'; // atmosphere-weather; Fahrzeuge je Kartengröße
 import { realTimePreset } from '../world/weather.js?v=20261115041504'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261115041504';
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261115041504';
 import { esc, num, secs, meters } from './dom.js?v=20261115041504';
 import { ICON } from './icons.js?v=20261115041504';
 import { drawMapArt } from './mapart.js?v=20261115041504';
@@ -314,6 +314,7 @@ export class Lobby {
       try { this.G.settings.set('gameStyle', c.style); } catch { /* */ }
       this._renderDeploy(); this._renderSummary(); this.menus.sound('click'); return;
     }
+    if (ds.simguide) { try { this.G.settings.set('simGuide', ds.simguide); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.xhair != null) { try { this.G.settings.set('realisticCrosshair', !this.G.settings.get('realisticCrosshair')); } catch { /* */ } this._renderDeploy(); this.menus.sound('toggle'); return; }
     if (ds.len) { c.matchLength = ds.len; this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.tod != null) { c.timeOfDay = ds.tod || null; try { this.G.settings.set('lastTime', ds.tod || 'standard'); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
@@ -395,7 +396,14 @@ export class Lobby {
     const diffs = DIFF_ORDER.filter((id) => d.DIFF[id] || true).map((id) => `<button type="button" role="radio" data-diff="${id}" aria-checked="${id === c.difficulty}">${esc((d.DIFF[id] && d.DIFF[id].name) || id)}</button>`).join('');
     const xpm = diff.xpMult && diff.xpMult !== 1 ? `EP ×${num(diff.xpMult, 2).replace(/,?0+$/, '')}` : 'EP ×1';
     const st = GAME_STYLES[c.style] || GAME_STYLES.arcade;
-    const styles = STYLE_ORDER.map((id) => `<button type="button" role="radio" data-style="${id}" aria-checked="${id === c.style}">${esc(GAME_STYLES[id].label)}</button>`).join('');
+    // Infanteriesimulation nur in passenden Modi (SIM_MODES); sonst spielt „Simulation“ als „Realistisch“
+    const simOk = (SIM_MODES || []).includes(c.modeId);
+    const styles = STYLE_ORDER.filter((id) => id !== 'simulation' || simOk || c.style === id).map((id) => `<button type="button" role="radio" data-style="${id}" aria-checked="${id === c.style}">${esc(GAME_STYLES[id].label)}</button>`).join('');
+    const sg = this.G.settings.get('simGuide') || 'tutorial';
+    const simBox = c.style !== 'simulation' ? '' : simOk
+      ? `<div class="m-seg" role="radiogroup" aria-label="Führung" style="margin-top:8px">${[['tutorial', 'Tutorial'], ['hilfe', 'Hilfe auf Anfrage'], ['aus', 'Aus']].map(([id, l]) => `<button type="button" role="radio" data-simguide="${id}" aria-checked="${id === sg}">${l}</button>`).join('')}</div>
+        <p class="lb-note">Führung: ${sg === 'tutorial' ? 'Handgriffe als Liste mit Erklärung.' : sg === 'hilfe' ? 'Liste nur auf Anfrage (F2).' : 'Ganz ohne Hilfe.'} Tasten: Durchladen O · Magazin prüfen I · Feuerwahl/Sicherung M · Visier Bild ↑/↓ · Verband N · Abbinden 7 · Kompass , · Karte . · Ausrüstung P</p>`
+      : '<p class="lb-note">In diesem Modus nicht verfügbar – es gilt „Realistisch“.</p>';
     const xh = !!this.G.settings.get('realisticCrosshair');
     const map = d.MAPS[c.mapId] || {};
     const times = Array.isArray(map.times) ? map.times : [];
@@ -431,7 +439,7 @@ export class Lobby {
       </section>
       ${c.modeId === 'training' ? '' : `<section class="lb-sec lb-row2">
         <div><h2 class="m-h2">Spielstil</h2><div class="m-seg lb-style" role="radiogroup" aria-label="Spielstil">${styles}</div>
-          <p class="lb-note">${esc(st.desc || '')}</p>
+          <p class="lb-note">${esc(st.desc || '')}</p>${simBox}
           ${c.style === 'realistisch' ? `<button type="button" class="lb-bal" data-xhair aria-pressed="${xh}"><i class="m-check">${ICON.check}</i>Fadenkreuz anzeigen</button>` : ''}</div>
         ${extra.trim() ? `<div class="lb-extra">${extra}</div>` : ''}
       </section>`}`;
@@ -522,7 +530,7 @@ export class Lobby {
     if (c.modeId === 'training') who = 'Allein am Stand';
     else if (m.teams !== false) who = `${c.allies + 1} gegen ${c.enemies}`;
     else who = `${c.enemies + 1} Spieler`;
-    const sty = c.style === 'realistisch' && c.modeId !== 'training' ? ' · Realistisch' : '';
+    const sty = c.modeId === 'training' ? '' : c.style === 'realistisch' ? ' · Realistisch' : c.style === 'simulation' ? ((SIM_MODES || []).includes(c.modeId) ? ' · Simulation' : ' · Realistisch') : '';
     const cl = CLASSES[c.cls] ? ` · ${CLASSES[c.cls].name}` : '';
     this.el.summary.innerHTML = `<small>${esc(m.short || '')} · ${esc(prep)} ${esc(map.name || c.mapId)}</small><b>${esc(m.name || c.modeId)}</b><span>${esc(who)}${c.modeId === 'training' ? '' : ` · ${esc(diff.name || c.difficulty)}${esc(sty)}`}${esc(cl)}</span>`;
   }

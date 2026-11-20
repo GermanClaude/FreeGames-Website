@@ -344,7 +344,7 @@ function dressFacade(b, M, h, o) {
       // Balkontür: Blumenkasten außen am Balkongeländer statt an der Fensterbank (gleicher Zufallsverbrauch)
       const bl = op.fd ? (o.balconies || []).find(q => q.side === op.side && q.at === op.at && (q.floor ?? 1) === fl) : null;
       const [px, pz, ry] = onWall(M, h, op.side, op.at, bl ? (bl.d ?? 0.85) + 0.15 : 0.14);
-      const y = bl ? fl * h.fh + 0.7 : fl * h.fh + (op.sill ?? 0.95) - 0.3;
+      const y = bl ? fl * h.fh + 0.7 : fl * h.fh + (op.sill ?? 0.95) - 0.24; // platz: Oberkante knapp unter der Fensterbank (vorher 8 cm tiefer)
       merkeFensterdeko(b, px, fl * h.fh + (op.sill ?? 0.95), pz); // platz: fensterleben setzt hier keinen zweiten Kasten
       const f = frame(b, px, y, pz, ry);
       f.box(0, 0, 0, op.w + 0.1, 0.22, 0.24, 'tiles_terracotta', { tint: '#c47a52', collide: false, minimap: false, grad: false, ao: false });

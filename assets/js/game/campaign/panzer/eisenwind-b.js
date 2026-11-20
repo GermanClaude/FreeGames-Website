@@ -284,7 +284,12 @@ export const P6 = {
             m.say('kiesel', 'Kontakt! Panzerfaust im ersten Stock links!');
             yield m.killObjective('gasse', 'Säubere die Gasse mit Kiesel', ['gasse']);
             m.say('wendt', 'Gasse frei. Weiter zum Markt – bleibt dicht bei uns.');
-            yield m.reach('markt', 'Rücke mit Kiesel zum Marktplatz vor', { at: F.at(0.38, 0), r: 25, label: 'Markt' });
+            // Marktplatz: Zone um die Pak-Stellung (Stellplatz liegt sicher auf der Straße, nicht in einem Haus)
+            const pak = m.get('markt')[0];
+            const mp = pak ? [pak.position.x, pak.position.z] : F.at(0.38, 0);
+            m.objective('markt', 'Rücke mit Kiesel zum Marktplatz vor', { pos: mp, label: 'Markt' });
+            yield m.until(() => playerPos(m).distanceTo(m.vec(mp)) < 45 || (pak && !pak.alive));
+            m.done('markt');
           },
         },
         {
@@ -307,7 +312,8 @@ export const P6 = {
             infantry(m, 'kopf', 5, F.at(0.7, 10), { hold: true, cls: 'pionier', r: 9 });
             m.say('korvan', 'Brückenkopf an Vesk: Feindliche Panzer und Infanterie am Markt. Wir halten!');
             yield destroy(m, 'kopf', 'Nimm den Brückenkopf (Bunker und Schützenpanzer)', m.get('kopf'), { label: 'Brückenkopf' });
-            yield m.reach('ziel', 'Erreiche die Brücke', { at: F.at(0.8, 0), r: 25, label: 'Brücke' });
+            const bk = m.get('kopf')[0];
+            yield m.reach('ziel', 'Erreiche die Brücke', { at: bk ? [bk.position.x, bk.position.z] : F.at(0.8, 0), r: 30, label: 'Brücke' });
             m.complete();
           },
         },
@@ -316,4 +322,3 @@ export const P6 = {
   },
 };
 
-void playerPos;

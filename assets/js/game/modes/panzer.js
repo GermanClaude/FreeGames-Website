@@ -185,7 +185,7 @@ export class PanzerMode extends BaseMode {
       const b = bots[i];
       if (!b) return;
       b._psim = { crew: true, role: s.def.id };
-      b.name = CREW_NAMES[i % CREW_NAMES.length];
+      b.name = (this.crewNames && this.crewNames[s.def.id]) || CREW_NAMES[i % CREW_NAMES.length];
       try { const pl = G.bots._plates && G.bots._plates.get(b); if (pl && pl.setName) pl.setName(b.name); } catch { /* */ }
       if (!G.actors.includes(b)) G.actors.push(b);
       G.spawnActor(b, { position: tank.position.clone().add(_a.set(3 + i, 0, 2)), yaw: 0 });
@@ -921,7 +921,11 @@ export class PanzerMode extends BaseMode {
       S.help = S.steps ? null : this._helpText();
     }
     if (this._banner) S.banner = this._banner;
+    if (this.hudReserve) S.reserveTop = this.hudReserve();
     this.hud.update(dt, S);
+    // Namensschilder der eigenen Besatzung (sitzt im Panzer) nicht über die Optik legen
+    const plates = G.bots && G.bots._plates;
+    if (plates) for (const st of v.seats) { const a = st.actor; const pl = a && !a.isPlayer ? plates.get(a) : null; if (pl && pl.sprite) pl.sprite.visible = false; }
   }
 
   _crewRows() {
@@ -992,7 +996,7 @@ export class PanzerMode extends BaseMode {
         const bunker = !!(v.def.interior && v.def.interior.blastDoor);
         const wish = this.crew && this.crew.ammoOrder;
         return [
-          { html: `Befohlene Munition wählen ${k('swap', 'Mausrad')}/1–4`, hot: 'wahl', done: s !== 'leer' && s !== 'offen' ? true : !wish || g.select === wish, why: 'Die Sorte ruft der Kommandant aus (Untertitel). Wähle sie, bevor du greifst – eine falsche Granate im Rohr muss erst verschossen werden.' },
+          { html: `Munition wählen ${k('swap', 'Mausrad')}`, hot: 'wahl', done: s !== 'leer' && s !== 'offen' ? true : !wish || g.select === wish, why: 'Die Sorte ruft der Kommandant aus (Untertitel). Wähle sie, bevor du greifst – eine falsche Granate im Rohr muss erst verschossen werden.' },
           ...(bunker ? [{ html: `Bunkertür öffnen ${k('reload', 'R')}`, hot: 'gestell', done: s !== 'leer' || g.busyKind === 'tuer', why: 'Der Munitionsbunker im Turmheck ist durch eine Schiebetür vom Kampfraum getrennt (Sprengklappen nach außen).' }] : []),
           { html: `Granate greifen ${k('reload', 'R')}`, hot: 'gestell', done: s === 'gegriffen' || s === 'eingeschoben' || s === 'geladen', why: 'Zum Gestell drehen und die Granate herausziehen – bei starken Stößen fällt sie aus der Hand.' },
           { html: `Ansetzen/einschieben ${k('fire', 'LMT')}`, hot: 'verschluss', done: s === 'eingeschoben' || s === 'geladen', why: 'Zum Verschluss drehen und die Granate ins Rohr schieben.' },
@@ -1017,11 +1021,13 @@ export class PanzerMode extends BaseMode {
     if (this.G.time.elapsed - (this._startT || (this._startT = this.G.time.elapsed)) > 40 && !this.G.input.down('scoreboard')) return null;
     const k = (a, fb) => `<kbd>${this.G.input.label(a) || fb}</kbd>`;
     const sv = `${k('crouch', 'C')} Sicht · `;
-    if (this.arcade) return `<h4>Arcade</h4><p>${k('move_forward', 'W')}${k('move_left', 'A')}${k('move_back', 'S')}${k('move_right', 'D')} fahren · Maus richten · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom</p><p>1–4 Munition · ${sv}${k('grenade', 'G')} Wärmebild · ${k('befehl', 'Y')} Befehlsrad</p>`;
+    const pad = this.G.input.lastDevice === 'gamepad'; // plattform: Controller-Hinweise statt Maus/Zifferntasten
+    const aim = pad ? '<kbd>R-Stick</kbd> richten' : 'Maus richten', n14 = pad ? '' : '/1–4';
+    if (this.arcade) return `<h4>Arcade</h4><p>${k('move_forward', 'W')}${k('move_left', 'A')}${k('move_back', 'S')}${k('move_right', 'D')} fahren · ${aim} · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom</p><p>${pad ? `${k('swap', 'Y')} Munition` : '1–4 Munition'} · ${sv}${k('grenade', 'G')} Wärmebild · ${k('befehl', 'Y')} Befehlsrad</p>`;
     switch (this.role) {
       case 'kommandant': return `<h4>Kommandant – Befehle</h4><p>${k('move_forward', 'W')} Marsch/schneller · ${k('move_back', 'S')} Halt (2×: zurück) · ${k('move_left', 'A')}/${k('move_right', 'D')} links/rechts</p><p>${k('gadget', 'B')} zur Markierung · ${k('prone', 'Z')} Deckung · ${k('tactical', 'X')} Front zum Ziel</p><p>${k('squad_order', 'H')} Ziel übergeben · ${k('jump', 'Leertaste')} Feuer! · ${k('melee', 'V')} Feuer frei · 1–4 Munition</p><p>${k('befehl', 'Y')} Befehlsrad · ${sv}${k('verband', 'N')} Restlicht · Q/E/Z Kopf</p>`;
-      case 'richtschuetze': return `<h4>Richtschütze</h4><p>Maus richten · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom · ${k('swap', 'Mausrad')}/1–4 Munition</p><p>${k('light', 'T')} Laser · ${k('grenade', 'G')} Wärmebild · ${k('verband', 'N')} Polarität/Restlicht · ${sv}</p><p>Der Kommandant weist Ziele zu und befiehlt „Feuer!“.</p>`;
-      case 'ladeschuetze': return `<h4>Ladeschütze</h4><p>Zum Gestell drehen · ${k('reload', 'R')} greifen · zum Verschluss · ${k('fire', 'LMT')} einschieben · ${k('reload', 'R')} schließen${this.sim ? ` · ${k('reload', 'R')} entsichern` : ''}</p><p>${k('swap', 'Mausrad')}/1–4 Munitionsart · ${sv}Q/E/Z Kopf neigen</p>`;
+      case 'richtschuetze': return `<h4>Richtschütze</h4><p>${aim} · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom · ${k('swap', 'Mausrad')}${n14} Munition</p><p>${k('light', 'T')} Laser · ${k('grenade', 'G')} Wärmebild · ${k('verband', 'N')} Polarität/Restlicht · ${sv}</p><p>Der Kommandant weist Ziele zu und befiehlt „Feuer!“.</p>`;
+      case 'ladeschuetze': return `<h4>Ladeschütze</h4><p>Zum Gestell drehen · ${k('reload', 'R')} greifen · zum Verschluss · ${k('fire', 'LMT')} einschieben · ${k('reload', 'R')} schließen${this.sim ? ` · ${k('reload', 'R')} entsichern` : ''}</p><p>${k('swap', 'Mausrad')}${n14} Munitionsart · ${sv}Q/E/Z Kopf neigen</p>`;
       case 'fahrer': return `<h4>Fahrer</h4><p>${k('move_forward', 'W')} Gas · ${k('move_back', 'S')}/${k('jump', 'Leertaste')} Bremse · ${k('move_left', 'A')}/${k('move_right', 'D')} Lenkhebel</p><p>${k('swap', 'Mausrad')} Wahlhebel · ${k('gadget', 'B')} Feststellbremse · ${k('tactical', 'X')} Anlasser · ${k('light', 'T')} Licht</p><p>${sv}Befehle des Kommandanten oben im Bild.</p>`;
       default: return null;
     }

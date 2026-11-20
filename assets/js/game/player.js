@@ -591,14 +591,16 @@ export class Player {
     // FPV-Drohne (modes/drone.js, this.piloting): der Körper steht still und bleibt verwundbar, Blick und Eingaben steuern
     // die Drohne (wie im Countdown: keine Bewegung, kein Feuer, Waffe ruht)
     const piloting = !!this.piloting;
-    const frozen = !G.match || G.match.state !== 'playing' || piloting;
+    // Infanteriesimulation (isim/body.js): bewusstlos – kein Blick, keine Bewegung, keine Waffe
+    const downed = !!this.simDown;
+    const frozen = !G.match || G.match.state !== 'playing' || piloting || downed;
     const now = G.time.elapsed;
     const w = this.weapon;
     const def = w ? w.currentDef : null;
     const touch = input.mode === 'touch';
 
     // Blick (auch im Countdown) – beim freien Zielen bewegt sich zuerst die Waffe, die Sicht folgt am Rand der Totzone
-    if (!piloting) this._applyLook(input.look.dx, input.look.dy, dt, touch, w);
+    if (!piloting && !downed) this._applyLook(input.look.dx, input.look.dy, dt, touch, w);
     // MG-Stellung (mappoints.js mount): Drehbereich um die Feuerrichtung, Höhe −20°…+25°
     if (this.mounted) {
       const m = this.mounted;
@@ -712,6 +714,7 @@ export class Player {
     if (now < this.boostUntil) gear *= this._boostMult;
     if (now < (this.netUntil || 0)) gear *= this.netSlow ?? 0.15; // Wurfnetz (weapons/grenades.js)
     if (this.injury && this.injury.leg) gear *= 0.72; // Beintreffer: humpeln (injuries.js)
+    if (this.simSpeed > 0) gear *= this.simSpeed; // Infanteriesimulation: Gewicht der Ausrüstung, Blutverlust
     if (stanceBusy && !this._dive) gear *= 0.25;
     if (this.plating) gear *= 0.8;
     // Gelände: bergauf langsamer (bis −30 %), bergab etwas schneller; nach Stufen und harten Landungen kurz gebremst
@@ -839,6 +842,7 @@ export class Player {
     // knappe Ausdauer hält die Anstrengung oben (Atmung, Zielwandern)
     const sta = this.stamina;
     sta.setStyle(G.match && G.match.styleFlags);
+    if (this.simStamina > 0 && sta.mult > 0) sta.mult *= this.simStamina; // Infanteriesimulation (isim/body.js): Gewicht, Blutverlust
     if (this.sprinting && !frozen) sta.sprint(dt);
     sta.update(dt, this.sliding || this.mantling || !body.onGround ? RECOVER.none : hs > 0.6 && !this.crouching && !this.prone ? RECOVER.move : RECOVER.still);
     this.exertion = Math.max(this.exertion, sta.strain);

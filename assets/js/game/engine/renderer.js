@@ -485,6 +485,8 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
       } else sm.autoUpdate = true;
       const exp = renderer.toneMappingExposure;
       renderer.toneMappingExposure = postState.exposure * 1.05;
+      // Vorab-Bilder für die Brille (engine/xr/scope.js: echtes Zielfernrohrbild) – eigene Zielgröße, XR kurz aus
+      if (typeof this.xrPrePass === 'function') { try { this.xrPrePass(renderer, scene); } catch (err) { this.xrPrePass = null; console.warn('[NULLPUNKT] VR-Vorabbild:', err); } }
       renderer.autoClear = true;
       renderer.render(scene, camera);
       if (vmScene && vmScene.visible !== false) {

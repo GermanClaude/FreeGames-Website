@@ -7,7 +7,8 @@ import { esc } from '../dom.js?v=20261115041504';
 import { rowHtml, syncRows, setRowDisabled } from './rows.js?v=20261115041504';
 
 export const VR_KEYS = ['vrEnabled', 'vrHand', 'vrTurn', 'vrTurnStep', 'vrTurnSpeed', 'vrVignette', 'vrVignetteStrength', 'vrMoveDir',
-  'vrSeated', 'vrPhysical', 'vrRoomScale', 'vrSmoothing', 'vrGripHold', 'vrTwoHand', 'vrLaser', 'vrQuality', 'vrScale'];
+  'vrLocomotion', 'vrSeated', 'vrPhysical', 'vrRoomScale', 'vrSmoothing', 'vrGripHold', 'vrTwoHand', 'vrReload', 'vrGrenadeGrab', 'vrScope', 'vrGunAmmo',
+  'vrLaser', 'vrQuality', 'vrScale', 'vrFrameRate', 'vrFoveation'];
 
 const HINTS = {
   vrEnabled: 'Im Match erscheint „VR starten“ (unten in der Mitte bzw. im Pausenmenü). Lobby und Einstellungen bleiben am Bildschirm.',
@@ -25,6 +26,13 @@ const HINTS = {
   vrLaser: 'Kleiner Punkt dort, wohin der Lauf zeigt (färbt sich bei Treffern).',
   vrQuality: 'Automatisch: auf der Quest-Brille „Niedrig“ (72–90 Bilder/s), am PC mit Air Link wie am Bildschirm.',
   vrScale: 'Weniger = schneller, aber unschärfer. Automatisch: Quest-Brille 80 %, PC 100 %.',
+  vrLocomotion: 'Teleport: linken Stick nach vorn halten, Bogen auf den Boden richten, loslassen – kurzes Abblenden, keine Bewegung im Bild. Am angenehmsten bei Übelkeit.',
+  vrReload: 'Per Hand: Taste der Waffenhand (A bzw. X) wirft das Magazin aus, Nebenhand greift ein neues an der Brust (Griff-Taste) und schiebt es von unten in den Schacht; bei leerem Patronenlager mit der Nebenhand hinten am Verschluss durchladen. Vereinfacht: Nachlade-Taste wie bisher.',
+  vrGrenadeGrab: 'Nebenhand an die Brust, Griff-Taste halten = Granate in der Hand, ausholen und loslassen wirft sie mit deinem Schwung.',
+  vrScope: 'Zielfernrohre und Kampfvisiere zeigen ein echtes vergrößertes Bild (kostet etwas Leistung, nur wenn das Auge nah am Okular ist).',
+  vrGunAmmo: 'Kleine Anzeige seitlich an der Waffe (Patronen im Magazin), zusätzlich zur Uhr am Handgelenk.',
+  vrFrameRate: 'Automatisch: die Brille entscheidet (Quest meist 72 oder 90 Hz). Höher ist flüssiger, braucht aber mehr Leistung.',
+  vrFoveation: 'Rechnet den Bildrand mit weniger Pixeln (Quest). Automatisch: Brille stark, PC aus.',
 };
 
 /** Unterstützung: null = wird geprüft, true/false. */

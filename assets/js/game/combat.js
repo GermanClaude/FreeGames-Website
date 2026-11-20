@@ -383,6 +383,8 @@ export class Combat {
     const absorbed = armorRes ? armorRes.plates + armorRes.helmet : 0;
     const before = target.health;
     target.health = Math.max(0, target.health - amount);
+    // Infanteriesimulation (isim/body.js): tödlicher Treffer am Spieler → bewusstlos statt tot (Leben bleibt bei 1)
+    if (target.health <= 0 && target.isPlayer && G.isim && G.isim.interceptDeath(target, info, amount, before)) target.health = 1;
     target.lastDamageTime = now;
     const dealt = before - target.health;
     const killed = target.health <= 0;

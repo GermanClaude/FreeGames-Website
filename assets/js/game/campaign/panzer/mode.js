@@ -29,7 +29,11 @@ const CSS = `
 /* Panzer-Kampagne: Missionsfunk oben (unten liegt der Bordsprech), Zielliste unter der Minikarte */
 body.pk-on #np-campaign .kc-sub.radio { bottom: auto; top: 9px; width: min(46vw, 640px); }
 body.pk-on #np-campaign .kc-obj { top: 200px; width: min(270px, 26vw); }
+body.pk-on #np-campaign .kc-obj li { font-size: 13px; }
+body.pk-on #np-campaign .kc-obj li.done { display: none; } /* Platz für die Panzer-Spalte; erfüllte Ziele meldet die Einblendung */
 @media (max-height: 520px) { body.pk-on #np-campaign .kc-sub.radio { top: 6px; width: min(44vw, 520px); } }
+body.pk-on #np-campaign .kc-toast { white-space: normal; max-width: min(640px, 52vw); text-align: center; top: 21%; line-height: 1.35; }
+body.pk-on[data-input-mode="touch"] #np-campaign .kc-toast { max-width: 50vw; top: 30%; font-size: 13px; }
 body.pk-on[data-input-mode="touch"] #np-campaign .kc-obj { left: 118px; top: 6px; width: min(190px, 22vw); }
 body.pk-on[data-input-mode="touch"] #np-campaign .kc-sub.radio { top: 6px; left: 50%; width: min(36vw, 460px); }
 `;
@@ -45,6 +49,8 @@ export class PanzerCampaignMode extends PanzerMode {
     this.store = new CampaignProgress(PZ_ORDER, PZ_ORDER);
     this.ui = null; this.director = null; this.mission = null; this.success = null; this.cinema = false;
     this.campaignMode = true;
+    // Besatzung von „Falke 2“ (frei erfunden); der Platz des Spielers bleibt ohne Namen
+    this.crewNames = { commander: 'Fw. Roeder', gunner: 'Uffz. Martell', driver: 'Gefr. Ollmann', loader: 'Gefr. Brucks', funker: 'Gefr. Wiese', mg: 'Gefr. Wiese', mechaniker: 'Gefr. Arndt' };
     this._pre = null; this._keys = null; this._padA = false;
   }
 
@@ -108,10 +114,26 @@ export class PanzerCampaignMode extends PanzerMode {
     const cp = (st && st.checkpoint) || { at: this.F.at(0.05, 0), yaw: this.F.yaw };
     const p = D.vec(cp.at);
     const spot = sys.findSpot(p, type, { maxR: 40, toward: this.F.toB }) || { position: p, yaw: cp.yaw };
-    if (!this._spawnOwn(type, spot.position, cp.yaw ?? spot.yaw)) return;
+    if (!this._spawnOwn(type, spot.position, this._freeYaw(spot.position, cp.yaw ?? spot.yaw))) return;
     this._hooks();
     this.director.start();
     if (this.mission.night) this._applyNight(this.mission.night);
+  }
+
+  /** Blickrichtung mit freier Bahn (Stadt: nicht vor eine Hauswand stellen) – Probe ±30°…180° um die Wunschrichtung. */
+  _freeYaw(pos, yaw) {
+    const G = this.G, W = G.world, sys = G.vehicles;
+    if (!W || !W.raycast) return yaw;
+    const o = pos.clone(); o.y += 1.6;
+    for (const dy of [0, 0.5, -0.5, 1.05, -1.05, 1.57, -1.57, 2.3, -2.3, Math.PI]) {
+      const y = yaw + dy, d = _v.set(-Math.sin(y), 0, -Math.cos(y));
+      const was = sys ? sys._noVeh : false;
+      if (sys) sys._noVeh = true;
+      let h = null;
+      try { h = W.raycast(o, d, 28); } finally { if (sys) sys._noVeh = was; }
+      if (!h || h.distance > 26) return y;
+    }
+    return yaw;
   }
 
   tick(dt) {
@@ -120,8 +142,22 @@ export class PanzerCampaignMode extends PanzerMode {
       for (const b of this._pre) if (!b._kc && !b._psim) { try { G.bots.removeBot(b); } catch { /* */ } }
       this._pre = null;
     }
+    // Luftfahrzeuge der Karte (Stellplätze) gehören nicht in die Panzer-Kampagne
+    if ((this._airT = (this._airT || 0) - dt) <= 0 && G.vehicles && G.vehicles.list) {
+      this._airT = 2;
+      try { G.vehicles.spawns = (G.vehicles.spawns || []).filter((sp) => !(VEHICLES[sp.type] && VEHICLES[sp.type].air)); } catch { /* */ }
+      for (const v of [...G.vehicles.list]) if (v.def && v.def.air && !(this.director && this.director.vehicles.includes(v))) { try { G.vehicles.removeVehicle(v); } catch { /* */ } }
+    }
     if (this.cinema) {
       if (G.input && G.input.enabled) G.input.setEnabled(false);
+      // Namensschilder ausblenden (Darsteller stehen im Bild)
+      const plates = G.bots && G.bots._plates;
+      for (const b of (G.bots && G.bots.bots) || []) {
+        if (b.soldier && b.soldier.root) b.soldier.root.visible = false;
+        const pl = plates && plates.get(b);
+        if (pl && pl.sprite) pl.sprite.visible = false;
+      }
+      this._hidBots = true;
       this._pollPad();
       // Panzer stehen während der Sequenz
       const v = this.tank;
@@ -146,6 +182,13 @@ export class PanzerCampaignMode extends PanzerMode {
     this._night = () => { this.baseFilter = ''; if (G.world) G.world.nightVis = 1; const c = this.optics && this.optics.canvas; if (c) c.style.filter = ''; };
   }
 
+  /** Unterkante der Zielliste (px) – die linke HUD-Spalte des Panzers bleibt darunter (psim/hud.js). */
+  hudReserve() {
+    const el = this.ui && this.ui.root ? this.ui.root.querySelector('.kc-obj') : null;
+    if (!el || !el.classList.contains('on')) return 0;
+    return el.getBoundingClientRect().bottom + 8;
+  }
+
   /* ------------------------------------------------------------ Kinomodus */
 
   enterCinema(on) {
@@ -163,6 +206,10 @@ export class PanzerCampaignMode extends PanzerMode {
       const st = G.match.state;
       if (G.input && (st === 'playing' || st === 'countdown')) G.input.setEnabled(true);
       if (this.ui) this.ui.setMode('play');
+      if (this._hidBots) {
+        this._hidBots = false;
+        for (const b of (G.bots && G.bots.bots) || []) if (b.soldier && b.soldier.root && b.soldier.state !== 'hidden' && !b._vehHidden && !b.vehicle) b.soldier.root.visible = true;
+      }
       // Spieler zurück in seine Sicht (Sequenzkamera lag darüber)
       if (G.player && this.tank && G.player.vehicle !== this.tank && this.tank.alive) this._enterPlayer();
     }

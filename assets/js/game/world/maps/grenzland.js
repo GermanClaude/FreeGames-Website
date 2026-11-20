@@ -216,7 +216,7 @@ function dorf(b) {
   woodFence(b, 30, 30, 42, 30); woodFence(b, 42, 30, 42, 48);
   for (const [x, z] of [[-36, 92], [-24, 104], [28, 104], [-14, 32], [40, 46], [-42, 60], [12, 72]]) b.plant('bush', x, 0, z, { s: 1.1 });
   // Straßenraum: Autos, Laternen, Sandsäcke (Flaggenkampf)
-  car(b, 8, 79, { ry: 1.25, color: '#6b7a52' }); car(b, -21, 67, { ry: 0.25 }); car(b, 28, 54, { ry: -0.3, color: '#c7c7c2' });
+  car(b, 8, 79, { ry: 1.25, color: '#6b7a52' }); car(b, -21, 68.2, { ry: 0.25 }); /* platz: 1,2 m weiter weg – Heck stand 25 cm vor der Gasthausbank */ car(b, 28, 54, { ry: -0.3, color: '#c7c7c2' });
   lampPost(b, 5, 86); lampPost(b, -15, 62); lampPost(b, 12, 50);
   sandbags(b, -2, 86, 5, 88, { rows: 3 }); sandbags(b, -20, 84, -14, 87, { rows: 3 });
   sandbags(b, 2, 58, 8, 60, { rows: 3 });
@@ -540,7 +540,9 @@ const H_Y = 15; // Plateauhöhe Funkhügel
 // ---------------------------------------------------------------------------
 /** karten-voll: Ortschaft aufbauen, dann Leben an Fassaden/Fenstern (nur Optik; Starts, Flaggen, Kampagne frei). */
 function leben(b, res, stil) {
-  belebe(b, { stil, einrichten: stil === 'dorf', sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...KAMPAGNE_PUNKTE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
+  // platz (19.11.): keine automatische Einrichtung mehr – alle Dorfhäuser sind von Hand eingerichtet (grenzland-innen.js);
+  // einrichten() erkannte diese Möbel nicht (keine Minikarten-Grundrisse) und stellte Regale/Kommoden in Schränke hinein
+  belebe(b, { stil, einrichten: false, sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...KAMPAGNE_PUNKTE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
   return res;
 }
 

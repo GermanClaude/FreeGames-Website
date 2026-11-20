@@ -66,10 +66,20 @@ export const ACTION_DEFS = Object.freeze([
   { id: 'gear_down', label: 'Herunterschalten (Panzer)', short: 'Gang runter', group: 'fahrzeug' },
   { id: 'seat_next', label: 'Nächster Sitz (Fahrzeug)', short: 'Sitz vor', group: 'fahrzeug' },
   { id: 'seat_prev', label: 'Vorheriger Sitz (Fahrzeug)', short: 'Sitz zurück', group: 'fahrzeug' },
+  // Infanteriesimulation (Spielstil „Simulation“, game/isim/): nur dort wirksam, sonst ohne Funktion
+  { id: 'sim_durchladen', label: 'Durchladen / Ladehemmung beheben (Simulation)', short: 'Durchladen', group: 'simulation' },
+  { id: 'sim_magcheck', label: 'Magazin prüfen, zweimal: Patronenlager prüfen (Simulation)', short: 'Magazin-Check', group: 'simulation' },
+  { id: 'sim_kompass', label: 'Kompass halten (Simulation)', short: 'Kompass', group: 'simulation' },
+  { id: 'sim_karte', label: 'Karte halten (Simulation)', short: 'Karte', group: 'simulation' },
+  { id: 'sim_inventar', label: 'Ausrüstung: Weste und Rucksack (Simulation)', short: 'Ausrüstung', group: 'simulation' },
+  { id: 'sim_abbinden', label: 'Abbinden (Arterienblutung an Arm/Bein, Simulation)', short: 'Abbinden', group: 'simulation' },
+  { id: 'sim_visier_auf', label: 'Visier weiter stellen (Entfernung +, Simulation)', short: 'Visier +', group: 'simulation' },
+  { id: 'sim_visier_ab', label: 'Visier näher stellen (Entfernung −, Simulation)', short: 'Visier −', group: 'simulation' },
+  { id: 'sim_hilfe', label: 'Hilfe zu den Handgriffen (Simulation)', short: 'Sim-Hilfe', group: 'simulation' },
 ]);
 export const ACTION_IDS = Object.freeze(ACTION_DEFS.map((a) => a.id));
 export const ACTION_BY_ID = Object.freeze(Object.fromEntries(ACTION_DEFS.map((a) => [a.id, a])));
-export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges', fahrzeug: 'Fahrzeug' });
+export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges', fahrzeug: 'Fahrzeug', simulation: 'Simulation' });
 export const MOVE_ACTIONS = Object.freeze(['move_forward', 'move_back', 'move_left', 'move_right']);
 
 /**
@@ -90,6 +100,8 @@ export const DEFAULT_BINDINGS = deepFreeze({
     prone: ['KeyZ'], plate: ['Digit4'], gadget: ['KeyB'], faehigkeit: ['KeyJ'], bauen: ['KeyK'], verband: ['KeyN'], inspect: ['KeyI'], loadout: ['KeyL'], squad_order: ['Mouse1', 'KeyH'],
     befehl: ['KeyY'], unterlauf: ['KeyU'], feuermodus: ['KeyM'],
     gear_up: [], gear_down: [], seat_next: [], seat_prev: [],
+    sim_durchladen: ['KeyO'], sim_magcheck: ['KeyI'], sim_kompass: ['Comma'], sim_karte: ['Period'], sim_inventar: ['KeyP'],
+    sim_abbinden: ['Digit7'], sim_visier_auf: ['PageUp'], sim_visier_ab: ['PageDown'], sim_hilfe: ['F2'],
   },
   pad: {
     move_forward: [], move_back: [], move_left: [], move_right: [],
@@ -97,8 +109,9 @@ export const DEFAULT_BINDINGS = deepFreeze({
     fire: ['Pad7'], ads: ['Pad6'], reload: ['Pad2'], melee: ['Pad11'], grenade: ['Pad4'], tactical: ['Pad5'],
     swap: ['Pad3'], slot1: [], slot2: [], light: ['Pad13'],
     streak1: ['Pad12'], streak2: ['Pad14'], streak3: ['Pad15'], streak4: ['Pad6+Pad13'], interact: ['Pad2'], scoreboard: ['Pad8'], pause: ['Pad9'], fullscreen: [],
-    prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], faehigkeit: ['Pad6+Pad14'], bauen: ['Pad6+Pad15'], verband: [], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'], unterlauf: ['Pad6+Pad2'], feuermodus: ['Pad6+Pad11'],
+    prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], faehigkeit: ['Pad6+Pad14'], bauen: ['Pad6+Pad15'], verband: [], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'], unterlauf: ['Pad6+Pad2'], feuermodus: ['Pad6+Pad1'], // LT + B (LT + R3 = rechts lehnen; plattform 19.11.: war doppelt)
     gear_up: ['Pad5'], gear_down: ['Pad4'], seat_next: ['Pad15'], seat_prev: ['Pad14'],
+    sim_durchladen: [], sim_magcheck: [], sim_kompass: [], sim_karte: [], sim_inventar: [], sim_abbinden: [], sim_visier_auf: [], sim_visier_ab: [], sim_hilfe: [],
   },
   // VR-Controller (wie gängige VR-Shooter, Haupthand rechts): Abzug feuern, Griff anlegen (zusätzlich: Waffe ans Auge),
   // A springen, B ducken (halten: hinlegen), Stick drücken Nahkampf, Stick hoch Waffe wechseln, Stick runter Platte;
@@ -114,6 +127,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     streak1: [], streak2: [], streak3: [], streak4: [], interact: ['XrN4'], scoreboard: [], pause: ['XrN5'], fullscreen: [],
     prone: [], plate: ['XrHDown'], gadget: [], faehigkeit: [], bauen: [], verband: [], inspect: [], loadout: [], squad_order: [], befehl: [], unterlauf: [], feuermodus: [],
     gear_up: [], gear_down: [], seat_next: ['XrH3'], seat_prev: [],
+    sim_durchladen: [], sim_magcheck: [], sim_kompass: [], sim_karte: [], sim_inventar: [], sim_abbinden: [], sim_visier_auf: [], sim_visier_ab: [], sim_hilfe: [],
   },
 });
 
@@ -128,7 +142,7 @@ export function isFixed(action, device) {
 // Ausrüsten teilt Y mit dem Waffenwechsel (nur nach dem Tod/in Menüs wirksam).
 // Fahrzeugaktionen teilen sich Tasten mit Infanterie-Aktionen, die im Fahrzeug ruhen (RB/LB, Steuerkreuz ◀/▶, VR-Stick).
 export const ALLOWED_SHARES = Object.freeze([['reload', 'interact'], ['plate', 'streak2'], ['plate', 'light'], ['loadout', 'swap'],
-  ['gear_up', 'tactical'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2']]);
+  ['gear_up', 'tactical'], ['sim_magcheck', 'inspect'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2']]);
 const shareOk = (a, b) => ALLOWED_SHARES.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 
 /** Nicht belegbar: Esc (verlässt den Pointer-Lock), Browser-/Systemtasten, Home-Taste des Gamepads. */
@@ -208,24 +222,33 @@ const MOUSE_NAMES = {
   Mouse3: ['Maus 4', 'Maustaste 4 (zurück)'], Mouse4: ['Maus 5', 'Maustaste 5 (vor)'],
   Wheel: ['Mausrad', 'Mausrad'], WheelUp: ['Rad ↑', 'Mausrad hoch'], WheelDown: ['Rad ↓', 'Mausrad runter'],
 };
-/** Gamepad-Tasten im Standard-Mapping: [Xbox-Stil, PlayStation-Stil]. */
+/**
+ * Gamepad-Tasten im Standard-Mapping: [Xbox-Stil, PlayStation-Stil, Nintendo-Stil]. Das Standard-Mapping zählt nach Lage
+ * (0 = unten, 1 = rechts, 2 = links, 3 = oben) – beim Nintendo-Pro-Controller liegt unten „B“, rechts „A“ (plattform, 19.11.).
+ */
 export const PAD_BUTTON_NAMES = Object.freeze([
-  ['A', '✕'], ['B', '○'], ['X', '□'], ['Y', '△'], ['LB', 'L1'], ['RB', 'R1'], ['LT', 'L2'], ['RT', 'R2'],
-  ['Ansicht', 'Create'], ['Menü', 'Options'], ['L3', 'L3'], ['R3', 'R3'], ['▲', '▲'], ['▼', '▼'], ['◀', '◀'], ['▶', '▶'], ['Home', 'PS'],
+  ['A', '✕', 'B'], ['B', '○', 'A'], ['X', '□', 'Y'], ['Y', '△', 'X'], ['LB', 'L1', 'L'], ['RB', 'R1', 'R'], ['LT', 'L2', 'ZL'], ['RT', 'R2', 'ZR'],
+  ['Ansicht', 'Create', '−'], ['Menü', 'Options', '+'], ['L3', 'L3', 'L-Stick'], ['R3', 'R3', 'R-Stick'], ['▲', '▲', '▲'], ['▼', '▼', '▼'], ['◀', '◀', '◀'], ['▶', '▶', '▶'], ['Home', 'PS', 'Home'],
 ]);
+/** Sticks (Laufen/Umsehen sind nicht belegbar) – Beschriftung für Hinweise: [kurz, lang]. */
+export const PAD_STICK_LABELS = Object.freeze({
+  move_forward: ['L-Stick ↑', 'Linker Stick nach vorn'], move_back: ['L-Stick ↓', 'Linker Stick zurück'],
+  move_left: ['L-Stick ←', 'Linker Stick nach links'], move_right: ['L-Stick →', 'Linker Stick nach rechts'],
+  look: ['R-Stick', 'Rechter Stick'], move: ['L-Stick', 'Linker Stick'],
+});
 
 /**
  * Beschriftung eines Codes. opts: { long: false, pad: 'xbox'|'ps', layout: Map|null (navigator.keyboard.getLayoutMap()) }
  * „KeyZ“ heißt auf QWERTZ „Y“ – mit Layout-Karte stimmt jede Tastatur.
  */
-export function codeLabel(code, { long = false, pad = 'xbox', layout = null } = {}) {
+export function codeLabel(code, { long = false, pad = 'xbox', layout = null } = {}) { // pad: 'xbox' | 'ps' | 'nintendo'
   if (!code) return '—';
   if (code.includes('+')) return code.split('+').map((c) => codeLabel(c, { long, pad, layout })).join(' + ');
   if (code.startsWith('Xr')) return xrLabel(code, long);
   const m = /^Pad(\d{1,2})$/.exec(code);
   if (m) {
     const n = PAD_BUTTON_NAMES[Number(m[1])];
-    return n ? n[pad === 'ps' ? 1 : 0] : `Taste ${m[1]}`;
+    return n ? n[pad === 'ps' ? 1 : pad === 'nintendo' ? 2 : 0] : `Taste ${m[1]}`;
   }
   if (MOUSE_NAMES[code]) return MOUSE_NAMES[code][long ? 1 : 0];
   if (layout && typeof layout.get === 'function') {

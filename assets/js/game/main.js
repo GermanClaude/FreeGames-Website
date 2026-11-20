@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { settings } from '../shared/settings.js?v=20261115041504';
 import { profile } from '../shared/profile.js?v=20261115041504';
 import { TrophyToasts } from './ui/trophy-toast.js?v=20261115041504';
+import { initTvMode } from './ui/tv-mode.js?v=20261115041504'; // TV-/Konsolen-Modus (plattform)
 import * as weaponsData from '../shared/weapons.data.js?v=20261115041504';
 import * as modesData from '../shared/modes.data.js?v=20261115041504';
 import * as mapsData from '../shared/maps.data.js?v=20261115041504';
@@ -37,6 +38,7 @@ import { Combat } from './combat.js?v=20261115041504';
 import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261115041504'; // Interaktionspunkte der Karten (Taste F)
 import { Building } from './building.js?v=20261115041504'; // Bauen (Taste K)
 import { Injuries } from './injuries.js?v=20261115041504'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
+import { InfantrySim } from './isim/index.js?v=20261115041504'; // Infanteriesimulation (Spielstil „Simulation“)
 import { Gore } from './gore.js?v=20261115041504'; // Blutlachen + Spritzer
 import { Destruction } from './destruction.js?v=20261115041504'; // zerstörbare Fassaden
 import { CarDeform } from './deform.js?v=20261115041504'; // verformbare Autos
@@ -581,10 +583,14 @@ const SPAWN_GRACE = 5; // s nach dem Spawn, in denen eine neue Ausrüstung sofor
 
 /** Spielstil + Panzerung des Matches aus der normalisierten Konfiguration. */
 function applyStyle(cfg) {
-  const style = cfg.style === 'realistisch' ? 'realistisch' : 'arcade';
-  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: cfg.crosshair })) : null;
+  // Infanteriesimulation (isim/): baut auf „Realistisch“ auf – G.match.style bleibt 'realistisch' (alle Realismus-Regeln),
+  // G.match.sim schaltet die Simulation zu; nur in SIM_MODES (sonst gilt Realistisch)
+  const sim = cfg.style === 'simulation' && (classesData.SIM_MODES || []).includes(cfg.modeId);
+  const style = cfg.style === 'realistisch' || cfg.style === 'simulation' ? 'realistisch' : 'arcade';
+  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: sim ? false : cfg.crosshair })) : null;
   G.match.style = style;
-  G.match.styleFlags = classesData.styleFlags(style, { realisticCrosshair: settings.get('realisticCrosshair'), rules });
+  G.match.sim = sim;
+  G.match.styleFlags = classesData.styleFlags(sim ? 'simulation' : style, { realisticCrosshair: settings.get('realisticCrosshair'), rules });
   G.match.armor = cfg.armor;
   G.match.respawnHold = false;
   G.match.pendingLoadout = null;
@@ -1267,6 +1273,7 @@ async function runStart(config, gen) {
     safe('points', () => { G.points = new MapPoints(G, cfg.mapId); });
     safe('building', () => { G.building = new Building(G); });
     safe('injuries', () => { G.injuries = new Injuries(G); });
+    if (G.match.sim) safe('isim', () => { G.isim = new InfantrySim(G); });
     safe('gore', () => { G.gore = new Gore(G); });
     safe('destruction', () => { G.destruction = new Destruction(G); });
     safe('deform', () => { G.deform = new CarDeform(G); });
@@ -1640,6 +1647,7 @@ async function teardownMatch({ keepWorld = false } = {}) {
   if (G.trees) { safe('trees', () => G.trees.dispose()); G.trees = null; }
   if (G.building) { safe('building', () => G.building.dispose()); G.building = null; }
   if (G.injuries) { safe('injuries', () => G.injuries.dispose()); G.injuries = null; }
+  if (G.isim) { safe('isim', () => G.isim.dispose()); G.isim = null; }
   if (G.gore) { safe('gore', () => G.gore.dispose()); G.gore = null; }
   if (G.destruction) { safe('destruction', () => G.destruction.dispose()); G.destruction = null; }
   if (G.deform) { safe('deform', () => G.deform.dispose()); G.deform = null; }
@@ -1724,7 +1732,7 @@ function pause() {
 }
 
 /** Desktop braucht den Pointer-Lock zum Zielen: erst mit Sperre wird weitergespielt. */
-const lockRequired = () => G.input.mode === 'desktop' && !G.input.allowUnlockedMouse && typeof G.canvas.requestPointerLock === 'function' &&
+const lockRequired = () => G.input.mode === 'desktop' && !G.input.allowUnlockedMouse && !G.input.lockUnsupported && typeof G.canvas.requestPointerLock === 'function' &&
   !(G.xr && G.xr.presenting); // VR: Blick über das Headset, keine Zeiger-Sperre
 
 /**
@@ -2034,6 +2042,7 @@ function frame(now, bg = false, xrFrame = null) {
     const net = G.match.netRole && G.net ? G.net : null;
     if (net) step('net:pre', () => net.preUpdate(dt)); // Host: Zustände der Clients → Puppen; Client: Schnappschüsse → Puppen
     if (G.mode && G.mode.preUpdate) step('mode:pre', () => G.mode.preUpdate(dt)); // Cheat-Menü (cheats.js) – Blick/Bewegung/Schuss/Nahkampf vor dem Spieler
+    if (G.isim) step('isim:pre', () => G.isim.preUpdate(dt)); // Simulation: Tasten im Ausrüstungsmenü abfangen
     step('player', () => (G.player.vehicle ? G.vehicles.updateOccupant(G.player, dt) : G.player.update(dt))); // vehicles: Sitz statt Laufen
     step('bots', () => G.bots.update(dt));
     const live = G.match.state === 'playing' || G.match.netLive;
@@ -2043,6 +2052,7 @@ function frame(now, bg = false, xrFrame = null) {
     if (G.building) step('building', () => G.building.update(dt));
     if (G.doors) step('doors', () => G.doors.update(dt));
     if (G.injuries) step('injuries', () => G.injuries.update(dt));
+    if (G.isim) step('isim', () => G.isim.update(dt)); // Infanteriesimulation: Handgriffe, Körper, Bild
     if (G.gore) step('gore', () => G.gore.update(dt));
     if (G.destruction) step('destruction', () => G.destruction.update(dt));
     if (G.deform) step('deform', () => G.deform.update(dt));
@@ -2158,7 +2168,7 @@ function updateLockHint() {
   const el = $('lock-hint');
   if (!el || !G.input) return;
   const st = G.match.state;
-  const lost = G.input.mode === 'desktop' && (st === 'playing' || st === 'countdown') && !G.input.locked && G.input.everLocked && !G.input.allowUnlockedMouse && !G.match.uiHold;
+  const lost = G.input.mode === 'desktop' && (st === 'playing' || st === 'countdown') && !G.input.locked && G.input.everLocked && !G.input.allowUnlockedMouse && !G.input.lockUnsupported && !G.match.uiHold;
   el.hidden = !(lost || (G.match.awaitingLock && st === 'paused'));
 }
 
@@ -2389,6 +2399,7 @@ async function bootstrap() {
     if (G.renderer.onStyleChange) G.renderer.onStyleChange(applyQualityClasses); // Bildstil (core-render)
     if (DEBUG && G.renderer.exposure) G.renderer.exposure.track = true;
     applyQualityClasses();
+    safe('tvMode', () => initTvMode(G));
     G.perf = dynres = new DynamicResolution({ touch: window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : false });
 
     setBoot(0.06, 'Lade Module …');

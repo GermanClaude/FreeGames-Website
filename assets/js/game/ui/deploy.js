@@ -6,6 +6,7 @@
 
 import { el, esc, secs } from './dom.js?v=20261115041504';
 import { ICON } from './icons.js?v=20261115041504';
+import { activePad } from '../../shared/gamepad.js?v=20261115041504';
 import { LoadoutPanel } from './loadout-panel.js?v=20261115041504';
 
 const OPEN_DELAY = 1.1; // s Todeskamera, bevor die Einsatzkarte erscheint (Eroberung)
@@ -413,8 +414,7 @@ export class DeployScreen {
 
   _pollPad() {
     if (typeof navigator.getGamepads !== 'function') return;
-    let pad = null;
-    for (const p of navigator.getGamepads() || []) if (p && p.connected) { pad = p; break; }
+    const pad = activePad();
     if (!pad) return;
     const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
     const prev = this._padPrev;

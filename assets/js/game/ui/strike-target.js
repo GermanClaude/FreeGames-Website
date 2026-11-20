@@ -5,6 +5,7 @@
 
 import { el } from './dom.js?v=20261115041504';
 import { ICON } from './icons.js?v=20261115041504';
+import { activePad } from '../../shared/gamepad.js?v=20261115041504';
 import { drawGlyph } from './glyphs.js?v=20261115041504';
 
 const COL = { ally: '#38b6ff', enemy: '#ff3b3b', me: '#ffffff', signal: '#ff5b1f', neutral: '#e9e6df' };
@@ -163,9 +164,7 @@ export class StrikeTargeting {
   update(dt) {
     if (!this.open) return;
     // Gamepad
-    const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
-    let pad = null;
-    for (const p of pads || []) if (p && p.connected) { pad = p; break; }
+    const pad = activePad();
     if (pad) {
       const ax = pad.axes[0] || 0;
       const ay = pad.axes[1] || 0;

@@ -61,7 +61,7 @@ export function sense(bot, now, dt) {
   for (let k = 0; k < count; k++) {
     const i = (start + k) % n;
     const a = list[i];
-    if (!a.alive) continue;
+    if (!a.alive || a.simDown) continue; // bewusstlos am Boden (Infanteriesimulation) – kein Ziel mehr
     targetPoints(a, _p, _h);
     const dx = _p.x - _eye.x, dy = _p.y - _eye.y, dz = _p.z - _eye.z;
     const d = Math.hypot(dx, dy, dz) || 1e-3;

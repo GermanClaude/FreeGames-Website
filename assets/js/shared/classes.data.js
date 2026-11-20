@@ -384,8 +384,22 @@ export const GAME_STYLES = deepFreeze({
     killfeed: 'eigene', enemyMarkers: false, crosshair: 'einstellung', hudMin: 'reduziert', spotting: true, damageDirection: false,
     staminaMult: 1.4, // ≈ 5 s Dauersprint, Rutschen/Sprung entsprechend teurer
   },
+  // Infanteriesimulation (isim/, Nutzer 19.11.): alles selbst – Magazine einzeln, Durchladen, Sicherung, Ladehemmungen,
+  // Visiereinstellung, Verwundungen je Körperteil, Bewusstlosigkeit, Gewicht, kein HUD. Baut auf „Realistisch“ auf:
+  // main.applyStyle setzt G.match.style = 'realistisch' (alle Realismus-Regeln gelten) und G.match.sim = true.
+  // Nur in SIM_MODES; sonst gilt „Realistisch“. crosshair 'aus' = nie (auch nicht per Einstellung).
+  simulation: {
+    id: 'simulation', label: 'Simulation', short: 'Sim',
+    desc: 'Alles selbst: Magazine, Durchladen, Sicherung, Ladehemmungen, Visier, Verwundungen, Gewicht – kein HUD, kein Fadenkreuz.',
+    bulletMult: 1.5, explosiveMult: 1.25, regenDelay: 60, regenRate: 2, bleedout: 8,
+    nameplates: 'team', minimapEnemies: false, uavEnemies: false, hitmarkers: 'aus', hitmarkerThroughWalls: false,
+    killfeed: 'eigene', enemyMarkers: false, crosshair: 'aus', hudMin: 'aus', spotting: false, damageDirection: false,
+    staminaMult: 1.4,
+  },
 });
-export const STYLE_ORDER = Object.freeze(['arcade', 'realistisch']);
+export const STYLE_ORDER = Object.freeze(['arcade', 'realistisch', 'simulation']);
+/** Modi mit Infanteriesimulation (Spielstil „Simulation“); übrige Modi spielen ihn als „Realistisch“. */
+export const SIM_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'hp', 'cq', 'kc', 'kampagne']);
 export const DEFAULT_STYLE = 'arcade';
 
 /**
@@ -396,7 +410,7 @@ export const DEFAULT_STYLE = 'arcade';
  */
 export function styleFlags(styleId, { realisticCrosshair = false, rules = null } = {}) {
   const s = GAME_STYLES[styleId] || GAME_STYLES[DEFAULT_STYLE];
-  const out = { ...s, crosshair: s.crosshair === 'an' ? true : !!realisticCrosshair };
+  const out = { ...s, crosshair: s.crosshair === 'an' ? true : s.crosshair === 'aus' ? false : !!realisticCrosshair };
   if (!rules) return out;
   Object.assign(out, rules, { id: s.id });
   if (Number.isFinite(rules.damageMult)) out.bulletMult = rules.damageMult;

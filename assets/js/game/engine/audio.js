@@ -1701,7 +1701,8 @@ export class AudioEngine {
       }
       const point = xyz(p.point) || this._eye(target), t = now(), byPlayer = this._isPlayer(attacker);
       if (melee) this.play('melee_hit', { position: byPlayer ? null : point, player: byPlayer, actor: target });
-      if (byPlayer) {
+      if (byPlayer && this.G.isim) { if (!melee) this.play('hit_flesh', { position: point, volume: 0.7, actor: target }); } // Simulation: nur der echte Einschlag, kein Treffermarker-Ton
+      else if (byPlayer) {
         if (killed) { if (t - this._t.kill > 0.08) { this._t.kill = t; this.play('hitmarker_kill'); } }
         else if (t - this._t.hm > 0.035) { this._t.hm = t; this.play('hitmarker', { pitch: zone === 'head' ? 1.1 : 1 }); }
         if (zone === 'head' && t - this._t.hs > 0.06) {

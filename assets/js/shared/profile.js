@@ -224,7 +224,7 @@ function blankCampaign() {
 function cleanCampaign(c) {
   const out = blankCampaign();
   if (!c || typeof c !== 'object') return out;
-  const DIFF = ['rekrut', 'regulaer', 'veteran', 'elite'];
+  const DIFF = ['rekrut', 'regulaer', 'veteran', 'elite', 'simulation']; // simulation: Infanteriesimulation (Kampagne)
   if (c.missions && typeof c.missions === 'object') {
     for (const [id, m] of Object.entries(c.missions).slice(0, 32)) {
       if (!ID_RE.test(id) || !m || typeof m !== 'object') continue;

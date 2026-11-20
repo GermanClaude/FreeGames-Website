@@ -24,6 +24,7 @@ const CSS = `
 .ps-head span{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}.ps-head small{font-size:11px;opacity:.75;margin-left:2px}
 .ps-hull{height:4px;margin:-3px 0 0;background:rgba(233,230,223,.16)}.ps-hull i{display:block;height:100%;background:#9fd37a;transform-origin:left}
 .ps-hull.is-low i{background:#e7c35a}.ps-hull.is-crit i{background:#e5634b}
+.ps-side.is-tight .ps-crewl{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}.ps-side.is-tight .ps-crewl .ps-row{font-size:11px}.ps-side.is-tight .ps-box h4{display:none}
 .ps-right{position:absolute;right:calc(14px + env(safe-area-inset-right));top:25%;width:280px;display:flex;flex-direction:column;align-items:stretch;gap:6px;max-height:58vh;overflow:hidden}
 .ps-right>*{position:static!important;width:auto!important}
 .ps-box{background:rgba(10,12,10,.62);border:1px solid rgba(200,200,170,.16);padding:7px 9px}
@@ -70,6 +71,7 @@ const CSS = `
 .ps-vis{font-size:12px;letter-spacing:.12em;background:rgba(10,12,10,.6);padding:3px 8px;color:#c9d79f;align-self:flex-end}
 .psim-on .vh-panel,.psim-on .vh-rack,.psim-on .vh-seats{display:none!important}
 .psim-on .vo-load{bottom:calc(4% + env(safe-area-inset-bottom))}
+.psim-on .vo-arrow{top:66%}
 /* Handy/kleine Fenster: alles kompakter; Touch (quer): Zustand rechts oben unter der Pause, Handgriffe links unter der Minikarte,
    Bordsprech schmal zwischen Stick und Feuerknöpfen, Bedienhilfe aus (Tastatur) */
 @media (max-height:560px),(max-width:900px){
@@ -277,6 +279,14 @@ export class PanzerHUD {
     this._set('rightH', el.right, 'hidden', !s.visible);
     if (this._t > 0) return;
     this._t = 0.2;
+    // Linke Spalte unter einer Zielliste (Kampagne, s.reserveTop = Unterkante in px) halten statt sie zu überdecken
+    if (s.visible && typeof window !== 'undefined' && document.body.dataset.inputMode !== 'touch') {
+      const vh = window.innerHeight || 720, h = el.side.offsetHeight || 0;
+      const top = Math.max(vh * 0.85 - h, s.reserveTop || 0);
+      const tight = top + h > vh - 6;
+      if (this._c.sideTop !== Math.round(top)) { this._c.sideTop = Math.round(top); el.side.style.top = `${Math.round(top)}px`; el.side.style.bottom = 'auto'; }
+      if (this._c.tight !== tight) { this._c.tight = tight; el.side.classList.toggle('is-tight', tight); }
+    } else if (this._c.sideTop != null) { this._c.sideTop = null; el.side.style.top = ''; el.side.style.bottom = ''; }
     // Kopf: Fahrzeug, Tempo, Hülle (ersetzt die Fahrzeugtafel des Fahrzeug-HUDs)
     const V = s.vehicle;
     if (V) {

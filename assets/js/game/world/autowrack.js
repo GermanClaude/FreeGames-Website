@@ -64,8 +64,8 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   const SH = pkwShape(st), { G } = SH;
   const yaw = ry + PI; // Fahrzeugraum: vorn −z
   // Wrack sitzt tiefer (Reifen weg) und schief: eine Seite tiefer
-  // platz (19.11., QA „Wrack schwebt“): 3 cm tiefer, Felgen sitzen auf, dunkler Unterboden (siehe unten)
-  const drop = -0.23, roll = (r() - 0.5) * 0.08, pitch = (r() - 0.5) * 0.05;
+  // platz (19.11., QA „Wrack schwebt“): 6 cm tiefer (Schweller ≈ 4–7 cm über Grund), Felgen sitzen auf, dunkler Unterboden (siehe unten)
+  const drop = -0.26, roll = (r() - 0.5) * 0.08, pitch = (r() - 0.5) * 0.05;
   const place = (geom, mat, tint = '#ffffff') => {
     geom.translate(0, drop, 0);
     geom.rotateZ(roll); geom.rotateX(pitch);
@@ -105,14 +105,14 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   for (const wz of [-1.38, 1.43]) for (const sx of [-1, 1]) {
     const ri = 0.21, g = st === 2 ? alloyRim(ri, 0.16, { spokes: 5, twin: true, seg: 14 }).face : steelRim(ri, { holes: 8, seg: 14 });
     if (sx < 0) g.rotateY(PI);
-    g.translate(sx * 0.82, ri + 0.23 - (r() * 0.03), wz); // platz: Felgen sitzen auf (drop −0,23)
+    g.translate(sx * 0.82, ri + 0.26 - (r() * 0.03), wz); // platz: Felgen sitzen auf (drop −0,26)
     rims.push(g);
-    const bar = new THREE.CylinderGeometry(ri * 0.98, ri * 0.98, 0.16, 14, 1, true).rotateZ(HP).translate(sx * 0.76, ri + 0.23, wz);
+    const bar = new THREE.CylinderGeometry(ri * 0.98, ri * 0.98, 0.16, 14, 1, true).rotateZ(HP).translate(sx * 0.76, ri + 0.26, wz);
     rims.push(bar);
-    rims.push(new THREE.TorusGeometry(ri * 1.08, 0.006, 3, 18).rotateY(HP).translate(sx * 0.78, ri + 0.23, wz));
+    rims.push(new THREE.TorusGeometry(ri * 1.08, 0.006, 3, 18).rotateY(HP).translate(sx * 0.78, ri + 0.26, wz));
   }
   place(burn(merge(rims), seedN + 6, '#3a2a20', { dent: 0.003, keepPaint: 0 }), 'metal_rust');
   // platz: verrußter Unterboden (dunkle Platte zwischen den Schwellern) – vorher sah man unter der Hülle hindurch
   // auf hellen Boden, das Wrack wirkte schwebend
-  place(merge([new THREE.BoxGeometry(1.52, 0.03, 3.7).translate(0, 0.33, 0.03)]), 'metal_rust', '#3a3430');
+  place(merge([new THREE.BoxGeometry(1.52, 0.03, 3.7).translate(0, 0.36, 0.03)]), 'metal_rust', '#3a3430');
 }

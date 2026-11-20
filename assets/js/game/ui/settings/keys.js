@@ -2,6 +2,7 @@
 
 import { codeLabel, loadKeyboardLayout, aspectBucket, setTouchEntry, sanitizeTouchLayout, TOUCH_ASPECTS } from '../../../shared/bindings.data.js?v=20261115041504';
 import { esc } from '../dom.js?v=20261115041504';
+import { activePad, padFamily, padGlyphSet } from '../../../shared/gamepad.js?v=20261115041504';
 
 let kbLayout = null;
 let kbAsked = false;
@@ -12,16 +13,12 @@ export function warmKeyboardLayout() {
   loadKeyboardLayout().then((m) => { kbLayout = m; });
 }
 
-/** 'xbox' | 'ps' – Einstellung padIcons oder am verbundenen Controller erkannt. */
+/** 'xbox' | 'ps' | 'nintendo' – Einstellung padIcons oder am benutzten Controller erkannt (Steam Deck: Xbox-Symbole). */
 export function padStyle(G) {
   const v = G && G.settings ? G.settings.get('padIcons') : 'auto';
-  if (v === 'xbox' || v === 'ps') return v;
-  if (typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function') {
-    for (const p of navigator.getGamepads() || []) {
-      if (p && p.connected) return /054c|dualsense|dualshock|playstation|wireless controller/i.test(p.id) ? 'ps' : 'xbox';
-    }
-  }
-  return 'xbox';
+  if (v === 'xbox' || v === 'ps' || v === 'nintendo') return v;
+  const p = activePad();
+  return p ? padGlyphSet(padFamily(p.id)) : 'xbox';
 }
 
 const SIDED = /^(Shift|Control|Meta)(Left|Right)$/;
@@ -39,7 +36,7 @@ export function keyHtml(G, code) {
   return code.split('+').map((c) => {
     const m = /^Pad(\d+)$/.exec(c);
     const t = esc(keyText(G, c, { sided: true }));
-    return m ? `<kbd class="kb-pad" data-pad="${m[1]}" data-ps="${style === 'ps' ? 1 : 0}">${t}</kbd>` : `<kbd>${t}</kbd>`;
+    return m ? `<kbd class="kb-pad" data-pad="${m[1]}" data-ps="${style === 'ps' ? 1 : style === 'nintendo' ? 2 : 0}">${t}</kbd>` : `<kbd>${t}</kbd>`;
   }).join('<i class="kb-plus">+</i>');
 }
 

@@ -1000,15 +1000,15 @@ export class Effects {
       this.alpha.cell[j] = big ? CELL.CHUNK : i % 3 === 1 ? CELL.SHARD : CELL.CHIP;
     }
     // Ruß: dichte, dunkle Ballen quellen aus dem Feuerball (verzögert), steigen und weiten sich – beleuchtet (Volumen)
-    const soot = Math.max(3, Math.round(9 * sc));
+    const soot = Math.max(4, Math.round(13 * sc));
     for (let i = 0; i < soot; i++) {
       const sp = rnd(1.5, 4.5) * R;
       _v.set(rnd(-1, 1) + ux * 1.4, rnd(0.2, 1) + uy * 0.6, rnd(-1, 1) + uz * 1.4).normalize();
       const j = this._puff(x + rnd(-0.4, 0.4) * R, y + rnd(0.2, 0.9) * R, z + rnd(-0.4, 0.4) * R, _v.x * sp, _v.y * sp, _v.z * sp,
-        rnd(2.6, 4.2), rnd(0.9, 1.3) * R, rnd(2.6, 3.8) * R, i % 3 ? C.soot : C.sootBrown, rnd(0.85, 0.95), 2.4, 0.55, i % 2 ? CELL.SOOT_A : CELL.SOOT_B);
+        rnd(2.8, 4.5), rnd(0.7, 1.0) * R, rnd(1.8, 2.8) * R, i % 3 ? C.soot : C.sootBrown, 1, 2.4, 0.55, i % 2 ? CELL.SOOT_A : CELL.SOOT_B);
       this.alpha.delay[j] = rnd(0.08, 0.2);
-      this.alpha.fadeIn[j] = 0.05;
-      this.alpha.fadePow[j] = 1.5;
+      this.alpha.fadeIn[j] = 0.04;
+      this.alpha.fadePow[j] = 0.75;
       this.alpha.rv[j] = rnd(-0.35, 0.35);
     }
     // Staub in Wand-/Bodenfarbe: aufgewirbelt, heller als der Ruß, bleibt länger stehen und sinkt

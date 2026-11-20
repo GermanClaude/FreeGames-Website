@@ -422,7 +422,9 @@ export function building(b, o) {
   // Zufallsstrom der Karte nicht), Holzschuppen und Gebäude ohne Dach ohne Rohre. o.pipes: false schaltet ab.
   if (o.pipes !== false && o.roof !== false && floors >= 1 && !/wood/.test(mat) && w > 3 && d > 3) {
     const hsh = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
-    const top = roofY + (o.roof && o.roof.parapet ? o.roof.parapet - 0.12 : -0.05);
+    // platz (19.11.): Rinnenkasten unter der Brüstungskrone bzw. – bei Satteldach (edge: false) – unter dem Dachüberstand;
+    // vorher stak er 13 cm über der Traufkante sichtbar durch die Dachziegel
+    const top = roofY + (o.roof && o.roof.parapet ? o.roof.parapet - 0.2 : o.roof && o.roof.edge === false ? -0.3 : -0.05);
     const pm = o.pipeMat || 'metal_galvanized', pt = o.pipeTint || '#8d9296', r = 0.055, off = 0.11;
     const corners = hsh < 0.5 ? [[x0, z0, 1, 1], [x1, z1, -1, -1]] : [[x1, z0, -1, 1], [x0, z1, 1, -1]];
     for (const [cx, cz, sx, sz] of corners) {
