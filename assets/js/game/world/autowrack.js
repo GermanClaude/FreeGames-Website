@@ -8,8 +8,8 @@
 //   • Blech: Form und Kanten bleiben (keine Rauschbeulen über die ganze Hülle mehr – das wirkte „geschmolzen“), nur
 //     einzelne Dellen, ein durch die Hitze eingesacktes Dach und eine aufgebogene, verzogene Motorhaube (eigene Teil-
 //     fläche, vorn hochgestellt → Spalt an der Haubenfuge). Dünnes Blech: Innenhaut 1–1,5 cm hinter der Außenhaut.
-//   • Kunststoff verbrannt: Stoßfängerverkleidungen, Grill, Leuchten fehlen → Querträger (einer abgerissen und schräg
-//     hängend), Kühlerblock und Lampentöpfe sichtbar. Scheiben fehlen bis auf gesplitterte Reste an der Unterkante.
+//   • Kunststoff verkohlt: Stoßfänger, Grill und Leuchten als schwarze, geschmolzene Reste; dahinter Querträger,
+//     Kühlerblock, Lampentöpfe. Scheiben fehlen bis auf gesplitterte Reste an der Unterkante der Seitenfenster.
 //   • Reifen abgebrannt: der Wagen sitzt auf den Stahlfelgen (Felgenhorn auf dem Boden), Drahtreste der Stahlgürtel
 //     um die Felge, Bremsscheiben dahinter, Federbein im Radhaus; gelegentlich fehlt ein Rad ganz – die Ecke liegt auf
 //     der Bremsscheibe, die Felge liegt daneben. Die Karosserie folgt den vier Auflagehöhen (Ebene durch die Radnaben).
@@ -171,13 +171,16 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   }
   const { N: FN } = faceNormals(M), nQ = M.Q.length / 4;
   const cen = (f) => { let cx = 0, cy = 0, cz = 0; for (let i = 0; i < 4; i++) { const v = M.Q[f * 4 + i]; cx += P[v * 3]; cy += P[v * 3 + 1]; cz += P[v * 3 + 2]; } return [cx / 4, cy / 4, cz / 4]; };
-  const shell = new Set([TAG.PAINT, TAG.TRIM]); // Kunststoff, Grill, Leuchten, Scheiben verbrannt
+  // Scheiben fehlen; Stoßfänger-, Grill- und Leuchtenflächen bleiben als verkohlte, geschmolzene Reste (schwarz) –
+  // als Löcher wirkten sie wie Modellfehler (große helle Öffnungen an Heck/Bug)
+  const shell = new Set([TAG.PAINT, TAG.TRIM, TAG.PLASTIC, TAG.GRILLE, TAG.LAMP, TAG.RLAMP]);
+  const melt = new Set([TAG.PLASTIC, TAG.GRILLE, TAG.LAMP, TAG.RLAMP]);
   const isHood = new Uint8Array(nQ), isShard = new Uint8Array(nQ);
   for (let f = 0; f < nQ; f++) {
     const [cx, cy, cz] = cen(f), t = M.F[f];
     if (shell.has(t) && cz < G.zA0 - 0.015 && cy > 0.66 && FN[f * 3 + 1] > 0.3 && Math.abs(cx) < 0.8 * SH.wt(cz)) isHood[f] = 1;
     // Glasreste: gesplitterter Streifen an der Unterkante der Scheiben
-    if (t === TAG.GLASS && cy < SH.ys(clamp(cz, -2.3, 2.3)) + 0.085 && vhash(cx * 31 + o, cy * 17, cz * 23) < 0.62) isShard[f] = 1;
+    if (t === TAG.GLASS && Math.abs(cx) > 0.55 && cy < SH.ys(clamp(cz, -2.3, 2.3)) + 0.075 && vhash(cx * 31 + o, cy * 17, cz * 23) < 0.45) isShard[f] = 1;
   }
   // Ruß: Ecken an Scheibenöffnungen (Flammen schlagen aus den Fenstern) und an den Radläufen (Reifenbrand)
   const soot = new Float32Array(nV);
@@ -191,6 +194,8 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     }
     soot.set(next);
   }
+  const molten = new Uint8Array(nV);
+  for (let f = 0; f < nQ; f++) if (melt.has(M.F[f])) for (let i = 0; i < 4; i++) molten[M.Q[f * 4 + i]] = 1;
   const col = new Float32Array(nV * 3), c = new THREE.Color();
   for (let v = 0; v < nV; v++) {
     const px = P[v * 3], py = P[v * 3 + 1], pz = P[v * 3 + 2], up = VN[v * 3 + 1];
@@ -204,6 +209,7 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     let s = soot[v] * smooth(SH.ys(clamp(pz, -2.3, 2.3)) - 0.05, SH.ys(clamp(pz, -2.3, 2.3)) + 0.05, py) * 0.85;
     for (const a of SH.arches) { const dd = Math.hypot(pz - a.z, py - a.y) - a.R; if (dd < 0.2) s = Math.max(s, (1 - Math.max(0, dd) / 0.2) * 0.75); }
     if (s > 0) c.lerp(C.char, s * (0.7 + 0.3 * vnoise(px * 11, py * 11, pz * 11 + o)));
+    if (molten[v]) c.copy(C.char).lerp(C.blister, vnoise(px * 14, py * 14, pz * 14 + o) * 0.5);
     col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b;
   }
   const CN = cornerNormals(M, 38);

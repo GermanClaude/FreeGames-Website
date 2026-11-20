@@ -7,8 +7,9 @@
 //                  Laser-Entfernungsmesser, Handräder (Hinweis)
 //   Ladeschütze:   Munitionsgestell/-bunker (greifen), Verschluss (einschieben/schließen), Sicherung (entsichern)
 //   Kommandant:    Luke auf/zu, Funkgerät (Lagemeldung)
-// Kleine eigene Bedienteile (Schalterkästen mit Hebel und Leuchte) werden ab medium in den Innenraum gesetzt; auf low gibt
-// es nur die Markierung (vereinfachte Interaktion). Kopf neigen: Q/E seitlich, Z vorbeugen (halten).
+// Bedienteile: wo der Detail-Innenraum (cabin.js) einen echten Schalter hat ('sw:<id>', Kippschalter unter Bügel mit
+// Leuchtmelder), ist er das Ziel des Hotspots; sonst setzt die Simulation ab medium eigene Schalterkästen, auf low gibt es
+// nur die Markierung (vereinfachte Interaktion). Kopf neigen: Q/E seitlich, Z vorbeugen (halten).
 import * as THREE from 'three';
 import { driverCabin } from '../data.js?v=20261115041504';
 import { spaceLocal, viewOf } from '../views.js?v=20261115041504';
@@ -102,13 +103,20 @@ export class SimControls {
 
   /** Eigene Bedienteile in den Innenraum setzen (einmal, sobald der Innenraum existiert; nicht auf low). */
   _decorate(v) {
-    if (this._built === v || this.quality === 'low') return;
+    if (this._built === v) return;
     const M = v.model;
     if (!M || !M.interior) return;
+    // Detail-Innenraum (cabin.js) entsteht beim ersten Öffnen – kurz darauf warten, dann seine echten Schalter nutzen
+    const cab = M.cabin;
+    if (!cab && (this._cabWait = (this._cabWait || 0) + 1) < 30) return;
     this._built = v;
     const eyeW = this.G.camera ? this.G.camera.position.clone() : null;
     for (const h of this.list) {
       if (!h.panel) continue;
+      // Ankerpunkt: Bedienteil des Innenraums ('sw:<id>': Kippschalter unter Bügel mit Leuchtmelder) statt Schalterkasten
+      const own = cab && cab.sw && cab.sw[h.id];
+      if (own) { h.part = 'sw:' + h.id; h.mesh = own; continue; }
+      if (this.quality === 'low') continue;
       const sw = switchBox();
       const parent = h.space === 'turret' ? M.turret || M.root : M.root;
       if (!parent) continue;
@@ -177,7 +185,7 @@ export class SimControls {
   }
 
   dispose() {
-    for (const h of this.list) if (h.mesh) h.mesh.group.removeFromParent();
+    for (const h of this.list) if (h.mesh && !h.mesh.cabin) h.mesh.group.removeFromParent();
     this.list.length = 0;
   }
 }

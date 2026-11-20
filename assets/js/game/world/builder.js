@@ -692,7 +692,9 @@ export class MapBuilder {
             for (let i = 0; i < n; i++) { const sh = 0.5 + R() * 0.22; if (b0 + sh < h - 0.3) dec(-w / 2 + 0.05 + (i + 0.5) * sw, b0 + sh / 2, sw + 0.02, sh, 'damp', 0.42 + R() * 0.14); }
           }
           // Abplatzung an der Kante (Ecke/Laibung) direkt über dem Sockel – Bruchstein darunter
-          if (w >= 1.3 && R() < 0.38) {
+          // platz2 (20.11.): nur an geschosshohen Pfeilern – auf dem kurzen Brüstungsstück unter einem Fenster saß die
+          // Abplatzung direkt unter der Fensterbank und las sich als grauer Klumpen (Grenzland, Gasthaus)
+          if (w >= 1.3 && h >= 2 && R() < 0.38) {
             const sw = Math.min(w * 0.42, 0.5 + R() * 0.4), sh = sw * (0.55 + R() * 0.2), e = R() < 0.5 ? -1 : 1;
             dec(e * (w / 2 - sw / 2 - 0.03), base + 0.03 + sh / 2, sw, sh, 'chip_stone', 1);
           }

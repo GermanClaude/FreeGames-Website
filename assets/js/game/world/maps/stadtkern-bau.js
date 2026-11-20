@@ -203,7 +203,12 @@ export function altbau(b, o) {
   for (let f = 0; f < floors; f++) {
     const yy = f === 0 ? 0.12 : f * fh, hh = fh - 0.25 - (f === 0 ? 0.12 : 0);
     // Hausflurwand mit Wohnungs-/Ladentür am Podest (EG: Tür zum Laden-Lager)
-    wall(b, { x0: fx, z0: wz0, x1: fx, z1: wz1, y: yy, h: hh, t: 0.15, mat: 'plaster_white', tint: '#e6dcc6', openings: [{ at: landZ - wz0, w: 1.0, h: 2.1, kind: 'gap', frameMat: 'wood_dark', frameTint: '#6a4a32' }] }); // Wohnungstüren herausgerissen (Krieg) – spart bewegliche Türen
+    // platz2 (20.11.): der Flurrest hinter dem Treppenhaus (zwischen Treppenhaus-Rückwand und Hofwand) war in den
+    // Obergeschossen ringsum geschlossen („Nicht erreichbare Fläche“ bei −32,3/27,8; ±15,8/±20,3) → Durchgang vom
+    // hinteren Zimmer (Kammer)
+    // Tür gleich hinter dem Treppenhaus: Schrank/Waschtisch des Hinterzimmers stehen an dieser Wand in Raummitte
+    const kz = cz + s * (L / 2 + 0.85), kammer = f > 0 && Math.abs(zIn1 - (cz + s * L / 2)) > 2.2;
+    wall(b, { x0: fx, z0: wz0, x1: fx, z1: wz1, y: yy, h: hh, t: 0.15, mat: 'plaster_white', tint: '#e6dcc6', openings: [{ at: landZ - wz0, w: 1.0, h: 2.1, kind: 'gap', frameMat: 'wood_dark', frameTint: '#6a4a32' }, ...(kammer ? [{ at: kz - wz0, w: 0.9, h: 2.05, kind: 'gap', frameMat: 'wood_dark', frameTint: '#6a4a32' }] : [])] }); // Wohnungstüren herausgerissen (Krieg) – spart bewegliche Türen
     if (f === 0 && gx != null) for (const sx of [-1, 1]) wall(b, { x0: gx + sx * (gw / 2 + 0.08), z0: wz0, x1: gx + sx * (gw / 2 + 0.08), z1: wz1, y: yy, h: hh, t: 0.16, mat: 'plaster_white', tint: shadeHex(color, 0.92) });
     // Mittelwand (Vorder-/Hinterzimmer) zwischen Flur und Außenwand bzw. Torwand
     const mx0 = ce > 0 ? (f === 0 && o.gate === 'w' ? gx + gw / 2 + 0.16 : x0 + t) : fx + 0.08;

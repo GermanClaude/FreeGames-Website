@@ -858,10 +858,17 @@ export function bodenmarken(b, o = {}) {
     } else if (h < 0.14 && !sperrt) { kanaldeckel(b, px, y, pz); n++; }
     else if (o.asphalt && h < 0.24) {
       // Fahrbahnfarbe: Pfeil, Sperrfläche oder Haltelinie (vom Verkehr abgefahren)
-      const k2 = hash01(px, pz, 466), ry = Math.round(hash01(px, pz, 467) * 4) * Math.PI / 2;
+      // platz2 (20.11.): Richtung aus dem Straßenverlauf (vorher zufällig in 90°-Schritten → Pfeile zeigten zur Wand):
+      // freie Lauflänge zwischen Gebäuden/Mauern längs x und längs z; Pfeile und Haltelinien nur, wo eine Achse
+      // klar überwiegt (Straße), auf Plätzen/Kreuzungen stattdessen Ölfleck
+      const run = (dx, dz) => { let L = 0; for (let k = 1; k <= 16; k++) { const qx = px + dx * k, qz = pz + dz * k; if (qx < bz.minX || qx > bz.maxX || qz < bz.minZ || qz > bz.maxZ || near(qx, qz).some((f) => f.kind !== 'floor' && f.y1 > y + 1.4 && f.y0 < y + 1 && inRect(f, qx, qz, 0.3))) break; L = k; } return L; };
+      const lx = run(1, 0) + run(-1, 0), lz = run(0, 1) + run(0, -1);
+      const gerade = Math.max(lx, lz) >= 10 && Math.max(lx, lz) >= 1.8 * Math.min(lx, lz) && Math.min(lx, lz) >= 4;
+      const k2 = gerade ? hash01(px, pz, 466) : 0.9, ry = (lx > lz ? Math.PI / 2 : 0) + (hash01(px, pz, 467) < 0.5 ? Math.PI : 0);
       if (k2 < 0.4) b.decal(px, y + 0.011, pz, 1.1, 3.2, 'arrow', { ry, tint: k2 < 0.2 ? '#f0eee6' : '#e8c22c', opacity: 0.75, kind: 'paint' });
       else if (k2 < 0.7) b.decal(px, y + 0.011, pz, 3.0, 2.2, 'hatch', { ry, tint: '#e8c22c', opacity: 0.7, kind: 'paint' });
-      else b.decal(px, y + 0.011, pz, 4.0, 0.25, 'line', { ry, tint: '#f0eee6', opacity: 0.75, kind: 'paint' });
+      else if (gerade) b.decal(px, y + 0.011, pz, 4.0, 0.25, 'line', { ry, tint: '#f0eee6', opacity: 0.75, kind: 'paint' });
+      else b.decal(px, y + 0.011, pz, 1.6, 1.1, 'stain', { ry: hash01(px, pz, 465) * 6.28, tint: '#2a2a28', opacity: 0.38, kind: 'grime' });
       n++;
     } else if (o.asphalt && h < 0.38 && fein(b)) {
       const w = 1.2 + hash01(px, pz, 463) * 2.5, d = 0.8 + hash01(px, pz, 464) * 1.8;
