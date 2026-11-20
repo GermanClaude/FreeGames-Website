@@ -63,8 +63,8 @@ export class EndScreen {
         ['Schaden', num(ps.damage || 0)],
       ];
       const ct = ps.counters || {};
-      if (r.modeId === 'dom' || r.modeId === 'cq') cells[8] = ['Erobe\u00adrungen', String(ps.captures ?? 0)];
-      if (r.modeId === 'cq' && ct.vehicles) cells[7] = ['Fahrzeuge zerstört', String(ct.vehicles)];
+      if (r.modeId === 'dom' || r.modeId === 'cq' || r.modeId === 'trupp') cells[8] = ['Erobe\u00adrungen', String(ps.captures ?? 0)];
+      if ((r.modeId === 'cq' || r.modeId === 'trupp') && ct.vehicles) cells[7] = ['Fahrzeuge zerstört', String(ct.vehicles)];
       if (r.modeId === 'kc') cells[8] = ['Marken', String(ct.confirms ?? 0), ct.denies ? `${ct.denies} verweigert` : ''];
       if (r.modeId === 'inf') cells[8] = ['Infiziert', String(ct.infects ?? 0), ct.survivals ? 'Überlebt' : ''];
       if (r.modeId === 'hp') cells[8] = ['Halte\u00adzeit', clock(Math.floor(ct.hpTime || 0)), ct.hpCaptures ? `${ct.hpCaptures}× eingenommen` : '']; // Stellung (26.10.)

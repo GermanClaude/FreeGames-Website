@@ -405,7 +405,11 @@ const FACE_ALBEDO = /* glsl */`
 		alb = eyeC;
 		npRough = mix( 0.12, 0.03, iris );
 		npSss = 0.15;
-		npAoT = fAo;
+		// mensch3: Oberlid und Wimpern verschatten den oberen Augapfel (sonst „starrer“ Blick), Augenwinkel dunkler/feucht
+		float lidSh = smoothstep( -0.15, 0.8, ( q.y - E.y ) / E.w );
+		float cornerSh = smoothstep( 0.55, 0.95, abs( d.x ) );
+		alb *= ( 1.0 - 0.4 * lidSh ) * ( 1.0 - 0.3 * cornerSh );
+		npAoT = fAo * ( 1.0 - 0.5 * lidSh );
 	} else if ( part < 3.5 ) {
 		// Zähne (uv.x = Bogen −1…1, uv.y = Höhe 0…1, unten +2) und Zahnfleisch
 		float s = vFUv.x, t = vFUv.y - ( vFUv.y > 1.5 ? 2.0 : 0.0 );
@@ -563,7 +567,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => 'np-face-6' + (low ? 'l' : 'h');
+  m.customProgramCacheKey = () => 'np-face-7' + (low ? 'l' : 'h');
   return m;
 }
 

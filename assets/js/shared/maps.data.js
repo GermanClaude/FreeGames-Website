@@ -305,7 +305,7 @@ export const MAPS = {
     // atmosphere-weather: wählbares Wetter (ohne Niederschlag) + Tageszeiten; Standard = Kartenwetter/-zeit (unverändert)
     weathers: ['klar', 'dunst', 'morgennebel', 'bewoelkt'], weatherDefault: 'dunst',
     timeDefault: 'vormittag', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'abend', name: 'Abend' }],
-    modes: ['cq', 'tdm', 'dom', 'ffa', 'panzer'],
+    modes: ['cq', 'trupp', 'tdm', 'dom', 'ffa', 'panzer'],
     palette: ['#6f8a4e', '#c9b98a', '#3f5d6a', '#8a4232', '#e9e2d0'],
     features: ['Fünf Eroberungsflaggen A–E mit HQs', 'Fluss mit Brücke und zwei Furten', 'Betretbare Häuser, Scheune mit Heuboden', 'Wälder, Hecken, Felder und Randgebirge', 'Fahrzeug-Stellplätze in beiden HQs'],
     lanes: ['Westen: Gehöft – Furt – Funkhügel', 'Mitte: Dorf – Brücke – Landstraße', 'Osten: Werkstraße – Furt – Kieswerk'],
@@ -344,7 +344,7 @@ export const MAPS = {
     weather: 'Bedeckt, Dunst über dem Schlamm',
     weathers: ['bewoelkt', 'dunst', 'morgennebel', 'klar'], weatherDefault: 'bewoelkt',
     timeDefault: 'vormittag', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'abend', name: 'Abend' }],
-    modes: ['cq', 'tdm', 'dom', 'ffa', 'panzer'],
+    modes: ['cq', 'trupp', 'tdm', 'dom', 'ffa', 'panzer'],
     palette: ['#5b5246', '#8f8a80', '#3b3a30', '#6b5a44', '#a8a092'],
     features: ['Schützengräben mit Feuerbuchten, Rampen und Laufgräben', 'Hunderte Granattrichter, die tiefsten voll Wasser', 'Stacheldrahtgürtel vor beiden Fronten', 'Dorf- und Kapellenruine mit einstürzenden Mauern', 'Fünf Eroberungsflaggen A–E', 'Einsatzkarte: bei Kameraden einsteigen'],
     lanes: ['Westen: Dorfruine', 'Mitte: Trichterfeld mit Panzerwrack', 'Osten: Kapellenruine'],
@@ -370,7 +370,7 @@ export const MAPS = {
     weather: 'Hoher Dunst, fast weißer Himmel',
     weathers: ['bewoelkt', 'dunst', 'klar', 'morgennebel'], weatherDefault: 'bewoelkt',
     timeDefault: 'vormittag', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'abend', name: 'Abend' }],
-    modes: ['cq', 'tdm', 'dom', 'ffa', 'panzer'],
+    modes: ['cq', 'trupp', 'tdm', 'dom', 'ffa', 'panzer'],
     palette: ['#2b2824', '#6b6458', '#8f8a81', '#4a3f33', '#c7c9c8'],
     features: ['Tausende verkohlte Bäume, Stümpfe und umgestürzte Stämme', 'Gräben mit Sandsackwänden, Brustwehren, Bretterverschalung, Wurzeln, Lattenrosten und Unterständen', 'Stromtrasse mit Gittermasten, einer umgestürzt', 'Stahlgerippe einer Gewächshausanlage mit Glasresten', 'Abgebrannter Holzplatz, Forstweg und ausgebrannte Fahrzeugwracks', 'Bodenstreu aus Zweigen, Rinde, Holzkohle; Pfützen und Stacheldraht', 'Fünf Eroberungsflaggen A–E'],
     lanes: ['Westen: Gewächshäuser', 'Mitte: Trichter unter der Stromtrasse', 'Osten: Holzplatz'],
@@ -397,7 +397,7 @@ export const MAPS = {
     weather: 'Klar, leichter Dunst über dem Wald',
     weathers: ['klar', 'dunst', 'morgennebel', 'bewoelkt'], weatherDefault: 'klar',
     timeDefault: 'vormittag', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'mittag', name: 'Mittag' }, { id: 'abend', name: 'Abend' }],
-    modes: ['cq', 'tdm', 'dom', 'ffa', 'panzer'],
+    modes: ['cq', 'trupp', 'tdm', 'dom', 'ffa', 'panzer'],
     palette: ['#6f7a5c', '#b4b0a6', '#2f3134', '#e8c22c', '#c8302a'],
     features: ['Startbahn 840 m mit Befeuerung – Jets starten und landen', 'Drei begehbare Hangars mit Werkstatt, Galerie und Büros', 'Kontrollturm mit Treppenhaus bis zur Kanzel', 'Tanklager, Radarstellung, Flakstellungen', 'Kaserne mit Stuben und Kantine, Fahrzeughof, Haupttor', 'Hubschrauber, Jets, Panzer und Geländewagen in beiden Gefechtsständen'],
     lanes: ['Norden: Radar – Hangars – Tanklager', 'Mitte: Startbahn und Vorfeld', 'Süden: Kaserne – Haupttor – Fahrzeughof'],
@@ -418,6 +418,36 @@ export const MAPS = {
     cq: [{ id: 'A', name: 'Radarstellung', x: -300, z: -166 }, { id: 'B', name: 'Unterkünfte', x: -130, z: 150 }, { id: 'C', name: 'Hangars', x: -40, z: -146 }, { id: 'D', name: 'Fahrzeughof', x: 150, z: 152 }, { id: 'E', name: 'Tanklager', x: 300, z: -165 }],
     hq: { A: [-415, -110], B: [415, -110] },
     spawns: { A: [-240, -60], B: [240, -60] },
+  },
+  // riesen (20.11.): Riesenkarte – 1600 × 1600 m, nur in der App (shared/appgate.js; Browser/Handy-Browser/VR-Browser gesperrt)
+  weitmark: {
+    id: 'weitmark',
+    name: 'Weitmark',
+    subtitle: 'Flusstal um Kesselbrück',
+    description: 'Ein weites Flusstal unter diesigem Vormittagshimmel, viermal so groß wie jede bisherige Karte: Die Kleinstadt Kesselbrück liegt beiderseits der Weitach, mit Marktplatz, Rathaus, Kirche und Bahnhof, verbunden durch die Steinbrücke und die Südbrücke. Draußen die Dörfer Lindhof und Hohenried, das Sägewerk am Güterbahnhof, die Ziegelei mit ihrem Schornstein, die Funkstation auf der bewaldeten Hügelkette und das Segelflugfeld, von dem die Jets abheben. Sieben Flaggen, Panzer, Hubschrauber und Jets – hier entscheidet der Weg, nicht nur der Abzug.',
+    short: 'Riesenkarte (nur App): Kleinstadt am Fluss, zwei Dörfer, Industrie, Hügelkette, Flugfeld – sieben Flaggen.',
+    size: 'groß',
+    scale: 'gross',
+    appOnly: true,
+    viewDistance: { low: 430, medium: 720, high: 1100, ultra: 1300 },
+    dimensions: { x: 1600, z: 1600 },
+    timeOfDay: 'Vormittag',
+    weather: 'Leicht dunstig, weite Sicht',
+    weathers: ['dunst', 'klar', 'morgennebel', 'bewoelkt'], weatherDefault: 'dunst',
+    timeDefault: 'vormittag', times: [{ id: 'morgen', name: 'Morgen' }, { id: 'mittag', name: 'Mittag' }, { id: 'abend', name: 'Abend' }],
+    modes: ['cq', 'trupp', 'tdm', 'dom', 'ffa', 'panzer'],
+    palette: ['#6f8a4e', '#c9b98a', '#3f5d6a', '#8a4232', '#e9e2d0'],
+    features: ['1600 × 1600 m – viermal so groß wie die bisher größte Karte', 'Kleinstadt Kesselbrück mit Marktplatz, Rathaus, Kirche, Bahnhof und zwei Brücken', 'Dörfer Lindhof und Hohenried, Sägewerk, Ziegelei, Funkstation, Segelflugfeld', 'Sieben Eroberungsflaggen A–G, Jets starten vom Boden', 'Nur in der App (PC-App, Android-App)'],
+    lanes: ['Westen: Sägewerk – Lindhof – Gefechtsstand West', 'Mitte: Kesselbrück, Funkstation, Flugfeld', 'Osten: Hohenried – Ziegelei – Gefechtsstand Ost'],
+    ambience: 'range',
+    bounds: { minX: -800, maxX: 800, minZ: -800, maxZ: 800 },
+    layout: [
+      [22,-720,22,169.2,"water",0.33], [8,-555,22,171.8,"water",-0.15], [30,-400,22,141.4,"water",-0.14], [26,-265,22,133.0,"water",0.21], [9,-140,22,120.1,"water",0.05], [7,-20,22,120.0,"water",-0.02], [10,100,22,120.1,"water",-0.03], [34,215,22,118.1,"water",-0.37], [102,325,22,145.3,"water",-0.71], [205,425,22,142.1,"water",-0.89], [295,535,22,147.6,"water",-0.49], [345,680,22,162.8,"water",-0.19], [-750,-40,6,100.0,"lane",-1.57], [-630,-35,6,140.4,"lane",-1.5], [-480,-35,6,160.3,"lane",-1.63], [-320,-30,6,161.2,"lane",-1.45], [0,-20,6,480.0,"lane",-1.57], [320,-5,6,162.8,"lane",-1.39], [480,20,6,161.2,"lane",-1.45], [630,35,6,140.4,"lane",-1.5], [750,40,6,100.0,"lane",-1.57], [-180,200,6,113.1,"lane",0.79], [-290,285,6,166.4,"lane",1.0], [-420,355,6,130.0,"lane",1.18], [-540,340,6,144.2,"lane",2.16], [-640,210,6,197.0,"lane",2.72], [-690,65,6,111.8,"lane",2.96], [160,-200,6,113.1,"lane",-2.36], [270,-285,6,166.4,"lane",-2.14], [405,-345,6,133.4,"lane",-1.8], [535,-330,6,143.2,"lane",-1.14], [645,-210,6,201.2,"lane",-0.46], [695,-60,6,120.4,"lane",-0.08], [-170,-195,6,92.2,"lane",2.43], [-265,-260,6,143.2,"lane",2.0], [-375,-295,6,90.6,"lane",1.68], [-470,-315,6,104.4,"lane",1.86], [185,195,6,147.6,"lane",-1.08], [340,265,6,193.1,"lane",-1.2], [495,275,6,139.3,"lane",-1.94], [625,180,6,191.0,"lane",-2.39], [-145,245,6,170.3,"lane",0.06], [-140,400,6,141.4,"lane",-0.14], [-120,495,6,53.9,"lane",-0.38], [135,-230,6,143.2,"lane",-2.93], [140,-365,6,131.5,"lane",2.99], [140,-480,6,102.0,"lane",-2.94], [-140,600,680,30,"lane"], [-140,-90,30,60,"house"], [-140,90,30,60,"house"], [-60,0,16,260,"house"], [-200,-20,60,20,"house"], [-176,40,12,30,"kirche"], [-100,-38,22,13,"house"], [-100,36,52,12,"house"], [120,-90,30,120,"house"], [120,80,30,90,"house"], [64,0,14,240,"house"], [182,40,22,10,"house"], [210,40,10,200,"lane"], [160,-110,30,18,"warehouse"], [-420,-318,40,22,"warehouse"], [-386,-322,26,16,"warehouse"], [420,286,48,18,"warehouse"], [452,268,4,4,"turm"], [-480,380,120,90,"house"], [470,-360,120,90,"house"], [-170,538,40,30,"building"], [-110,538,40,30,"building"], [-45,540,10,7,"building"], [150,-560,9,7,"bunker"],
+    ],
+    flags: [{ id: 'A', x: -100, z: 4 }, { id: 'B', x: 8, z: -20 }, { id: 'C', x: 150, z: 40 }],
+    cq: [{ id: 'A', name: 'Sägewerk', x: -420, z: -300 }, { id: 'B', name: 'Lindhof', x: -480, z: 380 }, { id: 'C', name: 'Marktplatz', x: -100, z: 4 }, { id: 'D', name: 'Funkstation', x: 150, z: -552 }, { id: 'E', name: 'Flugfeld', x: -110, z: 560 }, { id: 'F', name: 'Hohenried', x: 470, z: -360 }, { id: 'G', name: 'Ziegelei', x: 430, z: 300 }],
+    hq: { A: [-700, -40], B: [700, 40] },
+    spawns: { A: [-262, 0], B: [262, 0] },
   },
   // karten-neu (14.11.): dichtes Stadtviertel, Läden und Wohnungen begehbar, U-Bahn unter der Allee, Dächer
   stadtkern: {
@@ -528,7 +558,7 @@ export const WEATHERS = {
 };
 export const WEATHER_ORDER = ['klar', 'dunst', 'morgennebel', 'bewoelkt'];
 
-export const MAP_ORDER = ['hafen', 'altstadt', 'werk', 'bibliothek', 'range', 'grenzland', 'niemandsland', 'brandwald', 'flugplatz', 'stadtkern'];
+export const MAP_ORDER = ['hafen', 'altstadt', 'werk', 'bibliothek', 'range', 'grenzland', 'niemandsland', 'brandwald', 'flugplatz', 'stadtkern', 'weitmark'];
 
 /**
  * Militärfahrzeuge (Panzer aller Generationen, Geländewagen) nur auf großen Karten (Nutzer 21.10.: auf Hafen, Altstadt,

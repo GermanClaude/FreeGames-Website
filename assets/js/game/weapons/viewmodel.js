@@ -2018,7 +2018,7 @@ ViewModel.FOV = 54;
 const VM_FILL = 0.42;
 const VM_ENV = 0.62;
 // Staubmenge auf den Ego-Waffen je Karte (materials.js setWeaponDust; Farbe aus dem Bodenlicht der Karte)
-const DUST_BY_MAP = { grenzland: 0.7, niemandsland: 0.75, brandwald: 0.7, werk: 0.6, flugplatz: 0.5, altstadt: 0.5, hafen: 0.42, stadtkern: 0.45, bibliothek: 0.2, range: 0.25 };
+const DUST_BY_MAP = { grenzland: 0.7, niemandsland: 0.75, brandwald: 0.7, werk: 0.6, flugplatz: 0.5, weitmark: 0.65, altstadt: 0.5, hafen: 0.42, stadtkern: 0.45, bibliothek: 0.2, range: 0.25 };
 
 // Welle 2 (Arsenal): zusätzliche Choreografien (Nachladen je Mechanik, Inspizieren je Klasse, Platte, Klingenhiebe);
 // Animationen 09.10.: Nachladen mit Varianten, Magazin entlang der Schachtachse (anim/reloads.js, anim/magwell.js),

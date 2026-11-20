@@ -15,7 +15,7 @@ const icon = (body) =>
 
 /* ------------------------------------------------------------------ Modi */
 
-export const MODE_ORDER = ['tdm', 'ult', 'dom', 'hp', 'cq', 'kc', 'ffa', 'inf', 'messer', 'gun', 'training', 'panzer'];
+export const MODE_ORDER = ['tdm', 'ult', 'dom', 'hp', 'cq', 'trupp', 'kc', 'ffa', 'inf', 'messer', 'gun', 'training', 'panzer'];
 
 /*
  * Modus-Daten B6 (26.10.): online: true = im Mehrspieler wählbar (eine Quelle für net/index.js und ui/net-menus.js,
@@ -319,6 +319,55 @@ export const MODES = {
     icon: icon('<path d="M4 21V4"/><path d="M4 5h8l-2 3 2 3H4"/><path d="M14 21V10"/><path d="M14 11h6l-1.5 2.25L20 15.5h-6"/>'),
   },
 
+  // Trupp (20.11.): jeder Spieler führt seinen eigenen KI-Trupp, Front-Eroberung in Reihenfolge (game/modes/trupp.js,
+  // Daten shared/trupp.data.js). Optionen: trupp = Trupp-Typ beim ersten Einsatz (persönlich), groesse = Größe der KI-Trupps,
+  // kommandant = Kommandant mit Artillerie/Luftschlag.
+  trupp: {
+    id: 'trupp',
+    name: 'Trupp',
+    short: 'TRP',
+    tagline: 'Dein Trupp, deine Front.',
+    description:
+      'Du führst einen eigenen Trupp aus vier bis neun Soldaten und steuerst einen davon – die anderen folgen dir und gehorchen dem Befehlsrad. Fällt dein Soldat, übernimmst du sofort einen Kameraden; erst wenn der ganze Trupp gefallen ist, wählst du einen neuen Trupp-Typ: Sturm, MG, Pioniere, Scharfschützen, Panzerabwehr, Panzerbesatzung oder Fahrzeugtrupp. Die Front verläuft über eine Kette von Punkten, die nur der Reihe nach fallen; jeder Einsatz kostet Verstärkung.',
+    sizeRule: '{team} gegen {enemies} an der Front',
+    rules: [
+      'Eigener Trupp aus 4–9 KI-Soldaten, du steuerst einen',
+      'Gefallen? Sofort einen Kameraden übernehmen (auch per Taste)',
+      'Ganzer Trupp gefallen: neuen Trupp-Typ wählen und einsetzen',
+      'Punkte fallen nur der Reihe nach – Frontlinie zwischen den HQs',
+      'Jeder eingesetzte Soldat kostet ein Verstärkungsticket',
+      'Pioniere bauen auf Befehl Deckung, MG-Nest, Bunker und Sammelpunkt',
+    ],
+    hudObjective: 'Nimm den nächsten Frontpunkt',
+    scoreUnit: 'Verstärkung',
+    scoreLimit: 0,
+    timeLimit: 2400,
+    teams: true,
+    defaultAllies: 17,
+    defaultEnemies: 18,
+    limits: { allies: [3, 31], enemies: [4, 32] },
+    respawnDelay: 10,
+    streaks: false,
+    lethals: true,
+    squads: true,
+    deploy: true,
+    vehicles: true,
+    armor: true,
+    online: true,
+    onlineVehicles: true,
+    maxTeam: 24,
+    scales: ['gross'],
+    objective: { captureTime: 16, captureRateBonus: 0.4, maxCapturers: 6, hqWarning: 10, hqRadius: 34, points: { capture: 250, neutralize: 120, defend: 60 } },
+    matchLengths: { kurz: 0.6, standard: 1, lang: 1.7 },
+    options: [
+      { id: 'trupp', label: 'Erster Trupp', values: ['sturm', 'mg', 'pionier', 'scharf', 'pa', 'panzer', 'fahrzeug'], labels: { sturm: 'Sturmtrupp', mg: 'MG-Trupp', pionier: 'Pioniertrupp', scharf: 'Scharfschützen', pa: 'Panzerabwehr', panzer: 'Panzerbesatzung', fahrzeug: 'Fahrzeugtrupp' }, def: 'sturm', hint: 'Mit diesem Trupp setzt du zuerst ein; später wählst du im Truppmenü bzw. vor jedem Neueinsatz.' },
+      { id: 'groesse', label: 'KI-Trupps', values: [4, 6, 9], def: 6, suffix: ' Mann', hint: 'Größe der Trupps, die die KI führt.' },
+      { id: 'kommandant', label: 'Kommandant', values: ['an', 'aus'], labels: { an: 'An', aus: 'Aus' }, def: 'an', hint: 'Ein Spieler je Team kann das Kommando übernehmen: Ziele für Trupps, Artillerie und Luftschlag mit Abklingzeit.' },
+    ],
+    recommendedMaps: ['grenzland', 'niemandsland', 'brandwald', 'flugplatz'],
+    icon: icon('<circle cx="8" cy="6.5" r="2.2"/><circle cx="16" cy="6.5" r="2.2"/><circle cx="12" cy="4.5" r="2.4"/><path d="M4.5 13.5c.6-2.6 2-3.8 3.5-3.8s2.9 1.2 3.5 3.8M12.5 13.5c.6-2.6 2-3.8 3.5-3.8s2.9 1.2 3.5 3.8"/><path d="M5 20l7-4 7 4"/><path d="M12 16v-4"/>'),
+  },
+
   kc: {
     id: 'kc',
     name: 'Abschuss bestätigt',
@@ -483,7 +532,7 @@ export const MODES = {
     options: [
       { id: 'stil', label: 'Spielart', values: ['simulation', 'arcade'], labels: { simulation: 'Simulation', arcade: 'Arcade' }, def: 'simulation', hint: 'Simulation: jeder Handgriff selbst, keine Außenansicht. Arcade: du fährst und schießt allein, Automatiklader.' },
       { id: 'rolle', label: 'Rolle', values: ['kommandant', 'richtschuetze', 'fahrer', 'ladeschuetze'], labels: { kommandant: 'Kommandant', richtschuetze: 'Richtschütze', fahrer: 'Fahrer', ladeschuetze: 'Ladeschütze' }, def: 'kommandant', hint: 'Nur Simulation. Panzer ohne diesen Platz (LK-17: zwei Mann) setzen dich an den nächsten.' },
-      { id: 'panzer', label: 'Panzer', values: ['karte', 'mbt', 'spz', 'kk', 'wk2', 'wk2m', 'wk2h', 'wk2j', 'wk1', 'wk1l'], labels: { karte: 'Nach Karte', mbt: 'KP-1 Mammut', spz: 'SZ-8 Igel', kk: 'KP-68 Auerochs', wk2: 'MP-4 Bison', wk2m: 'MP-43 Elch', wk2h: 'SP-6 Moloch', wk2j: 'JP-44 Stier', wk1: 'SK-18 Koloss', wk1l: 'LK-17 Libelle' }, def: 'karte', hint: 'KP-1 und SZ-8: Wärmebild und Restlicht. KP-68 (1960er) und Weltkriegspanzer: nur Optik und Winkelspiegel. Munition passt zur Kanone – KP-68: Treibspiegel, Hohlladung, Quetschkopf, Kanister; SZ-8: 30-mm-Feuerstöße und Lenkflugkörper.' },
+      { id: 'panzer', label: 'Panzer', values: ['karte', 'mbt', 'spz', 'lp21', 'kk', 'kks', 'wk2', 'wk2m', 'wk2h', 'wk2s', 'wk2l', 'wk2j', 'wk1', 'wk1l'], labels: { karte: 'Nach Karte', mbt: 'KP-1 Mammut', spz: 'SZ-8 Igel', lp21: 'LP-21 Gämse (leicht)', kk: 'KP-68 Auerochs', kks: 'SP-58 Mastodon (schwer)', wk2: 'MP-4 Bison', wk2m: 'MP-43 Elch', wk2h: 'SP-6 Moloch', wk2s: 'SP-45 Walross (schwer)', wk2l: 'LP-39 Frettchen (leicht)', wk2j: 'JP-44 Stier', wk1: 'SK-18 Koloss', wk1l: 'LK-17 Libelle' }, def: 'karte', hint: 'KP-1 und SZ-8: Wärmebild und Restlicht. KP-68 (1960er) und Weltkriegspanzer: nur Optik und Winkelspiegel. Munition passt zur Kanone – KP-68: Treibspiegel, Hohlladung, Quetschkopf, Kanister; SZ-8: 30-mm-Feuerstöße und Lenkflugkörper. Leicht: LP-21 (105 mm, schnell, dünn gepanzert), LP-39 (37 mm). Schwer: SP-58 (120 mm, 1950er), SP-45 (lange 88 mm, 150-mm-Bug).' },
       { id: 'gegner', label: 'Feindkräfte', values: ['leicht', 'mittel', 'schwer'], labels: { leicht: 'Leicht', mittel: 'Mittel', schwer: 'Schwer' }, def: 'mittel', hint: 'Leicht: 2 Panzer, 1 Pak, 1 Bunker · Mittel: 3/2/2 · Schwer: 5/3/2' },
       { id: 'fuehrung', label: 'Führung (Simulation)', values: ['tutorial', 'hilfe', 'aus'], labels: { tutorial: 'Tutorial', hilfe: 'Hilfe auf Anfrage', aus: 'Aus' }, def: 'hilfe', hint: 'Tutorial: nächster Handgriff wird am Bedienelement markiert und erklärt. Hilfe: Liste nur auf Taste I. Aus: freie Reihenfolge ohne Hinweise.' },
       { id: 'stimme', label: 'Bordsprech-Stimme', values: ['aus', 'an'], labels: { aus: 'Aus', an: 'An' }, def: 'aus', hint: 'Sprachausgabe des Browsers (falls eine deutsche Stimme vorhanden ist); Untertitel immer.' },
@@ -930,7 +979,7 @@ export const SQUAD_SIZE = 4;
 
 /* ------------------------------------------------------------ Teamgrößen je Karte und Gerät (GROSSKAMPF §3.2) */
 
-const BIG_MAPS = new Set(['grenzland', 'talsperre', 'nordkueste', 'niemandsland', 'brandwald', 'flugplatz']);
+const BIG_MAPS = new Set(['grenzland', 'talsperre', 'nordkueste', 'niemandsland', 'brandwald', 'flugplatz', 'weitmark']);
 export function mapScaleOf(map) {
   if (map && typeof map === 'object') return map.scale === 'gross' ? 'gross' : 'arena';
   return BIG_MAPS.has(map) ? 'gross' : 'arena';
@@ -972,7 +1021,7 @@ export function limitsFor(modeId, map, { tier = 'high', touch = false, deviceMem
     let side = weak ? 16 : touch ? 32 : BIG_SIDE; // Telefone/Tablets wie bisher höchstens 32 v 32
     if (mass) side = Math.max(BIG_SIDE, MASS_SIDE[tier] || MASS_SIDE.high);
     if (teams) { allies = [0, side - 1]; enemies = [1, side]; } else enemies = [1, Math.min(touch || weak ? 23 : 49, side * 2 - 1)];
-    if (modeId === 'cq') {
+    if (modeId === 'cq' || modeId === 'trupp') {
       const n = tier === 'low' ? 12 : tier === 'medium' ? (touch ? 16 : 24) : 32;
       rec = { allies: Math.min(n, side) - 1, enemies: Math.min(n, side) };
     }

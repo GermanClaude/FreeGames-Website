@@ -124,7 +124,7 @@ class EngineVoice {
     const def = v.def || {}, E = def.engine || {};
     this.kind = engineKindOf(def); this.K = ENGINE_KINDS[this.kind];
     this.idle = E.idleRpm || 800; this.rated = E.ratedRpm || this.idle * 4; this.cut = E.cutRpm || this.rated * 1.05;
-    this.tracked = def.drive === 'tracked';
+    this.tracked = def.drive === 'tracked' || !!def.halftrack; // Halbkette (data-troop.js): Kettenklang des Hinterlaufwerks
     this.turret = !!(v.mount && (def.traverse || def.turretLimits));
     this.mass = def.mass || 2000;
     this.vol = KIND_VOL[this.kind] ?? 0.7;
@@ -311,7 +311,7 @@ export class VehicleAudio {
       const E = (v.def && v.def.engine) || {}, idle = E.idleRpm || 800, cut = E.cutRpm || (E.ratedRpm || idle * 4) * 1.05, kind = engineKindOf(v.def);
       for (const r of rpmSteps(idle, cut)) jobs.push(() => K.engine(kind, r));
       jobs.push(() => K.noise(1), () => K.noise(2));
-      if (v.def && v.def.drive === 'tracked') { const m = v.def.mass || 2000, h = m > 35000 ? 1.25 : m > 15000 ? 1 : 0.8; jobs.push(() => K.track(8, h), () => K.track(36, h)); }
+      if (v.def && (v.def.drive === 'tracked' || v.def.halftrack)) { const m = v.def.mass || 2000, h = m > 35000 ? 1.25 : m > 15000 ? 1 : 0.8; jobs.push(() => K.track(8, h), () => K.track(36, h)); }
     }
     for (const j of jobs) {
       const before = K.cache.size; j();

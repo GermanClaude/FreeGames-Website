@@ -96,16 +96,19 @@ function bodyMesh(lod, civil = false, female = false) {
   // gesamt 20.11.: Bereiche der gröbsten Stufe aus Stufe 0 übernehmen (nächste Ecke mit ähnlicher Normale). Die erzeugten
   // Bereichsdaten der Uniform-Stufe 2 waren vertauscht (Gesicht/Schädel an Oberschenkeln und Brust → Hautflecken auf low).
   if (lod === 2) {
-    const B0 = bodyMesh(0, civil, female), r = D0.reg;
+    // mensch3: nur Ecken desselben Hauptknochens (sonst holten Oberarm-Ecken der Zivilisten Hals-/Handbereiche → Hautstreifen)
+    const B0 = bodyMesh(0, civil, female), r = D0.reg, sk = D0.ski;
     for (let v = 0; v < E.n; v++) {
       const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2], nx = nrm[v * 3], ny = nrm[v * 3 + 1], nz = nrm[v * 3 + 2];
-      let best = Infinity, br = r[v];
+      let best = Infinity, br = r[v], best2 = Infinity, br2 = r[v];
       for (let u = 0; u < B0.n; u++) {
         const dx = B0.pos[u * 3] - x, dy = B0.pos[u * 3 + 1] - y, dz = B0.pos[u * 3 + 2] - z;
         const q = dx * dx + dy * dy + dz * dz;
-        if (q < best && B0.nrm[u * 3] * nx + B0.nrm[u * 3 + 1] * ny + B0.nrm[u * 3 + 2] * nz > 0.2) { best = q; br = B0.reg[u]; }
+        if (q < best && B0.nrm[u * 3] * nx + B0.nrm[u * 3 + 1] * ny + B0.nrm[u * 3 + 2] * nz > 0.2) {
+          if (B0.ski[u * 4] === sk[v * 4]) { best = q; br = B0.reg[u]; } else if (q < best2) { best2 = q; br2 = B0.reg[u]; }
+        }
       }
-      r[v] = br;
+      r[v] = best < Infinity ? br : br2;
     }
   }
   bodyCache[ck] = D0;
@@ -414,6 +417,7 @@ function buildSoldier(V, lod) {
       const a = I[t], b = I[t + 1], c = I[t + 2];
       if (filter === true && (ARMS.has(RR[a]) || ARMS.has(RR[b]) || ARMS.has(RR[c]))) continue;
       if (filter === 'arm' && !(ARMS.has(RR[a]) && ARMS.has(RR[b]) && ARMS.has(RR[c]))) continue;
+      if (filter === 'neck' && !(RR[a] === RG.NECK && RR[b] === RG.NECK && RR[c] === RG.NECK)) continue;
       const ay = P[a * 3 + 1], by = P[b * 3 + 1], cy = P[c * 3 + 1];
       if ((ay > y && by > y && cy > y) || (ay < y && by < y && cy < y)) continue;
       // Möller–Trumbore
@@ -597,31 +601,99 @@ function buildSoldier(V, lod) {
       if (rib && L0) ribify(g, 24, 0.035);
       pair(place(g, { p: [ax + (rxi - rxo) / 2, y, (rzb - rzf) / 2], s: [rx, 1, rz] }), 'foreArmL', 'foreArmR', { ...mat, ...NB });
     };
-    // Kragen/Bündchen entlang des gemessenen Halsausschnitts (body-mesh.js boots.neck): w hoch, t dick, lift über der Kante,
-    // flare (rad) nach außen gekippt, open (rad) vorn offen, rib Rippen
+    // Kragen/Bündchen entlang des gemessenen Halsausschnitts (body-mesh.js boots.neck): w hoch, t dick, lift über der Kante
     const NL0 = (BODY_MESH.boots && BODY_MESH.boots.neck && BODY_MESH.boots.neck[V.female ? 'female' : 'civil']) || null;
-    const collar = (w, t, lift, mat, { flare = 0, open = 0, rib = false, out = 0, down = 0 } = {}) => {
+    // mensch3: Kragen als Band zwischen Halsausschnitt und Hals – die Oberkante liegt am gemessenen Hals an (vorher stand der Kragen
+    // als Ring auf dem weiten Ausschnitt ab). Stehkragen: Unterkante im Ausschnitt, Oberkante am Hals in Höhe +w. Umlegekragen
+    // (fold): zusätzlich ein Blatt von der Stehkragen-Oberkante nach außen/unten auf Schulter und Brust (Hemd, Mantelrevers).
+    // open (rad): vorn offen (Knopfleiste/Revers), rib: Rippen (Strick)
+    const collar = (w, t, lift, mat, { open = 0, rib = false, out = 0, fold = 0, gap = 0.0035 } = {}) => {
       if (!NL0 || NL0.length < 8 || FAR) return;
-      // glätten (geschlossen), dann gleichmäßig neu verteilen
       let L = NL0.map((p) => p.slice());
       for (let it = 0; it < 3; it++) L = L.map((p, i) => { const a = L[(i - 1 + L.length) % L.length], b = L[(i + 1) % L.length]; return [(a[0] + 2 * p[0] + b[0]) / 4, (a[1] + 2 * p[1] + b[1]) / 4, (a[2] + 2 * p[2] + b[2]) / 4]; });
       const cz0 = L.reduce((s_, p) => s_ + p[2], 0) / L.length;
-      const N = L0 ? 64 : 24;
+      const N = L0 ? 56 : 22;
       const C3 = new THREE.CatmullRomCurve3(L.map((p) => new THREE.Vector3(...p)), true, 'centripetal');
-      const pts = [], ups = [];
+      // Halsmitte je Höhe (vorn/hinten gemessen) und Halsradius je Richtung
+      const neckC = new Map();
+      const neckCz = (y) => { const k = Math.round(y * 500); if (!neckC.has(k)) { const yy = k / 500; const rf = surfAt(yy, 0, cz0, 0, -1, 0.012, 0.3, 'neck'), rb = surfAt(yy, 0, cz0, 0, 1, 0.012, 0.3, 'neck'); neckC.set(k, rf > 0.02 && rb > 0.02 ? cz0 + (rb - rf) / 2 : cz0); } return neckC.get(k); };
+      const neckAt = (y, ox, oz) => { const cz = neckCz(y); const r = surfAt(y, 0, cz, ox, oz, 0.012, 0.3, 'neck'); return [cz, r]; };
+      const B = [], T = [], F = [], keep = [];
       for (let i = 0; i < N; i++) {
         const v = C3.getPointAt(i / N);
         let ox = v.x, oz = v.z - cz0; const ol = Math.hypot(ox, oz) || 1; ox /= ol; oz /= ol;
-        const ang = Math.atan2(ox, -oz); // 0 = vorn
+        const ang = Math.atan2(ox, -oz);
         if (open && Math.abs(ang) < open) continue;
-        const k = t / 2 + 0.0015 + out;
-        pts.push([v.x + ox * k, v.y + lift - down * (1 - Math.cos(ang)) * 0.5, v.z + oz * k]);
-        ups.push([ox * Math.cos(flare), -Math.sin(flare), oz * Math.cos(flare)]); // flare > 0: Oberkante kippt nach außen
+        // Unterkante: knapp außerhalb der Ausschnittkante (deckt die gezackte Stoffgrenze), etwas eingesenkt
+        const b = [v.x + ox * (t * 0.5 + out), v.y + lift - 0.004, v.z + oz * (t * 0.5 + out)];
+        // Oberkante: am Hals in Höhe +w, Abstand = halbe Stoffdicke + Luft
+        const yT = v.y + lift + w;
+        const [cz, rn] = neckAt(yT, ox, oz);
+        const rB = Math.hypot(b[0], b[2] - cz);
+        let rT = rn > 0.02 ? rn + t * 0.5 + gap : rB - w * 0.35;
+        rT = Math.min(rT, rB + 0.002); // nie nach außen kippen
+        const tp = [ox * rT, yT, cz + oz * rT];
+        B.push(b); T.push(tp); keep.push(ang);
+        if (fold) {
+          // Umlegeblatt: von der Oberkante nach außen/unten, Länge fold, liegt mit Luft auf Schulter/Brust
+          let best = null;
+          for (let k = 1; k <= 14; k++) {
+            const yy = tp[1] - k * 0.006;
+            const rb_ = surfAt(yy, 0, cz0, ox, oz, 0.012, 0.3, true);
+            if (rb_ < 0.02) continue;
+            const rq = Math.max(rb_ + t + 0.002, Math.hypot(b[0], b[2] - cz0) + t * 1.2 + 0.003 + (tp[1] - yy) * 0.25); // außen über dem Steg
+            const q = [ox * rq, yy, cz0 + oz * rq];
+            const d = Math.hypot(q[0] - tp[0], q[1] - tp[1], q[2] - tp[2]);
+            best = q;
+            if (d >= fold) break;
+          }
+          F.push(best || [tp[0] + ox * fold * 0.7, tp[1] - fold * 0.7, tp[2] + oz * fold * 0.7]);
+        }
       }
+      const n = B.length;
+      if (n < 4) return;
       // Reihenfolge so drehen, dass die Lücke vorn am Anfang/Ende liegt
-      if (open) { let gi = 0, gm = 0; for (let i = 0; i < pts.length; i++) { const j = (i + 1) % pts.length; const d = Math.hypot(pts[j][0] - pts[i][0], pts[j][2] - pts[i][2]); if (d > gm) { gm = d; gi = j; } } pts.push(...pts.splice(0, gi)); ups.push(...ups.splice(0, gi)); }
-      const prof = rectProfile(w, t).map(([a, b]) => [a + w / 2 * 0.6, b]);
-      add(sweep(pts, ups, prof, { closed: !open, smooth: false, scale: rib && L0 ? (i) => (i % 2 ? 1.0 : 1.12) : null }), 'chest', { ...mat, ...NB });
+      if (open) {
+        let gi = 0, gm = 0;
+        for (let i = 0; i < n; i++) { const j = (i + 1) % n; const d = Math.hypot(B[j][0] - B[i][0], B[j][2] - B[i][2]); if (d > gm) { gm = d; gi = j; } }
+        for (const A_ of [B, T, F]) if (A_.length) A_.push(...A_.splice(0, gi));
+      }
+      // Querschnitt je Spalte: innen unten → innen oben → Rand → außen oben → außen unten (→ Umlegeblatt)
+      const pos = [], idx = [];
+      const rowsOf = (i) => {
+        const b = B[i], tp = T[i];
+        const dx = tp[0] - b[0], dy = tp[1] - b[1], dz = tp[2] - b[2], dl = Math.hypot(dx, dy, dz) || 1;
+        // Bandnormale: waagrecht nach außen, senkrecht zur Bandrichtung
+        let nx = b[0], nz = b[2] - cz0; const nl = Math.hypot(nx, nz) || 1; nx /= nl; nz /= nl;
+        const along = [dx / dl, dy / dl, dz / dl];
+        const dn = nx * along[0] + nz * along[2];
+        let n3 = [nx - along[0] * dn, -along[1] * dn, nz - along[2] * dn]; const l3 = Math.hypot(...n3) || 1; n3 = n3.map((q) => q / l3);
+        const ribS = rib && L0 ? 1 + 0.12 * (i % 2) : 1;
+        const h = t * 0.5 * ribS;
+        const off = (p, s_) => [p[0] + n3[0] * h * s_, p[1] + n3[1] * h * s_, p[2] + n3[2] * h * s_];
+        const rim = [tp[0] + along[0] * h * 0.8, tp[1] + along[1] * h * 0.8, tp[2] + along[2] * h * 0.8];
+        const R_ = [off(b, -1), off(tp, -1), rim, off(tp, 1), off(b, 1)];
+        if (fold) { const f = F[i]; R_.push([f[0] + n3[0] * h, f[1] + n3[1] * h, f[2] + n3[2] * h], [f[0] - n3[0] * h * 0.3, f[1] - h * 0.8, f[2] - n3[2] * h * 0.3]); }
+        return R_;
+      };
+      const per = fold ? 7 : 5;
+      for (let i = 0; i < n; i++) for (const p of rowsOf(i)) pos.push(...p);
+      const segs = open ? n - 1 : n;
+      for (let i = 0; i < segs; i++) {
+        const a0 = i * per, b0 = ((i + 1) % n) * per;
+        for (let k = 0; k + 1 < per; k++) idx.push(a0 + k, b0 + k, a0 + k + 1, a0 + k + 1, b0 + k, b0 + k + 1);
+      }
+      // offene Enden schließen (Stirnseiten vorn)
+      if (open) for (const e of [0, n - 1]) { const o = e * per; for (let k = 1; k + 1 < per; k++) idx.push(o, o + k, o + k + 1); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      // Umlauf so, dass die Außenseite (Zeile 3) nach außen zeigt – sonst Dreiecke umdrehen (einseitiges Material)
+      { const Nn = g.attributes.normal.array; let sdot = 0;
+        for (let i = 0; i < n; i++) { const v = i * per + 3, px = pos[v * 3], pz = pos[v * 3 + 2] - cz0; sdot += Nn[v * 3] * px + Nn[v * 3 + 2] * pz; }
+        if (sdot < 0) { for (let k = 0; k < idx.length; k += 3) { const x_ = idx[k + 1]; idx[k + 1] = idx[k + 2]; idx[k + 2] = x_; } g.setIndex(idx); g.computeVertexNormals(); } }
+      add(g, 'chest', { ...mat, ...NB });
     };
     // Knopfleiste/Reißverschluss vorn (am Körper gemessen)
     const placket = (y0, y1, w, t, mat, x = 0, n = 7) => {
@@ -655,18 +727,18 @@ function buildSoldier(V, lod) {
         if (V.top === 'strick') buttons([1.1, 1.18, 1.26, 1.34, 1.41], 0, { color: '#3a2c22', detail: 0.3, shine: 0.4, cls: 'hard' });
         flapSide(1.09, darker(civ.top, 0.85));
       }
-      if (V.top === 'jacke') { collar(0.04, 0.008, 0.002, civ.top, { flare: -0.45, open: 0.16, out: -0.003 }); cuff(darker(civ.top, 0.9), 0.03, false); }
-      else { collar(0.02, 0.006, 0.003, civ.shirt, { flare: -0.6, out: -0.005 }); collar(0.016, 0.007, -0.006, civ.top, { rib: true, out: 0.002, open: 0.22, down: 0.05 }); cuff(civ.top); }
+      if (V.top === 'jacke') { collar(0.038, 0.007, 0.0, civ.top, { open: 0.16 }); cuff(darker(civ.top, 0.9), 0.03, false); }
+      else { collar(0.02, 0.004, 0.002, civ.shirt, { out: -0.004, open: 0.12 }); collar(0.012, 0.007, -0.004, civ.top, { rib: true, out: 0.002, open: 0.22, gap: 0.006 }); cuff(civ.top); }
       if (V.hiVis) for (const y of [1.12, 1.2]) hemBand(y, 0.026, 0.004, { color: '#d8dccf', detail: 0.3, shine: 0.6, emis: 0.05, cls: 'gear' }, false);
     } else if (V.top === 'pullover') {
       // Pullover: Rippbündchen an Hals, Saum, Ärmeln; darunter Hemdkragen
       hemBand(1.0, 0.055, 0.005, civ.top, true);
-      collar(0.026, 0.009, 0.0, civ.top, { rib: true, flare: -0.75, out: -0.006 });
+      collar(0.024, 0.008, -0.002, civ.top, { rib: true, out: -0.002 });
       cuff(civ.top, 0.05);
     } else if (V.top === 'mantel') {
       // Mantel: Revers/Kragen, Knopfleiste, Ärmelaufschlag; Mantelschöße unten an den Oberschenkeln (siehe unten)
-      collar(0.05, 0.008, 0.002, darker(civ.top, 0.95), { flare: 0.55, open: 0.5, out: 0.004, down: 0.06 });
-      collar(0.022, 0.006, 0.004, civ.shirt, { flare: -0.6, open: 0.2, out: -0.005 });
+      collar(0.022, 0.004, 0.002, civ.shirt, { open: 0.2, out: -0.004 });
+      collar(0.03, 0.007, 0.0, darker(civ.top, 0.95), { open: 0.5, fold: 0.055, out: 0.002, gap: 0.006 });
       if (L01) { placket(0.98, 1.36, 0.03, 0.005, darker(civ.top, 0.97), -0.012); buttons([1.02, 1.12, 1.22, 1.32], -0.012, btnDark, 0.008); }
       cuff(darker(civ.top, 0.9), 0.05, false);
       hemBand(1.06, 0.035, 0.007, darker(civ.top, 0.9), false); // Gürtelschlaufe/Taille
@@ -677,14 +749,14 @@ function buildSoldier(V, lod) {
         buttons(pts.slice(1, 7).map((p) => p[1]), 0, btnLight, 0.0045);
         if (L0) for (const sx of [-1, 1]) { const x = sx * 0.085, y = 1.33; add(place(pad({ k: 2, fr: 0, bv: 2, w: 0.075, h: 0.085, d: 0.005, rb: 0.002, rc: 0.006, bend: [2, 0] }), { p: [x, y, frontZ(y, x) - 0.003], r: [0, sx * 0.25, 0] }), 'chest', { ...civ.top, color: shade(V.topColor, 0.9), ...NB }); }
       }
-      collar(0.026, 0.005, 0.002, civ.top, { flare: -0.6, open: 0.1, out: -0.005 });
-      collar(0.03, 0.004, -0.002, darker(civ.top, 0.96), { flare: 0.45, open: 0.16, out: 0.005, down: 0.035 });
+      collar(0.022, 0.004, 0.0, civ.top, { open: 0.1, fold: 0.035, out: -0.002 });
     }
     // Mantelschöße: je Seite eine doppelwandige Stoffbahn um Becken/Oberschenkel (vorn übereinander, hinten Gehschlitz)
     if (V.top === 'mantel') {
       const y0 = 0.985, y1 = V.female ? 0.5 : 0.53, rows = L0 ? 8 : L01 ? 4 : 2, cols = L0 ? 16 : L01 ? 8 : 4;
       const rx0 = sideX(y0) + 0.012, rf0 = -frontZ(y0) + 0.006 + 0.012, rb0 = backZ(y0) - 0.006 + 0.014;
-      const rx1 = Math.max(rx0 + 0.035, 0.2), rf1 = rf0 + 0.03, rb1 = rb0 + 0.025;
+      // mensch3: Saum weiter (v. a. hinten/seitlich) – Oberschenkel schwingen beim Gehen innen frei, statt durchzustechen
+      const rx1 = Math.max(rx0 + 0.05, 0.215), rf1 = rf0 + 0.035, rb1 = rb0 + 0.06;
       // vorn überlappen die Schöße (links außen, rechts 5 mm darunter) → auch in der Schrittstellung geschlossen.
       // Weich gehäutet (wie der Körper): oben am Becken, nach unten zunehmend am Oberschenkel (höchstens 70 %, zur Mitte
       // vorn/hinten weniger) – der Mantel schwingt beim Gehen mit und legt sich beim Hocken über die Knie, statt starr mit
@@ -705,7 +777,8 @@ function buildSoldier(V, lod) {
               let nx = side * Math.sin(th) / rx, nz = -Math.cos(th) / rz; const nl = Math.hypot(nx, nz) || 1;
               nrm.push((shell ? -1 : 1) * nx / nl, 0, (shell ? -1 : 1) * nz / nl);
               uvA.push(th * 0.18, y);
-              const wT = 0.7 * Math.min(1, Math.max(0, (0.985 - y) / 0.4)) * (0.55 + 0.45 * Math.sin(Math.min(Math.PI, Math.max(0, th))));
+              // mensch3: vorn folgt der Schoß dem Oberschenkel stärker (legt sich beim Hocken über das Knie), hinten hängt er am Becken
+              const wT = Math.min(1, Math.max(0, (0.985 - y) / 0.36)) * (0.5 + 0.38 * Math.cos(th));
               const q = Math.round(wT * 255);
               ski.push(BONE.hips, BONE[thighBone], 0, 0); skw.push(255 - q, q, 0, 0);
             }

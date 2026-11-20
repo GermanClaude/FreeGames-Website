@@ -1233,6 +1233,7 @@ export class HUD {
     this._updateArmor(p, now);
     if (this.deploy) this.deploy.update(dt);
     if (this.wheel) this.wheel.update(dt);
+    if (G.trupp && G.trupp.hud && typeof G.trupp.hud.update === 'function') G.trupp.hud.update(dt); // Modus Trupp (ui/trupp-hud.js)
     if (G.mode && G.mode.squads && p && p.alive && input && typeof input.pressed === 'function' && input.pressed('squad_order')) this._squadPing();
     if (this._zoneT > 0) { this._zoneT -= dt; if (this._zoneT <= 0) this.el.zone.hidden = true; }
 

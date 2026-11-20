@@ -1229,6 +1229,8 @@ html.static-type .hl { --sq: 0; }
 .dl-meta { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
 .dl-note { font-family: var(--font-mono); font-size: 12.5px !important; line-height: 1.55; color: var(--ink-2); }
 .dl-note:empty { display: none; }
+/* riesen (20.11.): Hinweis auf die App-exklusive Riesenkarte in der PC-App-Karte */
+.dl-excl { border-left: 3px solid var(--np-signal); padding-left: 10px; }
 .dl-note a, .dl-inline { color: var(--np-ink); }
 .dl-share { display: inline-block; width: .9em; height: 1.05em; vertical-align: -.15em; border: 1.5px solid currentColor; border-top: 0; position: relative; margin: 0 2px; }
 .dl-share::before { content: ''; position: absolute; left: 50%; top: -.35em; width: 1.5px; height: .8em; background: currentColor; transform: translateX(-50%); }

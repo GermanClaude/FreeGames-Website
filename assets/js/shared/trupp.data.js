@@ -11,7 +11,35 @@
  * So läuft jede Großkarte mit Eroberungspunkten ohne weitere Daten, auch neue (z. B. die Riesenkarte der App).
  */
 
-/** Truppgrößen (Plätze je Trupp), Standard und Lobby-Werte. */
+/*
+ * Grundprinzip (Nutzer 20.11.): JEDER Spieler führt seinen EIGENEN Trupp aus KI-Soldaten (4–9 Mann) und steuert einen davon;
+ * die anderen folgen ihm. Fällt der gesteuerte Soldat, übernimmt der Spieler sofort einen lebenden Kameraden (auch jederzeit
+ * per Taste „Soldat wechseln“). Erst wenn der ganze Trupp gefallen ist, wählt er einen Trupp-Typ und setzt neu ein.
+ * Weitere Trupps (ohne Menschen) führt die KI. TRUPP_TYPES = Trupp-Typen zur Wahl vor dem Einsatz.
+ */
+
+/**
+ * Trupp-Typen: roles = Rollen der Soldaten (Index 0 = der Soldat, den der Spieler zuerst steuert), vehicle = Trupp setzt im
+ * Fahrzeug ein ('panzer': gepanzertes Kampffahrzeug mit Kanone, 'transport': Fahrzeug mit den meisten freien Sitzen).
+ */
+export const TRUPP_TYPES = Object.freeze({
+  sturm: { id: 'sturm', name: 'Sturmtrupp', text: 'Sechs Mann mit Sturmgewehren und Sanitäter – der Allrounder für den Angriff auf Punkte.', roles: ['truppfuehrer', 'schuetze', 'schuetze', 'sanitaeter', 'schuetze', 'schuetze'] },
+  mg: { id: 'mg', name: 'MG-Trupp', text: 'Zwei leichte MGs halten Gegner nieder, Schützen und ein Sanitäter sichern.', roles: ['mg', 'mg', 'truppfuehrer', 'schuetze', 'sanitaeter'] },
+  pionier: { id: 'pionier', name: 'Pioniertrupp', text: 'Baut auf Befehl Sandsäcke, MG-Nester, Bunker als Außenposten und Sammelpunkte.', roles: ['pionier', 'pionier', 'truppfuehrer', 'schuetze', 'sanitaeter'] },
+  scharf: { id: 'scharf', name: 'Scharfschützentrupp', text: 'Vier Mann: zwei Zielfernrohrgewehre, ein Beobachter mit Sturmgewehr, ein Sanitäter.', roles: ['zielfernrohr', 'zielfernrohr', 'truppfuehrer', 'sanitaeter'] },
+  pa: { id: 'pa', name: 'Panzerabwehrtrupp', text: 'Drei Panzerabwehrwerfer gegen Fahrzeuge und Bunker, dazu Truppführer und Schütze.', roles: ['panzerabwehr', 'panzerabwehr', 'panzerabwehr', 'truppfuehrer', 'schuetze'] },
+  panzer: { id: 'panzer', name: 'Panzerbesatzung', text: 'Vier Mann Besatzung – der Trupp setzt im Panzer am HQ ein und besetzt alle Plätze.', roles: ['besatzung', 'besatzung', 'besatzung', 'besatzung'], vehicle: 'panzer' },
+  fahrzeug: { id: 'fahrzeug', name: 'Fahrzeugtrupp', text: 'Fahrer und Infanterie im Transportfahrzeug – schnell an die Front, absitzen, angreifen.', roles: ['besatzung', 'truppfuehrer', 'schuetze', 'schuetze', 'sanitaeter', 'mg', 'pionier', 'schuetze'], vehicle: 'transport' },
+});
+export const TRUPP_TYPE_ORDER = Object.freeze(['sturm', 'mg', 'pionier', 'scharf', 'pa', 'panzer', 'fahrzeug']);
+export const TRUPP_TYPE_DEFAULT = 'sturm';
+
+/** Bauaufträge an den Pionier des eigenen Trupps (Funk-Rad): k = Bauwerk (building.js) bzw. 'sammelpunkt'. */
+export const TRUPP_BUILD_ORDERS = Object.freeze([
+  { id: 'sandsack', name: 'Sandsäcke' }, { id: 'mgnest', name: 'MG-Nest' }, { id: 'bunker', name: 'Bunker (Außenposten)' }, { id: 'sammelpunkt', name: 'Sammelpunkt' },
+]);
+
+/** Truppgrößen der KI-Trupps (Plätze je Trupp), Standard und Lobby-Werte. */
 export const TRUPP_SIZES = Object.freeze([4, 6, 9]);
 export const TRUPP_SIZE_DEFAULT = 6;
 /** Rufnamen der Trupps (frei erfunden, Buchstabieralphabet-artig). */

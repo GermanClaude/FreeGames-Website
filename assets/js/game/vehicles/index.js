@@ -6,7 +6,7 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261115041504';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor, isRoleKind, transportTypeFor } from './data.js?v=20261115041504';
 import { Vehicle, newIntent } from './vehicle.js?v=20261115041504';
 import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261115041504';
 import { ShellPool, raycastActors } from './projectiles.js?v=20261115041504';
@@ -28,6 +28,7 @@ import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupp
 import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261115041504';
 import { Aircraft } from './air/aircraft.js?v=20261115041504';
 import { AirSupport, AIR_CAP } from './air/index.js?v=20261115041504';
+import { TransportRides } from './ride.js?v=20261115041504';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -70,6 +71,7 @@ export class VehicleSystem {
     this._noVeh = false; // world.raycast-Hülle: Fahrzeuge auslassen (feste Messungen, bullet-holes.js)
     this.hud = null;
     this.audio = new VehicleAudio(G);
+    this.rides = new TransportRides(this); // Bot-Fahrten mit Truppentransportern (ride.js)
     this.air = new AirSupport(this); // Luftfahrzeuge (air/index.js): Stellplätze, Flugsteuerung, HUD, Flugabwehr, Skript-API
     this._own = 0;
     this._vehHits = [];
@@ -221,6 +223,7 @@ export class VehicleSystem {
     const G = this.G;
     if (this.thermal) { this.thermal.dispose(); this.thermal = null; }
     this.air.detach();
+    this.rides.state.clear();
     if (this.net) { this.net.dispose(); this.net = null; }
     this.remote = null;
     if (this._warmModels) { for (const md of this._warmModels) { md.root.removeFromParent(); md.dispose(); } this._warmModels = null; }
@@ -337,6 +340,14 @@ export class VehicleSystem {
     return tankTypeFor(era, M.mapId || (this.world && this.world.id), team, slot);
   }
   get tankType() { return this.tankTypeFor('A'); }
+  /** Typ eines Rollen-Stellplatzes ('truck', 'apc', 'light', …) in der Panzergeneration dieser Runde (data.js). */
+  roleTypeFor(kind) {
+    const G = this.G, M = G.match || {};
+    let era = null;
+    try { era = G.params && typeof G.params.get === 'function' ? G.params.get('panzer') : null; } catch { era = null; }
+    if (!era || VEHICLES[era]) era = (M.net && M.net.tankEra) || M.tankEra || 'karte';
+    return transportTypeFor(era, M.mapId || (this.world && this.world.id), kind);
+  }
   /** Beide Panzer der Runde (Team A, Team B; ohne Doppelte). */
   get tankTypes() { return [...new Set([this.tankTypeFor('A'), this.tankTypeFor('B'), this.tankTypeFor('A', 1), this.tankTypeFor('B', 1)])]; }
 
@@ -378,6 +389,18 @@ export class VehicleSystem {
     if (!entries || !entries.length) return;
     // Panzergeneration (Raum/Lobby „Panzer“): Kampfpanzer-Plätze der Karte bekommen den Panzer der gewählten Epoche
     const slots = new Map(); // je Team: n-ter Kampfpanzer-Stellplatz (zweiter → zweites Fahrzeug der Epoche)
+    // Rollen-Stellplätze (Transporter, leichte/schwere Panzer, data-troop.js): Typ je Panzergeneration der Runde
+    // (Stellplatz auf freien, ebenen Boden in ≤ 24 m rücken – die Fahrzeuge sind verschieden groß)
+    const fixed = entries.filter((e) => e && !isRoleKind(e.type) && e.position).map((e) => e.position);
+    entries = entries.map((e) => {
+      if (!e || !isRoleKind(e.type)) return e;
+      const type = this.roleTypeFor(e.type);
+      if (!type) return null;
+      let spot = null;
+      try { spot = e.position ? this.findSpot(e.position.clone ? e.position.clone() : new THREE.Vector3(e.position.x, e.position.y, e.position.z), type, { maxR: 24, avoid: fixed }) : null; } catch { spot = null; }
+      if (spot) fixed.push(spot.position);
+      return { ...e, type, position: spot ? spot.position : e.position, yaw: e.yaw ?? (spot ? spot.yaw : 0) };
+    });
     entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret).map((e) => {
       if (e.type !== 'mbt') return e;
       const k = e.team ?? null, n = slots.get(k) || 0;
@@ -576,6 +599,9 @@ export class VehicleSystem {
     let idx = seatIdx;
     if (idx == null || idx < 0 || idx >= v.seats.length || v.seats[idx].actor) idx = v.seats.findIndex((s) => !s.actor);
     if (idx < 0) return -1;
+    // Modus-Regel (Trupp: Fahrer-/Waffensitze gepanzerter Fahrzeuge nur für die Besatzung) → anderer Sitz bzw. −1
+    const M = this.G.mode;
+    if (M && typeof M.vehicleSeatFor === 'function') { idx = M.vehicleSeatFor(actor, v, seatIdx, idx); if (idx < 0) return -1; }
     this._seat(actor, v, idx);
     // Infanteriewaffe ruht im Sitz (kein weapon.update): laufendes Nachladen abbrechen, sonst klingt es weiter
     if (actor.weapon && typeof actor.weapon.cancelReload === 'function') actor.weapon.cancelReload();
@@ -671,6 +697,8 @@ export class VehicleSystem {
   switchSeat(actor, idx) {
     const v = actor && actor.vehicle;
     if (!v || idx < 0 || idx >= v.seats.length || v.seats[idx].actor) return false;
+    const M = this.G.mode;
+    if (M && typeof M.vehicleSeatFor === 'function' && M.vehicleSeatFor(actor, v, idx, idx) !== idx) return false;
     const from = v.seatOf(actor);
     if (from === idx) return false;
     this._clearSeatState(v.seats[from]);
@@ -778,6 +806,8 @@ export class VehicleSystem {
   _playerEnter(player, v) {
     const G = this.G;
     if (G.viewmodel && G.viewmodel.scene) G.viewmodel.scene.visible = false;
+    player._rideFire = false;
+    try { if (typeof document !== 'undefined' && document.body) delete document.body.dataset.rideFire; } catch { /* */ }
     const input = G.input;
     if (input) {
       input.cancelAds && input.cancelAds();
@@ -797,6 +827,8 @@ export class VehicleSystem {
   _playerExit(player, v) {
     const G = this.G;
     if (G.viewmodel && G.viewmodel.scene) G.viewmodel.scene.visible = !!player.alive;
+    player._rideFire = false;
+    try { if (typeof document !== 'undefined' && document.body) delete document.body.dataset.rideFire; } catch { /* */ }
     const d = this.camera.dir;
     if (player.alive && d) {
       player.yaw = Math.atan2(-d.x, -d.z);
@@ -846,6 +878,7 @@ export class VehicleSystem {
       seat.zoomIndex = seat._zoomHi && (eff.zoom || []).length > 1 ? 1 : 0;
     }
     this._eff = { seat, view: eff };
+    this._rideFire(player, v, seat, eff, dt, frozen);
     // Wärmebild (G) in Hauptzieloptik, Weitwinkel und Rundblickperiskop
     const thermalOk = !!(eff && !eff.tp && THERMAL_VIEWS.has(eff.overlay) && !v.def.noThermal); // Wärmebild nur moderne Panzer
     if (!this.thermal) this.thermal = new Thermal(G);
@@ -917,6 +950,43 @@ export class VehicleSystem {
     }
   }
 
+  /**
+   * Mitfahrer feuert aus dem Fahrzeug (Sicht fireOut – offene Ladefläche, Dachluke, Bordwand; data-troop.js): Blick
+   * kommt aus der Fahrzeugsicht (Kamera), die eigene Infanteriewaffe läuft wie zu Fuß (Feuern, Zielen, Nachladen,
+   * Waffenwechsel), Körper bleibt am Standplatz geheftet. Taste Ducken/Sicht setzt sich wieder.
+   */
+  _rideFire(player, v, seat, view, dt, frozen) {
+    const G = this.G, w = player.weapon, input = G.input;
+    const on = !!(view && view.fireOut && !view.tp && player.alive && v.alive && seat.hatchT >= 0.5 && w && !(G.xr && G.xr.presenting));
+    const vm = G.viewmodel && G.viewmodel.scene;
+    if (on !== !!player._rideFire) {
+      player._rideFire = on;
+      if (vm) vm.visible = on;
+      try { if (typeof document !== 'undefined' && document.body) { if (on) document.body.dataset.rideFire = '1'; else delete document.body.dataset.rideFire; } } catch { /* */ } // Infanterie-HUD (vehicles/hud.js)
+      if (!on && w && 'adsProgress' in w) { try { w.adsProgress = 0; } catch { /* nur Getter */ } }
+    }
+    if (!on || !input) return;
+    const it = player._intent;
+    if (!it) return;
+    const busy = typeof player._busy === 'function' ? player._busy(G.time.elapsed) : null;
+    const blocked = frozen || !!busy;
+    const sp = Math.abs(v.body.speed || 0);
+    it.fire = !blocked && input.down('fire');
+    it.firePressed = !blocked && input.pressed('fire');
+    it.ads = !blocked && (input.active ? input.active('ads') : input.down('ads'));
+    it.reload = !frozen && !busy && input.pressed('reload');
+    it.swap = !blocked && input.pressed('swap');
+    it.slot = blocked ? null : input.pressed('slot1') ? 1 : input.pressed('slot2') ? 2 : null;
+    it.grenade = it.grenadeHeld = it.tactical = it.tacticalHeld = it.melee = it.inspect = false; // kein Werfen aus dem Sitz
+    it.light = false; it.interact = false;
+    it.sprinting = false; it.moving = sp > 0.5; it.airborne = false; it.onGround = true;
+    it.crouching = false; it.prone = false; it.crawling = false; it.sliding = false; it.plating = false; it.mantling = false;
+    it.stance = 'stand'; it.busy = busy; it.speed = Math.min(6, sp); it.frozen = frozen; it.leaning = 0;
+    it.lookDX = input.look ? input.look.dx : 0; it.lookDY = input.look ? input.look.dy : 0;
+    it.aimOffsetX = 0; it.aimOffsetY = 0; it.exertion = player.exertion || 0;
+    try { w.update(dt, it); } catch (err) { if (!this._rideErr) { this._rideErr = true; console.warn('[vehicles] Feuern aus dem Fahrzeug:', err); } }
+  }
+
   _flash(text) { this._msg = { text, until: this.G.time.elapsed + 1.6 }; }
 
   /* =============================================================== Takt */
@@ -945,6 +1015,7 @@ export class VehicleSystem {
       this._spawnAt(sp);
     }
     for (const v of this.list) v.update(dt, world);
+    this.rides.update(dt); // Bots fahren mit Transportern zur Front und sitzen ab
     updateResupply(this, dt); // Aufmunitionieren an Versorgungspunkten (Host/offline)
     this._collideVehicles();
     this._collideActors(dt);
@@ -1011,10 +1082,11 @@ export class VehicleSystem {
       if (!a.isPlayer) {
         // Blickrichtung der Bots/Puppen: Lafette bzw. Fahrtrichtung
         const yaw = s.def.mount ? v.yaw + (s.def.mount === 'gun' ? v.mount.turretYaw : s.def.mount === 'cmg' ? (v.def.cmgHull ? 0 : v.mount.turretYaw) + v.mount.cmgYaw : v.mount.mgYaw) : v.yaw;
-        a.yaw = wrap(yaw);
-        if (fv.hatch) a.crouching = open; // aus der Luke: nur Oberkörper draußen
-        // Kabine (Zivilfahrzeuge): statt des stehenden Soldaten zeigt das Fahrzeugmodell eine sitzende Figur
-        const show = open && !s.def.cabin;
+        if (!(s.def.passenger && open)) a.yaw = wrap(yaw); // Mitfahrer auf offener Bank/Luke: Bot blickt und zielt selbst
+        if (fv.hatch || fv.crouch) a.crouching = open && !fv.fireOut; // aus der Luke: nur Oberkörper draußen; offene Bank: geduckt
+        // Kabine (Zivilfahrzeuge): statt des stehenden Soldaten zeigt das Fahrzeugmodell eine sitzende Figur – außer der
+        // Mitfahrer steht zum Feuern auf (Sicht fireOut, Truppentransporter)
+        const show = open && (!s.def.cabin || !!fv.fireOut);
         const sol = a.soldier;
         if (sol && sol.root && sol.state !== 'hidden') {
           if (sol.root.visible !== show) sol.root.visible = show;

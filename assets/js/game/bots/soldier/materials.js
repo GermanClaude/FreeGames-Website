@@ -554,6 +554,7 @@ flat varying vec2 vNpUvF;
 varying float vNpAo;
 varying vec3 vNpAlbA;
 varying vec3 vNpAlbB;
+varying vec3 vNpN;
 uniform vec3 uPal[ 10 ];
 `;
 const FRAG_HEAD = /* glsl */`
@@ -586,6 +587,45 @@ uniform float uRimTint;
 uniform vec3 uRimColor;
 uniform float uLightFloor;
 uniform float uAmbRef;
+varying vec3 vNpN;
+// mensch3: Dreiseiten-Projektion (Bindepose, Meter) – Tarnmuster/Gewebe ohne Verzerrung an Schulterkuppen und Stiefeln
+vec3 npTriW( vec3 n ) { vec3 w = pow( abs( n ), vec3( 6.0 ) ); return w / ( w.x + w.y + w.z + 1e-5 ); }
+vec4 npTri( sampler2D t, vec3 p, vec3 w, float sc ) {
+	return texture2D( t, p.zy * sc ) * w.x + texture2D( t, p.xz * sc ) * w.y + texture2D( t, p.xy * sc ) * w.z;
+}
+// Bildschirm-Ableitungs-Relief (Höhe in Metern) → Normale (wie three.js bumpmap, ohne Textur)
+vec3 npBump( vec3 n, float h ) {
+	vec3 dpx = dFdx( -vViewPosition ), dpy = dFdy( -vViewPosition );
+	float dhx = dFdx( h ), dhy = dFdy( h );
+	vec3 r1 = cross( dpy, n ), r2 = cross( n, dpx );
+	float det = dot( dpx, r1 );
+	vec3 g = sign( det ) * ( dhx * r1 + dhy * r2 );
+	vec3 nn = normalize( abs( det ) * n - g );
+	return ( any( isnan( nn ) ) || abs( det ) < 1e-14 ) ? n : nn;
+}
+#ifndef NP_LOW
+// Nähte (Bindepose): Hosen-Seitennaht und Schrittnaht, Schulter-, Armloch-, Ärmel- und Passennaht. → x Abstand zur Nahtlinie (m),
+// y Lauf entlang der Naht (m), z Gewicht (0 = keine Naht in der Nähe)
+vec3 npSeamAt( vec3 p, vec3 n ) {
+	float ax = abs( p.x );
+	vec3 r = vec3( 1.0, 0.0, 0.0 );
+	if ( p.y < 0.965 && p.y > 0.12 ) {
+		// Bein: Außen- und Innennaht in der Seitenebene (z ≈ −0,006), Schrittnaht mittig
+		float ins = step( ax, 0.1 );
+		r = vec3( p.z + 0.006, p.y, 1.0 - ins * smoothstep( 0.8, 0.88, p.y ) );
+		if ( p.y > 0.84 && ax < 0.05 ) r = vec3( p.x, p.y + p.z, smoothstep( 0.84, 0.88, p.y ) );
+	} else if ( p.y > 1.37 && ax < 0.205 && ax > 0.065 && n.y > 0.25 ) {
+		r = vec3( p.z - 0.004, ax, 1.0 ); // Schulternaht oben
+	} else if ( p.y > 1.3 && ax > 0.17 ) {
+		r = vec3( ax - 0.19, p.y + p.z, smoothstep( 1.3, 1.36, p.y ) ); // Armloch (Ärmelansatz)
+	} else if ( p.y > 0.98 && p.y < 1.3 && ax > 0.17 && ax < 0.235 ) {
+		r = vec3( p.z - 0.03, p.y, 0.8 ); // Ärmelnaht innen-hinten
+	} else if ( p.y > 1.36 && p.y < 1.5 && ax < 0.17 && n.z > 0.35 ) {
+		r = vec3( p.y - 1.43, p.x, 1.0 ); // Rückenpasse
+	}
+	return r;
+}
+#endif
 `;
 
 // Albedo: Palette/Vertexfarbe × Tarnmuster × Stoff-Kavität × Teil-Streuung, dann Staub (untere Beine) + Abnutzung
@@ -598,13 +638,44 @@ const ALBEDO = /* glsl */`
 	vec3 sdAlb = vNpAlbA + vNpAlbB;
 	if ( vNp.x > 0.004 ) {
 		// Video-Look: Tarnfarbe je Fläche (flache UV der Dreiecksecke) gemischt mit dem durchlaufenden Muster
-		vec3 sdM = texture2D( map, mix( vNpUv, vNpUvF, uCamoFacet * step( float( sdCls ), 0.5 ) ) * uCamoScale ).rgb; // nur Stoff (große Kastenflächen der Ausrüstung behalten das Muster)
+		// mensch3: Stoff am Körper in Dreiseiten-Projektion (Schulterkuppen/Gesäß verzerrten die Zylinderabwicklung); Ausrüstung
+		// (Kastenflächen) behält ihre UV
+		vec3 sdM = sdCls == 0 ? npTri( map, vNpPos, npTriW( vNpN ), uCamoScale ).rgb : texture2D( map, vNpUv * uCamoScale ).rgb;
 		vec3 sdCam = mix( uCamo[ 0 ], uCamo[ 1 ], sdM.r );
 		sdCam = mix( sdCam, uCamo[ 2 ], sdM.g );
 		sdCam = mix( sdCam, uCamo[ 3 ], sdM.b );
 		sdAlb = vNpAlbA + vNpAlbB * sdCam;
 	}
-	vec3 sdOrm = texture2D( uNpOrm, sdUvD ).rgb;
+	// Gewebe-Kavität: Stoff/Leder ebenfalls dreiseitig (keine Streifen auf Stiefelkappe und Schultern)
+	vec3 sdTw = npTriW( vNpN );
+	vec3 sdOrm = ( sdCls == 0 || sdCls == 4 ) ? npTri( uNpOrm, vNpPos, sdTw, sdC.x ).rgb : texture2D( uNpOrm, sdUvD ).rgb;
+	// Verzerrung der UV gegenüber der Fläche (Pole/Streckung) → dort keine UV-Detailnormale
+	float sdUvOk = 1.0;
+	{
+		vec2 ux = dFdx( vNpUv ), uy = dFdy( vNpUv );
+		vec3 qx = dFdx( vNpPos ), qy = dFdy( vNpPos );
+		float rx = length( ux ) / max( length( qx ), 1e-7 ), ry = length( uy ) / max( length( qy ), 1e-7 );
+		sdUvOk = smoothstep( 0.3, 0.65, min( rx, ry ) / max( max( rx, ry ), 1e-6 ) ) * smoothstep( 0.25, 0.5, min( rx, ry ) );
+	}
+	float sdSeamH = 0.0;
+	#ifndef NP_LOW
+	// Nähte: Rille, aufgeworfener Stoff daneben, Doppelsteppnaht (Strichel) – nur Stoff
+	if ( sdCls == 0 && vNp.y > 0.3 ) {
+		vec3 sm = npSeamAt( vNpPos, vNpN );
+		if ( sm.z > 0.0 && abs( sm.x ) < 0.012 ) {
+			float d = abs( sm.x ), fw = max( fwidth( sm.x ), 1e-5 );
+			float groove = exp( -( d * d ) / ( 0.0011 * 0.0011 ) );
+			float puff = exp( -pow( ( d - 0.0032 ) / 0.0022, 2.0 ) );
+			float dash = smoothstep( 0.15, 0.3, fract( sm.y / 0.0036 ) ) * smoothstep( 0.85, 0.7, fract( sm.y / 0.0036 ) );
+			float line = 1.0 - smoothstep( 0.00045, 0.00045 + fw * 1.5, abs( d - 0.0052 ) );
+			float vis = sm.z * ( 1.0 - smoothstep( 0.0006, 0.0025, fw ) ); // aus der Ferne nur die Rille
+			sdSeamH = sm.z * ( -0.0007 * groove + 0.00035 * puff ) + line * dash * vis * 0.00022;
+			sdAlb *= 1.0 - 0.28 * groove * sm.z;
+			float lumS = dot( sdAlb, vec3( 0.3, 0.59, 0.11 ) );
+			sdAlb = mix( sdAlb, sdAlb * 1.25 + vec3( 0.025 ) + lumS * 0.2, line * dash * vis * 0.7 );
+		}
+	}
+	#endif
 	float sdDet = sdC.z * vNp.y;
 	sdAlb *= mix( 1.0, clamp( sdOrm.r * uNpDetail.x, 0.5, 1.3 ), sdDet );
 	sdAlb *= 0.95 + vNq.w * ( 0.1 / 255.0 );
@@ -615,6 +686,9 @@ const ALBEDO = /* glsl */`
 		float sdN = sdMac.b;
 		sdDust = ( 1.0 - smoothstep( 0.03, 0.6, vNpPos.y ) ) * uDustAmt * ( 0.4 + 1.2 * sdN );
 		sdDust += vNq.z * ( 1.0 / 255.0 ) * smoothstep( 0.35, 0.75, sdN ) * 0.45;
+		// mensch3: Knie (vorn) und Ellbogen/Unterarme tragen Schmutz der Karte (Knien, Abstützen)
+		sdDust += uDustAmt * ( 0.2 + 0.8 * sdN ) * ( exp( -pow( ( vNpPos.y - 0.5 ) / 0.06, 2.0 ) ) * smoothstep( 0.0, -0.6, vNpN.z ) * step( vNpPos.y, 0.9 ) * 0.8
+			+ exp( -pow( ( vNpPos.y - 1.2 ) / 0.09, 2.0 ) ) * step( 0.17, abs( vNpPos.x ) ) * 0.35 );
 		sdDust = clamp( sdDust, 0.0, 0.65 ) * step( 0.5, sdC.y + sdC.z );
 		// 20.11.: Leder/Gummi (Stiefel, Handschuhe) nimmt Staub nur als Hauch in Rillen/Kanten an – vorher wurden dunkle Stiefel
 		// mit dem halben Staubton überzogen und wirkten grau-beige; Stoff behält den vollen Staub an Knien/Hosenbeinen
@@ -645,17 +719,26 @@ const ROUGH = /* glsl */`
 const NORMAL = /* glsl */`
 #ifdef USE_NORMALMAP_TANGENTSPACE
 	vec3 mapN = texture2D( normalMap, sdUvD ).xyz * 2.0 - 1.0;
-	mapN.xy *= normalScale * ( sdC.y * vNp.y * uNpDetail.y );
+	mapN.xy *= normalScale * ( sdC.y * vNp.y * uNpDetail.y ) * ( ( sdCls == 0 || sdCls == 4 ) ? sdUvOk : 1.0 );
 	#ifndef NP_LOW
-		// grobe Stofffalten nur auf der Uniform (Tarnanteil)
-		vec2 sdW = ( sdMac.rg * 2.0 - 1.0 ) * uNpMacroStr * vNp.x * step( float( sdCls ), 0.5 );
+		// grobe Stofffalten nur auf Stoff (Uniform und Zivilkleidung); mensch3: an Knie, Ellbogen, Schritt und Kniekehle kräftiger
+		float sdJ = exp( -pow( ( vNpPos.y - 0.5 ) / 0.075, 2.0 ) ) * step( vNpPos.y, 0.9 )
+			+ exp( -pow( ( vNpPos.y - 1.24 ) / 0.07, 2.0 ) ) * step( 0.16, abs( vNpPos.x ) )
+			+ exp( -pow( ( vNpPos.y - 0.9 ) / 0.05, 2.0 ) ) * step( abs( vNpPos.x ), 0.13 ) * 0.7;
+		vec2 sdW = ( sdMac.rg * 2.0 - 1.0 ) * uNpMacroStr * max( vNp.x, 0.6 * vNp.y ) * step( float( sdCls ), 0.5 ) * ( 1.0 + 1.3 * sdJ );
 		mapN.xy += sdW;
 	#endif
 	vec3 sdFn = normalize( cross( dFdx( vViewPosition ), dFdy( vViewPosition ) ) );
-	vec3 sdBase = normalize( mix( tbn[ 2 ], sdFn, sdCls == 0 ? uFacet.x : uFacet.y ) );
+	vec3 sdBase = normalize( mix( tbn[ 2 ], sdFn, ( sdCls == 0 || sdCls == 4 ) ? uFacet.x : uFacet.y ) ); // mensch3: Leder (Stiefel) ohne Kantenanteil
 	normal = normalize( sdBase * mapN.z + tbn * vec3( mapN.xy, 0.0 ) );
 	// Schutz: entartete UV-Ableitungen (Kuppen, Nähte) → unendlicher Tangentenrahmen → Ersatz ohne Detailnormale
 	if ( any( isnan( normal ) ) || any( isinf( normal ) ) ) normal = normalize( mix( vNormal, sdFn, 0.0 ) );
+	// mensch3: Nähte + Gewebe-Kavität als Relief, wo die UV-Detailnormale wegfällt (Pole, Stiefelkappe)
+	{
+		float sdH = sdSeamH;
+		if ( sdCls == 0 || sdCls == 4 ) sdH += ( sdOrm.r - 0.7 ) * 0.00035 * ( 1.0 - sdUvOk ) * vNp.y;
+		if ( sdH != 0.0 ) normal = npBump( normal, sdH );
+	}
 #endif
 `;
 
@@ -754,7 +837,7 @@ function newMaterial(schemeId, low) {
   m.onBeforeCompile = (shader) => {
     for (const k of Object.keys(U)) shader.uniforms[k] = U[k];
     shader.vertexShader = VERT_HEAD + shader.vertexShader
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\n\tvNp = aNp;\n\tvNq = aNq;\n\tvNpPos = position;\n\tvNpUv = uv;\n\tvNpUvF = uv;\n\tvNpAo = aNo;\n\tint sdPalV = int( aNq.x + 0.5 );\n\tvec3 sdAlbV = sdPalV > 0 ? uPal[ sdPalV ] * color.rgb * 2.0 : color.rgb;\n\tvNpAlbA = sdAlbV * ( 1.0 - aNp.x );\n\tvNpAlbB = sdAlbV * aNp.x;');
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n\tvNp = aNp;\n\tvNq = aNq;\n\tvNpPos = position;\n\tvNpUv = uv;\n\tvNpUvF = uv;\n\tvNpN = normal;\n\tvNpAo = aNo;\n\tint sdPalV = int( aNq.x + 0.5 );\n\tvec3 sdAlbV = sdPalV > 0 ? uPal[ sdPalV ] * color.rgb * 2.0 : color.rgb;\n\tvNpAlbA = sdAlbV * ( 1.0 - aNp.x );\n\tvNpAlbB = sdAlbV * aNp.x;');
     let fs = FRAG_HEAD + shader.fragmentShader;
     fs = fs.replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
 	float sdDis = 0.0;
@@ -786,7 +869,7 @@ function newMaterial(schemeId, low) {
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => 'np-soldier-13' + (low ? 'l' : 'h');
+  m.customProgramCacheKey = () => 'np-soldier-14' + (low ? 'l' : 'h');
   return m;
 }
 

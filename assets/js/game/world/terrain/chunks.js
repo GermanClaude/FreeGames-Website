@@ -21,6 +21,9 @@ export class TerrainChunks {
     this.steps = o.steps || [1, 2, 4, 8];
     this.dists = o.dists || [70, 200, 380];
     this.skirt = o.skirt ?? 3;
+    // riesen: evict – feine Stufen weit entfernter Kacheln wieder freigeben (Riesenkarte: Speicher bleibt begrenzt,
+    // auch wenn ein Jet die ganze Karte überfliegt). Die gröbste Stufe bleibt immer stehen.
+    this.evict = !!o.evict;
     this.group = new THREE.Group();
     this.group.name = 'terrain';
     this.cells = Math.round(hf.size / hf.res);
@@ -137,6 +140,11 @@ export class TerrainChunks {
       }
       if (use !== c.lv || c.mesh.geometry !== c.geos[use]) { c.lv = use; c.mesh.geometry = c.geos[use]; }
       tris += c.geos[use].userData.tris;
+      if (this.evict) {
+        for (let k = 0; k < use && k < this.dists.length; k++) {
+          if (c.geos[k] && d > this.dists[k] * 1.8 + 60) { c.geos[k].dispose(); c.geos[k] = null; this.stats.evicted = (this.stats.evicted || 0) + 1; }
+        }
+      }
     }
     this.stats.triangles = tris;
   }

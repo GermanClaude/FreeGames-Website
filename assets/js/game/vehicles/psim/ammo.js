@@ -43,6 +43,10 @@ export const ERA_KINDS = { modern: ['wucht', 'mz', 'spreng', 'kan'], wk2: ['pzgr
 /** Eigene Sätze je Typ: KP-68 (1960er, 105 mm: Treibspiegel, Hohlladung, Quetschkopf, Kanister), SZ-8 (30-mm-Maschinenkanone). */
 export const TYPE_KINDS = { kk: ['tsg', 'hl', 'qk', 'kan'], spz: ['wucht', 'spreng', 'lfk'] };
 const TYPE_LOADOUT = { kk: { tsg: 0.4, hl: 0.25, qk: 0.25, kan: 0.1 }, spz: { wucht: 0.45, spreng: 0.53, lfk: 0.02 } };
+// Fahrzeug-Strang 20.11. (data-troop.js): SP-58 (1950er, gezogene 120 mm: Panzergranate, Hohlladung, Quetschkopf, Spreng),
+// RS-8 (30-mm-Maschinenkanone wie SZ-8, ohne Lenkflugkörper); Feinwerte je Typ über D.psimMods (registerAmmo)
+Object.assign(TYPE_KINDS, { kks: ['pzgr', 'hl', 'qk', 'spreng'], rsp: ['wucht', 'spreng'] });
+Object.assign(TYPE_LOADOUT, { kks: { pzgr: 0.42, hl: 0.22, qk: 0.16, spreng: 0.2 }, rsp: { wucht: 0.4, spreng: 0.6 } });
 /** Gestellbelegung (Anteile) je Generation. */
 const LOADOUT = {
   modern: { wucht: 0.42, mz: 0.32, spreng: 0.16, kan: 0.1 },
@@ -106,6 +110,7 @@ export function registerAmmo(type) {
   const list = [];
   for (const kind of TYPE_KINDS[type] || ERA_KINDS[era] || ERA_KINDS.modern) {
     const s = kindSpec(kind, cal, era), K = KINDS[kind];
+    if (D.psimMods && D.psimMods[kind]) Object.assign(s, D.psimMods[kind]); // Feinwerte je Typ (data-troop.js)
     const id = `psim_${type}_${kind}`;
     const rl = s.reload || reloadFor(cal);
     VEHICLE_WEAPONS[id] = {

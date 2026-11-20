@@ -11,7 +11,7 @@
 // neu anlegen muss. Nur Name/Art/Deckkraft sind je Match.
 import * as THREE from 'three';
 
-const COLORS = { ally: '#38b6ff', enemy: '#ff3b3b', ffa: '#ff3b3b' };
+const COLORS = { ally: '#38b6ff', squad: '#57d68d', enemy: '#ff3b3b', ffa: '#ff3b3b' }; // squad: eigener Trupp (Modus Trupp)
 const POOL_MAX = 40; // mehr freie Schilder werden wirklich entsorgt (online bis 32 Spieler; Großkarte mit mehr Bots legt den Rest neu an)
 const pool = [];
 
@@ -99,7 +99,7 @@ export class Nameplate {
     ctx.fillText(label, 128, y);
     // Markierung: Raute (Verbündete) bzw. Pfeil (Gegner)
     ctx.beginPath();
-    if (this.kind === 'ally') {
+    if (this.kind === 'ally' || this.kind === 'squad') {
       ctx.moveTo(128, 60); ctx.lineTo(137, 69); ctx.lineTo(128, 78); ctx.lineTo(119, 69); ctx.closePath();
     } else {
       ctx.moveTo(118, 62); ctx.lineTo(138, 62); ctx.lineTo(128, 76); ctx.closePath();

@@ -136,7 +136,7 @@ function addWheels(K, S, lod, seg, spec) {
 /* ------------------------------------------------------------------ Lenkrad, Insassen */
 
 /** Lenkrad: Gruppe 'lenkrad' an der Mitte C, Neigung tilt (rad um x), Kind 'lenkrad:dreh' dreht mit dem Einschlag. */
-function steeringWheel(K, S, C, tilt, r) {
+export function steeringWheel(K, S, C, tilt, r) {
   const outer = new THREE.Group();
   outer.name = 'lenkrad';
   outer.position.fromArray(C);
@@ -160,7 +160,7 @@ function steeringWheel(K, S, C, tilt, r) {
  * Sitzende Figur (Insasse): hip = Mitte der Sitzfläche oben, floor = Fußboden, hands = { c: Lenkradmitte, r, tilt }
  * oder null (Hände auf den Oberschenkeln). Kleidung wie die Soldaten (Oliv, Weste, Helm mit Bezug, Sturmhaube).
  */
-function seatedFigure(K, S, idx, hip, floor, hands = null) {
+export function seatedFigure(K, S, idx, hip, floor, hands = null) {
   const g = new THREE.Group();
   g.name = `occ:${idx}`;
   g.visible = false;

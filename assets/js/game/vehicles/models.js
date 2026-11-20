@@ -24,6 +24,8 @@ import { attachCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } f
 import { NEW_TANK_BUILDERS, buildTroop, sprocket, idler, weld, hullShell, castTurret, towCable } from './models-tanks.js?v=20261115041504';
 import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261115041504';
 import { eraPaint } from './materials.js?v=20261115041504';
+import { HEAVY_BUILDERS } from './models-heavy.js?v=20261115041504';
+import { TROOP_BUILDERS } from './models-troop.js?v=20261115041504';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const PI = Math.PI, HP = PI / 2;
@@ -1284,9 +1286,12 @@ const TKIT = {
   get HQ() { return HQ; }, get DET() { return DET; },
   setLod(l) { CUR_LOD = l; },
 };
+/** Baukasten der Truppentransporter (models-troop.js): Panzer-Baukasten + Reifen. */
+const TRKIT = Object.create(TKIT, { tireGeometry: { value: (...a) => tireGeometry(...a) } });
 function tankBuilder(model) {
   if (TANK_BUILDERS[model]) return (l, S, team) => TANK_BUILDERS[model](l, S, team);
   if (NEW_TANK_BUILDERS[model]) return (l, S, team) => NEW_TANK_BUILDERS[model](l, S, team, TKIT);
+  if (HEAVY_BUILDERS[model]) return (l, S, team) => HEAVY_BUILDERS[model](l, S, team, TKIT); // leichte/schwere Panzer, MTW (20.11.)
   return (l, S, team) => buildMBT(l, S, team);
 }
 
@@ -2143,6 +2148,18 @@ function lodOf(levels, dists) {
   return L;
 }
 
+/** Bewegliche Luken (außerhalb der LOD-Stufen) nach D.hatches bzw. HATCH_DEF; Turmluken an den Turm. */
+function addHatches(D, S, team, root, tur) {
+  const paint = S.paint[team] || S.paint.null;
+  for (const id of Object.keys(D.hatches || (D.drive === 'tracked' ? HATCH_DEF : {}))) {
+    if (!HATCH_DEF[id]) continue;
+    const d = (D.hatches && D.hatches[id]) || {};
+    const def = { space: d.space || HATCH_DEF[id].space, pos: d.pos || HATCH_DEF[id].pos, r: d.r || HATCH_DEF[id].r };
+    const inTur = def.space === 'turret' && tur;
+    (inTur ? tur : root).add(buildHatch(id, def, S, paint, inTur ? D.turretPivot : null));
+  }
+}
+
 function template(type, team, quality, variant = 0) {
   const key = `${type}:${team}:${quality}:${variant | 0}`;
   if (TEMPLATES.has(key)) return TEMPLATES.get(key);
@@ -2179,19 +2196,19 @@ function template(type, team, quality, variant = 0) {
     root.add(tur);
     // Besatzung: bewegliche Luken (außerhalb der LOD-Stufen, Nahstufen-Details), Innenraum + Verschluss (unsichtbar)
     CUR_LOD = 0;
-    const paint = S.paint[team] || S.paint.null;
-    for (const id of Object.keys(D.hatches || HATCH_DEF)) {
-      if (!HATCH_DEF[id]) continue;
-      const d = (D.hatches && D.hatches[id]) || {};
-      const def = { space: d.space || HATCH_DEF[id].space, pos: d.pos || HATCH_DEF[id].pos, r: d.r || HATCH_DEF[id].r };
-      const inTur = def.space === 'turret';
-      (inTur ? tur : root).add(buildHatch(id, def, S, paint, inTur ? D.turretPivot : null));
+    addHatches(D, S, team, root, tur);
+    if (D.noTurretInterior) {
+      // Transporter ohne Panzerturm (MTW): leerer Turm-Innenraum (setInterior), Kampfraum/Fahrerplatz aus dem Bauer
+      const it = new THREE.Group(); it.name = 'interior'; it.visible = false; tur.add(it);
+      if (lv[0].inner) { lv[0].inner.name = 'hullInterior'; lv[0].inner.visible = false; root.add(lv[0].inner); }
+    } else {
+      const crew = buildInterior(S, D);
+      tur.add(crew.interior);
+      gun.add(crew.breech);
+      if (crew.hull) root.add(crew.hull); // Kampfraum der Wanne unter dem Turmkorb (fest)
+      if (crew.hull && D.troop) crew.hull.add(buildTroop(TKIT, S, D)); // Schützenpanzer: Kampfraum der Schützen dahinter
     }
-    const crew = buildInterior(S, D);
-    tur.add(crew.interior);
-    gun.add(crew.breech);
-    if (crew.hull) root.add(crew.hull); // Kampfraum der Wanne unter dem Turmkorb (fest)
-    if (crew.hull && D.troop) crew.hull.add(buildTroop(TKIT, S, D)); // Schützenpanzer: Kampfraum der Schützen dahinter
+    if (lv[0].ramp) root.add(lv[0].ramp); // Heckrampe (setRamp)
     // Tarnlack je Epoche (materials.js eraPaint: eigene Uniforms – Tarnschema, Rost, Kartenstimmung) für die Außenhülle
     // und Gummi der Außenteile mit Kartenschmutz (medium+; Innenraum behält seine Materialien für cabin.js)
     const ep = eraPaint(team, D.era || 'modern'), base = S.paint[team] || S.paint.null;
@@ -2202,11 +2219,51 @@ function template(type, team, quality, variant = 0) {
     };
     walk(root);
   } else {
-    // Radfahrzeuge: Geländewagen (MG-Lafette) bzw. Zivilfahrzeuge (models-civil.js: Kabine, Lenkrad, Insassen)
+    // Radfahrzeuge: Geländewagen (MG-Lafette) bzw. Zivilfahrzeuge (models-civil.js: Kabine, Lenkrad, Insassen),
+    // Truppentransporter (models-troop.js: Lkw, Mannschaftswagen, Halbketten mit Laufwerk, Radschützenpanzer mit Turm)
     const D = DT || VEHICLES.jeep;
-    const civ = CIVIL_BUILDERS[D.model];
-    const lv = [0, 1, 2].map((l) => (civ ? civ(l, S, KIT, variant | 0) : buildJeep(l, S, team)));
+    const civ = CIVIL_BUILDERS[D.model], trb = TROOP_BUILDERS[D.model];
+    const lv = [0, 1, 2].map((l) => {
+      if (!trb) return civ ? civ(l, S, KIT, variant | 0) : buildJeep(l, S, team);
+      RG = D.halftrack && l === 0 && DET === 2 ? { wheels: new Map(), tracks: [] } : null; // Halbkette: Laufwerk zum Anfassen
+      const r = trb(l, S, TRKIT, team);
+      if (RG) { CUR_LOD = 0; attachRunningGear(r.hull, RG); }
+      RG = null;
+      return r;
+    });
     root.add(lodOf(lv.map((x) => x.hull), dists));
+    if (lv[0].tur) {
+      // Radschützenpanzer: Turm/Waffe/Rundblickoptik wie bei den Kettenfahrzeugen
+      const tur = new THREE.Group(); tur.name = 'turret';
+      tur.position.fromArray(D.turretPivot);
+      tur.add(lodOf(lv.map((x) => x.tur), dists));
+      const gun = new THREE.Group(); gun.name = 'gun';
+      gun.position.fromArray(D.gunPivot);
+      gun.add(lodOf(lv.map((x) => x.gun), dists));
+      tur.add(gun);
+      const cmg = new THREE.Group(); cmg.name = 'cmg';
+      cmg.position.fromArray(D.cmgPivot);
+      cmg.add(lodOf(lv.map((x) => x.cmg || new THREE.Group()), dists));
+      tur.add(cmg);
+      root.add(tur);
+      CUR_LOD = 0;
+      if (D.interior) { const crew = buildInterior(S, D); tur.add(crew.interior); gun.add(crew.breech); }
+      else { const it = new THREE.Group(); it.name = 'interior'; it.visible = false; tur.add(it); }
+    }
+    if (trb) {
+      CUR_LOD = 0;
+      addHatches(D, S, team, root, root.getObjectByName('turret'));
+      if (lv[0].inner) { lv[0].inner.name = 'hullInterior'; lv[0].inner.visible = false; root.add(lv[0].inner); }
+      if (lv[0].ramp) root.add(lv[0].ramp);
+      // Tarnlack je Epoche wie bei den Panzern
+      const ep = eraPaint(team, D.era || 'modern'), base = S.paint[team] || S.paint.null;
+      const walk = (o) => {
+        if (o.name === 'interior' || o.name === 'hullInterior' || o.name === 'breech' || (o.name && o.name.startsWith('occ:'))) return;
+        if (o.isMesh) { if (o.material === base && ep) o.material = ep; else if (HQ && o.material === S.rubber) o.material = S.rubberOut; }
+        for (const c of o.children) walk(c);
+      };
+      walk(root);
+    }
     if (lv[0].mg) {
       const mg = new THREE.Group(); mg.name = 'mg';
       mg.position.fromArray(D.mgPivot);
@@ -2283,7 +2340,7 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
   // Zivilfahrzeuge: Lenkrad (dreht mit dem Einschlag, vehicle.js sync) und Insassenfiguren je Sitz
   model.steerWheel = root.getObjectByName('lenkrad:dreh') || null;
   model.setOccupant = (i, on) => { const o = model.occ[i]; if (o) o.visible = !!on && !model.wrecked; };
-  if (VEHICLES[type] && VEHICLES[type].drive === 'tracked') model.trackMats = tm;
+  if (VEHICLES[type] && (VEHICLES[type].drive === 'tracked' || VEHICLES[type].halftrack)) model.trackMats = tm;
   else for (const m of tm) { m.map.dispose(); m.normalMap?.dispose(); m.dispose(); }
 
   model.setLights = (on) => {
@@ -2444,7 +2501,7 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
     if (!model.interior) return;
     const v = !!on && !model.wrecked;
     // Detail-Innenraum (cabin.js): erst beim ersten Öffnen gebaut/angehängt – fremde Panzer tragen ihn nie
-    if (v && !cabinTried) {
+    if (v && !cabinTried && !VEHICLES[type].noCabin) {
       cabinTried = true;
       try { model.cabin = attachCabin(model, VEHICLES[type], S, quality); } catch (err) { console.warn('[vehicles] Innenraum-Ausbau fehlgeschlagen:', err); model.cabin = null; }
     }
@@ -2525,6 +2582,15 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
       pushArm.position.lerpVectors(_lv, _lh, e);
       if (t > 0.5) pushArm.position.y += 0.18 * ease((t - 0.5) * 2);  // Keil hochdrücken
     }
+  };
+  // Heckrampe / Hecktüren / Bordwand (data-troop.js ramp; Bauer liefert Gruppe 'ramp'): t 0 zu … 1 offen
+  model.ramp = root.getObjectByName('ramp') || null;
+  model.setRamp = (t) => {
+    const R = model.ramp;
+    if (!R) return;
+    const k = model.wrecked ? 0 : clamp01(t), U = R.userData;
+    if (U.kind === 'tueren') { for (const c of R.children) if (c.userData.door) c.rotation.y = c.userData.door * k * 1.7; }
+    else R.rotation.x = (U.open || 1.4) * k;
   };
   model.dispose = () => {
     root.removeFromParent();

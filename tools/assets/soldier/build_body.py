@@ -98,7 +98,7 @@ def build(kind):
     n = len(PS)
 
     # -------------------------------------------------------------- Finger zur lockeren Faust (Quellraum)
-    PS = curl_hands(PS, P0, J)
+    PS = curl_hands(PS, P0, J, trigger=not civil)
 
     # -------------------------------------------------------------- Quellgelenke
     src = {}
@@ -454,8 +454,10 @@ def quads_to_tris(P0, Q0):
 
 
 # ------------------------------------------------------------------ Finger krümmen (Quellraum, beide Hände)
-def curl_hands(PS, P0, J):
-    """Lockere Faust: je Finger Vorwärtskinematik als Hautverformung (Grund-, Mittel-, Endgelenk), Daumen leicht angelegt."""
+def curl_hands(PS, P0, J, trigger=False):
+    """Lockere Faust: je Finger Vorwärtskinematik als Hautverformung (Grund-, Mittel-, Endgelenk), Daumen leicht angelegt.
+    trigger (Soldat, mensch3 20.11.): Griffhaltung – Mittel-/Ring-/kleiner Finger um einen Griff (≈ 3 cm), rechter Zeigefinger
+    gestreckt längs des Abzugsbügels (Abzugsdisziplin), Daumen weiter umgreifend."""
     out = PS.copy()
     for s_ in ('r', 'l'):
         Wr = J(s_ + '-hand')
@@ -471,7 +473,11 @@ def curl_hands(PS, P0, J):
         chains = {f: [J(f'{s_}-finger-{f}-{k}') for k in range(1, 5)] for f in range(1, 6)}
         dist = np.stack([np.minimum.reduce([seg_dist(PS, chains[f][k], chains[f][k + 1]) for k in range(3)]) for f in range(1, 6)], 1)
         owner = np.argmin(dist, 1) + 1
-        for f, amt in ((2, (1.0, 1.2, 0.7)), (3, (1.1, 1.25, 0.7)), (4, (1.15, 1.25, 0.7)), (5, (1.2, 1.2, 0.65)), (1, (0.3, 0.45, 0.35))):
+        fingers = ((2, (1.0, 1.2, 0.7)), (3, (1.1, 1.25, 0.7)), (4, (1.15, 1.25, 0.7)), (5, (1.2, 1.2, 0.65)), (1, (0.3, 0.45, 0.35)))
+        if trigger:
+            fingers = ((2, (0.22, 0.3, 0.15) if s_ == 'r' else (0.85, 1.25, 0.75)), (3, (0.95, 1.35, 0.8)), (4, (1.0, 1.35, 0.8)),
+                       (5, (1.05, 1.3, 0.75)), (1, (0.45, 0.6, 0.45)))
+        for f, amt in fingers:
             Jf = chains[f]
             e = [(PS - Jf[k]) @ ((Jf[k + 1] - Jf[k]) / np.linalg.norm(Jf[k + 1] - Jf[k])) for k in range(3)]
             h = (0.012 if f > 1 else 0.018, 0.006, 0.005)

@@ -230,6 +230,9 @@ const veh = (side, L) => {
     { id: t + '-panzer-2', team: t, kind: 'tank', x: L.tanks[1][0], z: L.tanks[1][1], yaw: PI },
     { id: t + '-jeep-2', team: t, kind: 'jeep', x: L.jeeps[1][0], z: L.jeeps[1][1], yaw: PI },
     { id: t + '-jeep-3', team: t, kind: 'jeep', x: L.jeeps[2][0], z: L.jeeps[2][1], yaw: PI },
+    // Truppentransporter (20.11., Rolle → Typ je Panzergeneration, vehicles/data-troop.js): bewaffnet + Lkw, hinten angehängt
+    { id: t + '-apc-1', team: t, kind: 'apc', x: L.jeeps[2][0] + (L.jeeps[2][0] - L.jeeps[1][0]) * 1.2, z: L.jeeps[2][1], yaw: PI },
+    { id: t + '-truck-1', team: t, kind: 'truck', x: L.jeeps[2][0] + (L.jeeps[2][0] - L.jeeps[1][0]) * 2.4, z: L.jeeps[2][1], yaw: PI },
   ];
 };
 

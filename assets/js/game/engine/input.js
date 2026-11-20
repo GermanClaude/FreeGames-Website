@@ -1485,6 +1485,9 @@ class TouchUI {
       <div class="tc-btn tc-sim-inv" data-action="sim_inventar" role="button" aria-label="Ausrüstung"><span class="tc-fm">AUSR.</span></div>
       ${BTN_HTML('tc-prone', 'prone', 'Hinlegen', ICONS.prone)}
       ${BTN_HTML('tc-befehl', 'befehl', 'Befehlsrad', ICONS.befehl)}
+      <div class="tc-btn tc-trupp-wechsel" data-action="trupp_wechsel" role="button" aria-label="Soldat wechseln"><span class="tc-fm">WECHS.</span></div>
+      <div class="tc-btn tc-trupp-funk" data-action="trupp_funk" role="button" aria-label="Funkrad"><span class="tc-fm">FUNK</span></div>
+      <div class="tc-btn tc-trupp-menu" data-action="trupp_menu" role="button" aria-label="Truppmenü"><span class="tc-fm">TRUPP</span></div>
       <div class="tc-btn tc-plate" data-action="plate" role="button" aria-label="Panzerplatte einsetzen">${ICONS.plate}<span class="tc-badge">0</span></div>
       <div class="tc-btn tc-gadget" data-action="gadget" role="button" aria-label="Klassen-Ausrüstung">${ICONS.gadget}<span class="tc-badge">0</span></div>
       ${BTN_HTML('tc-bauen', 'bauen', 'Bauen', ICONS.bauen)}
@@ -1815,6 +1818,7 @@ class TouchUI {
     if (kind === 'verband') { const j = p && p.injury; return !!(j && (j.bleed > 0 || j.arm || j.leg)); }
     if (kind === 'faehigkeit') return !!(p && p.ability);
     if (kind === 'sim') return !!G.isim; // Infanteriesimulation (Spielstil „Simulation“)
+    if (kind === 'trupp') return !!(G.mode && G.mode.trupp); // Modus Trupp
     if (kind === 'bauen') return !!(G.building && p && G.building.kindsFor(p).length);
     if (kind === 'allies') {
       // verbündete Bots (offline/Host: KI-Bots, Client: Puppen der Host-Bots) – sonst hat das Befehlsrad nichts zu tun

@@ -16,6 +16,7 @@ import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } fro
 import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261115041504';
 import { SUPPLY, supplyOf, supplyStateIndex, supplyStateOf, ammoNeed } from './resupply.js?v=20261115041504';
 import { falloff } from '../combat.js?v=20261115041504';
+import { packVehKind } from '../net/protocol.js?v=20261115041504';
 
 const HOST_ID = 1; // net/index.js HOST_ID (hier ohne Import: Fahrzeuge laden auch ohne Netzmodul)
 const NEAR = 160; // m (xz): eigenes Fahrzeug und nähere bekommen jeden Takt einen Block
@@ -232,7 +233,7 @@ export class VehicleNet {
   _block(v, o) {
     const G = this.G, b = v.body, m = v.mount, def = v.def, now = G.time.elapsed;
     o.vid = v.netId;
-    o.kind = (Math.max(0, VEHICLE_IDS.indexOf(v.type)) & 15) | (teamCode(v.spawnTeam) << 4);
+    o.kind = packVehKind(Math.max(0, VEHICLE_IDS.indexOf(v.type)), teamCode(v.spawnTeam)); // 6 Bit Typ (protocol.js)
     const Z = v.zones;
     const zdead = (k) => !!(Z[k] && Z[k].hp <= 0);
     o.bits = (v.alive ? 1 : 0) | (v.wreck ? 2 : 0) | (v.disabled ? 4 : 0) | (v.lights ? 8 : 0) | (b.sleeping ? 16 : 0)

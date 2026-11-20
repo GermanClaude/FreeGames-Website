@@ -327,6 +327,10 @@ export class Vehicle {
     } else if (seat.def.mount === 'cmg') {
       m.cmgYaw = wrap(approach(m.cmgYaw, wrap(yawH - m.turretYaw), 2.6 * dt));
       m.cmgPitch = approach(m.cmgPitch, clamp(pitchH, -0.17, 0.85), 2.0 * dt);
+    } else if (seat.def.mount === 'mg' && def.mgYaw) {
+      // MG mit Schutzschild (Schützenpanzerwagen): Schwenkbereich nach vorn begrenzt
+      m.mgYaw = clamp(approach(m.mgYaw, clamp(yawH, def.mgYaw[0], def.mgYaw[1]), 3.2 * dt), def.mgYaw[0], def.mgYaw[1]);
+      m.mgPitch = approach(m.mgPitch, clamp(pitchH, def.mgLimits.min, def.mgLimits.max), 2.4 * dt);
     } else if (seat.def.mount === 'mg') {
       m.mgYaw = wrap(approach(m.mgYaw, yawH, 3.2 * dt));
       m.mgPitch = approach(m.mgPitch, clamp(pitchH, def.mgLimits.min, def.mgLimits.max), 2.4 * dt);
@@ -732,6 +736,7 @@ export class Vehicle {
       M.steerWheel.rotation.z = -st * (def.wheelLock || 2.4);
     }
     if (M.occ.length) this._syncOccupants();
+    if (M.ramp) this._syncRamp(dt);
     if (M.lightsOn !== this.lights) M.setLights(this.lights);
     this._syncCrew(dt);
   }
@@ -775,13 +780,31 @@ export class Vehicle {
     }
   }
 
+  /**
+   * Heckrampe/Hecktüren der Truppentransporter (data-troop.js ramp): offen im Stand, solange jemand auf- oder absitzt
+   * (Sitzbelegung geändert, 6 s) oder kein Fahrer an Bord ist; zu beim Anfahren. Läuft auch im Abbild (liest nur Zustand).
+   */
+  _syncRamp(dt) {
+    const now = this.G.time.elapsed;
+    let sig = 0;
+    for (const s of this.seats) if (s.actor) sig += 2 ** s.index;
+    if (sig !== this._rampSig) { this._rampSig = sig; this._rampAt = now; }
+    const still = Math.abs(this.body.speed || 0) < 0.6;
+    const want = this.alive && still && (now - (this._rampAt ?? -99) < 6 || !this.driver) ? 1 : 0;
+    const t = this._rampT ?? want;
+    this._rampT = want > t ? Math.min(1, t + dt / 1.6) : Math.max(0, t - dt / 1.2);
+    if (this._rampSent !== this._rampT) { this._rampSent = this._rampT; this.model.setRamp(this._rampT); }
+  }
+
   /** Insassenfiguren der Kabine (Zivilfahrzeuge): sichtbar je besetztem Sitz, der eigene Sitz nicht in der Ego-Sicht. */
   _syncOccupants() {
     const M = this.model, st = this._modelState, p = this.G.player;
     const cv = this.sys && this.sys.camera ? this.sys.camera.view : null;
     for (const s of this.seats) {
       const own = !!(p && s.actor === p && cv && !cv.tp);
-      const want = !!s.actor && this.alive && !!s.def.cabin && !own;
+      // Mitfahrer, der aufsteht und feuert (Sicht fireOut): statt der sitzenden Figur das Soldatenmodell (index.js)
+      const firing = !!(s.actor && s.def.cabin && fpViewOf(s).fireOut && s.hatchT >= 0.5);
+      const want = !!s.actor && this.alive && !!s.def.cabin && !own && !firing;
       if (st['o' + s.index] !== want) { st['o' + s.index] = want; M.setOccupant(s.index, want); }
     }
   }

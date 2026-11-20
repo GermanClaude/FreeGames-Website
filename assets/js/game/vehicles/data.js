@@ -6,6 +6,7 @@
 // (mountY = rest + radius − statische Einfederung).
 
 import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261115041504';
+import { TROOP_VEHICLES, ROLE_TYPES, ROLE_KINDS } from './data-troop.js?v=20261115041504';
 
 const deg = (d) => (d * Math.PI) / 180;
 
@@ -1162,8 +1163,10 @@ const NEW_TANKS = {
   },
 };
 Object.assign(VEHICLES, NEW_TANKS);
+// Weitere Panzer + Truppentransporter (data-troop.js, 20.11.): hinten angehängt – Typindex 16 ff. (Netz: 6 Bit)
+Object.assign(VEHICLES, TROOP_VEHICLES);
 // dieselben Nacharbeiten wie oben (Fahrerraum-Innensicht, Turm-Innensichten) für die angehängten Panzer
-for (const D of Object.values(NEW_TANKS)) {
+for (const D of [...Object.values(NEW_TANKS), ...Object.values(TROOP_VEHICLES)]) {
   const R = driverCabin(D);
   const s = R && D.seats.find((x) => x.drive);
   if (s && s.views && !s.views.some((v) => v.id === 'innen')) s.views.push({ id: 'innen', label: 'Fahrerraum', space: 'hull', pos: R.eye, look: 'rel', yaw: [-2.0, 2.0], pitch: [-0.9, 0.5], zoom: [1], interior: true });
@@ -1229,7 +1232,7 @@ export const TANK_ERAS = { modern: { A: 'mbt', B: 'mbt' }, wk2: { A: 'wk2', B: '
 // „Kalter Krieg“ (kk) als eigene Epoche: beide Teams KP-68 Auerochs.
 Object.assign(TANK_ERAS.modern, { A2: 'spz', B2: 'spz' });
 Object.assign(TANK_ERAS.wk2, { A2: 'wk2m', B2: 'wk2j' });
-TANK_ERAS.kk = { A: 'kk', B: 'kk' };
+TANK_ERAS.kk = { A: 'kk', B: 'kk', A2: 'kks', B2: 'kks' }; // zweiter Stellplatz: SP-58 Mastodon (schwer, 20.11.)
 export const MAP_TANK_ERA = { niemandsland: 'wk1' };
 export function tankEraOf(era, mapId) {
   const e = era && era !== 'karte' ? era : (MAP_TANK_ERA[mapId] || 'modern');
@@ -1239,3 +1242,13 @@ export function tankTypeFor(era, mapId, team = 'A', slot = 0) {
   const E = TANK_ERAS[tankEraOf(era, mapId)], k = team === 'B' ? 'B' : 'A';
   return (slot > 0 && E[k + '2']) || E[k];
 }
+
+/** Rollen-Stellplatz der Karte (kind 'truck' | 'utility' | 'apc' | 'apc2' | 'gwmg' | 'light' | 'heavy') → Fahrzeugtyp der
+ *  Panzergeneration (Raum/Lobby „Panzer-Generation“); unbekannte Rolle → null. Beide Teams bekommen dieselbe Art. */
+export const isRoleKind = (k) => ROLE_KINDS.has(k);
+export function transportTypeFor(era, mapId, kind) {
+  const R = ROLE_TYPES[tankEraOf(era, mapId)] || ROLE_TYPES.modern;
+  const t = R[kind];
+  return t && VEHICLES[t] ? t : null;
+}
+export { ROLE_TYPES };

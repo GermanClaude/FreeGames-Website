@@ -92,7 +92,8 @@ export class Injuries {
     if (!this._host || !v || !v.team) return;
     if (e.weaponId === 'world') return;
     const now = this.G.time.elapsed;
-    this.down.set(v, { until: now + REVIVE_WINDOW, pos: v.position.clone(), yaw: v.yaw || 0, at: now });
+    const win = (this.G.mode && this.G.mode.reviveWindow) || REVIVE_WINDOW; // Trupp: länger bewusstlos
+    this.down.set(v, { until: now + win, pos: v.position.clone(), yaw: v.yaw || 0, at: now });
     // Spieler-Sanitäter in der Nähe: gefallener Bot wartet mit dem Respawn auf die Wiederbelebung
     const P = this.G.player;
     if (v.isBot && isMedic(P) && P.alive && P.team === v.team && P.position.distanceTo(v.position) < 20 && v.respawnAt != null) {
@@ -166,7 +167,8 @@ export class Injuries {
     if (!d || v.alive) return false;
     this.down.delete(v);
     const old = v.isBot ? v.soldier : null;
-    if (typeof this.G.spawnActor === 'function') this.G.spawnActor(v, { position: d.pos.clone(), yaw: d.yaw });
+    v._reviving = true; // Modus: Wiederbelebung kostet kein Ticket (Trupp)
+    try { if (typeof this.G.spawnActor === 'function') this.G.spawnActor(v, { position: d.pos.clone(), yaw: d.yaw }); } finally { v._reviving = false; }
     if (!v.alive) return false;
     v.health = Math.round(v.maxHealth * 0.5);
     v.lastDamageTime = this.G.time.elapsed; // Regeneration erst nach der üblichen Pause

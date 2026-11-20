@@ -109,6 +109,8 @@ export class HostSync {
       net.on('build', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.building) this.G.building.netRequest(p, m); }),
       net.on('point', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && m && this.G.points) this.G.points.netUse(p, m.i, from); }),
       net.on('drone', (m, from) => this._onDrone(m, from)),
+      // Modus Trupp (modes/trupp.js netRequest): { t: 'trupp', a, … } – der Modus prüft Rolle, Abstand, Abklingzeit
+      net.on('trupp', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && m && this.G.mode && typeof this.G.mode.netRequest === 'function') this.G.mode.netRequest(p, m); }),
       net.onFast((buf, from) => this._onFast(buf, from)),
     ];
     if (G.events) {

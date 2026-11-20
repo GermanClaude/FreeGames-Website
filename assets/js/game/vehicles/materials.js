@@ -429,6 +429,7 @@ const VEH_ENV_PRESET = {
   hafen: { mud: 0x48443f, dust: 0x8f8b84, amt: 0.7, wet: 0.35, tint: 0x666a68, ta: 0.12 },
   werk: { mud: 0x3b3833, dust: 0x7a756c, amt: 0.9, wet: 0.2, tint: 0x5e5c56, ta: 0.12 },
   flugplatz: { mud: 0x6b604d, dust: 0xa89d84, amt: 0.75, wet: 0.05, tint: 0xa39270, ta: 0.26 },
+  weitmark: { mud: 0x5a4f3d, dust: 0x9e927a, amt: 0.85, wet: 0.2, tint: 0x8a7a5c, ta: 0.2 },
 };
 export const VEH_ENV = { uEnvMud: { value: new THREE.Color(VEH_ENV_PRESET.neutral.mud) }, uEnvDust: { value: new THREE.Color(VEH_ENV_PRESET.neutral.dust) }, uEnvAmt: { value: 0.8 }, uEnvWet: { value: 0.2 }, uEnvTint: { value: new THREE.Color(VEH_ENV_PRESET.neutral.tint) }, uEnvTintAmt: { value: 0 } };
 let envId = 'neutral';

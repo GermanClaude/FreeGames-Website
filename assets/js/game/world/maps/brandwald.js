@@ -176,6 +176,9 @@ const BRANDWALD = {
   vehicles: [
     { id: 'A-panzer-1', team: 'A', kind: 'tank', x: 50, z: HQZ + 8, yaw: 0 },
     { id: 'B-panzer-1', team: 'B', kind: 'tank', x: -50, z: -HQZ - 8, yaw: Math.PI },
+    // Schützentransporter je Team (20.11., Rolle → Typ je Panzergeneration, vehicles/data-troop.js)
+    { id: 'A-apc-1', team: 'A', kind: 'apc', x: 34, z: HQZ + 10, yaw: 0 },
+    { id: 'B-apc-1', team: 'B', kind: 'apc', x: -34, z: -HQZ - 10, yaw: Math.PI },
   ],
   secrets: [],
 };

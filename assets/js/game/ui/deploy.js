@@ -261,7 +261,7 @@ export class DeployScreen {
     const team = G.player.team;
     const key = (p) => `${p.kind}:${p.id}`;
     const isSel = (p) => this.sel && p.kind === this.sel.kind && String(p.id) === String(this.sel.id);
-    const icon = (p) => (p.kind === 'hq' ? ICON.hq : p.kind === 'squad' ? ICON.user : p.kind === 'vehicle' ? ICON.tank : '');
+    const icon = (p) => (p.kind === 'hq' ? ICON.hq : p.kind === 'squad' ? ICON.user : p.kind === 'vehicle' ? ICON.tank : p.kind === 'rally' || p.kind === 'outpost' ? (ICON.flag || ICON.target || '') : ''); // Trupp: Sammelpunkt/Außenposten
     const side = (p) => (p.kind !== 'flag' ? 'a' : p.owner == null ? 'n' : p.owner === team ? 'a' : 'e');
     // Liste
     this.el.list.innerHTML = pts.map((p) => `<button type="button" class="dp-pt${isSel(p) ? ' is-sel' : ''}" data-pt="${esc(key(p))}" data-side="${side(p)}" aria-pressed="${isSel(p)}"${p.available ? '' : ' aria-disabled="true"'}>

@@ -12,6 +12,7 @@ import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, reso
 import { esc, num, secs, meters } from './dom.js?v=20261115041504';
 import { ICON } from './icons.js?v=20261115041504';
 import { drawMapArt } from './mapart.js?v=20261115041504';
+import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261115041504'; // riesen: Riesenkarte nur in der App
 import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261115041504';
 import { openCamoEditor } from './camo-editor.js?v=20261115041504';
 import { loadAttachments } from '../../shared/attachments.data.js?v=20261115041504';
@@ -21,7 +22,7 @@ import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=2026111
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
-const MAP_PREP = { hafen: 'im', altstadt: 'in der', werk: 'im', range: 'am', grenzland: 'im', brandwald: 'im', flugplatz: 'auf dem', stadtkern: 'im' };
+const MAP_PREP = { hafen: 'im', altstadt: 'in der', werk: 'im', range: 'am', grenzland: 'im', brandwald: 'im', flugplatz: 'auf dem', stadtkern: 'im', weitmark: 'in der' };
 const LENGTHS = [['kurz', 'Kurz'], ['standard', 'Standard'], ['lang', 'Lang']];
 
 export class Lobby {
@@ -139,7 +140,8 @@ export class Lobby {
     const d = this._data();
     const c = this.cfg;
     const m = d.MODES[c.modeId] || {};
-    const maps = this.mapsFor(c.modeId);
+    // riesen: gesperrte (App-exklusive) Karten stehen in der Liste, sind hier aber nicht wählbar
+    const maps = this.mapsFor(c.modeId).filter((id) => !mapLockedHere(d.MAPS[id]));
     if (!maps.includes(c.mapId)) c.mapId = (m.recommendedMaps || []).find((x) => maps.includes(x)) || maps[0] || c.mapId;
     const L = this._lim();
     const lim = { allies: L.allies, enemies: L.enemies };
@@ -311,6 +313,13 @@ export class Lobby {
     const ds = b.dataset;
     if (ds.tab) { this.tab = ds.tab; this._syncTab(); return; }
     if (ds.mode) { c.modeId = ds.mode; this._fixMode(); this._renderDeploy(); this._renderSummary(); this._renderKit(); this.menus.sound('click'); return; }
+    if (ds.map && mapLockedHere(this._data().MAPS[ds.map])) {
+      // riesen: Riesenkarte im Browser – Hinweis mit Link zur App-Seite hervorheben statt wählen
+      const n = this.el.deploy && this.el.deploy.querySelector('.lb-app-only');
+      if (n) { n.classList.remove('is-flash'); void n.offsetWidth; n.classList.add('is-flash'); try { n.querySelector('a')?.focus({ preventScroll: false }); } catch { /* */ } }
+      this.menus.sound('error');
+      return;
+    }
     if (ds.map) { c.mapId = ds.map; this._fixMode(); this._renderDeploy(); this._renderSummary(); this.menus.sound('click'); return; }
     if (ds.style) {
       c.style = GAME_STYLES[ds.style] ? ds.style : 'arcade';
@@ -390,12 +399,18 @@ export class Lobby {
         <span class="lb-mode-ico">${x.icon || ''}</span><span class="lb-mode-short">${esc(x.short || id.toUpperCase())}</span>
         <b>${esc(x.name)}</b><small>${esc(x.tagline || '')}</small></button>`;
     }).join('');
+    let lockedAny = false;
     const mapCards = maps.map((id) => {
       const x = d.MAPS[id];
-      return `<button type="button" class="lb-map" data-map="${id}" aria-pressed="${id === c.mapId}">
+      // riesen: App-exklusive Riesenkarte – sichtbar mit Schloss, hier nicht wählbar (shared/appgate.js)
+      const locked = mapLockedHere(x);
+      if (locked) lockedAny = true;
+      return `<button type="button" class="lb-map${locked ? ' is-locked' : ''}" data-map="${id}" aria-pressed="${id === c.mapId && !locked}"${locked ? ` aria-disabled="true" title="${esc(lockReason())}"` : ''}>
         <canvas class="lb-map-art" data-art="${id}"></canvas>
-        <span class="lb-map-txt"><b>${esc(x.name)}</b><small>${x.scale === 'gross' ? 'Großkarte · ' : ''}${esc(x.timeOfDay || x.subtitle || '')}</small></span></button>`;
+        ${locked ? `<span class="lb-map-lock">${ICON.lock}<span>Nur in der App</span></span>` : ''}
+        <span class="lb-map-txt"><b>${esc(x.name)}</b><small>${x.appOnly ? 'Riesenkarte · ' : x.scale === 'gross' ? 'Großkarte · ' : ''}${esc(x.timeOfDay || x.subtitle || '')}</small></span></button>`;
     }).join('');
+    const appNote = lockedAny ? `<p class="lb-note lb-app-only">${ICON.lock}<span><b>Nur in der App</b> – ${esc(lockReason().replace(/^Nur in der App: /, ''))} Die Riesenkarte ist viermal so groß wie alle anderen und braucht den Speicher der App. <a href="${APP_PAGE_URL}" target="_blank" rel="noopener">Hier herunterladen</a></span></p>` : '';
     const diffs = DIFF_ORDER.filter((id) => d.DIFF[id] || true).map((id) => `<button type="button" role="radio" data-diff="${id}" aria-checked="${id === c.difficulty}">${esc((d.DIFF[id] && d.DIFF[id].name) || id)}</button>`).join('');
     const xpm = diff.xpMult && diff.xpMult !== 1 ? `EP ×${num(diff.xpMult, 2).replace(/,?0+$/, '')}` : 'EP ×1';
     const st = GAME_STYLES[c.style] || GAME_STYLES.arcade;
@@ -428,13 +443,13 @@ export class Lobby {
       ${times.length ? `<div><h2 class="m-h2">Tageszeit</h2><div class="m-seg" role="radiogroup" aria-label="Tageszeit"><button type="button" role="radio" data-tod="" aria-checked="${!todSel}">${esc(map.timeOfDay || 'Standard')}</button>${times.map((t) => `<button type="button" role="radio" data-tod="${esc(t.id)}" aria-checked="${t.id === todSel}">${esc(t.name || t.label || t.id)}</button>`).join('')}<button type="button" role="radio" data-tod="echtzeit" aria-checked="${todSel === 'echtzeit'}" title="Passend zur echten Uhrzeit">Echtzeit</button><button type="button" role="radio" data-tod="zufall" aria-checked="${todSel === 'zufall'}">Zufall</button></div>${rtNote}</div>` : ''}
       ${c.modeId !== 'training' && vehMap ? `<div><h2 class="m-h2">Panzer &amp; Fahrzeuge</h2><div class="m-seg" role="radiogroup" aria-label="Panzer und Fahrzeuge">${[['an', 'An', 'Panzer und Geländewagen der Karte'], ['aus', 'Aus', 'Nur Infanterie']].map(([id, l, t]) => `<button type="button" role="radio" data-veh="${id}" aria-checked="${id === c.vehicles}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
       ${c.modeId !== 'training' && !vehMap ? `<div><h2 class="m-h2">Panzer &amp; Fahrzeuge</h2><p class="lb-note lb-veh-off">Panzer und Geländewagen gibt es nur auf großen Karten (${esc(LARGE_MAP_NAMES.join(', '))}). Hier fahren nur die zivilen Fahrzeuge der Karte.</p></div>` : ''}
-      ${c.modeId !== 'training' && vehOn ? `<div><h2 class="m-h2">Panzer-Generation</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Generation">${[['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild und Munitionsbunker, 4 Mann; zweiter Stellplatz: SZ-8 Igel (Schützenpanzer, 30 mm + Lenkflugkörper)'], ['kk', 'Kalter Krieg', 'KP-68 Auerochs: Gussturm, 105 mm, Infrarot-Scheinwerfer, 4 Mann'], ['wk2', '2. WK', 'Team A: MP-4 Bison (mittel, 75 mm, schnell), zweiter Stellplatz MP-43 Elch (85 mm) – Team B: SP-6 Moloch (schwer, 88 mm), zweiter Stellplatz JP-44 Stier (Jagdpanzer)'], ['wk1', '1. WK', 'Team A: LK-17 Libelle (leicht, Drehturm, 2 Mann) – Team B: SK-18 Koloss (Sturmpanzer, 6 Mann)']].map(([id, l, t]) => `<button type="button" role="radio" data-era="${id}" aria-checked="${id === (c.tankEra || 'karte')}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
+      ${c.modeId !== 'training' && vehOn ? `<div><h2 class="m-h2">Panzer-Generation</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Generation">${[['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild und Munitionsbunker, 4 Mann; zweiter Stellplatz: SZ-8 Igel (Schützenpanzer, 30 mm + Lenkflugkörper); dazu LP-21 Gämse (leicht, 105 mm) und Transporter RS-8 Waran (8×8, 30 mm), LKW-5, GMW-6, GW-7 (MG-Ring)'], ['kk', 'Kalter Krieg', 'KP-68 Auerochs: Gussturm, 105 mm, Infrarot-Scheinwerfer, 4 Mann; zweiter Stellplatz SP-58 Mastodon (schwer, 120 mm); Transporter MTW-13 Kröte (Ketten, MG), LKW-5, GMW-6'], ['wk2', '2. WK', 'Team A: MP-4 Bison (mittel, 75 mm, schnell), zweiter Stellplatz MP-43 Elch (85 mm) – Team B: SP-6 Moloch (schwer, 88 mm), zweiter Stellplatz JP-44 Stier (Jagdpanzer); dazu LP-39 Frettchen (leicht), SP-45 Walross (schwer) und Halbketten SPW-41 Hamster (MG-Schild) / ZK-8 Packesel'], ['wk1', '1. WK', 'Team A: LK-17 Libelle (leicht, Drehturm, 2 Mann) – Team B: SK-18 Koloss (Sturmpanzer, 6 Mann)']].map(([id, l, t]) => `<button type="button" role="radio" data-era="${id}" aria-checked="${id === (c.tankEra || 'karte')}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
       ${c.modeId !== 'training' && vehOn ? (() => { const P = loadTankProgress(), nx = TANK_SKINS.find((k) => k.xp > P.xp); return `<div><h2 class="m-h2">Panzer-Tarnung</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Tarnung">${TANK_SKINS.map((k) => `<button type="button" role="radio" data-tskin="${k.id}" aria-checked="${k.id === P.skin}"${skinUnlocked(P, k) ? '' : ' aria-disabled="true"'} title="${skinUnlocked(P, k) ? 'Freigeschaltet' : `Ab ${k.xp} Panzer-Erfahrung`}">${skinUnlocked(P, k) ? '' : '🔒 '}${k.name}</button>`).join('')}</div><p class="lb-note">Panzer-Erfahrung ${Math.floor(P.xp)}${nx ? ` · nächste Tarnung „${nx.name}“ bei ${nx.xp}` : ' · alle Tarnungen frei'} – im Panzer sitzen, mit Fahrzeugwaffen Gegner und Fahrzeuge ausschalten.</p></div>`; })() : ''}
       ${wxs.length ? `<div><h2 class="m-h2">Wetter</h2><div class="m-seg" role="radiogroup" aria-label="Wetter">${[['standard', 'Standard', map.weather || ''], ...wxs.map((w) => [w, WEATHERS[w].name, WEATHERS[w].short || '']), ['zufall', 'Zufall', 'Zufälliges Wetter beim Start']].map(([id, l, t]) => `<button type="button" role="radio" data-wx="${id}" aria-checked="${id === wxSel}"${t ? ` title="${esc(t)}"` : ''}>${esc(l)}</button>`).join('')}</div></div>` : ''}`;
     this.el.deploy.innerHTML = `
       <section class="lb-sec"><h2 class="m-h2">Modus</h2><div class="lb-modes" role="group" aria-label="Modus">${modes}</div>
         <div class="lb-modeinfo"><p>${esc(m.description || '')}</p><ul class="lb-rules"></ul></div></section>
-      <section class="lb-sec"><h2 class="m-h2">Karte</h2><div class="lb-maps" role="group" aria-label="Karte">${mapCards}</div></section>
+      <section class="lb-sec"><h2 class="m-h2">Karte</h2><div class="lb-maps" role="group" aria-label="Karte">${mapCards}</div>${appNote}</section>
       <section class="lb-sec lb-row2">
         <div><h2 class="m-h2">Gegnerstärke</h2><div class="m-seg lb-diff" role="radiogroup" aria-label="Gegnerstärke">${diffs}</div>
           <p class="lb-note">${esc(diff.description || '')} <b>${xpm}</b></p></div>

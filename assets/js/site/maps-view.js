@@ -12,6 +12,7 @@ import { loop } from './loop.js?v=20261115041504';
 import { reduced, pointerFine } from './motion.js?v=20261115041504';
 import { num, NNBSP } from './fmt.js?v=20261115041504';
 import { jumpTo } from './jump.js?v=20261115041504';
+import { mapLockedHere } from '../shared/appgate.js?v=20261115041504'; // riesen: Riesenkarte nur in der App
 import { segmentsFrom, castVisibility, boundsOf, wordFor, corners, blocked, defaultPoint, planText, polyPath, isSoft, labelBlocks } from './plan.js?v=20261115041504';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -425,6 +426,10 @@ export async function init(sec, D, ctx = {}) {
       const mode = (map.modes || []).includes(ui.get('mode')) ? ui.get('mode') : (map.modes?.[0] || 'tdm');
       href = buildPlayUrl({ mode, map: id });
     }
+    // riesen: App-exklusive Riesenkarte im Browser → Link zur App-Seite statt „Hier spielen“
+    const locked = mapLockedHere(map);
+    if (locked) href = '#app';
+    if (playLink.firstChild) playLink.firstChild.textContent = locked ? 'Nur in der App – hier herunterladen' : 'Hier spielen';
     playLink.setAttribute('href', href);
   }
 

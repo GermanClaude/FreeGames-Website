@@ -268,7 +268,7 @@ class HairBuf {
 /* ------------------------------------------------------------------ Frisur bauen */
 
 // Auflösung je Kopfstufe: Spalten um den Kopf, Zeilen Wirbel→Ansatz, Schalen (inkl. Grundschicht)
-const RES = { cine: { cols: 72, rows: 18, shells: 3, cur: [40, 12], lobe: [10, 7] }, near: { cols: 48, rows: 12, shells: 2, cur: [26, 8], lobe: [8, 5] }, mid: { cols: 30, rows: 8, shells: 2, cur: [16, 5], lobe: [6, 4] } };
+const RES = { cine: { cols: 72, rows: 18, shells: 3, cur: [40, 12], lobe: [10, 7], beard: 3 }, near: { cols: 40, rows: 10, shells: 2, cur: [24, 7], lobe: [8, 5], beard: 1 }, mid: { cols: 28, rows: 7, shells: 2, cur: [14, 5], lobe: [6, 4], beard: 1 } };
 // Dicke der Haarschicht [m]: oben (t = 0) … am Ansatz (t = 1), je Frisur
 const THICK = {
   kurz: [0.009, 0.0055, 0.0018], scheitel: [0.015, 0.009, 0.002], buerste: [0.0042, 0.0034, 0.0014], kranz: [0.005, 0.004, 0.0016],
@@ -507,7 +507,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
     for (const v of [a, b, c]) if (sel[v] < 0) { sel[v] = list.length; list.push(v); }
   }
   if (!keepTri.length) return null;
-  const shells = res === 'cine' ? 3 : res === 'near' ? 2 : 1;
+  const shells = (RES[res] || RES.near).beard;
   const n = list.length;
   const pos = new Float32Array(n * 3 * shells), nrm = new Float32Array(n * 3 * shells), uv = new Float32Array(n * 2 * shells);
   const tan = new Float32Array(n * 4 * shells), lay = new Float32Array(n * 3 * shells);
@@ -515,7 +515,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
   const M = geo.morphAttributes.position || [], MN = geo.morphAttributes.normal || [];
   const mpos = M.map(() => new Float32Array(n * 3 * shells)), mnrm = MN.map(() => new Float32Array(n * 3 * shells));
   for (let s = 0; s < shells; s++) {
-    const depth = shells > 1 ? s / (shells - 1) : 0;
+    const depth = shells > 1 ? s / (shells - 1) : 0.65;
     const cover = s === 0 ? 1 : lerp(0.7, 0.45, (s - 1) / Math.max(1, shells - 2));
     for (let k = 0; k < n; k++) {
       const v = list[k], o = s * n + k;

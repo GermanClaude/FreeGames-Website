@@ -76,10 +76,14 @@ export const ACTION_DEFS = Object.freeze([
   { id: 'sim_visier_auf', label: 'Visier weiter stellen (Entfernung +, Simulation)', short: 'Visier +', group: 'simulation' },
   { id: 'sim_visier_ab', label: 'Visier näher stellen (Entfernung −, Simulation)', short: 'Visier −', group: 'simulation' },
   { id: 'sim_hilfe', label: 'Hilfe zu den Handgriffen (Simulation)', short: 'Sim-Hilfe', group: 'simulation' },
+  // Modus Trupp (game/modes/trupp.js, ui/trupp-hud.js): nur dort wirksam
+  { id: 'trupp_wechsel', label: 'Soldat wechseln (nächster lebender Kamerad des eigenen Trupps)', short: 'Soldat wechseln', group: 'trupp' },
+  { id: 'trupp_funk', label: 'Trupp-Funkrad (halten): Pionier-Bauaufträge, Sammelpunkt, Markierungen, Funksprüche', short: 'Funkrad', group: 'trupp' },
+  { id: 'trupp_menu', label: 'Truppmenü: Trupp-Typ, Soldaten, Kommandant', short: 'Truppmenü', group: 'trupp' },
 ]);
 export const ACTION_IDS = Object.freeze(ACTION_DEFS.map((a) => a.id));
 export const ACTION_BY_ID = Object.freeze(Object.fromEntries(ACTION_DEFS.map((a) => [a.id, a])));
-export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges', fahrzeug: 'Fahrzeug', simulation: 'Simulation' });
+export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges', fahrzeug: 'Fahrzeug', simulation: 'Simulation', trupp: 'Trupp' });
 export const MOVE_ACTIONS = Object.freeze(['move_forward', 'move_back', 'move_left', 'move_right']);
 
 /**
@@ -102,6 +106,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     gear_up: [], gear_down: [], seat_next: [], seat_prev: [],
     sim_durchladen: ['KeyO'], sim_magcheck: ['KeyI'], sim_kompass: ['Comma'], sim_karte: ['Period'], sim_inventar: ['KeyP'],
     sim_abbinden: ['Digit7'], sim_visier_auf: ['PageUp'], sim_visier_ab: ['PageDown'], sim_hilfe: ['F2'],
+    trupp_wechsel: ['KeyO'], trupp_funk: ['CapsLock'], trupp_menu: ['KeyP'], // O/P teilen sich die Simulation (Modus Trupp läuft nie im Spielstil Simulation)
   },
   pad: {
     move_forward: [], move_back: [], move_left: [], move_right: [],
@@ -114,6 +119,8 @@ export const DEFAULT_BINDINGS = deepFreeze({
     // Simulation (isim) am Controller (plattform, 19.11.): Ansicht/Create halten + Taste – alle Einzeltasten sind belegt
     sim_durchladen: ['Pad8+Pad2'], sim_magcheck: ['Pad8+Pad3'], sim_kompass: ['Pad8+Pad14'], sim_karte: ['Pad8+Pad15'], sim_inventar: ['Pad8+Pad0'],
     sim_abbinden: ['Pad8+Pad1'], sim_visier_auf: ['Pad8+Pad12'], sim_visier_ab: ['Pad8+Pad13'], sim_hilfe: ['Pad8+Pad11'],
+    // Trupp: Ansicht/Create halten + RB (wechseln), + LB (Funkrad), + L3 (Truppmenü)
+    trupp_wechsel: ['Pad8+Pad5'], trupp_funk: ['Pad8+Pad4'], trupp_menu: ['Pad8+Pad10'],
   },
   // VR-Controller (wie gängige VR-Shooter, Haupthand rechts): Abzug feuern, Griff anlegen (zusätzlich: Waffe ans Auge),
   // A springen, B ducken (halten: hinlegen), Stick drücken Nahkampf, Stick hoch Waffe wechseln, Stick runter Platte;
@@ -130,6 +137,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     prone: [], plate: ['XrHDown'], gadget: [], faehigkeit: [], bauen: [], verband: [], inspect: [], loadout: [], squad_order: [], befehl: [], unterlauf: [], feuermodus: [],
     gear_up: [], gear_down: [], seat_next: ['XrH3'], seat_prev: [],
     sim_durchladen: [], sim_magcheck: [], sim_kompass: [], sim_karte: [], sim_inventar: [], sim_abbinden: [], sim_visier_auf: [], sim_visier_ab: [], sim_hilfe: [],
+    trupp_wechsel: [], trupp_funk: [], trupp_menu: [],
   },
 });
 
@@ -144,7 +152,8 @@ export function isFixed(action, device) {
 // Ausrüsten teilt Y mit dem Waffenwechsel (nur nach dem Tod/in Menüs wirksam).
 // Fahrzeugaktionen teilen sich Tasten mit Infanterie-Aktionen, die im Fahrzeug ruhen (RB/LB, Steuerkreuz ◀/▶, VR-Stick).
 export const ALLOWED_SHARES = Object.freeze([['reload', 'interact'], ['plate', 'streak2'], ['plate', 'light'], ['loadout', 'swap'],
-  ['gear_up', 'tactical'], ['sim_magcheck', 'inspect'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2']]);
+  ['gear_up', 'tactical'], ['sim_magcheck', 'inspect'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2'],
+  ['trupp_wechsel', 'sim_durchladen'], ['trupp_menu', 'sim_inventar']]); // Trupp/Simulation schließen sich aus
 const shareOk = (a, b) => ALLOWED_SHARES.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 
 /** Nicht belegbar: Esc (verlässt den Pointer-Lock), Browser-/Systemtasten, Home-Taste des Gamepads. */
@@ -461,6 +470,10 @@ export const TOUCH_BUTTONS = Object.freeze([
   { id: 'faehigkeit', sel: '.tc-faehigkeit', label: 'Klassen-Fähigkeit', auto: 'faehigkeit', def: { x: 58, y: 42, s: 46 } },
   // Befehlsrad: nur mit verbündeten Bots; oben rechts in der Reihe von Punktetabelle/Pause (frei auf 4:3 bis 20:9)
   { id: 'befehl', sel: '.tc-befehl', label: 'Befehlsrad', auto: 'allies', def: { x: 80, y: 8, s: 42 } },
+  // Modus Trupp (nur dort sichtbar): Soldat wechseln, Funkrad, Truppmenü – Reihe links neben dem Befehlsrad
+  { id: 'truppWechsel', sel: '.tc-trupp-wechsel', label: 'Soldat wechseln (Trupp)', auto: 'trupp', def: { x: 73, y: 8, s: 40 } },
+  { id: 'truppFunk', sel: '.tc-trupp-funk', label: 'Funkrad (Trupp)', auto: 'trupp', def: { x: 66, y: 8, s: 40 } },
+  { id: 'truppMenu', sel: '.tc-trupp-menu', label: 'Truppmenü', auto: 'trupp', def: { x: 59, y: 8, s: 40 } },
   // Infanteriesimulation (isim, nur im Spielstil „Simulation“ sichtbar; plattform 19.11.)
   { id: 'simLaden', sel: '.tc-sim-laden', label: 'Durchladen (Simulation)', auto: 'sim', def: { x: 51, y: 42, s: 44 } },
   { id: 'simMag', sel: '.tc-sim-mag', label: 'Magazin prüfen (Simulation)', auto: 'sim', def: { x: 51, y: 56, s: 44 } },

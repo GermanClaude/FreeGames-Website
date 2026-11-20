@@ -23,6 +23,7 @@ import { initTvMode } from './ui/tv-mode.js?v=20261115041504'; // TV-/Konsolen-M
 import * as weaponsData from '../shared/weapons.data.js?v=20261115041504';
 import * as modesData from '../shared/modes.data.js?v=20261115041504';
 import * as mapsData from '../shared/maps.data.js?v=20261115041504';
+import { mapLockedHere } from '../shared/appgate.js?v=20261115041504'; // riesen: Riesenkarte nur in der App
 import * as classesData from '../shared/classes.data.js?v=20261115041504'; // core-mechanics: Klassen, Panzerung, Spielstile
 import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261115041504'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
 import { EventBus } from './engine/events.js?v=20261115041504';
@@ -426,7 +427,8 @@ function normalizeConfig(cfg = {}) {
   const W = G.data.WEAPONS || {};
   const EQ = G.data.EQUIPMENT || {};
   const modeId = MODES[cfg.modeId] ? cfg.modeId : MODES[settings.get('lastMode')] ? settings.get('lastMode') : 'tdm';
-  const maps = mapsForMode(modeId);
+  // riesen: App-exklusive Karten (MAPS[id].appOnly) außerhalb der App nicht startbar – auch nicht per URL (?map=…)
+  const maps = mapsForMode(modeId).filter((id) => !mapLockedHere((G.data.MAPS || {})[id]));
   const rec = (MODES[modeId] && MODES[modeId].recommendedMaps) || [];
   // Kampagne: die Mission bestimmt die Karte (MODES.kampagne.missionMaps)
   const missionMap = modeId === 'kampagne' && cfg.campaign && MODES.kampagne && MODES.kampagne.missionMaps ? MODES.kampagne.missionMaps[cfg.campaign.mission] : null;
@@ -551,6 +553,8 @@ function spawnActor(actor, fixed = null) {
   if (actor === G.player) G.match.respawnHold = false;
   // Mehrspieler (Host): gemeldete Ausrüstung eines entfernten Menschen gilt ab diesem Spawn
   if (G.match.netRole === 'host' && G.net && G.net.sync && typeof G.net.sync.beforeSpawn === 'function') safe('net.beforeSpawn', () => G.net.sync.beforeSpawn(actor));
+  // Trupp (modes/trupp.js): Ausrüstung der Rolle des gesteuerten Soldaten bzw. der Trupp-Bots
+  if (mode && typeof mode.beforeSpawn === 'function') safe('mode.beforeSpawn', () => mode.beforeSpawn(actor));
   safe('equipActor', () => equipActor(actor));
   actor.respawn(spawn);
   actor.respawnAt = null;
@@ -604,7 +608,7 @@ function armorFor(cfg, mapId, modeId) {
   const mode = (G.data.MODES || {})[modeId];
   if (mode && typeof mode.armor === 'boolean') return mode.armor;
   const map = (G.data.MAPS || {})[mapId];
-  return !!(map && map.scale === 'gross') || modeId === 'cq';
+  return !!(map && map.scale === 'gross') || modeId === 'cq' || modeId === 'trupp';
 }
 
 /** Ausrüstung bereinigen: Klasse, Waffen (freigeschaltet), Weste/Helm; fehlende Waffen aus der Klassen-Standardausrüstung. */

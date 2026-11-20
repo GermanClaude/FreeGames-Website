@@ -105,8 +105,8 @@ export function kirche(b, x, z, o = {}) {
     x, z, w, d, floors: 1, fh: h, y, mat: 'plaster_white', tint,
     openings: [
       { side: 's', at: 0, w: 1.8, h: 2.9, kind: 'door', leaf: 'open', floor: 0 },
-      ...[-7.5, -2.5, 2.5, 7.5].flatMap((at) => [{ side: 'e', at, w: 1.2, h: 3.2, sill: 2.6, kind: 'window', floor: 0 }, { side: 'w', at, w: 1.2, h: 3.2, sill: 2.6, kind: 'window', floor: 0 }]),
-      { side: 'e', at: 9.5, w: 1.1, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
+      ...[-0.34, -0.11, 0.11, 0.34].map((f) => Math.round(f * d * 10) / 10).flatMap((at) => [{ side: 'e', at, w: 1.2, h: 3.2, sill: 2.6, kind: 'window', floor: 0 }, { side: 'w', at, w: 1.2, h: 3.2, sill: 2.6, kind: 'window', floor: 0 }]),
+      { side: 'e', at: Math.round(d * 0.44 * 10) / 10 - 0.4, w: 1.1, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
     ],
     roof: { edge: false, mat: 'concrete', tint: '#b9ab94' }, floorMat: 'tiles', floorTint: '#b7ab98', interiorFactor: 0.5, nutzung: 'kapelle',
     plinth: { h: 0.7, mat: 'stone_wall', tint: '#bdb3a0', over: 0.04 },
@@ -114,10 +114,10 @@ export function kirche(b, x, z, o = {}) {
   pitchedRoof(b, { x, z, w: w + 0.02, d: d + 0.02, y: nave.roofY - 0.02, ridge: 'z', pitch: 1.0, over: 0.5, gableMat: 'plaster_white', gableTint: tint, tint: '#8f7466' });
   b.noNav(x - w / 2 - 0.6, z - d / 2 - 0.6, x + w / 2 + 0.6, z + d / 2 + 0.6, nave.roofY - 0.5, y + 60);
   // Bänke (Deckung), Altar
-  for (let r = 0; r < 6; r++) for (const s of [-1, 1]) b.box(x + s * 2.6, y + 0.12, z - d / 2 + 5 + r * 1.9, 3.6, 0.85, 0.45, 'wood_planks', { tint: '#6e5240', minimap: 'cover' });
-  b.box(x, y + 0.12, z - d / 2 + 2, 2.6, 1.0, 1.0, 'stone_wall', { tint: '#cfc6b4', minimap: 'cover' });
-  // Turm (Schaft 5 × 5, 22 m, Spitzhelm)
-  const tz = z + d / 2 + 2.5, tw = 5, th = 22;
+  for (let r = 0, nr = Math.min(6, Math.floor((d - 8) / 1.9)); r < nr; r++) for (const s of [-1, 1]) b.box(x + s * (w / 2 - 0.4 - Math.min(3.6, w / 2 - 1.4) / 2), y + 0.12, z - d / 2 + 5 + r * 1.9, Math.min(3.6, w / 2 - 1.4), 0.85, 0.45, 'wood_planks', { tint: '#6e5240', minimap: 'cover' });
+  b.box(x, y + 0.12, z - d / 2 + 2, Math.min(2.6, w - 3), 1.0, 1.0, 'stone_wall', { tint: '#cfc6b4', minimap: 'cover' });
+  // Turm (Schaft 5 × 5, Spitzhelm) an der Nordseite – Portal im Süden bleibt frei
+  const tz = z - d / 2 - 2.5, tw = 5, th = o.towerH ?? 22;
   b.box(x, y, tz, tw, th, tw, 'plaster_white', { tint: o.towerTint || '#ddd6c6', minimap: 'building' });
   for (const [sx, sz] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) b.box(x + sx * (tw / 2 + 0.02), y + th - 4.2, tz + sz * (tw / 2 + 0.02), sz ? 1.1 : 0.06, 2.2, sx ? 1.1 : 0.06, 'black', { ...NOCOL, grad: false });
   b.cyl(x, y + th, tz, tw * 0.72, 9, 'roof_tiles', { r1: 0.05, seg: 4, ry: PI / 4, tint: '#5f6f66', minimap: false });
@@ -274,10 +274,10 @@ export function flugleitung(b, x, z, y = 0) {
   const B = building(b, {
     x, z, w: 10, d: 7, floors: 2, fh: 3.2, y, mat: 'plaster_white', tint: '#e6e2d8',
     openings: [...oeffnungen(10, 7, 2, [{ side: 'n', at: -2 }])],
-    holes: [{ floor: 1, x0: x + 1.2, x1: x + 4.7, z0: z - 3.2, z1: z - 1.9 }],
+    holes: [{ floor: 1, x0: x - 0.3, x1: x + 3.8, z0: z - 3.2, z1: z - 1.9 }],
     roof: { parapet: 1.0, mat: 'concrete', tint: '#a49c8c' }, floorMat: 'linoleum', upperFloorMat: 'linoleum', interiorFactor: 0.55, nutzung: 'buero',
   });
-  stairs(b, { x: x + 1.0, z: z - 2.55, dir: 'e', y0: y + 0.12, y1: y + 3.2, w: 1.1, run: 4.9, style: 'metal_painted', rail: 'right', railTint: '#3d4247' });
+  stairs(b, { x: x - 1.2, z: z - 2.55, dir: 'e', y0: y + 0.12, y1: y + 3.2, w: 1.1, run: 4.9, style: 'metal_painted', rail: 'right', railTint: '#3d4247' });
   // Kanzel auf dem Dach (Glas umlaufend, beschießbar)
   const ky = B.roofY;
   b.box(x - 1.5, ky, z, 4.6, 0.9, 4.2, 'concrete', { tint: '#d8d2c4', minimap: false });

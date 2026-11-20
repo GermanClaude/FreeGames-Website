@@ -593,7 +593,7 @@ function cabinShader(sh, renderer, mat) {
           // Aufkleber/Schilder: ausgebleicht, angeschmutzt, Ecken und Streifen abgekratzt
           float l = dot( cbC, vec3( 0.3, 0.59, 0.11 ) );
           cbC = mix( cbC, vec3( l ) * 1.05 + 0.03, ( 0.18 + 0.35 * cbLo ) * W );
-          float sc = max( smoothstep( 0.3, 0.6, cbM.r ) * 0.9, smoothstep( 0.55, 0.7, cbM.b * ( 0.6 + cbLo ) ) );
+          float sc = max( smoothstep( 0.4, 0.7, cbM.r ) * 0.6, smoothstep( 0.72, 0.88, cbM.b * ( 0.5 + cbLo ) ) );
           cbC = mix( cbC, vec3( 0.55, 0.53, 0.48 ), sc * W );
           cbC *= 1.0 - 0.25 * cbM.g * W;
           cbScr = sc;
@@ -602,11 +602,11 @@ function cabinShader(sh, renderer, mat) {
             // Kantenabrieb: Lack → Grundierung (rotbraun) → blankes Metall, ausgefranst über die Abplatzer-Maske
             // nur stellenweise (Abplatzer-Maske × feines Rauschen × Zonen), Griffstellen stärker
             float en = cbM.b * 0.8 + cbN( vCabO * 55.0 ) * 0.45 + cbLo * 0.35;
-            float e = cbEdge * en + cbWr * ( 0.35 + 0.5 * cbM.b + 0.2 * cbN( vCabO * 30.0 ) );
+            float e = cbEdge * ( en + uCabEra.y ) + cbWr * ( 0.35 + 0.5 * cbM.b + 0.2 * cbN( vCabO * 30.0 ) );
             cbPrim = smoothstep( 0.78, 0.84, e ) * W * uCabK.x;
             cbBare = smoothstep( 0.98, 1.06, e + cbM.r * 0.15 ) * W * uCabK.x;
             // Abplatzer auf der Fläche (gruppiert, eher unten)
-            float fc = cbM.b * smoothstep( 0.42, 0.85, cbLo ) * ( 1.15 - 0.5 * smoothstep( 0.2, 0.7, vCabO.y ) );
+            float fc = cbM.b * smoothstep( 0.42 - uCabEra.y, 0.85, cbLo ) * ( 1.15 - 0.5 * smoothstep( 0.2, 0.7, vCabO.y ) );
             cbPrim = max( cbPrim, smoothstep( 0.5, 0.56, fc ) * W * uCabK.x );
             cbBare = max( cbBare, smoothstep( 0.7, 0.78, fc ) * W * uCabK.x );
             // Kratzer und Schrammen im Lack
@@ -633,7 +633,7 @@ function cabinShader(sh, renderer, mat) {
           float ra = uCabEra.x * uCabK.y * W;
           if ( ra > 0.0 ) {
             float spot = max( cbBare, cbPrim * 0.6 ) * smoothstep( 0.35, 0.65, cbN( vCabO * 40.0 ) + 0.25 * ra );
-            float run = cbM.g * smoothstep( 0.55, 0.9, cbN( vec3( vCabO.x * 9.0, vCabO.y * 0.8, vCabO.z * 9.0 ) ) ) * ( 1.0 - smoothstep( 0.4, 0.75, abs( cbNo.y ) ) );
+            float run = smoothstep( 0.3, 0.75, cbM.g ) * smoothstep( 0.45, 0.8, cbN( vec3( vCabO.x * 9.0, vCabO.y * 0.8, vCabO.z * 9.0 ) ) ) * ( 1.0 - smoothstep( 0.4, 0.75, abs( cbNo.y ) ) );
             float pit = smoothstep( 0.72, 0.9, cbM.b * cbLo * 1.5 );
             cbRust = clamp( spot * 1.2 + run * 0.7 + pit * 0.6 * uCabK.y, 0.0, 1.0 ) * min( 1.0, ra );
             vec3 rc = mix( vec3( 0.16, 0.055, 0.02 ), vec3( 0.36, 0.13, 0.04 ), cbN( vCabO * 90.0 ) );
@@ -784,7 +784,7 @@ function cabinMats(S, det = 2) {
     // Halter, Gehäuse, Gussteile: dunkel graugrün lackiert
     metal: wall('metall', 0x585d52, 0.95, 0.15),
     steel: tag(clone(S.steel, 'stahl', { color: 0x7e8286, roughness: 0.36, metalness: 0.85 }), K4(0, 0.8, 0, 0)),
-    breech: tag(clone(S.steel, 'verschluss', { color: 0x585c61, roughness: 0.44, metalness: 0.85 }), K4(0, 0.5, 0, 0)),
+    breech: tag(clone(S.steel, 'verschluss', { color: 0x5c5b57, roughness: 0.44, metalness: 0.85 }), K4(0, 0.5, 0, 0)),
     black: wall('schwarz', 0x1e1f1d, 0.85, 0.2, K4(0.7, 0.4, 0, 0)),
     olive: wall('oliv', 0x4b5337, 0.95, 0.12),
     rubber: tag(clone(S.rubber, 'gummi', { roughness: 0.9 }), K4(0, 0, 0.6, 0)),
@@ -1821,7 +1821,7 @@ function buildTurret(D, C, det, era, cab, A) {
 /* ===================================================================== Vorlage, Anbau, Takt */
 
 const TPL = new Map();
-const ERA_WEAR = { modern: [0.18, 0.45], kk: [0.42, 0.6], wk2: [0.65, 0.72], wk1: [1.0, 0.85] };
+const ERA_WEAR = { modern: [0.18, 0.45, 0], kk: [0.45, 0.6, 0.08], wk2: [0.7, 0.72, 0.12], wk1: [1.0, 0.85, 0.2] }; // Rost, Staub, mehr Abplatzer
 // Kalter Krieg (kk): analoge Instrumente und heller Innenanstrich wie im 2. WK (keine Bildschirme)
 function eraOf(D) { return D.era === 'wk2' || D.era === 'kk' ? 'wk2' : D.era === 'wk1' ? 'wk1' : 'modern'; }
 /** Hülse je Panzer: modern nur der Hülsenboden (verbrennbare Hülse), sonst Messinghülse (Länge, Radius in m). */
@@ -2205,7 +2205,7 @@ export function syncCabin(cab, v, dt, ctx = {}) {
   const where = ctx.driver ? 'fahrer' : 'turm';
   CAB_U.uCabSet.value = ctx.driver ? 1 : 0;
   // Gebrauchsspuren je Ära: Rost (x) und Staub (z) – modern gepflegt, Weltkrieg stark verrostet
-  { const e = cab.D.era || 'modern', E = ERA_WEAR[e] || ERA_WEAR.modern; CAB_U.uCabEra.value.set(E[0], 0, E[1], 0); }
+  { const e = cab.D.era || 'modern', E = ERA_WEAR[e] || ERA_WEAR.modern; CAB_U.uCabEra.value.set(E[0], E[2], E[1], 0); }
   const LP = CAB_U.uCabLP.value, LCo = CAB_U.uCabLC.value;
   const f = 1 - cab.flick * (0.55 + 0.45 * Math.sin(cab.t * 63)) * 0.8;
   const slots = cab.slots[where] || [];

@@ -291,6 +291,8 @@ const NIEMANDSLAND = {
   vehicles: [
     { id: 'A-panzer-1', team: 'A', kind: 'tank', x: 70, z: HQZ - 4, yaw: 0 }, { id: 'A-panzer-2', team: 'A', kind: 'tank', x: -70, z: HQZ - 4, yaw: 0 },
     { id: 'B-panzer-1', team: 'B', kind: 'tank', x: -70, z: -HQZ + 4, yaw: Math.PI }, { id: 'B-panzer-2', team: 'B', kind: 'tank', x: 70, z: -HQZ + 4, yaw: Math.PI },
+    // Halbkette für den Nachschub je Team (20.11., Rolle 'truck' → je Generation; 1. WK: ZK-8 Packesel)
+    { id: 'A-truck-1', team: 'A', kind: 'truck', x: 38, z: HQZ - 6, yaw: 0 }, { id: 'B-truck-1', team: 'B', kind: 'truck', x: -38, z: -HQZ + 6, yaw: Math.PI },
   ],
   secrets: [],
 };

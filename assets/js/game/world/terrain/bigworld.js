@@ -34,14 +34,32 @@ import { RoadNetwork } from './roads.js?v=20261115041504';
 import { bigNavFromData } from './bignav.js?v=20261115041504';
 import { createBigMinimap } from './bigminimap.js?v=20261115041504';
 import { terrainJob, worldJob } from './bigjob.js?v=20261115041504';
+import { appClient } from '../../../shared/appgate.js?v=20261115041504';
 
 const BIG_MAPS = {
   grenzland: () => import('../maps/grenzland.js?v=20261115041504'),
   niemandsland: () => import('../maps/niemandsland.js?v=20261115041504'),
   brandwald: () => import('../maps/brandwald.js?v=20261115041504'),
   flugplatz: () => import('../maps/flugplatz.js?v=20261115041504'), // karten-neu: Fliegerhorst mit Startbahn
+  weitmark: () => import('../maps/weitmark.js?v=20261115041504'), // riesen: Riesenkarte 1600 × 1600 m (nur App, shared/appgate.js)
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
+
+/**
+ * riesen: Dateien App-exklusiver Karten. Der Service Worker der Web-Version nimmt sie nie auf (sw.js APP_ONLY); die
+ * Android-App (lädt die Website) legt sie beim ersten Laden der Karte in den eigenen Speicher np-app – danach offline
+ * spielbar. Die Desktop-App hat sie ohnehin lokal (extraResources, desktop/package.json).
+ */
+const APP_FILES = { weitmark: ['../maps/weitmark.js?v=20261115041504', '../maps/weitmark-bau.js?v=20261115041504'] };
+function keepAppFiles(id) {
+  if (appClient().kind !== 'android-app' || typeof caches === 'undefined' || !APP_FILES[id]) return;
+  const urls = APP_FILES[id].map((p) => new URL(p, import.meta.url).href);
+  caches.open('np-app').then(async (c) => {
+    const base = urls.map((u) => u.split('?')[0]);
+    for (const k of await c.keys()) if (base.includes(k.url.split('?')[0]) && !urls.includes(k.url)) await c.delete(k); // ältere Fassungen
+    await c.addAll(urls.filter(Boolean));
+  }).catch(() => { /* Speicher voll / offline */ });
+}
 
 /** Budgets je Qualitätsstufe (GROSSKAMPF_PLAN §3.4; Handy = low). density: Anteil der kollisionslosen Büsche/Schilf –
  * Bäume und Felsen (Kollision) stehen auf jeder Stufe vollständig (Mehrspieler, terrain/vegetation.js). */
@@ -120,6 +138,39 @@ function concatF32(list) {
   return out;
 }
 
+/**
+ * riesen: Fernkulisse einer Ortschaft – Gebäude-Grundrisse (MapBuilder.footprints, kind 'building') als Quader mit
+ * Dachkeil-Ersatz (oben 1,5 m höher, dunkler), Vertexfarben, ohne Texturen (kein zusätzlicher Sampler, keine Kollision).
+ */
+function siteImpostor(footprints, y0 = 0) {
+  const list = (footprints || []).filter((f) => f.kind === 'building' && f.hw > 1.5 && f.hd > 1.5);
+  if (!list.length) return null;
+  const P = [], C = [], wall = new THREE.Color('#c9c1b2').convertSRGBToLinear(), roof = new THREE.Color('#8e6f62').convertSRGBToLinear();
+  const quad = (a, b, c, d, col) => { for (const v of [a, b, c, a, c, d]) { P.push(v[0], v[1], v[2]); C.push(col.r, col.g, col.b); } };
+  for (const f of list) {
+    const x0 = f.x - f.hw, x1 = f.x + f.hw, z0 = f.z - f.hd, z1 = f.z + f.hd;
+    const ya = Math.min(f.y0 ?? y0, y0) - 0.5, yb = Math.max(f.y1 ?? y0 + 6, ya + 2), yr = yb + Math.min(3, Math.min(f.hw, f.hd) * 0.6);
+    quad([x0, ya, z1], [x1, ya, z1], [x1, yb, z1], [x0, yb, z1], wall);
+    quad([x1, ya, z0], [x0, ya, z0], [x0, yb, z0], [x1, yb, z0], wall);
+    quad([x1, ya, z1], [x1, ya, z0], [x1, yb, z0], [x1, yb, z1], wall);
+    quad([x0, ya, z0], [x0, ya, z1], [x0, yb, z1], [x0, yb, z0], wall);
+    quad([x0, yb, z1], [x1, yb, z1], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
+    quad([x1, yb, z0], [x0, yb, z0], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
+    quad([x1, yb, z1], [x1, yb, z0], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
+    quad([x0, yb, z0], [x0, yb, z1], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 });
+  m.name = 'fernkulisse';
+  const mesh = new THREE.Mesh(g, m);
+  mesh.castShadow = false; mesh.receiveShadow = false; mesh.matrixAutoUpdate = false;
+  return mesh;
+}
+
 /** Unsichtbare Randwände (Kollision) um ein Rechteck. */
 function boundaryWalls(r, yMin, yMax) {
   const out = [];
@@ -137,13 +188,16 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const t0 = performance.now();
   const id = BIG_MAPS[mapId] ? mapId : BIG_MAP_IDS[0];
   const meta = MAPS[id] || { name: id };
+  // riesen: App-exklusive Riesenkarte außerhalb der App nicht laden (Plattform-Vorgabe, shared/appgate.js; kein Kopierschutz)
+  if (meta.appOnly && !appClient().kind) throw new Error(`Karte „${meta.name || id}“ gibt es nur in der App (PC-App oder Android-App).`);
   const progress = (p, label) => { try { onProgress?.(Math.min(1, Math.max(0, p)), label || ''); } catch { /* UI */ } };
   progress(0, 'Karte wird vorbereitet');
   const renderer = G.renderer?.renderer || G.renderer;
   attachFoliageClock(G); // Wind (Gras/Laub) an der gemeinsamen Uhr (online Host-Zeit)
   const quality = ['low', 'medium', 'high', 'ultra'].includes(G.renderer?.quality) ? G.renderer.quality : (['low', 'medium', 'high', 'ultra'].includes(G.settings?.get?.('quality')) ? G.settings.get('quality') : 'high');
   // desktop „Extrem“ (nur Desktop-App, renderer.js EXTREME_PRESET): Ultra mit weiterer Sicht, Bäumen/Gras weiter draußen
-  const tier = G.renderer?.preset?.extreme && quality === 'ultra' ? { ...BIG_TIERS.ultra, ...BIG_EXTREME } : BIG_TIERS[quality];
+  const extreme = !!(G.renderer?.preset?.extreme && quality === 'ultra');
+  let tier = extreme ? { ...BIG_TIERS.ultra, ...BIG_EXTREME } : BIG_TIERS[quality];
   const debug = !!(G.debug || G.params?.get?.('debug') === '1');
   const lowTex = quality === 'low';
   const maxAniso = renderer?.capabilities?.getMaxAnisotropy?.() || 4;
@@ -151,9 +205,18 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   beginTextureEpoch();
 
   const { default: def0 } = await BIG_MAPS[id]();
+  if (meta.appOnly) keepAppFiles(id);
   // atmosphere-weather: Wetter/Tageszeit → abgeleitete Definition (Standard = def0)
   const conditions = resolveConditions(meta, { weather, time });
   const def = applyConditions(def0, conditions, id);
+  // riesen (20.11.): Riesenkarte (def.giant) – Sichtweite/Fernkulisse/Budgets je Stufe aus der Kartenbeschreibung; in der
+  // Android-App (Handy, Tablet, Quest als 2D-App) zusätzlich gedeckelt (Speicher-Budget je Plattform)
+  if (def.giant) {
+    const gt = def.giant.tiers?.[quality] || {};
+    tier = { ...tier, ...gt };
+    if (extreme) for (const k of ['view', 'far', 'treeFar', 'siteCull', 'mapPx']) tier[k] = Math.max(tier[k] ?? 0, BIG_EXTREME[k] ?? 0, gt[k] ?? 0);
+    if (appClient().kind === 'android-app' && def.giant.android) for (const [k, v] of Object.entries(def.giant.android)) tier[k] = Math.min(tier[k] ?? v, v);
+  }
   const runner = createRunner();
   const ms = {};
   // 1) Gelände im Worker (parallel zu den Ortschaften)
@@ -223,12 +286,13 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const tLib = performance.now();
   const tmat = await createTerrainMaterial({ hf, quality, lib, libOk, getMaterial, maxTex: renderer?.capabilities?.maxTextures, tier: lib.stats?.tier?.texture, look: def.terrainLook || null });
   ms.terrainLib = Math.round(performance.now() - tLib);
-  const chunks = new TerrainChunks(hf, tmat.material, { steps: tier.steps, dists: tier.dists, chunk: 128 });
+  // riesen: auf Riesenkarten feine Kachel-Stufen in der Ferne wieder freigeben (Speicher bleibt beim Flug über die Karte begrenzt)
+  const chunks = new TerrainChunks(hf, tmat.material, { steps: tier.steps, dists: tier.dists, chunk: 128, evict: !!def.giant });
   await chunks.build((p) => progress(0.55 + p * 0.05, 'Gelände-Kacheln'));
   const firstSpawn = def.spawns?.A?.[0] || [0, 0];
   chunks.prewarm(firstSpawn[0], firstSpawn[1], 200);
   group.add(chunks.group);
-  const farRing = createFarRing(hf, makeCoarse(def.terrain), tmat.material, { radius: tier.far, step: quality === 'low' ? 32 : 20 });
+  const farRing = createFarRing(hf, makeCoarse(def.terrain), tmat.material, { radius: tier.far, step: quality === 'low' ? 32 : def.giant ? 24 : 20 });
   group.add(farRing);
   // 26.10. (K0): Wasser nur in 4-m-Zellen, in denen das Gelände unter den Wasserspiegel reicht (water.js)
   const wetCell = (x0, z0, x1, z1) => {
@@ -472,8 +536,20 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
   const sitesVis = sites.map(s => {
     const r = s.def.bounds;
-    return { group: s.built.group, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, rad: Math.hypot(r.maxX - r.minX, r.maxZ - r.minZ) / 2 + 20, props: s.built.props, objects: s.b.objects, res: s.res };
+    return { group: s.built.group, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, rad: Math.hypot(r.maxX - r.minX, r.maxZ - r.minZ) / 2 + 20, props: s.built.props, objects: s.b.objects, res: s.res, imp: null };
   });
+  // riesen: Fernkulisse – je Ortschaft ein Klötzchen-Modell der Gebäude (ein Draw Call), sichtbar, sobald die volle
+  // Ortschaft jenseits siteCull ausgeblendet ist (statt Leere am Horizont der Riesenkarte)
+  if (def.giant) {
+    for (let k = 0; k < sites.length; k++) {
+      const imp = siteImpostor(sites[k].b.footprints, sites[k].def.y ?? 0);
+      if (!imp) continue;
+      imp.name = 'fernkulisse:' + sites[k].def.id;
+      imp.visible = false;
+      group.add(imp);
+      sitesVis[k].imp = imp;
+    }
+  }
   const found = new Set();
   const nOut = { x: 0, y: 1, z: 0 };
   const prevFar = G.camera?.far;
@@ -507,6 +583,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       meshes: sites.reduce((n, s) => n + s.built.stats.meshes, 0), triangles: sites.reduce((n, s) => n + s.built.stats.triangles, 0),
       sites: sites.map(s => ({ id: s.def.id, meshes: s.built.stats.meshes, triangles: s.built.stats.triangles })),
       assets: lib.stats,
+      giant: def.giant ? { view: tier.view, far: tier.far, siteCull: tier.siteCull, treeFar: tier.treeFar, platform: appClient().kind || 'web' } : null,
     },
     debugData: { colliderBVH: colBVH, bulletBVH: bulBVH, compositeCollider: compCol, compositeBullet: compBul, heightfield: hf, footprints, navPoints: sites.flatMap(s => s.b.navPoints), zones: [] },
 
@@ -617,7 +694,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       }
       for (const s of sitesVis) {
         const vis = Math.hypot(camera.position.x - s.x, camera.position.z - s.z) - s.rad < tier.siteCull;
-        if (s.group.visible !== vis) s.group.visible = vis;
+        if (s.group.visible !== vis) { s.group.visible = vis; if (s.imp) s.imp.visible = !vis; }
         if (!vis) continue;
         s.props?.update(camera);
         for (const ob of s.objects) ob.update?.(dt, camera);
@@ -652,6 +729,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
         s.res.dispose?.();
       }
       chunks.dispose(); farRing.geometry.dispose(); tmat.dispose();
+      for (const s of sitesVis) if (s.imp) { s.imp.geometry.dispose(); s.imp.material.dispose(); }
       veg.dispose(); dead?.dispose(); litter?.dispose(); water.dispose();
       group.traverse(o => { if (o.name === 'roads-asphalt') { o.geometry.dispose(); o.material.dispose(); } });
       atmos?.dispose();
