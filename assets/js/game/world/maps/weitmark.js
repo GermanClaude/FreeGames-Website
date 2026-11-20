@@ -38,7 +38,7 @@ function hqLayout(side) {
     helis: [[x + 18 * s, z - 22], [x + 18 * s, z + 4]],
     tanks: [[x - 22 * s, z + 34], [x - 13 * s, z + 34]],
     jeeps: [[x - 2 * s, z + 34], [x + 6 * s, z + 34], [x + 14 * s, z + 34]],
-    roles: [[x - 24 * s, z + 46, 'apc'], [x - 12 * s, z + 46, 'apc2'], [x, z + 46, 'truck'], [x + 12 * s, z + 46, 'light']],
+    roles: [[x - 24 * s, z + 46, 'apc'], [x - 10 * s, z + 46, 'truck'], [x + 4 * s, z + 46, 'light'], [x + 18 * s, z + 46, 'heavy']],
     spawns: [[x - 22, z + 20], [x - 14, z + 20], [x - 6, z + 20], [x + 2, z + 20], [x + 10, z + 20], [x - 18, z + 25], [x - 2, z + 25], [x + 6, z + 25]].map(([px, pz]) => [px, pz, s > 0 ? -Q : Q]),
   };
 }
@@ -420,17 +420,23 @@ function gefechtsstand(b, side) {
 // ---------------------------------------------------------------------------
 const veh = (side, L) => {
   const t = side, yawIn = side === 'A' ? -Q : Q;
+  const R = Object.fromEntries(L.roles.map(([x, z, kind]) => [kind, { x, z }]));
+  // weit2: Reihenfolge je Team = Vorrang unter der Fahrzeug-Obergrenze (low 3, medium 5, high 8 je Team, wie grenzland.js):
+  // Kampfpanzer, Geländewagen, Schützenfahrzeug, Lkw, leichter Panzer, Hubschrauber, Jet, schwerer Panzer, Rest.
+  // Rollen-Stellplätze (apc/truck/light/heavy) → Typ je Panzergeneration (vehicles/data-troop.js), auf freien Boden gerückt.
   return [
-    { id: t + '-jet', team: t, kind: 'jet', x: side === 'A' ? RUNWAY.x0 + 25 : RUNWAY.x1 - 25, z: side === 'A' ? RUNWAY.z - 7 : RUNWAY.z + 7, yaw: yawIn },
-    { id: t + '-heli-1', team: t, kind: 'heli', x: L.helis[0][0], z: L.helis[0][1], yaw: yawIn },
     { id: t + '-panzer-1', team: t, kind: 'tank', x: L.tanks[0][0], z: L.tanks[0][1], yaw: PI },
     { id: t + '-jeep-1', team: t, kind: 'jeep', x: L.jeeps[0][0], z: L.jeeps[0][1], yaw: PI },
+    { id: t + '-apc-1', team: t, kind: 'apc', x: R.apc.x, z: R.apc.z, yaw: PI },
+    { id: t + '-truck-1', team: t, kind: 'truck', x: R.truck.x, z: R.truck.z, yaw: PI },
+    { id: t + '-light-1', team: t, kind: 'light', x: R.light.x, z: R.light.z, yaw: PI },
+    { id: t + '-heli-1', team: t, kind: 'heli', x: L.helis[0][0], z: L.helis[0][1], yaw: yawIn },
+    { id: t + '-jet', team: t, kind: 'jet', x: side === 'A' ? RUNWAY.x0 + 25 : RUNWAY.x1 - 25, z: side === 'A' ? RUNWAY.z - 7 : RUNWAY.z + 7, yaw: yawIn },
+    { id: t + '-heavy-1', team: t, kind: 'heavy', x: R.heavy.x, z: R.heavy.z, yaw: PI },
+    { id: t + '-jeep-2', team: t, kind: 'jeep', x: L.jeeps[1][0], z: L.jeeps[1][1], yaw: PI },
     { id: t + '-heli-2', team: t, kind: 'heli', x: L.helis[1][0], z: L.helis[1][1], yaw: yawIn },
     { id: t + '-panzer-2', team: t, kind: 'tank', x: L.tanks[1][0], z: L.tanks[1][1], yaw: PI },
-    { id: t + '-jeep-2', team: t, kind: 'jeep', x: L.jeeps[1][0], z: L.jeeps[1][1], yaw: PI },
     { id: t + '-jeep-3', team: t, kind: 'jeep', x: L.jeeps[2][0], z: L.jeeps[2][1], yaw: PI },
-    // weit2: Rollen-Stellplätze (vehicles/data-troop.js ROLE_TYPES: Typ je Panzergeneration) – Transporter, leichter Panzer
-    ...L.roles.map(([x, z, kind], i) => ({ id: `${t}-${kind}-${i + 1}`, team: t, kind, x, z, yaw: PI })),
   ];
 };
 
