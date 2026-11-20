@@ -143,6 +143,7 @@ export class Menus {
       if (act === 'start') this._start(b);
       else if (act === 'net-host') this.net.createRoom({}, b);
       else if (act === 'camp-start') this.lobby.campaign.start(); // Kampagne (campaign/menu.js)
+      else if (act === 'pz-start') this.lobby.panzer.start(b); // Panzer-Reiter (ui/panzer-pane.js)
       else if (act === 'settings') this.showSettings('lobby');
       else if (act === 'profile') { this.settingsPanel.group = 'profil'; this.showSettings('lobby'); }
       else if (act === 'controls') this.showControls('lobby');
