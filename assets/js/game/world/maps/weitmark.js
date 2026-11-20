@@ -330,6 +330,7 @@ const WEITMARK = {
     ],
     roads: [
       { id: 'landstrasse', name: 'Landstraße', kind: 'asphalt', width: 7, pts: [[-900, -40], [-700, -40], [-560, -30], [-400, -40], [-240, -20], [-150, -20], [-36, -20], [52, -20], [150, -20], [240, -20], [400, 10], [560, 30], [700, 40], [900, 40]], bridge: { a: [BR.stein.x0, -20], b: [BR.stein.x1, -20], y: BRIDGE_Y } },
+      { id: 'piste', name: 'Startbahn 09/27', kind: 'asphalt', width: RUNWAY.w, shoulder: 5, pts: [[RUNWAY.x0, RUNWAY.z], [(RUNWAY.x0 + RUNWAY.x1) / 2, RUNWAY.z], [RUNWAY.x1, RUNWAY.z]] },
       { id: 'suedstrasse', name: 'Südstraße', kind: 'asphalt', width: 6, pts: [[-236, 130], [-140, 130], [-36, 130], [52, 130], [120, 130], [236, 130]], bridge: { a: [BR.sued.x0, 130], b: [BR.sued.x1, 130], y: BRIDGE_Y } },
       { id: 'kirchgasse', name: 'Kirchgasse', kind: 'asphalt', width: 6, pts: [[-140, -160], [-140, -20], [-140, 60], [-140, 160]] },
       { id: 'uferstrasse', name: 'Uferstraße', kind: 'gravel', width: 5, pts: [[-50, -160], [-50, -20], [-50, 130], [-50, 160]] },
