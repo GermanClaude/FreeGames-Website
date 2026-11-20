@@ -150,6 +150,7 @@ export class SimGun {
       this.sim.forceJam = false;
       s.jam = s.box && s.mag && s.mag.n > 0 && Math.random() < 0.35 ? 'doppel' : 'huelse';
       this.sim.event('ladehemmung', { s });
+      try { const A = this.G.audio; if (A && typeof A.simAction === 'function') A.simAction('jam', { actor: ctrl.actor, weaponId: def.id }); } catch { /* */ }
     }
     this._sync(st, s);
     if (s.box && s.chamber === 0 && !s.jam) this.sim.event('leer', { s });
@@ -240,6 +241,8 @@ export class SimGun {
     const dur = jam ? 2.3 + (s.jam === 'doppel' ? 0.9 : 0) : (st.def.cls === 'pistol' ? 0.95 : st.def.cls === 'sniper' ? 1.0 : st.def.cls === 'lmg' ? 1.25 : 1.1);
     this.act = { kind: jam ? 'clear' : 'charge', t: 0, dur, at: jam ? 0.78 : 0.56, st, applied: false };
     if (vm && typeof vm.playSim === 'function') vm.playSim(jam ? 'clear' : 'charge', dur);
+    // Klang (audio 20.11.): Durchladen bzw. Hemmung beheben (Magazin anschlagen – repetieren – Hülse fällt)
+    try { const A = this.G.audio; if (A && typeof A.simAction === 'function') A.simAction(jam ? 'clear' : 'charge', { actor: ctrl.actor, weaponId: st.def.id, dur, jam: s.jam }); } catch { /* */ }
     if (ctrl.ads && this.G.input && this.G.input.cancelAds) this.G.input.cancelAds();
     return true;
   }
@@ -279,7 +282,7 @@ export class SimGun {
     const A = this.act;
     if (A) {
       // Waffenwechsel/Tod bricht den Handgriff ab
-      if (A.st !== st || !ctrl.actor.alive) { this.act = null; if (ctrl.viewModel && !A.inspect) ctrl.viewModel.cancelAction(); return; }
+      if (A.st !== st || !ctrl.actor.alive) { this.act = null; if (ctrl.viewModel && !A.inspect) ctrl.viewModel.cancelAction(); try { this.G.audio?.cancelSim?.(ctrl.actor); } catch { /* */ } return; }
       // Prüfen abgebrochen (Schuss, Zielen, Sprint brechen das Inspizieren im Controller ab)
       if (A.inspect && ctrl.viewModel && ctrl.viewModel.actionName !== 'inspect' && A.t > 0.1) { this.act = null; return; }
       A.t += dt;

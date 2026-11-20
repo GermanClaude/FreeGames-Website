@@ -9,7 +9,7 @@
 // er: Anteil an den frühen Reflexionen (reflect.js) · loud: Nennpegel (dB, 0 ≈ eigener Schuss) für das HDR-Fenster
 // (laute Klänge dämpfen leise) · quiet: wird vom HDR-Fenster gedämpft
 // REC_ONLY: nur als Aufnahme vorhandene Klänge (assets/lib/audio, samples.js) mit denselben Mischfeldern, ohne Rezept.
-import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop } from './sfx-weapons.js?v=20261115041504';
+import { GUN_PROFILES, gunNear, gunFar, HANDLING, explosionNear, explosionFar, bulletWhiz, bulletCrack, gunFP, gunSub, boomSub, debrisFall, flashBang, smokeHiss, ricochet, shellDrop, cannonNear, cannonFar, cannonIn, blastFront } from './sfx-weapons.js?v=20261115041504';
 import { SURFACES, footstep, gearRattle, jump, land, slide, impact, hitFlesh, hitHelmet, pain, death, heartbeat, breathIn, breathOut, rustle } from './sfx-foley.js?v=20261115041504';
 import { UI_RECIPES, FEEDBACK } from './sfx-ui.js?v=20261115041504';
 import { AMB_EVENTS, AMBIENCES, ambienceBed, BED_RATE, EVENT_RATE } from './ambience.js?v=20261115041504';
@@ -68,6 +68,12 @@ def('explosion_far', explosionFar, { variants: 2, ref: 14, roll: 1, maxDist: 120
 def('gun_sub', gunSub, { variants: 3, variantsLow: 2, gain: 0.6, ref: 9, roll: 1, maxDist: 400, group: 'gunsub', cap: 8, prio: 2, env: 0, pitchJit: 0.05, gainJit: 0.08, tier: 1, rate: 16000, rateLow: 16000 });
 def('boom_sub', boomSub, { variants: 2, variantsLow: 1, gain: 0.5, ref: 14, roll: 1, maxDist: 300, group: 'boom', cap: 4, prio: 2, env: 0, pitchJit: 0.06, tier: 1, rate: 16000, rateLow: 16000 });
 def('debris', debrisFall, { variants: 2, variantsLow: 1, gain: 0.5, ref: 6, roll: 1.2, maxDist: 60, group: 'impact', cap: 12, prio: 1, env: 0.2, pitchJit: 0.06, tier: 2, rate: 32000, rateLow: 24000, quiet: true });
+// Druckfront unter der Explosions-Aufnahme (deren Einsatz ist weich, gemessen 60–140 ms) – nur nah
+def('blast_front', blastFront, { variants: 3, variantsLow: 2, gain: 0.7, ref: 14, roll: 1, maxDist: 160, group: 'boomfront', cap: 4, prio: 2, env: 0.2, pitchJit: 0.06, tier: 1, rate: 44100, rateLow: 32000, er: 1 });
+// Kanonen (Fahrzeuge, 20.11.): außen nah/fern, im Turm – nur bei Bedarf (VehicleAudio fordert sie an), sonst Explosion als Ersatz
+def('cannon_near', cannonNear, { variants: 2, variantsLow: 1, gain: 1, ref: 18, roll: 1, maxDist: 900, group: 'cannon', cap: 6, prio: 3, env: 0.45, pitchJit: 0.04, tier: 4, rate: 44100, rateLow: 32000, alt: ['explosion'], er: 1, loud: 8 });
+def('cannon_far', cannonFar, { variants: 2, variantsLow: 1, gain: 1, ref: 18, roll: 1, maxDist: 3000, group: 'cannon', cap: 6, prio: 2, env: 0.6, pitchJit: 0.05, tier: 4, rate: 16000, rateLow: 16000, alt: ['explosion_far'], er: 0.3, loud: 2 });
+def('cannon_in', cannonIn, { variants: 2, variantsLow: 1, gain: 1, ref: 3, maxDist: 30, group: 'cannon', cap: 6, prio: 3, env: 0, pitchJit: 0.03, tier: 4, rate: 32000, rateLow: 24000, alt: ['explosion'], loud: 4 });
 // Taktische Granaten (Plan §11.2): Blendgranate, Rauchgranate (Zischen, Schleife)
 def('flashbang', flashBang, { variants: 2, variantsLow: 1, gain: 1, ref: 10, roll: 1, maxDist: 600, group: 'boom', cap: 4, prio: 3, env: 0.75, pitchJit: 0.04, tier: 2, rate: 32000, rateLow: 24000, er: 1, loud: 5 });
 def('smoke_hiss', smokeHiss, { gain: 0.55, ref: 3, roll: 1.1, maxDist: 40, group: 'loop', cap: 6, prio: 1, env: 0.2, pitchJit: 0.05, tier: 4, rate: 22050, rateLow: 22050, quiet: true });
@@ -179,7 +185,7 @@ export const SOUND_GROUPS = {
   Waffen: Object.keys(GUN_PROFILES),
   'Ich-Perspektive': Object.keys(GUN_PROFILES).map(p => `gunfp_${p}`),
   Handling: ['dryfire', 'reload_mag_out', 'reload_mag_in', 'reload_bolt', 'reload_shell', 'pump', 'bolt', 'equip', 'ads_in', 'ads_out', 'melee_swing', 'melee_hit', 'grenade_pin', 'grenade_throw', 'grenade_bounce', 'grenade_stick', 'low_ammo'],
-  Explosion: ['explosion', 'explosion_far', 'boom_sub', 'debris', 'flashbang', 'smoke_hiss'],
+  Explosion: ['explosion', 'explosion_far', 'blast_front', 'boom_sub', 'debris', 'flashbang', 'smoke_hiss', 'cannon_near', 'cannon_far', 'cannon_in'],
   Geschosse: ['bullet_whiz', 'bullet_crack', 'ricochet', 'shell_tink'],
   Schritte: SURFACES.map(s => `step_${s}`).concat(['gear', 'rustle', 'jump', 'land', 'slide']),
   Einschläge: SURFACES.map(s => `impact_${s}`),

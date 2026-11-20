@@ -11,6 +11,7 @@ export const DEFAULTS = Object.freeze({
   playerName: 'Operator', sensitivity: 1.0, adsSensitivity: 0.85, touchSensitivity: 1.0,
   invertY: false, fov: 80, quality: 'auto' /* auto|low|medium|high|ultra */,
   masterVolume: 0.8, sfxVolume: 1.0, musicVolume: 0.5, uiVolume: 0.7,
+  ambienceVolume: 1.0, vehicleVolume: 1.0, tinnitus: true, // Klang 20.11. (audio): Umgebung, Fahrzeuge, Ohrenklingeln
   crosshairStyle: 'cross' /* cross|dot|circle */, crosshairColor: '#ffffff', reticleSize: 1.0,
   showFps: false, aimAssist: true /* nur Touch */, autoFire: false /* Touch: „einfacher Modus“ */,
   difficulty: 'regulaer', lastMode: 'tdm', lastMap: 'hafen', lastLoadout: null, reducedMotion: false,
@@ -89,8 +90,11 @@ export const SETTINGS_SCHEMA = Object.freeze({
   },
   masterVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Gesamtlautstärke', group: 'audio' },
   sfxVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Effekte', group: 'audio' },
-  musicVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Musik & Atmosphäre', group: 'audio' },
+  musicVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Musik', group: 'audio' },
   uiVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Oberfläche', group: 'audio' },
+  ambienceVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Umgebung (Wind, Vögel, Stadt)', group: 'audio' },
+  vehicleVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Fahrzeuge (Motoren, Ketten, Rotoren)', group: 'audio' },
+  tinnitus: { type: 'boolean', label: 'Ohrenklingeln nach Explosionen und Knalltrauma', group: 'audio' },
   crosshairStyle: {
     type: 'enum', label: 'Fadenkreuz', group: 'hud',
     options: ['cross', 'dot', 'circle'], labels: { cross: 'Kreuz', dot: 'Punkt', circle: 'Kreis' },

@@ -29,10 +29,10 @@ const CROWD = [
   { route: [[-6, -12], [2, -14], [-4, -20]], variant: 'zivil' },
   { route: [[8, -12], [12, -18], [6, -22]], variant: 'zivil-strick' },
   { route: [[0, -22], [-6, -20], [2, -16]], variant: 'zivil-hemd' },
-  { route: [[10, -22], [6, -16], [12, -12]], variant: 'zivil' },
-  { route: [[-2, -11], [4, -12], [8, -11]], variant: 'zivil-strick' },
+  { route: [[10, -22], [6, -16], [12, -12]], variant: 'zivil-pullover' }, // 20.11.: mehr Kleidungsvielfalt (keine Warnweste,
+  { route: [[-2, -11], [4, -12], [8, -11]], variant: 'zivilistin-mantel' }, // keine dunkle Jacke mit hellem Hemd – Späher bleiben eindeutig)
   { route: [[-6, -23], [0, -20], [6, -23]], variant: 'zivil-hemd' },
-  { route: [[12, -20], [10, -14]], variant: 'zivil-strick' },
+  { route: [[12, -20], [10, -14]], variant: 'zivilistin-pullover' },
   { route: [[-4, -16], [-6, -13]], variant: 'zivil' },
 ];
 /** Die drei Späher (Beschreibung per Funk; Aussehen eindeutig: Warnweste bzw. dunkle Jacke mit hellem Hemd). */

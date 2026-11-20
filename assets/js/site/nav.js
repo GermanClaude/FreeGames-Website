@@ -8,8 +8,8 @@ import { jumpTo } from './jump.js?v=20261115041504';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-const SECTIONS = ['einsatz', 'modi', 'karten', 'arsenal', 'profil', 'einstellungen', 'steuerung', 'app', 'ueber'];
-const NAMES = { nullpunkt: 'Nullpunkt', einsatz: 'Einsatz', modi: 'Modi', karten: 'Karten', arsenal: 'Arsenal', profil: 'Profil', einstellungen: 'Einstellungen', steuerung: 'Steuerung', app: 'App', ueber: 'Über' };
+const SECTIONS = ['einsatz', 'neu', 'kampagne', 'simulation', 'modi', 'karten', 'arsenal', 'profil', 'einstellungen', 'steuerung', 'app', 'fragen', 'ueber'];
+const NAMES = { nullpunkt: 'Nullpunkt', einsatz: 'Einsatz', neu: 'Neu', kampagne: 'Kampagne', simulation: 'Simulation', modi: 'Modi', karten: 'Karten', arsenal: 'Arsenal', profil: 'Profil', einstellungen: 'Einstellungen', steuerung: 'Steuerung', app: 'App', fragen: 'Fragen', ueber: 'Über' };
 
 let scrollLoop = false;
 let lastScrollY = window.scrollY;

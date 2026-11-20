@@ -22,7 +22,7 @@ const _c = new THREE.Color();
 const TAU = Math.PI * 2;
 
 /** Palettenplätze (Schemafarben im Material, Index 0 = Vertexfarbe direkt). */
-export const PALETTE = ['', 'gear', 'gear2', 'strap', 'helmet', 'glove', 'boot', 'metal', 'accent'];
+export const PALETTE = ['', 'gear', 'gear2', 'strap', 'helmet', 'glove', 'boot', 'metal', 'accent', 'skin']; // skin: Hautton je Soldat (20.11.)
 export const PAL = Object.fromEntries(PALETTE.map((n, i) => [n, i]));
 /** Materialklassen (Detailtextur-Maßstab, Normalenstärke, Kavität, Rauheit – siehe materials.js CLASS_PARAMS). */
 export const CLASSES = ['cloth', 'gear', 'skin', 'hard', 'leather', 'glass'];
@@ -221,7 +221,8 @@ export class SkinBuilder {
   /**
    * Teil hinzufügen. o: { bone, color (Hex, direkt) | pal (Palettenplatz) + shade (sRGB-Faktor, Standard 1),
    *   camo = 0, detail = 0, emis = 0, shine = 0, cls ('cloth'|'gear'|'skin'|'hard'|'leather'|'glass'), wear = 0,
-   *   mirrorBone, tail } – mirrorBone: zusätzlich an x gespiegelt an diesen Knochen; tail: Dreiecke ans Ende (siehe addMesh).
+   *   mirrorBone, tail, noBulk } – mirrorBone: zusätzlich an x gespiegelt an diesen Knochen; tail: Dreiecke ans Ende (siehe addMesh);
+   *   noBulk: keine Querskalierung (Teil ist am Körpernetz body-mesh.js in Endmaßen gemessen).
    */
   add(geo, o) {
     if (!geo) return;
@@ -242,14 +243,14 @@ export class SkinBuilder {
     const np = [o.camo || 0, o.detail ?? (o.camo ? 1 : 0), o.emis || 0, o.shine || 0];
     const seed = hash01(this.parts.length * 7 + bone * 131 + 17);
     const nq = [pal, cls, Math.round(Math.min(1, Math.max(0, o.wear || 0)) * 255), Math.floor(seed * 255)];
-    this.parts.push({ geo, bone, r, g, b, np, nq, seed, tail: !!o.tail });
+    this.parts.push({ geo, bone, r, g, b, np, nq, seed, tail: !!o.tail, noBulk: !!o.noBulk });
     if (o.mirrorBone) {
       const m = geo.clone();
       m.userData = { ...geo.userData, npUv: geo.userData.npUv ? [...geo.userData.npUv] : undefined };
       m.scale(-1, 1, 1);
       flipWinding(m);
       const mb = BONE[o.mirrorBone];
-      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3), tail: !!o.tail });
+      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3), tail: !!o.tail, noBulk: !!o.noBulk });
     }
   }
 
@@ -328,7 +329,7 @@ export class SkinBuilder {
       const n = g.attributes.position.count;
       const cr = u8(p.r), cg = u8(p.g), cb = u8(p.b);
       const n0 = u8(p.np[0]), n1 = u8(p.np[1]), n2 = u8(p.np[2]), n3 = u8(p.np[3]);
-      const bk = this.bulk ? this.bulk[p.bone] : null;
+      const bk = this.bulk && !p.noBulk ? this.bulk[p.bone] : null; // noBulk: Teil schon in Endmaßen (am Körpernetz gemessen)
       if (p.tail) tailV.fill(1, vo, vo + n);
       for (let i = 0; i < n; i++) {
         let x = P[i * 3], z = P[i * 3 + 2];

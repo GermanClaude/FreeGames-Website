@@ -88,6 +88,9 @@ export class Lobby {
       mass: S.get('lastMass') === 'an', // masse: Massenschlacht (Großkarten, Teammodi)
     };
     if (prm) {
+      // Startseite (§03 Kampagne): spielen.html?tab=kampagne bzw. ?tab=eisenwind öffnet die Lobby im Reiter Kampagne
+      const tb = prm.get('tab');
+      if (tb === 'kampagne' || tb === 'eisenwind') { this.tab = 'kampagne'; if (tb === 'eisenwind' && this.campaign) this.campaign.which = 'panzer'; }
       if (d.MODES[prm.get('mode')]) base.modeId = prm.get('mode');
       if (d.MAPS[prm.get('map')]) base.mapId = prm.get('map');
       if (DIFF_ORDER.includes(prm.get('diff'))) base.difficulty = prm.get('diff');

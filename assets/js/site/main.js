@@ -83,6 +83,9 @@ const fontsP = (document.fonts?.ready || Promise.resolve()).then(() => {
 setTimeout(() => { if (!fontsDone) { fontsReady(); fitAll(document, { now: true }); } }, 3000);
 
 const VIEWS = {
+  news: () => import('./news-view.js?v=20261115041504'), // §02 Neu (20.11.)
+  campaign: () => import('./campaign-view.js?v=20261115041504'), // §03 Kampagne
+  sim: () => import('./sim-view.js?v=20261115041504'), // §04 Simulation
   modes: () => import('./modes-view.js?v=20261115041504'),
   maps: () => import('./maps-view.js?v=20261115041504'),
   arsenal: () => import('./arsenal-view.js?v=20261115041504'),
@@ -106,6 +109,9 @@ function heroData(D) {
   }
   // Jede Angabe bleibt zusammen; umbrochen wird nur an den Mittelpunkten.
   const items = [`${modes} MODI`, `${maps} KARTEN`, `${weapons} WAFFEN`, `BIS ZU ${bots} BOTS`];
+  // Zahlen im Fließtext (data-count) aus denselben Daten – neue Waffen, Modi oder Karten zählen von selbst mit
+  const counts = { modes, maps, weapons, bots };
+  for (const el of document.querySelectorAll('[data-count]')) if (counts[el.dataset.count] !== undefined) el.textContent = String(counts[el.dataset.count]);
   line.replaceChildren(...items.flatMap((t, i) => {
     const sp = document.createElement('span');
     sp.className = 'nw';

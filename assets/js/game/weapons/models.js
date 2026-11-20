@@ -50,6 +50,10 @@ import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261115041504';
 import { attKey } from '../../shared/attachments.data.js?v=20261115041504';
 import { funke, erstlicht } from './gunsmith/guns-og.js?v=20261115041504';
 import { ursprung } from './gunsmith/guns-ursprung.js?v=20261115041504';   // UR-1 auf dem M4-Fotomodell (13.11.)
+import { setWeaponLodEnabled } from './lodbake.js?v=20261115041504';   // gebackene Drittpersonen-Stufen (20.11.)
+export { setWeaponLod, prefetchWeaponLods, weaponLodEnabled, disposeWeaponLods } from './lodbake.js?v=20261115041504';
+import { uhu, luchs, dachs, elster } from './gunsmith/guns-neu-a.js?v=20261115041504';   // Waffen-Welle 3 (20.11.)
+import { habicht, kranich, hornisse, lindwurm, stier } from './gunsmith/guns-neu-b.js?v=20261115041504';   // Waffen-Welle 3 (20.11.)
 
 const BUILDERS = {
   zwilling, // neue Waffe (26.10.): ZW-12 Zwilling
@@ -60,12 +64,14 @@ const BUILDERS = {
   ursprung, funke, erstlicht, // Waffen der ersten Stunde (guns-og.js)
   p9a, wirbel, // neue Waffen (26.10.)
   orkan, // RG-6 Orkan (13.11.)
+  uhu, luchs, dachs, elster, habicht, kranich, hornisse, lindwurm, stier, // Waffen-Welle 3 (20.11.)
 };
 
 export const MODEL_KEYS = Object.keys(BUILDERS);
 export const GUN_KEYS = ['kv47', 'm17', 'vp9', 'qx90', 'hm60', 'sk14', 'brecher', 'bulldog', 'p9', 'adler',
   'k36', 'bx20', 'g7', 'wespe', 'keiler', 'lm8', 'titan', 'hagel', 'kobra', 'donner', 'hammer', 'trommel', 'ursprung', 'funke',
-  'zwilling', 'p9a', 'wirbel', 'orkan'];   // neue Waffen (26.10.), RG-6 Orkan (13.11.)
+  'zwilling', 'p9a', 'wirbel', 'orkan',   // neue Waffen (26.10.), RG-6 Orkan (13.11.)
+  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier'];   // Waffen-Welle 3 (20.11.)
 export const MELEE_KEYS = ['knife', 'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten', 'erstlicht'];
 export const THROWABLE_KEYS = ['frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke', 'trophy'];
 export { applyCamo };
@@ -93,6 +99,7 @@ export function setWeaponDetail(quality) {
   const was = weaponDetailTier();
   setDetail(quality);
   setKitTier(weaponDetailTier());   // Oberflächen-Baukasten: Kartengröße nach Stufe (finish-kit.js)
+  setWeaponLodEnabled(quality === 'medium' || quality === 'high' || quality === 'ultra');   // Bot-Waffen nah/mitte (lodbake.js; nicht Handy/niedrig)
   return weaponDetailTier() !== was;
 }
 

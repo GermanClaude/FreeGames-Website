@@ -12,6 +12,8 @@
 // Anker und Teile wie bei den Vorgängern (Pump, Ladehebel, Magazin, Patrone) – Hände/Animationen bleiben.
 import { ejectionPort, engrave, triggerGuard, roundRect, qdCup } from './parts.js?v=20261115041504';
 import { magRounds } from './magfill.js?v=20261115041504';
+import { slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261115041504';   // Hagel überarbeitet (20.11.)
+import { pistolGrip } from './neu-kit.js?v=20261115041504';
 import { schrift } from './schrift.js?v=20261115041504';   // Gravuren (14.11., gfx-waffen)
 const MARK_BULLDOG = schrift('bulldog').mark;
 const MARK_HAGEL = schrift('hagel').mark;
@@ -142,9 +144,16 @@ export function hagel(b) {
   MARK_HAGEL(b, 'HAGEL  12/76', -(0.0215 + 0.0002), 0.056, 0.03, 0.0035);
   const axis = 0.07;
   // Gestanztes Gehäuse (AK-Bauart): Seitenwand mit Magazinschacht-Ausbuchtung, Nietbild, Versteifungsmulde
-  b.front('steel', roundRect(-0.0215, 0.028, 0.0215, 0.084, 0.004, b.hi ? 2 : 1), 0.31, -0.095, { bevel: 0.0015 });
+  // 20.11. (Waffen-Welle 3, Schwachstellen): Gehäuse, Deckel, Handschutz, Griff, Schaft und Magazin als Distanzfeld-Bauteile mit
+  // gerundeten Kanten, Prägemulden und Kühlschlitzen statt gefaster Kisten (Ego-Fassung 5 300 → ≈ 60 000 Dreiecke in „std“)
+  slab(b, [[-0.095, 0.028], [0.215, 0.028], [0.215, 0.084], [-0.095, 0.084]], 0.0215, 0.0022, 'steel', { id: 'hgRec', cav: STEEL, cut: (x, v, u, d) => {
+    d = Math.min(d, Math.max(Math.abs(x) - 0.0222, Math.abs(v - 0.044) - 0.008, Math.abs(u - 0.125) - 0.045, -u + 0.08));   // Schacht-Ausbuchtung
+    d = pocket(d, x, rrect(u, v, 0.12, 0.072, 0.036, 0.0035, 0.0035), 0.0205);                  // Versteifungsmulde
+    d = Math.max(d, -(Math.hypot(Math.abs(x) - 0.0215, v - 0.0335) - 0.0007));                  // Bodenblech-Fuge
+    return d;
+  } });
   // Gehäusedeckel: oben gerundet, Querrippen hinten
-  b.front('steel', roundRect(-0.0205, 0.078, 0.0205, 0.095, 0.009, b.hi ? 4 : 1), 0.26, -0.09, { bevel: 0.001 });
+  slab(b, [[-0.09, 0.078], [0.17, 0.078], [0.17, 0.088], [0.16, 0.095], [-0.09, 0.095]], (u, v) => 0.0205 - Math.max(0, v - 0.087) * 0.9, 0.006, 'steel', { hwMax: 0.0205, id: 'hgCover', cav: STEEL });
   if (b.hi) {
     for (let i = 0; i < 4; i++) b.box('steel', 0.042, 0.0016, 0.004, 0, 0.0952, -0.07 + i * 0.008, { c: 0 });
     b.box('steelDark', 0.012, 0.006, 0.012, 0, 0.09, -0.098, { c: 0.001 });                                // Deckelknopf
@@ -176,11 +185,16 @@ export function hagel(b) {
   b.side('steelDark', [[0.43, axis - 0.014], [0.47, axis - 0.014], [0.47, axis + 0.04], [0.455, axis + 0.044], [0.43, axis + 0.042]], 0.026, 0, { bevel: 0.002 });
   if (b.hi) { b.cyl('steel', 0.0072, 0.0072, 0.006, 0.014, axis + 0.026, 0.45, { axis: 'x', seg: 12 }); for (let i = 0; i < 3; i++) b.box('paintWhite', 0.0005, 0.0006, 0.002, 0.0172, axis + 0.033, 0.443 + i * 0.006, { c: 0 }); }
   b.cyl('steel', 0.0095, 0.0095, 0.16, 0, axis + 0.026, 0.355, { seg: b.seg(18, 6) });
-  b.side('polymer', [[0.275, axis + 0.016], [0.43, axis + 0.016], [0.43, axis + 0.038], [0.42, axis + 0.044], [0.285, axis + 0.044], [0.275, axis + 0.038]], 0.034, 0, { bevel: 0.006, bevelSeg: 2 });
-  b.side('polymer', [[0.215, 0.094 - 0.064], [0.43, 0.034], [0.432, 0.06], [0.425, 0.068], [0.22, 0.068], [0.212, 0.06]], 0.05, 0, { bevel: 0.008, bevelSeg: 2 });
+  slab(b, [[0.275, axis + 0.016], [0.43, axis + 0.016], [0.43, axis + 0.038], [0.42, axis + 0.044], [0.285, axis + 0.044], [0.275, axis + 0.038]], 0.017, 0.007, 'polymer', { id: 'hgTop', cav: POLY, cut: (x, v, u, d) => {
+    for (let i = 0; i < 4; i++) d = pocket(d, x, rrect(u, v, 0.3 + i * 0.03, axis + 0.03, 0.01, 0.003, 0.003), 0.012);
+    return d;
+  } });
+  slab(b, [[0.215, 0.03], [0.43, 0.034], [0.432, 0.06], [0.425, 0.068], [0.22, 0.068], [0.212, 0.06]], (u, v) => 0.025 - Math.max(0, 0.04 - v) * 0.25, 0.008, 'polymer', { hwMax: 0.025, id: 'hgLow', cav: POLY, cut: (x, v, u, d) => {
+    for (let i = 0; i < 7; i++) d = pocket(d, x, rrect(u, v, 0.24 + i * 0.026, 0.05, 0.008, 0.006, 0.003), 0.021);
+    for (let i = 0; i < 8; i++) d = Math.max(d, -(Math.abs(u - (0.23 + i * 0.024)) - 0.0012 + Math.max(0, v - 0.036) * 10));   // Griffrillen unten
+    return d;
+  } });
   if (b.hi) {
-    for (let i = 0; i < 7; i++) for (const s of [-1, 1]) b.box('cavity', 0.0012, 0.012, 0.016, s * 0.0248, 0.05, 0.24 + i * 0.026, { c: 0 });
-    for (let i = 0; i < 4; i++) for (const s of [-1, 1]) b.box('cavity', 0.0012, 0.006, 0.02, s * 0.0168, axis + 0.03, 0.3 + i * 0.03, { c: 0 });
     // Handschutzhalter (Blech) vorn und hinten mit Hebel
     b.box('steel', 0.052, 0.04, 0.008, 0, 0.05, 0.212, { c: 0.001 });
     b.box('steel', 0.034, 0.028, 0.008, 0, axis - 0.004, 0.432, { c: 0.001 });
@@ -204,12 +218,11 @@ export function hagel(b) {
   b.part('bolt', 0, 0.066, 0.06);
   b.box('steelBright', 0.004, 0.018, 0.06, 0.018, 0.066, 0.06, { part: 'bolt', c: 0.001 });
   // AK-Griff (Polymer, gerippt), Bügel mit Abzug, Polymer-Schaft mit Schaftkappe und Riemenöse
-  b.side('polymer', [[0.012, 0.03], [0.002, -0.02], [-0.008, -0.07], [-0.012, -0.092], [-0.034, -0.095], [-0.042, -0.086], [-0.036, -0.04], [-0.026, 0.0], [-0.02, 0.03]], 0.03, 0, { bevel: 0.006, bevelSeg: 2 });
-  if (b.hi) for (let i = 0; i < 8; i++) for (const s of [-1, 1]) b.box('cavity', 0.0008, 0.002, 0.026, s * 0.0152, -0.08 + i * 0.012, -0.014, { rx: 0.2, c: 0 });
+  pistolGrip(b, 'grip', { u: -0.004, top: 0.03, h: 0.122, w: 0.038, rake: 0.2, hw: 0.0148, id: 'hgGrip', cap: 'polymer' });
   triggerGuard(b, 'steel', 0.02, 0.078, 0.03, 0.03, { t: 0.0035, w: 0.012, trigPos: 0.3 });
-  b.side('polymer', [
+  slab(b, [
     [-0.09, 0.088], [-0.35, 0.084], [-0.36, 0.08], [-0.36, -0.03], [-0.35, -0.038], [-0.28, -0.026], [-0.18, 0.004], [-0.11, 0.028], [-0.09, 0.032],
-  ], 0.038, 0, { bevel: 0.006, bevelSeg: 2 });
+  ], (u) => (u < -0.2 ? 0.019 : 0.0185), 0.008, 'polymer', { hwMax: 0.019, id: 'hgStock', cav: POLY, cut: (x, v, u, d) => pocket(d, x, rrect(u, v, -0.25, 0.03, 0.07, 0.022, 0.012), 0.016) });
   b.side('rubber', [[-0.36, 0.086], [-0.374, 0.086], [-0.378, 0.078], [-0.378, -0.032], [-0.372, -0.042], [-0.36, -0.04]], 0.042, 0, { bevel: 0.004 });
   if (b.hi) {
     b.box('steel', 0.0398, 0.008, 0.012, 0, 0.088, -0.095, { c: 0.001 });                                // Schaftbefestigung (Blech)
@@ -219,13 +232,12 @@ export function hagel(b) {
   }
   // Kastenmagazin (8 Patronen Kaliber 12, leicht gebogen) mit Rastnase vorn und Bodenplatte
   b.part('mag', 0, 0.02, 0.12);
-  b.side('polymer', [[0.09, 0.038], [0.092, -0.04], [0.1, -0.13], [0.17, -0.142], [0.164, -0.04], [0.156, 0.038]], 0.036, 0, { part: 'mag', bevel: 0.0025 });
+  slab(b, [[0.09, 0.038], [0.092, -0.04], [0.1, -0.13], [0.17, -0.142], [0.164, -0.04], [0.156, 0.038]], 0.018, 0.004, 'polymer', { part: 'mag', cav: POLY, step: 0.0018, cut: (x, v, u, d) => {
+    for (let i = 0; i < 3; i++) d = Math.min(d, Math.max(Math.abs(x) - 0.0188, Math.abs(v - (-0.09 + i * 0.03)) - 0.002, Math.abs(u - 0.13) - 0.026));   // Querrippen
+    return d;
+  } });
   b.box('polymer', 0.04, 0.01, 0.074, 0, -0.14, 0.136, { part: 'mag', rx: -0.17, c: 0.003 });
   if (b.hi) {
-    for (const s of [-1, 1]) {
-      b.box('polymer', 0.002, 0.11, 0.004, s * 0.0182, -0.05, 0.126, { part: 'mag', rx: -0.1, c: 0 });
-      for (let i = 0; i < 3; i++) b.box('polymer', 0.0018, 0.004, 0.05, s * 0.0185, -0.09 + i * 0.03, 0.13, { part: 'mag', rx: -0.12, c: 0 });
-    }
     b.box('polymer', 0.014, 0.008, 0.008, 0, 0.032, 0.16, { part: 'mag', c: 0.001 });                    // Rastnase vorn
   }
   magRounds(b, { cal: 'g12', width: 0.033, depth: 0.066, path: [[0, 0.033, 0.123], [0, -0.04, 0.128], [0, -0.11, 0.132]] });

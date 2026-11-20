@@ -69,6 +69,16 @@ export const WEAPON_SOUND = {
   // Waffen der ersten Stunde: eigener Ton (heller, sauberer Knall bzw. kurzer Kompensator-Bellton)
   ar_ursprung: { cal: '5.56',    voice: 'ar',           pitch: 0.97, tone: [[2400, 3], [260, 2]] },
   pi_funke:    { cal: '9x19',    voice: 'pistol',       pitch: 0.96, tone: [[1500, 3], [4200, 2]], pcal: 0.9 },
+  // Waffen-Welle 3 (20.11.): Klang-Kennungen nach Bauart (Feinabstimmung/Eichung pcal: Sound-Strang)
+  smg_uhu:      { cal: '9x19',    voice: 'smg',          pitch: 1.04, tone: [[900, 2], [4500, -6]], pcal: 0.2 },   // Integralschalldämpfer (def.suppressed dämpft im Audio)
+  ar_luchs:     { cal: '5.56',    voice: 'ar',           pitch: 0.96, tone: [[650, 3.5], [4200, -3]], pcal: -0.6 },          // Bullpup: kastig
+  ar_dachs:     { cal: '7.62x39', voice: 'ar_heavy',     pitch: 1.06, tone: [[2600, 3.5], [160, 2]], db: 1.5, pcal: -0.2 },   // kurzer Lauf: grell, lauter
+  mr_elster:    { cal: '7.62x51', voice: 'dmr',          pitch: 1.0,  tone: [[1900, 2.5], [380, 2]], pcal: 0.1 },
+  sr_habicht:   { cal: '7.62x51', voice: 'sniper',       pitch: 1.0,  tone: [[1600, 2], [420, 2.5]], pcal: -0.9 },
+  sr_kranich:   { cal: '7.62x51', voice: 'springfield',  pitch: 1.03, tone: [600, 2.5], pcal: -0.7 },                    // Weltkriegs-Repetierer
+  smg_hornisse: { cal: '9x19',    voice: 'smg',          pitch: 0.94, tone: [[800, 3], [3000, -2]], pcal: 0.2 },             // langsamer Takt, tiefer
+  lmg_lindwurm: { cal: '7.62x51', voice: 'lmg',          pitch: 1.1,  tone: [[700, 2], [2600, 2]], pcal: 0.9 },             // hohe Kadenz
+  sg_stier:     { cal: '12ga',    voice: 'model12',      pitch: 0.98, tone: [300, 3.5], pcal: -0.9 },
   // Geschütze, Fahrzeug-MGs
   sentry:     { cal: '5.56',    voice: 'ar',           pitch: 1.04, tone: [1000, 2] },
   mbt_coax:   { cal: '7.62x51', voice: 'lmg',          pitch: 1.03, tone: [520, 2], pcal: 0.9 },

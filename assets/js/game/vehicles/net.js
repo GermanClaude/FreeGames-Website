@@ -688,8 +688,7 @@ export class VehicleNet {
         G.effects?.muzzleLight?.(o, 34, 3, 0.09, 20);
         G.effects?.smoke?.(_a.copy(o).addScaledVector(d, 1.2), { count: 7, size: 2.6, life: 2.4, rise: 0.35, alpha: 0.42 });
         const own = !!(v && G.player && G.player.vehicle === v);
-        sys.audio.play('explosion', { position: own ? null : o, volume: own ? 0.8 : 1, pitch: 1.55, priority: 3 });
-        sys.audio.play('boom_sub', { position: own ? null : o, volume: 1, priority: 3 });
+        sys.audio.cannon(v, o, own); // Kanone: außen/innen (audio 20.11.)
         if (v) v.recoil = 1;
         if (own) { G.player.shake?.(def.shake || 0.5); G.input?.rumble?.(0.9, 0.6, 200); }
         G.events.emit('vehicle:fire', { vehicle: v || null, seat: m.s | 0, actor: shooter, weaponId: def.id, origin: o, dir: d, net: true });

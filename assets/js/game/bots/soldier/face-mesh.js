@@ -65,10 +65,10 @@ export function rng(seed) {
 /**
  * Profil normalisieren: { age (Jahre), african, asian (0…1, Rest mitteleuropäisch), weight (−1 hager … 1 schwer), muscle (0…1),
  * jaw, chin, nose, noseW, brow, cheek, lips, mouthW, skull, eyes, neck, bags, laugh, fat, prog, angles, cleft (−1…1), asym (0…1),
- * seed }
+ * female (0…1, Form-Ziel 'female' = MakeHuman weiblich), seed }
  */
 export function normProfile(p = {}) {
-  const o = { age: 30, african: 0, asian: 0, weight: 0, muscle: 0.3, jaw: 0, chin: 0, nose: 0, noseW: 0, brow: 0, cheek: 0, lips: 0, mouthW: 0, skull: 0, eyes: 0, neck: 0, bags: 0, laugh: 0, fat: 0, prog: 0, angles: 0, cleft: 0, asym: 0.5, seed: 1 };
+  const o = { age: 30, african: 0, asian: 0, female: 0, weight: 0, muscle: 0.3, jaw: 0, chin: 0, nose: 0, noseW: 0, brow: 0, cheek: 0, lips: 0, mouthW: 0, skull: 0, eyes: 0, neck: 0, bags: 0, laugh: 0, fat: 0, prog: 0, angles: 0, cleft: 0, asym: 0.5, seed: 1 };
   for (const k of Object.keys(o)) if (p[k] !== undefined && Number.isFinite(+p[k])) o[k] = +p[k];
   return o;
 }
@@ -94,7 +94,9 @@ function shapedPositions(A, P) {
   const a = sat((P.age - 25) / 65);
   const af = sat(P.african), as = sat(P.asian) * (1 - af), cau = 1 - af - as;
   for (const [n, w] of [['old', cau * a], ['african', af * (1 - a)], ['africanOld', af * a], ['asian', as * (1 - a)], ['asianOld', as * a]]) apply(n, w);
-  apply('muscle', sat(P.muscle));
+  // weiblich (20.11.): MakeHuman caucasian-female-young − caucasian-male-young, am Skelett verankert wie die Herkunftsziele
+  apply('female', sat(P.female));
+  apply('muscle', sat(P.muscle) * (1 - 0.6 * sat(P.female)));
   if (P.weight > 0) apply('heavy', P.weight); else apply('lean', -P.weight);
   for (const n of ['jaw', 'chin', 'nose', 'noseW', 'brow', 'cheek', 'lips', 'mouthW', 'skull', 'eyes', 'neck', 'bags', 'laugh', 'fat', 'prog', 'angles']) {
     const w = P[n];

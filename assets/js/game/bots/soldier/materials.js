@@ -5,7 +5,7 @@
 //
 // Geometrie-Attribute (soldier/builder.js): aNp = (Tarnanteil, Detail, Leuchtanteil, Glanz), aNq = (Palettenplatz,
 // Materialklasse, Abnutzung, Teil-Zufall), uv in Metern, color = Farbe bzw. Helligkeitsfaktor (Palette).
-// Uniforms: uPal[9] Schemafarben je Palettenplatz · uCamo[4] Tarnfarben (Grund, dunkel, hell, Fleck) · uCls[6] je
+// Uniforms: uPal[10] Schemafarben je Palettenplatz (+ Hautton) · uCamo[4] Tarnfarben (Grund, dunkel, hell, Fleck) · uCls[6] je
 // Materialklasse (Detail-Maßstab 1/m, Normalenstärke, Kavität, Rauheit aus dem Scan) · uNpOrm (ORM des Stoffs) ·
 // uNpMacro (Falten-Normalen + Rauschen, nur ab medium) · uDissolve (Auflösen der Leiche) · Randlicht/Lichtboden
 // (Gegner im Schatten lesbar, F37) – beide skalieren mit dem örtlichen Umgebungslicht (Belichtungsautomatik R4 und
@@ -75,7 +75,8 @@ const FFA_SCHEMES_BRIGHT = ['urban', 'wald', 'nacht', 'Bd'];
 export const SKIN_TONES = ['#bf9a80', '#a37d63', '#86614a', '#694a39', '#4d3528', '#caa58f'];
 
 /** Palettenplätze in der Reihenfolge von builder.PALETTE (0 = keine Palette). */
-const PAL_KEYS = ['', 'gear', 'gear2', 'strap', 'helmet', 'glove', 'boot', 'metal', 'accent'];
+// 20.11.: + 'skin' (Hautton je Soldat, setzt character.js/face.js – Hände/Hals passen zum Gesicht)
+const PAL_KEYS = ['', 'gear', 'gear2', 'strap', 'helmet', 'glove', 'boot', 'metal', 'accent', 'skin'];
 
 /**
  * Materialklassen (Reihenfolge wie builder.CLASSES): [Detail-Maßstab 1/m, Normalenstärke, Kavität, Rauheit aus Scan].
@@ -86,7 +87,7 @@ export const CLASS_PARAMS = [
   [6.5, 1.1, 1.0, 0.85], // gear (Cordura: Weste, Taschen, Gurte)
   [3.5, 0.12, 0.2, 0.15], // skin
   [2.6, 0.16, 0.35, 0.2], // hard (Helm, Kunststoff, Metall)
-  [4.5, 0.4, 0.55, 0.45], // leather (Stiefel, Handschuhe, Maske)
+  [4.5, 0.4, 0.55, 0.2], // leather (Stiefel, Handschuhe, Maske) – 20.11.: Rauheit kaum aus dem Stoffscan (Leder matt)
   [0, 0, 0, 0], // glass
 ];
 
@@ -553,7 +554,7 @@ flat varying vec2 vNpUvF;
 varying float vNpAo;
 varying vec3 vNpAlbA;
 varying vec3 vNpAlbB;
-uniform vec3 uPal[ 9 ];
+uniform vec3 uPal[ 10 ];
 `;
 const FRAG_HEAD = /* glsl */`
 varying vec3 vNpAlbA;
@@ -566,7 +567,7 @@ flat varying vec2 vNpUvF;
 varying float vNpAo;
 uniform float uCamoFacet;
 uniform vec2 uFacet;
-uniform vec3 uPal[ 9 ];
+uniform vec3 uPal[ 10 ];
 uniform vec3 uCamo[ 4 ];
 uniform vec4 uCls[ 6 ];
 uniform float uCamoScale;
@@ -615,6 +616,9 @@ const ALBEDO = /* glsl */`
 		sdDust = ( 1.0 - smoothstep( 0.03, 0.6, vNpPos.y ) ) * uDustAmt * ( 0.4 + 1.2 * sdN );
 		sdDust += vNq.z * ( 1.0 / 255.0 ) * smoothstep( 0.35, 0.75, sdN ) * 0.45;
 		sdDust = clamp( sdDust, 0.0, 0.65 ) * step( 0.5, sdC.y + sdC.z );
+		// 20.11.: Leder/Gummi (Stiefel, Handschuhe) nimmt Staub nur als Hauch in Rillen/Kanten an – vorher wurden dunkle Stiefel
+		// mit dem halben Staubton überzogen und wirkten grau-beige; Stoff behält den vollen Staub an Knien/Hosenbeinen
+		sdDust *= sdCls == 4 ? 0.3 : 1.0;
 		sdAlb = mix( sdAlb, sdAlb * 0.6 + uDust * 0.4, sdDust );
 		// gfx-soldat: Kantenabrieb + Einfassnaht an Ausrüstung/Leder/Hartteilen aus der Flächenkrümmung (abgerundete Kanten
 		// der Taschen, Platten, Stiefel): Kante heller/entsättigt, knapp innen eine dunkle Naht-/Einfasslinie
@@ -623,7 +627,7 @@ const ALBEDO = /* glsl */`
 			float sdEdge = smoothstep( 35.0, 140.0, sdCurv ) * ( 0.35 + 0.65 * sdN ) * ( 0.45 + vNq.z * ( 0.55 / 255.0 ) );
 			float sdSeam = smoothstep( 10.0, 22.0, sdCurv ) * ( 1.0 - smoothstep( 28.0, 55.0, sdCurv ) );
 			float sdLumA = dot( sdAlb, vec3( 0.3, 0.59, 0.11 ) );
-			sdAlb = mix( sdAlb, mix( vec3( sdLumA ), sdAlb, 0.6 ) * 1.35 + 0.015, sdEdge * ( sdCls == 3 ? 0.25 : 0.42 ) );
+			sdAlb = mix( sdAlb, mix( vec3( sdLumA ), sdAlb, 0.6 ) * 1.35 + 0.015, sdEdge * ( sdCls == 3 ? 0.25 : sdCls == 4 ? 0.1 : 0.42 ) ); // 20.11.: Leder kaum (Stiefel-Facetten lasen sich als helle Streifen)
 			sdAlb *= 1.0 - sdSeam * ( sdCls == 1 ? 0.22 : 0.1 );
 		}
 	#endif
@@ -692,7 +696,7 @@ const POOL_MAX = 48;
 function linColor(hex) { return new THREE.Color(hex); } // three.Color.set(hex) wandelt sRGB → linear
 
 function schemeUniforms(sc) {
-  const pal = PAL_KEYS.map((k) => (k ? linColor(sc[k]) : new THREE.Color(1, 1, 1)));
+  const pal = PAL_KEYS.map((k) => (k === 'skin' ? linColor(SKIN_TONES[0]) : k ? linColor(sc[k]) : new THREE.Color(1, 1, 1)));
   const camo = sc.camo.map(linColor);
   return { pal, camo };
 }
@@ -775,7 +779,7 @@ function newMaterial(schemeId, low) {
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => 'np-soldier-12' + (low ? 'l' : 'h');
+  m.customProgramCacheKey = () => 'np-soldier-13' + (low ? 'l' : 'h');
   return m;
 }
 

@@ -112,7 +112,7 @@ export class AudioEngine {
     this.unlocked = false;
     this.autoMusic = opts.autoMusic !== false;
     this.voices = [];
-    this.vol = { master: 0.8, sfx: 1, music: 0.5, ui: 0.7, ambience: 1 };
+    this.vol = { master: 0.8, sfx: 1, music: 0.5, ui: 0.7, ambience: 1, vehicle: 1 };
     this.recordings = true; this.mixSetting = 'auto'; this.protection = false;
     /** Schichten des Hybrid-Klangs (Prüfstand/A-B): Mechanik, Ich-Perspektive, Nachhall-Fahne, frühe Reflexionen, Zufalls-EQ, Sub/Trümmer */
     this.layers = { mech: true, fp: true, tail: true, er: true, eq: true, sub: true, diffract: true };
@@ -193,6 +193,8 @@ export class AudioEngine {
     this.bus = {
       sfx: gain(this.vol.sfx), q: gain(1), amb: gain(1), fb: gain(1), ui: gain(1), music: gain(1),
     };
+    // Fahrzeuge (vehicles/audio.js: Motoren, Ketten, Rotoren) – eigener Regler, läuft in den sfx-Bus
+    this.bus.veh = gain(this.vol.vehicle); this.bus.veh.connect(this.bus.sfx);
     // Leise Klänge (Schritte, Foley, Mechanik …) laufen über das HDR-Fenster in den sfx-Bus
     this.hdrQ = gain(1); this.bus.q.connect(this.hdrQ).connect(this.bus.sfx);
     this.ambDuck = gain(1); this.hdrAmb = gain(1);
@@ -318,10 +320,13 @@ export class AudioEngine {
     this.vol.sfx = clamp(get('sfxVolume', this.vol.sfx));
     this.vol.music = clamp(get('musicVolume', this.vol.music));
     this.vol.ui = clamp(get('uiVolume', this.vol.ui));
+    this.vol.ambience = clamp(get('ambienceVolume', this.vol.ambience));
+    this.vol.vehicle = clamp(get('vehicleVolume', this.vol.vehicle ?? 1));
     this.mixSetting = String(raw('audioMix', this.mixSetting));
     this.protection = !!raw('hearingProtection', this.protection);
     this.recordings = raw('audioRecordings', this.recordings) !== false;
     this.hearing.setProtection(this.protection);
+    this.hearing.setTinnitus(raw('tinnitus', true) !== false);
   }
 
   _settingsChanged() {
@@ -332,7 +337,8 @@ export class AudioEngine {
   }
 
   /** Lautstärken direkt setzen (0..1); folgt sonst automatisch den Einstellungen. */
-  setVolumes({ master, sfx, music, ui, ambience } = {}) {
+  setVolumes({ master, sfx, music, ui, ambience, vehicle } = {}) {
+    if (vehicle != null) this.vol.vehicle = clamp(+vehicle);
     if (master != null) this.vol.master = clamp(+master);
     if (sfx != null) this.vol.sfx = clamp(+sfx);
     if (music != null) this.vol.music = clamp(+music);
@@ -350,6 +356,7 @@ export class AudioEngine {
     set(this.bus.fb.gain, this.vol.sfx * 0.9);
     set(this.bus.ui.gain, this.vol.ui * 0.75);
     set(this.bus.music.gain, this.vol.music * 0.55);
+    if (this.bus.veh) set(this.bus.veh.gain, this.vol.vehicle ?? 1);
     // Musik wurde stumm angefordert und ist jetzt hörbar → jetzt erst rendern (nicht während eines Matchs)
     if (this._wantMusic && !this._music?.playing && !this._musicPending && this.unlocked && !IN_MATCH.has(this.G.match?.state)) this.startMusic();
   }
@@ -666,6 +673,7 @@ export class AudioEngine {
         case 'impact': return opts.surface === 'flesh' ? this.play('hit_flesh', opts) : this.play(`impact_${this._surface(opts.surface)}`, opts);
         case 'impact_flesh': return this.play('hit_flesh', opts);
         case 'explosion': return opts.position ? this._explosion({ position: opts.position, radius: opts.radius, volume: opts.volume, concuss: opts.concuss, type: opts.type }) : this._spawn(CATALOG.explosion, { priority: 3, ...opts });
+        case 'cannon': return this._cannon(opts);
         case 'hitmarker_headshot': return this.play('headshot', opts);
         case 'airstrike_call': case 'strike': return this.play('airstrike', opts);
       }
@@ -1417,6 +1425,8 @@ export class AudioEngine {
     if (far > 0.05) v = this._spawn(CATALOG.explosion_far, { position: pos, volume: vol * far * 1.2, delay, priority: 2 }) || v;
     // Hybrid: Sub-Druck unter der Aufnahme (Erschütterung), nachrieselnde Trümmer in der Nähe
     if (v?.recorded && this.layers.sub) {
+      // Druckfront (20.11.): die Aufnahmen setzen weich ein (60–140 ms Anstieg) – echte Detonationen < 1 ms
+      if (dist < 120) this._spawn(CATALOG.blast_front, { position: pos, volume: vol * (0.35 + 0.65 * near), delay, priority: 2, occlusion: dist > 8, _deferred: true });
       if (dist < 140 && P.sub > 0.05) this._spawn(CATALOG.boom_sub, { position: pos, volume: vol * P.sub * (0.5 + 0.5 * near), delay, priority: 2, _deferred: true });
       if (dist < 35) this._spawn(CATALOG.debris, { position: pos, volume: vol * (1 - dist / 35), delay: delay + this._rand.range(0.2, 0.35), _deferred: true });
     }
@@ -1425,6 +1435,64 @@ export class AudioEngine {
     else if (this.listener.valid && dist < r * 2.2) this.hearing.expose(0.18 * (1 - dist / (r * 2.2)));
     return v;
   }
+
+  /**
+   * Kanone (Fahrzeuge, 20.11.): außen nah/fern übergeblendet (40–300 m) mit Laufzeit Abstand/343 m/s; Bodenreflexion
+   * und Gelände-Rollen stecken im Rezept. Eigenes Fahrzeug: Luke zu → dumpfer Schlag mit Rücklauf, Keil und Hülse
+   * (cannon_in) plus etwas Außenknall durch die Wanne; Luke offen → voller Außenknall am Ohr (Gehör!).
+   * o: { position (fremd), player (eigenes Fahrzeug), inside 0..1, volume, pitch }
+   */
+  _cannon(o = {}) {
+    const vol = o.volume ?? 1, pitch = o.pitch ?? 1, P = this._preset || MIX_PRESETS.kopfhoerer;
+    const pos = o.player ? null : xyz(o.position);
+    if (!pos) {
+      const ins = clamp(+o.inside || 0);
+      let v = null;
+      if (ins > 0.02) v = this._spawn(CATALOG.cannon_in, { player: true, priority: 3, volume: vol * ins, pitch, env: 0 });
+      // Außenknall: draußen voll, drinnen gedämpft durch die Wanne
+      v = this._spawn(CATALOG.cannon_near, { player: true, priority: 3, pitch, volume: vol * (1 - ins * 0.75), lowpass: ins > 0.5 ? 650 : 0, env: 1 - ins, loud: 8 - ins * 8 }) || v;
+      if (P.sub > 0.05) this._spawn(CATALOG.boom_sub, { player: true, priority: 3, volume: vol * P.sub * (0.7 + 0.3 * ins), pitch: pitch * 1.1, _deferred: true });
+      this.hearing.expose((1 - ins) * 0.45 + ins * 0.06);
+      if (ins < 0.5) this.concuss(0.2 * (1 - ins));
+      this._muffle.hearing = this.hearing.muffle; this._applyMuffle(true);
+      return v;
+    }
+    const dist = this._dist(pos), x = smooth(40, 300, dist), near = Math.cos(x * Math.PI / 2), far = Math.sin(x * Math.PI / 2);
+    const delay = Math.min(4.5, dist / 343);
+    let v = null;
+    if (near > 0.05) v = this._spawn(CATALOG.cannon_near, { position: pos, volume: vol * near, delay, pitch, priority: 3, occlusion: dist > 10, echo: 0.8 });
+    if (far > 0.05) v = this._spawn(CATALOG.cannon_far, { position: pos, volume: vol * far * 1.25, delay, pitch, priority: 2 }) || v;
+    if (dist < 220 && P.sub > 0.05) this._spawn(CATALOG.boom_sub, { position: pos, volume: vol * P.sub * (0.4 + 0.6 * near), delay, priority: 2, _deferred: true });
+    if (this.listener.valid && dist < 30) this.hearing.expose(0.35 * (1 - dist / 30));
+    return v;
+  }
+
+  /**
+   * Handgriffe der Waffensimulation (isim, 20.11.): 'charge' Durchladen, 'clear' Ladehemmung beheben (Magazin
+   * anschlagen – repetieren – Hülse fällt; Doppelzuführung: Magazin raus, zweimal repetieren, Magazin rein, repetieren),
+   * 'jam' Hemmung beim Schuss (Verschluss bleibt halb offen hängen). Läuft wie das Nachladen in Spielzeit,
+   * cancelSim(actor) schneidet ab (Waffenwechsel, Tod).
+   */
+  simAction(kind, { actor = this.G.player, weaponId = null, dur = 1, jam = null } = {}) {
+    if (!this.ctx || !this.unlocked) return;
+    const def = this.weaponDef(weaponId), prof = this.profileFor(weaponId, def);
+    const pistol = prof === 'pistol' || prof === 'pistol_heavy', pl = this._isPlayer(actor);
+    const rack = prof === 'sniper' ? 'bolt' : pistol && this._recName('slide_release', true) ? 'slide_release' : 'reload_bolt';
+    const shell = prof === 'shotgun' ? 'shell_shotgun' : 'shell_concrete';
+    if (kind === 'jam') {
+      const pos = pl ? null : this._eye(actor);
+      this.play('dryfire', { player: pl, position: pos, actor, volume: 0.55, pitch: 0.72, delay: 0.05 });
+      return;
+    }
+    let seq;
+    if (kind === 'charge') seq = [[rack, 0.48]];
+    else if (jam === 'doppel') seq = [['reload_mag_out', 0.14], [rack, 0.36], [rack, 0.5], [shell, 0.56], ['reload_mag_in', 0.7], [rack, 0.86]];
+    else seq = [['reload_mag_in', 0.16], [rack, 0.7], [shell, 0.82]];
+    if (!actor) return;
+    this._cancelReload(actor);
+    this._reloadSeq.set(actor, { seq: seq.map(([n, f]) => [n, dur * f]), i: 0, t: 0, fresh: true, volume: pl ? 0.9 : 0.8 });
+  }
+  cancelSim(actor) { this._cancelReload(actor); }
 
   /** Blendgranate: scharfer Knall; in Sichtlinie und nah → starke Gehör-Dosis (Klingeln, dumpf). */
   _flash(p) {

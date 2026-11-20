@@ -990,6 +990,148 @@ ICONS.orkan = gunIcon(
   'M38 10H92 M38 13H92 M38 16H92 M44 8.5V17.5 M66 8.5V17.5 M88 8.5V17.5 M14 8Q14 6.5 16 6.5H38V19.5H16Q14 19.5 14 18Z ' +
   'M20 6.5V3.5H32V6.5 M22 19.5L19 30H26L28 19.5 M30 19.5H42V28H30Z M14 9L4 10V18L14 17 M38 19.5V24H42');
 
+/*
+ * Waffen-Welle 3 (20.11.2026, Nutzerwunsch „füge mehr Waffen hinzu, alle enorm detailliert“): frei erfundene Waffen nach realen
+ * Bauarten (keine Nachbauten bestimmter Modelle). Modelle: game/weapons/gunsmith/guns-neu-a.js / guns-neu-b.js. Die drei
+ * Weltkriegs-Waffen (Kranich, Hornisse, Lindwurm) sind für Kampagne/Panzer-Kampagne gedacht – Bots tragen sie selten (botWeight).
+ */
+PATTERN.uhu = [[0, 1], [0.15, 0.95], [-0.1, 0.92], [0.2, 0.9], [-0.18, 0.88], [0.1, 0.85], [-0.05, 0.85], [0.15, 0.85]];
+PATTERN.luchs = [[0, 1], [0.08, 1], [-0.06, 0.96], [-0.16, 0.94], [0.02, 0.9], [0.14, 0.9], [0.06, 0.86], [-0.08, 0.86]];
+PATTERN.dachs = [[0, 1.05], [0.3, 1.1], [0.5, 1.05], [0.2, 1], [-0.25, 1], [-0.5, 0.95], [-0.2, 0.92], [0.3, 0.92], [0.45, 0.9]];
+PATTERN.hornisse = [[0, 1], [0.25, 0.95], [-0.2, 0.95], [0.3, 0.9], [-0.3, 0.9], [0.2, 0.88], [-0.15, 0.85], [0.25, 0.85]];
+PATTERN.lindwurm = [[0, 1.2], [0.35, 1.15], [-0.25, 1.05], [0.5, 1], [-0.45, 0.95], [0.4, 0.9], [-0.35, 0.88], [0.45, 0.85], [-0.4, 0.85], [0.35, 0.85]];
+Object.assign(FIRE_SELECT, {
+  smg_uhu: { modes: ['auto', 'semi'] },
+  ar_luchs: { modes: ['auto', 'semi'] },                     // Druckpunktabzug wie bei Bullpups üblich (halb Einzel, ganz Dauer)
+  ar_dachs: { modes: ['auto', 'semi'] },
+  smg_hornisse: { modes: ['auto'] },                         // offener Verschluss, nur Dauerfeuer
+  lmg_lindwurm: { modes: ['auto', 'semi'] },                 // Kippabzug: oben Einzel, unten Dauer
+});
+RAW.smg_uhu = {
+  id: 'smg_uhu', name: 'MS-9 Uhu', cls: 'smg', slot: 'primary', unlockLevel: 15,
+  description: 'Maschinenpistole mit eingebautem Schalldämpfer über die ganze Lauflänge: kein Mündungsfeuer, kaum ein Knall – nur das Klacken des Verschlusses. Leise ist sie nicht wehrlos, aber auf Distanz verliert sie schnell an Wucht.',
+  damage: { max: 23, min: 14, rangeStart: 11, rangeEnd: 24 }, headMult: 1.3, limbMult: 0.9, pellets: 1,
+  rpm: 760, fireMode: 'auto', burstCount: 1, mag: 30, reserve: 150,
+  reloadTime: 2.0, reloadEmptyTime: 2.6, perShellReload: false,
+  equipTime: 0.5, adsTime: 0.19, adsZoom: 1.2, sight: 'iron', scope: null, sprintToFire: 0.13,
+  moveSpeedMult: 0.99, adsMoveMult: 0.74, hipSpread: 0.033, adsSpread: 0.0036, moveSpreadMult: 1.25, jumpSpreadMult: 2.0,
+  recoil: { vertical: 0.0044, horizontal: 0.0026, recovery: 12, firstShotMult: 1.0, pattern: PATTERN.uhu },
+  range: 75, penetration: 0.3, suppressed: true, sound: { profile: 'smg', pitch: 1.05 }, model: 'uhu',
+  attSlots: ['optik', 'unterlauf', 'taktisch', 'magazin', 'munition', 'schaft'],   // Dämpfer eingebaut: kein Mündungsgerät
+};
+RAW.ar_luchs = {
+  id: 'ar_luchs', name: 'BL-7 Luchs', cls: 'ar', slot: 'primary', unlockLevel: 21,
+  description: 'Bullpup-Sturmgewehr mit Rotpunkt: langer Lauf im kurzen Gehäuse, ruhig im Dauerfeuer und präzise bis weit über die Straße. Das Magazin hinter dem Griff will geübt gewechselt werden.',
+  damage: { max: 27, min: 20, rangeStart: 24, rangeEnd: 50 }, headMult: 1.35, limbMult: 0.9, pellets: 1,
+  rpm: 740, fireMode: 'auto', burstCount: 1, mag: 30, reserve: 120,
+  reloadTime: 2.5, reloadEmptyTime: 3.1, perShellReload: false,
+  equipTime: 0.58, adsTime: 0.23, adsZoom: 1.3, sight: 'reddot', scope: { zoom: 1.3, overlay: 'reddot' }, sprintToFire: 0.18,
+  moveSpeedMult: 0.96, adsMoveMult: 0.62, hipSpread: 0.044, adsSpread: 0.0023, moveSpreadMult: 1.4, jumpSpreadMult: 2.4,
+  recoil: { vertical: 0.006, horizontal: 0.0026, recovery: 10.5, firstShotMult: 1.05, pattern: PATTERN.luchs },
+  range: 115, penetration: 0.55, suppressed: false, sound: { profile: 'ar', pitch: 0.97 }, model: 'luchs',
+};
+RAW.ar_dachs = {
+  id: 'ar_dachs', name: 'KD-74 Dachs', cls: 'ar', slot: 'primary', unlockLevel: 17,
+  description: 'Kurzkarabiner im Kaliber 7,62 × 39 mit Klappschaft: schwere Kugel aus kurzem Lauf, laut und grell. Im Haus ein Hammer – auf der Straße streut er früher als die langen Gewehre.',
+  damage: { max: 31, min: 21, rangeStart: 16, rangeEnd: 36 }, headMult: 1.4, limbMult: 0.9, pellets: 1,
+  rpm: 640, fireMode: 'auto', burstCount: 1, mag: 30, reserve: 120,
+  reloadTime: 2.2, reloadEmptyTime: 2.8, perShellReload: false,
+  equipTime: 0.5, adsTime: 0.2, adsZoom: 1.2, sight: 'iron', scope: null, sprintToFire: 0.15,
+  moveSpeedMult: 0.98, adsMoveMult: 0.66, hipSpread: 0.042, adsSpread: 0.0036, moveSpreadMult: 1.4, jumpSpreadMult: 2.4,
+  recoil: { vertical: 0.0085, horizontal: 0.0048, recovery: 9, firstShotMult: 1.2, pattern: PATTERN.dachs },
+  range: 95, penetration: 0.65, suppressed: false, sound: { profile: 'ar_heavy', pitch: 1.04 }, model: 'dachs',
+};
+RAW.mr_elster = {
+  id: 'mr_elster', name: 'DM-11 Elster', cls: 'marksman', slot: 'primary', unlockLevel: 23,
+  description: 'Halbautomatisches Präzisionsgewehr mit Schichtholzschaft und 4-fachem Kampfvisier: zwanzig Schuss im großen Kaliber, zwei Treffer bis weit hinaus. Schwer an der Schulter, ruhig im Anschlag.',
+  damage: { max: 50, min: 40, rangeStart: 40, rangeEnd: 90 }, headMult: 1.6, limbMult: 0.85, pellets: 1,
+  rpm: 280, fireMode: 'semi', burstCount: 1, mag: 20, reserve: 60,
+  reloadTime: 2.5, reloadEmptyTime: 3.2, perShellReload: false,
+  equipTime: 0.7, adsTime: 0.34, adsZoom: 3, sight: 'acog', scope: { zoom: 3, overlay: 'acog' }, sprintToFire: 0.27,
+  moveSpeedMult: 0.91, adsMoveMult: 0.52, hipSpread: 0.075, adsSpread: 0.0007, moveSpreadMult: 1.9, jumpSpreadMult: 2.9,
+  recoil: { vertical: 0.026, horizontal: 0.0065, recovery: 8.5, firstShotMult: 1.0 }, scopeSway: 0.0018,
+  range: 150, penetration: 0.8, suppressed: false, sound: { profile: 'ar_heavy', pitch: 1.02 }, model: 'elster',
+};
+RAW.sr_habicht = {
+  id: 'sr_habicht', name: 'RS-5 Habicht', cls: 'sniper', slot: 'primary', unlockLevel: 26,
+  description: 'Repetiergewehr im Kaliber 7,62 × 51 mit schwerem, kanneliertem Lauf: leichter und schneller durchgeladen als der Brecher, ein Kopftreffer genügt auf jede Distanz, ein Torsotreffer auf mittlere.',
+  damage: { max: 105, min: 80, rangeStart: 35, rangeEnd: 95 }, headMult: 1.6, limbMult: 0.7, pellets: 1,
+  rpm: 58, fireMode: 'bolt', burstCount: 1, mag: 5, reserve: 30,
+  reloadTime: 2.7, reloadEmptyTime: 3.5, perShellReload: false,
+  equipTime: 0.75, adsTime: 0.42, adsZoom: 5, sight: 'sniper', scope: { zoom: 5, overlay: 'sniper' }, sprintToFire: 0.28,
+  moveSpeedMult: 0.9, adsMoveMult: 0.45, hipSpread: 0.11, adsSpread: 0.0003, moveSpreadMult: 2.3, jumpSpreadMult: 3.4,
+  recoil: { vertical: 0.04, horizontal: 0.009, recovery: 5.5, firstShotMult: 1.0 }, scopeSway: 0.006,
+  range: 150, penetration: 0.85, suppressed: false, sound: { profile: 'sniper', pitch: 1.08 }, model: 'habicht',
+};
+RAW.sr_kranich = {
+  id: 'sr_kranich', name: 'GK-33 Kranich', cls: 'sniper', slot: 'primary', unlockLevel: 12,
+  description: 'Repetierer der Weltkriegszeit mit Nussbaum-Vollschaft und Kimme und Korn: fünf Schuss, Kammer auf, Kammer zu. Ohne Optik verlangt er ein ruhiges Auge – trifft er, steht keiner mehr auf.',
+  damage: { max: 100, min: 75, rangeStart: 30, rangeEnd: 90 }, headMult: 1.6, limbMult: 0.75, pellets: 1,
+  rpm: 52, fireMode: 'bolt', burstCount: 1, mag: 5, reserve: 30,
+  reloadTime: 2.8, reloadEmptyTime: 3.6, perShellReload: false,
+  equipTime: 0.7, adsTime: 0.3, adsZoom: 1.5, sight: 'iron', scope: null, sprintToFire: 0.26,
+  moveSpeedMult: 0.93, adsMoveMult: 0.55, hipSpread: 0.09, adsSpread: 0.0012, moveSpreadMult: 2.0, jumpSpreadMult: 3.2,
+  recoil: { vertical: 0.045, horizontal: 0.01, recovery: 5.5, firstShotMult: 1.0 },
+  range: 140, penetration: 0.85, suppressed: false, sound: { profile: 'sniper', pitch: 1.0 }, model: 'kranich',
+  botWeight: 0.3, attSlots: ['optik', 'muendung', 'munition', 'taktisch'],
+};
+RAW.smg_hornisse = {
+  id: 'smg_hornisse', name: 'MS-38 Hornisse', cls: 'smg', slot: 'primary', unlockLevel: 10,
+  description: 'Maschinenpistole der Weltkriegszeit aus Stahlrohr und Bakelit: gemächlicher Takt, gutmütig im Dauerfeuer, zweiunddreißig Schuss im Stangenmagazin. Der Magazinschacht ist zugleich der Vordergriff.',
+  damage: { max: 25, min: 16, rangeStart: 12, rangeEnd: 26 }, headMult: 1.3, limbMult: 0.9, pellets: 1,
+  rpm: 540, fireMode: 'auto', burstCount: 1, mag: 32, reserve: 128,
+  reloadTime: 2.3, reloadEmptyTime: 2.9, perShellReload: false,
+  equipTime: 0.52, adsTime: 0.21, adsZoom: 1.2, sight: 'iron', scope: null, sprintToFire: 0.14,
+  moveSpeedMult: 0.98, adsMoveMult: 0.72, hipSpread: 0.036, adsSpread: 0.0042, moveSpreadMult: 1.25, jumpSpreadMult: 2.0,
+  recoil: { vertical: 0.0048, horizontal: 0.003, recovery: 12, firstShotMult: 1.0, pattern: PATTERN.hornisse },
+  range: 80, penetration: 0.35, suppressed: false, sound: { profile: 'smg', pitch: 0.92 }, model: 'hornisse',
+  botWeight: 0.3, attSlots: ['magazin', 'munition'],
+};
+RAW.lmg_lindwurm = {
+  id: 'lmg_lindwurm', name: 'UM-38 Lindwurm', cls: 'lmg', slot: 'primary', unlockLevel: 28,
+  description: 'Universal-MG der Weltkriegszeit mit gelochtem Laufmantel und Gurttrommel: über tausend Schuss pro Minute, das Geräusch eines reißenden Tuchs. Wer ihn nicht festhält, schießt in den Himmel.',
+  damage: { max: 27, min: 22, rangeStart: 30, rangeEnd: 62 }, headMult: 1.35, limbMult: 0.9, pellets: 1,
+  rpm: 1100, fireMode: 'auto', burstCount: 1, mag: 50, reserve: 200, killAmmo: 20,
+  reloadTime: 5.2, reloadEmptyTime: 6.2, perShellReload: false,
+  equipTime: 0.9, adsTime: 0.42, adsZoom: 1.25, sight: 'iron', scope: null, sprintToFire: 0.36,
+  moveSpeedMult: 0.86, adsMoveMult: 0.45, hipSpread: 0.075, adsSpread: 0.0034, moveSpreadMult: 1.7, jumpSpreadMult: 3.0,
+  recoil: { vertical: 0.0062, horizontal: 0.0052, recovery: 7.5, firstShotMult: 1.4, pattern: PATTERN.lindwurm },
+  range: 120, penetration: 0.8, suppressed: false, sound: { profile: 'lmg', pitch: 1.08 }, model: 'lindwurm',
+  botWeight: 0.3, attSlots: ['munition'],
+};
+RAW.sg_stier = {
+  id: 'sg_stier', name: 'PF-12 Stier', cls: 'shotgun', slot: 'primary', unlockLevel: 19,
+  description: 'Vorderschaftrepetierer mit Röhrenmagazin für sieben Patronen, gelochtem Hitzeschild und Geisterring: engere Garbe als die Bulldog, sechs Reservepatronen griffbereit am Gehäuse.',
+  damage: { max: 13, min: 4, rangeStart: 5, rangeEnd: 18 }, headMult: 1.1, limbMult: 0.9, pellets: 8,
+  rpm: 70, fireMode: 'pump', burstCount: 1, mag: 7, reserve: 28,
+  reloadTime: 0.5, reloadEmptyTime: 4.0, perShellReload: true, shellTiming: { start: 0.35, insert: 0.42, end: 0.4 },
+  equipTime: 0.62, adsTime: 0.26, adsZoom: 1.15, sight: 'iron', scope: null, sprintToFire: 0.18,
+  moveSpeedMult: 0.95, adsMoveMult: 0.66, hipSpread: 0.055, adsSpread: 0.036, moveSpreadMult: 1.1, jumpSpreadMult: 1.6,
+  recoil: { vertical: 0.04, horizontal: 0.013, recovery: 6.5, firstShotMult: 1.0 },
+  range: 38, penetration: 0.15, suppressed: false, sound: { profile: 'shotgun', pitch: 0.97 }, model: 'stier',
+};
+Object.assign(FEEL, {
+  smg_uhu: { handling: { mass: 3.4, inertia: 0.86, swayScale: 0.92, aimDrift: 0.0004, reach: 0.73 }, recoil: { visual: 0.85, firstShotSpread: 0.8 } },
+  ar_luchs: { handling: { mass: 3.6, inertia: 0.9, swayScale: 0.95, aimDrift: 0.0004, reach: 0.78 }, recoil: { visual: 0.9, firstShotSpread: 0.7 } },
+  ar_dachs: { handling: { mass: 3.0, inertia: 0.85, swayScale: 0.95, aimDrift: 0.0005, reach: 0.68 }, recoil: { visual: 1.15, firstShotSpread: 0.8 } },
+  mr_elster: { handling: { mass: 5.2, inertia: 1.25, swayScale: 1.1, aimDrift: 0, reach: 1.06 }, recoil: { visual: 1.05, firstShotSpread: 0.6 } },
+  sr_habicht: { handling: { mass: 5.6, inertia: 1.3, swayScale: 1.12, aimDrift: 0, reach: 1.05 }, recoil: { visual: 1.0, firstShotSpread: 1 } },
+  sr_kranich: { handling: { mass: 4.1, inertia: 1.2, swayScale: 1.08, aimDrift: 0.0003, reach: 0.95 }, recoil: { visual: 1.1, firstShotSpread: 1 } },
+  smg_hornisse: { handling: { mass: 4.0, inertia: 0.95, swayScale: 0.96, aimDrift: 0.0004, reach: 0.62 }, recoil: { visual: 0.95, firstShotSpread: 0.85 } },
+  lmg_lindwurm: { handling: { mass: 11.5, inertia: 1.65, swayScale: 1.25, aimDrift: 0.0009, reach: 1.02 }, recoil: { visual: 1.1, firstShotSpread: 0.85 } },
+  sg_stier: { handling: { mass: 3.5, inertia: 1.08, swayScale: 1.05, aimDrift: 0.0005, reach: 1.03 }, recoil: { visual: 1.1, firstShotSpread: 1 } },
+});
+// Symbole (Strichzeichnung 96 × 32): Umriss je Bauart
+ICONS.uhu = gunIcon('M4 13H9V22H4Z M9 14H18 M9 19L18 16 M18 11H44V18H18Z M20 11V8H26V11 M28 18L26 26H32L34 18 M38 18V30H44V18 M44 10H86V19H44Z M50 10V19 M80 10V19');
+ICONS.luchs = gunIcon('M4 10H10V24H4Z M10 9H58V22H10Z M14 22V30H24V22 M34 22L32 29H38L40 22 M58 10H76V19H58Z M76 14H90 M90 12.5V15.5 M22 9V5H54V9 M40 5V2H46V5');
+ICONS.dachs = gunIcon('M4 9H8V22H4Z M8 11H22 M8 19L22 16 M22 9H62V18H22Z M24 9V6H28V9 M30 18L28 26H34L36 18 M40 18Q42 25 48 30L52 28Q46 24 46 18 M62 12H76V16H62Z M76 11H82V17H76Z M58 9V6');
+ICONS.elster = gunIcon('M4 12L26 10V20L6 25Z M26 10H40V19H34L32 27H28L26 19 M40 10H54V18H40Z M44 18V28H50V18 M54 10H80V17H54Z M80 12.5H90 M90 11V15 M38 10V6H58V10 M42 6V3H54V6');
+ICONS.habicht = gunIcon('M4 12L28 10V20L8 25Z M28 10H52V19H38L34 27H30L28 19 M52 11H78V17H52Z M78 13H90 M90 11.5V15.5 M30 9V5H60V9 M26 5H32 M58 5H64 M44 19V23H50V19 M36 13L42 16');
+ICONS.kranich = gunIcon('M4 13L24 11V19L6 23Z M24 11H34V18H30L28 22L24 19 M34 12H88V16H34Z M44 11V16 M64 11V16 M88 14H92 M90 12V11 M36 12L42 10 M30 11V9H34');
+ICONS.hornisse = gunIcon('M4 12H8V22H4Z M8 13H20 M8 20L20 17 M20 11H58V17H20Z M28 17L26 25H32L34 17 M40 17V31H46V17 M58 12H74V16H58Z M74 13H78 M70 12V9 M24 11V9');
+ICONS.lindwurm = gunIcon('M4 12L24 11V18L6 22Z M24 10H46V18H24Z M28 18L26 26H32L34 18 M46 11H80V17H46Z M50 11V17 M56 11V17 M62 11V17 M68 11V17 M74 11V17 M80 12.5H90 M36 18A6 6 0 1 0 36 30A6 6 0 1 0 36 18 M72 17L68 28 M72 17L77 28');
+ICONS.stier = gunIcon('M4 13L22 11V18L6 22Z M22 11H44V18H22Z M28 18L26 25H31L33 18 M44 11H90V14H44 M44 15H82V17.5H44 M52 14.5H72V19H52Z M56 15V18.5 M62 15V18.5 M68 15V18.5 M28 8H36V11');
+
 /** Reihenfolge = Roster-Tabelle des Vertrags. */
 export const WEAPON_IDS = [
   'ar_kv47', 'ar_m17', 'smg_vp9', 'smg_qx90', 'lmg_hm60', 'mr_sk14', 'sr_brecher', 'sg_bulldog', 'pi_p9', 'pi_adler', 'knife',
@@ -1002,6 +1144,9 @@ export const WEAPON_IDS = [
   'ar_ursprung', 'pi_funke', 'erstlicht', // Waffen der ersten Stunde (nur Profil.og)
   'pi_p9a', 'smg_wirbel', // neue Waffen (26.10.): P-9A Automatik (Glock 18C), PS-41 Wirbel (PPSch-41)
   'hmg_orkan', // RG-6 Orkan (13.11.): Gatling
+  // Waffen-Welle 3 (20.11.): MP mit Integralschalldämpfer, Bullpup, Kurzkarabiner, Präzisionsgewehr, Repetierer, Weltkriegs-
+  // Repetierer/-MP/-MG, Vorderschaftrepetierer
+  'smg_uhu', 'ar_luchs', 'ar_dachs', 'mr_elster', 'sr_habicht', 'sr_kranich', 'smg_hornisse', 'lmg_lindwurm', 'sg_stier',
 ];
 /** Nahkampfwaffen (Slot „melee“, Ausrüstung `loadout.melee`; 'knife' ist der Standard). */
 export const MELEE_IDS = ['knife', 'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten', 'erstlicht'];

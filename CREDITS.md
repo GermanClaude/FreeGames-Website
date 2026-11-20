@@ -290,6 +290,10 @@ Kleidungshülle, Detailstufen) und die **Ego-Hände** (`assets/js/game/weapons/g
 Die aufgenommenen Klänge unter `assets/lib/audio/` (ebenfalls CC0: The Free Firearm Sound Library, Freesound,
 Kenney) sind mit Quelle, Urheber:in und Lizenz je Datei in [docs/AUDIO_SOURCES.md](docs/AUDIO_SOURCES.md) aufgeführt.
 
+Fahrzeugklänge (Motoren mit Zündimpulsen je Zylinder, Ketten, Turmantrieb, Rotor, Strahltriebwerk), Kanonenschüsse
+(außen, fern, im Turm) und die Druckfront naher Explosionen sind eigene Klangsynthese ohne fremde Aufnahmen
+(`assets/js/game/vehicles/engine-sound.js`, `assets/js/game/engine/audio/sfx-weapons.js`).
+
 ## Software
 
 | Bibliothek | Verwendung | Lizenz |

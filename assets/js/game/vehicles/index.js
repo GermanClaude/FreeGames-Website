@@ -1276,8 +1276,7 @@ export class VehicleSystem {
       G.effects?.muzzleFlash?.(origin, dir, { cls: 'sniper', scale: 3.4 });
       G.effects?.muzzleLight?.(origin, 34, 3, 0.09, 20);
       G.effects?.smoke?.(_a.copy(origin).addScaledVector(dir, 1.2), { count: 7, size: 2.6, life: 2.4, rise: 0.35, alpha: 0.42 });
-      this.audio.play('explosion', { position: isPlayer ? null : origin, volume: isPlayer ? 0.8 : 1, pitch: 1.55, priority: 3 });
-      this.audio.play('boom_sub', { position: isPlayer ? null : origin, volume: 1, priority: 3 });
+      this.audio.cannon(v, origin, !!(v && G.player && G.player.vehicle === v)); // Kanone: außen/innen (audio 20.11.)
       if (isPlayer) { actor.shake?.(def.shake || 0.5); G.input?.rumble?.(0.9, 0.6, 200); }
     } else {
       // Streuung (Normalverteilung, Kegel def.spread)

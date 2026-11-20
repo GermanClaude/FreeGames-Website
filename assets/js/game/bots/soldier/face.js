@@ -122,6 +122,19 @@ export const SHAPE_PRESETS = Object.freeze([
   { age: 37, african: 0.6, jaw: 0.3, chin: -0.3, nose: 0.3, noseW: 0.7, brow: 0.4, cheek: 0.2, lips: 0.5, weight: 0.3, fat: 0.2, prog: 0.3, seed: 97, look: { beard: 'kinnbart', stubble: 0.7, freckles: 0, moles: 0.4, recede: 0.4 } },
 ]);
 
+/**
+ * Gesichter der Zivilistinnen (20.11., Ausführungen mit `female` in gear.js CIVIL_VARIANTS): Form-Ziel 'female' des Kopf-Assets,
+ * kein Bart, feinere Brauen; Alter 23–61, verschiedene Herkunft. Frisur als Geometrie (gear.js), Haaransatz gemalt.
+ */
+export const FEMALE_PRESETS = Object.freeze([
+  { female: 1, age: 44, jaw: -0.1, chin: 0.2, nose: 0.2, noseW: -0.2, brow: -0.2, cheek: 0.4, lips: 0.1, weight: -0.2, bags: 0.3, laugh: 0.3, seed: 113, look: { beard: 'none', stubble: 0, freckles: 0.2, moles: 0.5, recede: 0, brows: 0.75 } },
+  { female: 1, age: 29, african: 0.85, jaw: -0.2, nose: 0.1, noseW: 0.5, cheek: 0.5, lips: 0.6, weight: -0.1, seed: 127, look: { beard: 'none', stubble: 0, freckles: 0, moles: 0.3, recede: 0, brows: 0.8 } },
+  { female: 1, age: 36, asian: 0.8, jaw: -0.3, chin: -0.2, nose: -0.3, cheek: 0.6, lips: 0.1, eyes: 0.1, weight: -0.3, seed: 131, look: { beard: 'none', stubble: 0, freckles: 0.05, moles: 0.4, recede: 0, brows: 0.7 } },
+  { female: 1, age: 58, jaw: 0.1, chin: 0.1, nose: 0.4, brow: 0.1, cheek: -0.2, lips: -0.3, weight: 0.3, fat: 0.3, bags: 0.8, laugh: 0.7, seed: 137, look: { beard: 'none', stubble: 0, freckles: 0.35, moles: 0.8, recede: 0, brows: 0.7 } },
+  { female: 1, age: 24, jaw: -0.3, chin: 0.3, nose: -0.1, noseW: -0.3, cheek: 0.2, lips: 0.3, weight: -0.4, eyes: 0.15, seed: 149, look: { beard: 'none', stubble: 0, freckles: 0.6, moles: 0.3, recede: 0, brows: 0.8 } },
+  { female: 1, age: 41, african: 0.4, asian: 0.1, jaw: 0.0, chin: 0.1, nose: 0.2, noseW: 0.3, cheek: 0.3, lips: 0.3, weight: 0.1, laugh: 0.2, seed: 157, look: { beard: 'none', stubble: 0, freckles: 0.1, moles: 0.4, recede: 0, brows: 0.8 } },
+]);
+
 /* ------------------------------------------------------------------ Kopfnetz + Karten (Hintergrund-Rechner, geteilt) */
 
 const geoCache = new Map(), texCache = new Map();
@@ -580,17 +593,38 @@ function profileFor(soldier, V, opts) {
   const nameSeed = soldier.name ? hashS(String(soldier.name)) : 0;
   const pick = nameSeed ? nameSeed : Math.floor(hashN(soldier.id * 31 + VARIANTS.indexOf(V) * 7 + 3) * 4294967296);
   let pre;
+  const PRE = V.female ? FEMALE_PRESETS : SHAPE_PRESETS;
   if (typeof opts.shape === 'object' && opts.shape) pre = opts.shape;
-  else pre = SHAPE_PRESETS[((typeof opts.shape === 'number' ? opts.shape : pick % SHAPE_PRESETS.length) + SHAPE_PRESETS.length) % SHAPE_PRESETS.length];
+  else pre = PRE[((typeof opts.shape === 'number' ? opts.shape : pick % PRE.length) + PRE.length) % PRE.length];
   const prof = { ...pre };
   delete prof.look;
+  if (V.female) { prof.female = 1; }
   if (opts.age !== undefined) prof.age = +opts.age;
   const look = { ...(pre.look || {}), age: prof.age ?? 30, seed: pre.seed ?? 1 };
   if (opts.stubble !== undefined) look.stubble = +opts.stubble;
   if (opts.beard !== undefined) look.beard = opts.beard;
   if (opts.hairAmt !== undefined) look.hair = +opts.hairAmt;
   for (const k of ['recede', 'brows', 'freckles', 'moles']) if (opts[k] !== undefined) look[k] = +opts[k];
+  if (V.female) { look.beard = 'none'; look.stubble = 0; look.recede = 0; look.brows = Math.min(look.brows ?? 0.8, 0.85); }
   return { prof, look };
+}
+
+/** Hautton zu Profil/Optionen (Gesicht und Körper – Hände, Hals, Kopf der fernen Stufen – bekommen denselben). */
+function skinFor(prof, opts) {
+  if (typeof opts.skin === 'string') return opts.skin;
+  if (typeof opts.skin === 'number') return SKIN_TONES[opts.skin % SKIN_TONES.length];
+  const af = prof.african || 0, as = prof.asian || 0;
+  const r = hashN((prof.seed || 1) * 5 + 1);
+  return af > 0.7 ? SKIN_TONES[r < 0.5 ? 4 : 3] : af > 0.3 ? SKIN_TONES[r < 0.5 ? 2 : 3] : as > 0.5 ? SKIN_TONES[r < 0.5 ? 1 : 5] : SKIN_TONES[[0, 5, 1, 0][Math.floor(r * 4)]];
+}
+
+/**
+ * Hautton eines Soldaten wie ihn sein Gesicht bekäme (auch ohne Gesicht, z. B. Telefon/ferne Stufen): character.js setzt
+ * damit die Hautfarbe des Körpers (Palettenplatz 'skin'), damit Hände/Hals zum Gesicht passen.
+ */
+export function soldierSkin(soldier, opts = {}) {
+  const V = variantDef(soldier.variant);
+  return skinFor(profileFor(soldier, V, opts).prof, opts);
 }
 
 export class SoldierFace {
@@ -610,15 +644,10 @@ export class SoldierFace {
     const U = (this.u = mat.userData.faceU);
     const { prof, look } = profileFor(soldier, V, opts);
     // Hautton: Option, sonst passend zur Herkunft des Profils (sonst Variante)
-    let skin;
-    if (typeof opts.skin === 'string') skin = opts.skin;
-    else if (typeof opts.skin === 'number') skin = SKIN_TONES[opts.skin % SKIN_TONES.length];
-    else {
-      const af = prof.african || 0, as = prof.asian || 0;
-      const r = hashN((prof.seed || 1) * 5 + 1);
-      skin = af > 0.7 ? SKIN_TONES[r < 0.5 ? 4 : 3] : af > 0.3 ? SKIN_TONES[r < 0.5 ? 2 : 3] : as > 0.5 ? SKIN_TONES[r < 0.5 ? 1 : 5] : SKIN_TONES[[0, 5, 1, 0][Math.floor(r * 4)]];
-    }
+    const skin = skinFor(prof, opts);
     U.uSkin.value.set(skin);
+    // Körper (Hände, Hals, Kopf der fernen Stufen) im selben Ton
+    if (shared && shared.uPal && shared.uPal.value[9]) shared.uPal.value[9].set(skin);
     const lum = U.uSkin.value.r * 0.3 + U.uSkin.value.g * 0.59 + U.uSkin.value.b * 0.11;
     look.dark = clamp((0.35 - lum) / 0.3, 0, 1);
     const hair = opts.hair || (prof.african > 0.5 || prof.asian > 0.5 ? '#16110d' : V.hair || '#2a2119');

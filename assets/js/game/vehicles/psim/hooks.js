@@ -50,8 +50,7 @@ export function installHooks(sys, mode) {
       G.effects?.muzzleLight?.(origin, 34, 3, 0.09, 20);
       G.effects?.smoke?.(_o.copy(origin).addScaledVector(dir, 1.5), { count: 9, size: 2.8, life: 2.2, rise: 0.3, alpha: 0.45 });
       const isP = !!(actor && actor.isPlayer);
-      sys.audio.play('explosion', { position: isP ? null : origin, volume: isP ? 0.8 : 1, pitch: 1.7, priority: 3 });
-      sys.audio.play('boom_sub', { position: isP ? null : origin, volume: 0.9, priority: 3 });
+      sys.audio.cannon(v, origin, !!(v && G.player && G.player.vehicle === v)); // Kanone: außen/innen (audio 20.11.)
       if (isP) { actor.shake?.(def.shake || 0.5); G.input?.rumble?.(0.9, 0.6, 200); }
       G.events.emit('vehicle:fire', { vehicle: v, seat: seat.index, actor, weaponId: def.id, origin, dir });
       mode.onShot?.(v, def, origin, dir, null);
