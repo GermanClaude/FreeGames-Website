@@ -9,7 +9,7 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (116)
+## Texturen (128)
 
 45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
@@ -177,10 +177,14 @@ aufgehellt und mit gezeichneten Korkporen versehen.
 | Pine Bark | `bark_kiefer` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/pine_bark) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Bark Willow | `bark_fichte` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/bark_willow) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
-Dazu kommen 15 Sätze mit der Kennung `vh_*`, `vp_*` und `vw_*` (Hafen-Wellblech, Container, Kaimauer, Pflaster,
-Ziegel), die NULLPUNKT selbst aus einer eigenen Video-Vorlage des Projekts erzeugt hat – keine Fremdquelle, CC0.
+Dazu kommen 22 Sätze mit der Kennung `v_*`, `vh_*`, `vp_*` und `vw_*` (Hafen-Wellblech, Container, Kaimauer, Pflaster,
+Ziegel, Putz, Dach, Verkleidung, Betonplatten), die NULLPUNKT selbst aus einer eigenen Video-Vorlage des Projekts erzeugt hat – keine Fremdquelle, CC0.
 
 ## HDRIs (8)
+
+Die ausgelieferten Himmel (`assets/lib/hdri/np_sky_*`, 20 Sätze: fünf Tageszeiten × vier Wetterlagen) erzeugt NULLPUNKT
+selbst mit einem eigenen Himmelsgenerator (keine Fremdquelle). Die folgenden CC0-HDRIs von
+Poly Haven dienten früheren Fassungen bzw. als Vorlage für Licht und Stimmung:
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
 |---|---|---|---|---|
