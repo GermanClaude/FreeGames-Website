@@ -1976,7 +1976,7 @@ float npDepth( vec2 p ) {
 float npL;
 vec3 npFreshCol( vec3 alb ) {
   float L = max( dot( alb, vec3( 0.2126, 0.7152, 0.0722 ) ), 0.004 ); npL = L;
-  if ( npSt == 0 ) return vec3( 1.0, 0.7, 0.42 ) * clamp( L * 2.4, 0.05, 0.32 ); // Holz: frische helle Fasern (auch unter Kohle)
+  if ( npSt == 0 ) return vec3( 1.0, 0.7, 0.42 ) * clamp( L * 2.4, 0.2, 0.36 ); // zer2: frisches Holz innen hell, auch bei dunkel gebeiztem Brett // Holz: frische helle Fasern (auch unter Kohle)
   if ( npSt == 1 ) return mix( alb, vec3( L ), 0.35 ) * mix( 1.6, 0.92, smoothstep( 0.12, 0.5, L ) ); // Beton: Bruch heller als dunkle, grauer als helle Flächen
   if ( npSt == 2 ) return min( mix( alb, vec3( L ), 0.6 ) * 1.3, vec3( 0.85 ) ); // Putz/Gips: weiß
   if ( npSt == 3 ) return vec3( clamp( L * 2.5, 0.08, 0.55 ) );                  // Blech: blank

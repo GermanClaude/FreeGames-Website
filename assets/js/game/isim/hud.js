@@ -29,7 +29,7 @@ const CSS = `
   background:radial-gradient(circle at 50% 45%,#3b3a33 0,#24241f 62%,#15150f 70%,#4a4436 71%,#2b281f 78%,rgba(0,0,0,0) 79%);box-shadow:0 10px 30px rgba(0,0,0,.6);transition:transform .25s}
 .is-comp svg{position:absolute;inset:9%;width:82%;height:82%}
 .is-comp .is-cl{position:absolute;left:50%;top:6%;width:2px;height:16%;margin-left:-1px;background:#e04b2e}
-.is-comp b{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);font-size:15px;letter-spacing:.12em;color:#d9cfb0}
+.is-comp b{position:absolute;left:50%;top:-30px;text-shadow:0 1px 3px #000;transform:translateX(-50%);font-size:15px;letter-spacing:.12em;color:#d9cfb0}
 .is-map{position:absolute;left:50%;top:50%;width:min(78vh,74vw);aspect-ratio:1;transform:translate(-50%,-50%) rotate(-1.2deg);background:#d8ccab;padding:2.2%;
   box-shadow:0 18px 50px rgba(0,0,0,.7),inset 0 0 60px rgba(90,70,30,.45)}
 .is-map canvas{width:100%;height:100%;display:block}
@@ -202,7 +202,7 @@ export class SimHUD {
         if (o.label || o.id) ctx.fillText(String(o.label || o.id).slice(0, 2).toUpperCase(), x + 22, y + 8);
       }
     }
-    this.el.mapP.textContent = `${(W && W.def && W.def.name) || (this.G.match && this.G.match.mapId) || 'Lageskizze'} · Gitter 1:${mm && mm.size ? Math.round(mm.size.x / 8) : '?'} m je Quadrat`;
+    this.el.mapP.textContent = `${(this.G.data && this.G.data.MAPS && this.G.match && this.G.data.MAPS[this.G.match.mapId] && this.G.data.MAPS[this.G.match.mapId].name) || (W && W.def && W.def.name) || (this.G.match && this.G.match.mapId) || 'Lageskizze'} · Gitter 1:${mm && mm.size ? Math.round(mm.size.x / 8) : '?'} m je Quadrat`;
   }
 
   /* ---------------------------------------------------------------- Takt */

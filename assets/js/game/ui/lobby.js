@@ -519,7 +519,7 @@ export class Lobby {
 
   _renderSummary() {
     if (this.tab === 'online' && this.menus.net) { this.el.summary.innerHTML = this.menus.net.summaryHtml(); return; }
-    if (this.tab === 'kampagne') { this.el.summary.innerHTML = '<small>Kampagne</small><b>Stille Grenze</b><span>Ausrüstung aus dem Reiter „Ausrüstung“</span>'; return; }
+    if (this.tab === 'kampagne') { this.el.summary.innerHTML = this.campaign && this.campaign.which === 'panzer' ? '<small>Panzer-Kampagne</small><b>Eisenwind</b><span>Rolle und Spielart im Missionsfeld</span>' : '<small>Kampagne</small><b>Stille Grenze</b><span>Ausrüstung aus dem Reiter „Ausrüstung“</span>'; return; }
     const d = this._data();
     const c = this.cfg;
     const m = d.MODES[c.modeId] || {};

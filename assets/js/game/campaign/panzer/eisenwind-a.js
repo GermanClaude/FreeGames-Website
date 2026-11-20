@@ -335,7 +335,8 @@ export const P3 = {
             m.objective('geleit', 'Geleite die Kolonne nach Ostrau', { pos: () => (c.lead() ? c.lead().v.position : null), label: 'Kolonne', noDrive: false });
             yield 3;
             crewSay(pz, 'Fahrer', 'Motor läuft. Der alte Diesel zieht gut.');
-            yield m.until(() => c.near(F.at(0.32, 0), 40) || playerPos(m).distanceTo(m.vec(F.at(0.36, 0))) < 40);
+            const ahead = (t) => () => (c.lead() && F.prog(c.lead().v.position) > t) || F.prog(playerPos(m)) > t + 0.04;
+            yield m.until(ahead(0.3));
             m.set('stopp', true);
             infantry(m, 'hinterhalt', 6, F.at(0.43, 45), { attack: 'player', cls: 'pionier', r: 8 });
             m.say('kolonne', 'Beschuss von rechts! Kolonne hält!');
@@ -351,7 +352,7 @@ export const P3 = {
           setup(m) { for (const k of ['pak', 'bunker']) { const v = m.get(k); if (v && v.alive) v.destroy(null, 'kampagne'); } const c = m.get('kolonne'); c.route = ROUTE.map((q) => m.vec(q)); m.objective('geleit', 'Geleite die Kolonne nach Ostrau', { pos: () => (c.lead() ? c.lead().v.position : null), label: 'Kolonne', quiet: true }); },
           *run(m) {
             const c = m.get('kolonne');
-            yield m.until(() => c.near(F.at(0.58, 0), 50) || playerPos(m).distanceTo(m.vec(F.at(0.6, 0))) < 50);
+            yield m.until(() => (c.lead() && F.prog(c.lead().v.position) > 0.55) || F.prog(playerPos(m)) > 0.6);
             const f = [foeTank(m, pz, 'kk', F.at(0.7, -140), { route: [F.at(0.66, -50)] }), foeTank(m, pz, 'kk', F.at(0.76, -150), { route: [F.at(0.72, -60)] })];
             m.set('stopp', true);
             m.say('kolonne', 'Panzer links auf dem Hang! Zwei Stück!');
@@ -359,7 +360,7 @@ export const P3 = {
             yield destroy(m, 'flanke', 'Wehre den Flankenangriff ab', f, { label: 'Panzer' });
             m.set('stopp', false);
             m.say('kolonne', 'Danke, Falke 2. Noch zwei Kilometer.');
-            yield m.until(() => c.arrived(16) || (c.lead() && c.lead().v.position.distanceTo(m.vec(ROUTE[ROUTE.length - 1])) < 22));
+            yield m.until(() => c.arrived(16) || (c.lead() && (c.lead().v.position.distanceTo(m.vec(ROUTE[ROUTE.length - 1])) < 22 || F.prog(c.lead().v.position) > 0.87)));
             m.set('angekommen', true);
             c.stop();
             m.done('geleit');

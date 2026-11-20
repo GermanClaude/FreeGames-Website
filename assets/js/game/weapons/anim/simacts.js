@@ -107,7 +107,7 @@ export const SIM_ACTIONS = {
     // Wickeln: Kreise unten in der Bildmitte (am eigenen Bein/Arm), Abbinden: Band anziehen, dann Knebel drehen
     const ph = (u - 0.18) * (tq ? 5 : 7) * Math.PI * 2;
     const active = u > 0.18 && u < 0.8 ? 1 : 0;
-    const cx = -0.06, cy = -0.3, cz = -0.32;
+    const cx = -0.05, cy = -0.22, cz = -0.34;
     let pos;
     if (tq && u < 0.4) pos = curve(u, [[0.06, [-0.2, -0.42, -0.2]], [0.22, [-0.08, -0.3, -0.33]], [0.32, [-0.02, -0.38, -0.3]], [0.4, [-0.06, -0.3, -0.33]]]);
     else pos = [cx + 0.045 * Math.cos(ph) * active, cy + 0.03 * Math.sin(ph) * active, cz + 0.015 * Math.sin(ph * 0.5) * active];

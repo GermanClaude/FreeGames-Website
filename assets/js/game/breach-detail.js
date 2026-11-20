@@ -212,7 +212,7 @@ export class BreachDetail {
     const brick = [0.66 * cl(L * 1.45 + 0.1), 0.31 * cl(L * 1.45 + 0.1), 0.2 * cl(L * 1.45 + 0.1)];
     const fresh = st === 1 ? [cl((alb[0] * 0.7 + L * 0.3) * 1.7), cl((alb[1] * 0.7 + L * 0.3) * 1.7), cl((alb[2] * 0.7 + L * 0.3) * 1.7)]
       : st === 7 ? [cl(alb[0] * 2.0), cl(alb[1] * 1.7), cl(alb[2] * 1.5)]
-      : st === 0 ? [1.0 * cl(L * 2.4 + 0.05), 0.7 * cl(L * 2.4 + 0.05), 0.42 * cl(L * 2.4 + 0.05)] : alb;
+      : st === 0 ? [Math.max(0.2, Math.min(0.36, L * 2.4)), 0.7 * Math.max(0.2, Math.min(0.36, L * 2.4)), 0.42 * Math.max(0.2, Math.min(0.36, L * 2.4))] : alb;
     const into = _e3.copy(h.n).negate(); // in die Wand / Wirkrichtung
     let th = rnd() * 0.3, n = 0;
     const per = st === 0 ? 1 : st === 3 ? 1 : Math.max(1, Math.min(4, Math.round(tn / 0.11)));

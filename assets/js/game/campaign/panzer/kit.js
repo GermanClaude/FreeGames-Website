@@ -34,6 +34,8 @@ export function makeFrame(G, A, B) {
     /** Punkt in Metern vor/neben einem Rahmenpunkt (dz vorwärts zur Feindbasis, dx rechts). */
     off: (t, lat, dx, dz) => at(t + dz / L, lat + dx),
     m: (meters) => meters / L, // Meter → Streckenanteil
+    /** Fortschritt eines Punkts entlang der Achse (0 = eigene Basis, 1 = Feindbasis). */
+    prog: (p) => ((p.x - A.x) * d.x + (p.z - A.z) * d.z) / L,
   };
 }
 

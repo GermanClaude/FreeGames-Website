@@ -1544,7 +1544,7 @@ export class HUD {
     } else if (G.points && G.points.near) {
       const { point, left, text } = G.points.near;
       pr = { text: text || `${point.def.name} · ${left > 0 ? `noch ${left} s` : point.def.act}`, key: this._keyFor('interact'), action: () => G.points.use() };
-    } else if (G.injuries && G.player && G.player.alive && G.player.injury) {
+    } else if (G.injuries && !G.isim && G.player && G.player.alive && G.player.injury) { // Simulation: Wunden über isim
       // Verwundet: Hinweis mit Verband-Taste (auf Touch antippbar)
       const j = G.player.injury, w = [j.bleed > 0 ? 'Blutung' : '', j.arm ? 'Arm verletzt' : '', j.leg ? 'Bein verletzt' : ''].filter(Boolean);
       if (w.length) pr = { text: `${w.join(' · ')} – Verband (${j.bandages})`, key: this._keyFor('verband'), action: () => G.injuries.bandage() };

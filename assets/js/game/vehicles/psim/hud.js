@@ -35,6 +35,7 @@ const CSS = `
 .ps-mods{display:flex;flex-wrap:wrap;gap:3px 4px}.ps-mods span{white-space:nowrap;padding:1px 5px;border-radius:2px;background:rgba(233,230,223,.08);font-size:11.5px}
 .ps-mods span.ps-hurt{background:rgba(231,195,90,.16)}.ps-mods span.ps-dead{background:rgba(229,99,75,.2)}
 .ps-row kbd{font:inherit;font-size:.85em;background:#2a2c26;border:1px solid #6a6c5e;border-radius:3px;padding:0 4px;margin-right:5px}
+.ps-row .ps-short{display:none}
 .ps-ammo .ps-row.is-sel{background:rgba(160,180,120,.16)}
 .ps-ammo .ps-row.is-load i::after{content:" ●";color:#e7c35a}
 .ps-ord{position:absolute;left:50%;top:13%;transform:translateX(-50%);text-align:center;font-size:clamp(20px,3vw,34px);letter-spacing:.16em;text-transform:uppercase;color:#f0e6c0;text-shadow:0 2px 6px #000}
@@ -80,14 +81,23 @@ const CSS = `
   .ps-right{width:210px;top:22%}.ps-steps{font-size:11.5px}.ps-steps li{padding:1px 0 1px 18px}.ps-steps li::before{top:4px;width:9px;height:9px}.ps-why{font-size:11px;margin-top:3px}
   .ps-help{display:none!important}.ps-line{font-size:13px;padding:3px 8px}.ps-sub{width:min(560px,56vw);bottom:14%}
 }
-body[data-input-mode="touch"] .ps-side{left:auto;right:calc(8px + env(safe-area-inset-right));top:58px;bottom:auto;width:172px;font-size:10.5px;max-height:44vh}
-body[data-input-mode="touch"] .ps-side .ps-crew{display:none}
-body[data-input-mode="touch"] .ps-row kbd{display:none}
-body[data-input-mode="touch"] .ps-right{right:auto;left:calc(8px + env(safe-area-inset-left));top:calc(var(--mm-touch,118px) + 34px);width:190px;max-height:46vh}
-body[data-input-mode="touch"] .ps-steps kbd{display:none}
+/* Touch (Handy quer): Knöpfe belegen die Ränder – oben rechts nur Kopf + Munition als Kürzel (Zustand nur bei Schaden), Handgriffe
+   als eine Zeile (nächster Schritt) oben mittig unter dem Funk, Bordsprech schmal über dem Waffenknopf */
+body[data-input-mode="touch"] .ps-side{left:auto;right:calc(8px + env(safe-area-inset-right));top:56px;bottom:auto;width:176px;font-size:10.5px;max-height:none;gap:2px}
+body[data-input-mode="touch"] .ps-side .ps-crew,body[data-input-mode="touch"] .ps-box h4,body[data-input-mode="touch"] .ps-ammol .ps-row:last-child em:only-child{display:none}
+body[data-input-mode="touch"] .ps-side .ps-mbox{display:none}body[data-input-mode="touch"] .ps-side.has-dmg .ps-mbox{display:block}
+body[data-input-mode="touch"] .ps-ammo{padding:2px 5px}
+body[data-input-mode="touch"] .ps-ammol{display:flex;flex-wrap:wrap;gap:2px 6px}
+body[data-input-mode="touch"] .ps-ammol .ps-row{gap:3px;line-height:1.2}
+body[data-input-mode="touch"] .ps-ammol .ps-row i .ps-long,body[data-input-mode="touch"] .ps-row kbd{display:none}
+body[data-input-mode="touch"] .ps-ammol .ps-row i .ps-short{display:inline}
+body[data-input-mode="touch"] .ps-right{right:auto;left:50%;transform:translateX(-50%);top:92px;width:auto!important;max-width:46vw;max-height:none;align-items:center}
+body[data-input-mode="touch"] .ps-steps{padding:3px 8px;font-size:12px}
+body[data-input-mode="touch"] .ps-steps h4,body[data-input-mode="touch"] .ps-steps li:not(.is-next),body[data-input-mode="touch"] .ps-why,body[data-input-mode="touch"] .ps-steps kbd,body[data-input-mode="touch"] .ps-hint{display:none!important}
+body[data-input-mode="touch"] .ps-steps li{padding-left:18px}
 body[data-input-mode="touch"] .ps-help{display:none!important}
-body[data-input-mode="touch"] .ps-sub{bottom:4%;width:min(440px,44vw)}
-body[data-input-mode="touch"] .ps-line{font-size:12.5px}
+body[data-input-mode="touch"] .ps-sub{bottom:15%;width:min(400px,40vw)}
+body[data-input-mode="touch"] .ps-line{font-size:12px;padding:2px 7px}
 body[data-input-mode="touch"] .ps-ord{top:22%;font-size:20px}
 `;
 
@@ -195,7 +205,7 @@ export class PanzerHUD {
         <div class="ps-head"><b></b><span></span></div><div class="ps-hull"><i></i></div>
         <div class="ps-box ps-crew"><h4>Besatzung</h4><div class="ps-crewl"></div></div>
         <div class="ps-box ps-ammo"><h4>Munition</h4><div class="ps-ammol"></div></div>
-        <div class="ps-box"><h4>Zustand</h4><div class="ps-mods"></div></div>
+        <div class="ps-box ps-mbox"><h4>Zustand</h4><div class="ps-mods"></div></div>
       </div>
       <div class="ps-right">
         <div class="ps-vis" hidden></div>
@@ -301,7 +311,7 @@ export class PanzerHUD {
     const crew = (s.crew || []).map((c) => `<div class="ps-row"><i class="${c.me ? 'ps-me' : ''}">${esc(c.role)}</i><em class="${c.cls}">${esc(c.state)}</em></div>`).join('');
     this._set('crew', el.crew, 'html', crew);
     // Munition
-    const ammo = (s.ammo || []).map((a) => `<div class="ps-row${a.sel ? ' is-sel' : ''}${a.loaded ? ' is-load' : ''}"><i>${a.key ? `<kbd>${esc(a.key)}</kbd>` : ''}${esc(a.label)}</i><em>${a.n}</em></div>`).join('') + (s.loadText ? `<div class="ps-row"><em>${esc(s.loadText)}</em></div>` : '');
+    const ammo = (s.ammo || []).map((a) => `<div class="ps-row${a.sel ? ' is-sel' : ''}${a.loaded ? ' is-load' : ''}"><i>${a.key ? `<kbd>${esc(a.key)}</kbd>` : ''}<span class="ps-long">${esc(a.label)}</span><span class="ps-short">${esc(a.short || '')}</span></i><em>${a.n}</em></div>`).join('') + (s.loadText ? `<div class="ps-row"><em>${esc(s.loadText)}</em></div>` : '');
     this._set('ammo', el.ammo, 'html', ammo);
     // Module
     const mods = s.vehicle ? modsOf(s.vehicle) : null;
@@ -312,6 +322,8 @@ export class PanzerHUD {
         + bad.map((k) => `<span class="${mods[k] > 0 ? 'ps-hurt' : 'ps-dead'}">${MOD_LABEL[k]} ${mods[k] > 0 ? 'beschädigt' : 'ausgefallen'}</span>`).join('')
         || '<span class="ps-ok">Alle Baugruppen i. O.</span>';
       this._set('mods', el.mods, 'html', m);
+      const dmg = bad.length > 0 || mods.brand > 0;
+      if (this._c.dmg !== dmg) { this._c.dmg = dmg; el.side.classList.toggle('has-dmg', dmg); }
     }
     // Prüfliste / Hilfe
     const st = s.steps;
@@ -337,6 +349,6 @@ export function ammoRows(v, keyOf = null, sel = null) {
   if (!g || !v._psimAmmo) return [];
   return v._psimAmmo.map((id, i) => {
     const k = kindOf(id);
-    return { label: KINDS[k].label, n: g.rack[id] | 0, sel: id === sel, loaded: g.loaded === id && g.step === 'geladen', key: keyOf ? keyOf(i) : null };
+    return { label: KINDS[k].label, short: KINDS[k].short, n: g.rack[id] | 0, sel: id === sel, loaded: g.loaded === id && g.step === 'geladen', key: keyOf ? keyOf(i) : null };
   });
 }
