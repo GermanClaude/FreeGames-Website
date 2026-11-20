@@ -28,6 +28,12 @@ export function linde(b, x, z, o = {}) {
 /** Stadtkern: Linden auf beiden Gehwegen der Lindenallee (spiegelgleich in z), Baumscheiben. */
 export function stadtkernFuellen(b) {
   for (const s of [-1, 1]) for (const x of [-36, -24, -13.9, 13.9, 24, 36]) linde(b, x, s * 7.35);
+  // Allee, Hinterstraßen, Ladehöfe: Risse, Ruß, Laub, Papier, Pfützen (Kriegsschauplatz)
+  bodenspuren(b, -54, -5.5, 54, 5.5, 40, { mix: ['cracks', 'cracks', 'soot', 'stain', 'leaves', 'paper', 'puddle', 'tire'] });
+  for (const s of [-1, 1]) {
+    bodenspuren(b, -50, s > 0 ? 48.5 : -55.5, 50, s > 0 ? 55.5 : -48.5, 22, { mix: ['cracks', 'stain', 'leaves', 'paper', 'puddle', 'oil'] });
+    bodenspuren(b, -20, s > 0 ? 38 : -48, 20, s > 0 ? 48 : -38, 12, { mix: ['oil', 'stain', 'cracks', 'leaves'] });
+  }
 }
 
 /**
@@ -87,4 +93,20 @@ export function hafenFuellen(b) {
 /** Werk: Fugen auf den Betonflächen, Fahrspuren im Lkw-Hof. */
 export function werkFuellen(b, flaechen = []) {
   for (const [x0, z0, x1, z1, st] of flaechen) fugen(b, x0, z0, x1, z1, st || 6);
+}
+
+/** Altstadt: Laub, Sandverwehungen, Moos, Flecken auf dem Pflaster der Plätze und Gassen. */
+export function altstadtFuellen(b) {
+  bodenspuren(b, -46, -52, 69, 52, 80, { mix: ['leaves', 'leaves', 'sanddrift', 'stain', 'moss', 'paper', 'puddle', 'cracks'] });
+}
+
+/** Schießstand: Sandverwehungen/Fahrspuren auf den Bahnen, Gras und Büsche auf den Wiesen außerhalb der Mauern. */
+export function rangeFuellen(b) {
+  bodenspuren(b, -28, -75, 28, 28, 36, { mix: ['sanddrift', 'sanddrift', 'stain', 'tire', 'leaves'] });
+  const q = b.lookQuality || b.quality, n = q === 'low' ? 120 : q === 'medium' ? 260 : q === 'ultra' ? 560 : 420;
+  for (let i = 0; i < n; i++) {
+    const side = i % 2 ? 1 : -1, x = side * (39 + hash01(i, 3, 51) * 30), z = -108 + hash01(3, i, 52) * 206;
+    const k = hash01(x, z, 53);
+    b.plant(k < 0.08 ? 'bush' : k < 0.55 ? 'grass' : 'weeds', x, -0.02, z, { s: k < 0.08 ? 0.6 + hash01(z, x, 54) * 0.5 : 0.45 + hash01(z, x, 55) * 0.5, ry: hash01(x, z, 56) * 6.28 });
+  }
 }

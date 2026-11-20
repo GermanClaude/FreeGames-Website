@@ -76,17 +76,17 @@ const ARTEN = {
 };
 /** Nester je Kartenstil: Gewichte der Arten außen (Wandfuß/Ecke/frei) und innen, Grün (Büschel), Büsche, Krieg. */
 const STIL = {
-  hafen:        { laub: 0.4, kiesel: 1.3, ziegel: 0.15, putz: 0.1, holz: 0.7, glas: 0.25, huelse: 0.05, zweig: 0.2, gruen: 0.8, busch: 0.25, fassade: 0.7, palette: 0.5, reifen: 0.25, plane: 0.3, kanister: 0.3 },
-  werk:         { laub: 0.6, kiesel: 1.4, ziegel: 0.6, putz: 0.4, holz: 0.7, glas: 0.6, huelse: 0.15, zweig: 0.3, gruen: 1.1, busch: 0.45, fassade: 1.0, palette: 0.45, reifen: 0.35, plane: 0.25, kanister: 0.3 },
-  altstadt:     { laub: 1.3, kiesel: 0.6, ziegel: 0.35, putz: 0.4, holz: 0.25, glas: 0.15, huelse: 0.1, zweig: 0.3, gruen: 1.0, busch: 0.55, fassade: 1.3, palette: 0.15, reifen: 0.05, plane: 0.1, kanister: 0.1 },
-  bibliothek:   { menge: 0.55, laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0, fassade: 0, palette: 0, reifen: 0, plane: 0, kanister: 0 },
-  stadtkern:    { laub: 1.0, kiesel: 0.8, ziegel: 1.5, putz: 1.1, holz: 0.8, glas: 1.2, huelse: 0.9, zweig: 0.3, gruen: 0.9, busch: 0.4, fassade: 1.2, palette: 0.3, reifen: 0.25, plane: 0.3, kanister: 0.2 },
-  range:        { laub: 0.9, kiesel: 1.0, ziegel: 0, putz: 0.05, holz: 0.3, glas: 0, huelse: 1.6, zweig: 0.5, gruen: 1.3, busch: 0.6, fassade: 0.6, palette: 0.25, reifen: 0.3, plane: 0.15, kanister: 0.3 },
-  grenzland:    { laub: 1.1, kiesel: 0.9, ziegel: 0.45, putz: 0.3, holz: 0.6, glas: 0.25, huelse: 0.45, zweig: 0.8, gruen: 1.2, busch: 0.7, fassade: 1.0, palette: 0.3, reifen: 0.2, plane: 0.2, kanister: 0.2 },
-  niemandsland: { laub: 0.2, kiesel: 1.0, ziegel: 1.3, putz: 0.6, holz: 1.3, glas: 0.2, huelse: 1.2, zweig: 0.9, gruen: 0.25, busch: 0.05, fassade: 0.25, palette: 0.25, reifen: 0.1, plane: 0.3, kanister: 0.35 },
-  brandwald:    { laub: 0.1, kiesel: 0.7, ziegel: 0.3, putz: 0.2, holz: 1.0, glas: 0.4, huelse: 0.9, zweig: 1.1, gruen: 0.2, busch: 0, fassade: 0.2, palette: 0.15, reifen: 0.1, plane: 0.2, kanister: 0.3 },
-  flugplatz:    { laub: 0.6, kiesel: 1.1, ziegel: 0.2, putz: 0.2, holz: 0.4, glas: 0.25, huelse: 0.35, zweig: 0.4, gruen: 1.1, busch: 0.45, fassade: 0.9, palette: 0.35, reifen: 0.3, plane: 0.25, kanister: 0.35 },
-  default:      { laub: 0.8, kiesel: 1, ziegel: 0.4, putz: 0.3, holz: 0.5, glas: 0.3, huelse: 0.3, zweig: 0.4, gruen: 1, busch: 0.4, fassade: 1, palette: 0.3, reifen: 0.2, plane: 0.2, kanister: 0.2 },
+  hafen:        { laub: 0.4, kiesel: 1.3, ziegel: 0.15, putz: 0.1, holz: 0.7, glas: 0.25, huelse: 0.05, zweig: 0.2, gruen: 0.8, busch: 0.25, fassade: 0.7, palette: 0.5, reifen: 0.25, plane: 0.3, kanister: 0.3, risse: 0.45 },
+  werk:         { laub: 0.6, kiesel: 1.4, ziegel: 0.6, putz: 0.4, holz: 0.7, glas: 0.6, huelse: 0.15, zweig: 0.3, gruen: 1.1, busch: 0.45, fassade: 1.0, palette: 0.45, reifen: 0.35, plane: 0.25, kanister: 0.3, risse: 1.0 },
+  altstadt:     { laub: 1.3, kiesel: 0.6, ziegel: 0.35, putz: 0.4, holz: 0.25, glas: 0.15, huelse: 0.1, zweig: 0.3, gruen: 1.0, busch: 0.55, fassade: 1.3, palette: 0.15, reifen: 0.05, plane: 0.1, kanister: 0.1, risse: 0.35 },
+  bibliothek:   { menge: 0.55, laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0, fassade: 0, palette: 0, reifen: 0, plane: 0, kanister: 0, risse: 0 },
+  stadtkern:    { laub: 1.0, kiesel: 0.8, ziegel: 1.5, putz: 1.1, holz: 0.8, glas: 1.2, huelse: 0.9, zweig: 0.3, gruen: 0.9, busch: 0.4, fassade: 1.2, palette: 0.3, reifen: 0.25, plane: 0.3, kanister: 0.2, risse: 0.8 },
+  range:        { laub: 0.9, kiesel: 1.0, ziegel: 0, putz: 0.05, holz: 0.3, glas: 0, huelse: 1.6, zweig: 0.5, gruen: 1.3, busch: 0.6, fassade: 0.6, palette: 0.25, reifen: 0.3, plane: 0.15, kanister: 0.3, risse: 0.7 },
+  grenzland:    { laub: 1.1, kiesel: 0.9, ziegel: 0.45, putz: 0.3, holz: 0.6, glas: 0.25, huelse: 0.45, zweig: 0.8, gruen: 1.2, busch: 0.7, fassade: 1.0, palette: 0.3, reifen: 0.2, plane: 0.2, kanister: 0.2, risse: 0.5 },
+  niemandsland: { laub: 0.2, kiesel: 1.0, ziegel: 1.3, putz: 0.6, holz: 1.3, glas: 0.2, huelse: 1.2, zweig: 0.9, gruen: 0.25, busch: 0.05, fassade: 0.25, palette: 0.25, reifen: 0.1, plane: 0.3, kanister: 0.35, risse: 0.15 },
+  brandwald:    { laub: 0.1, kiesel: 0.7, ziegel: 0.3, putz: 0.2, holz: 1.0, glas: 0.4, huelse: 0.9, zweig: 1.1, gruen: 0.2, busch: 0, fassade: 0.2, palette: 0.15, reifen: 0.1, plane: 0.2, kanister: 0.3, risse: 0 },
+  flugplatz:    { laub: 0.6, kiesel: 1.1, ziegel: 0.2, putz: 0.2, holz: 0.4, glas: 0.25, huelse: 0.35, zweig: 0.4, gruen: 1.1, busch: 0.45, fassade: 0.9, palette: 0.35, reifen: 0.3, plane: 0.25, kanister: 0.35, risse: 0.8 },
+  default:      { laub: 0.8, kiesel: 1, ziegel: 0.4, putz: 0.3, holz: 0.5, glas: 0.3, huelse: 0.3, zweig: 0.4, gruen: 1, busch: 0.4, fassade: 1, palette: 0.3, reifen: 0.2, plane: 0.2, kanister: 0.2, risse: 0.5 },
 };
 /** Innenräume: nur Bauschutt, Putz, Holz, Scherben (kein Laub/Grün). */
 const INNEN = ['putz', 'holz', 'glas', 'ziegel', 'kiesel', 'papier', 'buch'];
@@ -201,7 +201,7 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
       continue;
     }
     // außen: Grün an Wandfuß/Ecke (Fugen), sonst Nester
-    if (wand && W.gruen && r() < 0.32 * W.gruen) {
+    if (wand && W.gruen && r() < 0.5 * W.gruen) {
       // Busch in Ecken (nicht an Startpunkten/Flaggen; ganze Ecke Wand bis 1,6 m Höhe – keine Türlaibung)
       if (ecke && W.busch && r() < W.busch * 0.55 && !nahStart(x, z, 5)) {
         const ok = wandIn(world, x, gy + 1.6, z, wand[0], wand[1], 0.8) < Infinity
@@ -209,18 +209,27 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
           && wandIn(world, x + wand[1] * 0.9, gy + 0.9, z - wand[0] * 0.9, wand[0], wand[1], 0.8) < Infinity;
         if (ok) { plants.push({ kind: 'bush', x: x + wand[0] * 0.1, y: gy - 0.03, z: z + wand[1] * 0.1, s: 0.42 + r() * 0.3, ry: r() * 6.283 }); continue; }
       }
-      const n = 2 + Math.floor(r() * 4);
+      const n = 4 + Math.floor(r() * 7);
       for (let i = 0; i < n; i++) {
-        const u = (r() - 0.5) * 2.2, off = r() * 0.25;
+        const u = (r() - 0.5) * 3.6, off = r() * 0.3;
         const px = x + wand[0] * (0.25 - off) - wand[1] * u, pz = z + wand[1] * (0.25 - off) + wand[0] * u;
         const g2 = bodenAt(world, px, pz, gy + 0.3);
         if (!g2 || Math.abs(g2.y - gy) > 0.04) continue;
-        plants.push({ kind: r() < 0.55 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: 0.3 + r() * 0.42, ry: r() * 6.283, tint: ['#b9b98a', '#a3ab7a', '#9aa070', '#c0b888'][Math.floor(r() * 4)] });
+        plants.push({ kind: r() < 0.55 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: (0.3 + r() * 0.5) * (1 - off), ry: r() * 6.283, tint: ['#b9b98a', '#a3ab7a', '#9aa070', '#c0b888', '#8f9a62'][Math.floor(r() * 5)] });
+      }
+      continue;
+    }
+    // Unkraut in Belagsrissen auf freier Fläche (verlassene Höfe/Straßen), klein – verdeckt nichts
+    if (!wand && W.risse && r() < 0.35 * W.risse) {
+      const n = 1 + Math.floor(r() * 3);
+      for (let i = 0; i < n; i++) {
+        const px = x + (r() - 0.5) * 0.7, pz = z + (r() - 0.5) * 0.7, g2 = bodenAt(world, px, pz, gy + 0.3);
+        if (g2 && Math.abs(g2.y - gy) < 0.03) plants.push({ kind: r() < 0.7 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: 0.18 + r() * 0.2, ry: r() * 6.283, tint: ['#a8b07c', '#9aa070', '#b4b088'][Math.floor(r() * 3)] });
       }
       continue;
     }
     // mittelgroße flache Teile nur direkt an der Wand (nicht in Laufwegen, nicht an Startpunkten)
-    if (wand && r() < 0.16 && !nahStart(x, z, 4)) {
+    if (wand && r() < 0.3 && !nahStart(x, z, 4)) {
       const art2 = wahl(AN_WAND);
       if (art2) {
         const A = ARTEN[art2], ry = Math.atan2(wand[0], wand[1]) + (r() - 0.5) * 0.5, off = art2 === 'palette' ? 0.1 : 0;

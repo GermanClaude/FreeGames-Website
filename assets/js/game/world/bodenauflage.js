@@ -158,11 +158,11 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
     if (g.surface === 'water' || g.surface === 'grass' || g.surface === 'wood' || g.surface === 'metal' || g.surface === 'fabric' || /grass|roof|water/.test(g.name)) continue;
     const gy = g.y;
     // Wandfuß? (45 % der Versuche): waagerechte Strahlen 0,18 m über dem Boden in zwei Richtungen
-    if (r() < 0.45) {
+    if (r() < 0.6) { // fuell: vorher 45 %, Strahl 4,5 m
       const a = r() * Math.PI * 2;
       _o.set(x, gy + 0.18, z); _d.set(Math.cos(a), 0, Math.sin(a));
-      let h = world.raycast(_o, _d, 4.5);
-      if (!h || Math.abs(h.normal.y) >= 0.15) { _d.set(-Math.sin(a), 0, Math.cos(a)); h = world.raycast(_o, _d, 4.5); }
+      let h = world.raycast(_o, _d, 6.5);
+      if (!h || Math.abs(h.normal.y) >= 0.15) { _d.set(-Math.sin(a), 0, Math.cos(a)); h = world.raycast(_o, _d, 6.5); }
       if (h && Math.abs(h.normal.y) < 0.15 && h.distance > 0.3) {
         _n.copy(h.normal).setY(0).normalize();
         if (_n.dot(_d) > 0) _n.negate();

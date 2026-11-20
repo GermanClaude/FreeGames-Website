@@ -134,7 +134,8 @@ export default {
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
     belebe(b, { stil: 'industrie', huellen: ['building', 'container'], boden: { asphalt: true }, bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
     werkFuellen(b, [[-HX, -HZ, HX, HZ, 6], [HX, -48, 52, 48, 6.5]]);
-    bodenspuren(b, -78, -48, -HX, 48, 34);
+    bodenspuren(b, -78, -48, -HX, 48, 46, { mix: ['tire', 'tire', 'oil', 'cracks', 'stain', 'puddle', 'moss', 'leaves'] });
+    bodenspuren(b, HX, -48, 52, 48, 26, { mix: ['oil', 'cracks', 'stain', 'puddle', 'moss', 'drip'] });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -36, z: 27, radius: 5 }, { id: 'B', x: 0, z: 0, radius: 5.5 }, { id: 'C', x: -36, z: -27, radius: 5 }] },

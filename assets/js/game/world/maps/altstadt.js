@@ -15,6 +15,7 @@ import {
 } from './altstadt-ausstattung.js?v=20261115041504';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
 import { belebe, sperrpunkte, KAMPAGNE, merkeFensterdeko } from '../kleinkram.js?v=20261115041504';
+import { altstadtFuellen } from './fuell-karten.js?v=20261115041504'; // fuell (20.11.): Bodenspuren auf dem Pflaster
 import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
 import { terrassen } from './altstadt-terrassen.js?v=20261115041504'; // gelaende (Runde 3)
 
@@ -144,6 +145,7 @@ export default {
     b.gelaende = terrassen(b, spawns);
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
     belebe(b, { stil: 'stadt', einrichten: true, boden: true, bereich: { minX: -46, maxX: 69, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, [...KAMPAGNE.altstadt, ...KAMPAGNE_PUNKTE.altstadt]) });
+    altstadtFuellen(b);
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 29, radius: 5 }, { id: 'B', x: -7.5, z: 0, radius: 5.5 }, { id: 'C', x: -5, z: -29, radius: 5 }] },
