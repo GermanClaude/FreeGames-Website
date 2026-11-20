@@ -731,7 +731,7 @@ function buildSoldier(V, lod) {
     // Haaransatz, entlang der Normalen um 3–11 mm (Volumen) versetzt – sitzt so genau auf dem Kopf von face.js; dazu Dutt, Zopf
     // oder schulterlanges Haar. Haaransatz/Brauen malt face-skin.js.
     if (V.female && V.hairStyle) {
-      const HM = { color: V.hair, detail: 1, shine: 0.22, cls: 'cloth' };
+      const HM = { color: V.hair, detail: 1, shine: 0.22, cls: 'cloth', tail: L0 }; // mensch3: auf Stufe 0 zeichnet hair.js die Frisur am Detailkopf (Ansicht ohne Kopf blendet diese Kappe aus)
       const D2 = Math.PI / 180;
       const HC = [0, 1.7, -0.012];
       // Haaransatz θ(φ) ab Scheitel (φ: vorn 270°, hinten 90°): Stirn ≈ 46°, Schläfen ≈ 70°, über den Ohren ≈ 86°, Nacken ≈ 120°

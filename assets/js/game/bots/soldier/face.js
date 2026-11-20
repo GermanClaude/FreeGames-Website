@@ -53,6 +53,7 @@ import { bakeFaceMaps, normLook } from './face-skin.js?v=20261115041504';
 import { BONE } from './rig.js?v=20261115041504';
 import { VARIANTS, variantDef } from './gear.js?v=20261115041504';
 import { SKIN_TONES, SCHEMES } from './materials.js?v=20261115041504';
+import { hairGeometry, beardGeometry, hairMaterial, pickHairStyle, disposeHair } from './hair.js?v=20261115041504';
 
 export { FACE_MORPHS };
 
@@ -256,6 +257,7 @@ export function disposeFaceGeometries() {
   for (const g of geoCache.values()) g.dispose();
   for (const t of texCache.values()) { t.a.dispose(); t.b.dispose(); }
   geoCache.clear(); texCache.clear(); stats.texBytes = 0;
+  disposeHair();
 }
 
 /* ------------------------------------------------------------------ Shader */
@@ -616,6 +618,14 @@ function profileFor(soldier, V, opts) {
   return { prof, look };
 }
 
+/** Frisur (hair.js) zu Ausführung/Optionen: ausdrücklich (opts.hairStyle, '' = keine), sonst nur ohne Kopfbedeckung/Abdeckung. */
+function hairStyleFor(V, opts, look, prof, cover) {
+  if (opts.hairStyle !== undefined) return opts.hairStyle || null;
+  if (V.head || (cover && cover !== 'none')) return null;
+  if (V.female) return V.hairStyle || pickHairStyle(look, true, prof.seed || 1);
+  return pickHairStyle(look, false, prof.seed || 1);
+}
+
 /** Hautton zu Profil/Optionen (Gesicht und Körper – Hände, Hals, Kopf der fernen Stufen – bekommen denselben). */
 function skinFor(prof, opts) {
   if (typeof opts.skin === 'string') return opts.skin;
@@ -668,6 +678,16 @@ export class SoldierFace {
     this.profile = prof;
     this.look = look;
     this.setCover(opts.cover || 'auto');
+    // mensch3: Frisur als Geometrie (hair.js) nur bei unbedecktem Kopf (Zivil, Kampagne ohne Helm); unter Helm/Mütze/Haube
+    // bleibt das gemalte Kurzhaar. Haarkranz/Glatze passen die gemalten Haare an (Oberkopf kahl).
+    this.hairStyle = hairStyleFor(V, opts, look, prof, this.cover);
+    if (this.hairStyle === 'kranz') { look.crown = 1; look.recede = Math.max(look.recede ?? 0, 0.6); }
+    if (this.hairStyle === 'glatze') look.hair = Math.min(look.hair ?? 1, 0.18);
+    // Bart als Geometrie (Vollbart/kurzer Bart) nur ohne Abdeckung über dem Mund
+    this.beardKind = (this.cover === 'none' || !this.cover) && !V.female && (look.beard === 'voll' || look.beard === 'kurz') ? look.beard : null;
+    this.hairMesh = null; this.beardMesh = null;
+    this.hairMat = this.hairStyle || this.beardKind ? hairMaterial({ low, shared, color: '#' + U.uHairCol.value.getHexString() }) : null;
+    if (this.hairMat) this.hairMat.userData.hairU.uHairCol.value.copy(U.uHairCol.value);
     // Netz + Karten kommen aus dem Hintergrund-Rechner (face-worker.js); bis dahin zeichnet der Soldat seinen einfachen Körperkopf.
     this.mesh = null;
     this.castShadow = false;
@@ -691,6 +711,23 @@ export class SoldierFace {
       mesh.bind(soldier.skeleton, new THREE.Matrix4());
       mesh.visible = false;
       soldier.root.add(mesh);
+      // mensch3: Frisur/Bart am selben Skelett (Bart folgt den Mimik-Gewichten des Kopfes – geteiltes Gewichtsfeld)
+      const hres = this.res === 'cine' ? 'cine' : low || this.res === 'mid' ? 'mid' : 'near';
+      try {
+        const hg = this.hairStyle ? hairGeometry(geo, this.hairStyle, hres, { recede: look.recede, female: !!V.female, seed: prof.seed || 1 }) : null;
+        if (hg) {
+          const hm = (this.hairMesh = new THREE.SkinnedMesh(hg, this.hairMat));
+          hm.name = 'soldat-frisur'; hm.frustumCulled = false; hm.castShadow = false; hm.receiveShadow = true;
+          hm.bind(soldier.skeleton, new THREE.Matrix4()); hm.visible = false; soldier.root.add(hm);
+        }
+        const bg = this.beardKind ? beardGeometry(geo, this.beardKind, hres) : null;
+        if (bg) {
+          const bm = (this.beardMesh = new THREE.SkinnedMesh(bg, this.hairMat));
+          bm.name = 'soldat-bart'; bm.frustumCulled = false; bm.castShadow = false; bm.receiveShadow = true;
+          bm.morphTargetInfluences = mesh.morphTargetInfluences;
+          bm.bind(soldier.skeleton, new THREE.Matrix4()); bm.visible = false; soldier.root.add(bm);
+        }
+      } catch (err) { if (typeof console !== 'undefined') console.warn('[Gesicht] Frisur nicht verfügbar.', err); }
       warmProgram(mesh, low);
       this._step(0);
       if (typeof soldier._faceReady === 'function') soldier._faceReady(this);
@@ -910,7 +947,12 @@ export class SoldierFace {
   }
 
   /** Sichtbarkeit nach Detailstufe des Soldaten. */
-  syncVisible(lod) { if (this.mesh) this.mesh.visible = this.forceVisible || lod === 0; }
+  syncVisible(lod) {
+    if (!this.mesh) return;
+    const v = (this.mesh.visible = this.forceVisible || lod === 0);
+    if (this.hairMesh) this.hairMesh.visible = v;
+    if (this.beardMesh) this.beardMesh.visible = v;
+  }
 
   setShadows(on) { this.castShadow = !!on; if (this.mesh) this.mesh.castShadow = this.castShadow; }
 
@@ -919,6 +961,9 @@ export class SoldierFace {
     this.disposed = true;
     if (--liveFaces <= 0) { liveFaces = 0; warmed.clear(); }
     if (this.mesh) this.mesh.removeFromParent();
+    if (this.hairMesh) this.hairMesh.removeFromParent();
+    if (this.beardMesh) this.beardMesh.removeFromParent();
+    if (this.hairMat) this.hairMat.dispose();
     this.material.dispose();
     // Geometrie und Karten bleiben im Cache (geteilt)
   }
