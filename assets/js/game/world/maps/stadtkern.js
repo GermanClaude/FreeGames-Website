@@ -8,6 +8,7 @@
 import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261115041504';
 import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261115041504';
 import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261115041504';
+import { stadtkernFuellen } from './fuell-karten.js?v=20261115041504'; // fuell (20.11.): Linden der Lindenallee u. a.
 
 const PI = Math.PI, Q = PI / 2;
 const HX = 56, HZ = 56; // Spielfläche (Kulissen dahinter)
@@ -193,6 +194,7 @@ export default {
     haelfte(b, 1, zones);
     haelfte(b, -1, zones);
     rand(b);
+    stadtkernFuellen(b);
     // Startpunkte: Hinterstraßen (A Süd, B Nord); FFA verteilt (Höfe, Läden, Platz, U-Bahn, Dächer nicht)
     const spawns = { A: [], B: [], ffa: [] };
     for (const x of [-44, -36, -20, -12, -2, 6, 18, 24, 36, 44, -52, 52]) { spawns.A.push({ x, z: x === -52 || x === 52 ? 46 : 51.5, yaw: 0 }); spawns.B.push({ x, z: x === -52 || x === 52 ? -46 : -51.5, yaw: PI }); }

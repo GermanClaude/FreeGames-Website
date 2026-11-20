@@ -329,7 +329,7 @@ const FLUGPLATZ = {
       { x: 220, z: 345, r: 60, density: 0.55, spruce: 0.4 }, { x: -360, z: 340, r: 55, density: 0.6, spruce: 0.5 },
     ],
     ring: { density: 0.32, spruce: 0.75, inset: -6, step: 9 },
-    scatter: { count: 22 },
+    scatter: { count: 22, buesche: 36 }, // fuell (20.11.): + Buschgruppen ohne Kollision (nicht in den Schneisen)
     hedges: [
       { pts: [[-280, 262], [-120, 266]], trees: 0.25 }, { pts: [[-10, 268], [100, 266]], trees: 0.2 }, { pts: [[300, 262], [420, 250]], trees: 0.3 },
     ],

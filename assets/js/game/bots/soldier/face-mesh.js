@@ -100,7 +100,9 @@ function shapedPositions(A, P) {
   if (P.weight > 0) apply('heavy', P.weight); else apply('lean', -P.weight);
   for (const n of ['jaw', 'chin', 'nose', 'noseW', 'brow', 'cheek', 'lips', 'mouthW', 'skull', 'eyes', 'neck', 'bags', 'laugh', 'fat', 'prog', 'angles']) {
     const w = P[n];
-    if (w > 0) apply(n + '+', Math.min(w, 1.3)); else if (w < 0) apply(n + '-', Math.min(-w, 1.3));
+    // mensch4: Brauenwulst-Ziel nur noch zu 40 % (Nutzer: „wie Neandertaler mit dieser fetten Stirn“)
+    const k = n === 'brow' && w > 0 ? 0.4 : 1;
+    if (w > 0) apply(n + '+', Math.min(w, 1.3) * k); else if (w < 0) apply(n + '-', Math.min(-w, 1.3));
   }
   if (P.cleft > 0) apply('cleft', P.cleft);
   // Asymmetrie: echte Gesichter sind nie spiegelgleich (eine Seite voller, ein Auge tiefer, Nasenspitze leicht schief)
@@ -117,6 +119,21 @@ function shapedPositions(A, P) {
   ];
   const ey = L.eyeL[1];
   const n = pos.length / 3;
+  // mensch4: Stirn steiler und glatter, Brauenwulst flacher. Gemessen (Mittellinie): Stirn 5 cm über der Glabella lag 20–24 mm
+  // hinter ihr (fliehende Stirn), Wulst 10–19 mm vor der Hornhaut. Obere Stirn nach vorn (Gaußbuckel um 5 cm über dem Auge),
+  // Wulst über den Augen zurück; Frauen etwas stärker (steilere Stirn).
+  {
+    const bY = L.browY, fem = sat(P.female), bw = Math.max(0, P.brow);
+    const fwd = 0.0055 + 0.0025 * fem, back = 0.0018 + 0.0022 * bw * 0.6 + 0.0008 * fem;
+    for (let v = 0; v < n; v++) {
+      const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
+      if (z > 0.0) continue;
+      const front = sstep(0.0, -0.06, z);
+      const gF = Math.exp(-(((y - (bY + 0.042)) / 0.03) ** 2) - (x / 0.055) ** 2);
+      const gB = Math.exp(-(((y - (bY + 0.002)) / 0.0085) ** 2)) * Math.exp(-(((Math.abs(x) - 0.026) / 0.03) ** 2));
+      pos[v * 3 + 2] -= (fwd * gF - back * gB) * front;
+    }
+  }
   for (let v = 0; v < n; v++) {
     const x = pos[v * 3], y = pos[v * 3 + 1] - ey;
     for (const [cx, cy, rx, ry, dx, dy, dz] of blobs) {
@@ -349,6 +366,47 @@ function tongue(out, L, segU, segV) {
 
 /* ------------------------------------------------------------------ Hauptfunktion */
 
+/**
+ * mensch4 (Nutzer: Mund, Nase, Lippen viel zu deutlich durch die Maske): Hülle für Stoff über dem Gesicht (Sturmhaube,
+ * Halstuch, Shemagh). Stoff liegt nicht 1:1 auf, er spannt sich über die vorstehenden Stellen: wiederholtes Glätten
+ * (Umbrella-Operator über die Viereck-Nachbarn) mit Zeltbedingung – eine Ecke darf höchstens `allow` hinter die Haut
+ * (Nasenspitze, Kinn, Wangen halten den Stoff; Lippen bis 4,5 mm, damit Lippenwulst und Mundspalt verschwinden),
+ * Vertiefungen (Mundspalt, Nasenflügelfurche, Lippen-Kinn-Furche, Philtrum) füllen sich. Nur unterhalb der Augen
+ * (Augenschlitz/Stirn bleiben), Ohren und Mundraum ausgenommen. → Positionen der Hülle (Float32 nV×3).
+ */
+function coverShell(pos, nrm, quads, nV, mask, L) {
+  const S = new Float32Array(pos);
+  const nb = Array.from({ length: nV }, () => new Set());
+  for (let f = 0; f < quads.length; f += 4) for (let i = 0; i < 4; i++) { const a = quads[f + i], b = quads[f + ((i + 1) & 3)]; nb[a].add(b); nb[b].add(a); }
+  const eyeY = (L.eyeL[1] + L.eyeR[1]) / 2;
+  const w = new Float32Array(nV), allow = new Float32Array(nV), inner = new Uint8Array(nV);
+  for (let v = 0; v < nV; v++) {
+    const mIn = mask[v * 4 + 1], ear = mask[v * 4 + 3], lip = mask[v * 4];
+    inner[v] = mIn > 0.5 ? 1 : 0;
+    w[v] = inner[v] || ear > 0.5 ? 0 : 1 - sstep(eyeY - 0.024, eyeY - 0.008, pos[v * 3 + 1]);
+    allow[v] = 0.0012 + 0.0033 * sat(lip * 1.4);
+  }
+  const nbA = nb.map((st, v) => Array.from(st).filter((u) => !inner[u] || inner[v]));
+  const T = new Float32Array(nV * 3);
+  for (let it = 0; it < 48; it++) {
+    T.set(S);
+    for (let v = 0; v < nV; v++) {
+      if (w[v] <= 0) continue;
+      const A = nbA[v]; if (!A.length) continue;
+      let x = 0, y = 0, z = 0;
+      for (const u of A) { x += S[u * 3]; y += S[u * 3 + 1]; z += S[u * 3 + 2]; }
+      const k = 0.65 * w[v] / A.length;
+      T[v * 3] += (x - S[v * 3] * A.length) * k; T[v * 3 + 1] += (y - S[v * 3 + 1] * A.length) * k; T[v * 3 + 2] += (z - S[v * 3 + 2] * A.length) * k;
+      // Zeltbedingung: nicht tiefer als `allow` hinter der Haut (entlang der Hautnormalen)
+      const nx = nrm[v * 3], ny = nrm[v * 3 + 1], nz = nrm[v * 3 + 2];
+      const d = (T[v * 3] - pos[v * 3]) * nx + (T[v * 3 + 1] - pos[v * 3 + 1]) * ny + (T[v * 3 + 2] - pos[v * 3 + 2]) * nz;
+      if (d < -allow[v]) { const c = -allow[v] - d; T[v * 3] += nx * c; T[v * 3 + 1] += ny * c; T[v * 3 + 2] += nz * c; }
+    }
+    S.set(T);
+  }
+  return S;
+}
+
 export const FACE_RES = Object.freeze({ cine: { sub: 1, eye: [32, 20], arch: 40, tongue: [16, 10] }, near: { sub: 0, eye: [20, 12], arch: 22, tongue: [10, 6] }, mid: { sub: 0, eye: [12, 8], arch: 12, tongue: [8, 5] } });
 
 /**
@@ -375,6 +433,8 @@ export function buildHeadData(A, res = 'near', profile = {}) {
     quads = cc.quads1; quadsUV = su.quadsUV; uv = su.uv; nV = cc.nV1;
   }
   const nrm = quadNormals(pos, quads, nV);
+  const shell = coverShell(pos, nrm, quads, nV, mask, L);
+  const shellN = quadNormals(shell, quads, nV);
   // Mimik-Normalen: Normalen der verformten Fläche − Ruhe-Normalen
   const tmp = new Float32Array(pos.length);
   const morphN = morph.map((m) => {
@@ -411,11 +471,11 @@ export function buildHeadData(A, res = 'near', profile = {}) {
   tongue(X, L, R.tongue[0], R.tongue[1]);
   const nX = X.pos.length / 3;
   const n = nSkin + nX;
-  const D = { n, pos: new Float32Array(n * 3), nrm: new Float32Array(n * 3), uv: new Float32Array(n * 2), rest: new Float32Array(n * 4) };
+  const D = { n, pos: new Float32Array(n * 3), nrm: new Float32Array(n * 3), uv: new Float32Array(n * 2), rest: new Float32Array(n * 4), cov: new Float32Array(n * 3), covN: new Float32Array(n * 3) };
   const parts = new Uint8Array(n);
   for (let i = 0; i < nSkin; i++) {
     const p = rv[i * 2], t = rv[i * 2 + 1];
-    for (let c = 0; c < 3; c++) { D.pos[i * 3 + c] = pos[p * 3 + c]; D.nrm[i * 3 + c] = nrm[p * 3 + c]; }
+    for (let c = 0; c < 3; c++) { D.pos[i * 3 + c] = pos[p * 3 + c]; D.nrm[i * 3 + c] = nrm[p * 3 + c]; D.cov[i * 3 + c] = shell[p * 3 + c] - pos[p * 3 + c]; D.covN[i * 3 + c] = shellN[p * 3 + c]; }
     D.uv[i * 2] = uv[t * 2]; D.uv[i * 2 + 1] = uv[t * 2 + 1];
     const mIn = mask[p * 4 + 1], ear = mask[p * 4 + 3];
     parts[i] = mIn > 0.5 ? 5 : ear > 0.5 ? 1 : 0;
@@ -423,7 +483,7 @@ export function buildHeadData(A, res = 'near', profile = {}) {
   }
   for (let j = 0; j < nX; j++) {
     const i = nSkin + j;
-    for (let c = 0; c < 3; c++) { D.pos[i * 3 + c] = X.pos[j * 3 + c]; D.nrm[i * 3 + c] = X.nrm[j * 3 + c]; }
+    for (let c = 0; c < 3; c++) { D.pos[i * 3 + c] = X.pos[j * 3 + c]; D.nrm[i * 3 + c] = X.nrm[j * 3 + c]; D.covN[i * 3 + c] = X.nrm[j * 3 + c]; }
     parts[i] = X.part[j];
     // Zähne: UV = (Bogen −1…1, Höhe 0…1) für Zahnzwischenräume/Zahnfleisch im Shader
     if (j >= nEye && j < nTeeth) { const k = (j - nEye) * 2; D.uv[i * 2] = X.toothU[k]; D.uv[i * 2 + 1] = X.toothU[k + 1] + (j >= nUp ? 2 : 0); }
@@ -494,6 +554,7 @@ export function buildHeadData(A, res = 'near', profile = {}) {
 /** Übertragbare Puffer (postMessage) eines buildHeadData-Ergebnisses. */
 export function transferList(D) {
   const tr = [D.pos.buffer, D.nrm.buffer, D.uv.buffer, D.rest.buffer, D.idx.buffer, D.ski.buffer, D.skw.buffer];
+  if (D.cov) tr.push(D.cov.buffer, D.covN.buffer);
   for (const m of D.morphs) tr.push(m.pos.buffer, m.nrm.buffer);
   return tr;
 }

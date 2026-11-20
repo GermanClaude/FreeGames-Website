@@ -56,7 +56,8 @@ export function streuRaster(world, bereiche, step, r) {
     for (let z = q.minZ + step / 2; z < q.maxZ; z += step) for (let x = q.minX + step / 2; x < q.maxX; x += step) cells.push([x + (r() - 0.5) * step, z + (r() - 0.5) * step]);
   }
   for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
-  return { cells, flaeche: bereiche && bereiche.length ? Math.min(1.5, Math.max(0.25, area / 12000)) : 1 };
+  // Flächenfaktor (Bezug ≈ 12 000 m² – Hafen/Werk/Altstadt/Stadtkern): kleine Karten (Bibliothek) entsprechend weniger
+  return { cells, flaeche: Math.min(1.5, Math.max(0.3, area / 12000)) };
 }
 /** Bodenhöhe der Ebene unter (x, z): kleine Karten y ≈ 0, Großkarten Gelände (world.heightAt) – oder null. */
 export function bodenY(world, x, z) {
@@ -276,6 +277,7 @@ const LITTER = [
 const LITTER_MIX = {
   hafen: [1.2, 0.8, 0.9, 0.6, 1.4, 1.0, 0.6, 0.8], werk: [1.0, 0.7, 0.8, 0.5, 1.2, 0.6, 0.5, 1.6],
   altstadt: [1.0, 1.2, 1.2, 1.2, 0.7, 0.9, 1.0, 0.8], default: [1, 1, 1, 1, 1, 1, 1, 1],
+  bibliothek: [0, 0.05, 1.4, 2.4, 0.15, 0, 0.05, 0.3], // fuell: Kloster-Bibliothek – Papier statt Dosen/Tüten
 };
 function mergeGeos(list) {
   const P = [], N = [];
@@ -293,7 +295,8 @@ export function placeLitter3D(world, group, { quality = 'high', seed = 1, def = 
   // fuell: Großkarten nur in Bereichen (Ortschaften), Menge nach Fläche
   const opt = def.groundDressing || {}, ber = opt.bereiche && opt.bereiche.length ? opt.bereiche : null;
   const berW = ber ? ber.map((q) => (q.maxX - q.minX) * (q.maxZ - q.minZ)) : null, berSum = ber ? berW.reduce((a, c) => a + c, 0) : 0;
-  if (ber) cap = Math.round(cap * Math.min(1.5, Math.max(0.25, berSum / 12000)) * (opt.cap ?? 1));
+  const flaeche = ber ? berSum : (b.max.x - b.min.x) * (b.max.z - b.min.z);
+  cap = Math.round(cap * Math.min(1.5, Math.max(0.3, flaeche / 12000)) * (opt.cap ?? 1));
   const mix = LITTER_MIX[def.id] || LITTER_MIX.default, mixSum = mix.reduce((a, c) => a + c, 0);
   const pick = () => { let k = r() * mixSum; for (let i = 0; i < mix.length; i++) { k -= mix[i]; if (k <= 0) return i; } return 0; };
   const per = LITTER.map(() => []);

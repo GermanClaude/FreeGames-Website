@@ -317,7 +317,8 @@ export function hairGeometry(geo, style, res = 'near', opts = {}) {
   if (style === 'offen') pole = dirOf(18 * D2R, 0.5 * (opts.seed % 2 ? 1 : -1)); // Scheitel leicht seitlich
   const crownHole = style === 'kranz'; // Haarkranz: oben kahl
   const thick = (t, a) => {
-    let d = t < 0.55 ? lerp(T[0], T[1], t / 0.55) : lerp(T[1], T[2], sstep(0.55, 1, t));
+    // mensch4: zum Ansatz hin flach auslaufen (vorher ≈ 3 mm dicke Kante kurz vor dem Ansatz → sichtbare Stufe, Stirn wirkte höher)
+    let d = t < 0.5 ? lerp(T[0], T[1], t / 0.5) : lerp(T[1], T[2] * 0.35, sstep(0.5, 0.9, t));
     if (style === 'scheitel') d += 0.004 * Math.exp(-(a * a) / 0.25) * sstep(0.4, 0.8, t) * (1 - sstep(0.88, 1, t)); // Tolle vorn
     if (style === 'offen') d += 0.004 * sstep(0.5, 0.95, Math.abs(a) / Math.PI);
     return d;
@@ -346,7 +347,7 @@ export function hairGeometry(geo, style, res = 'near', opts = {}) {
       (i, j) => {
         const t = (j / rows) * (1 + OVER);
         // Ausdünnen am Ansatz (Strähne für Strähne) und am Kranz-Innenrand
-        let f = 1 - sstep(0.74, 1 + OVER * 0.95, t);
+        let f = 1 - sstep(0.66, 1 + OVER * 0.95, t);
         if (crownHole) f *= sstep(0.0, 0.25, t) * sstep(55 * D2R, 85 * D2R, Math.abs(-Math.PI + (i / cols) * TAU));
         return f;
       },

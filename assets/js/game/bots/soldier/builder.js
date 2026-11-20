@@ -219,6 +219,7 @@ export class SkinBuilder {
     // mensch4: Teil-Kennung (gear.js setzt B.tag vor Gruppen von Teilen) → userData.parts [[erste Ecke, Ende, Kennung]] für
     // Prüfwerkzeuge (Durchstich-Prüfung je Pose); kostet nur eine kleine Liste je Geometrie
     this.tag = '';
+    this.shrink = []; // mensch4: [{ inner, regs, outer, depth, max }] – verdeckte Innen-Lage einziehen (siehe build)
   }
 
   /**
@@ -377,6 +378,10 @@ export class SkinBuilder {
       vo += n;
       g.dispose();
     }
+    // mensch4: verdeckte Innen-Lage einziehen (Durchstich-Schutz): Ecken der Innen-Lage (Kennung + Bereiche), über denen in der
+    // Bindehaltung die Außen-Lage liegt (Strahl entlang der Normalen trifft sie ≤ max), um `depth` nach innen – bei starker
+    // Verformung (Laufen, Liegen, Ragdoll) sticht so das Hemd nicht durch die Weste.
+    for (const sh of this.shrink || []) shrinkCovered(pos, nor, idx, io, ranges, sh);
     // Umgebungsverdeckung je Vertex (Kontaktschatten unter Taschen, zwischen den Beinen, unter Helm/Kragen …)
     const tAo = performance.now();
     const ao = this.ao ? bakeVertexAO(pos, nor, idx, io, this.ao) : new Uint8Array(nv).fill(255);
@@ -415,6 +420,53 @@ export class SkinBuilder {
     this.triangles = io / 3;
     this.parts = [];
     return out;
+  }
+}
+
+/** Innen-Lage unter der Außen-Lage einziehen (siehe build): sh = { inner, regs (Set|null), outer, depth, max }. */
+function shrinkCovered(pos, nor, idx, ni, ranges, { inner, regs = null, outer, depth = 0.006, max = 0.04 }) {
+  const inR = ranges.filter((r) => r[2] === inner), outR = ranges.filter((r) => r[2] === outer);
+  if (!inR.length || !outR.length) return;
+  const isOut = (v) => outR.some((r) => v >= r[0] && v < r[1]);
+  const cell = 0.03, G = new Map(), T = [];
+  for (let t = 0; t < ni; t += 3) {
+    const a = idx[t], b = idx[t + 1], c = idx[t + 2];
+    if (!isOut(a)) continue;
+    const ti = T.length; T.push(a, b, c);
+    let x0 = 1e9, y0 = 1e9, z0 = 1e9, x1 = -1e9, y1 = -1e9, z1 = -1e9;
+    for (const v of [a, b, c]) { x0 = Math.min(x0, pos[v * 3]); x1 = Math.max(x1, pos[v * 3]); y0 = Math.min(y0, pos[v * 3 + 1]); y1 = Math.max(y1, pos[v * 3 + 1]); z0 = Math.min(z0, pos[v * 3 + 2]); z1 = Math.max(z1, pos[v * 3 + 2]); }
+    for (let i = Math.floor(x0 / cell); i <= Math.floor(x1 / cell); i++) for (let j = Math.floor(y0 / cell); j <= Math.floor(y1 / cell); j++) for (let k = Math.floor(z0 / cell); k <= Math.floor(z1 / cell); k++) {
+      const key = (i * 73856093) ^ (j * 19349663) ^ (k * 83492791); let L = G.get(key); if (!L) G.set(key, (L = [])); L.push(ti);
+    }
+  }
+  const hit = (ox, oy, oz, dx, dy, dz) => {
+    const seen = new Set();
+    for (let s = 0; s <= max + 1e-6; s += cell * 0.5) {
+      const ci = Math.floor((ox + dx * s) / cell), cj = Math.floor((oy + dy * s) / cell), ck = Math.floor((oz + dz * s) / cell);
+      const L = G.get((ci * 73856093) ^ (cj * 19349663) ^ (ck * 83492791));
+      if (!L) continue;
+      for (const t of L) {
+        if (seen.has(t)) continue; seen.add(t);
+        const A = T[t] * 3, B = T[t + 1] * 3, C = T[t + 2] * 3;
+        const e1x = pos[B] - pos[A], e1y = pos[B + 1] - pos[A + 1], e1z = pos[B + 2] - pos[A + 2];
+        const e2x = pos[C] - pos[A], e2y = pos[C + 1] - pos[A + 1], e2z = pos[C + 2] - pos[A + 2];
+        const hx = dy * e2z - dz * e2y, hy = dz * e2x - dx * e2z, hz = dx * e2y - dy * e2x;
+        const det = e1x * hx + e1y * hy + e1z * hz; if (Math.abs(det) < 1e-12) continue;
+        const f = 1 / det, sx = ox - pos[A], sy = oy - pos[A + 1], sz = oz - pos[A + 2];
+        const u = f * (sx * hx + sy * hy + sz * hz); if (u < 0 || u > 1) continue;
+        const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+        const w = f * (dx * qx + dy * qy + dz * qz); if (w < 0 || u + w > 1) continue;
+        const tt = f * (e2x * qx + e2y * qy + e2z * qz);
+        if (tt >= 0 && tt <= max) return true;
+      }
+    }
+    return false;
+  };
+  for (const r of inR) for (let v = r[0]; v < r[1]; v++) {
+    if (regs && !(r[3] && regs.has(r[3][v - r[0]]))) continue;
+    const nx = nor[v * 3] / 127, ny = nor[v * 3 + 1] / 127, nz = nor[v * 3 + 2] / 127;
+    if (!hit(pos[v * 3], pos[v * 3 + 1], pos[v * 3 + 2], nx, ny, nz)) continue;
+    pos[v * 3] -= nx * depth; pos[v * 3 + 1] -= ny * depth; pos[v * 3 + 2] -= nz * depth;
   }
 }
 

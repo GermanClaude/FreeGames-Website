@@ -637,7 +637,7 @@ const GRENZLAND = {
       { x: 10, z: -110, r: 30, density: 0.5, spruce: 0.3 },
     ],
     ring: { density: 0.6, spruce: 0.8, inset: -8, step: 6.5 },
-    scatter: { count: 70 },
+    scatter: { count: 70, buesche: 70 }, // fuell (20.11.): + Buschgruppen ohne Kollision (Wiesen, Feldränder)
     hedges: [
       { pts: [[-190, 74], [-112, 70]], trees: 0.2 }, { pts: [[-112, 70], [-110, 144]], trees: 0.15 },
       { pts: [[16, 116], [74, 110]], trees: 0.3 }, { pts: [[-118, 26], [-40, 30]], trees: 0.25 },

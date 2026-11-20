@@ -227,6 +227,8 @@ const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vect
 const _col = new THREE.Color();
 
 /** Welches Decal passt zu einer Wand? → [Zelle, Breite, Höhe, Mittenhöhe über Boden] | null */
+/** fuell (20.11.): Anteil Kriegsspuren je Karte (ohne def.lookDecals.krieg). */
+const KRIEG = { stadtkern: 0.34, niemandsland: 0.5, brandwald: 0.42, grenzland: 0.2, flugplatz: 0.18, werk: 0.13, hafen: 0.1, altstadt: 0.12, range: 0.04, bibliothek: 0.02 };
 function pick(name, r, krieg = 0.12) {
   const n = name || '';
   // gesamt 20.11.: nie auf Scheiben (Schaufenster Stadtkern: Einschuss/Kreide schwebte als heller Fleck auf dem Glas)
@@ -273,7 +275,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
     if (!h || Math.abs(h.normal.y) > 0.12 || h.distance < 0.25) continue;
     if (h.surface === 'glass') continue; // gesamt 20.11.: keine Decals auf Scheiben
     const name = h.object?.name || h.object?.material?.name || h.surface || '';
-    const sel = pick(name, r, opt.krieg ?? 0.12);
+    const sel = pick(name, r, opt.krieg ?? KRIEG[def.id] ?? 0.12);
     if (!sel) continue;
     let [cell, w, hh, cy] = sel;
     // Normale zur Strahlquelle drehen (die BVH liefert die Dreiecksnormale ohne Ausrichtung)

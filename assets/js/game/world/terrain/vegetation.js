@@ -526,6 +526,21 @@ export class Vegetation {
         if (tree(x, z, 0.2, rs)) made++;
       }
     }
+    // fuell (20.11.): Buschgruppen (nur Büsche, keine Bäume – keine Kollision) auf Wiesen, an Feld- und Wegrändern;
+    // eigener Zufallsstrom → alle übrigen Abschnitte bleiben gleich. spec.scatter.buesche = Anzahl Gruppen
+    if (sc?.buesche) {
+      const rb = rng(seed * 17 + 29), b = this.bounds, okWiese = (x, z) => !inField(x, z) && okTree(x, z);
+      for (let g = 0, tries = 0; g < sc.buesche && tries < sc.buesche * 25; tries++) {
+        const cx = b.minX + 15 + rb() * (b.maxX - b.minX - 30), cz = b.minZ + 15 + rb() * (b.maxZ - b.minZ - 30);
+        if (noise(cx / 50 + 7, cz / 50) < -0.1 || !okWiese(cx, cz)) continue;
+        g++;
+        const n = 2 + Math.floor(rb() * 4), rad = 1.2 + rb() * 2.4;
+        for (let k = 0; k < n; k++) {
+          const a = rb() * 6.283, d = Math.sqrt(rb()) * rad, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d, sz = 0.6 + rb() * 0.7, ry = rb() * 6.28;
+          if (okWiese(x, z)) this._add('busch', x, z, sz, ry);
+        }
+      }
+    }
     // Hecken/Baumreihen entlang Linien
     const rh = rng(seed * 11 + 3);
     for (const h of spec.hedges || []) {

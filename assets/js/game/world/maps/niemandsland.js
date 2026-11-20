@@ -239,6 +239,9 @@ const NIEMANDSLAND = {
     seed: 19, forests: [], scatter: { count: 0 }, hedges: [],
     rocks: { count: 30, clusters: [] },
   },
+  // fuell (20.11.): Bodenstreu im Ring um die Kamera (terrain/litter.js) – Steine, Granatsplitter-Brocken, zerfetzte
+  // Äste und Rindenstücke aus den zerschossenen Baumreihen; vorher war das Ödland eine glatte braune Fläche
+  litter: { seed: 1917, twigs: 0.1, sticks: 0.05, branches: 0.006, bark: 0.03, coals: 0.035, stones: 0.24 },
   clearings: [[0, 0, 40]],
 
   sites: [

@@ -430,6 +430,9 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   { let o = 0; for (const d of datList) { bulletData.set(d, o); o += d.length; } }
   const bulletAlbedo = new Uint8Array(bulletData.length * 3);
   { let o = 0; for (const a of albList) { bulletAlbedo.set(a.subarray(0, Math.min(a.length, bulletAlbedo.length - o)), o); o += a.length; } }
+  // weit2: Teil-Puffer der Ortschaften sind jetzt zusammengefügt – nicht über `sites` (dispose-Closure) festhalten
+  for (const s of sites) s.built.colTris = s.built.bulletTris = s.built.bulletData = s.built.bulletAlbedo = null;
+  colList.length = bulList.length = datList.length = albList.length = 0;
 
   // Punkte (Startpunkte, Flaggen, Fahrzeuge, Geheimnisse) auf den Boden setzen
   const pts = [];

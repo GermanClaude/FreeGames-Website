@@ -23,6 +23,8 @@ const MENGE = { medium: 0.5, high: 1, ultra: 1.4 };
 const NESTER = { medium: 600, high: 1300, ultra: 1900 };
 /** Ausblenden (m): [Beginn, Ende] je Stufe; kleine Teile (Hülsen, Kies) früher. */
 const FADE = { medium: [22, 30], high: [32, 44], ultra: [42, 58] };
+/** Höchstzahl Fassaden-Kabelläufe je Stufe. */
+const FASSADE = { medium: 40, high: 90, ultra: 130 };
 
 function rng(seed) {
   let s = seed >>> 0;
@@ -56,24 +58,28 @@ const ARTEN = {
   holz: { geo: () => new THREE.BoxGeometry(0.62, 0.018, 0.085).translate(0, 0.009, 0), cols: ['#7a6248', '#5e4a36', '#8a7052', '#4a3a2a', '#6a5a46'], r: 0.9, m: 0, s: [0.5, 1.3], fade: 1.1 },
   glas: { geo: scherbeGeo, cols: ['#c8d4d0', '#b0c0bc', '#a8b8b0'], r: 0.06, m: 0, side: THREE.DoubleSide, s: [0.6, 1.4], fade: 0.7, opacity: 0.75 },
   huelse: { geo: () => new THREE.CylinderGeometry(0.0055, 0.006, 0.045, 6, 1, true).rotateZ(Math.PI / 2).translate(0, 0.006, 0), cols: ['#b8903a', '#a8822e', '#c8a048', '#8a6a2a'], r: 0.32, m: 0.95, s: [0.9, 1.1], fade: 0.5 },
+  buch: { geo: () => new THREE.BoxGeometry(0.16, 0.035, 0.23).translate(0, 0.0175, 0), cols: ['#5a2a22', '#2a3a5a', '#3a4a2a', '#6a4a2a', '#4a2a3a', '#7a6a4a', '#2a2a2a'], r: 0.8, m: 0, s: [0.8, 1.4], fade: 1.1 },
+  papier: { geo: () => { const g = new THREE.PlaneGeometry(0.21, 0.297, 2, 2).rotateX(-Math.PI / 2); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, 0.003 + Math.abs(Math.sin(i * 1.7)) * 0.01); g.computeVertexNormals(); return g; }, cols: ['#ece6d6', '#e0d8c2', '#d8ceb4', '#f0ebe0'], r: 0.92, m: 0, side: THREE.DoubleSide, s: [0.8, 1.2], fade: 1 },
   zweig: { geo: () => new THREE.CylinderGeometry(0.006, 0.01, 0.42, 4, 1, true).rotateZ(Math.PI / 2).translate(0, 0.008, 0), cols: ['#4a3a2a', '#5a4632', '#3a2e22', '#6a5640'], r: 0.95, m: 0, s: [0.6, 1.5], fade: 1 },
 };
 /** Nester je Kartenstil: Gewichte der Arten außen (Wandfuß/Ecke/frei) und innen, Grün (Büschel), Büsche, Krieg. */
 const STIL = {
-  hafen:        { laub: 0.4, kiesel: 1.3, ziegel: 0.15, putz: 0.1, holz: 0.7, glas: 0.25, huelse: 0.05, zweig: 0.2, gruen: 0.8, busch: 0.25 },
-  werk:         { laub: 0.6, kiesel: 1.4, ziegel: 0.6, putz: 0.4, holz: 0.7, glas: 0.6, huelse: 0.15, zweig: 0.3, gruen: 1.1, busch: 0.45 },
-  altstadt:     { laub: 1.3, kiesel: 0.6, ziegel: 0.35, putz: 0.4, holz: 0.25, glas: 0.15, huelse: 0.1, zweig: 0.3, gruen: 1.0, busch: 0.55 },
-  bibliothek:   { laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0 },
-  stadtkern:    { laub: 1.0, kiesel: 0.8, ziegel: 1.5, putz: 1.1, holz: 0.8, glas: 1.2, huelse: 0.9, zweig: 0.3, gruen: 0.9, busch: 0.4 },
-  range:        { laub: 0.9, kiesel: 1.0, ziegel: 0, putz: 0.05, holz: 0.3, glas: 0, huelse: 1.6, zweig: 0.5, gruen: 1.3, busch: 0.6 },
-  grenzland:    { laub: 1.1, kiesel: 0.9, ziegel: 0.45, putz: 0.3, holz: 0.6, glas: 0.25, huelse: 0.45, zweig: 0.8, gruen: 1.2, busch: 0.7 },
-  niemandsland: { laub: 0.2, kiesel: 1.0, ziegel: 1.3, putz: 0.6, holz: 1.3, glas: 0.2, huelse: 1.2, zweig: 0.9, gruen: 0.25, busch: 0.05 },
-  brandwald:    { laub: 0.1, kiesel: 0.7, ziegel: 0.3, putz: 0.2, holz: 1.0, glas: 0.4, huelse: 0.9, zweig: 1.1, gruen: 0.2, busch: 0 },
-  flugplatz:    { laub: 0.6, kiesel: 1.1, ziegel: 0.2, putz: 0.2, holz: 0.4, glas: 0.25, huelse: 0.35, zweig: 0.4, gruen: 1.1, busch: 0.45 },
-  default:      { laub: 0.8, kiesel: 1, ziegel: 0.4, putz: 0.3, holz: 0.5, glas: 0.3, huelse: 0.3, zweig: 0.4, gruen: 1, busch: 0.4 },
+  hafen:        { laub: 0.4, kiesel: 1.3, ziegel: 0.15, putz: 0.1, holz: 0.7, glas: 0.25, huelse: 0.05, zweig: 0.2, gruen: 0.8, busch: 0.25, fassade: 0.7 },
+  werk:         { laub: 0.6, kiesel: 1.4, ziegel: 0.6, putz: 0.4, holz: 0.7, glas: 0.6, huelse: 0.15, zweig: 0.3, gruen: 1.1, busch: 0.45, fassade: 1.0 },
+  altstadt:     { laub: 1.3, kiesel: 0.6, ziegel: 0.35, putz: 0.4, holz: 0.25, glas: 0.15, huelse: 0.1, zweig: 0.3, gruen: 1.0, busch: 0.55, fassade: 1.3 },
+  bibliothek:   { menge: 0.55, laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0, fassade: 0 },
+  stadtkern:    { laub: 1.0, kiesel: 0.8, ziegel: 1.5, putz: 1.1, holz: 0.8, glas: 1.2, huelse: 0.9, zweig: 0.3, gruen: 0.9, busch: 0.4, fassade: 1.2 },
+  range:        { laub: 0.9, kiesel: 1.0, ziegel: 0, putz: 0.05, holz: 0.3, glas: 0, huelse: 1.6, zweig: 0.5, gruen: 1.3, busch: 0.6, fassade: 0.6 },
+  grenzland:    { laub: 1.1, kiesel: 0.9, ziegel: 0.45, putz: 0.3, holz: 0.6, glas: 0.25, huelse: 0.45, zweig: 0.8, gruen: 1.2, busch: 0.7, fassade: 1.0 },
+  niemandsland: { laub: 0.2, kiesel: 1.0, ziegel: 1.3, putz: 0.6, holz: 1.3, glas: 0.2, huelse: 1.2, zweig: 0.9, gruen: 0.25, busch: 0.05, fassade: 0.25 },
+  brandwald:    { laub: 0.1, kiesel: 0.7, ziegel: 0.3, putz: 0.2, holz: 1.0, glas: 0.4, huelse: 0.9, zweig: 1.1, gruen: 0.2, busch: 0, fassade: 0.2 },
+  flugplatz:    { laub: 0.6, kiesel: 1.1, ziegel: 0.2, putz: 0.2, holz: 0.4, glas: 0.25, huelse: 0.35, zweig: 0.4, gruen: 1.1, busch: 0.45, fassade: 0.9 },
+  default:      { laub: 0.8, kiesel: 1, ziegel: 0.4, putz: 0.3, holz: 0.5, glas: 0.3, huelse: 0.3, zweig: 0.4, gruen: 1, busch: 0.4, fassade: 1 },
 };
 /** Innenräume: nur Bauschutt, Putz, Holz, Scherben (kein Laub/Grün). */
-const INNEN = ['putz', 'holz', 'glas', 'ziegel', 'kiesel'];
+const INNEN = ['putz', 'holz', 'glas', 'ziegel', 'kiesel', 'papier', 'buch'];
+/** Innen-Gewichte (Papier/Bücher) je Karte; Rest wie außen. */
+const INNEN_W = { bibliothek: { papier: 1.3, buch: 1.6 }, default: { papier: 0.5, buch: 0.08 } };
 
 function material(art, A, quality, f) {
   const m = new THREE.MeshStandardMaterial({ roughness: A.r, metalness: A.m, side: A.side || THREE.FrontSide, transparent: !!A.opacity, opacity: A.opacity ?? 1, depthWrite: !A.opacity });
@@ -114,10 +120,11 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
   const k = MENGE[quality] || 0;
   if (!k || !world?.raycast || !world.bounds || def.fuellung === false) return { cluster: 0, teile: 0, gruen: 0, meshes: 0, ms: 0 };
   const opt = def.fuellung || {};
-  const W = { ...(STIL[def.id] || STIL.default), ...(stil || {}), ...(opt.stil || {}) };
+  const W = { ...(STIL[def.id] || STIL.default), ...(INNEN_W[def.id] || INNEN_W.default), ...(stil || {}), ...(opt.stil || {}) };
   const r = rng((seed ?? seedOf(def.id)) ^ 0x7f4a7c15);
   const { cells, flaeche } = streuRaster(world, bereiche || opt.bereiche, opt.step ?? 2.0, r);
-  const cap = Math.round((NESTER[quality] || 0) * flaeche * (opt.menge ?? 1));
+  // kleine Karten: nach Spielfläche (Bezug 12 000 m²), Großkarten: nach Fläche der Bereiche (streuRaster)
+  const cap = Math.round((NESTER[quality] || 0) * flaeche * (W.menge ?? 1) * (opt.menge ?? 1));
   const per = Object.fromEntries(Object.keys(ARTEN).map((a) => [a, []]));
   const plants = [];
   const frei = [...['A', 'B', 'ffa'].flatMap((t) => (world.spawns?.[t] || []).map((s) => s.position)), ...(world.objectives?.dom || []).map((o) => o.position)];
@@ -174,10 +181,11 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
       }
     }
     if (!wand && r() < 0.55) continue; // freie Fläche: seltener
+    if (innen && !wand && r() < 0.5) continue; // Raummitte (Laufwege) noch seltener
     cluster++;
     if (innen) {
       const art = wahl(INNEN);
-      if (art) teile += nest(art, x, gy, z, 4 + Math.floor(r() * 10), wand ? 0.5 : 0.7, ...(wand || [0, 0]));
+      if (art) teile += nest(art, x, gy, z, art === 'buch' ? 1 + Math.floor(r() * 4) : art === 'papier' ? 2 + Math.floor(r() * 5) : 4 + Math.floor(r() * 10), wand ? 0.5 : 0.7, ...(wand || [0, 0]));
       continue;
     }
     // außen: Grün an Wandfuß/Ecke (Fugen), sonst Nester
@@ -204,9 +212,81 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
     const viel = art === 'laub' ? (ecke ? 26 : wand ? 14 : 5) : art === 'kiesel' ? 10 : art === 'huelse' ? 4 + Math.floor(r() * 12) : art === 'holz' ? 1 + Math.floor(r() * 3) : 3 + Math.floor(r() * 6);
     teile += nest(art, x, gy, z, Math.round(viel * (0.6 + r() * 0.8)), art === 'laub' && ecke ? 0.55 : wand ? 0.45 : 0.6, ...(wand || [0, 0]));
   }
+  // Fassaden: Aufputzkabel mit Schellen, Abzweig nach unten in einen Verteilerkasten, Wandleuchten-Konsolen
+  const fass = W.fassade ?? 1;
+  const fassCap = Math.round((FASSADE[quality] || 0) * flaeche * fass * (opt.menge ?? 1));
+  const teileF = [];
+  let laeufe = 0;
+  if (fassCap > 0) {
+    const seen = new Set();
+    const rF = rng((seed ?? seedOf(def.id)) ^ 0x1b873593);
+    const { cells: fc } = streuRaster(world, bereiche || opt.bereiche, 3.2, rF);
+    for (const [x, z] of fc) {
+      if (laeufe >= fassCap) break;
+      const gy = bodenY(world, x, z);
+      if (gy == null) continue;
+      _o.set(x, gy + 0.3, z); _d.set(0, 1, 0);
+      if (world.raycast(_o, _d, 30)) continue; // nur außen
+      const a = rF() * Math.PI * 2;
+      _o.set(x, gy + 1.2, z); _d.set(Math.cos(a), 0, Math.sin(a));
+      const h = world.raycast(_o, _d, 7);
+      if (!h || Math.abs(h.normal.y) > 0.1 || h.distance < 0.8 || h.surface === 'glass' || h.surface === 'metal' || h.surface === 'wood') continue;
+      const name = (h.object?.material?.name || h.object?.name || '');
+      if (/container|corr|fence|tarp|glass|sandbag|crate|vehicle|car|wreck|bark|rock/i.test(name)) continue;
+      const nx0 = h.normal.x, nz0 = h.normal.z, nl = Math.hypot(nx0, nz0);
+      let nx = nx0 / nl, nz = nz0 / nl;
+      if (nx * _d.x + nz * _d.z > 0) { nx = -nx; nz = -nz; }
+      const tx = -nz, tz = nx;
+      const key = `${Math.round(h.point.x / 6)}|${Math.round(h.point.z / 6)}`;
+      if (seen.has(key)) continue;
+      const hc = gy + 2.6 + rF() * 1.5;
+      const wandDa = (s, y) => { _o.set(h.point.x + nx * 0.3 + tx * s, y, h.point.z + nz * 0.3 + tz * s); _d.set(-nx, 0, -nz); const c = world.raycast(_o, _d, 0.5); return !!c && Math.abs(c.distance - 0.3) < 0.06 && Math.abs(c.normal.x * nx + c.normal.z * nz) > 0.95 && c.surface !== 'glass'; };
+      if (!wandDa(0, hc)) continue;
+      let s0 = 0, s1 = 0;
+      while (s1 < 7 && wandDa(s1 + 0.5, hc)) s1 += 0.5;
+      while (s0 > -7 && wandDa(s0 - 0.5, hc)) s0 -= 0.5;
+      const L = s1 - s0;
+      if (L < 2.5) continue;
+      seen.add(key);
+      laeufe++;
+      const px = h.point.x + nx * 0.025, pz = h.point.z + nz * 0.025;
+      const at = (s, y, w, hh, dd, c, off = 0) => teileF.push({ x: px + tx * s + nx * off, y, z: pz + tz * s + nz * off, ry: Math.atan2(-tz, tx), w, h: hh, d: dd, c });
+      const kab = ['#2a2a2a', '#3a3834', '#d8d4ca', '#4a4a48'][Math.floor(rF() * 4)];
+      at((s0 + s1) / 2, hc, L - 0.2, 0.022, 0.022, kab);
+      for (let s = s0 + 0.3; s < s1 - 0.2; s += 0.75) at(s, hc - 0.012, 0.03, 0.046, 0.034, '#5a5a58');
+      if (rF() < 0.35) at((s0 + s1) / 2, hc - 0.12, L - 0.6, 0.016, 0.016, kab);
+      // Abzweig nach unten in einen Kasten (Wand muss dort sein, keine Öffnung)
+      if (rF() < 0.45) {
+        const sd = s0 + 0.4 + rF() * (L - 0.8), yb = gy + 1.35 + rF() * 0.4;
+        if (wandDa(sd, yb) && wandDa(sd, yb + 0.45) && wandDa(sd, (yb + hc) / 2)) {
+          at(sd, yb + 0.42, 0.024, hc - yb - 0.42, 0.024, kab);
+          at(sd, yb, 0.32 + rF() * 0.12, 0.42, 0.12, ['#b8b6ae', '#8a8e88', '#c8c2b0', '#6a7066'][Math.floor(rF() * 4)], 0.05);
+        }
+      }
+      // Wandleuchte (Konsole + Schirm) über Kopfhöhe
+      if (rF() < 0.3) {
+        const sl = s0 + 0.5 + rF() * (L - 1), yl = hc + 0.35;
+        if (wandDa(sl, yl)) { at(sl, yl, 0.05, 0.05, 0.42, '#2e2e2c', 0.2); at(sl, yl - 0.1, 0.24, 0.1, 0.24, '#3a3a36', 0.42); }
+      }
+    }
+  }
   // Meshes: je Art eines für die ganze Karte
   const f = FADE[quality] || FADE.high;
   let meshes = 0;
+  if (teileF.length) {
+    const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), material('fassade', { r: 0.7, m: 0.1, fade: 2.6 }, quality, f), teileF.length);
+    teileF.forEach((it, i) => {
+      _q.setFromAxisAngle(_s.set(0, 1, 0), it.ry);
+      _m.compose(_p.set(it.x, it.y, it.z), _q, _s.set(it.w, it.h, it.d));
+      mesh.setMatrixAt(i, _m);
+      mesh.setColorAt(i, _col.set(it.c));
+    });
+    mesh.computeBoundingSphere();
+    mesh.castShadow = false; mesh.receiveShadow = true; mesh.matrixAutoUpdate = false;
+    mesh.name = 'fuellung-fassade';
+    group.add(mesh);
+    meshes++;
+  }
   for (const [art, list] of Object.entries(per)) {
     if (!list.length) continue;
     const A = ARTEN[art];

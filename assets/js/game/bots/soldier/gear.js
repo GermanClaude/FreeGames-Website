@@ -222,6 +222,12 @@ function buildSoldier(V, lod) {
   const q = Q[lod];
   const B = new SkinBuilder({ ao: globalThis.__npNoAO ? null : AO[lod], bulk: BULK });
   const L0 = lod === 0, L01 = lod <= 1, FAR = lod === 2;
+  const SB = B; // (im Kragen-Bau ist B eine Punktliste)
+  // mensch4: Hemd unter Weste (11 mm) bzw. Rucksack (6 mm) einziehen (Durchstich bei Laufen/Liegen/Ragdoll, siehe builder.js shrinkCovered)
+  if (!FAR && !V.civil) {
+    const RS = new Set([BODY_MESH.regions.SHIRT, BODY_MESH.regions.COLLAR]);
+    B.shrink.push({ inner: 'koerper', regs: RS, outer: 'weste', depth: 0.011, max: 0.065 }, { inner: 'koerper', regs: RS, outer: 'rucksack', depth: 0.006, max: 0.04 });
+  }
 
   // Materialien: color = feste Farbe (sRGB-Hex), pal = Schemafarbe (+ shade = sRGB-Faktor); cls = Materialklasse
   const C = {
@@ -373,6 +379,21 @@ function buildSoldier(V, lod) {
     for (let i = 0; i < BM.n; i++) if (reg[i] === RG.POCKET && BM.pos[i * 3 + 1] > 1.0) reg[i] = RG.SHIRT;
     BM = { ...BM, reg };
   }
+  if (civ && V.top === 'mantel') {
+    // mensch4 (Nutzer: „Hose scheint durch die Kleidung“): unter den Mantelschößen liegt nur verdeckte Hose/Hüfte – entlang der
+    // Normalen um bis zu 20 mm eingezogen (Bereichsmaske: Hose/Taschen/Hüfte zwischen Saum + 4 cm und Taille), damit Oberschenkel
+    // und Gesäß in Schritt-, Hock- und Sitzhaltung nicht durch den Stoff stechen. Gemessen wird weiter am unveränderten Körper (BM0).
+    const yH = V.female ? 0.5 : 0.53, pos = BM.pos.slice();
+    const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    for (let i = 0; i < BM.n; i++) {
+      const r = BM.reg[i], y = pos[i * 3 + 1];
+      if (!(r === RG.PANTS || r === RG.POCKET || r === RG.PAD || r === RG.SHIRT)) continue;
+      const a = 0.02 * ss(yH + 0.01, yH + 0.08, y) * (1 - ss(0.94, 0.975, y));
+      if (a <= 0) continue;
+      for (let c = 0; c < 3; c++) pos[i * 3 + c] -= BM.nrm[i * 3 + c] * a;
+    }
+    BM = { ...BM, pos };
+  }
   B.tag = 'koerper';
   B.addMesh(BM, bodyMat, L0 ? new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]) : null);
   B.tag = '';
@@ -425,7 +446,7 @@ function buildSoldier(V, lod) {
     let best = 0;
     for (let t = 0; t < I.length; t += 3) {
       const a = I[t], b = I[t + 1], c = I[t + 2];
-      if (filter === true && (ARMS.has(RR[a]) || ARMS.has(RR[b]) || ARMS.has(RR[c]))) continue;
+      if ((filter === true || filter === 'first') && (ARMS.has(RR[a]) || ARMS.has(RR[b]) || ARMS.has(RR[c]))) continue;
       if (filter === 'arm' && !(ARMS.has(RR[a]) && ARMS.has(RR[b]) && ARMS.has(RR[c]))) continue;
       if (filter === 'neck' && !(RR[a] === RG.NECK && RR[b] === RG.NECK && RR[c] === RG.NECK)) continue;
       const ay = P[a * 3 + 1], by = P[b * 3 + 1], cy = P[c * 3 + 1];
@@ -445,7 +466,7 @@ function buildSoldier(V, lod) {
       const v = (dx * qx + dz * qz) * inv;
       if (v < 0 || u + v > 1) continue;
       const tt = (e2x * qx + e2y * qy + e2z * qz) * inv;
-      if (tt > best && tt < 0.4) best = tt;
+      if (filter === 'first') { if (tt > 0.002 && (best === 0 || tt < best)) best = tt; } else if (tt > best && tt < 0.4) best = tt;
     }
     return best;
   };
@@ -599,8 +620,21 @@ function buildSoldier(V, lod) {
       const rz = (rf + rb) / 2, cz = 0.006 + (rb - rf) / 2;
       const g = cyl(1, 1, h, L0 ? 48 : q.tseg, {}, true);
       if (rib && L0) ribify(g, 48, 0.02);
+      place(g, { p: [0, y, cz], s: [rx, 1, rz] });
+      // mensch4: Saum/Bund mit den Hautgewichten des Körpers darunter (nächste Rumpf-/Hosenecke) statt starr an Becken bzw.
+      // Lende – beim Laufen/Liegen beugt sich der Rumpf unter dem Band, vorher stach er durch
+      const P_ = g.attributes.position.array, nV = P_.length / 3;
+      const ski = new Uint8Array(nV * 4), skw = new Uint8Array(nV * 4), uv = new Float32Array(nV * 2);
+      for (let v = 0; v < nV; v++) {
+        let best = -1, bd = Infinity;
+        for (let i = 0; i < BM0.n; i++) { const r = BM0.reg[i]; if (ARMS.has(r)) continue; const dx = BM0.pos[i * 3] - P_[v * 3], dy = BM0.pos[i * 3 + 1] - P_[v * 3 + 1], dz = BM0.pos[i * 3 + 2] - P_[v * 3 + 2], q2 = dx * dx + dy * dy + dz * dz; if (q2 < bd) { bd = q2; best = i; } }
+        for (let k = 0; k < 4; k++) { ski[v * 4 + k] = BM0.ski[best * 4 + k]; skw[v * 4 + k] = BM0.skw[best * 4 + k]; }
+        uv[v * 2] = Math.atan2(P_[v * 3], -(P_[v * 3 + 2] - cz)) * (rx + rz) * 0.5; uv[v * 2 + 1] = P_[v * 3 + 1];
+      }
+      if (!g.attributes.normal) g.computeVertexNormals();
       const tg = B.tag; B.tag = 'saum';
-      add(place(g, { p: [0, y, cz], s: [rx, 1, rz] }), y < 1.0 ? 'hips' : 'spine', { ...mat, ...NB });
+      const I_ = g.index ? g.index.array : Uint16Array.from({ length: nV }, (_, i) => i);
+      B.addMesh({ n: nV, pos: new Float32Array(P_), nrm: new Float32Array(g.attributes.normal.array), uv, idx: new Uint16Array(I_), ski, skw, reg: new Uint8Array(nV), ao: new Uint8Array(nV).fill(255) }, () => mat);
       B.tag = tg;
     };
     // Bündchen am Handgelenk (Unterarm, links gemessen, rechts gespiegelt)
@@ -630,8 +664,10 @@ function buildSoldier(V, lod) {
       const C3 = new THREE.CatmullRomCurve3(L.map((p) => new THREE.Vector3(...p)), true, 'centripetal');
       // Halsmitte je Höhe (vorn/hinten gemessen) und Halsradius je Richtung
       const neckC = new Map();
-      const neckCz = (y) => { const k = Math.round(y * 500); if (!neckC.has(k)) { const yy = k / 500; const rf = surfAt(yy, 0, cz0, 0, -1, 0.012, 0.3, 'neck'), rb = surfAt(yy, 0, cz0, 0, 1, 0.012, 0.3, 'neck'); neckC.set(k, rf > 0.02 && rb > 0.02 ? cz0 + (rb - rf) / 2 : cz0); } return neckC.get(k); };
-      const neckAt = (y, ox, oz) => { const cz = neckCz(y); const r = surfAt(y, 0, cz, ox, oz, 0.012, 0.3, 'neck'); return [cz, r]; };
+      // mensch4: Hals = erste Fläche von der Halsachse aus (vorher nur Dreiecke ganz im Bereich NECK → in Kragenhöhe oft kein
+      // Treffer, Oberkante fiel auf den Ausschnitt zurück: 12–17 mm, seitlich bis 3 cm Luft zwischen Kragen und Hals)
+      const neckCz = (y) => { const k = Math.round(y * 500); if (!neckC.has(k)) { const yy = k / 500; const rf = surfAt(yy, 0, cz0, 0, -1, 0.012, 0.3, 'first'), rb = surfAt(yy, 0, cz0, 0, 1, 0.012, 0.3, 'first'); neckC.set(k, rf > 0.02 && rb > 0.02 ? cz0 + (rb - rf) / 2 : cz0); } return neckC.get(k); };
+      const neckAt = (y, ox, oz) => { const cz = neckCz(y); const r = surfAt(y, 0, cz, ox, oz, 0.012, 0.3, 'first'); return [cz, r]; };
       const B = [], T = [], F = [], keep = [];
       for (let i = 0; i < N; i++) {
         const v = C3.getPointAt(i / N);
@@ -707,7 +743,21 @@ function buildSoldier(V, lod) {
       { const Nn = g.attributes.normal.array; let sdot = 0;
         for (let i = 0; i < n; i++) { const v = i * per + 3, px = pos[v * 3], pz = pos[v * 3 + 2] - cz0; sdot += Nn[v * 3] * px + Nn[v * 3 + 2] * pz; }
         if (sdot < 0) { for (let k = 0; k < idx.length; k += 3) { const x_ = idx[k + 1]; idx[k + 1] = idx[k + 2]; idx[k + 2] = x_; } g.setIndex(idx); g.computeVertexNormals(); } }
-      { const tg = B.tag; B.tag = 'kragen'; add(g, 'chest', { ...mat, ...NB }); B.tag = tg; }
+      // mensch4: Oberkante (innen oben, Rand, außen oben) zu 70 % am Halsknochen, Umlegeblatt 15 % – der Kragen geht mit, wenn der
+      // Kopf sich hebt/neigt (Liegen, Zielen, Hocken), statt dass der Hals durch den starr an der Brust hängenden Kragen sticht
+      {
+        const nV = pos.length / 3, P_ = g.attributes.position.array, N_ = g.attributes.normal.array, I_ = g.index.array;
+        const ski = new Uint8Array(nV * 4), skw = new Uint8Array(nV * 4), uv = new Float32Array(nV * 2);
+        for (let v = 0; v < nV; v++) {
+          const k = v % per, wn = k >= 1 && k <= 3 ? 0.7 : k >= 5 ? 0.15 : 0;
+          ski[v * 4] = BONE.chest; ski[v * 4 + 1] = BONE.neck; const q = Math.round(wn * 255); skw[v * 4] = 255 - q; skw[v * 4 + 1] = q;
+          const nx = Math.abs(N_[v * 3]), nz = Math.abs(N_[v * 3 + 2]);
+          uv[v * 2] = nx > nz ? P_[v * 3 + 2] : P_[v * 3]; uv[v * 2 + 1] = P_[v * 3 + 1];
+        }
+        const tg = SB.tag; SB.tag = 'kragen';
+        SB.addMesh({ n: nV, pos: new Float32Array(P_), nrm: new Float32Array(N_), uv, idx: new Uint16Array(I_), ski, skw, reg: new Uint8Array(nV), ao: new Uint8Array(nV).fill(255) }, () => mat);
+        SB.tag = tg;
+      }
     };
     // Knopfleiste/Reißverschluss vorn (am Körper gemessen)
     const placket = (y0, y1, w, t, mat, x = 0, n = 7) => {
@@ -777,6 +827,28 @@ function buildSoldier(V, lod) {
       // dem Oberschenkel zu kippen.
       const pos = [], nrm = [], uvA = [], ski = [], skw = [], idx = [];
       const th0 = -0.14, th1 = Math.PI - 0.03;
+      // Gewichte koppeln: nächste Körperecke (Stufe 0, Hose/Hüfte/Rumpf) – Mischung c · Körper + (1 − c) · eigene Gewichte
+      const cand = [];
+      for (let i = 0; i < BM0.n; i++) { const r = BM0.reg[i], yy = BM0.pos[i * 3 + 1]; if (yy > 0.6 && yy < 1.05 && (r === RG.PANTS || r === RG.POCKET || r === RG.PAD || r === RG.SHIRT)) cand.push(i); }
+      const coupleW = (x, y, z, c, bi, bw, SKI, SKW) => {
+        const acc = new Map();
+        const addW = (b, w) => { if (w > 0) acc.set(b, (acc.get(b) || 0) + w); };
+        for (let k = 0; k < bi.length; k++) addW(bi[k], (bw[k] / 255) * (1 - c));
+        if (c > 0) {
+          let best = -1, bd = Infinity;
+          for (const i of cand) { const dx = BM0.pos[i * 3] - x, dy = BM0.pos[i * 3 + 1] - y, dz = BM0.pos[i * 3 + 2] - z, q2 = dx * dx + dy * dy + dz * dz; if (q2 < bd) { bd = q2; best = i; } }
+          if (best >= 0) for (let k = 0; k < 4; k++) addW(BM0.ski[best * 4 + k], (BM0.skw[best * 4 + k] / 255) * c);
+          else addW(bi[0], c);
+        }
+        const L = [...acc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+        const sum = L.reduce((a, e) => a + e[1], 0) || 1;
+        let rest = 255;
+        for (let k = 0; k < 4; k++) {
+          const e = L[k];
+          const w = !e ? 0 : k === L.length - 1 ? rest : Math.round((e[1] / sum) * 255);
+          SKI.push(e ? e[0] : 0); SKW.push(w); rest -= w;
+        }
+      };
       const panel = (side, shrink, thighBone) => {
         for (const shell of [0, 1]) {
           const base = pos.length / 3, inset = (shell ? -0.004 : 0) - shrink;
@@ -792,9 +864,17 @@ function buildSoldier(V, lod) {
               nrm.push((shell ? -1 : 1) * nx / nl, 0, (shell ? -1 : 1) * nz / nl);
               uvA.push(th * 0.18, y);
               // mensch3: vorn folgt der Schoß dem Oberschenkel stärker (legt sich beim Hocken über das Knie), hinten hängt er am Becken
-              const wT = Math.min(1, Math.max(0, (0.985 - y) / 0.36)) * Math.min(1, 0.56 + 0.5 * Math.cos(th)); // vorn ganz am Oberschenkel (gemischte Gewichte fallen bei 90° Beugung ein)
-              const q = Math.round(wT * 255);
-              ski.push(BONE.hips, BONE[thighBone], 0, 0); skw.push(255 - q, q, 0, 0);
+              // mensch4 (Nutzer: Lücke vorn beim Gehen, Schoß beim Hocken als flaches Blatt): seitlich/hinten hängt der Schoß fast nur
+              // am Becken (vorher 56 % Oberschenkel → bei 90° Beugung stand die Seite als halb gedrehtes Brett waagrecht ab); vorn über
+              // dem Bein folgt er dem eigenen Oberschenkel (legt sich übers Knie), an der Vorderkante beiden Oberschenkeln je zur Hälfte
+              // → die überlappenden Kanten beider Schöße bewegen sich gleich und klaffen in der Schrittstellung nicht auf.
+              const cf = Math.max(0, Math.cos(th));
+              const wT = Math.min(1, Math.max(0, (0.985 - y) / (0.16 + 0.2 * (1 - cf)))) * (0.2 + 0.8 * Math.pow(cf, 1.6));
+              const share = 0.5 * (1 - Math.min(1, Math.max(0, th / 0.5)) ** 2 * (3 - 2 * Math.min(1, Math.max(0, th / 0.5)))); // Vorderkante 50 : 50
+              const qo = Math.round(wT * share * 255), q = Math.round(wT * 255) - qo;
+              // oben (Hüfte/Gesäß, wo der Stoff anliegt) an die Gewichte des darunterliegenden Körpers gekoppelt → bewegt sich wie
+              // die Hüfte selbst (vorher stach die Hüftbeuge beim Gehen/Hocken durch), zum Saum hin die freien Gewichte oben
+              coupleW(x, y, z, 1 - Math.min(1, Math.max(0, (0.8 - y) / 0.13)), [BONE.hips, BONE[thighBone], BONE[thighBone === 'thighL' ? 'thighR' : 'thighL']], [255 - q - qo, q, qo], ski, skw);
             }
           }
           for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
