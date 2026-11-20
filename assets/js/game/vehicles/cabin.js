@@ -1222,7 +1222,7 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
   } else DT.riffle(B, C.steel, { rect: [-0.58, 0.88, -0.33, 0.93], y: 0.08, det });
   // ---- Lukenunterseiten (Kommandant: Scharnier hinten; Ladeschütze: Scharnier außen rechts)
   if (A.hatchC) DT.hatchInner(B, C, det, A.hatchC.pos, A.hatchC.r, A.hatchC.pos[1], 'x', 1);
-  if (A.hatchL) { DT.hatchInner(B, C, det, A.hatchL.pos, A.hatchL.r, A.hatchL.pos[1], 'z', 1); label(B, C, 'w_luke', [A.hatchL.pos[0], A.hatchL.pos[1] - 0.011, A.hatchL.pos[2] - A.hatchL.r - 0.09], [HP, 0, 0], 0.1); }
+  if (A.hatchL) { DT.hatchInner(B, C, det, A.hatchL.pos, A.hatchL.r, A.hatchL.pos[1], 'z', 1); label(B, C, 'w_luke', [A.hatchL.pos[0], A.hatchL.pos[1] - 0.011, A.hatchL.pos[2] - A.hatchL.r - 0.09], [HP, 0, PI], 0.1); }
   // ---- Schweißnähte an den Turmecken und am Dachrand, Schraubenreihen am Dach
   const foot = [[-0.9, 1.15], [0.9, 1.15], [1.24, 0.8], [1.25, -1.45], [0.9, -1.92], [-0.9, -1.92], [-1.25, -1.45], [-1.24, 0.8]].map(([x, v]) => [x * 0.985, -v * 0.985]);
   if (!wk1) {
@@ -1248,7 +1248,7 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
   stencil(B, C, wk1 ? 's_wk' : 's_kampf', [1.237, 0.15, -0.3], [0, -HP, 0], 0.26);
   if (A.basket) stencil(B, C, 's_tritt', [A.rc[0] + 0.12, A.yb + 0.262, A.rc[2]], [-HP, 0, 0], 0.14);
   if (!wk1) {
-    label(B, C, 'w_kopf', [-0.62, 0.7, 0.3], [HP, 0, 0], 0.11);
+    label(B, C, 'w_kopf', [-0.62, 0.7, 0.3], [HP, 0, PI], 0.11);
     label(B, C, modern ? 'w_hydr' : 'w_schmier', [1.237, 0.42, -0.25], [0, -HP, 0], 0.11);
     label(B, C, 'w_erde', [-1.237, 0.3, -0.3], [0, HP, 0], 0.09);
   }

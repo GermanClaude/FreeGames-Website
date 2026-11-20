@@ -719,11 +719,11 @@ function buildSoldier(V, lod) {
       const HM = { color: V.hair, detail: 1, shine: 0.22, cls: 'cloth' };
       const D2 = Math.PI / 180;
       const HC = [0, 1.7, -0.012];
-      // Haaransatz θ(φ) ab Scheitel (φ: vorn 270°, hinten 90°): Stirn ≈ 54°, Schläfen ≈ 72°, über den Ohren ≈ 86°, Nacken ≈ 120°
+      // Haaransatz θ(φ) ab Scheitel (φ: vorn 270°, hinten 90°): Stirn ≈ 46°, Schläfen ≈ 70°, über den Ohren ≈ 86°, Nacken ≈ 120°
       const line = (ph) => {
         const s_ = Math.sin(ph), c_ = Math.cos(ph);
         const f = Math.max(0, -s_), b = Math.max(0, s_);
-        return (86 - 32 * Math.pow(f, 1.6) + 34 * Math.pow(b, 1.3) - 10 * Math.exp(-((Math.abs(c_) - 0.62) ** 2) / 0.02) * (s_ < 0 ? 1 : 0)) * D2;
+        return (86 - 40 * Math.pow(f, 1.4) + 34 * Math.pow(b, 1.3) - 8 * Math.exp(-((Math.abs(c_) - 0.62) ** 2) / 0.02) * (s_ < 0 ? 1 : 0)) * D2;
       };
       const HB = bodyMesh(lod, true, true);
       const HEAD = new Set([RG.SKULL, RG.FACE, RG.EARS, RG.EYES, RG.NECK]);
@@ -744,7 +744,7 @@ function buildSoldier(V, lod) {
           if (map[v] < 0) {
             map[v] = cp.length / 3;
             const edge = Math.min(1, Math.max(0, (lnA[v] - thA[v]) / 0.22));
-            const o = 0.003 + 0.008 * edge * (0.6 + 0.4 * Math.cos(thA[v]));
+            const o = 0.0012 + 0.009 * edge * (0.6 + 0.4 * Math.cos(thA[v]));
             cp.push(HB.pos[v * 3] + HB.nrm[v * 3] * o, HB.pos[v * 3 + 1] + HB.nrm[v * 3 + 1] * o, HB.pos[v * 3 + 2] + HB.nrm[v * 3 + 2] * o);
           }
           ci.push(map[v]);
@@ -756,6 +756,10 @@ function buildSoldier(V, lod) {
         g.setIndex(ci);
         g.computeVertexNormals();
         add(g, 'head', HM);
+        // Rückseite (der Rand ist von vorn/unten einsehbar – sonst wirkt die Kappe dort durchsichtig)
+        const gb = g.clone(); const ib = gb.index.array.slice(); for (let t = 0; t < ib.length; t += 3) { const x_ = ib[t + 1]; ib[t + 1] = ib[t + 2]; ib[t + 2] = x_; }
+        gb.setIndex(Array.from(ib)); gb.computeVertexNormals();
+        add(gb, 'head', { ...HM, color: shade(V.hair, 0.55) });
       }
       // Kopfradius in Richtung (θ, φ) (äußerste Ecke im Kegel) → Punkt auf der Haarkappe
       const capP = (th, ph, extra = 0) => {
