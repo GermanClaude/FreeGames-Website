@@ -378,7 +378,6 @@ function coverShell(pos, nrm, quads, nV, mask, L) {
   // Tiefenkarte z(x, y) der Gesichtsvorderseite (Raster 2 mm, ohne Mundraum/Ohren), dann wiederholt weichgezeichnet mit
   // Zeltbedingung „höchstens allow hinter der Haut“ (z wächst nach hinten). Vorderseiten-Ecken gehen auf diese Fläche (nur z):
   // kein seitliches Gleiten, der Mundspalt schließt sich wie eine gespannte Stoffbahn.
-  void quads;
   const eyeY = (L.eyeL[1] + L.eyeR[1]) / 2;
   const x0 = -0.085, y0 = L.chin[1] - 0.04, y1 = eyeY + 0.004, c = 0.002;
   const NX = Math.ceil((0.085 - x0) / c) + 1, NY = Math.ceil((y1 - y0) / c) + 1;
@@ -418,21 +417,32 @@ function coverShell(pos, nrm, quads, nV, mask, L) {
     const tx = fx - i, ty = fy - j, k = j * NX + i;
     return (Z[k] * (1 - tx) + Z[k + 1] * tx) * (1 - ty) + (Z[k + NX] * (1 - tx) + Z[k + NX + 1] * tx) * ty;
   };
-  const S = new Float32Array(pos);
+  // Verschiebung (nur z) je Ecke, über die Nachbarn geglättet (keine Falten zwischen verschobenen und festen Ecken)
+  const dz = new Float32Array(nV), wv = new Float32Array(nV);
   for (let v = 0; v < nV; v++) {
     if (mask[v * 4 + 3] > 0.5) continue;
     const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
     const inner = mask[v * 4 + 1] > 0.5;
-    if (!inner && !front(v)) continue;
+    if (!inner && !(nrm[v * 3 + 2] < -0.05 && z < -0.02)) continue;
     const zs = zAt(x, y);
     if (!Number.isFinite(zs)) continue;
-    // Rand weich: unter den Augen, seitlich (Wangen) und unter dem Kinn auslaufen
     const wy = (1 - sstep(eyeY - 0.024, eyeY - 0.008, y)) * sstep(y0 + 0.004, y0 + 0.02, y);
     const wx = 1 - sstep(0.055, 0.078, Math.abs(x));
-    const wn = inner ? 1 : sstep(-0.25, -0.55, nrm[v * 3 + 2]);
-    const wgt = wy * wx * wn;
-    S[v * 3 + 2] = inner ? Math.min(z, zs) * wgt + z * (1 - wgt) : z + (zs - z) * wgt;
+    wv[v] = wy * wx * (inner ? 1 : sstep(-0.05, -0.4, nrm[v * 3 + 2]));
+    // Mundraum knapp hinter die Stoffbahn (sonst flimmert er mit den Lippen)
+    dz[v] = inner ? Math.min(0, zs + 0.0025 - z) : zs - z;
   }
+  const nb = Array.from({ length: nV }, () => []);
+  for (let f = 0; f < quads.length; f += 4) for (let i = 0; i < 4; i++) { const a = quads[f + i], b = quads[f + ((i + 1) & 3)]; nb[a].push(b); nb[b].push(a); }
+  let W = Float32Array.from(wv, (w_, v) => w_ * dz[v]);
+  let Wn = Float32Array.from(wv);
+  for (let it = 0; it < 3; it++) {
+    const A = new Float32Array(nV), B = new Float32Array(nV);
+    for (let v = 0; v < nV; v++) { let a_ = W[v] * 2, b_ = Wn[v] * 2, n_ = 2; for (const u of nb[v]) { a_ += W[u]; b_ += Wn[u]; n_++; } A[v] = a_ / n_; B[v] = b_ / n_; }
+    W = A; Wn = B;
+  }
+  const S = new Float32Array(pos);
+  for (let v = 0; v < nV; v++) if (wv[v] > 0 || Wn[v] > 0) S[v * 3 + 2] = pos[v * 3 + 2] + (mask[v * 4 + 1] > 0.5 ? dz[v] * wv[v] : W[v]);
   return S;
 }
 

@@ -29,7 +29,7 @@ const ROUGH = [0.92, 0.9, 0.95, 0.85, 0.42, 0.16, 0.92, 0.9];
 const MIX = {
   hafen: { 0: 0.4, 1: 1.0, 2: 1.3, 3: 1.2, 4: 1.6, 5: 1.4, 7: 0.6 },
   werk: { 0: 0.6, 1: 1.4, 2: 0.9, 3: 1.5, 4: 1.7, 5: 1.3, 7: 0.8 },
-  altstadt: { 0: 1.2, 1: 0.8, 2: 1.6, 3: 0.7, 4: 0.35, 5: 0.9, 7: 1.6 },
+  altstadt: { 0: 1.2, 1: 0.8, 2: 1.6, 3: 0.7, 4: 0.2, 5: 0.35, 7: 1.6 }, // fuell: weniger Pfützen/Öl (Mittagssonne)
   default: { 0: 0.9, 1: 1.1, 2: 1.0, 3: 1.0, 4: 0.9, 5: 1.1, 7: 1.0 },
   // fuell (20.11.): Großkarten-Ortschaften – Dorf: Laub/Erde statt Ölflecken; Front: Erde, Splitt, Pfützen
   grenzland: { 0: 1.3, 1: 1.3, 2: 0.8, 3: 0.6, 4: 0.2, 5: 0.7, 7: 1.4 },
@@ -62,7 +62,7 @@ export function streuRaster(world, bereiche, step, r) {
   }
   for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
   // Flächenfaktor (Bezug ≈ 12 000 m² – Hafen/Werk/Altstadt/Stadtkern): kleine Karten (Bibliothek) entsprechend weniger
-  return { cells, flaeche: Math.min(1.5, Math.max(0.3, area / 12000)) };
+  return { cells, flaeche: Math.min(bereiche && bereiche.length ? 2.5 : 1.5, Math.max(0.3, area / 12000)) };
 }
 /** Bodenhöhe der Ebene unter (x, z): kleine Karten y ≈ 0, Großkarten Gelände (world.heightAt) – oder null. */
 export function bodenY(world, x, z) {
@@ -283,6 +283,8 @@ const LITTER_MIX = {
   hafen: [1.2, 0.8, 0.9, 0.6, 1.4, 1.0, 0.6, 0.8], werk: [1.0, 0.7, 0.8, 0.5, 1.2, 0.6, 0.5, 1.6],
   altstadt: [1.0, 1.2, 1.2, 1.2, 0.7, 0.9, 1.0, 0.8], default: [1, 1, 1, 1, 1, 1, 1, 1],
   bibliothek: [0, 0.05, 1.4, 2.4, 0.15, 0, 0.05, 0.3], // fuell: Kloster-Bibliothek – Papier statt Dosen/Tüten
+  // fuell: Front-/Brandkarten – Brocken, wenig Zivilmüll, keine weißen Blätter auf verbranntem Boden
+  brandwald: [0.4, 0.3, 0.05, 0, 0.2, 0, 0.1, 2.6], niemandsland: [0.5, 0.35, 0.05, 0, 0.25, 0, 0.15, 2.4],
 };
 function mergeGeos(list) {
   const P = [], N = [];
@@ -301,7 +303,7 @@ export function placeLitter3D(world, group, { quality = 'high', seed = 1, def = 
   const opt = def.groundDressing || {}, ber = opt.bereiche && opt.bereiche.length ? opt.bereiche : null;
   const berW = ber ? ber.map((q) => (q.maxX - q.minX) * (q.maxZ - q.minZ)) : null, berSum = ber ? berW.reduce((a, c) => a + c, 0) : 0;
   const flaeche = ber ? berSum : (b.max.x - b.min.x) * (b.max.z - b.min.z);
-  cap = Math.round(cap * Math.min(1.5, Math.max(0.3, flaeche / 12000)) * (opt.cap ?? 1));
+  cap = Math.round(cap * Math.min(ber ? 2.5 : 1.5, Math.max(0.3, flaeche / 12000)) * (opt.cap ?? 1));
   const mix = LITTER_MIX[def.id] || LITTER_MIX.default, mixSum = mix.reduce((a, c) => a + c, 0);
   const pick = () => { let k = r() * mixSum; for (let i = 0; i < mix.length; i++) { k -= mix[i]; if (k <= 0) return i; } return 0; };
   const per = LITTER.map(() => []);

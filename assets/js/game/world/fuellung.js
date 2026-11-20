@@ -238,7 +238,7 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
         const px = x + wand[0] * (0.25 - off) - wand[1] * u, pz = z + wand[1] * (0.25 - off) + wand[0] * u;
         const g2 = bodenAt(world, px, pz, gy + 0.3);
         if (!g2 || Math.abs(g2.y - gy) > 0.04) continue;
-        plants.push({ kind: r() < 0.55 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: (0.3 + r() * 0.5) * (1 - off), ry: r() * 6.283, tint: ['#b9b98a', '#a3ab7a', '#9aa070', '#c0b888', '#8f9a62'][Math.floor(r() * 5)] });
+        plants.push({ kind: r() < 0.35 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: (0.36 + r() * 0.5) * (1 - off), ry: r() * 6.283, tint: ['#b9b98a', '#a3ab7a', '#9aa070', '#c0b888', '#8f9a62'][Math.floor(r() * 5)] });
       }
       continue;
     }
@@ -247,7 +247,7 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
       const n = 1 + Math.floor(r() * 3);
       for (let i = 0; i < n; i++) {
         const px = x + (r() - 0.5) * 0.7, pz = z + (r() - 0.5) * 0.7, g2 = bodenAt(world, px, pz, gy + 0.3);
-        if (g2 && Math.abs(g2.y - gy) < 0.03) plants.push({ kind: r() < 0.7 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: 0.18 + r() * 0.2, ry: r() * 6.283, tint: ['#a8b07c', '#9aa070', '#b4b088'][Math.floor(r() * 3)] });
+        if (g2 && Math.abs(g2.y - gy) < 0.03) plants.push({ kind: 'grass', x: px, y: g2.y - 0.02, z: pz, s: 0.28 + r() * 0.24, ry: r() * 6.283, tint: ['#a8b07c', '#9aa070', '#b4b088'][Math.floor(r() * 3)] });
       }
       continue;
     }

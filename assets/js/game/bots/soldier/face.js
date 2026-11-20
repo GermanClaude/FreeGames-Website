@@ -458,7 +458,7 @@ const FACE_ALBEDO = /* glsl */`
 		npRough = mix( npRough, 0.96, cov );
 		npSss *= 1.0 - cov;
 		npThin *= 1.0 - cov;
-		npAoT = mix( npAoT, fAo * 0.35 + 0.62, cov ); // mensch4: Mund-/Nasenfalten-Verdeckung zeichnet sich nicht durch den Stoff
+		npAoT = mix( npAoT, fAo * 0.15 + 0.8, cov ); // mensch4: Mund-/Nasenfalten-Verdeckung zeichnet sich nicht durch den Stoff
 		npMouthOcc = mix( npMouthOcc, 1.0, cov );
 	}
 	diffuseColor.rgb *= alb;
@@ -564,7 +564,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
 			float npFoot = ( 1.0 - smoothstep( ${(EAR_CUP.r + 0.006).toFixed(4)}, ${(EAR_CUP.r + 0.026).toFixed(4)}, npR ) ) * smoothstep( 0.035, 0.058, npAx );
 			transformed.x += sign( aRest.x ) * uEarFill * npFoot;
 			if ( npPart > 0.5 ) {
-				vec3 npEc = vec3( sign( aRest.x ) * ( uEarCup.x + 0.004 ), uEarCup.y, uEarCup.z );
+				vec3 npEc = vec3( sign( aRest.x ) * ( uEarCup.x + 0.004 ), uEarCup.y + ${L[1].toFixed(3)}, uEarCup.z + ${L[2].toFixed(3)} ); // Modellraum (uEarCup relativ zur Kopfmitte)
 				transformed = npEc + ( transformed - npEc ) * vec3( 0.75, 0.8, 0.8 );
 			}
 		}

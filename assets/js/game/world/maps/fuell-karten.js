@@ -97,7 +97,7 @@ export function werkFuellen(b, flaechen = []) {
 
 /** Altstadt: Laub, Sandverwehungen, Moos, Flecken auf dem Pflaster der Plätze und Gassen. */
 export function altstadtFuellen(b) {
-  bodenspuren(b, -46, -52, 69, 52, 80, { mix: ['leaves', 'leaves', 'sanddrift', 'stain', 'moss', 'paper', 'puddle', 'cracks'] });
+  bodenspuren(b, -46, -52, 69, 52, 80, { mix: ['leaves', 'leaves', 'sanddrift', 'sanddrift', 'moss', 'paper', 'cracks'] });
 }
 
 /** Schießstand: Sandverwehungen/Fahrspuren auf den Bahnen, Gras und Büsche auf den Wiesen außerhalb der Mauern. */
@@ -109,4 +109,10 @@ export function rangeFuellen(b) {
     const k = hash01(x, z, 53);
     b.plant(k < 0.08 ? 'bush' : k < 0.55 ? 'grass' : 'weeds', x, -0.02, z, { s: k < 0.08 ? 0.6 + hash01(z, x, 54) * 0.5 : 0.45 + hash01(z, x, 55) * 0.5, ry: hash01(x, z, 56) * 6.28 });
   }
+}
+
+/** Flugplatz-Vorfeld: Reifenspuren, Ölflecken, Tropfspuren und Risse auf den Betonfeldern. */
+export function vorfeldFuellen(b) {
+  bodenspuren(b, -168, -130, 168, -47, 90, { mix: ['tire', 'tire', 'oil', 'oil', 'stain', 'drip', 'cracks', 'puddle'] });
+  bodenspuren(b, 100, -142, 205, -100, 16, { mix: ['tire', 'oil', 'stain', 'cracks'] });
 }

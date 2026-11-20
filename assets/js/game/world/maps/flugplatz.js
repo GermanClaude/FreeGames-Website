@@ -12,6 +12,7 @@ import { mgNest } from './grenzland-stellungen.js?v=20261115041504';
 import { burntWreck } from './brandwald-bau.js?v=20261115041504';
 import { KEIN, VG } from './neu-bau.js?v=20261115041504';
 import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261115041504'; // gelaende (Runde 3)
+import { vorfeldFuellen } from './fuell-karten.js?v=20261115041504'; // fuell (20.11.): Spuren auf dem Vorfeld
 import { reliefAvoid } from '../terrain/relief.js?v=20261115041504';
 import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
 
@@ -85,6 +86,7 @@ function vorfeld(b) {
   // Vorfeldbeleuchtung
   for (const x of [-165, -85, 0, 85, 165]) floodMast(b, x, -128, { h: 16, ry: PI });
   for (const x of [-120, 0, 120]) floodMast(b, x, -47, { h: 12 });
+  vorfeldFuellen(b);
   return {};
 }
 

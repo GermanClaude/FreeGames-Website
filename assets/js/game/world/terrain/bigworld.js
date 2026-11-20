@@ -802,7 +802,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   for (const s of sites) s.built.props?.showAll();
   // fuell (20.11.): Wand-Decals, Bodenauflage und Kleinmüll auch in den Ortschaften der Großkarten (medium+, nur Optik)
   if (quality !== 'low' && !def.giant && id !== 'weitmark') {
-    try { const { fuelleGrosskarte } = await import('../fuellung.js?v=20261115041504'); world.stats.fuell = await fuelleGrosskarte(world, group, { quality, def: { ...def, id }, sites: sites.filter((s) => s.def.nav !== false).map((s) => s.def.bounds) }); } catch (err) { console.warn('[world] Füllung', err); }
+    try { const { fuelleGrosskarte } = await import('../fuellung.js?v=20261115041504'); world.stats.fuell = await fuelleGrosskarte(world, group, { quality, def: { ...def, id }, sites: (def.sites || []).map((s) => s.bounds) }); } catch (err) { console.warn('[world] Füllung', err); }
   }
   // erste Kamera-Stellung: Gelände-LOD + Vegetation am ersten Startpunkt vorbereiten
   const cam0 = new THREE.PerspectiveCamera(70, 1.7, 0.1, 900);
