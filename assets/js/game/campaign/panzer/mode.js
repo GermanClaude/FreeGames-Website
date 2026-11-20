@@ -33,7 +33,7 @@ body.pk-on #np-campaign .kc-obj li { font-size: 13px; }
 body.pk-on #np-campaign .kc-obj li.done { display: none; } /* Platz für die Panzer-Spalte; erfüllte Ziele meldet die Einblendung */
 @media (max-height: 520px) { body.pk-on #np-campaign .kc-sub.radio { top: 6px; width: min(44vw, 520px); } }
 body.pk-on #np-campaign .kc-toast { white-space: normal; max-width: min(640px, 52vw); text-align: center; top: 21%; line-height: 1.35; }
-body.pk-on[data-input-mode="touch"] #np-campaign .kc-toast { max-width: 40vw; top: 61%; font-size: 12.5px; padding: 4px 10px; }
+body.pk-on[data-input-mode="touch"] #np-campaign .kc-toast { max-width: 40vw; top: 37%; font-size: 12.5px; padding: 4px 10px; }
 body.pk-on[data-input-mode="touch"] #np-campaign .kc-obj { left: 118px; top: 6px; width: min(190px, 22vw); }
 body.pk-on[data-input-mode="touch"] #np-campaign .kc-sub.radio { top: 6px; left: 50%; width: min(36vw, 460px); }
 `;
