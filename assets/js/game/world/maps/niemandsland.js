@@ -241,6 +241,15 @@ const NIEMANDSLAND = {
   },
   // fuell (20.11.): Bodenstreu im Ring um die Kamera (terrain/litter.js) – Steine, Granatsplitter-Brocken, zerfetzte
   // Äste und Rindenstücke aus den zerschossenen Baumreihen; vorher war das Ödland eine glatte braune Fläche
+  // fuell (20.11.): zerschossene Baumgruppen im Niemandsland (Stümpfe, gebrochene Stämme; Kollision wie im Brandwald,
+  // terrain/deadwood.js) – nur in Hainen zwischen den Fronten (Grunddichte 0), punktsymmetrisch, fern von Gräben/Flaggen
+  deadwood: {
+    seed: 1916, density: 0, step: 3.4, clearNoise: 0.5, logs: 0,
+    mix: { hoch: 0.12, gebrochen: 0.42, stumpf: 0.46, grau: 0 },
+    groves: [[-60, 42, 20, 1.5], [60, -42, 20, 1.5], [-205, -52, 22, 1.4], [205, 52, 22, 1.4], [-28, -72, 16, 1.2], [28, 72, 16, 1.2],
+      [118, 68, 18, 1.3], [-118, -68, 18, 1.3], [-238, 66, 16, 1.1], [238, -66, 16, 1.1]],
+    clearings: [[0, 0, 26], [-62, 46, 7.5], [88, -58, 7.5], [-188, -30, 6], [196, 34, 6]], // Mitte, Wracks (niemandsland-leben.js)
+  },
   litter: { seed: 1917, twigs: 0.1, sticks: 0.05, branches: 0.006, bark: 0.03, coals: 0.035, stones: 0.24 },
   clearings: [[0, 0, 40]],
 
