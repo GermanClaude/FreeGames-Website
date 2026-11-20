@@ -109,6 +109,8 @@ function bodyMesh(lod, civil = false, female = false) {
         }
       }
       r[v] = best < Infinity ? br : br2;
+      // Oberkopf der gröbsten Stufe: nur wenige Schädel-Ecken → Kopf wirkte kahl (Hautton über den ganzen Kopf gemischt)
+      if (sk[v * 4] === BONE.head && y > 1.72 && !(z < -0.065 && y < 1.765) && BODY_MESH.regions.SKULL !== undefined) r[v] = BODY_MESH.regions.SKULL;
     }
   }
   bodyCache[ck] = D0;
@@ -758,7 +760,7 @@ function buildSoldier(V, lod) {
       const y0 = 0.985, y1 = V.female ? 0.5 : 0.53, rows = L0 ? 8 : L01 ? 4 : 2, cols = L0 ? 16 : L01 ? 8 : 4;
       const rx0 = sideX(y0) + 0.012, rf0 = -frontZ(y0) + 0.006 + 0.012, rb0 = backZ(y0) - 0.006 + 0.014;
       // mensch3: Saum weiter (v. a. hinten/seitlich) – Oberschenkel schwingen beim Gehen innen frei, statt durchzustechen
-      const rx1 = Math.max(rx0 + 0.05, 0.215), rf1 = rf0 + 0.035, rb1 = rb0 + 0.06;
+      const rx1 = Math.max(rx0 + 0.065, 0.228), rf1 = rf0 + 0.035, rb1 = rb0 + 0.065;
       // vorn überlappen die Schöße (links außen, rechts 5 mm darunter) → auch in der Schrittstellung geschlossen.
       // Weich gehäutet (wie der Körper): oben am Becken, nach unten zunehmend am Oberschenkel (höchstens 70 %, zur Mitte
       // vorn/hinten weniger) – der Mantel schwingt beim Gehen mit und legt sich beim Hocken über die Knie, statt starr mit
@@ -769,7 +771,7 @@ function buildSoldier(V, lod) {
         for (const shell of [0, 1]) {
           const base = pos.length / 3, inset = (shell ? -0.004 : 0) - shrink;
           for (let j = 0; j <= rows; j++) {
-            const v = j / rows, y = y0 + (y1 - y0) * v, e = v * v * 0.4 + v * 0.6;
+            const v = j / rows, y = y0 + (y1 - y0) * v, e = 1 - (1 - v) * (1 - v); // mensch3: Weite früh (Hüfte/Gesäß stechen nicht durch)
             const rx = rx0 + (rx1 - rx0) * e + inset, rf = rf0 + (rf1 - rf0) * e + inset, rb = rb0 + (rb1 - rb0) * e + inset;
             for (let i = 0; i <= cols; i++) {
               const th = th0 + (th1 - th0) * i / cols;

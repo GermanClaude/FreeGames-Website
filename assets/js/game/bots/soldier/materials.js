@@ -682,7 +682,8 @@ const ALBEDO = /* glsl */`
 	sdAlb *= mix( 1.0, vNpAo, 0.3 ); // Kontaktschatten auch im direkten Licht (Schattenkarten lösen Falten/Taschen nicht auf)
 	float sdDust = 0.0;
 	#ifndef NP_LOW
-		vec3 sdMac = texture2D( uNpMacro, vNpUv * vec2( 1.7, 2.3 ) ).rgb;
+		// mensch3: Leder (Stiefel) mit stetiger Raumabbildung – die Kasten-UV der Stiefel sprang je Dreieck (Staub als Zacken-Streifen)
+		vec3 sdMac = texture2D( uNpMacro, sdCls == 4 ? vec2( vNpPos.x * 1.7 + vNpPos.z * 1.3, vNpPos.y * 2.3 + vNpPos.z * 0.9 ) : vNpUv * vec2( 1.7, 2.3 ) ).rgb;
 		float sdN = sdMac.b;
 		sdDust = ( 1.0 - smoothstep( 0.03, 0.6, vNpPos.y ) ) * uDustAmt * ( 0.4 + 1.2 * sdN );
 		sdDust += vNq.z * ( 1.0 / 255.0 ) * smoothstep( 0.35, 0.75, sdN ) * 0.45;

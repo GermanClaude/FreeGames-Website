@@ -485,7 +485,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
   if (!geo || (beard !== 'voll' && beard !== 'kurz')) return null;
   const key = `${geo.userData.key || geo.uuid}|bart:${beard}|${res}`;
   if (hairGeoCache.has(key)) return hairGeoCache.get(key);
-  const len = beard === 'voll' ? 0.0052 : 0.003;
+  const len = beard === 'voll' ? 0.0045 : 0.0026;
   const P = geo.attributes.position.array, Nn = geo.attributes.normal.array, RS = geo.attributes.aRest.array, I = geo.index.array;
   const nV = P.length / 3;
   const slitY = land.slitY ?? 1.6216, cornerX = land.cornerX ?? 0.0243, noseY = (land.noseTip && land.noseTip[1]) ?? 1.6504, ey = (land.eyeL && land.eyeL[1]) ?? 1.689, tmjZ = (land.tmj && land.tmj[2]) ?? 0.0215;
@@ -527,7 +527,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
   for (let s = 0; s < shells; s++) {
     const depth = shells > 1 ? s / (shells - 1) : 0.65;
     // Bart: keine deckende Grundschicht – nur Strähnen (darunter der gemalte Bart/Bartschatten von face-skin.js)
-    const cover = lerp(0.9, 0.5, shells > 1 ? s / (shells - 1) : 0);
+    const cover = lerp(0.78, 0.45, shells > 1 ? s / (shells - 1) : 0);
     for (let k = 0; k < n; k++) {
       const v = list[k], o = s * n + k;
       const m = mask[v];
@@ -538,10 +538,10 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
       let g = [P[v * 3] * 0.6, -1, 0.15];
       const dn = g[0] * nx + g[1] * ny + g[2] * nz;
       g = norm3([g[0] - nx * dn, g[1] - ny * dn, g[2] - nz * dn]);
-      tan[o * 4] = g[0]; tan[o * 4 + 1] = g[1]; tan[o * 4 + 2] = g[2]; tan[o * 4 + 3] = sstep(0.02, 0.85, m);
+      tan[o * 4] = g[0]; tan[o * 4 + 1] = g[1]; tan[o * 4 + 2] = g[2]; tan[o * 4 + 3] = sstep(0.02, 0.95, m) * (0.75 + 0.25 * sat(m));
       // UV: Zylinderabwicklung (Strähnen senkrecht im Atlas)
       uv[o * 2] = Math.atan2(P[v * 3], -P[v * 3 + 2]) * 0.08 / 0.012 + s * 0.37;
-      uv[o * 2 + 1] = P[v * 3 + 1] / 0.016 + s * 0.23;
+      uv[o * 2 + 1] = P[v * 3 + 1] / 0.009 + s * 0.23;
       lay[o * 3] = 0.6; lay[o * 3 + 1] = cover; lay[o * 3 + 2] = depth;
       for (let mi = 0; mi < M.length; mi++) for (let q = 0; q < 3; q++) mpos[mi][o * 3 + q] = M[mi].array[v * 3 + q];
       for (let mi = 0; mi < MN.length; mi++) for (let q = 0; q < 3; q++) mnrm[mi][o * 3 + q] = MN[mi].array[v * 3 + q];
