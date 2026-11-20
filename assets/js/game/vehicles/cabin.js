@@ -514,11 +514,11 @@ function cabinShader(sh) {
       // gebackene Verdeckung: Schmutz sammelt sich in Ecken, Fugen und unter Bauteilen (bräunlich, fleckig)
       float cbAO = clamp( vCabA.x, 0.0, 1.0 );
       float cbDirt = smoothstep( 0.18, 0.75, cbAO ) * ( 0.45 + 0.55 * cbN( vCabO * 9.0 + 2.0 ) ) * uCabWear;
-      diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * vec3( 0.52, 0.46, 0.38 ), cbDirt * 0.75 );
+      diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * vec3( 0.55, 0.49, 0.4 ), cbDirt * 0.6 );
       // Abnutzung an Griffstellen: Lack abgegriffen, blankes Metall fleckig sichtbar
       float cbW = clamp( vCabA.y, 0.0, 1.0 ) * uCabWear;
-      float cbWm = cbW * smoothstep( 0.42, 0.62, cbN( vCabO * 38.0 ) * 0.55 + cbN( vCabO * 7.0 + 3.0 ) * 0.45 + cbW * 0.25 );
-      diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.47, 0.46, 0.44 ) * ( 0.85 + 0.3 * cbN( vCabO * 90.0 ) ), cbWm );`)
+      float cbWm = cbW * smoothstep( 0.5, 0.72, cbN( vCabO * 85.0 ) * 0.5 + cbN( vCabO * 21.0 + 3.0 ) * 0.5 + cbW * 0.22 );
+      diffuseColor.rgb = mix( diffuseColor.rgb, max( diffuseColor.rgb, vec3( 0.6, 0.59, 0.56 ) ) * ( 0.9 + 0.2 * cbN( vCabO * 140.0 ) ), cbWm );`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
       roughnessFactor = clamp( roughnessFactor + ( cbD * 0.12 - cbS * 0.3 + cbDirt * 0.15 ) * uCabWear, 0.04, 1.0 );
       roughnessFactor = mix( roughnessFactor, 0.32, cbWm );`)
@@ -526,7 +526,7 @@ function cabinShader(sh) {
       metalnessFactor = mix( metalnessFactor, 0.92, cbWm );`)
     .replace('#include <aomap_fragment>', `
       // geschlossener Stahlkasten: Sonne/Himmel kaum, dafür Innenleuchten (Punktlichter im Weltraum)
-      float cbAmbO = 1.0 - cbAO * 0.82;
+      float cbAmbO = 1.0 - cbAO * 0.7;
       reflectedLight.directDiffuse *= uCabSun; reflectedLight.directSpecular *= uCabSun;
       reflectedLight.indirectDiffuse *= uCabAmb * cbAmbO; reflectedLight.indirectSpecular *= uCabAmb * cbAmbO;
       {
@@ -1949,7 +1949,7 @@ export function syncCabin(cab, v, dt, ctx = {}) {
   CAB_U.uCabHC.value.setRGB(0.95, 0.97, 1.0).multiplyScalar(1.6 * hk * (ctx.day === false ? 0.15 : 1));
   // offene Luke in der Nähe? → mehr Tageslicht; sonst geschlossener Kasten
   CAB_U.uCabSun.value = ctx.hatchOpen ? 0.35 : 0.08;
-  CAB_U.uCabAmb.value = ctx.hatchOpen ? 0.5 : 0.26;
+  CAB_U.uCabAmb.value = ctx.hatchOpen ? 0.5 : 0.3;
   // Licht backen (schrittweise, Zeitbudget je Bild – bei langsamen Bildern mehr, damit es nicht ewig dauert)
   if (cab.bake && !cab.bake.done) cab.bake.step(dt > 0.5 ? 8000 : clamp(dt * 250, 8, 60));
 }

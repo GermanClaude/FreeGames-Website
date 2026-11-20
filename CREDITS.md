@@ -284,6 +284,11 @@ Ebenfalls aus dem MakeHuman-Grundnetz hm08 (CC0) stammen seit 15.11. die **Solda
 (`assets/js/game/bots/soldier/body-mesh.js`, Werkzeug `tools/assets/soldier/build_body.py`: auf unser Skelett umgezielt,
 Kleidungshülle, Detailstufen) und die **Ego-Hände** (`assets/js/game/weapons/gunsmith/glove-mesh.js`, Werkzeug
 `tools/assets/hands/build_hand.py`: Hand auf das Griff-Rig umgezielt, Handschuh mit Polstern und Bündchen).
+Seit 20.11. zusätzlich der **weibliche Zivilkörper** und das Kopf-Form-Ziel „female“ aus den MakeHuman-Zielen
+`macrodetails/caucasian-female-young`, `macrodetails/universal-female-young-averagemuscle-minweight` und
+`breast/female-young-averagemuscle-averageweight-maxcup-averagefirmness` (CC0 1.0, gleiche Quelle; Werkzeuge
+`tools/assets/soldier/build_body.py` und `tools/assets/kopf/build_head.py`). Kleidung, Stiefel, Frisuren und
+Ausrüstung sind eigene Modelle nach allgemeinen Bau-Beschreibungen realer Kleidung (keine fremden Modelle oder Bilder).
 
 ## Klänge
 

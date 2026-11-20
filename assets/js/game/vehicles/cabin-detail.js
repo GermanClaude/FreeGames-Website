@@ -227,7 +227,7 @@ export function breechParts(MB, C, det, era) {
   const B = new MB();
   const F = new LF(B, [0, 0, 0]);
   // Bodenstück
-  worn(B, 0.45, () => {
+  worn(B, 0.2, () => {
     B.add(rbox(0.5, 0.48, 0.42, 0.03, det ? 3 : 1), C.steel, [0, 0, 0]);
     for (const sx of [-1, 1]) B.add(box(0.035, 0.5, 0.03), C.steel, [sx * 0.232, 0, 0.212]);
     B.add(box(0.5, 0.05, 0.03), C.steel, [0, 0.218, 0.212]);
@@ -295,7 +295,7 @@ export function breechParts(MB, C, det, era) {
 /** Keil (Gruppenraum des Keils, Mitte 0, Ladefläche +Z). */
 export function keilParts(MB, C, det) {
   const B = new MB();
-  worn(B, 0.5, () => B.add(rbox(0.42, 0.44, 0.06, 0.012, det ? 2 : 1), C.steel, [0, 0, 0]));
+  worn(B, 0.3, () => B.add(rbox(0.42, 0.44, 0.06, 0.012, det ? 2 : 1), C.steel, [0, 0, 0]));
   B.add(cyl(0.032, 0.036, 0.022, det ? 16 : 10), C.metal, [0, 0, 0.038], [HP, 0, 0]);
   B.add(cyl(0.01, 0.01, 0.01, 8), C.brass, [0, 0, 0.052], [HP, 0, 0]);
   for (const y of [0.15, -0.15]) B.add(box(0.36, 0.012, 0.008), C.black, [0, y, 0.031]);
@@ -335,7 +335,7 @@ export function rackParts(MB, C, det, era, { slots, rw, rh, rz0, blast, wet }) {
     if (wet && det) for (const sx of [-1, 1]) B.add(cyl(0.02, 0.02, rh, 8), C.steel, [sx * (rw / 2 - 0.02), 0, rz0 - 0.2]);
   }
   // Rahmen: Winkelprofile an den Kanten, Schrauben
-  const fz = blast ? rz0 - 0.33 : rz0 - 0.14;
+  const fz = blast ? rz0 - 0.255 : rz0 - 0.14;
   for (const sy of [-1, 1]) B.add(box(rw + 0.06, 0.03, 0.04), C.metal, [0, sy * (rh / 2 + 0.01), fz]);
   for (const sx of [-1, 1]) B.add(box(0.03, rh + 0.06, 0.04), C.metal, [sx * (rw / 2 + 0.015), 0, fz]);
   if (det) { const F = new LF(B, [0, 0, fz - 0.021], Q(0, PI, 0)); for (const sy of [-1, 1]) boltRow(F, C.steel, [-rw / 2, sy * (rh / 2 + 0.01), 0], [rw / 2, sy * (rh / 2 + 0.01), 0], Math.max(3, Math.round(rw / 0.18)), 0.006, det); }

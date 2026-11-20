@@ -80,7 +80,7 @@ def build(kind):
         # schlank, Brust mäßig; der ganze Körper wird um die Verschiebung der Augenpartie zurückgesetzt (Kopf bleibt am Skelett,
         # gleiche Verankerung wie das Form-Ziel 'female' des Kopf-Assets → Kopf der fernen Stufen = face.js-Kopf)
         extra = {'macrodetails/universal-female-young-averagemuscle-minweight': 0.3,
-                 'breast/female-young-averagemuscle-averageweight-maxcup-averagefirmness': -0.25}
+                 'breast/female-young-averagemuscle-averageweight-maxcup-averagefirmness': -0.35}
     P0 = B0.copy()
     if female:
         D = mh.target('macrodetails/caucasian-female-young') - mh.target('macrodetails/caucasian-male-young')
@@ -277,7 +277,7 @@ def build(kind):
         for it in range(60):      # Lücken füllen
             avg = (np.roll(Hf, 1, 0) + np.roll(Hf, -1, 0) + np.roll(Hf, 1, 1) + np.roll(Hf, -1, 1)) / 4
             Hf = np.where(known, H, avg)
-        for it in range(22):      # weichzeichnen (≈ 3 cm)
+        for it in range(34):      # weichzeichnen (≈ 3,5 cm)
             Hf = (Hf * 2 + np.roll(Hf, 1, 0) + np.roll(Hf, -1, 0) + np.roll(Hf, 1, 1) + np.roll(Hf, -1, 1)) / 6
         fi = np.where(fr)[0]
         zs = Hf[ii, jj]
