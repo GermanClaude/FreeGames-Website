@@ -11,12 +11,13 @@
 //
 // placeLookDecals(world, group, { quality, seed, def }) → { count, meshes, ms }
 import * as THREE from 'three';
+import { streuRaster, bodenY } from './bodenauflage.js?v=20261115041504'; // fuell: Bereiche (Großkarten) + Bodenhöhe
 
 export const LOOK_DECAL = { rust: 0, water: 1, grime: 2, cracks: 3, leak: 4, poster: 5, tag: 6, soot: 7,
   // karten-voll (14.11.): Kriegsspuren und mehr Stadtleben (zweite Atlashälfte, 1024×1024)
   einschuss: 8, splitter: 9, brand: 10, plakat: 11, graffiti: 12, garbe: 13, kreide: 14, algen: 15 };
 const ROWS = 4;
-const CAP = { medium: 180, high: 300, ultra: 420 }; // karten-voll: vorher 140/220/300
+const CAP = { medium: 300, high: 540, ultra: 760 }; // karten-voll: vorher 140/220/300; fuell (20.11.): vorher 180/300/420
 /** Zellgröße der Instanz-Gruppen (m): größer = weniger Draw Calls, kleiner = besseres Frustum-Culling. */
 const CELL = { medium: 64, high: 44, ultra: 32 };
 
@@ -250,23 +251,22 @@ function pick(name, r, krieg = 0.12) {
 
 export function placeLookDecals(world, group, { quality = 'high', seed = 1, def = {} } = {}) {
   const t0 = performance.now();
-  const cap = CAP[quality] || 0;
+  let cap = CAP[quality] || 0;
   if (!cap || !world?.raycast || !world.bounds) return { count: 0, meshes: 0, ms: 0 };
   const opt = def.lookDecals || {};
   const density = opt.density ?? 1;
   const r = rng(seed);
-  const b = world.bounds, step = (opt.step ?? 2.6) / Math.sqrt(density);
+  const step = (opt.step ?? 2.6) / Math.sqrt(density);
   const items = [];
   const taken = new Map(); // grobe Belegung (0,8 m) gegen Häufungen
   const key = (x, y, z) => `${Math.round(x / 0.8)}|${Math.round(y / 0.8)}|${Math.round(z / 0.8)}`;
-  const cells = [];
-  for (let z = b.min.z + step / 2; z < b.max.z; z += step) for (let x = b.min.x + step / 2; x < b.max.x; x += step) cells.push([x + (r() - 0.5) * step, z + (r() - 0.5) * step]);
-  // gemischte Reihenfolge → bei Kappung gleichmäßig über die Karte verteilt
-  for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+  // gemischte Reihenfolge → bei Kappung gleichmäßig über die Karte verteilt; fuell: Großkarten nur in opt.bereiche
+  const { cells, flaeche } = streuRaster(world, opt.bereiche, step, r);
+  cap = Math.round(cap * flaeche * (opt.cap ?? 1));
   for (const [x, z] of cells) {
     if (items.length >= cap) break;
-    const gy = world.groundHeight ? world.groundHeight(x, z, 3.2) : 0;
-    if (gy == null || gy > 3) continue;
+    const gy = bodenY(world, x, z);
+    if (gy == null) continue;
     const a = r() * Math.PI * 2;
     _o.set(x, gy + 1.1, z); _d.set(Math.cos(a), 0, Math.sin(a));
     const h = world.raycast(_o, _d, 3.2);

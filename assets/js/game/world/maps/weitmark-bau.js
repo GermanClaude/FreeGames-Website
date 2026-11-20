@@ -136,17 +136,40 @@ export function rathaus(b, x, z, o = {}) {
   const holes = [1, 2].map((f) => ({ floor: f, x0: x - w / 2 + 0.6, x1: x - w / 2 + 0.6 + run + 0.4, z0: z - d / 2 + 0.35, z1: z - d / 2 + 0.35 + 1.4 }));
   const B = building(b, {
     x, z, w, d, floors, fh, y, mat: 'plaster_white', tint: o.tint || '#d9c9a8', openings: ops, holes,
-    roof: { parapet: 0.9, mat: 'concrete', tint: '#a49c8c' }, floorMat: 'tiles', upperFloorMat: 'wood_planks', floorTint: '#a8977e',
+    roof: { edge: false, mat: 'concrete', tint: '#a49c8c' }, floorMat: 'tiles', upperFloorMat: 'wood_planks', floorTint: '#a8977e',
     frameMat: 'wood_dark', frameTint: '#4a3a2c', sillMat: 'stone_wall', band: { mat: 'stone_wall', tint: '#c2b69c' },
     plinth: { h: 0.8, mat: 'stone_wall', tint: '#b8ad98', over: 0.05 }, interiorFactor: 0.55, nutzung: 'buero',
   });
   for (let f = 0; f < 2; f++) {
     stairs(b, { x: x - w / 2 + 0.7, z: z - d / 2 + 1.05, dir: 'e', y0: y + f * fh + (f ? 0.02 : 0.12), y1: y + (f + 1) * fh, w: 1.2, run, style: 'solid', mat: 'concrete', tint: '#b8b0a2', rail: 'right', railTint: '#3d4247' });
   }
+  // weit2: steiles Satteldach mit Dachreiter (Glocke, Uhr), Eckquaderung, Balkon über dem Portal, Podest, Fahnen
+  pitchedRoof(b, { x, z, w: w + 0.02, d: d + 0.02, y: B.roofY - 0.02, ridge: 'x', pitch: 1.05, over: 0.6, gableMat: 'plaster_white', gableTint: o.tint || '#d9c9a8', tint: '#7d5a4c' });
+  b.noNav(x - w / 2 - 0.7, z - d / 2 - 0.7, x + w / 2 + 0.7, z + d / 2 + 0.7, B.roofY - 0.5, y + 60);
+  const ridgeY = B.roofY + (d / 2) * 1.05;
+  b.box(x, ridgeY - 1.2, z, 2.2, 3.4, 2.2, 'wood_painted', { tint: '#e8e2d4', collide: false, minimap: false });
+  for (const [sx, sz] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) b.box(x + sx * 1.11, ridgeY + 0.9, z + sz * 1.11, sz ? 0.9 : 0.04, 1.0, sx ? 0.9 : 0.04, 'black', { ...NOCOL, grad: false });
+  b.cyl(x, ridgeY + 2.2, z, 1.65, 3.2, 'roof_tiles', { r1: 0.05, seg: 8, tint: '#5f6f66', ...NOCOL });
+  b.cyl(x, ridgeY + 5.4, z, 0.04, 1.4, 'metal_galvanized', { ...NOCOL, seg: 6 });
+  for (const s2 of [-1, 1]) b.cyl(x, ridgeY + 0.2, z + s2 * 1.13, 0.55, 0.05, 'plaster_white', { axis: 'z', tint: '#f2efe6', ...NOCOL, seg: 16 });
+  for (const ex of [-1, 1]) for (const ez of [-1, 1]) for (let k = 0; k < Math.floor(floors * fh / 0.7); k++) {
+    const lw = k % 2 ? 0.5 : 0.85;
+    b.box(x + ex * (w / 2 + 0.03) - ex * (lw / 2 - 0.25) * 0, y + 0.8 + k * 0.7, z + ez * (d / 2 + 0.03), ex ? 0.36 : lw, 0.62, ez ? lw : 0.36, 'stone_wall', { tint: '#c8bca4', ...NOCOL, grad: false });
+  }
+  const dz = door === 's' ? 1 : -1, fz = z + dz * (d / 2);
+  // Balkon (Platte + Geländer) über dem Portal, Freitreppe (3 Stufen) davor
+  b.box(x, y + fh + 0.02, fz + dz * 0.75, 4.6, 0.18, 1.5, 'stone_wall', { tint: '#c2b69c', minimap: false });
+  for (const s3 of [-1, 1]) b.box(x + s3 * 2.2, y + fh + 0.2, fz + dz * 0.75, 0.08, 0.9, 1.4, 'metal_painted', { tint: '#2e3236', ...NOCOL });
+  b.box(x, y + fh + 0.2, fz + dz * 1.46, 4.5, 0.9, 0.06, 'metal_painted', { tint: '#2e3236', ...NOCOL, grad: false });
+  b.box(x, y, fz + dz * 1.1, 5.2, 0.06, 2.2, 'stone_wall', { tint: '#b8ad98', minimap: false, collide: false, grad: false }); // Podest (bodengleich)
+  for (const s3 of [-1, 1]) {
+    b.cyl(x + s3 * 4.2, y, fz + dz * 2.2, 0.05, 7.5, 'metal_galvanized', { seg: 6, minimap: false });
+    b.box(x + s3 * 4.2 + 0.03, y + 6.1, fz + dz * 2.2 - 0.6, 0.02, 1.0, 1.2, 'awning', { tint: s3 < 0 ? '#f2c230' : '#2f5f9a', ...NOCOL, grad: false });
+  }
   b.defineSign('rathaus', { style: 'plate', text: 'RATHAUS', sub: 'Stadt Kesselbrück', bg: '#2f3f52', fg: '#efe6d4' });
   const sz = door === 's' ? z + d / 2 + 0.06 : z - d / 2 - 0.06;
   b.sign(x, y + fh + 0.4, sz, 4.2, 0.9, 'rathaus', { ry: door === 's' ? 0 : PI });
-  b.cyl(x, y + 3 * fh + 1.2, sz, 0.8, 0.06, 'plaster_white', { axis: 'z', tint: '#f2efe6', ...NOCOL, seg: 18 });
+
   return B;
 }
 
@@ -448,11 +471,10 @@ export function ortsstrasse(b, o) {
       cx = Math.round(cx * 2) / 2; cz = Math.round(cz * 2) / 2;
       const door = alongX ? (nz > 0 ? 'n' : 's') : (nx > 0 ? 'w' : 'e');
       const r = rect(cx, cz, w, d, 0.9);
-      if (!ok(r)) { t += 3 + rand() * 3; continue; }
+      if (!ok(r)) { t += 2 + rand() * 2; continue; }
       const fw = fl > 1 && rand() < (o.fachwerk ?? 0.25);
       const color = fw ? b.pick(['#eee8da', '#f0e9d8', '#e9e2cf']) : b.pick(PUTZ2);
       haus(b, { x: cx, z: cz, w, d, floors: fl, door, y, color, roofTint: b.pick(DACH), pitch: 0.55 + rand() * 0.45, ridge: rand() < 0.3 ? (w >= d ? 'z' : 'x') : undefined, fachwerk: fw });
-      taken.push(r);
       n++;
       // Hinterland (Richtung weg von der Straße): Anbau, Garten
       const bxv = Math.sign(nx) * (Math.abs(nx) > Math.abs(nz) ? 1 : 0), bzv = Math.sign(nz) * (Math.abs(nz) >= Math.abs(nx) ? 1 : 0);
@@ -462,7 +484,7 @@ export function ortsstrasse(b, o) {
         const off = (rand() - 0.5) * (la - (bxv ? ad : aw)) * 0.8;
         const ax = cx + bxv * (back + 1.5) + (bxv ? 0 : off), az = cz + bzv * (back + 1.5) + (bxv ? off : 0);
         const ra = rect(ax, az, aw, ad, 0.3);
-        if (ok(ra)) { anbau(b, { x: ax, z: az, w: aw, d: ad, y, h: 2.6, tint: color, roofTint: b.pick(DACH), pitch: 0.4 }); taken.push(ra); back += 3; }
+        if (ok(ra)) { anbau(b, { x: ax, z: az, w: aw, d: ad, y, h: 2.6, tint: color, roofTint: b.pick(DACH), pitch: 0.4 }); taken.push(ra); back += 3.3; }
       }
       if (rand() < (o.garage ?? 0.22)) {
         // Garage neben dem Haus, Tor zur Straße
@@ -473,11 +495,12 @@ export function ortsstrasse(b, o) {
         const rg = rect(gx, gz, gw, gdd, 0.3);
         if (ok(rg)) { anbau(b, { x: gx, z: gz, w: gw, d: gdd, y, h: 2.5, roof: 'flat', mat: 'plaster_white', tint: b.pick(['#d6d0c4', '#cfc9bc', '#bfb8aa']), tor: door, torW: 2.4, torTint: b.pick(['#7a7d80', '#6a4a36', '#8e8a7c', '#3e5a6e']) }); taken.push(rg); }
       }
+      taken.push(r);
       if (rand() < (o.garten ?? 0.6)) {
         const gd2 = 7 + rand() * 7, gwid = la + 1 + rand() * 2;
-        const g0x = cx + bxv * (back + 0.8), g0z = cz + bzv * (back + 0.8);
+        const g0x = cx + bxv * (back + 1.05), g0z = cz + bzv * (back + 1.05);
         const gr = bxv ? [Math.min(g0x, g0x + bxv * gd2), cz - gwid / 2, Math.max(g0x, g0x + bxv * gd2), cz + gwid / 2] : [cx - gwid / 2, Math.min(g0z, g0z + bzv * gd2), cx + gwid / 2, Math.max(g0z, g0z + bzv * gd2)];
-        const rr = [gr[0] - 0.3, gr[1] - 0.3, gr[2] + 0.3, gr[3] + 0.3];
+        const rr = [gr[0] - 0.12, gr[1] - 0.12, gr[2] + 0.12, gr[3] + 0.12];
         if (ok(rr)) {
           const art = rand() < 0.25 ? 'hecke' : 'latten';
           const [x0, z0, x1, z1] = gr;

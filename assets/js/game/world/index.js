@@ -629,6 +629,10 @@ export async function loadWorld(G, mapId, opts = {}) {
   if (quality !== 'low' && def.groundDressing !== false) {
     try { world.stats.groundDressing = (await import('./bodenauflage.js?v=20261115041504')).placeGroundDressing(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def: { ...def, id } }); } catch (err) { console.warn('[world] Bodenauflage', err); }
   }
+  // fuell (20.11.): Füllschicht (Laub, Kies, Bauschutt, Hülsen, Grün in Fugen/Ecken), medium+, nur Optik
+  if (quality !== 'low' && def.fuellung !== false) {
+    try { world.stats.fuell = (await import('./fuellung.js?v=20261115041504')).placeFuellung(world, group, { quality, seed: [...id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7), def: { ...def, id } }); } catch (err) { console.warn('[world] Füllung', err); }
+  }
   // Welt-Shading: alle Weltmaterialien bekommen den gemeinsamen Haken; Sonden + Fernkaskade aktivieren
   world.stats.lighting = activateLighting(G, def, world, group, light, probes, quality, debug);
   if (atmos) world.stats.lighting.atmos = atmos.stats;

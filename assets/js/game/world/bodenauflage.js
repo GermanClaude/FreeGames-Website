@@ -17,8 +17,9 @@ import * as THREE from 'three';
 import { createFoliage } from './atlas.js?v=20261115041504';
 
 export const GROUND_CELL = { laub: 0, erde: 1, sand: 2, splitt: 3, oel: 4, pfuetze: 5, wandfuss: 6, blaetter: 7 };
-const CAP = { medium: 360, high: 720, ultra: 1000 };
-const TUFTS = { medium: 80, high: 200, ultra: 300 };
+// fuell (20.11., Nutzer: „Maps sehen immer noch leer aus“): etwa doppelt so dicht; Großkarten über opt.bereiche
+const CAP = { medium: 640, high: 1400, ultra: 2000 };
+const TUFTS = { medium: 160, high: 480, ultra: 720 };
 const GRID = { medium: 64, high: 44, ultra: 36 };
 const FADE = { medium: [34, 50], high: [48, 70], ultra: [60, 88] };
 /** Größe [min, max] (m) und Rauheit je Zelle. */
@@ -41,6 +42,28 @@ function loadAtlas() {
     }).catch((err) => { console.warn('[world] Bodenauflage-Atlas', err?.message || err); return null; });
   }
   return atlasP;
+}
+/**
+ * fuell (20.11.): Streupunkte im Raster – ganze Karte (world.bounds) oder nur in Bereichen (Großkarten: Ortschaften,
+ * [{minX,maxX,minZ,maxZ}]). Liefert gemischte Liste [[x, z], …] und den Flächenfaktor (für die Kappung).
+ */
+export function streuRaster(world, bereiche, step, r) {
+  const B = world.bounds, list = bereiche && bereiche.length ? bereiche : [{ minX: B.min.x, maxX: B.max.x, minZ: B.min.z, maxZ: B.max.z }];
+  const cells = [];
+  let area = 0;
+  for (const q of list) {
+    area += (q.maxX - q.minX) * (q.maxZ - q.minZ);
+    for (let z = q.minZ + step / 2; z < q.maxZ; z += step) for (let x = q.minX + step / 2; x < q.maxX; x += step) cells.push([x + (r() - 0.5) * step, z + (r() - 0.5) * step]);
+  }
+  for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+  return { cells, flaeche: bereiche && bereiche.length ? Math.min(1.5, Math.max(0.25, area / 12000)) : 1 };
+}
+/** Bodenhöhe der Ebene unter (x, z): kleine Karten y ≈ 0, Großkarten Gelände (world.heightAt) – oder null. */
+export function bodenY(world, x, z) {
+  const base = world.heightAt ? world.heightAt(x, z) : 0;
+  if (!Number.isFinite(base)) return null;
+  const g = world.groundHeight ? world.groundHeight(x, z, base + 3.2) : base;
+  return g == null || g - base > 3 ? null : g;
 }
 const EMPTY = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
 EMPTY.needsUpdate = true;
@@ -101,7 +124,7 @@ function flat(world, x, y, z, a, w, d, tol) {
 
 export function placeGroundDressing(world, group, { quality = 'high', seed = 1, def = {} } = {}) {
   const t0 = performance.now();
-  const cap = CAP[quality] || 0;
+  let cap = CAP[quality] || 0;
   if (!cap || !world?.raycast || !world.bounds || def.groundDressing === false) return { count: 0, wall: 0, tufts: 0, meshes: 0, ms: 0 };
   loadAtlas();
   const opt = def.groundDressing || {};
@@ -117,19 +140,18 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
     return GROUND_CELL.sand;
   };
   const r = rng(seed ^ 0x5bd1e995);
-  const b = world.bounds, step = (opt.step ?? 1.9) / Math.sqrt(opt.density ?? 1);
+  const step = (opt.step ?? 1.9) / Math.sqrt(opt.density ?? 1);
   const items = [], tufts = [];
   const taken = new Set();
   const key = (x, z, s) => `${Math.round(x / s)}|${Math.round(z / s)}`;
-  const cells = [];
-  for (let z = b.min.z + step / 2; z < b.max.z; z += step) for (let x = b.min.x + step / 2; x < b.max.x; x += step) cells.push([x + (r() - 0.5) * step, z + (r() - 0.5) * step]);
-  for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+  const { cells, flaeche } = streuRaster(world, opt.bereiche, step, r);
+  cap = Math.round(cap * flaeche * (opt.cap ?? 1));
   let wall = 0;
-  const tuftCap = TUFTS[quality] || 0;
+  const tuftCap = Math.round((TUFTS[quality] || 0) * flaeche * (opt.cap ?? 1));
   for (const [x, z] of cells) {
     if (items.length >= cap) break;
-    const gy0 = world.groundHeight ? world.groundHeight(x, z, 3.2) : 0;
-    if (gy0 == null || gy0 > 3) continue;
+    const gy0 = bodenY(world, x, z);
+    if (gy0 == null) continue;
     const g = groundAt(world, x, z, gy0 + 0.4);
     if (!g || Math.abs(g.y - gy0) > 0.08) continue;
     if (g.surface === 'water' || g.surface === 'grass' || g.surface === 'wood' || g.surface === 'metal' || g.surface === 'fabric' || /grass|roof|water/.test(g.name)) continue;
@@ -239,7 +261,7 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
 // ein InstancedMesh (≈ 8 Draw Calls, keine Schatten), Farbe je Instanz. Nur Optik (keine Kollision/Kugeln), gesät
 // über die Kartenkennung. medium 420 · high 900 · ultra 1300 Stück; low lädt das Modul nicht.
 // ---------------------------------------------------------------------------
-const LITTER_CAP = { medium: 420, high: 900, ultra: 1300 };
+const LITTER_CAP = { medium: 700, high: 1700, ultra: 2400 }; // fuell (20.11.): vorher 420/900/1300
 /** Arten: Geometrie-Bauer, Farben, Rauheit/Metall, Gewicht je Kartenstil. */
 const LITTER = [
   { id: 'dose', geo: () => new THREE.CylinderGeometry(0.033, 0.033, 0.12, 8).rotateZ(Math.PI / 2).translate(0, 0.033, 0), cols: ['#b8261e', '#c8c8c4', '#2c4f9a', '#2f7a3a', '#d8b02a', '#1c1c1c'], r: 0.35, m: 0.6 },
@@ -265,17 +287,23 @@ function mergeGeos(list) {
 }
 
 export function placeLitter3D(world, group, { quality = 'high', seed = 1, def = {} } = {}) {
-  const cap = LITTER_CAP[quality] || 0;
+  let cap = LITTER_CAP[quality] || 0;
   if (!cap || !world?.raycast || !world.bounds || def.litter3d === false) return { count: 0, meshes: 0 };
   const r = rng(seed ^ 0x2c1b3c6d), b = world.bounds;
+  // fuell: Großkarten nur in Bereichen (Ortschaften), Menge nach Fläche
+  const opt = def.groundDressing || {}, ber = opt.bereiche && opt.bereiche.length ? opt.bereiche : null;
+  const berW = ber ? ber.map((q) => (q.maxX - q.minX) * (q.maxZ - q.minZ)) : null, berSum = ber ? berW.reduce((a, c) => a + c, 0) : 0;
+  if (ber) cap = Math.round(cap * Math.min(1.5, Math.max(0.25, berSum / 12000)) * (opt.cap ?? 1));
   const mix = LITTER_MIX[def.id] || LITTER_MIX.default, mixSum = mix.reduce((a, c) => a + c, 0);
   const pick = () => { let k = r() * mixSum; for (let i = 0; i < mix.length; i++) { k -= mix[i]; if (k <= 0) return i; } return 0; };
   const per = LITTER.map(() => []);
   let n = 0, tries = 0;
   while (n < cap && tries++ < cap * 6) {
-    let x = b.min.x + r() * (b.max.x - b.min.x), z = b.min.z + r() * (b.max.z - b.min.z);
-    const gy0 = world.groundHeight ? world.groundHeight(x, z, 3.2) : 0;
-    if (gy0 == null || gy0 > 3) continue;
+    let x, z;
+    if (ber) { let k = r() * berSum, i = 0; while (i < ber.length - 1 && (k -= berW[i]) > 0) i++; const q = ber[i]; x = q.minX + r() * (q.maxX - q.minX); z = q.minZ + r() * (q.maxZ - q.minZ); }
+    else { x = b.min.x + r() * (b.max.x - b.min.x); z = b.min.z + r() * (b.max.z - b.min.z); }
+    const gy0 = bodenY(world, x, z);
+    if (gy0 == null) continue;
     let g = groundAt(world, x, z, gy0 + 0.4);
     if (!g || g.surface === 'water' || /water/.test(g.name)) continue;
     // 65 %: an den nächsten Wandfuß rücken (waagerechter Strahl knapp über dem Boden)

@@ -292,7 +292,22 @@ export async function generateTerrain(spec, { onProgress } = {}) {
       if (ex > 1.5) continue;
       const o = j * n + i;
       const w = 1 - smoothstep(-1.5, 1.5, ex + noise(x / 4, z / 4) * 0.8);
-      if (f.kind === 'acker') {
+      if (f.furrows) {
+        // weit2 (f.furrows): Furchen-/Drillreihen als Streifen in der Bodenart (Periode 3,2 m ≫ 1-m-Raster, sichtbar aus der
+        // Luft und vom Feldrand), Fahrgassen alle 18 m, Vorgewende (5 m Rand) quer – statt einer gleichmäßig dunklen Fläche
+        const head = Math.max(Math.abs(lx) - hw + 5, 0) > 0;
+        const u = head ? lz : lx, st = 0.5 + 0.5 * Math.sin((u / 3.2) * Math.PI * 2 + noise(x / 9, z / 9) * 0.6);
+        const lane = Math.abs(((lz + 9) % 18 + 18) % 18 - 9) < 0.6 && !head ? 1 : 0;
+        if (f.kind === 'acker') {
+          splat[o * 4 + 3] = Math.max(splat[o * 4 + 3], Math.round(255 * w * (0.45 + 0.4 * st) * (1 - lane * 0.5)));
+          splat[o * 4] = Math.max(splat[o * 4], Math.round(255 * w * (0.25 + 0.35 * (1 - st))));
+          H[o] += 0.07 * (st - 0.5) * w;
+        } else if (f.kind === 'stoppel') {
+          splat[o * 4] = Math.max(splat[o * 4], Math.round(w * (70 + 100 * st + lane * 60)));
+        } else if (f.kind === 'wiese') {
+          splat[o * 4] = Math.max(splat[o * 4], Math.round(w * 38 * st));
+        }
+      } else if (f.kind === 'acker') {
         splat[o * 4 + 3] = Math.max(splat[o * 4 + 3], Math.round(255 * w));
         H[o] += 0.06 * Math.sin((lx / 2.8) * Math.PI * 2) * w;
       } else if (f.kind === 'stoppel') {

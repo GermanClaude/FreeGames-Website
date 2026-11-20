@@ -53,7 +53,7 @@ import * as THREE from 'three';
 import { FACE_MORPHS, HEAD_C, loadHeadAsset, buildHeadData, normProfile } from './face-mesh.js?v=20261115041504';
 import { bakeFaceMaps, normLook } from './face-skin.js?v=20261115041504';
 import { BONE } from './rig.js?v=20261115041504';
-import { VARIANTS, variantDef } from './gear.js?v=20261115041504';
+import { VARIANTS, variantDef, EAR_CUP } from './gear.js?v=20261115041504';
 import { SKIN_TONES, SCHEMES } from './materials.js?v=20261115041504';
 import { hairGeometry, beardGeometry, hairMaterial, pickHairStyle, disposeHair } from './hair.js?v=20261115041504';
 
@@ -292,6 +292,8 @@ flat varying float vPart;
 varying vec3 vMp;
 varying vec2 vFUv;
 uniform float uCoverEars;
+uniform vec4 uEarCup; // mensch4: Gehörschutz – x Polster-Innenseite, y/z Ringmitte (relativ Kopfmitte), w an
+uniform float uEarFill; // Kopfseite bis ans Polster andrücken (m, je Kopfform)
 ${GLSL_COMMON}
 `;
 
@@ -519,6 +521,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
   const L = HEAD_C;
   const U = (m.userData.faceU = {
     uCover: { value: 0 }, uCoverEars: { value: 0 },
+    uEarCup: { value: new THREE.Vector4(EAR_CUP.x, EAR_CUP.y - L[1], EAR_CUP.z - L[2], 0) }, uEarFill: { value: 0 },
     uMapA: { value: N.a }, uMapB: { value: N.b },
     uSkin: { value: lin('#b08c74') }, uHairCol: { value: lin('#2a2119') },
     uIris: { value: lin('#5a3c22') },
@@ -544,6 +547,17 @@ export function faceMaterial({ low = false, shared = null } = {}) {
 		transformed = position + ( transformed - position ) * ( 1.0 - npCov * 0.5 ) + normal * npCov * 0.0026;
 		float npPart = floor( aRest.w * 0.5 + 0.01 );
 		if ( npPart > 0.5 && npPart < 1.5 && uCoverEars > 0.5 ) transformed.x = mix( transformed.x, sign( transformed.x ) * 0.071, 0.6 );
+		if ( uEarCup.w > 0.5 && npPart < 1.5 ) {
+			// mensch4: Kapsel-Gehörschutz – Kopfseite unter dem Polsterring an dessen Innenseite, Ohr in der Kapsel angelegt
+			float npAx = abs( aRest.x );
+			float npR = length( vec2( ( aRest.y - uEarCup.y ) / ${EAR_CUP.sy.toFixed(3)}, ( aRest.z - uEarCup.z ) / ${EAR_CUP.sz.toFixed(3)} ) );
+			float npFoot = ( 1.0 - smoothstep( ${(EAR_CUP.r + 0.006).toFixed(4)}, ${(EAR_CUP.r + 0.026).toFixed(4)}, npR ) ) * smoothstep( 0.035, 0.058, npAx );
+			transformed.x += sign( aRest.x ) * uEarFill * npFoot;
+			if ( npPart > 0.5 ) {
+				vec3 npEc = vec3( sign( aRest.x ) * ( uEarCup.x + 0.004 ), uEarCup.y, uEarCup.z );
+				transformed = npEc + ( transformed - npEc ) * vec3( 0.75, 0.8, 0.8 );
+			}
+		}
 		vMp = transformed - vec3( ${L[0].toFixed(3)}, ${L[1].toFixed(3)}, ${L[2].toFixed(3)} );
 	}`);
     let fs = FRAG_HEAD + shader.fragmentShader;
@@ -569,7 +583,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => 'np-face-7' + (low ? 'l' : 'h');
+  m.customProgramCacheKey = () => 'np-face-8' + (low ? 'l' : 'h');
   return m;
 }
 
@@ -709,6 +723,8 @@ export class SoldierFace {
         this.eyeL = new THREE.Vector3(e.L[0], e.L[1], e.L[2]);
         this.eyeR = new THREE.Vector3(e.R[0], e.R[1], e.R[2]);
       }
+      this._skullX = earSkullX(geo);
+      this._earFill();
       const mesh = (this.mesh = new THREE.SkinnedMesh(geo, mat));
       mesh.name = 'soldat-gesicht';
       mesh.frustumCulled = false;
@@ -786,6 +802,14 @@ export class SoldierFace {
       U.uCoverCol.value.set('#4b4c3c'); U.uCoverCol2.value.set('#3e3f31');
     }
     this.cover = id;
+    U.uEarCup.value.w = V.ears ? 1 : 0;
+    this._earFill();
+  }
+
+  /** mensch4: Kopfseite bis an die Polster des Gehörschutzes (gear.js EAR_CUP) – Sturmhaube trägt 2,6 mm auf. */
+  _earFill() {
+    if (this._skullX === undefined) return;
+    this.u.uEarFill.value = clamp(EAR_CUP.x + 0.0005 - (this._skullX + (this.cover === 'balaclava' ? 0.0026 : 0)), 0, 0.012);
   }
 
   /* ---------------------------------------------------------------- Mund */
@@ -973,6 +997,21 @@ export class SoldierFace {
     this.material.dispose();
     // Geometrie und Karten bleiben im Cache (geteilt)
   }
+}
+
+/** mensch4: größte Kopfbreite (x) unter dem Polsterring des Gehörschutzes (Haut ohne Ohr, rechte Seite) – gecacht je Geometrie. */
+function earSkullX(geo) {
+  if (geo.userData.earSkullX !== undefined) return geo.userData.earSkullX;
+  const P = geo.attributes.position.array, R = geo.attributes.aRest.array, n = geo.attributes.position.count;
+  let mx = 0;
+  for (let i = 0; i < n; i++) {
+    const x = P[i * 3];
+    if (x < 0.03 || Math.floor(R[i * 4 + 3] * 0.5 + 0.01) !== 0) continue;
+    const r = Math.hypot((P[i * 3 + 1] - EAR_CUP.y) / EAR_CUP.sy, (P[i * 3 + 2] - EAR_CUP.z) / EAR_CUP.sz);
+    if (Math.abs(r - EAR_CUP.r) < 0.006 && x > mx) mx = x;
+  }
+  geo.userData.earSkullX = mx || EAR_CUP.x;
+  return geo.userData.earSkullX;
 }
 
 function bindPosOf(soldier, bone) {

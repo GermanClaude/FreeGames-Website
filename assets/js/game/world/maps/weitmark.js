@@ -38,6 +38,7 @@ function hqLayout(side) {
     helis: [[x + 18 * s, z - 22], [x + 18 * s, z + 4]],
     tanks: [[x - 22 * s, z + 34], [x - 13 * s, z + 34]],
     jeeps: [[x - 2 * s, z + 34], [x + 6 * s, z + 34], [x + 14 * s, z + 34]],
+    roles: [[x - 24 * s, z + 46, 'apc'], [x - 12 * s, z + 46, 'apc2'], [x, z + 46, 'truck'], [x + 12 * s, z + 46, 'light']],
     spawns: [[x - 22, z + 20], [x - 14, z + 20], [x - 6, z + 20], [x + 2, z + 20], [x + 10, z + 20], [x - 18, z + 25], [x - 2, z + 25], [x + 6, z + 25]].map(([px, pz]) => [px, pz, s > 0 ? -Q : Q]),
   };
 }
@@ -70,7 +71,16 @@ const STR = {
   rosen: [[122, 84], [156, 76], [190, 86]],
   suedost: [[128, 130], [168, 137], [236, 131]],
 };
-const GARTENBAUM = []; // Obst-/Hausbäume aus den Gärten (Vegetation, Liste wird beim Bau der ersten Ortschaft neu gefüllt)
+const GARTENBAUM = [];
+/** Straßenkorridor als Kette kleiner Quadrate (Häuser anderer Straßen halten ihn frei). */
+function korridor(pts, hw) {
+  const out = [];
+  for (let k = 0; k + 1 < pts.length; k++) {
+    const [ax, az] = pts[k], [bx, bz] = pts[k + 1], n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 2.5));
+    for (let i = 0; i <= n; i++) { const x = ax + (bx - ax) * i / n, z = az + (bz - az) * i / n; out.push([x - hw, z - hw, x + hw, z + hw]); }
+  }
+  return out;
+} // Obst-/Hausbäume aus den Gärten (Vegetation, Liste wird beim Bau der ersten Ortschaft neu gefüllt)
 
 function stadtWest(b) {
   const rand = strom(5101);
@@ -91,11 +101,12 @@ function stadtWest(b) {
   b.sign(-44, 1.4, -25.4, 1.8, 0.7, 'ortsschild_kb', {});
   // gewachsene Wohnstraßen (weitmark-bau.js ortsstrasse): versetzte Fluchten, Gärten, Anbauten, Garagen
   const taken = [[-130, -47, -70, 44], [-191, 14, -159, 54], [-131, -48, -69, -28]];
-  const free = [[-240, -24.5, -30, -15.5], ...freiUm([[-100, 4], [-176, 36], [-140, 150]], 8)];
+  const free = [[-240, -24.5, -30, -15.5], ...freiUm([[-100, 4], [-176, 36], [-140, 150]], 8),
+    ...[[STR.kirch, 3.5], [STR.ufer, 3], [STR.garten, 2.8], [STR.sued, 3.5], [STR.schul, 3], [STR.linden, 2.8], [STR.muehl, 2.4]].flatMap(([p, r]) => korridor(p, r - 0.15))];
   const W = { rand, taken, free, baeume: GARTENBAUM };
   ortsstrasse(b, { ...W, pts: STR.kirch, road: 3.5, sides: [-1, 1], zwei: 0.65, fachwerk: 0.35 });
   ortsstrasse(b, { ...W, pts: STR.ufer, road: 3, sides: [1], zwei: 0.7, fachwerk: 0.2, garten: 0.75 });
-  ortsstrasse(b, { ...W, pts: [[-236, -20], [-150, -20]], road: 3.5, sides: [-1, 1], zwei: 0.7, fachwerk: 0.3, garten: 0.4 });
+  ortsstrasse(b, { ...W, pts: [[-236, -20], [-150, -20]], road: 4.6, sides: [-1, 1], zwei: 0.7, fachwerk: 0.3, garten: 0.4 });
   ortsstrasse(b, { ...W, pts: STR.garten, road: 2.8, sides: [-1, 1], zwei: 0.4, garten: 0.8, gap: [2.5, 9] });
   ortsstrasse(b, { ...W, pts: STR.sued, road: 3.5, sides: [-1, 1], zwei: 0.5, garage: 0.35 });
   ortsstrasse(b, { ...W, pts: STR.muehl, road: 2.4, sides: [-1, 1], zwei: 0.8, fachwerk: 0.5, garten: 0.3, vorgarten: 1, gap: [0.8, 3] });
@@ -158,12 +169,13 @@ function stadtOst(b) {
   for (const [x, z] of [[144, 30], [144, 50], [164, 30], [164, 50]]) lampPost(b, x, z, {});
   for (const [x, z, ry] of [[160, 33, Q], [160, 47, Q]]) car(b, x, z, { ry, drivable: false });
   const taken = [[168, 30, 230, 50], [140, -124, 180, -96], [194, -160, 240, 160], [138, 26, 170, 54]];
-  const free = [[50, -24.5, 240, -15.5], [50, 125.5, 240, 134.5], ...freiUm([[150, 40], [100, 150]], 9)];
+  const free = [[50, -24.5, 240, -15.5], [50, 125.5, 126, 134.5], ...freiUm([[150, 40], [100, 150]], 9),
+    ...[[STR.bahnhof, 3.5], [STR.uferost, 2.5], [STR.suedost, 3.2], [STR.kirchweg, 2.6], [STR.rosen, 2.6]].flatMap(([p, r]) => korridor(p, r - 0.15))];
   const W = { rand, taken, free, baeume: GARTENBAUM };
   ortsstrasse(b, { ...W, pts: STR.bahnhof, road: 3.5, sides: [-1, 1], zwei: 0.7, fachwerk: 0.15, garage: 0.3 });
   ortsstrasse(b, { ...W, pts: STR.uferost, road: 2.5, sides: [-1], zwei: 0.4, garten: 0.75 });
-  ortsstrasse(b, { ...W, pts: [[56, -20], [112, -20]], road: 3.5, sides: [-1, 1], zwei: 0.7 });
-  ortsstrasse(b, { ...W, pts: [[56, 130], [112, 130]], road: 3.5, sides: [-1, 1], zwei: 0.5 });
+  ortsstrasse(b, { ...W, pts: [[56, -20], [112, -20]], road: 4.6, sides: [-1, 1], zwei: 0.7 });
+  ortsstrasse(b, { ...W, pts: [[56, 130], [112, 130]], road: 4.6, sides: [-1, 1], zwei: 0.5 });
   ortsstrasse(b, { ...W, pts: STR.kirchweg, road: 2.6, sides: [-1, 1], zwei: 0.6, fachwerk: 0.3 });
   ortsstrasse(b, { ...W, pts: STR.rosen, road: 2.6, sides: [-1, 1], zwei: 0.4, garten: 0.8 });
   ortsstrasse(b, { ...W, pts: STR.suedost, road: 3.2, sides: [-1, 1], zwei: 0.4, garage: 0.35 });
@@ -230,7 +242,7 @@ function dorf(b, X, Z, seed, name, strasse, extra) {
   b.defineSign('ort_' + seed, { style: 'plate', text: name.toUpperCase(), sub: 'Gemeinde Weitmark', bg: '#f2c230', fg: '#1c1c1c' });
   b.groundTiled(X - 16, Z - 11, X + 18, Z + 12, 'cobble', { cell: 1, tint: '#b7ae9e' });
   const taken = [[X - 18, Z - 13, X + 20, Z + 14]];
-  const free = freiUm([[X, Z]], 14);
+  const free = [...freiUm([[X, Z]], 14), ...korridor(strasse, 2.85)];
   const xr = extra?.(b, X, Z);
   if (xr) taken.push(xr);
   // Hofstellen in den vier Quadranten, unregelmäßig versetzt
@@ -267,7 +279,7 @@ function hohenried(b) {
     b2.defineSign('gasthof', { style: 'plate', text: 'GASTHOF ZUR LINDE', bg: '#2d4a3a', fg: '#f1e6c8' });
     haus(b2, { x: X, z: Z + 26, w: 16, d: 11, floors: 2, door: 'n', color: '#e8e2d2', nutzung: 'wohn', fachwerk: true, roofTint: '#8f5a48' });
     b2.sign(X, 3.3, Z + 20.4, 5.6, 0.9, 'gasthof', { ry: PI });
-    for (let k = 0; k < 3; k++) { cafeTable(b2, X - 5 + k * 5, Z + 17); }
+    for (const dx of [-6, 6]) cafeTable(b2, X + dx, Z + 17.5);
     return [X - 10, Z + 15, X + 10, Z + 34];
   });
 }
@@ -297,6 +309,106 @@ function piste(b, ctx) {
   return {};
 }
 
+/**
+ * weit2: Feldflur eines Kartenviertels r (Spät-Ortschaft mit Geländehöhen ctx.hf): Heuballen auf Stoppelfeldern,
+ * Feldscheunen an Feldecken, Hochsitze an Waldrändern, Bildstöcke an Wegkreuzungen, Weidezäune um Wiesen, Strommasten
+ * mit Leitungen an den Landstraßen. Kollision nur für Scheunen, Ballen, Hochsitz-Kanzeln, Masten und Zaunpfähle.
+ */
+function flur(b, ctx, r) {
+  const hf = ctx.hf, H = (x, z) => hf.heightAt(x, z), rand = strom(7000 + Math.round(r.minX + r.minZ * 3));
+  const inR = (x, z) => x >= r.minX + 2 && x < r.maxX - 2 && z >= r.minZ + 2 && z < r.maxZ - 2;
+  const nahStrasse = (x, z, m) => WEITMARK.terrain.roads.some((rd) => rd.pts.some(([px, pz], k) => { const q = rd.pts[k + 1]; if (!q) return false; const dx = q[0] - px, dz = q[1] - pz, l2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - px) * dx + (z - pz) * dz) / l2)); return Math.hypot(x - px - dx * t, z - pz - dz * t) < rd.width / 2 + m; }));
+  const inOrt = (x, z, m) => WEITMARK.sites.some((st) => x > st.bounds.minX - m && x < st.bounds.maxX + m && z > st.bounds.minZ - m && z < st.bounds.maxZ + m);
+  const frei = (x, z, m) => inR(x, z) && !nahStrasse(x, z, m) && !inOrt(x, z, m) && H(x, z) > hf.waterY + 0.6 && Math.abs(x) < 780 && Math.abs(z) < 780;
+  const clear = [];
+  const lokal = (f, lx, lz) => { const c = Math.cos(f.ry), sn = Math.sin(f.ry); return [f.x + lx * c + lz * sn, f.z - lx * sn + lz * c]; };
+  for (const f of FELDER) {
+    if (!inR(f.x, f.z)) continue;
+    // Heuballen (Rundballen) auf Stoppelfeldern, locker in Reihen entlang der Bearbeitungsrichtung
+    if (f.kind === 'stoppel') {
+      const n = 7 + Math.floor(rand() * 7);
+      for (let k = 0; k < n; k++) {
+        const [x, z] = lokal(f, (rand() - 0.5) * f.w * 0.8, (Math.round((rand() - 0.5) * 4) / 4) * f.d * 0.7 + (rand() - 0.5) * 2);
+        b.cyl(x, H(x, z) + 0.72, z, 0.78, 1.25, 'sand', { axis: 'x', ry: f.ry + (rand() - 0.5) * 0.5, tint: rand() < 0.5 ? '#d2b971' : '#c4aa62', seg: 14, minimap: k % 3 ? false : 'cover' });
+      }
+    }
+    // Feldscheune an einer Feldecke (≈ jedes zweite Feld)
+    if (rand() < 0.55) {
+      const sx = rand() < 0.5 ? -1 : 1, sz = rand() < 0.5 ? -1 : 1;
+      const [x, z] = lokal(f, sx * (f.w / 2 + 11), sz * (f.d / 2 - 6));
+      if (frei(x, z, 12)) {
+        const [lo, hi] = hf.rangeY(x - 7, z - 9, x + 7, z + 9);
+        if (hi - lo < 1.2) {
+          const xs = Math.round(x), zs = Math.round(z), w = 8 + Math.round(rand() * 3), d = 12 + Math.round(rand() * 4), rot = rand() < 0.5;
+          scheune(b, { x: xs, z: zs, w: rot ? d : w, d: rot ? w : d, y: hi + 0.02, door: rot ? (sz > 0 ? 'n' : 's') : (sx > 0 ? 'w' : 'e'), h: 4.6, tint: b.pick(['#7a5a40', '#6b4f3a', '#8a6a4c', '#5d4a38']), roofTint: b.pick(['#7a6a62', '#8f6a5e', '#6f716e']) });
+          b.box(xs, lo - 0.3, zs, (rot ? d : w) + 0.3, hi - lo + 0.3, (rot ? w : d) + 0.3, 'stone_wall', { tint: '#9a9284', minimap: false });
+          clear.push({ pts: [[xs - 1, zs], [xs + 1, zs]], r: 14 });
+        }
+      }
+    }
+    // Weidezaun um Wiesen (Holzpfähle, zwei Drähte, zwei Durchlässe)
+    if (f.kind === 'wiese') {
+      const C = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, c]) => lokal(f, a * (f.w / 2 + 1.5), c * (f.d / 2 + 1.5)));
+      for (let e = 0; e < 4; e++) {
+        const [ax, az] = C[e], [bx, bz] = C[(e + 1) % 4], L = Math.hypot(bx - ax, bz - az), n = Math.max(2, Math.round(L / 3.2));
+        const gap = e % 2 === 0 ? Math.floor(n / 2) : -1;
+        for (let i = 0; i < n; i++) {
+          if (i === gap) continue;
+          const x0 = ax + (bx - ax) * i / n, z0 = az + (bz - az) * i / n, x1 = ax + (bx - ax) * (i + 1) / n, z1 = az + (bz - az) * (i + 1) / n;
+          if (nahStrasse(x0, z0, 1)) continue;
+          const y0 = H(x0, z0), y1 = H(x1, z1);
+          b.cyl(x0, y0 - 0.2, z0, 0.06, 1.45, 'wood_dark', { tint: '#6a5848', seg: 6, minimap: false });
+          const ry = Math.atan2(-(z1 - z0), x1 - x0), sl = Math.hypot(x1 - x0, z1 - z0);
+          for (const hy of [0.55, 1.05]) b.box((x0 + x1) / 2, (y0 + y1) / 2 + hy, (z0 + z1) / 2, sl, 0.018, 0.018, 'metal_galvanized', { ry, rz: Math.atan2(y1 - y0, sl), collide: false, minimap: false, grad: false, ao: false, bullet: false });
+        }
+      }
+    }
+  }
+  // Hochsitze an Waldrändern (Blick aufs offene Feld, zur Kartenmitte)
+  for (const fo of WEITMARK.vegetation.forests) {
+    if (fo.r < 75) continue;
+    const a = Math.atan2(-fo.z, -fo.x) + (rand() - 0.5) * 0.8, x = fo.x + Math.cos(a) * (fo.r * 0.86 + 3), z = fo.z + Math.sin(a) * (fo.r * 0.86 + 3);
+    if (!frei(x, z, 6)) continue;
+    hochsitz(b, x, H(x, z), z, -a - Q);
+    clear.push({ pts: [[x - 0.5, z], [x + 0.5, z]], r: 3.5 });
+  }
+  // Bildstöcke an Wegkreuzungen
+  for (const [x, z] of [[-214, 236], [-334, -290], [244, 226], [206, -244], [-146, 336], [-404, -46], [404, 18], [176, 516], [-556, -36], [326, -334]]) {
+    if (!inR(x, z) || inOrt(x, z, 4)) continue;
+    const xx = x + 5, zz = z + 5, y = H(xx, zz);
+    b.box(xx, y - 0.3, zz, 0.7, 0.6, 0.7, 'stone_wall', { tint: '#a8a092', minimap: 'prop' });
+    b.cyl(xx, y + 0.3, zz, 0.16, 1.6, 'stone_wall', { tint: '#b3ab9c', seg: 8, collide: true, minimap: false });
+    b.box(xx, y + 1.9, zz, 0.55, 0.6, 0.4, 'stone_wall', { tint: '#bdb5a6', collide: false, minimap: false });
+    b.box(xx, y + 2.02, zz + 0.205, 0.32, 0.36, 0.02, 'black', { collide: false, minimap: false, grad: false });
+    b.box(xx, y + 2.5, zz, 0.75, 0.08, 0.6, 'roof_tiles', { tint: '#6e4c40', collide: false, minimap: false, rx: 0 });
+    b.cyl(xx, y + 2.58, zz, 0.025, 0.4, 'metal_painted', { tint: '#3a3a36', seg: 4, collide: false, minimap: false });
+  }
+  // Strommasten mit Leitungen entlang der Landstraßen (außerhalb der Orte)
+  const ok = (x, z) => inR(x, z) && !inOrt(x, z, 10) && Math.abs(x) < 780 && Math.abs(z) < 780 && H(x, z) > hf.waterY + 0.4;
+  for (const pts of [[[-700, -40], [-560, -30], [-400, -40], [-280, -26], [-236, -20]], [[240, -20], [400, 10], [560, 30], [700, 40]], [[-140, 160], [-220, 240], [-340, 352], [-396, 372]], [[120, -160], [200, -240], [330, -340], [388, -368]], [[120, 160], [250, 230], [340, 290], [370, 303]]]) {
+    if (!pts.some(([x, z]) => inR(x, z))) continue;
+    for (const [px, pz] of freileitung(b, pts, { step: 42, side: 10.5, hy: H, ok, trafo: 0.06 })) clear.push({ pts: [[px - 0.5, pz], [px + 0.5, pz]], r: 2.5 });
+  }
+  return { clearLines: clear };
+}
+
+/** Hochsitz (Jägerkanzel): vier gespreizte Pfosten, Kanzel mit Dach, Leiter. */
+function hochsitz(b, x, y, z, ry) {
+  const c = Math.cos(ry), sn = Math.sin(ry), P = (lx, lz) => [x + lx * c + lz * sn, z - lx * sn + lz * c];
+  const T = '#6b5844';
+  for (const [lx, lz] of [[-0.9, -0.9], [0.9, -0.9], [0.9, 0.9], [-0.9, 0.9]]) { const [px, pz] = P(lx, lz); b.cyl(px, y - 0.2, pz, 0.08, 4.0, 'wood_dark', { tint: T, seg: 6, minimap: false, rx: lz * 0.06, rz: -lx * 0.06 }); }
+  const [kx, kz] = P(0, 0);
+  b.box(kx, y + 3.6, kz, 1.6, 0.1, 1.6, 'wood_planks', { ry, tint: '#7a6248', minimap: 'prop' });
+  b.box(kx, y + 3.7, kz, 1.5, 1.0, 1.5, 'wood_planks', { ry, tint: '#6e5842', minimap: false });
+  const [wx, wz] = P(0, -0.76);
+  b.box(wx, y + 4.7, wz, 1.1, 0.45, 0.04, 'black', { ry, collide: false, minimap: false, grad: false });
+  b.box(kx, y + 5.25, kz, 1.9, 0.08, 1.9, 'roof_tiles', { ry, rx: 0.12, tint: '#4f4a44', collide: false, minimap: false });
+  for (const [lx, lz] of [[-0.72, -0.72], [0.72, -0.72], [0.72, 0.72], [-0.72, 0.72]]) { const [px, pz] = P(lx, lz); b.box(px, y + 4.7, pz, 0.08, 0.55, 0.08, 'wood_dark', { ry, tint: T, collide: false, minimap: false }); }
+  const [lx2, lz2] = P(0, 1.05);
+  for (const s of [-0.28, 0.28]) { const [px, pz] = P(s, 1.05); b.box(px, y, pz, 0.06, 3.7, 0.06, 'wood_dark', { ry, tint: T, collide: false, minimap: false }); }
+  for (let k = 0; k < 9; k++) b.box(lx2, y + 0.3 + k * 0.4, lz2, 0.56, 0.04, 0.05, 'wood_dark', { ry, tint: T, collide: false, minimap: false, grad: false });
+}
+
 function gefechtsstand(b, side) {
   const L = side === 'A' ? LA : LB, { x, z } = HQ[side];
   hauptquartier(b, x, z, side, { pads: [...L.tanks.map((p) => [p[0], p[1], 'tank']), ...L.jeeps.map((p) => [p[0], p[1], 'jeep'])], helis: L.helis });
@@ -317,8 +429,62 @@ const veh = (side, L) => {
     { id: t + '-panzer-2', team: t, kind: 'tank', x: L.tanks[1][0], z: L.tanks[1][1], yaw: PI },
     { id: t + '-jeep-2', team: t, kind: 'jeep', x: L.jeeps[1][0], z: L.jeeps[1][1], yaw: PI },
     { id: t + '-jeep-3', team: t, kind: 'jeep', x: L.jeeps[2][0], z: L.jeeps[2][1], yaw: PI },
+    // weit2: Rollen-Stellplätze (vehicles/data-troop.js ROLE_TYPES: Typ je Panzergeneration) – Transporter, leichter Panzer
+    ...L.roles.map(([x, z, kind], i) => ({ id: `${t}-${kind}-${i + 1}`, team: t, kind, x, z, yaw: PI })),
   ];
 };
+
+// weit2: Felder (gedrehte Rechtecke, Furchenrichtung = lange Seite), Feldwege, Alleen – Felder, die eine Straße
+// berühren würden, fallen beim Laden weg (siehe feldFrei)
+const FELD0 = [
+  [-330, 110, 120, 70, 0.1, 'acker'], [-340, 210, 90, 60, -0.2, 'stoppel'], [-580, 520, 110, 70, 0.3, 'acker'], [-360, 470, 100, 60, -0.1, 'acker'],
+  [330, -170, 120, 70, -0.15, 'acker'], [340, -60, 90, 60, 0.2, 'stoppel'], [590, -470, 110, 70, -0.3, 'acker'], [300, -430, 90, 60, 0.1, 'stoppel'],
+  [560, 420, 100, 70, 0.25, 'acker'], [-560, -170, 110, 70, -0.1, 'stoppel'], [250, 640, 120, 60, 0.05, 'acker'], [-380, 700, 140, 60, -0.05, 'stoppel'],
+  // neu: die weiten Wiesen zwischen den Orten
+  [-450, -70, 120, 76, 0.05, 'acker'], [-300, -112, 84, 62, -0.12, 'stoppel'], [-470, 140, 110, 66, -0.08, 'stoppel'], [-560, 250, 84, 60, 0.3, 'acker'],
+  [-250, 460, 104, 58, 0.2, 'acker'], [60, 410, 104, 66, -0.3, 'stoppel'], [-20, 300, 96, 56, 0.1, 'acker'], [-60, 230, 80, 50, -0.15, 'wiese'],
+  [450, -60, 120, 76, -0.05, 'acker'], [470, 90, 110, 76, 0.1, 'stoppel'], [450, -200, 96, 66, -0.2, 'acker'], [300, 230, 90, 56, 0.35, 'wiese'],
+  [-250, -400, 96, 56, -0.25, 'acker'], [280, -260, 86, 56, 0.2, 'stoppel'], [-120, -250, 90, 54, 0.05, 'wiese'], [600, 170, 84, 60, -0.3, 'acker'],
+  [-640, -320, 90, 60, 0.15, 'acker'], [640, 320, 90, 60, 0.15, 'stoppel'], [-180, 330, 80, 52, -0.4, 'stoppel'], [170, -360, 80, 52, 0.4, 'acker'],
+];
+const FELDWEGE = [
+  { id: 'feldweg_w', pts: [[-400, -40], [-414, 40], [-432, 150], [-404, 240], [-340, 352]] },
+  { id: 'feldweg_o', pts: [[400, 10], [430, 80], [446, 180], [430, 240], [370, 303]] },
+  { id: 'feldweg_s', pts: [[-148, 330], [-60, 356], [30, 380], [110, 420], [180, 520]] },
+  { id: 'feldweg_n', pts: [[-200, -230], [-170, -300], [-120, -330], [-60, -340]] },
+  { id: 'feldweg_no', pts: [[240, -20], [270, -110], [250, -200], [270, -300], [330, -340]] },
+  { id: 'feldweg_sw', pts: [[-560, -30], [-600, -110], [-560, -200], [-500, -260], [-420, -298]] },
+];
+/** Feld (x, z, w, d, ry) frei von Straßen (Abstand Rechteck ↔ Polylinienpunkte ≥ 7 m) und Ortschaften? */
+function feldFrei(f, roads, rects) {
+  const c = Math.cos(f.ry), sn = Math.sin(f.ry);
+  const inside = (x, z, m) => { const dx = x - f.x, dz = z - f.z, lx = dx * c - dz * sn, lz = dx * sn + dz * c; return Math.abs(lx) < f.w / 2 + m && Math.abs(lz) < f.d / 2 + m; };
+  for (const r of roads) for (let k = 0, L = r.pts; k + 1 < L.length; k++) {
+    const [ax, az] = L[k], [bx, bz] = L[k + 1], n = Math.ceil(Math.hypot(bx - ax, bz - az) / 3);
+    for (let i = 0; i <= n; i++) if (inside(ax + (bx - ax) * i / n, az + (bz - az) * i / n, r.width / 2 + 2.5)) return false;
+  }
+  // Ecken des Felds in einer Ortschaft (+ 8 m)?
+  const c4 = [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]].map(([a, b]) => [f.x + (a * f.w / 2) * c + (b * f.d / 2) * sn, f.z - (a * f.w / 2) * sn + (b * f.d / 2) * c]);
+  return !rects.some((r) => c4.some(([x, z]) => x > r.minX - 8 && x < r.maxX + 8 && z > r.minZ - 8 && z < r.maxZ + 8));
+}
+const FELDER = [];
+const BAUM_FEST = [
+      [-122, -7, 1.05, 0.4], [-78, -7, 1.0, 1.4], [-122, 19, 1.1, 2.2], [-78, 19, 0.95, 3.1], [-160, 10, 1.0, 4.0], [-62, 100, 1.0, 5.0],
+      [90, 100, 1.05, 0.7], [150, 100, 1.0, 1.8], [100, -80, 1.0, 2.6], [-472, 372, 1.15, 1.1], [478, -352, 1.15, 0.5],
+    ];
+/** Alleen: Baumreihen beiderseits der Landstraßen außerhalb der Orte (Hecken-Linien mit Bäumen, vegetation.hedges). */
+function allee(pts, off, trees = 0.85, step = 11) {
+  const out = [];
+  for (const s of [-1, 1]) {
+    const L = [];
+    for (let k = 0; k < pts.length; k++) {
+      const [ax, az] = pts[Math.max(0, k - 1)], [bx, bz] = pts[Math.min(pts.length - 1, k + 1)], l = Math.hypot(bx - ax, bz - az) || 1;
+      L.push([pts[k][0] - ((bz - az) / l) * off * s, pts[k][1] + ((bx - ax) / l) * off * s]);
+    }
+    out.push({ pts: L, trees, step });
+  }
+  return out;
+}
 
 const WEITMARK = {
   id: 'weitmark',
@@ -337,9 +503,9 @@ const WEITMARK = {
     farRadius: 2300,
     tiers: {
       low: { view: 430, far: 1300, treeFar: 400, siteCull: 260, mapPx: 768 },
-      medium: { view: 720, far: 1700, treeFar: 700, siteCull: 560, mapPx: 1024 },
-      high: { view: 1100, far: 2300, treeFar: 1000, siteCull: 760, mapPx: 1536 },
-      ultra: { view: 1300, far: 2300, treeFar: 1150, siteCull: 900, mapPx: 2048 },
+      medium: { view: 720, far: 1700, treeFar: 700, siteCull: 460, mapPx: 1024 },
+      high: { view: 1100, far: 2300, treeFar: 1000, siteCull: 560, mapPx: 1536 }, // weit2: Klötzchenmodelle früher (760 → 560)
+      ultra: { view: 1300, far: 2300, treeFar: 1150, siteCull: 680, mapPx: 2048 },
     },
     // Android-App (Handy/Tablet, Quest als 2D-App): engere Budgets, Speicher < 1,2 GB
     android: { view: 520, far: 1300, treeNear: 60, treeFar: 420, grassCap: 900, siteCull: 300, mapPx: 768 },
@@ -410,16 +576,10 @@ const WEITMARK = {
       { id: 'furtweg_sued', name: 'Furtweg Süd', kind: 'dirt', width: 3.6, pts: [[370, 303], [330, 420], [260, 470], [180, 520], [40, 548]] },
       { id: 'kammweg', name: 'Kammweg', kind: 'gravel', width: 4, pts: [[120, -160], [150, -300], [130, -430], [150, -530]] },
       { id: 'riedkamm', name: 'Höhenweg', kind: 'dirt', width: 3.6, pts: [[470, -360], [330, -470], [220, -540], [172, -556]] },
+      ...FELDWEGE.map((w) => ({ id: w.id, name: 'Feldweg', kind: 'dirt', width: 3.2, pts: w.pts })),
       { id: 'furtweg_nord', name: 'Furtweg Nord', kind: 'dirt', width: 3.6, pts: [[-340, -298], [-260, -360], [-200, -380], [40, -330], [130, -420]] },
     ],
-    fields: [
-      { x: -330, z: 110, w: 120, d: 70, ry: 0.1, kind: 'acker' }, { x: -340, z: 210, w: 90, d: 60, ry: -0.2, kind: 'stoppel' },
-      { x: -580, z: 520, w: 110, d: 70, ry: 0.3, kind: 'acker' }, { x: -360, z: 470, w: 100, d: 60, ry: -0.1, kind: 'acker' },
-      { x: 330, z: -170, w: 120, d: 70, ry: -0.15, kind: 'acker' }, { x: 340, z: -60, w: 90, d: 60, ry: 0.2, kind: 'stoppel' },
-      { x: 590, z: -470, w: 110, d: 70, ry: -0.3, kind: 'acker' }, { x: 300, z: -430, w: 90, d: 60, ry: 0.1, kind: 'stoppel' },
-      { x: 560, z: 420, w: 100, d: 70, ry: 0.25, kind: 'acker' }, { x: -560, z: -170, w: 110, d: 70, ry: -0.1, kind: 'stoppel' },
-      { x: 250, z: 640, w: 120, d: 60, ry: 0.05, kind: 'acker' }, { x: -380, z: 700, w: 140, d: 60, ry: -0.05, kind: 'stoppel' },
-    ],
+    fields: FELDER,
     forests: [
       { x: -600, z: -560, r: 170 }, { x: -300, z: -660, r: 140 }, { x: 360, z: -580, r: 150 }, { x: 660, z: -660, r: 120 },
       { x: -620, z: 200, r: 120 }, { x: -260, z: 320, r: 100 }, { x: 640, z: -150, r: 120 }, { x: 300, z: 520, r: 70 },
@@ -437,19 +597,21 @@ const WEITMARK = {
       { x: 650, z: 560, r: 130, density: 0.58, spruce: 0.55 }, { x: -110, z: -360, r: 80, density: 0.55, spruce: 0.4 },
       { x: -640, z: 660, r: 120, density: 0.55, spruce: 0.5 }, { x: 230, z: -290, r: 60, density: 0.5, spruce: 0.3 },
     ],
-    ring: { density: 0.34, spruce: 0.75, inset: -6, step: 8.5 },
-    scatter: { count: 160 },
+    ring: { density: 0.6, spruce: 0.62, inset: -6, step: 7.5 }, // weit2: Randhöhen bewaldet
+    scatter: { count: 260 },
     hedges: [
       { pts: [[-400, 80], [-260, 70]], trees: 0.25 }, { pts: [[-420, 250], [-300, 270]], trees: 0.2 }, { pts: [[260, -100], [400, -110]], trees: 0.25 },
       { pts: [[280, -230], [400, -250]], trees: 0.2 }, { pts: [[-560, -100], [-420, -120]], trees: 0.3 }, { pts: [[520, 180], [640, 160]], trees: 0.25 },
       { pts: [[-300, 560], [-200, 520]], trees: 0.2 }, { pts: [[100, 330], [220, 300]], trees: 0.3 }, { pts: [[-240, -440], [-120, -470]], trees: 0.2 },
       { pts: [[-260, 400], [-160, 420], [-120, 380]], trees: 0.25 }, { pts: [[300, 380], [380, 420]], trees: 0.2 }, { pts: [[540, -10], [600, 120]], trees: 0.25 },
+      // weit2: Alleen an der Landstraße und den Ortsverbindungen, Ufergehölz an der Weitach außerhalb der Stadt
+      ...allee([[-700, -40], [-560, -30], [-400, -40], [-280, -26]], 7.5), ...allee([[240, -20], [400, 10], [560, 30], [690, 40]], 7.5),
+      ...allee([[-220, 240], [-340, 352]], 6.5, 0.7, 13), ...allee([[200, -240], [330, -340]], 6.5, 0.7, 13), ...allee([[250, 230], [340, 290]], 7, 0.75, 12),
+      { pts: [[-12, -330], [10, -250], [-14, -170]], trees: 0.55, step: 6 }, { pts: [[34, 220], [80, 300], [140, 360]], trees: 0.55, step: 6 },
+      { pts: [[46, -330], [30, -250], [28, -170]], trees: 0.5, step: 6 }, { pts: [[60, 220], [118, 300], [180, 350]], trees: 0.5, step: 6 },
     ],
     // Linden in der Stadt und an den Dorfplätzen [x, z, Maßstab, Drehung]
-    trees: [
-      [-130, -6, 1.05, 0.4], [-70, -6, 1.0, 1.4], [-130, 18, 1.1, 2.2], [-70, 18, 0.95, 3.1], [-160, 10, 1.0, 4.0], [-62, 100, 1.0, 5.0],
-      [90, 100, 1.05, 0.7], [150, 100, 1.0, 1.8], [100, -80, 1.0, 2.6], [-492, 362, 1.1, 1.1], [-468, 400, 1.0, 2.3], [458, -378, 1.1, 0.5], [484, -340, 1.0, 3.3],
-    ],
+    get trees() { return [...BAUM_FEST, ...GARTENBAUM]; }, // weit2: + Gartenbäume der Ortschaften (beim Bau gesammelt)
     reeds: { offset: 11 },
     rocks: {
       count: 220, extra: [],
@@ -483,6 +645,9 @@ const WEITMARK = {
   ],
   lateSites: [
     { id: 'piste', name: 'Startbahn', bounds: { minX: RUNWAY.x0 - 20, maxX: RUNWAY.x1 + 20, minZ: 570, maxZ: 640 }, chunkSize: 400, build: (b, ctx) => piste(b, ctx) },
+    // weit2: Feldflur je Viertel (Heuballen, Feldscheunen, Hochsitze, Bildstöcke, Weidezäune, Strommasten mit Leitungen)
+    ...[['nw', -800, 0, -800, 0], ['no', 0, 800, -800, 0], ['sw', -800, 0, 0, 800], ['so', 0, 800, 0, 800]].map(([id, minX, maxX, minZ, maxZ]) => (
+      { id: 'flur_' + id, name: 'Feldflur', bounds: { minX, maxX, minZ, maxZ }, chunkSize: 800, build: (b, ctx) => flur(b, ctx, { minX, maxX, minZ, maxZ }) })),
   ],
 
   // Eroberung: 7 Flaggen (A Sägewerk · B Lindhof · C Marktplatz · D Funkstation · E Flugfeld · F Hohenried · G Ziegelei)
@@ -495,6 +660,14 @@ const WEITMARK = {
       { id: 'E', name: 'Flugfeld', x: -110, z: 560, radius: 30, heightBand: [-3, 10] },
       { id: 'F', name: 'Hohenried', x: 470, z: -360, radius: 26, heightBand: [-3, 9] },
       { id: 'G', name: 'Ziegelei', x: 430, z: 303, radius: 28, heightBand: [-3, 10] },
+    ],
+    // weit2: Trupp-Front West → Ost als Kette (MAPS.weitmark.trupp.order, terrain/bigworld.js → world.objectives.trupp)
+    trupp: [
+      { id: 'A', name: 'Sägewerk', x: -420, z: -298, radius: 26, heightBand: [-3, 10] },
+      { id: 'B', name: 'Marktplatz', x: -100, z: 4, radius: 24, heightBand: [-3, 11] },
+      { id: 'C', name: 'Steinbrücke', x: 8, z: -20, y: BRIDGE_Y, radius: 16, heightBand: [-4, 6] },
+      { id: 'D', name: 'Bahnhof', x: 150, z: 40, radius: 22, heightBand: [-3, 9] },
+      { id: 'E', name: 'Ziegelei', x: 430, z: 303, radius: 26, heightBand: [-3, 10] },
     ],
     dom: [
       { id: 'A', name: 'Marktplatz', x: -100, z: 4, radius: 10 },
@@ -517,6 +690,22 @@ const WEITMARK = {
   secrets: [],
 };
 
+// weit2: Felder ohne Straßen-/Ortsüberschneidung übernehmen (Furchen-Streifen: generate.js f.furrows)
+{
+  const roads = WEITMARK.terrain.roads, rects = WEITMARK.sites.map((st) => st.bounds);
+  // passt ein Feld nicht, kleiner und/oder etwas verschoben versuchen
+  const tries = [];
+  for (const k of [1, 0.8, 0.62]) for (const [ox, oz] of [[0, 0], [16, 0], [-16, 0], [0, 16], [0, -16], [22, 22], [-22, -22], [22, -22], [-22, 22]]) tries.push([k, ox, oz]);
+  for (const [x, z, w, d, ry, kind] of FELD0) {
+    for (const [k, ox, oz] of tries) {
+      const f = { x: x + ox, z: z + oz, w: Math.round(w * k), d: Math.round(d * k), ry, kind, furrows: true };
+      if (FELDER.some((g) => Math.hypot(g.x - f.x, g.z - f.z) < (Math.max(g.w, g.d) + Math.max(f.w, f.d)) / 2 + 6)) continue;
+      if (WEITMARK.vegetation.forests.some((fo) => Math.hypot(fo.x - f.x, fo.z - f.z) < fo.r + Math.max(f.w, f.d) * 0.45)) continue;
+      if (feldFrei(f, roads, rects)) { FELDER.push(f); break; }
+    }
+  }
+}
+
 // Kleinrelief (terrain/relief.js): Kuppen/Senken als Deckung auf den weiten Wiesen zwischen den Orten
 WEITMARK.terrain.relief = {
   ...reliefAvoid(WEITMARK, []),
@@ -526,7 +715,10 @@ WEITMARK.terrain.relief = {
     { x: 60, z: -400, r: 20, h: 2.6, w: 14 }, { x: 470, z: 300 - 70, r: 16, h: -2.4, w: 12 },
   ],
   ridges: [{ pts: [[-340, -60], [-320, 40], [-330, 120]], w: 4, h: 1.5 }, { pts: [[340, 60], [320, -40], [330, -120]], w: 4, h: 1.5 }],
-  sunken: [{ pts: [[-200, 200], [-260, 260], [-330, 300]], w: 4, d: 1.6, bank: 5.5 }, { pts: [[200, -200], [260, -260], [330, -300]], w: 4, d: 1.6, bank: 5.5 }],
+  sunken: [{ pts: [[-200, 200], [-260, 260], [-330, 300]], w: 4, d: 1.6, bank: 5.5 }, { pts: [[200, -200], [260, -260], [330, -300]], w: 4, d: 1.6, bank: 5.5 },
+    // weit2: Entwässerungsgräben an Feldrändern (in der Niederung mit Wasser), Bach zur Weitach
+    { pts: [[-520, -2], [-440, -8], [-370, -6]], w: 1.4, d: 1.5, bank: 2.2 }, { pts: [[380, 30], [470, 40], [540, 52]], w: 1.4, d: 1.5, bank: 2.2 },
+    { pts: [[-120, 280], [-60, 268], [-14, 250]], w: 2.2, d: 2.4, bank: 3 }, { pts: [[260, -120], [160, -150], [62, -170]], w: 2.2, d: 2.4, bank: 3 }],
   scatter: { seed: 2613, count: 240, area: { minX: -780, maxX: 780, minZ: -780, maxZ: 780 }, r: [10, 24], h: [1.3, 3.4], hollow: 0.3, gap: 10 },
 };
 

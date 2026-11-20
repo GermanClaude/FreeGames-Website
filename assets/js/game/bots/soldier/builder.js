@@ -216,6 +216,9 @@ export class SkinBuilder {
     this.triangles = 0;
     this.ao = ao;
     this.bulk = bulk;
+    // mensch4: Teil-Kennung (gear.js setzt B.tag vor Gruppen von Teilen) → userData.parts [[erste Ecke, Ende, Kennung]] für
+    // Prüfwerkzeuge (Durchstich-Prüfung je Pose); kostet nur eine kleine Liste je Geometrie
+    this.tag = '';
   }
 
   /**
@@ -243,14 +246,14 @@ export class SkinBuilder {
     const np = [o.camo || 0, o.detail ?? (o.camo ? 1 : 0), o.emis || 0, o.shine || 0];
     const seed = hash01(this.parts.length * 7 + bone * 131 + 17);
     const nq = [pal, cls, Math.round(Math.min(1, Math.max(0, o.wear || 0)) * 255), Math.floor(seed * 255)];
-    this.parts.push({ geo, bone, r, g, b, np, nq, seed, tail: !!o.tail, noBulk: !!o.noBulk });
+    this.parts.push({ geo, bone, r, g, b, np, nq, seed, tail: !!o.tail, noBulk: !!o.noBulk, tag: this.tag });
     if (o.mirrorBone) {
       const m = geo.clone();
       m.userData = { ...geo.userData, npUv: geo.userData.npUv ? [...geo.userData.npUv] : undefined };
       m.scale(-1, 1, 1);
       flipWinding(m);
       const mb = BONE[o.mirrorBone];
-      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3), tail: !!o.tail, noBulk: !!o.noBulk });
+      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3), tail: !!o.tail, noBulk: !!o.noBulk, tag: this.tag });
     }
   }
 
@@ -276,7 +279,7 @@ export class SkinBuilder {
       }
       return m;
     };
-    this.parts.push({ mesh: D, spec, tail });
+    this.parts.push({ mesh: D, spec, tail, tag: this.tag });
   }
 
   build() {
@@ -300,7 +303,11 @@ export class SkinBuilder {
     let vo = 0, io = 0;
     const fieldAo = []; // [Startecke, Uint8Array] der fertigen Netze (Feld-Verdeckung)
     const tailV = new Uint8Array(nv); // Ecken, deren Dreiecke ans Ende sollen (Kopf)
+    const ranges = [];
     for (const p of this.parts) {
+      const n_ = p.mesh ? p.mesh.n : p.geo.attributes.position.count;
+      const last = ranges[ranges.length - 1];
+      if (last && !p.mesh && !last[3] && last[2] === p.tag && last[1] === vo) last[1] = vo + n_; else ranges.push([vo, vo + n_, p.tag, p.mesh ? p.mesh.reg : null]);
       if (p.mesh) {
         const D = p.mesh, n = D.n;
         for (let i = 0; i < n; i++) {
@@ -402,6 +409,7 @@ export class SkinBuilder {
     out.computeBoundingBox();
     out.userData.triangles = io / 3;
     out.userData.tailStart = tailStart;
+    out.userData.parts = ranges;
     out.userData.aoMs = +aoMs.toFixed(1);
     out.userData.bytes = pos.byteLength + nor.byteLength + uv.byteLength + col.byteLength + np.byteLength + nq.byteLength + si.byteLength + sw.byteLength + idx.byteLength + ao.byteLength;
     this.triangles = io / 3;

@@ -117,6 +117,10 @@ function bodyMesh(lod, civil = false, female = false) {
   return D0;
 }
 
+/** mensch4: Lage der Gehörschutz-Kapseln (Modellraum, rechte Seite +x): Polsterring Mitte (y, z), Ringradius r, Schlauch tube,
+ *  Streckung sy/sz; x = Innenseite des Polsters. face.js drückt die Kopfseite bis dorthin an (je Kopfform). */
+export const EAR_CUP = Object.freeze({ x: 0.0725, y: 1.675, z: 0.01, r: 0.029, tube: 0.0085, sy: 1.2, sz: 0.92 });
+
 // Helm nach hinten gekippt (≈ 17°): Vorderkante über den Augenbrauen, Nackenschutz hinten tiefer – wie ein echter Helm
 const HELMET_TILT = new THREE.Matrix4().makeTranslation(0, 1.712, 0.006)
   .multiply(new THREE.Matrix4().makeRotationX(0.3))
@@ -166,7 +170,7 @@ function headlessView(g) {
   v.setIndex(g.index);
   v.setDrawRange(0, g.userData.tailStart ?? g.index.count);
   v.boundingSphere = g.boundingSphere; v.boundingBox = g.boundingBox;
-  v.userData = { key: g.userData.key + '|ohneKopf', variant: g.userData.variant, lod: g.userData.lod, triangles: (g.userData.tailStart ?? g.index.count) / 3, bytes: 0, headless: true };
+  v.userData = { key: g.userData.key + '|ohneKopf', variant: g.userData.variant, lod: g.userData.lod, parts: g.userData.parts, triangles: (g.userData.tailStart ?? g.index.count) / 3, bytes: 0, headless: true };
   g.userData.headlessView = v;
   return v;
 }
@@ -369,7 +373,9 @@ function buildSoldier(V, lod) {
     for (let i = 0; i < BM.n; i++) if (reg[i] === RG.POCKET && BM.pos[i * 3 + 1] > 1.0) reg[i] = RG.SHIRT;
     BM = { ...BM, reg };
   }
+  B.tag = 'koerper';
   B.addMesh(BM, bodyMat, L0 ? new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]) : null);
+  B.tag = '';
   if (V.holster && !FAR) {
     // 15.11.: an den schlankeren Oberschenkel des MakeHuman-Körpers (Außenseite x ≈ 0,186, Mitte z ≈ −0,02) gerückt
     add(R(0.06, 0.17, 0.1, 0.022, { p: [0.214, 0.72, -0.004], r: [0.08, 0, -0.03] }), 'thighR', C.gear2);
@@ -593,7 +599,9 @@ function buildSoldier(V, lod) {
       const rz = (rf + rb) / 2, cz = 0.006 + (rb - rf) / 2;
       const g = cyl(1, 1, h, L0 ? 48 : q.tseg, {}, true);
       if (rib && L0) ribify(g, 48, 0.02);
+      const tg = B.tag; B.tag = 'saum';
       add(place(g, { p: [0, y, cz], s: [rx, 1, rz] }), y < 1.0 ? 'hips' : 'spine', { ...mat, ...NB });
+      B.tag = tg;
     };
     // Bündchen am Handgelenk (Unterarm, links gemessen, rechts gespiegelt)
     const cuff = (mat, h = 0.04, rib = true) => {
@@ -603,7 +611,9 @@ function buildSoldier(V, lod) {
       const rx = (rxo + rxi) / 2 + 0.004, rz = (rzf + rzb) / 2 + 0.004;
       const g = cyl(1, 1, h, L0 ? 24 : q.cs, {}, true);
       if (rib && L0) ribify(g, 24, 0.035);
+      const tg = B.tag; B.tag = 'buendchen';
       pair(place(g, { p: [ax + (rxi - rxo) / 2, y, (rzb - rzf) / 2], s: [rx, 1, rz] }), 'foreArmL', 'foreArmR', { ...mat, ...NB });
+      B.tag = tg;
     };
     // Kragen/Bündchen entlang des gemessenen Halsausschnitts (body-mesh.js boots.neck): w hoch, t dick, lift über der Kante
     const NL0 = (BODY_MESH.boots && BODY_MESH.boots.neck && BODY_MESH.boots.neck[V.female ? 'female' : 'civil']) || null;
@@ -697,7 +707,7 @@ function buildSoldier(V, lod) {
       { const Nn = g.attributes.normal.array; let sdot = 0;
         for (let i = 0; i < n; i++) { const v = i * per + 3, px = pos[v * 3], pz = pos[v * 3 + 2] - cz0; sdot += Nn[v * 3] * px + Nn[v * 3 + 2] * pz; }
         if (sdot < 0) { for (let k = 0; k < idx.length; k += 3) { const x_ = idx[k + 1]; idx[k + 1] = idx[k + 2]; idx[k + 2] = x_; } g.setIndex(idx); g.computeVertexNormals(); } }
-      add(g, 'chest', { ...mat, ...NB });
+      { const tg = B.tag; B.tag = 'kragen'; add(g, 'chest', { ...mat, ...NB }); B.tag = tg; }
     };
     // Knopfleiste/Reißverschluss vorn (am Körper gemessen)
     const placket = (y0, y1, w, t, mat, x = 0, n = 7) => {
@@ -802,7 +812,9 @@ function buildSoldier(V, lod) {
       panel(-1, 0, 'thighL');
       panel(1, 0.005, 'thighR');
       const nV = pos.length / 3;
+      B.tag = 'mantel';
       B.addMesh({ n: nV, pos: new Float32Array(pos), nrm: new Float32Array(nrm), uv: new Float32Array(uvA), idx: new Uint16Array(idx), ski: new Uint8Array(ski), skw: new Uint8Array(skw), reg: new Uint8Array(nV), ao: new Uint8Array(nV).fill(235) }, () => civ.top);
+      B.tag = '';
     }
     // Frisuren der Zivilistinnen (20.11.): Haarkappe direkt aus dem (weiblichen) Kopfnetz geschnitten – alle Dreiecke über dem
     // Haaransatz, entlang der Normalen um 3–11 mm (Volumen) versetzt – sitzt so genau auf dem Kopf von face.js; dazu Dutt, Zopf
@@ -940,6 +952,7 @@ function buildSoldier(V, lod) {
   if (V.vest === 'heavy') add(R(0.17, 0.15, 0.03, 0.014, { p: [0, 0.885, -0.12], r: [-0.12, 0, 0] }), 'hips', C.gear);
 
   /* ------------------------------------------------------------ Westen */
+  B.tag = 'weste';
   // sol 15.11.: Plattenträger aus gewölbten Kissen (gear-parts.pad: gerundete Kanten, um die Brust gebogen, Schulterausschnitt)
   // statt Quadern; Taschen mit Deckeln, Gummizug und Magazinen, Funkgerät mit Antenne, Erste-Hilfe-Tasche mit Zuglasche,
   // gepolsterte Schulterträger, Kummerbund mit Gurtband. Ferne Stufe: nur die Silhouette tragenden Teile.
@@ -1066,6 +1079,7 @@ function buildSoldier(V, lod) {
   }
 
   /* ------------------------------------------------------------ Rucksäcke */
+  B.tag = 'rucksack';
   // sol 15.11.: Rucksackteile als gepolsterte Stoffkissen (gewölbte Außenseite nach hinten, gerundete Kanten) statt Rundquader
   const RP = (w, h, d, r, o = {}) => {
     if (FAR) return R(w, h, d, r, o);
@@ -1137,6 +1151,7 @@ function buildSoldier(V, lod) {
   }
 
   /* ------------------------------------------------------------ Hals + Kopf (Kopf/Hals selbst: body-mesh.js) */
+  B.tag = 'kopf';
   if (V.shemagh) add(torus(0.082, 0.034, 5, q.cs, { p: [0, 1.5, 0.01], r: [Math.PI / 2, 0, 0] }), 'neck', C.sand);
   if (V.face === 'gaiter' && !FAR) add(torus(0.078, 0.016, 4, q.cs, { p: [0, 1.492, 0.012], r: [Math.PI / 2, 0, 0], s: [1, 1.08, 1] }), 'neck', faceFab);
   const wrapHead = V.head === 'wrap';
@@ -1301,34 +1316,41 @@ function buildSoldier(V, lod) {
   // Headset (Kapsel-Gehörschutz mit Funk): ovale Kapseln mit Ohrpolster über den Ohren, mit Helm an den Seitenschienen
   // befestigt, sonst Kopfbügel; Mikrofonarm rechts zum Mund
   if (V.ears) {
+    B.tag = 'headset';
+    // mensch4 (Nutzer: „alle haben einen Abstand“): Kapseln auf die gemessene Ohrlage der Kopfnetze (face-mesh.js, alle
+    // Profile: Ohrmitte y 1,675, z 0,010; Schädel unter dem Polsterring x 0,068–0,073) – Polster-Innenseite bei x = EAR_CUP.x
+    // (vorher 0,0915 → 2–2,5 cm Luft). Den Rest je Kopfform gleicht face.js aus (Kopfseite unter dem Polster angedrückt).
+    const ex = EAR_CUP.x + EAR_CUP.tube, ey = EAR_CUP.y, ez = EAR_CUP.z, cs = [1, EAR_CUP.sy, EAR_CUP.sz];
     const cupProf = [[0.0005, 0], [0.026, 0], [0.034, 0.004], [0.038, 0.012], [0.039, 0.021], [0.035, 0.028], [0.025, 0.032], [0.0005, 0.033]];
     const cup = !L0 ? cyl(0.036, 0.038, 0.032, FAR ? 6 : 10, { r: [0, 0, Math.PI / 2], p: [0, 0.016, 0] }) : lathe(cupProf, 18);
     // lathe dreht um Y → um Z gekippt zeigt die Achse nach −X (linke Seite, rechts gespiegelt)
-    place(cup, { r: [0, 0, Math.PI / 2] }); place(cup, { s: [1, 1.13, 0.9], p: [-0.101, 1.668, 0.012] });
+    place(cup, { r: [0, 0, Math.PI / 2] }); place(cup, { s: cs, p: [-ex - 0.001, ey, ez] });
     pair(cup, 'head', 'head', C.plastic);
-    if (L0) {
-      const cush = torus(0.029, 0.0085, L0 ? 6 : 3, L0 ? 18 : 8, { r: [0, Math.PI / 2, 0] });
-      place(cush, { s: [1, 1.13, 0.9], p: [-0.1, 1.668, 0.012] });
+    if (L01) {
+      // Polsterring (Kunstleder) liegt am Kopf an; auf Stufe 1 gröber
+      const cush = torus(EAR_CUP.r, EAR_CUP.tube, L0 ? 6 : 3, L0 ? 18 : 10, { r: [0, Math.PI / 2, 0] });
+      place(cush, { s: cs, p: [-ex, ey, ez] });
       pair(cush, 'head', 'head', { color: '#2a2b2d', detail: 0.8, shine: 0.25, cls: 'leather' });
     }
     if (L0) {
       // Deckel/Lautstärke-Knöpfe, Gitter
-      pair(cyl(0.004, 0.004, 0.008, 6, { p: [-0.118, 1.705, 0.03], r: [0, 0, 0.4] }), 'head', 'head', { color: '#2a2d30', detail: 0.3, shine: 0.4, cls: 'hard' });
-      pair(ellipsoid(0.004, 0.024, 0.02, 6, 4, { p: [-0.1325, 1.668, 0.012] }), 'head', 'head', { color: '#26292c', detail: 0.4, shine: 0.3, cls: 'hard' });
+      pair(cyl(0.004, 0.004, 0.008, 6, { p: [-ex - 0.026, ey + 0.037, ez + 0.018], r: [0, 0, 0.4] }), 'head', 'head', { color: '#2a2d30', detail: 0.3, shine: 0.4, cls: 'hard' });
+      pair(ellipsoid(0.004, 0.024, 0.02, 6, 4, { p: [-ex - 0.0335, ey, ez] }), 'head', 'head', { color: '#26292c', detail: 0.4, shine: 0.3, cls: 'hard' });
     }
     if (helmet) {
-      // Schienenadapter: kurzer Arm von der Kapsel hoch zur Seitenschiene
-      if (!FAR) pair(rbox(0.012, 0.036, 0.022, 0.003, L0 ? 1 : 0, { p: [-0.116, 1.716, 0.008] }), 'head', 'head', C.plastic);
+      // Schienenadapter: Arm von der Kapseloberseite hoch zur Seitenschiene des Helms (schräg nach außen)
+      if (!FAR) pair(rbox(0.012, 0.05, 0.022, 0.003, L0 ? 1 : 0, { p: [-ex - 0.021, ey + 0.05, ez - 0.004], r: [0, 0, 0.32] }), 'head', 'head', C.plastic);
     } else if (!FAR) {
       const hb = hullPath([[84, 180], [55, 180], [25, 180], [0, 180], [-25, 180], [-55, 180], [-84, 180]], V.head === 'cap' ? 0.0115 : 0.006, L0 ? 3 : 1);
       add(sweep(hb.pts, hb.ups, rectProfile(0.024, 0.006), { smooth: false }), 'head', C.plastic);
     }
     if (L01) {
-      const mic = curve([[0.12, 1.648, -0.018], [0.112, 1.625, -0.06], [0.075, 1.607, -0.1], [0.034, 1.612, -0.12]], L0 ? 10 : 5);
+      const mic = curve([[0.104, 1.648, -0.012], [0.1, 1.625, -0.055], [0.07, 1.607, -0.1], [0.034, 1.612, -0.12]], L0 ? 10 : 5);
       add(sweep(mic, [0, 1, 0], roundProfile(0.0028, L0 ? 6 : 3), { smooth: true }), 'head', C.plastic);
       if (L0) add(ellipsoid(0.008, 0.007, 0.008, 8, 6, { p: [0.03, 1.612, -0.122] }), 'head', { color: '#1a1b1c', detail: 1, shine: 0.02, cls: 'cloth' });
     }
   }
+  B.tag = 'kopf';
   // Brillen / Maske
   if (V.eyes === 'goggles') {
     add(R(0.13, 0.046, 0.034, 0.016, { p: [0, 1.697, -0.093] }), 'head', { color: '#25282a', detail: 0.3, shine: 0.3, cls: 'hard' });
@@ -1358,6 +1380,7 @@ function buildSoldier(V, lod) {
   }
 
   /* ------------------------------------------------------------ Ghillie-Anzug / Tarnschleier */
+  B.tag = 'ghillie';
   // 21.10. (Nutzer: „Scharfschützen … diese Ghillie-Suits“): Jute- und Bastbüschel über Kopf, Schultern, Rücken,
   // Arme und Beine; Brust und Gesicht bleiben frei (Waffe/Zielen). Tarnschleier (Späher): nur Kopf und Schultern.
   if (V.ghillie || V.veil) {
@@ -1422,6 +1445,7 @@ function buildSoldier(V, lod) {
   }
 
   /* ------------------------------------------------------------ Arme (Arme/Hände selbst: body-mesh.js) */
+  B.tag = 'arme';
   const AX = -DIM.shoulderX; // Armachse links (rechts gespiegelt)
   // Armbinde in Teamfarbe rund um den Oberarm (auch aus der Ferne und von hinten sichtbar)
   // 15.11.: Maße am schlankeren MakeHuman-Oberarm (Halbachsen ≈ 0,06 × 0,066) gemessen

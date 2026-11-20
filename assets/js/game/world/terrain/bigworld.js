@@ -147,17 +147,30 @@ function siteImpostor(footprints, y0 = 0) {
   if (!list.length) return null;
   const P = [], C = [], wall = new THREE.Color('#c9c1b2').convertSRGBToLinear(), roof = new THREE.Color('#8e6f62').convertSRGBToLinear();
   const quad = (a, b, c, d, col) => { for (const v of [a, b, c, a, c, d]) { P.push(v[0], v[1], v[2]); C.push(col.r, col.g, col.b); } };
+  // weit2: Satteldach entlang der langen Seite (Giebel als Wandfarbe), Wand-/Dachtöne je Gebäude aus der Lage gehasht
+  const wv = ['#d9d2c2', '#cfc6b2', '#e2dccd', '#c9b99c', '#d4cbb8', '#bfb8a8'].map((h) => new THREE.Color(h).convertSRGBToLinear());
+  const rv = ['#8e6352', '#9c6a56', '#7a5a4e', '#6a625c', '#a3725c', '#5c5a58'].map((h) => new THREE.Color(h).convertSRGBToLinear());
+  const tri = (a, b, c, col) => { for (const v of [a, b, c]) { P.push(v[0], v[1], v[2]); C.push(col.r, col.g, col.b); } };
   for (const f of list) {
     const x0 = f.x - f.hw, x1 = f.x + f.hw, z0 = f.z - f.hd, z1 = f.z + f.hd;
-    const ya = Math.min(f.y0 ?? y0, y0) - 0.5, yb = Math.max(f.y1 ?? y0 + 6, ya + 2), yr = yb + Math.min(3, Math.min(f.hw, f.hd) * 0.6);
-    quad([x0, ya, z1], [x1, ya, z1], [x1, yb, z1], [x0, yb, z1], wall);
-    quad([x1, ya, z0], [x0, ya, z0], [x0, yb, z0], [x1, yb, z0], wall);
-    quad([x1, ya, z1], [x1, ya, z0], [x1, yb, z0], [x1, yb, z1], wall);
-    quad([x0, ya, z0], [x0, ya, z1], [x0, yb, z1], [x0, yb, z0], wall);
-    quad([x0, yb, z1], [x1, yb, z1], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
-    quad([x1, yb, z0], [x0, yb, z0], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
-    quad([x1, yb, z1], [x1, yb, z0], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
-    quad([x0, yb, z0], [x0, yb, z1], [(x0 + x1) / 2, yr, (z0 + z1) / 2], [(x0 + x1) / 2, yr, (z0 + z1) / 2], roof);
+    const hsh = Math.abs(Math.sin(f.x * 12.9898 + f.z * 78.233) * 43758.5453) % 1;
+    const wcol = wv[Math.floor(hsh * wv.length)] || wall, rcol = rv[Math.floor(((hsh * 7.31) % 1) * rv.length)] || roof;
+    const ya = Math.min(f.y0 ?? y0, y0) - 0.5, yb = Math.max(f.y1 ?? y0 + 6, ya + 2), yr = yb + Math.min(4, Math.min(f.hw, f.hd) * 0.8);
+    quad([x0, ya, z1], [x1, ya, z1], [x1, yb, z1], [x0, yb, z1], wcol);
+    quad([x1, ya, z0], [x0, ya, z0], [x0, yb, z0], [x1, yb, z0], wcol);
+    quad([x1, ya, z1], [x1, ya, z0], [x1, yb, z0], [x1, yb, z1], wcol);
+    quad([x0, ya, z0], [x0, ya, z1], [x0, yb, z1], [x0, yb, z0], wcol);
+    if (f.hw >= f.hd) { // First entlang x
+      const zm = (z0 + z1) / 2;
+      quad([x0, yb, z1], [x1, yb, z1], [x1, yr, zm], [x0, yr, zm], rcol);
+      quad([x1, yb, z0], [x0, yb, z0], [x0, yr, zm], [x1, yr, zm], rcol);
+      tri([x1, yb, z1], [x1, yb, z0], [x1, yr, zm], wcol); tri([x0, yb, z0], [x0, yb, z1], [x0, yr, zm], wcol);
+    } else {
+      const xm = (x0 + x1) / 2;
+      quad([x1, yb, z1], [x1, yb, z0], [xm, yr, z0], [xm, yr, z1], rcol);
+      quad([x0, yb, z0], [x0, yb, z1], [xm, yr, z1], [xm, yr, z0], rcol);
+      tri([x0, yb, z1], [x1, yb, z1], [xm, yr, z1], wcol); tri([x1, yb, z0], [x0, yb, z0], [xm, yr, z0], wcol);
+    }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
@@ -490,6 +503,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const collider = new TerrainCollider(hf, colBVH, compCol);
   progress(0.9, 'Navigation');
   const nav = bigNavFromData(job.nav, makeTests(compCol), { hf, col: colBVH });
+  job.nav = null; job.col = job.bullet = null; // weit2: `job` hängt am Closure-Kontext der Welt (V) – Rohdaten nicht festhalten
 
   const V = (i, yOff = 0) => new THREE.Vector3(pts[i].x, job.snapped[i] + yOff, pts[i].z);
   const cx = (pb.minX + pb.maxX) / 2, cz = (pb.minZ + pb.maxZ) / 2;
@@ -750,6 +764,10 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   world.stats.assets.libMaterials = libraryStats.materials;
   world.stats.assets.fallbackMaterials = libraryStats.fallback;
   for (const s of sites) s.built.props?.showAll();
+  // fuell (20.11.): Wand-Decals, Bodenauflage und Kleinmüll auch in den Ortschaften der Großkarten (medium+, nur Optik)
+  if (quality !== 'low' && !def.giant && id !== 'weitmark') {
+    try { const { fuelleGrosskarte } = await import('../fuellung.js?v=20261115041504'); world.stats.fuell = await fuelleGrosskarte(world, group, { quality, def: { ...def, id }, sites: sites.filter((s) => s.def.nav !== false).map((s) => s.def.bounds) }); } catch (err) { console.warn('[world] Füllung', err); }
+  }
   // erste Kamera-Stellung: Gelände-LOD + Vegetation am ersten Startpunkt vorbereiten
   const cam0 = new THREE.PerspectiveCamera(70, 1.7, 0.1, 900);
   const s0 = spawns.A[0] || spawns.ffa[0];

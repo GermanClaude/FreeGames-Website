@@ -111,9 +111,31 @@ export class BigNavGraph extends NavGraph {
   }
 }
 
+const EMPTY = Object.freeze([]);
+
+/**
+ * weit2: Knoten aus gepackten Job-Daten (bigjob.js packNav). Je Knoten ein schlankes Objekt; links/drop sind Sichten
+ * (Int32Array.subarray) auf je einen gemeinsamen Puffer, leere Listen teilen sich ein eingefrorenes Array,
+ * Deckungsrichtungen nur an Deckungsknoten. Spart gegenüber geklonten Objekten mit eigenen Arrays ≈ 60 % Heap.
+ */
+function nodesFromPacked(P) {
+  const N = P.count, out = new Array(N), { pos, linkStart, links, dropStart, drops, coverStart, coverDirs, coverDir, flags, cost } = P;
+  for (let i = 0; i < N; i++) {
+    const f = flags[i], c0 = coverStart[i], c1 = coverStart[i + 1];
+    let cd = EMPTY;
+    if (c1 > c0) { cd = []; for (let k = c0; k < c1; k += 2) cd.push(new THREE.Vector3(coverDirs[k], 0, coverDirs[k + 1])); }
+    out[i] = {
+      id: i, position: new THREE.Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]), links: links.subarray(linkStart[i], linkStart[i + 1]),
+      cover: !!(f & 1), coverDir: f & 8 ? new THREE.Vector3(coverDir[i * 2], 0, coverDir[i * 2 + 1]) : null, coverDirs: cd, coverHigh: !!(f & 2),
+      drop: dropStart[i + 1] > dropStart[i] ? Array.from(drops.subarray(dropStart[i], dropStart[i + 1])) : EMPTY, cost: cost[i], kind: f & 4 ? 1 : 0,
+    };
+  }
+  return out;
+}
+
 /** Knoten aus den reinen Job-Daten (bigjob.js) → BigNavGraph. */
 export function bigNavFromData(data, tests, o) {
-  const nodes = data.nodes.map((n, id) => {
+  const nodes = data.packed ? nodesFromPacked(data) : data.nodes.map((n, id) => {
     const coverDirs = [];
     for (let k = 0; k < n.coverDirs.length; k += 2) coverDirs.push(new THREE.Vector3(n.coverDirs[k], 0, n.coverDirs[k + 1]));
     return {
