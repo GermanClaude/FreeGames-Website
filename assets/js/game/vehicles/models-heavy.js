@@ -534,8 +534,10 @@ export function troopInner(K, S, D, { driver, engineX = 0.6 } = {}) {
     B.add(box(0.46, 0.08, 0.42), S.canvas, [dx, yF + 0.36, dz + 0.1]);
     B.add(box(0.46, 0.5, 0.08), S.canvas, [dx, yF + 0.65, dz + 0.36], [-0.15, 0, 0]);
     for (const sx of [-1, 1]) { B.add(cyl(0.02, 0.02, 0.55, 6), S.steel, [dx + sx * 0.18, yF + 0.45, dz - 0.32], [0.5, 0, 0]); B.add(cyl(0.035, 0.035, 0.1, 8), S.rubber, [dx + sx * 0.18, yF + 0.68, dz - 0.45]); }
-    B.add(box(0.55, 0.28, 0.06), S.dark, [dx, yR - 0.35, z0 + 0.06], [0.3, 0, 0]);
-    for (let i = 0; i < 4; i++) B.add(cyl(0.035, 0.035, 0.012, 14), S.dial, [dx - 0.18 + i * 0.12, yR - 0.33, z0 + 0.1], [1.25, 0, 0]);
+    B.add(box(0.55, 0.22, 0.2), S.dark, [dx, yR - 0.68, z0 + 0.14], [0.55, 0, 0]);
+    for (let i = 0; i < 4; i++) B.add(cyl(0.032, 0.032, 0.012, 14), S.dial, [dx - 0.18 + i * 0.12, yR - 0.6, z0 + 0.2], [1.0, 0, 0]);
+    for (let i = 0; i < 5; i++) B.add(box(0.018, 0.03, 0.018), i % 2 ? S.amber : S.lensOn, [dx - 0.12 + i * 0.06, yR - 0.67, z0 + 0.26]);
+    B.add(box(0.3, 0.2, 0.18), S.dark, [dx + 0.42, yF + 0.5, z0 + 0.2]);                       // Funkgerät
     for (let i = -1; i <= 1; i++) B.add(box(0.14, 0.1, 0.08), S.optic, [dx + i * 0.2, yR - 0.06, z0 + 0.08]);
     B.add(box(0.14, 0.04, 0.04), S.lensOn, [dx, yR - 0.03, dz + 0.4]);
   }

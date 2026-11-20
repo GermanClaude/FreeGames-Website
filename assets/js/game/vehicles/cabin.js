@@ -554,12 +554,13 @@ function cabinShader(sh, renderer, mat) {
   sh.uniforms.uCabK = { value: (mat && mat.userData.cabK) || new THREE.Vector4(0, 0, 0, 0) };
   ensureWorldVaryings(sh);
   sh.vertexShader = sh.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vCabO;\nvarying vec3 vCabN;\nattribute vec3 cabA;\nattribute vec2 cabS0;\nattribute vec2 cabS1;\nattribute vec4 cabE;\nvarying vec3 vCabA;\nvarying vec4 vCabS;\nvarying vec4 vCabE;\nvarying vec3 vCabV;')
-    .replace('#include <project_vertex>', '#include <project_vertex>\nvCabV = - mvPosition.xyz;')
-    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCabO = position;\nvCabN = normal;\nvCabA = cabA;\nvCabS = vec4( cabS0, cabS1 );\nvCabE = cabE;');
+    .replace('#include <common>', '#include <common>\nvarying vec4 vCabO4;\nvarying vec4 vCabN4;\nattribute vec3 cabA;\nattribute vec2 cabS0;\nattribute vec2 cabS1;\nattribute vec4 cabE;\nvarying vec4 vCabS;\nvarying vec4 vCabE;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\n// gepackt (Varyings sparen): O4 = Objektlage + Verdeckung, N4 = Objektnormale + Abnutzung + 2 × Raum\nvCabO4 = vec4( position, cabA.x );\nvCabN4 = vec4( normal, clamp( cabA.y, 0.0, 1.0 ) + 2.0 * step( 0.5, cabA.z ) );\nvCabS = vec4( cabS0, cabS1 );\nvCabE = cabE;');
   sh.fragmentShader = sh.fragmentShader
     .replace('#include <common>', `#include <common>
-      varying vec3 vCabO; varying vec3 vCabN; varying vec3 vCabA; varying vec4 vCabS; varying vec4 vCabE; varying vec3 vCabV;
+      varying vec4 vCabO4; varying vec4 vCabN4; varying vec4 vCabS; varying vec4 vCabE;
+      #define vCabO vCabO4.xyz
+      #define vCabA vec3( vCabO4.w, vCabN4.w - 2.0 * step( 1.5, vCabN4.w ), step( 1.5, vCabN4.w ) )
       uniform vec3 uCabLP[ ${NL} ]; uniform vec3 uCabLC[ ${NL} ]; uniform float uCabAmb; uniform float uCabSun; uniform float uCabWear; uniform float uCabSet;
       uniform vec3 uCabHP; uniform vec3 uCabHC; uniform vec4 uCabK; uniform vec4 uCabEra;
       float cbH( vec3 p ) { p = fract( p * 0.3183099 + 0.1 ); p *= 17.0; return fract( p.x * p.y * p.z * ( p.x + p.y + p.z ) ); }
@@ -581,7 +582,7 @@ function cabinShader(sh, renderer, mat) {
       float cbPrim = 0.0, cbBare = 0.0, cbRust = 0.0, cbScr = 0.0, cbFing = 0.0, cbDust = 0.0, cbDirt = 0.0, cbAO = 0.0, cbHgt = 0.0, cbPol = 0.0;`)
     .replace('#include <map_fragment>', `#include <map_fragment>
       {
-        vec3 cbNo = normalize( vCabN );
+        vec3 cbNo = normalize( vCabN4.xyz ); // Objektnormale
         vec4 cbM = cbMask( vCabO, cbNo );
         cbAO = clamp( vCabA.x, 0.0, 1.0 );
         float cbWr = clamp( vCabA.y, 0.0, 1.0 );                         // Griffstellen (gebaut)
@@ -677,7 +678,7 @@ function cabinShader(sh, renderer, mat) {
     .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
       {
         // Abplatzer liegen tiefer als der Lack, Rost trägt auf (Höhe aus den Masken, Ableitungen im Bildraum)
-        vec3 dpx = dFdx( - vCabV ), dpy = dFdy( - vCabV );
+        vec3 dpx = mat3( viewMatrix ) * dFdx( vNpWorld ), dpy = mat3( viewMatrix ) * dFdy( vNpWorld );
         vec2 dh = vec2( dFdx( cbHgt ), dFdy( cbHgt ) );
         vec3 r1 = cross( dpy, normal ), r2 = cross( normal, dpx );
         float dt = dot( dpx, r1 );

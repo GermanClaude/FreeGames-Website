@@ -410,7 +410,7 @@ export class Lobby {
         ${locked ? `<span class="lb-map-lock">${ICON.lock}<span>Nur in der App</span></span>` : ''}
         <span class="lb-map-txt"><b>${esc(x.name)}</b><small>${x.appOnly ? 'Riesenkarte · ' : x.scale === 'gross' ? 'Großkarte · ' : ''}${esc(x.timeOfDay || x.subtitle || '')}</small></span></button>`;
     }).join('');
-    const appNote = lockedAny ? `<p class="lb-note lb-app-only">${ICON.lock}<span><b>Nur in der App</b> – ${esc(lockReason().replace(/^Nur in der App: /, ''))} Die Riesenkarte ist viermal so groß wie alle anderen und braucht den Speicher der App. <a href="${APP_PAGE_URL}" target="_blank" rel="noopener">Hier herunterladen</a></span></p>` : '';
+    const appNote = lockedAny ? `<p class="lb-note lb-app-only">${ICON.lock}<span><b>Nur in der App</b> – ${esc(lockReason().replace(/^Nur in der App: /, ''))} Die Riesenkarte ist viermal so groß wie alle anderen und braucht den Speicher der App.&nbsp;<a href="${APP_PAGE_URL}" target="_blank" rel="noopener">Hier herunterladen</a></span></p>` : '';
     const diffs = DIFF_ORDER.filter((id) => d.DIFF[id] || true).map((id) => `<button type="button" role="radio" data-diff="${id}" aria-checked="${id === c.difficulty}">${esc((d.DIFF[id] && d.DIFF[id].name) || id)}</button>`).join('');
     const xpm = diff.xpMult && diff.xpMult !== 1 ? `EP ×${num(diff.xpMult, 2).replace(/,?0+$/, '')}` : 'EP ×1';
     const st = GAME_STYLES[c.style] || GAME_STYLES.arcade;

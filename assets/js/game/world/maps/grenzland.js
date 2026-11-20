@@ -721,13 +721,16 @@ const GRENZLAND = {
   },
   // Fahrzeug-Stellplätze (Fahrzeug-Agent): Panzer/Geländewagen je HQ; Traktor „Gertrud“ in der Scheune (Geheimnis)
   vehicles: [
+    // Reihenfolge je Team = Vorrang unter der Fahrzeug-Obergrenze (low 3, medium 5, high 8 je Team): Panzer, Geländewagen,
+    // Truppentransporter (20.11., Rolle → Typ je Panzergeneration, Stellplatz wird auf freien Boden gerückt), Lkw, leichter Panzer
     { id: 'A-panzer-1', team: 'A', kind: 'tank', x: 78, z: 228, yaw: 0 }, { id: 'A-panzer-2', team: 'A', kind: 'tank', x: 78, z: 212, yaw: 0 },
-    { id: 'A-jeep-1', team: 'A', kind: 'jeep', x: 40, z: 230, yaw: 0 }, { id: 'A-jeep-2', team: 'A', kind: 'jeep', x: 40, z: 220, yaw: 0 }, { id: 'A-jeep-3', team: 'A', kind: 'jeep', x: 40, z: 210, yaw: 0 },
+    { id: 'A-jeep-1', team: 'A', kind: 'jeep', x: 40, z: 230, yaw: 0 }, { id: 'A-apc-1', team: 'A', kind: 'apc', x: 59, z: 226, yaw: 0 },
+    { id: 'A-jeep-2', team: 'A', kind: 'jeep', x: 40, z: 220, yaw: 0 }, { id: 'A-truck-1', team: 'A', kind: 'truck', x: 59, z: 210, yaw: 0 },
+    { id: 'A-jeep-3', team: 'A', kind: 'jeep', x: 40, z: 210, yaw: 0 }, { id: 'A-light-1', team: 'A', kind: 'light', x: 96, z: 220, yaw: 0 },
     { id: 'B-panzer-1', team: 'B', kind: 'tank', x: -38, z: -213, yaw: Math.PI }, { id: 'B-panzer-2', team: 'B', kind: 'tank', x: -38, z: -229, yaw: Math.PI },
-    { id: 'B-jeep-1', team: 'B', kind: 'jeep', x: 2, z: -212, yaw: Math.PI }, { id: 'B-jeep-2', team: 'B', kind: 'jeep', x: 2, z: -222, yaw: Math.PI }, { id: 'B-jeep-3', team: 'B', kind: 'jeep', x: 2, z: -232, yaw: Math.PI },
-    // Truppentransporter + leichter Panzer (20.11., Rolle → Typ je Panzergeneration; Stellplatz wird auf freien Boden gerückt)
-    { id: 'A-apc-1', team: 'A', kind: 'apc', x: 59, z: 226, yaw: 0 }, { id: 'A-truck-1', team: 'A', kind: 'truck', x: 59, z: 210, yaw: 0 }, { id: 'A-light-1', team: 'A', kind: 'light', x: 96, z: 220, yaw: 0 },
-    { id: 'B-apc-1', team: 'B', kind: 'apc', x: -18, z: -213, yaw: Math.PI }, { id: 'B-truck-1', team: 'B', kind: 'truck', x: -18, z: -229, yaw: Math.PI }, { id: 'B-light-1', team: 'B', kind: 'light', x: -56, z: -221, yaw: Math.PI },
+    { id: 'B-jeep-1', team: 'B', kind: 'jeep', x: 2, z: -212, yaw: Math.PI }, { id: 'B-apc-1', team: 'B', kind: 'apc', x: -18, z: -213, yaw: Math.PI },
+    { id: 'B-jeep-2', team: 'B', kind: 'jeep', x: 2, z: -222, yaw: Math.PI }, { id: 'B-truck-1', team: 'B', kind: 'truck', x: -18, z: -229, yaw: Math.PI },
+    { id: 'B-jeep-3', team: 'B', kind: 'jeep', x: 2, z: -232, yaw: Math.PI }, { id: 'B-light-1', team: 'B', kind: 'light', x: -56, z: -221, yaw: Math.PI },
     { id: 'gertrud', team: null, kind: 'tractor', name: 'Gertrud', secret: true, x: -134.5, z: 119.5, yaw: Math.PI },
   ],
   secrets: [
