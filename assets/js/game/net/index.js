@@ -52,7 +52,7 @@ import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261115041504';
  *  10: Waffen der ersten Stunde (Waffen-Indizes verschoben), Aufsätze/Tarnung in Ausrüstungen.
  *  11: Versorgung/MG-Gurte im Fahrzeugblock (Byte 63), Militärfahrzeuge nur auf großen Karten.
  *  12: neue Waffen ZW-12 Zwilling, P-9A, PS-41 Wirbel (Waffenindizes verschoben, 26.10.). */
-export const NET_VERSION = 18; // 18: zerbrechliche Requisiten 'ev' pb, Zaun-Kollision je Feld (zerstoerung 15.11.), neue Panzertypen 12–15 spz/kk/wk2m/wk2j + Epoche 'kk' (panzermod 15.11.); 17: Luftfahrzeuge (Hubschrauber/Jet: Fahrzeugtypen 10/11, Pilot-Eingaben, Täuschkörper 'vf') – 14.11.; 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
+export const NET_VERSION = 19; // 19: Waffen-Welle 3 (20.11.: neun neue Waffen) verschiebt den Waffen-Index; 18: zerbrechliche Requisiten 'ev' pb, Zaun-Kollision je Feld (zerstoerung 15.11.), neue Panzertypen 12–15 spz/kk/wk2m/wk2j + Epoche 'kk' (panzermod 15.11.); 17: Luftfahrzeuge (Hubschrauber/Jet: Fahrzeugtypen 10/11, Pilot-Eingaben, Täuschkörper 'vf') – 14.11.; 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). 26.10.: aus den Modus-Daten
  *  (MODES[id].online, shared/modes.data.js ONLINE_MODE_IDS) – eine Quelle auch für ui/net-menus.js. */
 export const ONLINE_MODES = ONLINE_MODE_IDS;

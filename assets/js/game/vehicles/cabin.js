@@ -518,7 +518,12 @@ function cabinShader(sh) {
       // Abnutzung an Griffstellen: Lack abgegriffen, blankes Metall fleckig sichtbar
       float cbW = clamp( vCabA.y, 0.0, 1.0 ) * uCabWear;
       float cbWm = cbW * smoothstep( 0.5, 0.72, cbN( vCabO * 85.0 ) * 0.5 + cbN( vCabO * 21.0 + 3.0 ) * 0.5 + cbW * 0.22 );
-      diffuseColor.rgb = mix( diffuseColor.rgb, max( diffuseColor.rgb, vec3( 0.6, 0.59, 0.56 ) ) * ( 0.9 + 0.2 * cbN( vCabO * 140.0 ) ), cbWm );`)
+      // dunkle Teile (Gummi, schwarzer Lack) werden blank-speckig, helle Lackteile zeigen blankes Metall
+      float cbLum = dot( diffuseColor.rgb, vec3( 0.3, 0.59, 0.11 ) );
+      float cbBare = smoothstep( 0.08, 0.2, cbLum );
+      vec3 cbPol = mix( diffuseColor.rgb * 1.45 + 0.025, max( diffuseColor.rgb, vec3( 0.6, 0.59, 0.56 ) ), cbBare );
+      diffuseColor.rgb = mix( diffuseColor.rgb, cbPol * ( 0.9 + 0.2 * cbN( vCabO * 140.0 ) ), cbWm );
+      cbWm *= mix( 0.35, 1.0, cbBare );`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
       roughnessFactor = clamp( roughnessFactor + ( cbD * 0.12 - cbS * 0.3 + cbDirt * 0.15 ) * uCabWear, 0.04, 1.0 );
       roughnessFactor = mix( roughnessFactor, 0.32, cbWm );`)

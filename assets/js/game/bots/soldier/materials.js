@@ -638,6 +638,7 @@ const ROUGH = /* glsl */`
 	float sdShine = vNp.w;
 	float roughnessFactor = mix( mix( roughness, 0.32, sdShine ), sdOrm.g * uNpDetail.z, sdC.w * vNp.y );
 	roughnessFactor = min( 1.0, roughnessFactor + sdDust * 0.2 );
+	if ( sdCls == 4 ) roughnessFactor = max( roughnessFactor, 0.86 ); // 20.11.: Leder/Rauleder matt
 `;
 
 // Weiche Normalen (Stoff fällt rund), harte Ausrüstung behält einen Hauch Kante (uFacet.y), Stoff fast keine (uFacet.x)
@@ -774,7 +775,13 @@ function newMaterial(schemeId, low) {
     // gebackene Umgebungsverdeckung (Vertex) auf Umgebungslicht und -spiegelung
     fs = fs.replace('#include <aomap_fragment>', `#include <aomap_fragment>
 	reflectedLight.indirectDiffuse *= vNpAo;
-	reflectedLight.indirectSpecular *= mix( 1.0, vNpAo, 0.75 );`);
+	reflectedLight.indirectSpecular *= mix( 1.0, vNpAo, 0.75 ) * ( sdCls == 4 ? 0.45 : 1.0 ); // Leder: kaum Himmelsspiegelung
+	// 20.11.: Haut (Hände, Hals, Kopf der fernen Stufen): Streulicht-Näherung wie face.js – Licht dringt rötlich ein, Schatten-
+	// kanten weicher/wärmer (ohne Textur, ohne zusätzlichen Sampler)
+	if ( sdCls == 2 ) {
+		reflectedLight.directDiffuse *= vec3( 1.1, 0.97, 0.93 );
+		reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3( 0.16, 0.05, 0.03 ) * ( 0.4 + 0.6 * vNpAo );
+	}`);
     fs = fs.replace('#include <opaque_fragment>', `${RIM}
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;

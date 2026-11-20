@@ -105,8 +105,10 @@ for (const key of keys) try {
       if (WD && !cavity) {
         const edge = WD.getX(i), dirt = WD.getY(i);
         // Kantenabrieb: blankes Grundmetall bzw. abgegriffener Kunststoff/Lack (gedämpft – die Bot-Stufe hat kein Glanzlicht je Kante)
-        if (edge > 0) c.lerp(info.metal ? new THREE.Color(0.32, 0.33, 0.34) : c.clone().multiplyScalar(1.7), 0.32 * edge);
-        if (dirt > 0) c.multiplyScalar(1 - 0.5 * dirt);
+        // (Distanzfeld-Teile tragen einen fließenden Kantenwert 0…1 – nur ausgeprägte Kanten aufhellen, sonst wirkt alles grau)
+        const e = Math.max(0, edge - 0.45) / 0.55;
+        if (e > 0) c.lerp(info.metal ? new THREE.Color(0.2, 0.205, 0.21) : c.clone().multiplyScalar(1.35), 0.22 * e * e);
+        if (dirt > 0) c.multiplyScalar(1 - 0.45 * dirt);
       }
       c.toArray(col, i * 3);
     }
@@ -116,6 +118,8 @@ for (const key of keys) try {
     if (!buckets.has(k)) buckets.set(k, []);
     buckets.get(k).push({ pos, nrm, col });
   });
+  // Budget nach Größe: Pistolen/Revolver (≈ 0,25 m) brauchen aus derselben Entfernung weniger Dreiecke als ein Gewehr (≈ 0,9 m)
+  const gunLen = Math.max(...(ego.userData.info?.size || [0.9])), scale = Math.min(1, Math.max(0.35, gunLen / 0.85));
   const out = { key, ver: VER, src: Math.round(srcTris), levels: [] };
   const blobs = [];
   let off = 0;
@@ -133,7 +137,7 @@ for (const key of keys) try {
       geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
       const wg = mergeVertices(geo, 1e-5);
       const share = (nV / 3) / srcTris;
-      const target = Math.max(12, Math.round(L.tris * share)) * 3;
+      const target = Math.max(12, Math.round(L.tris * scale * share)) * 3;
       const idx = new Uint32Array(wg.index.array);
       let simp = idx;
       if (target < idx.length) {

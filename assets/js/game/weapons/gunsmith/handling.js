@@ -240,3 +240,8 @@ HANDLING.hornisse = { ...RIFLE, hip: [0.118, -0.14, -0.38], kick: { back: 0.019,
 HANDLING.lindwurm = { ...HANDLING.hm60, hip: [0.135, -0.16, -0.4], kick: { back: 0.026, up: 0.042, side: 0.016, roll: 0.05, kickRot: 0.022 }, weight: 1.7, flash: 1.25, flashLen: 1.3,
   cycle: 0.05, reloadTime: 5.2, emptyTime: 6.2, equipTime: 0.9, inspectStyle: 'belt' };
 HANDLING.stier = { ...HANDLING.bulldog, hip: [0.13, -0.13, -0.38], kick: { back: 0.062, up: 0.095, side: 0.012, roll: 0.06, kickRot: 0.078 }, inspectStyle: 'pump' };
+// Körperkamera: Bullpup sitzt mit dem Schaft hinter dem Griff – weiter vorn, sonst füllt das Visier die rechte untere Ecke
+BODYCAM.luchs = bcRifle('luchs', [0.14, -0.16, -0.38], BC_RIFLE_ROT);
+// Körperkamera: Zielfernrohr/Kampfvisier lägen sonst groß vor der rechten Bildhälfte – Waffe weiter weg und tiefer
+BODYCAM.habicht = bcRifle('habicht', [0.15, -0.2, -0.42], [0.08, 0.1, 0.25]);
+BODYCAM.elster = bcRifle('elster', [0.15, -0.19, -0.4], [0.08, 0.1, 0.27]);

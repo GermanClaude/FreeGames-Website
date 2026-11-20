@@ -650,7 +650,7 @@ def bake_ao(P0, N0, T0, cell=0.012, dirs=10, steps=(0.025, 0.05, 0.09, 0.15), st
     return np.clip(out, 0, 1)
 
 
-def uvs(P, reg, W):
+def uvs(P, reg, W, N=None):
     """UV in Metern: Rumpf/Glieder zylindrisch um ihre Achse (u = Umfang, v = Höhe), Kopf kugelig."""
     n = len(P)
     U = np.zeros((n, 2))
@@ -671,6 +671,18 @@ def uvs(P, reg, W):
     ang = np.arctan2(P[:, 0] - cx, -(P[:, 2] - cz))
     U[:, 0] = ang * R
     U[:, 1] = P[:, 1]
+    if N is not None:
+        # Stiefel/Schuhe: Kastenprojektion nach der Flächennormalen (die Zylinderabwicklung um den Fußknochen streckte das
+        # Leder vorn am Fuß zu langen Streifen); R groß → die Naht-Trennung in pack() greift dort nicht
+        bt = np.isin(reg, [REG['BOOT'], REG['SOLE'], REG['TOE'], REG['TONGUE']])
+        ax_, ay_, az_ = np.abs(N[:, 0]), np.abs(N[:, 1]), np.abs(N[:, 2])
+        top = bt & (ay_ >= np.maximum(ax_, az_))
+        side = bt & ~top & (ax_ >= az_)
+        front = bt & ~top & ~side
+        U[top, 0] = P[top, 0]; U[top, 1] = P[top, 2]
+        U[side, 0] = P[side, 2]; U[side, 1] = P[side, 1]
+        U[front, 0] = P[front, 0]; U[front, 1] = P[front, 1]
+        R[bt] = 10.0
     return U, R
 
 
@@ -697,7 +709,7 @@ def split_seam(T0, U, R):
 def pack(P, T0, W, reg, name):
     N = tri_normals(P, T0)
     ao = bake_ao(P, N, T0)
-    U, Rr = uvs(P, reg, W)
+    U, Rr = uvs(P, reg, W, N)
     T0, src = split_seam(T0, U, Rr)
     if len(src):
         U2 = U[src].copy(); U2[:, 0] += 2 * np.pi * Rr[src]

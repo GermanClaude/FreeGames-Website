@@ -120,6 +120,11 @@ export const SHAPE_PRESETS = Object.freeze([
   { age: 46, jaw: 0.8, chin: 0.6, nose: -0.2, noseW: 0.5, brow: 0.8, cheek: 0.6, lips: -0.3, skull: 0.5, weight: 0.2, muscle: 0.9, bags: 0.3, laugh: 0.4, angles: -0.4, seed: 67, look: { beard: 'voll', stubble: 1, freckles: 0.15, moles: 0.5, recede: 0.5, brows: 1.15 } },
   { age: 21, asian: 0.3, jaw: -0.4, chin: -0.3, nose: -0.1, noseW: -0.3, brow: -0.2, cheek: 0.1, lips: 0.2, weight: -0.5, eyes: 0.2, seed: 79, look: { beard: 'none', stubble: 0.25, freckles: 0.5, moles: 0.3, recede: 0 } },
   { age: 37, african: 0.6, jaw: 0.3, chin: -0.3, nose: 0.3, noseW: 0.7, brow: 0.4, cheek: 0.2, lips: 0.5, weight: 0.3, fat: 0.2, prog: 0.3, seed: 97, look: { beard: 'kinnbart', stubble: 0.7, freckles: 0, moles: 0.4, recede: 0.4 } },
+  // 20.11.: mehr Alter/Bart/Herkunft (Zivilisten der Kampagne werden über den Namen zugeordnet)
+  { age: 63, jaw: 0.2, chin: 0.3, nose: 0.6, noseW: 0.2, brow: 0.5, cheek: -0.4, lips: -0.5, skull: 0.2, weight: 0.1, bags: 0.9, laugh: 0.9, seed: 173, look: { beard: 'voll', stubble: 1, freckles: 0.4, moles: 0.9, recede: 0.95, brows: 1.3 } },
+  { age: 27, african: 0.95, jaw: 0.4, chin: 0.3, nose: 0.1, noseW: 0.6, brow: 0.3, cheek: 0.4, lips: 0.4, weight: -0.2, muscle: 0.5, seed: 181, look: { beard: 'schnauzer', stubble: 0.5, freckles: 0, moles: 0.2, recede: 0.05 } },
+  { age: 49, asian: 0.9, jaw: 0.1, chin: 0.2, nose: -0.2, noseW: 0.2, brow: -0.1, cheek: 0.6, lips: -0.2, weight: 0.3, fat: 0.2, bags: 0.5, seed: 191, look: { beard: 'kinnbart', stubble: 0.6, freckles: 0.05, moles: 0.5, recede: 0.5 } },
+  { age: 34, jaw: -0.1, chin: -0.2, nose: 0.3, noseW: -0.1, brow: 0.2, cheek: 0.1, lips: 0.1, weight: -0.3, seed: 199, look: { beard: 'kurz', stubble: 0.85, freckles: 0.6, moles: 0.3, recede: 0.15, brows: 0.9 } },
 ]);
 
 /**

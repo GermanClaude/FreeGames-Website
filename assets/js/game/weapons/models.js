@@ -294,7 +294,8 @@ export function getWeaponModelMeta(key) {
 // vorliegt: Aufheben zeigt dann einen Platzhalter statt im Bild zu bauen. Alle übrigen Waffen (alte Bauweise, 2–90 ms) baut das
 // Aufheben ohne Messung sofort. NEUE FOTO-WAFFEN HIER EINTRAGEN (Integrationsschritt je Etappe, Bauanleitung §8.2).
 const PHOTO_MODELS = new Set(['m17', 'p9', 'kv47', 'vp9', 'qx90', 'adler',   // Etappe 1 (25.10.): KV-47, VP-9, QX-90, Adler
-  'zwilling', 'p9a', 'wirbel']);   // neue Waffen 26.10.: ZW-12 Zwilling, P-9A, PS-41 Wirbel
+  'zwilling', 'p9a', 'wirbel',   // neue Waffen 26.10.: ZW-12 Zwilling, P-9A, PS-41 Wirbel
+  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier']);   // Welle 3 (20.11.): Distanzfeld-Bauteile, 0,4–1 s Bau
 export function isPhotoWeapon(key) { return PHOTO_MODELS.has(key); }
 
 /**
