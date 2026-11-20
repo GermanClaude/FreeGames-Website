@@ -148,7 +148,7 @@ export class VrScope {
       if (!box.isEmpty()) {
         const sz = box.getSize(this._tmp);
         if (sz.z > 0.04 && box.max.z < ez) z = box.max.z - 0.002;
-        r = THREE.MathUtils.clamp(Math.min(sz.x, sz.y) * 0.4, 0.009, 0.026);
+        r = THREE.MathUtils.clamp(Math.min(sz.x, sz.y) * 0.32, 0.009, 0.022); // Okular ist enger als die Box (Türme, Objektiv)
       }
     }
     e.xrLens = { zoom, kind: ov === 'acog' ? 1 : 0, pos: new THREE.Vector3(ex, ey, z), r };
