@@ -68,7 +68,9 @@ const _eu = new THREE.Euler();
 const _qw = new THREE.Quaternion();
 // Steuerungs-Seite im VR-Menü: belegbare Aktionen (Reihenfolge = Wichtigkeit), 6 je Seite, Tastenerfassung 6 s
 const CTL_ACTIONS = ['fire', 'reload', 'swap', 'melee', 'grenade', 'tactical', 'jump', 'crouch', 'prone', 'sprint', 'interact', 'plate',
-  'feuermodus', 'light', 'inspect', 'verband', 'gadget', 'faehigkeit', 'bauen', 'streak1', 'streak2', 'streak3', 'scoreboard'];
+  'feuermodus', 'light', 'inspect', 'verband', 'gadget', 'faehigkeit', 'bauen', 'streak1', 'streak2', 'streak3', 'scoreboard',
+  // Simulation (isim): in VR lädt die Hand durch (Nachlade-Taste bei leerem Lager ebenso); Kompass/Karte/Ausrüstung frei belegbar
+  'sim_magcheck', 'sim_kompass', 'sim_karte', 'sim_inventar', 'sim_abbinden', 'sim_durchladen'];
 const CTL_PAGE = 6;
 const CTL_CAPTURE = 6;
 const CTL_NOTE = 'Fest: Abzug der Haupthand im Menü wählt · Griff-Taste Haupthand an Rücken/Hüfte zieht Hauptwaffe/Pistole · Griff-Taste Nebenhand am Vorderschaft hält beidhändig · Sticks: laufen/drehen';

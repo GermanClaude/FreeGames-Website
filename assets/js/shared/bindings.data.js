@@ -111,7 +111,9 @@ export const DEFAULT_BINDINGS = deepFreeze({
     streak1: ['Pad12'], streak2: ['Pad14'], streak3: ['Pad15'], streak4: ['Pad6+Pad13'], interact: ['Pad2'], scoreboard: ['Pad8'], pause: ['Pad9'], fullscreen: [],
     prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], faehigkeit: ['Pad6+Pad14'], bauen: ['Pad6+Pad15'], verband: [], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'], unterlauf: ['Pad6+Pad2'], feuermodus: ['Pad6+Pad1'], // LT + B (LT + R3 = rechts lehnen; plattform 19.11.: war doppelt)
     gear_up: ['Pad5'], gear_down: ['Pad4'], seat_next: ['Pad15'], seat_prev: ['Pad14'],
-    sim_durchladen: [], sim_magcheck: [], sim_kompass: [], sim_karte: [], sim_inventar: [], sim_abbinden: [], sim_visier_auf: [], sim_visier_ab: [], sim_hilfe: [],
+    // Simulation (isim) am Controller (plattform, 19.11.): Ansicht/Create halten + Taste – alle Einzeltasten sind belegt
+    sim_durchladen: ['Pad8+Pad2'], sim_magcheck: ['Pad8+Pad3'], sim_kompass: ['Pad8+Pad14'], sim_karte: ['Pad8+Pad15'], sim_inventar: ['Pad8+Pad0'],
+    sim_abbinden: ['Pad8+Pad1'], sim_visier_auf: ['Pad8+Pad12'], sim_visier_ab: ['Pad8+Pad13'], sim_hilfe: ['Pad8+Pad11'],
   },
   // VR-Controller (wie gängige VR-Shooter, Haupthand rechts): Abzug feuern, Griff anlegen (zusätzlich: Waffe ans Auge),
   // A springen, B ducken (halten: hinlegen), Stick drücken Nahkampf, Stick hoch Waffe wechseln, Stick runter Platte;
@@ -459,6 +461,13 @@ export const TOUCH_BUTTONS = Object.freeze([
   { id: 'faehigkeit', sel: '.tc-faehigkeit', label: 'Klassen-Fähigkeit', auto: 'faehigkeit', def: { x: 58, y: 42, s: 46 } },
   // Befehlsrad: nur mit verbündeten Bots; oben rechts in der Reihe von Punktetabelle/Pause (frei auf 4:3 bis 20:9)
   { id: 'befehl', sel: '.tc-befehl', label: 'Befehlsrad', auto: 'allies', def: { x: 80, y: 8, s: 42 } },
+  // Infanteriesimulation (isim, nur im Spielstil „Simulation“ sichtbar; plattform 19.11.)
+  { id: 'simLaden', sel: '.tc-sim-laden', label: 'Durchladen (Simulation)', auto: 'sim', def: { x: 51, y: 42, s: 44 } },
+  { id: 'simMag', sel: '.tc-sim-mag', label: 'Magazin prüfen (Simulation)', auto: 'sim', def: { x: 51, y: 56, s: 44 } },
+  { id: 'simAbb', sel: '.tc-sim-abb', label: 'Abbinden (Simulation)', auto: 'sim', def: { x: 51, y: 28, s: 42 } },
+  { id: 'simKompass', sel: '.tc-sim-kompass', label: 'Kompass (Simulation)', auto: 'sim', def: { x: 52, y: 8, s: 40 } },
+  { id: 'simKarte', sel: '.tc-sim-karte', label: 'Karte (Simulation)', auto: 'sim', def: { x: 59, y: 8, s: 40 } },
+  { id: 'simInv', sel: '.tc-sim-inv', label: 'Ausrüstung (Simulation)', auto: 'sim', def: { x: 66, y: 8, s: 40 } },
   { id: 'streaks', sel: '.tc-streaks', label: 'Serienprämien', kind: 'group' },
   { id: 'score', sel: '.tc-score', label: 'Punktetabelle' },
   { id: 'pause', sel: '.tc-pause', label: 'Pause' },

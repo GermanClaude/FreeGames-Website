@@ -200,7 +200,7 @@ export const P2 = {
           *run(m) {
             yield m.cutsceneAt('intro');
             holdCheck(m);
-            m.objective('halten', 'Halte die Höhe 214', { pos: HOLD, label: 'Höhe 214' });
+            m.objective('halten', 'Halte die Höhe 214', {});
             m.tip(roleTip(pz), 8);
             yield 6;
             const w = wave(m, 1, 2, 0, 0);
@@ -213,7 +213,7 @@ export const P2 = {
         {
           id: 'welle2', name: 'Zweite Welle',
           checkpoint: { at: F.at(T0, 6), yaw: F.yaw },
-          setup(m) { holdCheck(m); m.objective('halten', 'Halte die Höhe 214', { pos: HOLD, label: 'Höhe 214', quiet: true }); },
+          setup(m) { holdCheck(m); m.objective('halten', 'Halte die Höhe 214', { quiet: true }); },
           *run(m) {
             const w = wave(m, 2, 1, 2, 5);
             yield 3;
@@ -228,7 +228,7 @@ export const P2 = {
         {
           id: 'welle3', name: 'Letzte Welle',
           checkpoint: { at: F.at(T0, 6), yaw: F.yaw },
-          setup(m) { holdCheck(m); m.objective('halten', 'Halte die Höhe 214', { pos: HOLD, label: 'Höhe 214', quiet: true }); },
+          setup(m) { holdCheck(m); m.objective('halten', 'Halte die Höhe 214', { quiet: true }); },
           *run(m) {
             const w = wave(m, 3, 3, 1, 4);
             m.say('korvan', 'Alle Einheiten: Höhe 214 nehmen, koste es, was es wolle!');

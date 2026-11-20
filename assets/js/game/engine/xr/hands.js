@@ -181,11 +181,36 @@ export class VrHands {
   /** Waffenplatz + Definition, wenn diese Waffe per Hand nachgeladen wird. */
   _manualSlot() {
     const w = this._weapon();
-    if (!w || !this.manual || w.sim) return null; // Infanteriesimulation (isim) hat eigene Handgriffe
+    if (!w || !this.manual) return null;
     const st = w.current;
     const def = st && st.def;
-    if (!handReloadable(def, !!this._part('mag'))) return null;
+    if (!def || !this._part('mag')) return null;
+    // Infanteriesimulation (isim/gun.js, Spielstil „Simulation“): echte Magazine mit Füllstand aus der Weste, Patronenlager,
+    // Ladehemmung – die Hand arbeitet mit deren Zustand (SimGun.of/kit), nicht mit eigener Zählung
+    const sim = w.sim && typeof w.sim.of === 'function' ? w.sim : null;
+    if (sim) {
+      let ss = null;
+      try { ss = sim.of(st); } catch { ss = null; }
+      if (!ss || !ss.box) return null;
+      st.vrMagOut = !ss.mag;
+      st.vrNeedsRack = !!ss.mag && (!!ss.jam || (ss.chamber === 0 && ss.mag.n > 0));
+      return { w, st, def, sim, ss };
+    }
+    if (!handReloadable(def, true)) return null;
     return { w, st, def };
+  }
+
+  /** Magazin raus (isim: altes Magazin mit Restfüllung zurück in die Tasche, leeres fällt). */
+  _eject(ms) {
+    if (!ms.sim) return MagLogic.eject(ms.st, ms.def, ms.w.infiniteAmmo);
+    const s = ms.ss;
+    if (!s.mag || ms.sim.act) return false;
+    const old = s.mag;
+    s.mag = null;
+    if (old.n > 0) ms.sim.sim.kit.stowMag(ms.def, old.n, old.cap);
+    ms.sim._sync(ms.st, s);
+    ms.st.vrMagOut = true;
+    return true;
   }
 
   /** Alles fallen lassen (Tod, Sitzungsende, Fahrzeug, Menü). keepFlags: Magazin-Zustand der Waffen behalten. */
@@ -211,6 +236,7 @@ export class VrHands {
       if (n.mesh) n.mesh.removeFromParent();
       this._nade = null;
     }
+    if (this.holding === 'mag') this._simMag = null;
     if (this.holding === 'mag' && this._mag) {
       if (why === 'drop' || why === 'reset') this._dropMesh(this._mag);
       else this._mag.removeFromParent();
@@ -264,8 +290,8 @@ export class VrHands {
 
     // 1) Magazin auswerfen bzw. (eingesetzt, Lager leer) per Taste durchladen
     if (ms && input.pressed('reload') && !w.isReloading) {
-      if (ms.st.vrNeedsRack && !ms.st.vrMagOut) this._doRack(ms);
-      else if (MagLogic.eject(ms.st, ms.def, w.infiniteAmmo)) this._onEject(ms);
+      if (ms.st.vrNeedsRack && !ms.st.vrMagOut) this._doRack(ms, true);
+      else if (this._eject(ms)) this._onEject(ms);
     }
 
     // 2) Greifen mit der Nebenhand
@@ -370,6 +396,13 @@ export class VrHands {
   }
 
   _grabMag(ms) {
+    if (ms.sim) {
+      // bestes Magazin der Weste (nur ansehen – erst das Einsetzen nimmt es heraus)
+      const kit = ms.sim.sim.kit;
+      const next = kit.takeBestMag(ms.def.id, true);
+      if (!next) { ms.sim.sim.event(kit.hasMagInPack && kit.hasMagInPack(ms.def.id) ? 'magRucksack' : 'keinMagazin'); return; }
+      this._simMag = next;
+    }
     const part = this._part('mag');
     const c = part ? this._cloneMag(part) : null;
     this._mag = c;
@@ -381,7 +414,18 @@ export class VrHands {
 
   _insert(ms) {
     const w = ms.w;
-    if (!MagLogic.insert(ms.st, ms.def, w.infiniteAmmo)) return;
+    if (ms.sim) {
+      const m = this._simMag, s = ms.ss;
+      if (!m || s.mag) return;
+      s.mag = { n: m.n, cap: m.cap };
+      ms.sim.sim.kit.removeMag(m);
+      this._simMag = null;
+      if (ms.sim.sim.stats) ms.sim.sim.stats.reloads++;
+      ms.sim._sync(ms.st, s);
+      ms.st.vrMagOut = false;
+      ms.st.vrNeedsRack = s.chamber === 0 && s.mag.n > 0;
+      if (ms.st.vrNeedsRack) ms.sim.sim.event('durchladenNoetig');
+    } else if (!MagLogic.insert(ms.st, ms.def, w.infiniteAmmo)) return;
     this.stats.inserts++;
     if (this._mag) { this._mag.removeFromParent(); this._mag = null; }
     this.holding = null;
@@ -398,8 +442,13 @@ export class VrHands {
     this.xr._pulse(O, 0.25, 15);
   }
 
-  _doRack(ms) {
-    if (!MagLogic.rack(ms.st)) return;
+  _doRack(ms, button = false) {
+    if (ms.sim) {
+      // Taste: Handgriff der Simulation (mit Animation); Hand: sofort wie „Durchladen“ bzw. „Hemmung beheben“
+      if (button) { if (!ms.sim.charge(ms.w)) return; }
+      else ms.sim._apply(ms.w, { kind: ms.ss.jam ? 'clear' : 'charge', st: ms.st });
+      ms.st.vrNeedsRack = false;
+    } else if (!MagLogic.rack(ms.st)) return;
     this.stats.racks++;
     const pistol = ms.def.cls === 'pistol';
     this._sound(pistol ? 'slide_release' : ms.def.cls === 'sniper' ? 'bolt' : 'reload_bolt');

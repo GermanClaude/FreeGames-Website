@@ -1477,6 +1477,12 @@ class TouchUI {
       ${BTN_HTML('tc-lean tc-lean-r', 'lean_right', 'Rechts lehnen', ICONS.leanR, ' data-toggle="1"')}
       ${BTN_HTML('tc-light', 'light', 'Lampe', ICONS.light)}
       <div class="tc-btn tc-feuermodus" data-action="feuermodus" role="button" aria-label="Feuermodus umschalten"><span class="tc-fm">AUTO</span></div>
+      <div class="tc-btn tc-sim-laden" data-action="sim_durchladen" role="button" aria-label="Durchladen"><span class="tc-fm">LADEN</span></div>
+      <div class="tc-btn tc-sim-mag" data-action="sim_magcheck" role="button" aria-label="Magazin prüfen"><span class="tc-fm">MAG?</span></div>
+      <div class="tc-btn tc-sim-abb" data-action="sim_abbinden" role="button" aria-label="Abbinden"><span class="tc-fm">ABB.</span></div>
+      <div class="tc-btn tc-sim-kompass" data-action="sim_kompass" role="button" aria-label="Kompass halten"><span class="tc-fm">KOMP.</span></div>
+      <div class="tc-btn tc-sim-karte" data-action="sim_karte" role="button" aria-label="Karte halten"><span class="tc-fm">KARTE</span></div>
+      <div class="tc-btn tc-sim-inv" data-action="sim_inventar" role="button" aria-label="Ausrüstung"><span class="tc-fm">AUSR.</span></div>
       ${BTN_HTML('tc-prone', 'prone', 'Hinlegen', ICONS.prone)}
       ${BTN_HTML('tc-befehl', 'befehl', 'Befehlsrad', ICONS.befehl)}
       <div class="tc-btn tc-plate" data-action="plate" role="button" aria-label="Panzerplatte einsetzen">${ICONS.plate}<span class="tc-badge">0</span></div>
@@ -1808,6 +1814,7 @@ class TouchUI {
     if (kind === 'gadget') return !!(p && p.gadget);
     if (kind === 'verband') { const j = p && p.injury; return !!(j && (j.bleed > 0 || j.arm || j.leg)); }
     if (kind === 'faehigkeit') return !!(p && p.ability);
+    if (kind === 'sim') return !!G.isim; // Infanteriesimulation (Spielstil „Simulation“)
     if (kind === 'bauen') return !!(G.building && p && G.building.kindsFor(p).length);
     if (kind === 'allies') {
       // verbündete Bots (offline/Host: KI-Bots, Client: Puppen der Host-Bots) – sonst hat das Befehlsrad nichts zu tun
