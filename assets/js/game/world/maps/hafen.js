@@ -21,6 +21,7 @@ import {
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
 import { belebe, sperrpunkte, KAMPAGNE, tauwerk } from '../kleinkram.js?v=20261115041504';
 import { kaiAusbau } from './hafen-kai.js?v=20261115041504'; // gelaende (Runde 3): Schwergut an der Kaikante
+import { hafenFuellen } from './fuell-karten.js?v=20261115041504'; // fuell (20.11.): Dehnfugen, Fahrspuren
 
 const H = CONTAINER_H;
 import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261115041504';
@@ -303,6 +304,7 @@ export default {
     b.gelaende = kaiAusbau(b, spawns);
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
     belebe(b, { stil: 'hafen', einrichten: true, huellen: ['building', 'container'], boden: { asphalt: true, bereich: { minX: -43, maxX: 74, minZ: -52, maxZ: 52 } }, bereich: { minX: -46, maxX: 74, minZ: -52, maxZ: 52 }, sperr: sperrpunkte({ spawns }, [...(KAMPAGNE.hafen || []), ...KAMPAGNE_PUNKTE.hafen]) });
+    hafenFuellen(b);
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 30.6, radius: 5 }, { id: 'B', x: -14.2, z: -0.8, radius: 6 }, { id: 'C', x: -13.6, z: -30.6, radius: 5 }] },

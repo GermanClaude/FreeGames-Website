@@ -368,6 +368,16 @@ export class TruppMode extends ConquestMode {
     if (want && want !== sq.type) this.squads.retype(sq, want);
     this._pendingType.delete(h);
     if (TRUPP_TYPES[sq.type] && h.truppRole !== TRUPP_TYPES[sq.type].roles[0]) this.squads._typeRoles(sq);
+    // Rolle kann sich gerade erst geändert haben (Typwechsel): Ausrüstung des Menschen sofort nachziehen
+    const hlo = roleLoadout(h.truppRole, h.loadout || {});
+    if (!h.loadout || hlo.primary !== h.loadout.primary || hlo.secondary !== h.loadout.secondary || hlo.cls !== h.loadout.cls) {
+      if (h.isRemoteHuman && typeof h.setNetLoadout === 'function') h.setNetLoadout(hlo);
+      else {
+        h.loadout = hlo; h.cls = hlo.cls; h.classDef = CLASSES[hlo.cls] || h.classDef;
+        if (h.weapon && typeof h.weapon.setLoadout === 'function') { try { h.weapon.setLoadout(h.loadout); } catch (err) { console.error('[NULLPUNKT] Trupp setLoadout:', err); } }
+        if (typeof h.applyClass === 'function') { try { h.applyClass(); } catch { /* */ } }
+      }
+    }
     const type = TRUPP_TYPES[sq.type] || TRUPP_TYPES[TRUPP_TYPE_DEFAULT];
     const bots = this.squads.members(sq).filter((b) => b !== h && !b.alive);
     let veh = type.vehicle ? this._squadVehicle(h, type.vehicle, bots.length + 1) : null;
@@ -429,7 +439,7 @@ export class TruppMode extends ConquestMode {
     if (!pio) return 'Kein Pionier im Trupp.';
     if (k !== 'sammelpunkt' && !(G.building && this.buildAllowed(pio, k))) return 'Das kann der Pionier nicht bauen.';
     const now = G.time.elapsed;
-    this._jobs.set(pio, { k, pos: pos.clone(), until: now + 45, by: h });
+    this._jobs.set(pio, { k, pos: pos.clone(), until: now + 60, by: h, at: now });
     try { issueCommand(G, [pio], h, 'defend', { point: pos.clone() }, now); } catch { /* */ }
     const nm = (TRUPP_BUILD_ORDERS.find((x) => x.id === k) || { name: 'Schützenloch' }).name;
     this._pushRadio({ team: h.team, sq: sq.id, from: pio, msg: '', txt: `${pio.name || 'Pionier'}: Verstanden – ${nm}.` });
@@ -439,8 +449,12 @@ export class TruppMode extends ConquestMode {
   _tickJobs(now) {
     const G = this.G;
     for (const [b, j] of this._jobs) {
-      if (!b.alive || now > j.until || !b.squad) { this._jobs.delete(b); continue; }
-      if (flat(b.position, j.pos) > 3.2) continue;
+      if (!b.alive || now > j.until || !b.squad) { if (j.by && now > j.until) this._notice(j.by, 'Bauauftrag abgebrochen – Pionier kam nicht hin.'); this._jobs.delete(b); continue; }
+      // Am Ziel: „Verteidigen“ stellt den Bot nur ungefähr an den Punkt (Ring um ihn) – bis 6 m reicht,
+      // nach 15 s auch 14 m (verstellter Weg); immer erst nach einem kurzen Halt (Werkzeug ziehen)
+      const d = flat(b.position, j.pos);
+      if (!(d <= 6 || (now - j.at > 15 && d <= 14))) continue;
+      if (now - j.at < 1.5) continue;
       this._jobs.delete(b);
       if (j.k === 'sammelpunkt') { const err = this._placeRally(b, j.pos, true); if (err) this._notice(j.by, err); continue; }
       const B = G.building;
@@ -448,7 +462,8 @@ export class TruppMode extends ConquestMode {
       const y = groundAt(G.world, j.pos.x, j.pos.z, j.pos.y + 2);
       const ry = Math.atan2(j.pos.x - j.by.position.x, j.pos.z - j.by.position.z);
       const p = new THREE.Vector3(j.pos.x, y, j.pos.z);
-      if (typeof B._valid === 'function' && !B._valid(j.k, p, b)) { this._notice(j.by, 'Kein Platz zum Bauen.'); continue; }
+      const probe = { position: new THREE.Vector3(p.x, p.y, p.z), cls: b.cls, loadout: b.loadout, truppRole: b.truppRole, team: b.team };
+      if (typeof B._valid === 'function' && !B._valid(j.k, p, probe)) { this._notice(j.by, 'Kein Platz zum Bauen – anderen Punkt wählen.'); continue; }
       try { B.spawn({ k: j.k, x: p.x, y: p.y, z: p.z, ry, owner: b }); } catch (err) { console.error('[NULLPUNKT] Trupp-Bauauftrag:', err); }
       if (b.command) b.command = null;
     }
@@ -562,6 +577,12 @@ export class TruppMode extends ConquestMode {
     if (!isHuman(actor)) { if (!this.replica && actor.squad && actor.squad.owner) this._equipBot(actor); return; }
     if (this.replica && !actor.isPlayer) return;
     if (!this.replica) this.squads.of(actor);
+    // Neueinsatz des ganzen Trupps: vorgemerkten Trupp-Typ schon vor dem Spawn anwenden (Rolle → Ausrüstung)
+    if (!this.replica && !actor._reviving && this.started) {
+      const own = this.squads.ownSquad(actor);
+      const want = this._pendingType.get(actor);
+      if (own && want && !this.squads.members(own, { alive: true }).length) { this.squads.retype(own, want); this._pendingType.delete(actor); }
+    }
     const role = actor.truppRole || (this.squads.prefs.get(actor) || {}).role || TRUPP_DEFAULT_ROLE;
     const lo = roleLoadout(role, actor.loadout || {});
     if (actor.isRemoteHuman && typeof actor.setNetLoadout === 'function') { actor.setNetLoadout(lo); return; }

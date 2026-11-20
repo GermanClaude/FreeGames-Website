@@ -258,7 +258,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
   const opt = def.lookDecals || {};
   const density = opt.density ?? 1;
   const r = rng(seed);
-  const step = (opt.step ?? 2.6) / Math.sqrt(density);
+  const step = (opt.step ?? 1.9) / Math.sqrt(density); // fuell (20.11.): vorher 2,6 m – auf dem Hafen kamen nur 59 Decals zustande
   const items = [];
   const taken = new Map(); // grobe Belegung (0,8 m) gegen Häufungen
   const key = (x, y, z) => `${Math.round(x / 0.8)}|${Math.round(y / 0.8)}|${Math.round(z / 0.8)}`;
@@ -271,7 +271,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
     if (gy == null) continue;
     const a = r() * Math.PI * 2;
     _o.set(x, gy + 1.1, z); _d.set(Math.cos(a), 0, Math.sin(a));
-    const h = world.raycast(_o, _d, 3.2);
+    const h = world.raycast(_o, _d, 5.5); // fuell: vorher 3,2 m
     if (!h || Math.abs(h.normal.y) > 0.12 || h.distance < 0.25) continue;
     if (h.surface === 'glass') continue; // gesamt 20.11.: keine Decals auf Scheiben
     const name = h.object?.name || h.object?.material?.name || h.surface || '';

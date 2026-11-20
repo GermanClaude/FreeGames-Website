@@ -29,3 +29,38 @@ export function linde(b, x, z, o = {}) {
 export function stadtkernFuellen(b) {
   for (const s of [-1, 1]) for (const x of [-36, -24, -13.9, 13.9, 24, 36]) linde(b, x, s * 7.35);
 }
+
+/**
+ * Dehnfugen eines Betonbelags (dunkle schmale Linien im Raster step) über das Rechteck – brechen große einheitliche
+ * Flächen wie in echten Hafen-/Werkshöfen. Nur ab mittel (Decals, ein Draw Call mit allen übrigen).
+ */
+export function fugen(b, x0, z0, x1, z1, step = 6, o = {}) {
+  if ((b.lookQuality || b.quality) === 'low') return;
+  const y = o.y ?? 0.008, tint = o.tint || '#2e2d2a', op = o.opacity ?? 0.42, w = o.w ?? 0.1;
+  for (let x = x0 + step; x < x1 - 0.5; x += step) b.decal(x, y, (z0 + z1) / 2, z1 - z0, w, 'line', { ry: Math.PI / 2, tint, kind: 'paint', opacity: op * (0.8 + hash01(x, z0, 11) * 0.4) });
+  for (let z = z0 + step; z < z1 - 0.5; z += step) b.decal((x0 + x1) / 2, y, z, x1 - x0, w, 'line', { ry: 0, tint, kind: 'paint', opacity: op * (0.8 + hash01(x0, z, 12) * 0.4) });
+}
+
+/** Fahrspuren, Ölflecken und Risse über ein Rechteck gestreut (Positions-Hash), n Stück. */
+export function bodenspuren(b, x0, z0, x1, z1, n, o = {}) {
+  if ((b.lookQuality || b.quality) === 'low') return;
+  const mix = o.mix || ['tire', 'tire', 'oil', 'cracks', 'stain'];
+  for (let i = 0; i < n; i++) {
+    const x = x0 + hash01(i, x0 + z0, 21) * (x1 - x0), z = z0 + hash01(z1 - i, x1, 22) * (z1 - z0), k = mix[Math.floor(hash01(x, z, 23) * mix.length)];
+    const along = hash01(x, z, 24) < 0.5 ? 0 : Math.PI / 2;
+    const [w, d] = k === 'tire' ? [5 + hash01(x, z, 25) * 7, 1.4] : k === 'cracks' ? [2 + hash01(x, z, 26) * 2.5, 2 + hash01(z, x, 27) * 2] : [1.2 + hash01(x, z, 28) * 2.2, 1 + hash01(z, x, 29) * 1.8];
+    b.decal(x, 0.011 + i * 1e-5, z, w, d, k, { ry: k === 'tire' ? along + (hash01(x, z, 30) - 0.5) * 0.15 : hash01(x, z, 31) * 6.28, opacity: 0.55 + hash01(x, z, 32) * 0.35 });
+  }
+}
+
+/** Hafen: Dehnfugen auf Kai und Terminal (Rissbeton), Fahrspuren der Containerstapler, Ölflecken. */
+export function hafenFuellen(b) {
+  fugen(b, -44, -52, 50, 52, 7.5);
+  bodenspuren(b, -27, -50, 48, 50, 46);
+  bodenspuren(b, 50, -50, 74, 50, 12, { mix: ['tire', 'oil', 'cracks'] });
+}
+
+/** Werk: Fugen auf den Betonflächen, Fahrspuren im Lkw-Hof. */
+export function werkFuellen(b, flaechen = []) {
+  for (const [x0, z0, x1, z1, st] of flaechen) fugen(b, x0, z0, x1, z1, st || 6);
+}

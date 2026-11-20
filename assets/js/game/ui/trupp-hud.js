@@ -109,6 +109,8 @@ export class TruppHud {
     if (this.wheelRoot) this.wheelRoot.remove();
     for (const n of this._compassEls.values()) n.remove();
     this._compassEls.clear();
+    const H = this.G.hud;
+    for (const k of (H && H.el && H.el.mks) || []) if (k && k.n) { k.n.classList.remove('tr-hide', 'tr-locked'); k.n.style.marginTop = ''; }
   }
 
   _style() {
@@ -144,6 +146,7 @@ export class TruppHud {
     this._t -= dt;
     if (this._t <= 0) { this._t = 0.25; this._renderSquad(); this._renderFront(); if (this.menu) this._renderMenu(false); }
     this._updateMarks();
+    this._declutter();
     // Einsatzkarte offen und Trupp gefallen: Knopf „Trupp wählen“
     const dep = document.body.dataset.deploy;
     this.el.deployBtn.hidden = !(dep && p && !p.alive) || !!this.menu;
@@ -193,17 +196,65 @@ export class TruppHud {
     const G = this.G;
     const m = this.mode;
     const team = G.player ? G.player.team : 'A';
+    const other = team === 'A' ? 'B' : 'A';
     const info = typeof m.frontInfo === 'function' ? m.frontInfo() : [];
-    const parts = info.map((f, i) => {
-      const side = f.owner == null ? 'n' : f.owner === team ? 'a' : 'e';
-      const open = f.open[team];
-      const enemyOpen = f.open[team === 'A' ? 'B' : 'A'];
-      const cap = f.capturingTeam ? (f.capturingTeam === team ? ' is-cap-a' : ' is-cap-e') : '';
-      const arrow = i < info.length - 1 ? '<i class="tr-fa">›</i>' : '';
-      return `<span class="tr-pt is-${side}${open ? ' is-open' : ''}${enemyOpen && f.owner === team ? ' is-threat' : ''}${!open && f.owner !== team ? ' is-lock' : ''}${f.contested ? ' is-cont' : ''}${cap}" title="${esc(f.name)}"><b>${esc(f.id)}</b>${open ? `<small>${esc(f.name || 'Ziel')}</small>` : ''}<u style="width:${Math.round((f.progress || 0) * 100)}%"></u></span>${arrow}`;
-    });
-    const sig = parts.join('');
-    if (sig !== this._frontSig) { this._frontSig = sig; this.el.front.innerHTML = sig; }
+    // Eine Zeile unter dem Kompass (die Flaggenleiste des HUD zeigt schon alle Punkte): nächstes Ziel, bedrohter eigener Punkt
+    const tgt = info.find((f) => f.open[team]);
+    const threat = info.find((f) => f.open[other] && f.owner === team);
+    const locked = info.filter((f) => !f.open[team] && f.owner !== team).map((f) => f.id);
+    const nm = (f) => `${f.id}${f.name ? ` – ${f.name}` : ''}`;
+    const html = info.length ? `${tgt ? `<b class="is-tgt">Ziel ${esc(nm(tgt))}${tgt.capturingTeam === team ? ` · ${Math.round((tgt.progress || 0) * 100)} %` : ''}</b>` : '<b>Alle Punkte gehalten</b>'}${threat ? `<span class="is-threat">Halten ${esc(threat.id)}${threat.capturingTeam === other ? ' – wird eingenommen!' : ''}</span>` : ''}${locked.length ? `<span class="is-lock">gesperrt ${esc(locked.join(' '))}</span>` : ''}` : '';
+    if (html !== this._frontSig) { this._frontSig = html; this.el.front.innerHTML = html; }
+    // Lage: knapp unter dem Kompass (sonst unter dem Punktestand)
+    const c = document.querySelector('.h-compass');
+    const r = c && c.offsetParent ? c.getBoundingClientRect() : null;
+    const lr = this.root.getBoundingClientRect();
+    const top = r && r.width ? Math.round(r.bottom - lr.top + 16) : null;
+    if (top !== this._frontTop) { this._frontTop = top; setStyle(this.el.front, 'top', top != null ? `${top}px` : ''); }
+  }
+
+  /**
+   * Marker entwirren (je Bild nach hud.js _updateMarkers und den eigenen Markierungen): nichts über der Truppliste/dem Funk,
+   * übereinanderliegende Marker untereinander versetzen, gesperrte Frontpunkte abgeblendet.
+   */
+  _declutter() {
+    const G = this.G;
+    const m = this.mode;
+    const H = G.hud;
+    const team = G.player ? G.player.team : 'A';
+    const items = [];
+    const byId = new Map(m.objectives.map((f) => [f.id, f]));
+    for (const k of (H && H.el && H.el.mks) || []) {
+      if (!k || !k.n || k.x == null) continue;
+      const f = byId.get(k.id);
+      toggle(k.n, 'tr-locked', !!f && f.owner !== team && !m.touchable(team, f));
+      items.push({ n: k.n, x: k.x, y: k.y, h: 58 });
+    }
+    for (const [, n] of this._markEls) if (n._x != null) items.push({ n, x: n._x, y: n._y, h: 40 });
+    const lr = this.root.getBoundingClientRect();
+    const rects = [];
+    for (const el of [this.el.squad, this.el.radio, this.el.front]) {
+      if (!el || el.classList.contains('is-off') || !el.offsetParent || !el.childElementCount) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width && r.height) rects.push({ l: r.left - lr.left - 22, t: r.top - lr.top - 26, r: r.right - lr.left + 22, b: r.bottom - lr.top + 34 });
+    }
+    items.sort((a, b) => a.y - b.y || a.x - b.x);
+    const placed = [];
+    for (const it of items) {
+      let off = 0;
+      for (let k = 0; k < 6; k++) {
+        const hit = placed.find((q) => Math.abs(q.x - it.x) < 40 && Math.abs(q.y + q.off - (it.y + off)) < Math.max(q.h, it.h) * 0.8);
+        if (!hit) break;
+        off = hit.y + hit.off + Math.max(hit.h, it.h) * 0.8 - it.y;
+      }
+      it.off = off;
+      placed.push(it);
+      const mt = off ? `${Math.round(off)}px` : '';
+      if (it.n.style.marginTop !== mt) it.n.style.marginTop = mt;
+      const y = it.y + off;
+      const hide = rects.some((r) => it.x > r.l && it.x < r.r && y > r.t && y < r.b);
+      toggle(it.n, 'tr-hide', hide);
+    }
   }
 
   /* ------------------------------------------------------------ Funk */
@@ -281,6 +332,7 @@ export class TruppHud {
       const edge = behind || x < 40 || x > vw - 40 || y < 80 || y > vh - 60;
       x = Math.round(clamp(x, 40, vw - 40));
       y = Math.round(clamp(y, 80, vh - 60));
+      n._x = x; n._y = y;
       setStyle(n, 'transform', `translate(${x}px, ${y}px)`);
       toggle(n, 'is-edge', edge);
       setText(n.querySelector('span'), `${k.label} · ${meters(Math.round(p.position.distanceTo(k.pos)))}`);
@@ -565,19 +617,13 @@ export class TruppHud {
 
 const TRUPP_CSS = `
 .tr-root { position: absolute; inset: 0; pointer-events: none; font-family: var(--font-hud, 'Rajdhani NP', system-ui, sans-serif); color: var(--np-ink, #e9e6df); text-shadow: 0 1px 2px rgba(0,0,0,.85); }
-.tr-front { position: absolute; left: 50%; top: calc(var(--top-h, 64px) + 34px); transform: translateX(-50%); display: flex; align-items: center; gap: 3px; white-space: nowrap; }
-.tr-pt { position: relative; display: inline-flex; align-items: baseline; gap: 5px; min-width: 22px; padding: 2px 7px 3px; border: 1px solid rgba(233,230,223,.28); background: rgba(12,13,15,.55); font: 700 13px/1 var(--font-hud, sans-serif); letter-spacing: .06em; overflow: hidden; }
-.tr-pt small { font-weight: 600; font-size: 11px; letter-spacing: .04em; opacity: .9; text-transform: uppercase; }
-.tr-pt.is-a { color: #7cc4ff; border-color: rgba(95,180,255,.55); }
-.tr-pt.is-e { color: #ff7a6e; border-color: rgba(255,75,62,.5); }
-.tr-pt.is-n { color: #d8d4c8; }
-.tr-pt.is-lock { opacity: .5; }
-.tr-pt.is-open { border-color: #f2c84b; box-shadow: 0 0 0 1px rgba(242,200,75,.4); color: #fff; }
-.tr-pt.is-threat { border-color: #ff8a2a; animation: tr-pulse 1s ease-in-out infinite; }
-.tr-pt u { position: absolute; left: 0; bottom: 0; height: 2px; background: currentColor; opacity: .85; text-decoration: none; }
-.tr-pt.is-cap-a u { background: #7cc4ff; } .tr-pt.is-cap-e u { background: #ff7a6e; }
-.tr-fa { font-style: normal; opacity: .5; font-size: 14px; }
-@keyframes tr-pulse { 50% { box-shadow: 0 0 0 2px rgba(255,138,42,.5); } }
+.tr-front { position: absolute; left: 50%; top: calc(var(--top-h, 64px) + 64px); transform: translateX(-50%); display: flex; gap: 10px; align-items: baseline; white-space: nowrap; font: 600 13px/1.1 var(--font-hud, sans-serif); letter-spacing: .05em; }
+.tr-front b { font-weight: 700; color: #f2c84b; text-transform: uppercase; }
+.tr-front .is-threat { color: #ff8a2a; font-weight: 700; text-transform: uppercase; animation: tr-blink 1.2s steps(2) infinite; }
+.tr-front .is-lock { color: rgba(233,230,223,.6); font-size: 11.5px; }
+@keyframes tr-blink { 50% { opacity: .55; } }
+.tr-hide { visibility: hidden !important; }
+.tr-locked { opacity: .42; }
 .tr-squad { position: absolute; left: calc(var(--pad-l, 16px) + 2px); top: 30%; width: 222px; background: rgba(10,11,13,.5); border-left: 2px solid rgba(233,230,223,.25); padding: 6px 8px 6px; pointer-events: auto; }
 .tr-squad.is-off { display: none; }
 .tr-squad header { display: flex; align-items: center; gap: 6px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
@@ -651,8 +697,8 @@ const TRUPP_CSS = `
   .tr-squad li span, .tr-squad footer { display: none; }
   .tr-radio { width: 240px; }
   .tr-msg { font-size: 11px; }
-  .tr-front { top: calc(var(--top-h, 54px) + 24px); }
-  .tr-pt small { display: none; }
+  .tr-front { font-size: 11px; gap: 6px; }
+  .tr-front .is-lock { display: none; }
   .tr-solrow { grid-template-columns: 34px 1fr; }
 }
 `;
