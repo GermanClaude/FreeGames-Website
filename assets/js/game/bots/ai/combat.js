@@ -125,8 +125,11 @@ export class Gunner {
     if (now - bot.lastDamageTime < 1) k *= 1.25;
     const rec = this.rec;
     if (rec && rec.actor.body) {
-      // seitliche Bewegung des Ziels erschwert das Nachführen
-      const v = rec.actor.body.velocity;
+      // seitliche Bewegung des Ziels erschwert das Nachführen (im Fahrzeug zählt dessen Fahrt; Luftfahrzeuge: deutlich
+      // schwerer zu treffen – Nutzer 20.11.: KI soll nicht jeden Treffer landen)
+      const veh = rec.actor.vehicle;
+      const v = veh && veh.body && veh.body.vel ? veh.body.vel : rec.actor.body.velocity;
+      if (veh && veh.isAircraft) k *= 1.8;
       _d.subVectors(rec.pos, bot.position).setY(0).normalize();
       const lat = Math.abs(v.x * -_d.z + v.z * _d.x);
       k *= 1 + Math.min(1, lat / 5) * 0.55;

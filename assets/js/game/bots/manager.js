@@ -62,7 +62,7 @@ const SIM_LOD = [
   { every: 6, sense: 0.1, think: 6 }, // masse: Massenschlacht (> 120 Bots), weit weg und nicht im Bild
 ];
 // Aussehen je Klasse (Varianten aus soldier/gear.js); Truppführer tragen das Funkgerät
-const CLASS_LOOKS = { sturm: ['sturm', 'grenadier', 'schatten'], sanitaeter: ['sanitaeter'], pionier: ['pionier', 'bastion'], besatzung: ['pionier'], aufklaerer: ['spaeher', 'kundschafter'] };
+const CLASS_LOOKS = { sturm: ['sturm', 'grenadier', 'schatten'], sanitaeter: ['sanitaeter'], pionier: ['pionier', 'bastion'], besatzung: ['pionier'], aufklaerer: ['spaeher', 'kundschafter'], pilot: ['schatten'] };
 const pick = (a) => a[(Math.random() * a.length) | 0];
 
 /** Reihenfolge der Namensschilder: höheres Ziel zuerst, dann näher. */

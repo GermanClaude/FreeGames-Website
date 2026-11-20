@@ -292,4 +292,5 @@ export function loaderHint(v, seat, keyFor, touch = false) {
 export const WHY_TEXT = {
   schritt: 'Falscher Schritt', blick: 'Erst hinsehen (Gestell/Verschluss)', leer: 'Keine Granate dieser Sorte', busy: 'Noch beschäftigt', sitz: 'Nur als Ladeschütze (Sitz 4)',
   besetzt: 'Sitz besetzt', weit: 'Zu weit weg', feind: 'Feindliches Fahrzeug', blockiert: 'Ausstieg blockiert', tot: 'Fahrzeug zerstört', sperre: 'Bitte warten',
+  pilot: 'Nur die Klasse Pilot fliegt Luftfahrzeuge', bot: 'Luftfahrzeuge fliegen nur Spieler',
 };

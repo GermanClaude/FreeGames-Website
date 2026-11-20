@@ -29,6 +29,7 @@ import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261115041
 import { Aircraft } from './air/aircraft.js?v=20261115041504';
 import { AirSupport, AIR_CAP } from './air/index.js?v=20261115041504';
 import { TransportRides } from './ride.js?v=20261115041504';
+import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261115041504';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -401,7 +402,8 @@ export class VehicleSystem {
       if (spot) fixed.push(spot.position);
       return { ...e, type, position: spot ? spot.position : e.position, yaw: e.yaw ?? (spot ? spot.yaw : 0) };
     });
-    entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret).map((e) => {
+    // Luftfahrzeuge nur für Teams mit Menschen (Bots fliegen nicht – air/policy.js, air.wantsTeam)
+    entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret && (!VEHICLES[e.type].air || this.air.wantsTeam(e.team ?? null))).map((e) => {
       if (e.type !== 'mbt') return e;
       const k = e.team ?? null, n = slots.get(k) || 0;
       slots.set(k, n + 1);
@@ -592,8 +594,12 @@ export class VehicleSystem {
     }
   }
 
-  /** Einsteigen (Regeln: lebt, frei, Team). → Sitzindex | −1 */
+  /** Regelkontext für Luftfahrzeuge (air/policy.js) aus dem laufenden Modus. */
+  airContext() { return airContext(this.G.match && this.G.match.modeId); }
+
+  /** Einsteigen (Regeln: lebt, frei, Team). → Sitzindex | −1 (Grund einer Regel-Ablehnung: this.enterWhy) */
   enter(actor, v, seatIdx = null) {
+    this.enterWhy = null;
     if (!actor || !actor.alive || !v || !v.alive || actor.vehicle || !this.attached) return -1;
     if (v.isOccupied && v.team != null && actor.team != null && v.team !== actor.team) return -1;
     let idx = seatIdx;
@@ -602,6 +608,12 @@ export class VehicleSystem {
     // Modus-Regel (Trupp: Fahrer-/Waffensitze gepanzerter Fahrzeuge nur für die Besatzung) → anderer Sitz bzw. −1
     const M = this.G.mode;
     if (M && typeof M.vehicleSeatFor === 'function') { idx = M.vehicleSeatFor(actor, v, seatIdx, idx); if (idx < 0) return -1; }
+    // Luftfahrzeuge (air/policy.js): keine Bots (außer Kampagnen-Skript), Pilotensitz nur für die Klasse Pilot
+    if (isAirVehicle(v)) {
+      const r = airSeatFor(actor, v, seatIdx, idx, this.airContext());
+      if (r.idx < 0) { this.enterWhy = r.why; return -1; }
+      idx = r.idx;
+    }
     this._seat(actor, v, idx);
     // Infanteriewaffe ruht im Sitz (kein weapon.update): laufendes Nachladen abbrechen, sonst klingt es weiter
     if (actor.weapon && typeof actor.weapon.cancelReload === 'function') actor.weapon.cancelReload();
@@ -699,6 +711,7 @@ export class VehicleSystem {
     if (!v || idx < 0 || idx >= v.seats.length || v.seats[idx].actor) return false;
     const M = this.G.mode;
     if (M && typeof M.vehicleSeatFor === 'function' && M.vehicleSeatFor(actor, v, idx, idx) !== idx) return false;
+    if (isAirVehicle(v)) { const r = airSeatFor(actor, v, idx, idx, this.airContext()); if (r.idx !== idx) { this.enterWhy = r.why; if (actor.isPlayer && r.why) this._flash(AIR_WHY[r.why]); return false; } }
     const from = v.seatOf(actor);
     if (from === idx) return false;
     this._clearSeatState(v.seats[from]);
@@ -1184,13 +1197,16 @@ export class VehicleSystem {
       this._near = p.alive && !p.piloting ? this._nearestEnterable(p) : null;
       if (this._near) {
         const v = this._near;
-        const idx = v.seats.findIndex((s) => !s.actor);
-        state.near = { vehicle: v, seatLabel: v.seats[idx].def.label };
+        let idx = v.seats.findIndex((s) => !s.actor);
+        let seatLabel = v.seats[idx].def.label;
+        if (isAirVehicle(v)) { const r = airSeatFor(p, v, null, idx, this.airContext()); if (r.idx >= 0) seatLabel = v.seats[(idx = r.idx)].def.label; else seatLabel = 'nur Pilot'; }
+        state.near = { vehicle: v, seatLabel };
         const input = G.input;
         // nicht im selben Tastendruck wieder einsteigen, mit dem gerade ausgestiegen wurde
         if (this.live && input && now - this._exitT > 0.4 && now - (this._reqT || -1e9) > 0.3 && (input.pressed('interact') || input.pressed('v_enter'))) {
           this._reqT = now;
-          this.requestEnter(p, v);
+          const got = this.requestEnter(p, v);
+          if (got < 0 && !this.remote && this.enterWhy && AIR_WHY[this.enterWhy]) this._flash(AIR_WHY[this.enterWhy]);
         }
       }
     }

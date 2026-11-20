@@ -263,9 +263,24 @@ export const CLASSES = deepFreeze({
     look: { id: 'besatzung', variant: 'funker', camo: 'oliv', sleeve: '#3d4034', glove: '#232320', vest: 'brustgurt', helmet: 'gefechtshelm', pack: 'funk', patch: 'zahnrad', accent: '#9a8a5a' },
     bot: { weight: 0, aggression: 0.4 },
   },
+  // Pilot (Nutzer 20.11.: „Für Jets und Helikopter einen extra Platz als Spawn-Option“): nur diese Klasse fliegt Hubschrauber
+  // und Jets (vehicles/air/policy.js) und setzt auf Karten mit Luftfahrzeugen direkt im Cockpit ein (vehicles/air/deploy.js,
+  // Auswahl im Einsatzbildschirm). Zu Fuß bewusst schwach: Fliegerkombi mit leichter Weste, MP/Pistole, Rauch, kein Werfer.
+  // Bots ziehen die Klasse nie (weight 0).
+  pilot: {
+    id: 'pilot', name: 'Pilot', short: 'PIL', icon: 'pilot',
+    role: 'Fliegt Hubschrauber und Jets: setzt auf Karten mit Luftfahrzeugen direkt im Cockpit eines freien Musters ein. Zu Fuß nur leichte Weste, MP und Pistole, Rauch- und Splittergranate, Fernglas.',
+    armor: 'leicht', helmet: 'standard', gadget: 'fernglas', tactical: 'smoke',
+    weaponClasses: ['smg', ...SIDEARMS],
+    signature: ['smg'],
+    prefer: { primary: ['smg_qx90', 'smg_vp9'], secondary: ['pi_p9', 'pi_adler'], lethal: ['frag'] },
+    perks: {},
+    look: { id: 'pilot', variant: 'schatten', camo: 'oliv', sleeve: '#6f6e55', glove: '#3a3326', vest: 'brustgurt', helmet: 'gefechtshelm', pack: 'keins', patch: 'pfeil', accent: '#8fa3b0' },
+    bot: { weight: 0, aggression: 0.3 },
+  },
 });
 // Eigener Name: G.data.CLASS_ORDER ist die Waffenklassen-Reihenfolge (weapons.data.js).
-export const SOLDIER_CLASS_ORDER = Object.freeze(['sturm', 'sanitaeter', 'pionier', 'aufklaerer', 'besatzung']);
+export const SOLDIER_CLASS_ORDER = Object.freeze(['sturm', 'sanitaeter', 'pionier', 'aufklaerer', 'besatzung', 'pilot']);
 export const DEFAULT_CLASS = 'sturm';
 
 export const classDef = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];

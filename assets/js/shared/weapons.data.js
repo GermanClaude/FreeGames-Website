@@ -1460,6 +1460,7 @@ export const CLASS_LOOKS = {
   pionier: { id: 'pionier', name: 'Pionier', glove: '#7a5a3c', sleeve: '#c9c2b0', sleeveCamo: 'neutral', accessory: 'cuffs' },
   aufklaerer: { id: 'aufklaerer', name: 'Aufklärer', glove: '#59614a', sleeve: '#b9c4a6', sleeveCamo: 'wood', accessory: 'wraps', openTips: true }, // Schießhandschuh mit offenen Kuppen
   besatzung: { id: 'besatzung', name: 'Besatzung', glove: '#2b2a27', sleeve: '#5a5c4c', accessory: 'none' },
+  pilot: { id: 'pilot', name: 'Pilot', glove: '#3a3326', sleeve: '#8a8a70', sleeveCamo: 'neutral', accessory: 'none' }, // Fliegerkombi, Lederhandschuhe
   unterstuetzung: { id: 'unterstuetzung', name: 'Unterstützung', glove: '#3f4434', sleeve: '#e0dccd', accessory: 'pads' },
 };
 /**

@@ -3,6 +3,8 @@
 // „Einsatz“ setzt ein. Touch zuerst (große Ziele), Maus (Desktop: Zeigersperre wird für den Bildschirm gelöst),
 // Tastatur (Pfeile, Eingabe, L) und Gamepad (Steuerkreuz, A, Y, LB/RB, B zurück, Start = Einsatz).
 // Wird von der HUD erzeugt und je Bild aktualisiert: new DeployScreen(G); attach(G); update(dt); detach().
+// Klasse Pilot (20.11.): Leiste „Luftfahrzeug“ mit den Hubschraubern/Jets des eigenen Teams (vehicles/air/deploy.js) –
+// Wahl „Zu Fuß“ oder ein freies Muster; nach dem Einsatz sitzt der Spieler im Cockpit. Nur auf Karten mit Luftfahrzeugen.
 
 import { el, esc, secs } from './dom.js?v=20261115041504';
 import { ICON } from './icons.js?v=20261115041504';
@@ -34,7 +36,9 @@ export class DeployScreen {
     this._padDir = null;
     this._padRep = 0;
     this._onKey = (e) => this._key(e);
-    this.panel.onChange = () => { this.changed = true; this.interacted = true; };
+    this.panel.onChange = () => { this.changed = true; this.interacted = true; this._airT = 0; };
+    this._airT = 0;
+    this._airHtml = '';
   }
 
   /* ------------------------------------------------------------ Lebenszyklus */
@@ -186,6 +190,7 @@ export class DeployScreen {
             ${sq ? `<h3 class="m-h2">Trupp-Befehl</h3><div class="dp-orders"></div><p class="dp-order-now"></p>` : ''}</aside>` : ''}
           <div class="dp-lo" data-pane="loadout"${this.tab === 'loadout' ? '' : ' hidden'}></div>
         </div>
+        <div class="dp-air" hidden><span class="m-h2">Luftfahrzeug</span><div class="dp-airlist m-scroll-x" data-scrollable></div></div>
         <footer class="dp-foot">
           <span class="dp-info"></span>
           ${deploy ? '' : '<button type="button" class="m-btn dp-back" data-dact="back">' + ICON.back + '<span>Zurück</span></button>'}
@@ -196,7 +201,10 @@ export class DeployScreen {
       dp: this.root.querySelector('.dp'), canvas: this.root.querySelector('.dp-canvas'), marks: this.root.querySelector('.dp-marks'),
       list: this.root.querySelector('.dp-list'), orders: this.root.querySelector('.dp-orders'), orderNow: this.root.querySelector('.dp-order-now'),
       lo: this.root.querySelector('.dp-lo'), info: this.root.querySelector('.dp-info'), go: this.root.querySelector('.dp-go'),
+      air: this.root.querySelector('.dp-air'), airList: this.root.querySelector('.dp-airlist'),
     };
+    this._airHtml = '';
+    this._renderAir();
     if (this.tab === 'loadout') this.panel.mount(this.el.lo);
     if (deploy) { this._drawMap(); this._renderPoints(); }
     this._updateFoot();
@@ -283,6 +291,45 @@ export class DeployScreen {
     }
   }
 
+  /** Luftfahrzeug-Deploy (Klasse Pilot) – null, wenn es in diesem Match keine gibt. */
+  _air() {
+    const A = this.G.vehicles && this.G.vehicles.air && this.G.vehicles.air.deploy;
+    return A && typeof A.enabled === 'function' && A.enabled() ? A : null;
+  }
+
+  /** Klasse, mit der der Spieler gleich einsetzt (Auswahl in der Ausrüstung hat Vorrang). */
+  _deployClass() {
+    const G = this.G, p = G.player, m = this.mode;
+    if (this.panel.host) { try { const v = this.panel.value(); if (v && v.cls) return v.cls; } catch { /* */ } }
+    return (m && m.pendingLoadout && m.pendingLoadout.cls) || (p.loadout && p.loadout.cls) || p.cls || null;
+  }
+
+  /** Leiste „Luftfahrzeug“: Zu Fuß + Luftfahrzeuge des Teams (frei/besetzt/zerstört mit Wartezeit). */
+  _renderAir() {
+    const E = this.el;
+    if (!E || !E.air) return;
+    const A = this._air();
+    const pilot = !!A && this._deployClass() === 'pilot';
+    if (E.air.hidden === pilot) E.air.hidden = !pilot;
+    if (!pilot) { this._airSel = null; return; }
+    const p = this.G.player;
+    const opts = A.options(p);
+    const key = A.choiceKey();
+    const auto = key == null ? A.pick(p) : null;
+    const selId = key === 'foot' ? 'foot' : key != null ? key : auto ? String(auto.id) : 'foot';
+    this._airSel = selId === 'foot' ? null : opts.find((o) => String(o.id) === selId) || null;
+    const btn = (id, ico, label, sub, ok) => `<button type="button" class="dp-pt dp-airpt${id === selId ? ' is-sel' : ''}" data-air="${esc(id)}" data-side="a" aria-pressed="${id === selId}"${ok ? '' : ' aria-disabled="true"'}><i>${ico}</i><span><b>${esc(label)}</b><small>${esc(sub)}</small></span></button>`;
+    let html = btn('foot', ICON.user || '', 'Zu Fuß', 'Normaler Einsatzpunkt', true);
+    for (const o of opts) html += btn(String(o.id), o.type === 'heli' ? ICON.heli || '' : ICON.pilot || '', o.label, o.sub, o.available);
+    if (!opts.length) html += '<span class="dp-airnone">Keine Luftfahrzeuge für dein Team auf dieser Karte.</span>';
+    if (html === this._airHtml) return;
+    const a = document.activeElement;
+    const had = a && E.airList.contains(a) ? a.dataset.air : null;
+    this._airHtml = html;
+    E.airList.innerHTML = html;
+    if (had) { const n = E.airList.querySelector(`[data-air="${CSS.escape(had)}"]`); if (n) try { n.focus({ preventScroll: true }); } catch { /* */ } }
+  }
+
   _updateFoot() {
     const G = this.G;
     const m = this.mode;
@@ -297,6 +344,7 @@ export class DeployScreen {
       info = left > 0.05 ? `${esc(where)} · bereit in <b>${secs(left)}</b>` : `${esc(where)} · <b>bereit</b>`;
       if (this.armed && left > 0.05) info += ' · Einsatz vorgemerkt';
     } else info = left > 0.05 ? `Wiedereinstieg angehalten · <b>${secs(left)}</b> Rest` : 'Bereit zum Einsatz';
+    if (this._airSel && this._air() && this._deployClass() === 'pilot') info = `Einsatz im Cockpit: <b>${esc(this._airSel.label)}</b> · ${info}`;
     const med = G.injuries && G.injuries.medicInfo();
     if (med) info = `Sanitäter ${esc(med.name)} kommt · <b>${med.dist} m</b> – warten oder „Einsatz“ (aufgeben)`;
     if (this._infoHtml !== info) { this._infoHtml = info; this.el.info.innerHTML = info; }
@@ -325,6 +373,16 @@ export class DeployScreen {
     if (ds.dtab) { this._setTab(ds.dtab); return; }
     if (ds.dact === 'go') { this._go(true); return; }
     if (ds.dact === 'back') { G.events.emit('ui:sound', { name: 'back' }); this.close(false, true); return; }
+    if (ds.air != null) {
+      const A = this._air();
+      this.interacted = true;
+      if (!A || b.getAttribute('aria-disabled') === 'true') { G.events.emit('ui:sound', { name: 'error' }); return; }
+      A.setChoice(ds.air === 'foot' ? 'foot' : ds.air);
+      G.events.emit('ui:sound', { name: 'click' });
+      this._renderAir();
+      this._updateFoot();
+      return;
+    }
     if (ds.dact === 'pause') { if (G.debugApi && typeof G.debugApi.pause === 'function') G.debugApi.pause(); return; } // Touch: Pause/Match verlassen bleibt erreichbar
     if (ds.pt) {
       const [kind, ...rest] = ds.pt.split(':');
@@ -461,6 +519,8 @@ export class DeployScreen {
     if (!this.isOpen) return;
     if (!dead) { if (p.alive) this.close(false); return; }
     this._pollPad();
+    this._airT -= dt;
+    if (this._airT <= 0) { this._airT = 0.5; this._renderAir(); }
     this._mkT -= dt;
     if (this.kind === 'deploy' && this.tab === 'map' && this._mkT <= 0) {
       this._mkT = 0.5;

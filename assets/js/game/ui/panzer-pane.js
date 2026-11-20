@@ -97,7 +97,7 @@ function drawTank(cv, D, yaw, pitch = 0.42) {
   const span = Math.max(hb[5] + 0.5, gl / 2 + Math.abs(tp[2] + gp[2]) * 0.5 + 1);
   const sc = Math.min(W, H * 1.9) / (span * 2.6);
   const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), spp = Math.sin(pitch);
-  const P = (x, y, z) => { const X = x * cy - z * sy, Z = x * sy + z * cy; const Y = y * cp - Z * spp, D2 = y * spp + Z * cp; return [W / 2 + X * sc, H * 0.62 - Y * sc, D2]; };
+  const P = (x, y, z) => { const X = x * cy - z * sy, Z = x * sy + z * cy; const Y = y * cp - Z * spp, D2 = -(y * spp + Z * cp); /* Tiefe: größer = weiter weg */ return [W / 2 + X * sc, H * 0.62 - Y * sc, D2]; };
   const L = [0.45, 0.8, 0.35]; const ln = Math.hypot(...L);
   const faces = [];
   for (const b of boxes) {
@@ -108,7 +108,7 @@ function drawTank(cv, D, yaw, pitch = 0.42) {
     for (const q of quads) {
       const pts = q.slice(0, 4).map((s) => P(...v(...s)));
       const n = q[4];
-      const nx = n[0] * cy - n[2] * sy, nz = n[0] * sy + n[2] * cy, ny = n[1] * cp - nz * spp, nd = n[1] * spp + nz * cp;
+      const nx = n[0] * cy - n[2] * sy, nz = n[0] * sy + n[2] * cy, ny = n[1] * cp - nz * spp, nd = -(n[1] * spp + nz * cp);
       if (nd > 0.02) continue; // abgewandt
       const lit = 0.45 + 0.55 * Math.max(0, (nx * L[0] + ny * L[1] - nd * L[2]) / ln);
       faces.push({ pts, d: pts.reduce((a, p) => a + p[2], 0) / 4, col: b.col, lit });

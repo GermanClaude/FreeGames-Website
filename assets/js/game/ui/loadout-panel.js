@@ -93,7 +93,11 @@ export class LoadoutPanel {
     const d = this._d();
     const lo = this.lo;
     const prof = classProfile(lo.cls);
-    const classes = SOLDIER_CLASS_ORDER.map((id) => {
+    // Pilot nur, wenn es in diesem Match Luftfahrzeuge gibt (vehicles/air/deploy.js) – oder er schon gewählt ist
+    const A = this.G && this.G.vehicles && this.G.vehicles.air && this.G.vehicles.air.deploy;
+    const inMatch = !!(this.G && this.G.vehicles && this.G.vehicles.attached); // Raum/Lobby vor dem Match: immer zeigen
+    const airOk = !inMatch || !!(A && typeof A.enabled === 'function' && A.enabled());
+    const classes = SOLDIER_CLASS_ORDER.filter((id) => id !== 'pilot' || airOk || lo.cls === 'pilot').map((id) => {
       const c = CLASSES[id];
       return `<button type="button" class="lp-cls" data-cls="${id}" aria-pressed="${id === lo.cls}"><i>${ICON[id] || ICON.user}</i><b>${esc(c.name)}</b></button>`;
     }).join('');

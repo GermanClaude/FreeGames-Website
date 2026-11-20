@@ -1418,6 +1418,7 @@ function buildFunker(root, D, C, det, era, cab) {
     if (det) for (let i = 0; i < 5; i++) M.add(cyl(0.006, 0.006, 0.05, 6), C.brass, [0.055, 0.02 - i * 0.004, 0.18 + i * 0.022], [0, 0, HP]);
     M.add(rbox(0.13, 0.18, 0.2, 0.05), C.canvas, [0, -0.2, 0.18]);
     M.build(p, 'bugmg');
+    for (const ch of p.children) ch.scale.setScalar(0.86); // MG etwas schlanker (Sicht des Funkers frei)
     cab.partNames.push('bugmg');
   }
   // ---- Funkgeräte über dem Getriebe (links), Front zum Funker (+X)

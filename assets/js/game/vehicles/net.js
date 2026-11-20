@@ -380,13 +380,15 @@ export class VehicleNet {
         if (!p.alive || p.vehicle) return;
         const v = Number.isInteger(m.v) ? this.byNetId(m.v) : null;
         if (!v || !v.alive) return this._reject(from, 'tot');
-        if (sys._boxDistance(v, p.position, 0.9) > REACH + ENTER_SLACK) return this._reject(from, 'weit');
+        // dep: Einsatz im Cockpit (Klasse Pilot, gerade erschienen, freies Luftfahrzeug des eigenen Teams – air/deploy.js)
+        const dep = m.dep === 1 && sys.air && sys.air.deploy && sys.air.deploy.mayDeploy(p, v);
+        if (!dep && sys._boxDistance(v, p.position, 0.9) > REACH + ENTER_SLACK) return this._reject(from, 'weit');
         if (v.isOccupied && v.team != null && p.team != null && v.team !== p.team) return this._reject(from, 'feind');
         let s = Number.isInteger(m.s) && m.s >= 0 && m.s < v.seats.length ? m.s : null;
         if (s != null && v.seats[s].actor) s = null; // gewünschter Sitz belegt → erster freier
         if (!v.freeSeats().length) return this._reject(from, 'besetzt');
         const idx = sys.enter(p, v, s);
-        if (idx < 0) this._reject(from, 'besetzt');
+        if (idx < 0) this._reject(from, sys.enterWhy || 'besetzt');
         return;
       }
       case 'exit': {
@@ -642,9 +644,11 @@ export class VehicleNet {
   }
 
   /** Anfragen des eigenen Spielers (sys.remote). */
-  enter(v, seatIdx = null) {
+  enter(v, seatIdx = null, { deploy = false } = {}) {
     if (!v || !Number.isInteger(v.netId)) return -1;
-    this._send(HOST_ID, { t: 'veh', a: 'enter', v: v.netId, s: Number.isInteger(seatIdx) ? seatIdx : -1 });
+    const m = { t: 'veh', a: 'enter', v: v.netId, s: Number.isInteger(seatIdx) ? seatIdx : -1 };
+    if (deploy) m.dep = 1; // Einsatz im Cockpit (optionales Feld; ältere Hosts ignorieren es)
+    this._send(HOST_ID, m);
     return -1;
   }
   exit() { this._send(HOST_ID, { t: 'veh', a: 'exit' }); return undefined; }

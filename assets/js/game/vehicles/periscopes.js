@@ -32,7 +32,7 @@ export function funkerCabin(D, driverCabin) {
   const half = Math.max(0.6, hb[3] - 0.32);
   const xl = Math.max(R.xr + 0.02, F[0] - 0.56), xr = Math.min(half, F[0] + 0.56);
   const mg = D.cmgPivot || [F[0], roof - 0.3, R.zFT];
-  const eye = [F[0], Math.min(Math.max(F[1] + 0.88, floor + 0.64), roof - 0.15), F[2] + 0.2];
+  const eye = [F[0] - 0.04, Math.min(Math.max(F[1] + 0.9, floor + 0.66), roof - 0.13), F[2] + 0.3];
   return { F, xl, xr, floor, roof, zFT: R.zFT, zFB: R.zFB, zB: R.zB, eye, mg };
 }
 
@@ -154,7 +154,7 @@ export function funkerLayout(F) {
     ein: [rx + 0.135, y0 + 0.5, rz + 0.07],
     kanal: [rx + 0.14, y0 + 0.76, rz - 0.04],
     senden: [rx + 0.135, y0 + 0.5, rz - 0.08],
-    gurt: [mg[0] + 0.12, mg[1] - 0.2, mg[2] + 0.36],
+    gurt: [mg[0] + 0.1, mg[1] - 0.11, mg[2] + 0.22],    // Gurtsack am MG (Ruhelage)
     regal: [F.xr - 0.1, y0 + 0.2, z0 - 0.05],
     lamp: [x0, F.roof - 0.04, z0 + 0.22],
     seat: [x0, y0 + 0.34, z0 + 0.1],

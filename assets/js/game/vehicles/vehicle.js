@@ -23,6 +23,7 @@ const _iq = new THREE.Quaternion(), _ro = new THREE.Vector3(), _rd = new THREE.V
 const Y = new THREE.Vector3(0, 1, 0), X = new THREE.Vector3(1, 0, 0);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
+const gauss = () => { let u = 0; while (u === 0) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); };
 const approach = (cur, target, maxStep) => { const d = wrap(target - cur); return Math.abs(d) <= maxStep ? target : cur + Math.sign(d) * maxStep; };
 
 /** Ersatzmunition eines MG in Schuss (def.belts Gurte zu je def.mag); ohne belts unbegrenzt (null). */
@@ -296,7 +297,10 @@ export class Vehicle {
     let want = null;
     if (it.aimAt) {
       this.muzzle(seat.index, _ro, _rd);
-      _a.copy(it.aimAt).sub(_ro);
+      _a.copy(it.aimAt);
+      const shooter = seat.actor || seat.proxy;
+      if (shooter && !isHuman(shooter) && !shooter._psim) this._botAimError(seat, _a, w, dt); // Panzermodus: eigene Zielfehler (psim/crew-ai.js)
+      _a.sub(_ro);
       if (w && w.def.kind === 'shell') {
         // Ballistik der geladenen Granate (sonst der gewählten)
         const bd = (this.gun && this.gun.loaded && vehicleWeapon(this.type, this.gun.loaded)) || w.def;
@@ -339,6 +343,28 @@ export class Vehicle {
     seat.aimError = Math.acos(clamp(_rd.dot(want), -1, 1));
   }
 
+  /**
+   * Zielfehler der Bot-Schützen an Lafetten (Nutzer 20.11.: KI soll nicht „jeden Treffer landen“): wandernder Versatz
+   * (MG ≈ 1,1°, Kanone ≈ 0,26° je Sigma, Schwierigkeit skaliert), dazu Reaktionszeit 0,7–1,5 s nach einem Zielwechsel
+   * (seat._bot.readyAt, _updateWeapons). point wird in place verschoben.
+   */
+  _botAimError(seat, point, w, dt) {
+    const now = this.G.time.elapsed;
+    const st = seat._bot || (seat._bot = { off: new THREE.Vector3(), want: new THREE.Vector3(), last: new THREE.Vector3(), has: false, t: 0, readyAt: 0, fireT: 0, on: true });
+    if (!st.has || st.last.distanceToSquared(point) > 36) st.readyAt = now + 0.7 + Math.random() * 0.8; // neues Ziel
+    st.last.copy(point); st.has = true;
+    const dist = Math.max(5, _ro.distanceTo(point));
+    st.t -= dt;
+    if (st.t <= 0) {
+      st.t = 0.6 + Math.random() * 0.9;
+      const diff = { rekrut: 1.6, regulaer: 1.2, veteran: 0.9, elite: 0.7 }[this.G.match && this.G.match.difficulty] || 1.2;
+      const sig = (w && w.def.kind === 'shell' ? 0.0045 : 0.02) * diff * dist;
+      st.want.set(gauss() * sig, gauss() * sig * 0.5, gauss() * sig);
+    }
+    st.off.lerp(st.want, 1 - Math.exp(-dt * 2.5));
+    point.add(st.off);
+  }
+
   _updateWeapons(seat, dt) {
     const it = seat.intent;
     if (!seat.weapons.length) return;
@@ -371,6 +397,16 @@ export class Vehicle {
     it.firePressed = false;
     if (frozen || !wants || !this.alive) return;
     if (it.fireWhenAligned && seat.aimError > 0.026) return;
+    // Bot-Schütze (nicht Panzermodus): erst nach der Reaktionszeit, MG in Feuerstößen (1–1,6 s an, 0,8–1,5 s Pause)
+    const bst = seat._bot;
+    if (bst && shooter && !isHuman(shooter) && !shooter._psim) {
+      const now = this.G.time.elapsed;
+      if (now < bst.readyAt) return;
+      if (!shell) {
+        if (now >= bst.fireT) { bst.on = !bst.on; bst.fireT = now + (bst.on ? 1 + Math.random() * 0.6 : 0.8 + Math.random() * 0.7); }
+        if (!bst.on) return;
+      }
+    }
     let fw = w;
     if (shell) {
       // gefeuert wird die geladene Granate, egal welche Sorte gewählt ist

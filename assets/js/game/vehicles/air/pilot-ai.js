@@ -3,6 +3,10 @@
 // Nase aufs Ziel, Raketen in kurzen Salven, Kinnturm (stellvertretend, wenn kein Schütze an Bord) mit Streuung nach
 // Entfernung; bei Raketenwarnung Täuschkörper + Ausweichen, unter 30 % Rumpf Rückzug zur Basis. Bodenabstand über
 // Vorausschau (Gelände in Flugrichtung). Schreibt nur die Sitz-Absicht (intent) wie ein Spieler – Netz/Host unverändert.
+// Nutzer 20.11. („sollen nicht die ganze Zeit zielen und jeden Treffer landen“): Im normalen Spiel fliegt keine KI mehr
+// (air/policy.js); die KI bleibt für Story-Figuren der Kampagne (M15 Begleithubschrauber) und ist bewusst schwach:
+// erst ≈ 3 s Zielauffassung mit Vorwarnung an den Spieler, wandernder Zielfehler (≈ 2–3,5° je nach Entfernung),
+// kurze Salven mit langen Pausen, Kanone nur in Feuerstößen mit großer Streuung.
 import * as THREE from 'three';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _e = new THREE.Vector3();
@@ -25,6 +29,10 @@ export class HeliPilotAI {
     this._pause = 0;
     this._I = { col: 0, yaw: 0, pitch: 0, roll: 0, level: false };
     this.done = false;
+    this._lockT = 0;          // Zielauffassung (s) – erst danach Feuer
+    this._warnAt = -1e9;      // letzte Vorwarnung an den Spieler
+    this._off = new THREE.Vector3(); this._offT = 0; // wandernder Zielfehler
+    this._gunT = 0; this._gunOn = 0; // Feuerstöße der Kanone
   }
 
   /** Einsatzpunkt: nächste nicht eigene Flagge (Modi mit Zielen), sonst Kartenmitte. */
@@ -63,6 +71,13 @@ export class HeliPilotAI {
       bd = d; best = { actor: null, vehicle: o };
     }
     this.target = best;
+  }
+
+  /** Zielt die KI gerade auf den Spieler (zu Fuß oder sein Fahrzeug)? */
+  _aimsAtPlayer() {
+    const t = this.target, P = this.G.player;
+    if (!t || !P) return false;
+    return t.actor === P || !!(t.vehicle && t.vehicle.seats && t.vehicle.seats.some((s) => s.actor === P));
   }
 
   _targetPos(out) {
@@ -111,6 +126,15 @@ export class HeliPilotAI {
         break;
       }
       case 'angriff': {
+        // Zielfehler: alle 1,2–2 s neu gewürfelt, proportional zur Entfernung (Rakete/Kanone verfehlen öfter)
+        const dd = tp.distanceTo(b.pos);
+        this._offT -= dt;
+        if (this._offT <= 0) {
+          this._offT = 1.2 + Math.random() * 0.8;
+          const k = dd * (0.035 + Math.random() * 0.025);
+          this._off.set((Math.random() - 0.5) * 2 * k, (Math.random() - 0.5) * k, (Math.random() - 0.5) * 2 * k);
+        }
+        tp.add(this._off);
         const d = Math.hypot(tp.x - b.pos.x, tp.z - b.pos.z);
         const sp = d > 380 ? 32 : d < 160 ? -6 : 6;
         v.steerToward(I, tp.x, tp.z, alt, sp);
@@ -122,20 +146,31 @@ export class HeliPilotAI {
         const dist = to.length();
         to.multiplyScalar(1 / Math.max(1e-3, dist));
         const err = Math.acos(clamp(_e.dot(to), -1, 1));
+        // Zielauffassung mit Vorwarnung (Spieler bzw. sein Fahrzeug im Visier)
+        if (dist < 700 && err < 0.2) this._lockT += dt; else this._lockT = Math.max(0, this._lockT - dt * 2);
+        const locked = this._lockT > 2.8;
+        if (this._lockT > 0.2 && now - this._warnAt > 9 && this._aimsAtPlayer()) {
+          this._warnAt = now;
+          try { G.events.emit('mode:notice', { text: 'Feindlicher Hubschrauber nimmt dich ins Visier – Deckung!', tone: 'enemy' }); } catch { /* */ }
+        }
         if (this._pause > 0) this._pause -= dt;
-        else if (dist < 650 && err < 0.07) {
+        else if (locked && dist < 650 && err < 0.07) {
           it.weapon = 0;
           it.fire = true;
           this._burst += dt;
-          if (this._burst > 0.45) { this._burst = 0; this._pause = 2.5 + Math.random() * 2; }
+          if (this._burst > 0.25) { this._burst = 0; this._pause = 5 + Math.random() * 3.5; }
         }
+        // Kanone: Feuerstöße 0,6–0,9 s, dann 2,5–4 s Pause
+        this._gunT -= dt;
+        if (this._gunT <= 0) { this._gunOn = 0.6 + Math.random() * 0.3; this._gunT = this._gunOn + 2.5 + Math.random() * 1.5; }
+        const gunBurst = locked && (this._gunOn -= dt) > 0;
         if (gun) {
-          const spread = dist * (0.012 + 0.01 * Math.random());
+          const spread = dist * (0.03 + 0.03 * Math.random());
           gun.aimAt = (gun.aimAt || new THREE.Vector3()).copy(tp).add(_e.set((Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread * 0.5, (Math.random() - 0.5) * spread));
           gun.aimDir = null;
-          gun.fire = dist < 750;
+          gun.fire = gunBurst && dist < 700;
           gun.fireWhenAligned = true;
-        } else if (dist < 600 && err < 0.05 && this._pause <= 0) { it.weapon = 1; it.fire = true; }
+        } else if (gunBurst && dist < 600 && err < 0.05 && this._pause <= 0) { it.weapon = 1; it.fire = true; }
         break;
       }
       case 'rueckzug':
