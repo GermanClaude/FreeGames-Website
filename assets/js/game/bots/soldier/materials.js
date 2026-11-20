@@ -720,7 +720,7 @@ const ROUGH = /* glsl */`
 const NORMAL = /* glsl */`
 #ifdef USE_NORMALMAP_TANGENTSPACE
 	vec3 mapN = texture2D( normalMap, sdUvD ).xyz * 2.0 - 1.0;
-	mapN.xy *= normalScale * ( sdC.y * vNp.y * uNpDetail.y ) * ( ( sdCls == 0 || sdCls == 4 ) ? sdUvOk : 1.0 );
+	mapN.xy *= normalScale * ( sdC.y * vNp.y * uNpDetail.y ) * ( sdCls == 4 ? 0.0 : sdCls == 0 ? sdUvOk : 1.0 ); // Leder: Kasten-UV der Stiefel springt je Dreieck → Relief nur aus der Raumabbildung
 	#ifndef NP_LOW
 		// grobe Stofffalten nur auf Stoff (Uniform und Zivilkleidung); mensch3: an Knie, Ellbogen, Schritt und Kniekehle kräftiger
 		float sdJ = exp( -pow( ( vNpPos.y - 0.5 ) / 0.075, 2.0 ) ) * step( vNpPos.y, 0.9 )
@@ -730,14 +730,14 @@ const NORMAL = /* glsl */`
 		mapN.xy += sdW;
 	#endif
 	vec3 sdFn = normalize( cross( dFdx( vViewPosition ), dFdy( vViewPosition ) ) );
-	vec3 sdBase = normalize( mix( tbn[ 2 ], sdFn, ( sdCls == 0 || sdCls == 4 ) ? uFacet.x : uFacet.y ) ); // mensch3: Leder (Stiefel) ohne Kantenanteil
+	vec3 sdBase = normalize( mix( sdCls == 4 ? normalize( vNormal ) : tbn[ 2 ], sdFn, ( sdCls == 0 || sdCls == 4 ) ? uFacet.x : uFacet.y ) ); // mensch3: Leder (Stiefel) ohne Kantenanteil
 	normal = normalize( sdBase * mapN.z + tbn * vec3( mapN.xy, 0.0 ) );
 	// Schutz: entartete UV-Ableitungen (Kuppen, Nähte) → unendlicher Tangentenrahmen → Ersatz ohne Detailnormale
 	if ( any( isnan( normal ) ) || any( isinf( normal ) ) ) normal = normalize( mix( vNormal, sdFn, 0.0 ) );
 	// mensch3: Nähte + Gewebe-Kavität als Relief, wo die UV-Detailnormale wegfällt (Pole, Stiefelkappe)
 	{
 		float sdH = sdSeamH;
-		if ( sdCls == 0 || sdCls == 4 ) sdH += ( sdOrm.r - 0.7 ) * 0.00035 * ( 1.0 - sdUvOk ) * vNp.y;
+		if ( sdCls == 0 || sdCls == 4 ) sdH += ( sdOrm.r - 0.7 ) * 0.00035 * ( sdCls == 4 ? 1.0 : 1.0 - sdUvOk ) * vNp.y;
 		if ( sdH != 0.0 ) normal = npBump( normal, sdH, -vViewPosition );
 	}
 #endif

@@ -240,7 +240,7 @@ function buildSoldier(V, lod) {
     glove: { pal: 'glove', detail: 0.8, shine: 0.16, cls: 'leather', wear: 0.5 },
     // 20.11.: Kampfstiefel sind mattes Rauleder/Cordura – vorher glänzend (0,3) → spiegelte den hellen Himmel und wirkte grau
     boot: { pal: 'boot', detail: 0.9, shine: 0.06, cls: 'leather', wear: 0.35 },
-    sole: { color: '#17181a', detail: 0.4, shine: 0.08, cls: 'hard' },
+    sole: { color: '#1d1d1e', detail: 0.4, shine: 0.08, cls: 'leather' }, // mensch3: Gummi wie Leder (kaum Staub) – Sohlenbereich reicht zackig auf die Kappe (las sich als helle Streifen)
     metal: { pal: 'metal', detail: 0.2, shine: 0.88, cls: 'hard' },
     plastic: { color: '#1e2022', detail: 0.5, shine: 0.42, cls: 'hard' },
     lens: { color: '#0b1014', detail: 0, shine: 1, cls: 'glass' },

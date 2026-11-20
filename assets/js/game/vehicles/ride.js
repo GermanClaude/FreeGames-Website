@@ -2,7 +2,7 @@
 // Läuft nur offline bzw. beim Host (nicht im Abbild), nur in Team-Modi mit Militärfahrzeugen (nicht Panzer/Kampagne).
 //
 // Ablauf je Transporter (def.transport) ohne menschliche Insassen:
-//   1. warten   – geparkt; sind ≥ 2 Bots des Teams (ohne sichtbares Ziel) in 28 m oder eben in ≤ 90 m erschienen, steigen bis zu 7 ein: erst Fahrer,
+//   1. warten   – geparkt; sind ≥ 2 Bots des Teams (ohne sichtbares Ziel) in 28 m oder eben in ≤ 140 m erschienen, steigen bis zu 7 ein: erst Fahrer,
 //                 dann Lafette (bewaffnete Transporter), dann Mitfahrer
 //   2. fahren   – Fahrer folgt dem geplanten Weg (VehicleSystem.planPath) zu einem Absetzpunkt 55 % des Wegs zur
 //                 feindlichen Basis bzw. zum nächsten Ziel (Flagge/Zone) der Karte; Schütze feuert auf sichtbare Feinde
@@ -59,8 +59,8 @@ export class TransportRides {
     const cand = [];
     for (const b of G.bots.bots) {
       if (!b.alive || b.puppet || b.vehicle || b.team !== team || b.isRemoteHuman) continue;
-      // in der Nähe – oder gerade an der Basis erschienen (≤ 8 s, ≤ 90 m): sitzt direkt auf („am HQ aufsitzen“)
-      const d2 = b.position.distanceToSquared(vp), fresh = now - (b.spawnTime ?? -1e9) < 8 && d2 < 90 * 90;
+      // in der Nähe – oder gerade an der Basis erschienen (≤ 8 s, ≤ 140 m – TDM-Startpunkte liegen vor dem Fahrzeughof): sitzt direkt auf („am HQ aufsitzen“)
+      const d2 = b.position.distanceToSquared(vp), fresh = now - (b.spawnTime ?? -1e9) < 8 && d2 < 140 * 140;
       if (d2 > BOARD_R * BOARD_R && !fresh) continue;
       if (b.target || now - (b.lastDamageTime ?? -1e9) < 4) continue; // im Gefecht nicht einsteigen
       cand.push(b);

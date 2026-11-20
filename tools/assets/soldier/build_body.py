@@ -714,6 +714,19 @@ def split_seam(T0, U, R):
 
 def pack(P, T0, W, reg, name):
     N = tri_normals(P, T0)
+    # mensch3 (20.11.): Stiefel/Schuhe – Normalen über die Nachbarn geglättet (das dezimierte Leder las sich im Randlicht als
+    # helle/dunkle Dreiecksstreifen); Sohle bleibt kantig
+    bt = np.isin(reg, [REG['BOOT'], REG['TOE'], REG['TONGUE']])
+    if bt.any():
+        for _ in range(4):
+            acc = np.zeros_like(N)
+            for a, b in ((0, 1), (1, 2), (2, 0)):
+                i, j = T0[:, a], T0[:, b]
+                m = bt[i] & bt[j]
+                np.add.at(acc, i[m], N[j[m]]); np.add.at(acc, j[m], N[i[m]])
+            Ns = N + 0.5 * acc
+            Ns /= np.maximum(np.linalg.norm(Ns, axis=1, keepdims=True), 1e-12)
+            N = np.where(bt[:, None], Ns, N)
     ao = bake_ao(P, N, T0)
     U, Rr = uvs(P, reg, W, N)
     T0, src = split_seam(T0, U, Rr)
