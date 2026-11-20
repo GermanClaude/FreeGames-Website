@@ -271,7 +271,7 @@ const WEITMARK = {
   assets: { hdri: 'np_sky_vormittag_dunst' },
   defaultSurface: 'grass',
   wallMargin: 45,
-  navGrid: 6,
+  navGrid: 7,
   // Riesenkarte (terrain/bigworld.js): Sichtweite, Fernkulisse, Budgets je Stufe und Plattform
   giant: {
     farRadius: 2300,
@@ -298,7 +298,7 @@ const WEITMARK = {
   water: { color: '#2b4a40' },
 
   terrain: {
-    size: 1900, res: 1, seed: 2611,
+    size: 1800, res: 1, seed: 2611,
     base: { amp: 5.0, scale: 260, octaves: 5, offset: 2.6 },
     detail: { amp: 0.3, scale: 10 },
     hills: [
@@ -309,7 +309,7 @@ const WEITMARK = {
       { x: -630, z: 640, r: 150, h: 18 }, { x: 560, z: 650, r: 160, h: 22 }, { x: 640, z: -190, r: 130, h: 14 },
       { x: -650, z: 190, r: 120, h: 12 }, { x: -300, z: -150, r: 100, h: 9 }, { x: 300, z: 150, r: 80, h: 7 },
     ],
-    edge: { start: 840, end: 935, height: 70 },
+    edge: { start: 830, end: 895, height: 70 },
     waterY: -1.4,
     river: {
       pts: [[70, -1000], [50, -800], [-5, -640], [20, -470], [40, -330], [12, -200], [6, -80], [8, 40], [12, 160], [55, 270], [150, 380], [260, 470], [330, 600], [360, 760], [380, 1000]],

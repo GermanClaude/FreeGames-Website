@@ -190,7 +190,7 @@ function headField(geo) {
 // Haaransatz θ(a) [Grad] nach |a| (0 vorn … 180 Nacken), am gemalten Ansatz von face-skin.js abgegriffen (Stirn ≈ Augen + 7 cm,
 // über dem Ohr ≈ Augenhöhe, Nacken ≈ Augen − 7 cm); Koteletten vor dem Ohr tiefer
 const LINE_A = [0, 20, 35, 48, 58, 66, 72, 80, 92, 110, 135, 160, 180];
-const LINE_T = [48, 49, 53, 60, 68, 88, 90, 80, 78, 88, 112, 124, 127];
+const LINE_T = [48, 49, 53, 60, 68, 88, 90, 80, 78, 90, 117, 129, 133];
 function hairline(a, recede = 0, female = false) {
   const x = Math.abs(a) / D2R;
   let th = LINE_T[LINE_T.length - 1];
@@ -271,7 +271,7 @@ class HairBuf {
 const RES = { cine: { cols: 72, rows: 18, shells: 3, cur: [40, 12], lobe: [10, 7], beard: 3 }, near: { cols: 40, rows: 10, shells: 2, cur: [24, 7], lobe: [8, 5], beard: 1 }, mid: { cols: 28, rows: 7, shells: 2, cur: [14, 5], lobe: [6, 4], beard: 1 } };
 // Dicke der Haarschicht [m]: oben (t = 0) … am Ansatz (t = 1), je Frisur
 const THICK = {
-  kurz: [0.009, 0.0055, 0.0018], scheitel: [0.015, 0.009, 0.002], buerste: [0.0042, 0.0034, 0.0014], kranz: [0.005, 0.004, 0.0016],
+  kurz: [0.012, 0.0065, 0.0018], scheitel: [0.017, 0.01, 0.002], buerste: [0.0042, 0.0034, 0.0014], kranz: [0.005, 0.004, 0.0016],
   dutt: [0.0065, 0.005, 0.0016], zopf: [0.0065, 0.005, 0.0016], offen: [0.013, 0.009, 0.0022],
 };
 
@@ -328,7 +328,7 @@ export function hairGeometry(geo, style, res = 'near', opts = {}) {
   const lenTile = 0.045, tilesU = female || style === 'offen' ? 9 : 8;
   for (let s = 0; s < Q.shells; s++) {
     const depth = Q.shells > 1 ? s / (Q.shells - 1) : 0;
-    const cover = s === 0 ? 1 : lerp(0.72, 0.42, (s - 1) / Math.max(1, Q.shells - 2));
+    const cover = s === 0 ? 1 : lerp(0.66, 0.4, (s - 1) / Math.max(1, Q.shells - 2));
     const off = (t, a) => lerp(0.35, 1.0, depth) * thick(t, a) + 0.0006;
     B.grid(cols, rows,
       (i, j) => { const d = dAt(i, j); const a = angOf(d)[1]; return surf(d, off(j / rows, a)); },
@@ -358,18 +358,18 @@ function addBun(B, F, pole, Q, rnd) {
   void rnd;
   const [th0, a0] = angOf(pole);
   const r0 = F.R(th0, a0) + 0.004;
-  const ax = pole, c = [HC[0] + ax[0] * (r0 + 0.017), HC[1] + ax[1] * (r0 + 0.017), HC[2] + ax[2] * (r0 + 0.017)];
+  const ax = pole, c = [HC[0] + ax[0] * (r0 + 0.019), HC[1] + ax[1] * (r0 + 0.019), HC[2] + ax[2] * (r0 + 0.019)];
   // Basis senkrecht zur Achse
   let e1 = norm3([ax[1] * 0 - ax[2] * 1, ax[2] * 0 - ax[0] * 0, ax[0] * 1 - ax[1] * 0]); // ax × (0,1,0)… ersatzweise
   if (!Number.isFinite(e1[0]) || Math.hypot(...e1) < 0.5) e1 = [1, 0, 0];
   const e2 = norm3([ax[1] * e1[2] - ax[2] * e1[1], ax[2] * e1[0] - ax[0] * e1[2], ax[0] * e1[1] - ax[1] * e1[0]]);
-  const Rm = 0.021, rt = 0.0145, cols = Q.lobe[0] * 2, rows = Q.lobe[1] * 2;
+  const Rm = 0.017, rt = 0.0175, cols = Q.lobe[0] * 2, rows = Q.lobe[1] * 2;
   for (const [sh, cover, depth] of [[0, 1, 0], [0.0025, 0.6, 1]]) {
     // Strähnen laufen entlang des großen Kreises (j), quer dazu (i) um das Rohr
     B.grid(cols, rows * 2, (i, j) => {
       const u = (i / cols) * TAU, v = (j / (rows * 2)) * TAU;
       const rr = Rm + (rt + sh) * Math.cos(u) * (1 + 0.06 * Math.sin(v * 3 + u));
-      const h = (rt + sh) * Math.sin(u) * 0.8;
+      const h = (rt + sh) * Math.sin(u) * 0.95;
       return [c[0] + (e1[0] * Math.cos(v) + e2[0] * Math.sin(v)) * rr + ax[0] * h, c[1] + (e1[1] * Math.cos(v) + e2[1] * Math.sin(v)) * rr + ax[1] * h, c[2] + (e1[2] * Math.cos(v) + e2[2] * Math.sin(v)) * rr + ax[2] * h];
     }, (i, j) => [i / cols * 2.2, j / (rows * 2) * 3.4], () => 1, [depth, cover], { closed: true });
     B.orientFrom(B.n - (cols + 1) * (rows * 2 + 1), c);
@@ -378,8 +378,8 @@ function addBun(B, F, pole, Q, rnd) {
   const cols2 = Q.lobe[0] * 2, rows2 = 3;
   B.grid(cols2, rows2, (i, j) => {
     const v = (i / cols2) * TAU, t = j / rows2, rr = Rm * (1 - t) + 0.0001;
-    const h = rt * 0.75 + 0.004 * (1 - t * t) * 0;
-    return [c[0] + (e1[0] * Math.cos(v) + e2[0] * Math.sin(v)) * rr + ax[0] * (h + 0.006 * (1 - t)), c[1] + (e1[1] * Math.cos(v) + e2[1] * Math.sin(v)) * rr + ax[1] * (h + 0.006 * (1 - t)), c[2] + (e1[2] * Math.cos(v) + e2[2] * Math.sin(v)) * rr + ax[2] * (h + 0.006 * (1 - t))];
+    const h = rt * 0.8 + 0.008 * Math.sqrt(Math.max(0, 1 - t * t));
+    return [c[0] + (e1[0] * Math.cos(v) + e2[0] * Math.sin(v)) * rr + ax[0] * h, c[1] + (e1[1] * Math.cos(v) + e2[1] * Math.sin(v)) * rr + ax[1] * h, c[2] + (e1[2] * Math.cos(v) + e2[2] * Math.sin(v)) * rr + ax[2] * h];
   }, (i, j) => [i / cols2 * 3, j / rows2 * 0.6], () => 1, [0, 1], { closed: true });
   B.orientFrom(B.n - (cols2 + 1) * (rows2 + 1), HC);
 }
@@ -419,8 +419,8 @@ function addBraid(B, F, pole, Q, rnd) {
       const ca = Math.cos(tilt), sa = Math.sin(tilt);
       const axis = norm3([ax[0] * ca + side0[0] * sa, ax[1] * ca + side0[1] * sa, ax[2] * ca + side0[2] * sa]);
       const side = norm3([side0[0] * ca - ax[0] * sa, side0[1] * ca - ax[1] * sa, side0[2] * ca - ax[2] * sa]);
-      const c = [(a[0] + b[0]) / 2 + s * 0.0055 * taper, (a[1] + b[1]) / 2 + (k % 2 ? 0.003 : -0.003) * s, (a[2] + b[2]) / 2];
-      lobe(c, axis, side, 0.0105 * taper, Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) * 0.72, 0.5, 1);
+      const c = [(a[0] + b[0]) / 2 + s * 0.0065 * taper, (a[1] + b[1]) / 2 + (k % 2 ? 0.003 : -0.003) * s, (a[2] + b[2]) / 2];
+      lobe(c, axis, side, 0.0135 * taper, Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) * 0.72, 0.5, 1);
     }
   }
   // Ansatz am Hinterkopf (gebündelt) und Haargummi + Spitze
@@ -486,7 +486,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
     if (part !== 0) continue;
     const x = P[v * 3], y = P[v * 3 + 1], z = P[v * 3 + 2], ax = Math.abs(x);
     if (z > tmjZ + 0.012) continue;
-    const cl = lerp(slitY + 0.017, ey - 0.014, sstep(0.026, 0.068, ax));
+    const cl = lerp(slitY + 0.019, ey - 0.027, sstep(0.026, 0.068, ax));
     const must = ax < cornerX + 0.006 ? noseY - 0.011 + 0.004 * sstep(0.008, 0.02, ax) : -9;
     const top = Math.max(cl, Math.min(must, noseY - 0.008));
     const bot = slitY - 0.062 + 0.022 * sstep(0.02, 0.06, ax);
@@ -516,7 +516,8 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
   const mpos = M.map(() => new Float32Array(n * 3 * shells)), mnrm = MN.map(() => new Float32Array(n * 3 * shells));
   for (let s = 0; s < shells; s++) {
     const depth = shells > 1 ? s / (shells - 1) : 0.65;
-    const cover = s === 0 ? 1 : lerp(0.7, 0.45, (s - 1) / Math.max(1, shells - 2));
+    // Bart: keine deckende Grundschicht – nur Strähnen (darunter der gemalte Bart/Bartschatten von face-skin.js)
+    const cover = lerp(0.9, 0.5, shells > 1 ? s / (shells - 1) : 0);
     for (let k = 0; k < n; k++) {
       const v = list[k], o = s * n + k;
       const m = mask[v];
@@ -530,7 +531,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
       tan[o * 4] = g[0]; tan[o * 4 + 1] = g[1]; tan[o * 4 + 2] = g[2]; tan[o * 4 + 3] = sstep(0.05, 0.55, m);
       // UV: Zylinderabwicklung (Strähnen senkrecht im Atlas)
       uv[o * 2] = Math.atan2(P[v * 3], -P[v * 3 + 2]) * 0.08 / 0.012 + s * 0.37;
-      uv[o * 2 + 1] = P[v * 3 + 1] / 0.03 + s * 0.23;
+      uv[o * 2 + 1] = P[v * 3 + 1] / 0.016 + s * 0.23;
       lay[o * 3] = 0.6; lay[o * 3 + 1] = cover; lay[o * 3 + 2] = depth;
       for (let mi = 0; mi < M.length; mi++) for (let q = 0; q < 3; q++) mpos[mi][o * 3 + q] = M[mi].array[v * 3 + q];
       for (let mi = 0; mi < MN.length; mi++) for (let q = 0; q < 3; q++) mnrm[mi][o * 3 + q] = MN[mi].array[v * 3 + q];
@@ -622,7 +623,7 @@ const HAIR_SPEC = /* glsl */`vec3 irradiance = dotNL * directLight.color;
 		float npS1 = pow( max( 1.0 - npC1 * npC1, 0.0 ), 90.0 );
 		float npS2 = pow( max( 1.0 - npC2 * npC2, 0.0 ), 24.0 );
 		float npW = saturate( dot( geometryNormal, directLight.direction ) * 0.6 + 0.4 );
-		reflectedLight.directSpecular += directLight.color * npW * npHairSpec * ( npS1 * 0.22 + npS2 * 0.26 * normalize( material.diffuseColor + 1e-4 ) * 1.6 );
+		reflectedLight.directSpecular += directLight.color * npW * npHairSpec * ( npS1 * 0.05 + npS2 * 0.07 * ( material.diffuseColor / max( max( material.diffuseColor.r, material.diffuseColor.g ), 1e-3 ) ) );
 		// Haare streuen Licht durch (weiche Schattengrenze)
 		reflectedLight.directDiffuse += directLight.color * saturate( dot( geometryNormal, directLight.direction ) * 0.5 + 0.5 ) * 0.18 * BRDF_Lambert( material.diffuseColor ) * npHairSpec;
 	}
@@ -692,7 +693,7 @@ float npHairSpec = 1.0;
     fs = fs.replace('#include <color_fragment>', `
 	{
 		// Strähnenhelligkeit, innen (Tiefe) und zur Wurzel dunkler (Selbstverschattung), Spitzen etwas heller
-		float npB = 0.5 + 0.75 * npHx.r * 1.2;
+		float npB = 0.45 + 1.0 * npHx.r;
 		float npAo = mix( 0.5, 1.0, vHairL.z ) * mix( 0.88, 1.04, vHairL.x );
 		diffuseColor.rgb *= uHairCol * npB * npAo;
 		npHairSpec = uHairSpecAmt * mix( 0.45, 1.0, vHairL.z ) * ( 0.6 + 0.6 * npHx.r );

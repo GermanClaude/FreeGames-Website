@@ -42,6 +42,7 @@ function triGeom(P, N, outFn = null) {
 
 /**
  * Kasten mit Fase c (gewichtete Normalen). c wird auf ≤ 30 % der kleinsten Kante begrenzt; c ≤ 0 → einfacher Kasten.
+ * Flächen als Fächer um die Mitte (56 Dreiecke).
  */
 export function cbox(w, h, d, c = 0.004) {
   const hx = w / 2, hy = h / 2, hz = d / 2;
@@ -56,7 +57,10 @@ export function cbox(w, h, d, c = 0.004) {
   for (let i = 0; i < 3; i++) for (const s of [-1, 1]) {
     const j = (i + 1) % 3, k = (i + 2) % 3, n = [0, 0, 0]; n[i] = s;
     const pt = (sj, sk) => { const p = [0, 0, 0]; p[i] = s * H[i]; p[j] = sj * Ai[j]; p[k] = sk * Ai[k]; return p; };
-    quad(pt(-1, -1), pt(1, -1), pt(1, 1), pt(-1, 1), n, n, n, n);
+    // Fächer um die Flächenmitte: jede Dreieckskante am Rand ist eine eigene Kante → Kantenabstand ohne Sägezahn
+    const c = [0, 0, 0]; c[i] = s * H[i];
+    const ring = [pt(-1, -1), pt(1, -1), pt(1, 1), pt(-1, 1)];
+    for (let q = 0; q < 4; q++) { v(c, n); v(ring[q], n); v(ring[(q + 1) % 4], n); }
   }
   // Kantenfasen (Normalen der angrenzenden Flächen → weich)
   for (let i = 0; i < 3; i++) {

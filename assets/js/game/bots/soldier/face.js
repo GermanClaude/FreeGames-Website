@@ -7,6 +7,8 @@
 //   (shape: Index in SHAPE_PRESETS oder Profil { age, african, asian, weight, muscle, jaw, chin, nose, noseW, brow, cheek, lips,
 //    mouthW, skull, eyes, neck, bags, laugh, fat, prog, angles, cleft, asym, seed } – Werte meist −1…1, age in Jahren;
 //    look: beard 'none'|'stoppel'|'kurz'|'voll'|'schnauzer'|'kinnbart', stubble 0…1, hairAmt 0 kahl…1, recede, brows, freckles)
+//   hairStyle: Frisur als Geometrie (hair.js) 'kurz'|'scheitel'|'buerste'|'kranz'|'glatze'|'dutt'|'zopf'|'offen', '' = keine;
+//    ohne Angabe: Zivilistinnen nach Ausführung, Männer nach Profil – nur ohne Helm/Mütze/Abdeckung; Voll-/kurzer Bart als Geometrie
 //   const f = s.face;               // SoldierFace | null (null nur bei face: false)
 //
 //   Lippen / Mund

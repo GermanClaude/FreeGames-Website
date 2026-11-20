@@ -56,7 +56,7 @@ function milWheels(K, S, lod, spec, paint) {
       const spin = new THREE.Group();
       const R = new K.Bucket(), rr = w.r, ww = w.w, ri = rr * 0.58;
       if (K.HQ && lod === 0) {
-        R.add(tire(rr, ww, ri, { kind: w.kind || 'mud', seg: K.DET === 2 ? 40 : 24 }), S.rubber);
+        R.add(tire(rr, ww, ri, { kind: w.kind || 'truck', seg: K.DET === 2 ? 48 : 28 }), S.rubber);
         R.add(steelRim(ri, { holes: 8, seg: K.DET === 2 ? 24 : 14 }), paint, [side * ww * 0.18, 0, 0], side < 0 ? [0, PI, 0] : null);
         R.add(K.cyl(ri * 0.98, ri * 0.98, ww * 0.8, 18, true), S.dark, [0, 0, 0], [0, 0, HP]);
       } else {
@@ -66,7 +66,7 @@ function milWheels(K, S, lod, spec, paint) {
       R.add(K.cyl(rr * 0.2, rr * 0.24, 0.08, Math.max(8, seg >> 1)), S.dark, [side * ww * 0.36, 0, 0], [0, 0, HP]);
       if (lod === 0) {
         for (let i = 0; i < 8; i++) { const a = (i / 8) * PI * 2; R.add(K.cyl(0.014, 0.014, 0.04, 6), S.steel, [side * ww * 0.3, Math.sin(a) * rr * 0.3, Math.cos(a) * rr * 0.3], [0, 0, HP]); }
-        if (w.ctis && K.DET === 2) { R.add(K.cyl(0.03, 0.03, 0.12, 6), S.steel, [side * (ww * 0.42 + 0.06), 0, 0], [0, 0, HP]); R.add(K.box(0.02, rr * 0.5, 0.02), S.rubber, [side * (ww * 0.42 + 0.09), rr * 0.25, 0]); }
+        if (w.ctis && K.DET === 2) { R.add(K.cyl(0.03, 0.03, 0.12, 6), S.steel, [side * (ww * 0.42 + 0.06), 0, 0], [0, 0, HP]); }
       }
       const x = side * w.x;
       R.build(spin, { shadow: lod < 2, off: [x, rr, w.z] });
@@ -345,6 +345,8 @@ function buildLKW(lod, S, K, team) {
   if (lod < 2) { B.add(cyl(0.5, 0.5, 0.3, seg), S.rubber, [0, 1.75, -1.85], [0, 0, HP]); B.add(cyl(0.28, 0.28, 0.32, seg), paint, [0, 1.75, -1.85], [0, 0, HP]); }
   // Ladefläche, Bordwände, Plane, Längsbänke
   cargoBed(K, B, S, paint, 1.2, 1.38, 0.62, -1.68, 4.42, lod);
+  B.add(box(1.5, 0.22, 6.0), S.dark, [0, 1.23, 1.37]);                                               // Hilfsrahmen unter der Pritsche
+  if (lod < 2) for (let i = 0; i < 9; i++) B.add(box(2.36, 0.1, 0.1), S.dark, [0, 1.29, -1.5 + i * 0.73]);   // Querträger
   canvasCover(K, B, S, 1.23, 1.98, 3.25, -1.7, 4.42, lod);
   for (const sx of [-1, 1]) bench(K, B, S, sx * 0.95, 1.38, -1.5, 2.25, lod);
   if (lod < 2) {
@@ -591,7 +593,7 @@ function buildSPW(lod, S, K, team) {
   hullShell(K, B, paint, [[2.95, 0.72], [3.08, 1.22], [-3.15, 1.25], [-3.18, 0.72]], 1.75, lod, { r: 0.02, rs: 0.02 });
   const upper = (x) => {
     // Seitenplatte oben (geneigt), als dünnes Profil je Seite
-    B.add(K.sideExtrude([[1.2, 1.25], [-3.16, 1.25], [-3.16, 1.95], [1.0, 1.95], [1.6, 1.78], [1.6, 1.25]], 0.04), paint, [x, 0, 0], [0, 0, -Math.sign(x) * 0.22]);
+    B.add(K.sideExtrude([[1.2, 1.25], [-3.16, 1.25], [-3.16, 1.95], [1.0, 1.95], [1.6, 1.78], [1.6, 1.25]], 0.04), paint, [x + Math.sign(x) * 0.27, 0.03, 0], [0, 0, Math.sign(x) * 0.22]); // nach innen geneigt, Unterkante bei |x| = 1
   };
   for (const sx of [-1, 1]) upper(sx * 1.0);
   // Motorhaube (keilförmig, Lüftungsklappen), Fahrerhaus-Front mit Sehklappen
@@ -623,7 +625,7 @@ function buildSPW(lod, S, K, team) {
   }
   for (const L of D.lights) guardedLamp(K, B, S, L, 0.08, lod, { guard: false });
   if (lod === 0 && DET === 2) {
-    for (const sx of [-1, 1]) for (const y of [1.3, 1.9]) for (let i = 0; i < 12; i++) B.add(cyl(0.013, 0.015, 0.016, 6), paint, [sx * (y > 1.5 ? 0.9 : 0.885) + sx * 0.02, y, -2.9 + i * 0.5], [0, 0, HP]);
+    for (const sx of [-1, 1]) for (const y of [1.3, 1.9]) for (let i = 0; i < 8; i++) B.add(cyl(0.013, 0.015, 0.016, 6), paint, [sx * (y > 1.5 ? 0.915 : 1.03), y, -0.6 + i * 0.47], [0, 0, HP]);
   }
   for (const sx of [-1, 1]) B.add(cyl(0.17, 0.17, 0.02, seg), mark, [sx * 0.95, 1.55, 1.6], [0, 0, sx * 1.35]);
   const tracks = halfTrack(K, B, S, paint, hull, TR, lod);

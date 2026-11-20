@@ -125,7 +125,6 @@ export function buildLP21(lod, S, team, K) {
     for (const sx of [-1, 1]) weld(K, B, paint, [[sx * 1.46, 1.46, -2.1], [sx * 1.46, 1.47, 2.95]], lod);
   }
   if (lod === 0) { B.add(box(0.05, 0.08, 1.2), S.wood, [-1.05, 1.5, -0.6]); B.add(box(0.22, 0.02, 0.28), S.dark, [-1.05, 1.5, 0.05]); }
-  for (const sx of [-1, 1]) B.add(cyl(0.17, 0.17, 0.02, seg), mark, [sx * 1.555, 0.78, 1.9], [0, 0, HP]);
   runningGear(K, B, S, paint, hull, lod, W, {
     roadZ: D.roadZ, roadR: W.radius, ret: { y: 0.8, r: 0.075, z: [-1.4, 0, 1.4] }, trackW: 0.46,
     front: { z: -2.9, y: 0.52, r: 0.26 }, back: { z: 2.92, y: 0.58, r: 0.28, sprocket: true, teeth: 11 },
@@ -217,7 +216,7 @@ export function buildWK2L(lod, S, team, K) {
     if (lod === 0) for (let i = 0; i < 6; i++) B.add(box(1.15, 0.03, 0.04), paint, [0, 1.52, 1.02 + i * 0.13]);
     // Nieten: Bugplatte, Seiten, Aufbaukanten
     for (const y of [1.47, 1.08]) rivetRow(K, B, paint, [-0.85, y, y > 1.3 ? -1.56 : -2.0], [0.85, y, y > 1.3 ? -1.56 : -2.0], 9, lod, 'z');
-    for (const sx of [-1, 1]) for (const y of [0.88, 1.45]) rivetRow(K, B, paint, [sx * 1.005, y, -1.85], [sx * 1.005, y, 1.85], 14, lod, 'x');
+    for (const sx of [-1, 1]) { rivetRow(K, B, paint, [sx * 1.005, 0.88, -1.85], [sx * 1.005, 0.88, 1.85], 14, lod, 'x'); rivetRow(K, B, paint, [sx * 1.005, 1.42, -1.3], [sx * 1.005, 1.42, 1.75], 11, lod, 'x'); }
   }
   for (const L of D.lights) guardedLamp(K, B, S, L, 0.08, lod, { guard: false });
   for (const sx of [-1, 1]) B.add(cyl(0.15, 0.15, 0.02, seg), mark, [sx * 1.005, 1.22, 0.6], [0, 0, HP]);
@@ -330,8 +329,7 @@ export function buildWK2S(lod, S, team, K) {
   if (lod < 2) {
     T.add(cyl(0.29, 0.29, 0.04, seg), S.dark, [0.55, 0.88, 0.62]);                // Ladeschützenluke (Ring)
     T.add(box(0.14, 0.12, 0.14), S.dark, [-0.35, 0.86, -0.85]);                    // Winkelspiegel des Richtschützen
-    for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) T.add(box(0.025, 0.1, 0.3), S.dark, [sx * 1.08, 0.52, 0.4 + k * 0.55]); // Haltebügel Ersatzglieder
-    if (lod === 0) for (const sx of [-1, 1]) spareLinks(K, T, S, [sx * 1.14, 0.48, 0.25], 4, 0.6, 0.16, [0, 0, HP - sx * 0.36], lod, [0, 0, 1]);
+    for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) T.add(box(0.04, 0.05, 0.05), S.dark, [sx * 1.19, 0.6, 0.4 + k * 0.55]); // Haltebügel
     T.add(box(0.5, 0.1, 0.3), paint, [0, 0.9, 1.7]);                              // Lüfter
     antenna(K, T, S, [0.9, 0.82, 1.6], lod === 0 ? 2.0 : 1.3, lod);
     if (HQ) { weld(K, T, paint, [[-0.82, 0.85, -1.36], [0.82, 0.85, -1.36]], lod, 0.014); for (const sx of [-1, 1]) weld(K, T, paint, [[sx * 1.1, 0.84, -0.8], [sx * 1.12, 0.84, 1.6]], lod, 0.014); }
@@ -481,7 +479,7 @@ export function buildMTW(lod, S, team, K) {
       jerrycan(K, B, paint, S, [sx * 1.0, 1.4, 2.72], 0, lod);
       if (lod === 0) for (const z of [-0.6, 0.6, 1.8]) B.add(box(0.03, 0.05, 0.3), S.dark, [sx * 1.32, 1.65, z]);
     }
-    B.add(box(0.05, 0.08, 1.2), S.wood, [-1.33, 1.25, 0.2]);
+    B.add(box(0.05, 0.08, 1.2), S.wood, [-1.33, 1.6, -0.75]);
     for (const sx of [-1, 1]) B.add(box(0.12, 0.08, 0.04), S.rearLamp, [sx * 1.15, 1.6, 2.63]);
   }
   for (const L of D.lights) guardedLamp(K, B, S, L, 0.075, lod);

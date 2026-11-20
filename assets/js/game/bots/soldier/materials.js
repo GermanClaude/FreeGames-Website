@@ -594,8 +594,8 @@ vec4 npTri( sampler2D t, vec3 p, vec3 w, float sc ) {
 	return texture2D( t, p.zy * sc ) * w.x + texture2D( t, p.xz * sc ) * w.y + texture2D( t, p.xy * sc ) * w.z;
 }
 // Bildschirm-Ableitungs-Relief (Höhe in Metern) → Normale (wie three.js bumpmap, ohne Textur)
-vec3 npBump( vec3 n, float h ) {
-	vec3 dpx = dFdx( -vViewPosition ), dpy = dFdy( -vViewPosition );
+vec3 npBump( vec3 n, float h, vec3 vp ) {
+	vec3 dpx = dFdx( vp ), dpy = dFdy( vp );
 	float dhx = dFdx( h ), dhy = dFdy( h );
 	vec3 r1 = cross( dpy, n ), r2 = cross( n, dpx );
 	float det = dot( dpx, r1 );
@@ -737,7 +737,7 @@ const NORMAL = /* glsl */`
 	{
 		float sdH = sdSeamH;
 		if ( sdCls == 0 || sdCls == 4 ) sdH += ( sdOrm.r - 0.7 ) * 0.00035 * ( 1.0 - sdUvOk ) * vNp.y;
-		if ( sdH != 0.0 ) normal = npBump( normal, sdH );
+		if ( sdH != 0.0 ) normal = npBump( normal, sdH, -vViewPosition );
 	}
 #endif
 `;
