@@ -3421,3 +3421,5 @@ body.np-ui-zoomed .h-capture, body.np-ui-zoomed .h-death, body.np-ui-zoomed .h-m
 body.np-tv .h-root { --pad-l: max(3vw, env(safe-area-inset-left)); --pad-r: max(3vw, env(safe-area-inset-right)); --pad-t: max(3vh, env(safe-area-inset-top)); --pad-b: max(3vh, env(safe-area-inset-bottom)); }
 body.np-tv .m-screen { --mp-l: max(3vw, env(safe-area-inset-left)); --mp-r: max(3vw, env(safe-area-inset-right)); --mp-t: max(3vh, env(safe-area-inset-top)); --mp-b: max(3vh, env(safe-area-inset-bottom)); }
 body.np-tv .m-screen :is(button, [tabindex="0"], input, select):focus-visible { outline-width: 4px; }
+/* Touch-Knöpfe der Infanteriesimulation (engine/input.js .tc-sim-*): kurze Beschriftung statt Symbol */
+#touch-ui .tc-btn[class*="tc-sim-"] .tc-fm { font: 700 9px/1 var(--np-font-mono, monospace); letter-spacing: .04em; color: var(--np-ink); white-space: nowrap; }

@@ -197,7 +197,7 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     const cab = pz > G.zA0 - 0.1 && pz < G.zC0 + 0.05 ? 1 : 0;
     let h = 0.42 + 0.34 * smooth(0.5, 1.25, py) + 0.1 * cab + (fireFront ? 0.16 : -0.06) * (pz < G.zA0 ? 1 : 0) + (fireFront ? -0.08 : 0.04) * (pz > G.zC0 ? 1 : 0);
     h -= 0.3 * smooth(1.85, 2.35, Math.abs(pz)) * (1 - smooth(0.85, 1.05, py)); // Enden kühler
-    h -= 0.26 * (1 - smooth(0.3, 0.6, py));                                        // Schweller/Unterkante kühler
+    h -= 0.16 * (1 - smooth(0.3, 0.6, py)) * (0.4 + vnoise(px * 2.2, o, pz * 2.2));   // Schweller/Unterkante kühler (fleckig)
     h += (vnoise(px * 1.7 + o, py * 1.7, pz * 1.7) - 0.5) * 0.5 + (vnoise(px * 6 + o, py * 6, pz * 6) - 0.5) * 0.16;
     heatColor(c, h, paint, up, vnoise(px * 9, py * 9 + o, pz * 9));
     // Rußfahnen über den Öffnungen (nur oberhalb der Gürtellinie) und um die Radläufe

@@ -86,7 +86,9 @@ export function grabenLeben(b, ctx, trenches, o = {}) {
       const h = hash01(bx, bz, 700);
       if (h > 0.75) continue;
       const side = hash01(bx, bz, 701) < 0.5 ? -1 : 1;
-      const px = bx + nx * side * (hw - 0.32), pz = bz + nz * side * (hw - 0.32), py = H(px, pz) + 0.07;
+      // platz2 (20.11.): Höhe nicht am Wandfuß abtasten – dort steigt das Höhenfeld schon an, das grobere Geländenetz
+      // nicht (Kisten/Kanister schwebten 0,2–0,65 m über der Grabensohle); tiefster Wert aus Fußpunkt und Grabenmitte
+      const px = bx + nx * side * (hw - 0.4), pz = bz + nz * side * (hw - 0.4), py = Math.min(H(px, pz), fl, H((px + bx) / 2, (pz + bz) / 2)) + 0.03;
       const ry = Math.atan2(nx * side, nz * side) + Math.PI; // lokal +z zur Grabenmitte
       const kind = Math.floor(hash01(bx, bz, 702) * 9);
       if (kind === 0 && Math.sign(nz * side) === enemy) sturmleiter(b, px - nx * side * 0.1, py, pz - nz * side * 0.1, ry, 2.6);
