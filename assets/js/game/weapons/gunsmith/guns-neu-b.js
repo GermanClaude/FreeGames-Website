@@ -205,7 +205,7 @@ export function hornisse(b) {
   b.box('gaBolt', 0.004, 0.009, 0.05, RR - 0.003, AX, -0.06, { part: 'bolt', c: 0.0008 });
   b.cyl('gaSteel', 0.0052, 0.0058, 0.018, RR + 0.009, AX, -0.06, { part: 'bolt', axis: 'x', seg: b.seg(16, 6) });
   b.sphere('gaSteel', 0.0068, RR + 0.019, AX, -0.06, { part: 'bolt', sx: 0.7, seg: b.seg(16, 6), hseg: b.seg(10, 4) });
-  b.anchor('chargeGrab', RR + 0.02, AX, -0.06, { part: 'bolt', data: { style: 'right', travel: [0, 0, 0.0] } });
+  b.anchor('chargeGrab', RR + 0.02, AX, -0.06, { part: 'bolt', data: { style: 'right', travel: [0, 0, 0.06] } });
   b.box('cavity', 0.002, 0.012, 0.034, RR - 0.0004, AX + 0.004, 0.044, { c: 0 });
   b.anchor('ejection', RR + 0.003, AX + 0.004, 0.044, { rz: 0.5 });
   // --- Lauf mit Auflageleiste, Korn mit Tunnel, Klappkimme
