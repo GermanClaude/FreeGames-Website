@@ -125,7 +125,8 @@ const BRANDWALD = {
     mix: { hoch: 0.3, gebrochen: 0.36, stumpf: 0.16, grau: 0.18 },
     // dichtere Haine hinter den Linien, Lichtungen an Flaggen/Bauten
     groves: [[-150, 120, 40, 4], [150, -120, 40, 4], [-40, -130, 30, 3.6], [60, 130, 30, 3.6]],
-    clearings: [[8, 6, 12], [-100, 14, 26], [106, -22, 22]],
+    // platz2 (20.11.): auch um die Wracks – vorher stand ein Baumstamm mitten im ausgebrannten Lastwagen (30/−8)
+    clearings: [[8, 6, 12], [-100, 14, 26], [106, -22, 22], ...WRECKS.map((w) => [w[0], w[1], w[3] === 'lkw' ? 6.5 : 5])],
   },
   // Bodenstreu (je m², Ring um die Kamera): verkohlte Zweige, graue Stöcke, Äste, Rindenstücke, Holzkohle, Steine
   embers: { count: 26, seed: 2115 },   // schwelende Stümpfe/Stämme mit dünnem Rauch

@@ -49,6 +49,15 @@ export function rivet(F, mat, lp, r = 0.009) { F.add(new THREE.SphereGeometry(r,
 /** Schweißnaht (Raupe) entlang Punkten. */
 export function weld(B, mat, pts, r = 0.004) { if (pts.length >= 2) B.tube(mat, pts, r, 4, 28); }
 
+/** Steg (Dach-Prisma ohne Stirnseiten, 4 Dreiecke): Länge l entlang X, Höhe h, Breite w. */
+function ridge(l, h, w) {
+  const x = l / 2, z = w / 2;
+  const P = [-x, 0, -z, x, 0, -z, x, h, 0, -x, 0, -z, x, h, 0, -x, h, 0, -x, h, 0, x, h, 0, x, 0, z, -x, h, 0, x, 0, z, -x, 0, z];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.computeVertexNormals();
+  return g;
+}
 /** Riffelblech: rautenförmige Stege im Wechsel auf einer Fläche y (Kreis R um c oder Rechteck). */
 export function riffle(B, mat, { c = null, R = 0, rect = null, y, det = 2, skip = null }) {
   const s = det > 1 ? 0.05 : 0.08;
@@ -59,7 +68,7 @@ export function riffle(B, mat, { c = null, R = 0, rect = null, y, det = 2, skip 
     if (c && (x - c[0]) ** 2 + (z - c[2]) ** 2 > (R - 0.03) ** 2) continue;
     if (skip && skip(x, z)) continue;
     const ang = ((Math.round((x - x0) / s) + Math.round((z - z0) / s)) % 2 ? 0.55 : -0.55);
-    B.add(box(s * 0.62, 0.0035, s * 0.16), mat, [x, y + 0.0017, z], [0, ang, 0]);
+    B.add(ridge(s * 0.62, 0.0035, s * 0.18), mat, [x, y, z], [0, ang, 0]);
   }
   return k;
 }
@@ -74,7 +83,7 @@ export function seat(B, C, det, pos, yaw, o = {}) {
   const w = o.w || 0.42, d = o.d || 0.4, pad = o.pad || C.pad;
   if (o.folded) {
     // hochgeklappt: Kissen senkrecht an der Wand (lokal +Z = Wand), Scharnierwinkel, Haltegurt
-    F.add(rbox(w, d, 0.075, 0.03, det ? 3 : 1), pad, [0, 0, -0.04]);
+    F.add(rbox(w, d, 0.075, 0.03, det > 1 ? 2 : 1), pad, [0, 0, -0.04]);
     F.add(box(w - 0.04, d - 0.04, 0.012), C.metal, [0, 0, 0.003]);
     for (const sx of [-1, 1]) { F.add(box(0.025, 0.08, 0.05), C.steel, [sx * (w / 2 - 0.05), -d / 2 + 0.02, 0.0]); F.add(cyl(0.012, 0.012, 0.06, 8), C.steel, [sx * (w / 2 - 0.05), -d / 2, 0.01], [0, 0, HP]); }
     if (det) { F.add(box(0.035, d * 0.9, 0.006), C.canvas, [0, 0.01, -0.082]); F.add(box(0.05, 0.03, 0.012), C.steel, [0, -0.12, -0.084]); }
@@ -82,13 +91,13 @@ export function seat(B, C, det, pos, yaw, o = {}) {
   }
   // Kissen: Unterbau + gepolsterte Fläche + Wangen
   F.add(box(w - 0.04, 0.03, d - 0.04), C.metal, [0, -0.07, 0]);
-  F.add(rbox(w, 0.075, d, 0.03, det ? 3 : 1), pad, [0, -0.035, 0]);
+  F.add(rbox(w, 0.075, d, 0.03, det > 1 ? 2 : 1), pad, [0, -0.035, 0]);
   if (det) for (const sx of [-1, 1]) F.add(rbox(0.06, 0.06, d * 0.92, 0.025), pad, [sx * (w / 2 - 0.02), -0.005, 0.01]);
   if (det > 1) F.add(box(w * 0.8, 0.004, 0.006), C.black, [0, 0.003, -d * 0.18]); // Naht
   // Lehne
   if (o.back !== false) {
     const bh = o.backH || 0.42;
-    F.add(rbox(w * 0.96, bh, 0.075, 0.03, det ? 3 : 1), pad, [0, bh / 2 + 0.03, d / 2 + 0.02], [-0.16, 0, 0]);
+    F.add(rbox(w * 0.96, bh, 0.075, 0.03, det > 1 ? 2 : 1), pad, [0, bh / 2 + 0.03, d / 2 + 0.02], [-0.16, 0, 0]);
     F.add(box(w * 0.86, bh * 0.9, 0.02), C.metal, [0, bh / 2 + 0.03, d / 2 + 0.07], [-0.16, 0, 0]);
     if (det) for (const sx of [-1, 1]) F.rod(C.steel, [sx * w * 0.44, -0.06, d / 2 + 0.06], [sx * w * 0.44, bh + 0.02, d / 2 + 0.13], 0.011, 8);
   }
@@ -128,17 +137,18 @@ export function switchUnit(B, C, det, F, { w = 0.1, h = 0.075, era = 'modern', l
   // Schutzbügel (U aus Rundstahl) beidseits des Kipphebels
   if (guard) worn(B, 0.5, () => {
     for (const sx of [-1, 1]) {
-      const x = -0.012 + sx * 0.02;
-      F.rod(C.steel, [x, -0.03, 0.0], [x, -0.03, 0.04], 0.0028, 6);
-      F.rod(C.steel, [x, -0.03, 0.04], [x, 0.03, 0.04], 0.0028, 6);
-      F.rod(C.steel, [x, 0.03, 0.04], [x, 0.03, 0.0], 0.0028, 6);
+      const x = -0.012 + sx * 0.016;
+      F.rod(C.steel, [x, -0.022, 0.0], [x, -0.022, 0.034], 0.002, 5);
+      F.rod(C.steel, [x, -0.022, 0.034], [x, 0.022, 0.034], 0.002, 5);
+      F.rod(C.steel, [x, 0.022, 0.034], [x, 0.022, 0.0], 0.002, 5);
     }
   });
   F.add(cyl(0.01, 0.01, 0.006, 12), C.steel, [-0.012, 0, 0.003], [HP, 0, 0]);       // Hebelfassung
   F.add(tor(0.0095, 0.0025, 4, 12), C.steel, [w / 2 - 0.022, 0.012, 0.004]);      // Fassung des Leuchtmelders
   if (lab && labelKey) lab(labelKey, [0, -h / 2 - 0.016, 0.0], Math.min(0.14, w * 1.25));
-  const lever = new THREE.CylinderGeometry(0.0038, 0.0055, 0.034, 8).translate(0, 0.017, 0);
-  const knob = new THREE.SphereGeometry(0.0068, 8, 6).translate(0, 0.035, 0);
+  // Hebel steht aus der Platte heraus (lokal +Z), kippt um X
+  const lever = new THREE.CylinderGeometry(0.0034, 0.005, 0.03, 8).rotateX(HP).translate(0, 0, 0.015);
+  const knob = new THREE.SphereGeometry(0.006, 8, 6).translate(0, 0, 0.031);
   return { leverAt: [-0.012, 0, 0.006], lampAt: [w / 2 - 0.022, 0.012, 0.006], lever: [lever, knob], lamp: cyl(0.0075, 0.0075, 0.008, 12).rotateX(HP) };
 }
 

@@ -18,7 +18,7 @@
 //   • Farbe je Ecke (Vertexfarben × Tönung): Hitzeverlauf – unten/an den Enden Lackreste mit Blasenrand, darüber
 //     schwarzer Ruß, dunkler und heller Rost, auf waagerechten Flächen weißliche Asche; Rußfahnen über den Fenster-
 //     öffnungen und um die Radläufe.
-// Alles läuft über MapBuilder.geom (Material-Eimer der Welt: metal_rust + glass → keine zusätzlichen Draw Calls je
+// Alles läuft über MapBuilder.geom (Material-Eimer der Welt: nur metal_rust → keine zusätzlichen Draw Calls je
 // Wrack, keine neuen Texturen/Sampler). Kollision bleibt beim Aufrufer (einfacher Quader). low → Requisit (props.js).
 //
 // autoWrack(b, x, y, z, ry, { seed, color, style }) – ry wie Requisiten (lokal +z = Front).
@@ -115,8 +115,17 @@ function coil(p, rr, h, n, wire = 0.005) {
 /** Quader mit Unterteilung längs (für Farbverlauf), Mitte (x, y, z). */
 const bar = (w, h, d, x, y, z, seg = 4) => new THREE.BoxGeometry(w, h, d, w > d ? seg : 1, 1, d >= w ? seg : 1).translate(x, y, z);
 
+/** Unterteiltes Pkw-Netz je Form/Stufe zwischengespeichert; jeder Aufruf bekommt eigene Eckpunkte (wird verformt). */
+const SUB = new Map();
+function subOf(st, lv, limit = false) {
+  const k = `${st}:${lv}:${limit}`;
+  if (!SUB.has(k)) { const m = pkwSub(st, lv); SUB.set(k, limit ? toLimit(m) : m); }
+  const m = SUB.get(k);
+  return { ...m, P: Float64Array.from(m.P) };
+}
+
 /** Ausgebranntes Auto; (x, y, z) Boden unter der Mitte, ry wie Requisiten (+z = Front). */
-export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style = null } = {}) {
+export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style = null, ground = null } = {}) {
   const r = rng(Math.abs(seed) * 1000 + 7);
   const st = style ?? Math.floor(r() * 3);
   const look = b.lookQuality || b.quality || 'high';
@@ -131,9 +140,13 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   const RIM = 0.2, WX = 0.8, WZ = [-1.38, 1.43];
   const missing = r() < 0.4 ? Math.floor(r() * 4) : -1;
   const wheels = [];
+  // ground(wx, wz): Geländehöhe (Welt) – unebener Boden: jede Felge liegt auf, die Karosserie folgt der Ebene durch die
+  // vier Auflagen (vorher schwebte ein Wrack auf einer Kuppe mit einer Achse in der Luft)
+  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const gAt = (lx, lz) => (ground ? ground(x + lx * cy + lz * sy, z - lx * sy + lz * cy) - y : 0);
   for (let i = 0; i < 4; i++) {
-    const sx = i % 2 ? 1 : -1, wz = WZ[i >> 1], hub = i === missing ? 0.145 : RIM;
-    wheels.push({ sx, wz, hub, gone: i === missing, dy: hub - 0.32 - (0.02 + r() * 0.025) });
+    const sx = i % 2 ? 1 : -1, wz = WZ[i >> 1], g = gAt(sx * WX, wz), hub = g + (i === missing ? 0.145 : RIM);
+    wheels.push({ sx, wz, hub, g, gone: i === missing, dy: hub - 0.32 - (0.02 + r() * 0.025) });
   }
   const avg = (f) => wheels.filter(f).reduce((s, w) => s + w.dy, 0) / 2;
   const gx = (avg((w) => w.sx > 0) - avg((w) => w.sx < 0)) / (2 * WX);
@@ -150,12 +163,12 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   };
 
   // ---- Karosserie: Netz verformen (Dellen, Dach, Hitzewellen) – Form und Kanten bleiben
-  const M = pkwSub(st, LV), P = M.P, VN = vertexNormals(M), nV = P.length / 3;
+  const M = subOf(st, LV), P = M.P, VN = vertexNormals(M), nV = P.length / 3;
   const dents = [];
   for (let k = 0, n = 3 + Math.floor(r() * 4); k < n; k++) {
     const side = r() < 0.5 ? -1 : 1, zz = lerp(-2.2, 2.2, r());
     const yy = Math.abs(zz) > 2.05 ? lerp(0.45, 0.75, r()) : lerp(0.4, 0.85, r());
-    dents.push({ p: [side * 0.9, yy, zz], R: 0.14 + r() * 0.26, d: 0.015 + r() * 0.045 });
+    dents.push({ p: [side * 0.9, yy, zz], R: 0.28 + r() * 0.3, d: 0.01 + r() * 0.025 }); // flach und weit: kleine tiefe Dellen wirkten mit den harten Normalen wie Schlitze
   }
   const sag = 0.035 + r() * 0.07;
   for (let i = 0; i < nV; i++) {
@@ -180,7 +193,7 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     const [cx, cy, cz] = cen(f), t = M.F[f];
     if (shell.has(t) && cz < G.zA0 - 0.015 && cy > 0.66 && FN[f * 3 + 1] > 0.3 && Math.abs(cx) < 0.8 * SH.wt(cz)) isHood[f] = 1;
     // Glasreste: gesplitterter Streifen an der Unterkante der Scheiben
-    if (t === TAG.GLASS && Math.abs(cx) > 0.55 && cy < SH.ys(clamp(cz, -2.3, 2.3)) + 0.075 && vhash(cx * 31 + o, cy * 17, cz * 23) < 0.45) isShard[f] = 1;
+    if (t === TAG.GLASS && Math.abs(cx) > 0.55 && cy < SH.ys(clamp(cz, -2.3, 2.3)) + 0.05 && vhash(cx * 31 + o, cy * 17, cz * 23) < 0.35) isShard[f] = 1;
   }
   // Ruß: Ecken an Scheibenöffnungen (Flammen schlagen aus den Fenstern) und an den Radläufen (Reifenbrand)
   const soot = new Float32Array(nV);
@@ -217,7 +230,7 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   const outer = toGeometry(M, (f) => shell.has(M.F[f]) && !isHood[f], { normals: CN, attrs });
   const hoodO = toGeometry(M, (f) => shell.has(M.F[f]) && isHood[f], { normals: CN, attrs });
   // Innenhaut (dünnes Blech): verkohlt/rostig; auf Stufe 2 aus der gröberen Stufe (auf die Grenzfläche gezogen)
-  const Mi = LV >= 2 ? toLimit(pkwSub(st, 1)) : M;
+  const Mi = LV >= 2 ? subOf(st, 1, true) : M;
   const inCol = new Float32Array((Mi.P.length / 3) * 3);
   for (let v = 0; v < Mi.P.length / 3; v++) {
     const n1 = vnoise(Mi.P[v * 3] * 4 + o, Mi.P[v * 3 + 1] * 4, Mi.P[v * 3 + 2] * 4);
@@ -233,7 +246,10 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   const FNi = Mi === M ? FN : faceNormals(Mi).N;
   const hoodI = (f) => { const [cx, cy, cz] = cenI(f); return cz < G.zA0 - 0.015 && cy > 0.66 && FNi[f * 3 + 1] > 0.3 && Math.abs(cx) < 0.8 * SH.wt(cz); };
   const off = LV >= 2 ? 0.016 : 0.012;
-  const inner = toGeometry(Mi, (f) => shell.has(Mi.F[f]) && !hoodI(f), { normals: CNi, attrs: { color: { size: 3, perVertex: inCol } }, offset: off, flip: true });
+  // an den Radlauf-Wülsten liegt die gröbere Innenhaut zu nah an der Außenhaut und stieß als dunkle Schlitze durch
+  // (wie carbody.finishBody: dort keine Innenhaut)
+  const nearArch = (f) => { const [, cy2, cz2] = cenI(f); return SH.arches.some((a) => Math.hypot(cz2 - a.z, cy2 - a.y) < 0.72); };
+  const inner = toGeometry(Mi, (f) => shell.has(Mi.F[f]) && !hoodI(f) && !nearArch(f), { normals: CNi, attrs: { color: { size: 3, perVertex: inCol } }, offset: off, flip: true });
   const hoodIn = toGeometry(Mi, (f) => shell.has(Mi.F[f]) && hoodI(f), { normals: CNi, attrs: { color: { size: 3, perVertex: inCol } }, offset: off, flip: true });
   // Fugen (Türen, Haube, Klappe) als dunkle Spalte
   const seams = seamGeometry(M, null, LV >= 2 ? 0.006 : 0.009, 0.0016, VN);
@@ -252,8 +268,9 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   // Glasreste (Sicherheitsglas gesplittert, verrußt)
   if (isShard.some((v) => v)) {
     const sh = toGeometry(M, (f) => isShard[f] === 1, { normals: CN });
-    colorize(sh, (cc, px, py, pz) => cc.setRGB(0.1, 0.11, 0.1).lerp(C.ash, vnoise(px * 20, py * 20, pz * 20) * 0.35));
-    place(sh, 'glass', '#5a605c');
+    // als verrußtes Glas auf dem Rost-Material (das Welt-Glas spiegelte den Himmel → leuchtend blaue Streifen)
+    colorize(sh, (cc, px, py, pz) => cc.setRGB(0.025, 0.03, 0.028).lerp(C.ash, vnoise(px * 20, py * 20, pz * 20) * 0.15));
+    place(sh);
   }
 
   // ---- Innenraum, Motorraum, Unterboden (Stahl, rostig/aschig)
@@ -298,11 +315,11 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   for (const s of [-1, 1]) parts.push(bar(0.2, 0.32, 0.22, s * 0.6, 0.72, WZ[0], 2), bar(0.18, 0.26, 0.2, s * 0.6, 0.7, WZ[1], 2));
   // Querträger statt Stoßfänger: vorn einseitig abgerissen (hängt schräg), hinten verbogen
   const hang = r() < 0.6 ? 1 : 0;
-  parts.push(bar(1.32, 0.11, 0.08, 0, 0.45, -2.27, 8).rotateZ(hang ? 0.12 * (r() < 0.5 ? -1 : 1) : 0));
-  parts.push(bar(1.3, 0.1, 0.08, 0, 0.47, 2.27, 8));
-  for (const s of [-1, 1]) parts.push(bar(0.07, 0.07, 0.24, s * 0.55, 0.47, 2.15, 1), bar(0.07, 0.07, 0.24, s * 0.55, 0.45, -2.15, 1));
+  parts.push(bar(1.08, 0.11, 0.08, 0, 0, 0, 8).rotateZ(hang ? 0.1 * (r() < 0.5 ? -1 : 1) : 0).translate(0, 0.45, -2.18));
+  parts.push(bar(1.08, 0.1, 0.08, 0, 0.47, 2.18, 8));
+  for (const s of [-1, 1]) parts.push(bar(0.07, 0.07, 0.2, s * 0.45, 0.47, 2.06, 1), bar(0.07, 0.07, 0.2, s * 0.45, 0.45, -2.06, 1));
   // Lampentöpfe (Reflektorschalen ohne Glas)
-  for (const s of [-1, 1]) parts.push(new THREE.CylinderGeometry(0.075, 0.06, 0.08, 10, 1, true).rotateX(HP).translate(s * 0.6, 0.65, -2.25));
+  for (const s of [-1, 1]) parts.push(new THREE.CylinderGeometry(0.075, 0.06, 0.08, 10, 1, true).rotateX(HP).translate(s * 0.56, 0.65, -2.16));
   // Unterboden: Bodenblech mit Ascheschicht (Innenraum), Längsträger, Abgasstrang mit Topf, Tank
   const floor = new THREE.PlaneGeometry(1.5, 4.1, 6, 16).rotateX(-HP).translate(0, 0.37, 0.12);
   colorize(floor, (cc, px, py, pz) => { const n1 = vnoise(px * 3 + o, 0, pz * 3), n2 = vnoise(px * 12, o, pz * 12); cc.copy(C.char).lerp(C.ash, smooth(0.35, 0.8, n1) * 0.85).lerp(C.rustD, smooth(0.7, 0.95, n2) * 0.6); });
@@ -333,8 +350,8 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     wheelParts.push(tube([[xo - w.sx * 0.1, hub - 0.05, w.wz], [w.sx * 0.35, 0.24 + lift(w.sx * 0.35, w.wz), w.wz - 0.15]], 0.016, 4, 1));
     if (w.gone) {
       // Felge abgefallen: liegt flach neben dem Wagen
-      const lr = rot(steelRim(RIM, { holes: 6, seg: 16 })).rotateZ(HP * w.sx).translate(w.sx * 1.32, 0.02, w.wz + 0.35);
-      lost.push(lr, new THREE.CylinderGeometry(RIM * 0.98, RIM * 0.98, 0.15, 18, 1, true).translate(w.sx * 1.32, 0.09, w.wz + 0.35));
+      const lr = rot(steelRim(RIM, { holes: 6, seg: 16 })).rotateZ(HP * w.sx).translate(w.sx * 1.32, 0.02 + gAt(w.sx * 1.32, w.wz + 0.35), w.wz + 0.35);
+      lost.push(lr, new THREE.CylinderGeometry(RIM * 0.98, RIM * 0.98, 0.15, 18, 1, true).translate(w.sx * 1.32, 0.09 + gAt(w.sx * 1.32, w.wz + 0.35), w.wz + 0.35));
       continue;
     }
     wheelParts.push(rot(steelRim(RIM, { holes: 6, seg: 18 })).translate(xo + w.sx * 0.02, hub, w.wz));
@@ -344,7 +361,7 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
     for (let k = 0; k < 2; k++) {
       const R0 = 0.27 + r() * 0.03, t = new THREE.TorusGeometry(R0, 0.004, 3, 26).rotateY(HP);
       const tp = t.attributes.position;
-      for (let i = 0; i < tp.count; i++) { const yy = tp.getY(i), zz = tp.getZ(i); tp.setXYZ(i, tp.getX(i) + (vnoise(zz * 8, yy * 8, k + o) - 0.5) * 0.05, yy < 0 ? yy * (hub / R0) : yy * (0.85 + 0.15 * vnoise(zz * 5, k, o)), zz); }
+      for (let i = 0; i < tp.count; i++) { const yy = tp.getY(i), zz = tp.getZ(i); tp.setXYZ(i, tp.getX(i) + (vnoise(zz * 8, yy * 8, k + o) - 0.5) * 0.05, yy < 0 ? yy * ((hub - w.g) / R0) : yy * (0.85 + 0.15 * vnoise(zz * 5, k, o)), zz); }
       wheelParts.push(t.translate(xo - w.sx * (0.02 + k * 0.08), hub, w.wz));
     }
   }

@@ -176,7 +176,7 @@ export function landschaft(b, ctx, def) {
       if (!free(x, z, 3) || roadDist(x, z) < 1.2) continue;
       hf.normalAt(x, z, n);
       if (n.y < 0.96) continue;
-      burntWreck(b, x, gy(x, z) - 0.08, z, Math.atan2(ux, uz) + (hash01(x, z, 611) - 0.5) * 0.8, 'pkw', Math.round(x * 3 + z));
+      burntWreck(b, x, gy(x, z) - 0.08, z, Math.atan2(ux, uz) + (hash01(x, z, 611) - 0.5) * 0.8, 'pkw', Math.round(x * 3 + z), gy);
       stats.wracks++;
     }
   }

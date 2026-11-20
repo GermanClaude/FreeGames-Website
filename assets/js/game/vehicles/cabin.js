@@ -227,7 +227,7 @@ function atlas() {
   plate('w_funk2', 'black', 'ANTENNENWAHL', 'A1 vorn · A2 hinten', 192, 52);
   // Schilder der Bedienteile (Simulation)
   for (const [k, t1, t2] of [['p_batterie', 'BATTERIE', 'EIN – AUS'], ['p_anlasser', 'ANLASSER', 'Vorglühen – Start'], ['p_licht', 'INNENLICHT', 'Gefecht · Arbeit · Aus'],
-    ['p_bremse', 'FESTSTELLBREMSE', 'Knopf drücken – lösen'], ['p_waffe', 'HAUPTSCHALTER WAFFE', 'Scharf – Gesichert'], ['p_antrieb', 'TURMANTRIEB', 'Elektrisch – Hand'],
+    ['p_bremse', 'FESTSTELLBREMSE', 'Knopf drücken – lösen'], ['p_waffe', 'WAFFE', 'Scharf – Gesichert'], ['p_antrieb', 'TURMANTRIEB', 'Elektrisch – Hand'],
     ['p_laser', 'LASER-EM', 'Messen'], ['p_wahl', 'MUNITIONSWAHL', 'Ladeschütze'], ['p_funk', 'FUNK', 'Senden – Empfang'], ['p_sicherung', 'SICHERUNG', 'Gesichert – Feuer']]) plate(k, 'black', t1, t2, 192, 48);
   put('streifen', 256, 32, (g2, w, h) => {
     g2.fillStyle = '#d8b021'; g2.fillRect(0, 0, w, h);
@@ -609,7 +609,7 @@ function cabinMats(S) {
     prism: std('prisma', { color: 0x203036, roughness: 0.05, metalness: 0.6, emissive: 0xffffff, emissiveMap: prismTex(), emissiveIntensity: 1.0, envMapIntensity: 1.5 }),
     lens: std('linse', { color: 0x071214, roughness: 0.04, metalness: 0.9, emissive: 0x0c2a30, emissiveIntensity: 0.8 }),
     lampRed: std('lampe-rot', { color: 0x3a0806, emissive: 0xff2a14, emissiveIntensity: 3.2, roughness: 0.3 }),
-    lampGreen: std('lampe-gruen', { color: 0x06200a, emissive: 0x3cff5a, emissiveIntensity: 2.4, roughness: 0.3 }),
+    lampGreen: std('lampe-gruen', { color: 0x06200a, emissive: 0x3cff5a, emissiveIntensity: 1.6, roughness: 0.3 }),
     lampAmber: std('lampe-gelb', { color: 0x2a1a04, emissive: 0xffa21c, emissiveIntensity: 2.4, roughness: 0.3 }),
     disp: std('anzeige', { color: 0x0a1a0c, emissive: 0x52d070, emissiveIntensity: 0.55, roughness: 0.3 }),
     lampOff: std('lampe-aus', { color: 0x221a18, roughness: 0.25, metalness: 0.2 }),
@@ -1588,7 +1588,7 @@ function buildTemplate(D, C, det) {
   const info = { lamps: [], screens: {}, partNames: [], driverEye: null };
   const A = anchorsOf(D);
   cab_sw = [];
-  TESS = det >= 2 ? 0.075 : det === 1 ? 0.13 : 0;
+  TESS = det >= 2 ? 0.1 : det === 1 ? 0.16 : 0;
   const t = buildTurret(D, C, det, era, info, A);
   const hull = new THREE.Group();
   hull.name = 'cabin:wanne';
@@ -1729,7 +1729,7 @@ export function attachCabin(model, D, S, quality = 'high') {
  * Kampfraum der Wanne ohne Lampenschatten). Grundnetze werden vorher unterteilt (nur einmal je Geometrie).
  */
 function prepareBake(cab, model, tpl) {
-  const tess = cab.det >= 2 ? 0.075 : 0.13;
+  const tess = cab.det >= 2 ? 0.1 : 0.16;
   const M = model;
   // Rohr für die Lage auf 0 stellen (Rohrteile im Turmraum), danach zurück
   const gunRx = M.gun ? M.gun.rotation.x : 0, gunPz = M.gun ? M.gun.position.z : 0;
@@ -1951,7 +1951,7 @@ export function syncCabin(cab, v, dt, ctx = {}) {
   CAB_U.uCabSun.value = ctx.hatchOpen ? 0.35 : 0.08;
   CAB_U.uCabAmb.value = ctx.hatchOpen ? 0.5 : 0.26;
   // Licht backen (schrittweise, Zeitbudget je Bild – bei langsamen Bildern mehr, damit es nicht ewig dauert)
-  if (cab.bake && !cab.bake.done) cab.bake.step(clamp(dt * 250, 6, 220));
+  if (cab.bake && !cab.bake.done) cab.bake.step(dt > 0.5 ? 8000 : clamp(dt * 250, 8, 60));
 }
 
 /** Hülse aus dem Verschluss (Lage im Turmgruppenraum), fliegt nach hinten unten, rollt aus. */

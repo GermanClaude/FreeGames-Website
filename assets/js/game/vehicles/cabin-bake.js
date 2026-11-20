@@ -25,16 +25,22 @@ export function tessellate(geom, maxLen) {
   let need = false;
   const L2 = maxLen * maxLen;
   const d2 = (i, j) => { const dx = P.getX(i) - P.getX(j), dy = P.getY(i) - P.getY(j), dz = P.getZ(i) - P.getZ(j); return dx * dx + dy * dy + dz * dz; };
-  for (let t = 0; t < n && !need; t += 3) if (d2(t, t + 1) > L2 || d2(t + 1, t + 2) > L2 || d2(t + 2, t) > L2) need = true;
+  const _u = new THREE.Vector3(), _w = new THREE.Vector3(), _o = new THREE.Vector3();
+  for (let t = 0; t < n && !need; t += 3) if (d2(t, t + 1) > L2 || d2(t + 1, t + 2) > L2 || d2(t + 2, t) > L2) {
+    _o.fromBufferAttribute(P, t); _u.fromBufferAttribute(P, t + 1).sub(_o); _w.fromBufferAttribute(P, t + 2).sub(_o);
+    if (_u.cross(_w).length() / 2 >= L2 * 0.3) need = true;
+  }
   if (!need) return null;
   const out = names.map(() => []);
   const vtx = (i) => src.map((a) => { const s = a.itemSize, r = new Array(s); for (let k = 0; k < s; k++) r[k] = a.array[i * s + k]; return r; });
   const mid = (A, B) => A.map((a, j) => a.map((x, k) => (x + B[j][k]) / 2));
   const len2 = (A, B) => { const a = A[0], b = B[0]; return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2; };
+  const area = (A, B, C) => { const a = A[0], b = B[0], c = C[0]; const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; return Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 2; };
   const emit = (A) => { for (let j = 0; j < out.length; j++) for (const x of A[j]) out[j].push(x); };
   const split = (A, B, C, depth) => {
     const ab = len2(A, B), bc = len2(B, C), ca = len2(C, A), mx = Math.max(ab, bc, ca);
-    if (mx <= L2 || depth > 12) { emit(A); emit(B); emit(C); return; }
+    // nur große Flächen teilen (lange, schmale Dreiecke von Rohren/Kanten bleiben)
+    if (mx <= L2 || area(A, B, C) < L2 * 0.3 || depth > 12) { emit(A); emit(B); emit(C); return; }
     // längste Kante halbieren (keine T-Stöße innerhalb eines Dreiecks; Kanten zwischen Dreiecken teilen sich gleich)
     if (mx === ab) { const M = mid(A, B); split(A, M, C, depth + 1); split(M, B, C, depth + 1); }
     else if (mx === bc) { const M = mid(B, C); split(A, B, M, depth + 1); split(A, M, C, depth + 1); }

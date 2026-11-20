@@ -209,7 +209,7 @@ function flakstellungen(b, ctx) {
   }
   // Kriegsspuren: abgestürztes Schulflugzeug neben der Bahn, ausgebrannte Lkw am Rollweg
   { const x = 215, z = 76, y = hf.heightAt(x, z); schulflugzeug(b, x, z, 2.2, { y: y - 0.35, tint: '#2e2a26', akzent: '#3a3430', open: true }); b.decal(x, y + 0.03, z, 16, 14, 'soot', { opacity: 0.85 }); b.decal(x - 3, y + 0.04, z + 2, 10, 8, 'cracks', { opacity: 0.6 }); }
-  for (const [x, z, ry, k] of [[-262, -8, 0.4, 'lkw'], [258, -60, 2.6, 'lkw'], [-120, 70, 1.2, 'pkw']]) burntWreck(b, x, hf.heightAt(x, z), z, ry, k, 7);
+  for (const [x, z, ry, k] of [[-262, -8, 0.4, 'lkw'], [258, -60, 2.6, 'lkw'], [-120, 70, 1.2, 'pkw']]) burntWreck(b, x, hf.heightAt(x, z), z, ry, k, 7, (px, pz) => hf.heightAt(px, pz));
   return {};
 }
 

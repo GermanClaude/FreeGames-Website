@@ -1441,7 +1441,11 @@ function palletStackSmall(b, x, z) {
 /** Dekoration einer Dachterrasse (Südkoordinaten). */
 function terraceDeco(b, M, h, o) {
   const y = h.roofY + 0.025;
-  for (const [x, z] of o.pots || []) pot(b, x, y, M.z(z), { r: 0.3, h: 0.5, plant: b.rand() < 0.4 ? 'flowers' : 'bush' });
+  // platz2 (20.11.): Töpfe ≥ 1 m von der Brüstung (Busch ragte durch die Brüstung) – und nicht auf dem Antennenfuß
+  // (Nord-EP3: Topf und Antenne standen auf demselben Punkt 35,8/−41,2; die Prüfung meldete den Topf „ohne Untergrund“)
+  const zlo = Math.min(h.z0, h.z1) + 1.0, zhi = Math.max(h.z0, h.z1) - 1.0, xlo = h.x0 + 1.0, xhi = h.x1 - 1.0;
+  const potsW = (o.pots || []).map(([x, z]) => [Math.min(xhi, Math.max(xlo, x)), Math.min(zhi, Math.max(zlo, M.z(z)))]);
+  for (const [x, z] of potsW) pot(b, x, y, z, { r: 0.3, h: 0.5, plant: b.rand() < 0.4 ? 'flowers' : 'bush' });
   if (o.tank) waterTank(b, o.tank[0], y, M.z(o.tank[1]));
   if (o.parasol) parasol(b, o.parasol[0], M.z(o.parasol[1]), { y, r: 1.3, tint: b.pick(['#ffffff', '#f2e6d0']) });
   for (const [x, z] of o.chairs || []) chair(b, x, M.z(z), { y, ry: b.rand() * Math.PI * 2, tint: b.pick(['#2f6f9a', '#3c7a5a', '#c8402f']), model: true });
@@ -1451,7 +1455,11 @@ function terraceDeco(b, M, h, o) {
     laundry(b, ax, y + 1.85, M.z(az), bx, y + 1.85, M.z(bz), { n: 4 });
   }
   // Antennen + Satellitenschüssel
-  const ax = h.x0 + 0.8, az = h.z0 + 0.8;
+  // Antenne in die Ecke, die von Töpfen/Tank am weitesten entfernt ist
+  const besetzt = [...potsW, ...(o.tank ? [[o.tank[0], M.z(o.tank[1])]] : [])];
+  const ecken = [[h.x0 + 0.8, h.z0 + 0.8], [h.x1 - 0.8, h.z0 + 0.8], [h.x0 + 0.8, h.z1 - 0.8], [h.x1 - 0.8, h.z1 - 0.8]];
+  const frei = (e) => Math.min(9, ...besetzt.map(([px, pz]) => Math.hypot(px - e[0], pz - e[1])));
+  const [ax, az] = ecken.reduce((best, e) => (frei(e) > frei(best) + 1e-6 ? e : best), ecken[0]);
   b.cyl(ax, y, az, 0.025, 2.2, 'metal_galvanized', { seg: 5, collide: false, minimap: false, ao: false });
   b.box(ax, y + 1.9, az, 1.0, 0.03, 0.03, 'metal_galvanized', { collide: false, minimap: false, ao: false, ry: 0.4 });
 }

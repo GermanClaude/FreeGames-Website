@@ -147,7 +147,7 @@ export function truemmerfeld(b, ctx, o) {
   // zwei ausgebrannte Lastwagen (Deckung, Kollision): feste Plätze, nur wo frei
   for (const [x, z, ry, kind] of o.wracks || []) {
     if (sperr.some(([sx, sz, r]) => Math.hypot(x - sx, z - sz) < r + 3) || near(x, z)) continue;
-    burntWreck(b, x, H(x, z) - 0.1, z, ry, kind, Math.round(x * 7 + z));
+    burntWreck(b, x, H(x, z) - 0.1, z, ry, kind, Math.round(x * 7 + z), H);
   }
   return n;
 }

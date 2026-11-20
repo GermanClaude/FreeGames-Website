@@ -695,8 +695,11 @@ export class MapBuilder {
           // platz2 (20.11.): nur an geschosshohen Pfeilern – auf dem kurzen Brüstungsstück unter einem Fenster saß die
           // Abplatzung direkt unter der Fensterbank und las sich als grauer Klumpen (Grenzland, Gasthaus)
           if (w >= 1.3 && h >= 2 && R() < 0.38) {
-            const sw = Math.min(w * 0.42, 0.5 + R() * 0.4), sh = sw * (0.55 + R() * 0.2), e = R() < 0.5 ? -1 : 1;
-            dec(e * (w / 2 - sw / 2 - 0.03), base + 0.03 + sh / 2, sw, sh, 'chip_stone', 1);
+            const sw = Math.min(w * 0.42, 0.5 + R() * 0.4), sh = sw * (0.55 + R() * 0.2), e = R() < 0.5 ? -1 : 1, yc = base + 0.03 + sh / 2;
+            // nicht neben einer Fensterbrüstung: läuft die Wand hinter der Kante in Abplatzungshöhe weiter (Brüstungsstück
+            // unter einem Fenster), säße die Stelle direkt unter der Fensterbank (Grenzland, Gasthaus: „grauer Klumpen“)
+            const ex = e * (w / 2 + 0.15);
+            if (find(x + tx * ex, y + yc, z + tz * ex) < 0) dec(e * (w / 2 - sw / 2 - 0.03), yc, sw, sh, 'chip_stone', 1);
           }
         } else if (w >= 1.3 && h >= 2 && R() < 0.16) {
           // Obergeschoss: vereinzelt unter dem Gesims an der Kante

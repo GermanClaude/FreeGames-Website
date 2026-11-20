@@ -631,7 +631,7 @@ export function car(b, x, z, o = {}) {
   const L = 4.3, W = 1.8, hatch = o.style === 'hatch';
   const wreck = o.style === 'wreck';
   // Nutzer 14.11.: ausgebranntes Wrack als echte Karosserie (autowrack.js) ab medium; low behält das Requisit
-  if (wreck && b.quality && b.quality !== 'low') {
+  if (wreck && (b.lookQuality || b.quality) && (b.lookQuality || b.quality) !== 'low') {
     autoWrack(b, x, o.y ?? 0, z, o.ry || 0, { seed: Math.abs(x * 0.37 + z * 0.11) + 0.5, color: col });
     f.solid(0, 0, 0, W, 1.42, L, { minimap: 'vehicle', mat: 'hull' });
     b.decal(x, (o.y ?? 0) + 0.01, z, 2.6, 4.6, 'oil', { ry: o.ry || 0, opacity: 0.6 });

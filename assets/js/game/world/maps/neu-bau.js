@@ -271,7 +271,7 @@ function igelGeom(v) {
     const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
     const n1 = hash01(Math.round(x * 6), Math.round(z * 6) + Math.round(y * 6) * 7, 31 + v), n2 = hash01(Math.round(x * 2.5), Math.round(y * 2.5) + Math.round(z * 2.5) * 5, 37 + v);
     c.copy(DARK).lerp(LIGHT, 0.25 + n1 * 0.6);
-    if (n2 > 0.72) c.lerp(PRIMER, 0.5);
+    if (n2 > 0.78) c.lerp(PRIMER, 0.4);
     c.multiplyScalar(0.55 + 0.45 * Math.min(1, y / 0.5));
     col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
   }
@@ -291,7 +291,7 @@ function mergeVerts(list) {
 }
 export function igel(b, x, z, o = {}) {
   const y = o.y ?? 0, ry = o.ry ?? hash01(x, z, 7) * Math.PI;
-  b.geom(igelGeom(Math.floor(hash01(x, z, 8) * 3)), x, y, z, 'metal_rust', { ry, ...VG, tint: '#d8c8b8' });
+  b.geom(igelGeom(Math.floor(hash01(x, z, 8) * 3)), x, y, z, 'metal_rust', { ry, ...VG, tint: '#c4b2a2' });
   b.box(x, y, z, 1.4, 1.1, 1.4, 'black', { ry, visual: false, minimap: 'cover' });
 }
 
