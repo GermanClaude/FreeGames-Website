@@ -252,7 +252,7 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
 
   // ---- Innenraum, Motorraum, Unterboden (Stahl, rostig/aschig)
   const parts = [];
-  const zSeat = st === 2 ? -0.02 : 0.0, zBench = st === 1 ? 1.05 : 0.95;
+  const zSeat = -0.28, zBench = st === 1 ? 0.72 : 0.64;
   const seat = (sx, z0, w, back = true, bench = false) => {
     const hw = w / 2, y0 = 0.5, z1 = z0 + (bench ? 0.5 : 0.5);
     parts.push(tube([[sx - hw, y0, z0], [sx + hw, y0, z0], [sx + hw, y0, z1], [sx - hw, y0, z1], [sx - hw, y0, z0]], 0.011, 4, 1));
@@ -281,13 +281,13 @@ export function autoWrack(b, x, y, z, ry, { seed = 1, color = '#3a3430', style =
   parts.push(tube([[-0.72, 0.84, -0.78], [0.72, 0.84, -0.78]], 0.028, 6, 1));
   parts.push(tube([[-0.4, 0.84, -0.78], [-0.4, 0.55, -0.66]], 0.016, 4, 1), tube([[0.25, 0.84, -0.78], [0.25, 0.55, -0.7]], 0.014, 4, 1));
   const sw = new THREE.Vector3(-0.38, 0.98, -0.5), tilt = -0.42;
-  parts.push(new THREE.TorusGeometry(0.18, 0.011, 4, 18).rotateX(HP + tilt).translate(sw.x, sw.y, sw.z));
-  for (let k = 0; k < 3; k++) { const a = PI / 2 + (k * 2 * PI) / 3; parts.push(tube([[sw.x, sw.y, sw.z], [sw.x + Math.cos(a) * 0.17, sw.y + Math.sin(a) * 0.17 * Math.cos(tilt), sw.z - Math.sin(a) * 0.17 * Math.sin(tilt)]], 0.007, 3, 1)); }
+  parts.push(new THREE.TorusGeometry(0.18, 0.011, 4, 18).rotateX(tilt).translate(sw.x, sw.y, sw.z));
+  for (let k = 0; k < 3; k++) { const a = PI / 2 + (k * 2 * PI) / 3; parts.push(tube([[sw.x, sw.y, sw.z], [sw.x + Math.cos(a) * 0.17, sw.y + Math.sin(a) * 0.17 * Math.cos(tilt), sw.z + Math.sin(a) * 0.17 * Math.sin(tilt)]], 0.007, 3, 1)); }
   parts.push(tube([[-0.38, 0.98, -0.5], [-0.38, 0.85, -0.76], [-0.38, 0.72, -0.95]], 0.022, 5, 1));
   parts.push(bar(0.4, 0.2, 0.22, 0.05, 0.66, -0.86, 2));
   for (const [px, h] of [[-0.5, 0.62], [-0.38, 0.6], [-0.26, 0.6]]) parts.push(tube([[px, 0.8, -0.98], [px, h - 0.1, -0.9], [px, h - 0.14, -0.86]], 0.007, 3, 1), bar(0.07, 0.015, 0.05, px, h - 0.15, -0.86, 1));
   // Motorraum: Block, Getriebe, Kühlerblock (hinter dem verbrannten Grill), Federbeindome
-  parts.push(bar(0.56, 0.42, 0.52, 0.04, 0.6, -1.62, 3), bar(0.36, 0.26, 0.32, -0.1, 0.5, -1.12, 2), bar(0.5, 0.12, 0.42, 0.04, 0.86, -1.62, 2));
+  parts.push(bar(0.56, 0.42, 0.52, 0.04, 0.6, -1.62, 3), bar(0.36, 0.26, 0.32, -0.1, 0.5, -1.12, 2), bar(0.5, 0.06, 0.42, 0.04, 0.81, -1.62, 2));
   parts.push(bar(1.2, 0.42, 0.06, 0, 0.56, -2.12, 6));
   for (const s of [-1, 1]) parts.push(bar(0.2, 0.32, 0.22, s * 0.6, 0.72, WZ[0], 2), bar(0.18, 0.26, 0.2, s * 0.6, 0.7, WZ[1], 2));
   // Querträger statt Stoßfänger: vorn einseitig abgerissen (hängt schräg), hinten verbogen
