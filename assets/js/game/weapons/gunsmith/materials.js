@@ -611,8 +611,9 @@ Object.assign(DEFS, {
   // Optik-Linsen: Mehrschicht-Vergütung als Dünnschicht-Interferenz (grün/violette Reflexe je nach Blickwinkel), Glas fast schwarz
   // visier (14.11.): wieder einseitig – jede Linse zeigt jetzt nach außen (Objektiv nach vorn, Okular nach hinten, parts.js /
   // guns-praezision.js); beidseitig spiegelte die Rückseite des Objektivs ins Rohr und schloss die Durchsicht
-  lens: () => phys({ color: 0x04080b, metalness: 0, roughness: 0.02, envMapIntensity: 2.4, clearcoat: 1, clearcoatRoughness: 0.02, iridescence: 1, iridescenceIOR: 1.85, iridescenceThicknessRange: [220, 460], specularIntensity: 1, emissive: 0x02070b, emissiveIntensity: 1 }),
-  lensClear: () => phys({ color: 0x8fb8d8, metalness: 0.6, roughness: 0.03, transparent: true, opacity: 0.16, depthWrite: false, envMapIntensity: 1.8, iridescence: 0.9, iridescenceIOR: 1.8, iridescenceThicknessRange: [240, 420] }),
+  // gesamt 20.11.: Vergütung dezenter (vorher iridescence 1 bei 220–460 nm → Okular wirkte flächig lila, v. a. in VR)
+  lens: () => phys({ color: 0x04080b, metalness: 0, roughness: 0.02, envMapIntensity: 2.4, clearcoat: 1, clearcoatRoughness: 0.02, iridescence: 0.35, iridescenceIOR: 1.6, iridescenceThicknessRange: [380, 560], specularIntensity: 1, emissive: 0x02070b, emissiveIntensity: 1 }),
+  lensClear: () => phys({ color: 0x8fb8d8, metalness: 0.6, roughness: 0.03, transparent: true, opacity: 0.16, depthWrite: false, envMapIntensity: 1.8, iridescence: 0.45, iridescenceIOR: 1.6, iridescenceThicknessRange: [380, 560] }),
   glass: () => phys({ color: 0x9fd8d0, metalness: 0.4, roughness: 0.04, transparent: true, opacity: 0.18, depthWrite: false, envMapIntensity: 1.4, iridescence: 0.6, iridescenceIOR: 1.6, iridescenceThicknessRange: [260, 400] }),
   // Augenseite durchsichtiger Optiken (visier, 14.11.): Okular von Rotpunkt/Holo/Kampfvisier, zum Auge gerichtet – nur ein Hauch
   // Tönung und kaum Spiegelung, damit man im Anschlag frei durchsieht. Die Außenseite (Objektiv/Frontscheibe) zeigt nach vorn und

@@ -15681,6 +15681,194 @@
      "normalXY": true
     }
    }
+  },
+  "cab_wear": {
+   "type": "texture",
+   "name": "cab_wear",
+   "category": "mask",
+   "surface": "metal",
+   "replaces": [],
+   "sizeM": [
+    0.6,
+    0.6
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#808080",
+    "avgRoughness": 0.5,
+    "avgMetalness": 0,
+    "avgAO": 1,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "ambientcg",
+   "sourceId": "Scratches005, SurfaceImperfections003, PaintedMetal004, Fingerprints002",
+   "maps": [],
+   "scan": "Masken für Gebrauchsspuren im Panzer-Innenraum (ORM-Datei = RGBA, UASTC): R Kratzer (ambientCG Scratches005), G Schlieren/Läufer (SurfaceImperfections003), B Lackabplatzer (PaintedMetal004 Metalness), A Fingerabdrücke (Fingerprints002); Albedo/Normalen nur Platzhalter",
+   "tiers": {
+    "512": {
+     "albedo": "textures/cab_wear/cab_wear_512_albedo.ktx2",
+     "normal": "textures/cab_wear/cab_wear_512_normal.ktx2",
+     "orm": "textures/cab_wear/cab_wear_512_orm.ktx2",
+     "sizes": {
+      "albedo": 498,
+      "normal": 500,
+      "orm": 333689
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "normal": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "orm": {
+       "desktop": 349526,
+       "mobile": 349526,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 334687,
+     "gpu": {
+      "desktop": 349868,
+      "mobile": 349868,
+      "rgba8": 1400834
+     }
+    },
+    "1024": {
+     "albedo": "textures/cab_wear/cab_wear_1024_albedo.ktx2",
+     "normal": "textures/cab_wear/cab_wear_1024_normal.ktx2",
+     "orm": "textures/cab_wear/cab_wear_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 498,
+      "normal": 500,
+      "orm": 1318028
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "normal": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "orm": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 1319026,
+     "gpu": {
+      "desktop": 1398444,
+      "mobile": 1398444,
+      "rgba8": 5595138
+     }
+    }
+   }
+  },
+  "cab_riffel": {
+   "type": "texture",
+   "name": "cab_riffel",
+   "category": "metal",
+   "surface": "metal",
+   "replaces": [],
+   "sizeM": [
+    0.45,
+    0.45
+   ],
+   "tintable": true,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#adadb0",
+    "avgRoughness": 0.289,
+    "avgMetalness": 0.905,
+    "avgAO": 0.77,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "ambientcg",
+   "sourceId": "DiamondPlate008A",
+   "maps": [],
+   "scan": "Riffelblech (ambientCG DiamondPlate008A), Albedo entsättigt (Innenraum tönt je Ära), Normalen OpenGL, Bild senkrecht gespiegelt kodiert",
+   "tiers": {
+    "512": {
+     "albedo": "textures/cab_riffel/cab_riffel_512_albedo.ktx2",
+     "normal": "textures/cab_riffel/cab_riffel_512_normal.ktx2",
+     "orm": "textures/cab_riffel/cab_riffel_512_orm.ktx2",
+     "sizes": {
+      "albedo": 63723,
+      "normal": 51697,
+      "orm": 75581
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 191001,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/cab_riffel/cab_riffel_1024_albedo.ktx2",
+     "normal": "textures/cab_riffel/cab_riffel_1024_normal.ktx2",
+     "orm": "textures/cab_riffel/cab_riffel_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 192932,
+      "normal": 167899,
+      "orm": 243139
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 603970,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
+    }
+   }
   }
  },
  "hdris": {
@@ -22331,8 +22519,8 @@
  },
  "totals": {
   "textures": {
-   "files": 1041,
-   "bytes": 302969624
+   "files": 1053,
+   "bytes": 305418308
   },
   "hdri": {
    "files": 80,
@@ -22343,17 +22531,17 @@
    "bytes": 30929416
   },
   "all": {
-   "files": 1223,
-   "bytes": 349169619
+   "files": 1235,
+   "bytes": 351618303
   },
   "byTier": {
-   "512": 23819428,
-   "1024": 87239496,
+   "512": 24345116,
+   "1024": 89162492,
    "2048": 172574463,
    "4096": 45168916
   },
   "counts": {
-   "textures": 128,
+   "textures": 130,
    "hdris": 20,
    "models": 53
   }

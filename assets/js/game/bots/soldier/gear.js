@@ -93,6 +93,21 @@ function bodyMesh(lod, civil = false, female = false) {
     uv[v * 2] = U[v * 2] / 16000; uv[v * 2 + 1] = U[v * 2 + 1] / 16000;
   }
   const D0 = { n: E.n, pos, nrm, uv, idx: b64(E.idx, Uint16Array), ski: b64(E.ski, Uint8Array), skw: b64(E.skw, Uint8Array), reg: b64(E.reg, Uint8Array), ao: b64(E.ao, Uint8Array) };
+  // gesamt 20.11.: Bereiche der gröbsten Stufe aus Stufe 0 übernehmen (nächste Ecke mit ähnlicher Normale). Die erzeugten
+  // Bereichsdaten der Uniform-Stufe 2 waren vertauscht (Gesicht/Schädel an Oberschenkeln und Brust → Hautflecken auf low).
+  if (lod === 2) {
+    const B0 = bodyMesh(0, civil, female), r = D0.reg;
+    for (let v = 0; v < E.n; v++) {
+      const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2], nx = nrm[v * 3], ny = nrm[v * 3 + 1], nz = nrm[v * 3 + 2];
+      let best = Infinity, br = r[v];
+      for (let u = 0; u < B0.n; u++) {
+        const dx = B0.pos[u * 3] - x, dy = B0.pos[u * 3 + 1] - y, dz = B0.pos[u * 3 + 2] - z;
+        const q = dx * dx + dy * dy + dz * dz;
+        if (q < best && B0.nrm[u * 3] * nx + B0.nrm[u * 3 + 1] * ny + B0.nrm[u * 3 + 2] * nz > 0.2) { best = q; br = B0.reg[u]; }
+      }
+      r[v] = br;
+    }
+  }
   bodyCache[ck] = D0;
   return D0;
 }

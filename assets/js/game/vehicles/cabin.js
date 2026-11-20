@@ -35,6 +35,9 @@ import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world
 import { driverCabin, vehicleWeapon } from './data.js?v=20261115041504';
 import * as DT from './cabin-detail.js?v=20261115041504';
 import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261115041504';
+import * as SH from './cabin-shape.js?v=20261115041504';
+import * as BASE from './cabin-base.js?v=20261115041504';
+import { assets, tierFor } from '../../../lib/loader.js?v=20261115041504';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -44,9 +47,11 @@ const V3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 
 /* ===================================================================== Geometrie-Helfer */
 
-const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+// Nutzer 20.11. („zu kantig“): Kästen und Zylinder mit Fase und gewichteten Normalen (cabin-shape.js) – ab medium
+let CHAMF = 1;
+const box = (w, h, d) => (CHAMF ? SH.cbox(w, h, d, Math.max(0.0015, Math.min(0.006, Math.min(w, h, d) * 0.2))) : new THREE.BoxGeometry(w, h, d));
 const rbox = (w, h, d, r = 0.02, seg = 2) => new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3));
-const cyl = (r1, r2, h, seg = 12, open = false) => new THREE.CylinderGeometry(r1, r2, h, Math.max(3, seg | 0), 1, open);
+const cyl = (r1, r2, h, seg = 12, open = false) => (CHAMF && !open && Math.max(r1, r2) > 0.006 ? SH.ccyl(r1, r2, h, seg, Math.max(0.0008, Math.min(0.004, Math.min(Math.max(r1, r2), h) * 0.15))) : new THREE.CylinderGeometry(r1, r2, h, Math.max(3, seg | 0), 1, open));
 const tor = (R, r, rs = 6, ts = 24, arc = PI * 2) => new THREE.TorusGeometry(R, r, rs, ts, arc);
 
 /** Drehung, die lokal +Z von `from` nach `to` zeigen lässt (Schilder, Bildschirme, Okulare). */
@@ -85,6 +90,8 @@ class MB {
     g.setAttribute('cabA', new THREE.BufferAttribute(ca, 3));
     g.setAttribute('cabS0', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
     g.setAttribute('cabS1', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+    // Kantenmaske (Abrieb an konvexen Kanten/Rundungen); Schilder, Bildschirme: keine
+    g.setAttribute('cabE', new THREE.BufferAttribute(keepUV || mat.userData.noEdge ? SH.edgeNone(n) : SH.edgeMask(g), 4));
     if (!this.m.has(mat)) this.m.set(mat, []);
     this.m.get(mat).push(g);
     return this;
@@ -259,6 +266,45 @@ function atlas() {
   stencil('s_tritt', 'KEIN TRITT', 256, 48, 'rgba(25,25,22,0.9)');
   stencil('s_pfeil', '▲ OBEN ▲', 192, 48, 'rgba(25,25,22,0.9)');
   stencil('s_wk', 'Kampfraum · Nr. 311', 256, 48, 'rgba(40,34,22,0.9)');
+  // Gebrauchsspuren als Abziehbilder (Nutzer 20.11.): Hülsen-Abdrücke (Rußring), Ölfleck – durchsichtiger Grund
+  put('d_ring', 128, 128, (g2, w, h) => {
+    g2.clearRect(0, 0, w, h);
+    for (let k = 0; k < 3; k++) {
+      const r = 44 - k * 9 + Math.random() * 3;
+      g2.strokeStyle = `rgba(${18 + k * 10},${15 + k * 8},${10 + k * 5},${0.95 - k * 0.2})`; g2.lineWidth = 5 - k;
+      g2.beginPath(); for (let i = 0; i <= 48; i++) { const a = (i / 48) * PI * 2, rr = r + Math.sin(a * 5 + k) * 1.5; if (Math.random() < 0.12 && k) { g2.stroke(); g2.beginPath(); continue; } g2.lineTo(w / 2 + Math.cos(a) * rr, h / 2 + Math.sin(a) * rr); } g2.stroke();
+    }
+    g2.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 160; i++) { g2.fillStyle = `rgba(0,0,0,${Math.random()})`; g2.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1 + Math.random() * 3); }
+    g2.globalCompositeOperation = 'source-over';
+  });
+  put('d_oel', 128, 128, (g2, w, h) => {
+    g2.clearRect(0, 0, w, h);
+    for (let i = 0; i < 14; i++) { const x = w / 2 + (Math.random() - 0.5) * 50, y = h / 2 + (Math.random() - 0.5) * 40, r = 10 + Math.random() * 22; g2.fillStyle = `rgba(${22 + Math.random() * 10},${17 + Math.random() * 6},${8},0.95)`; g2.beginPath(); g2.ellipse(x, y, r, r * (0.6 + Math.random() * 0.4), Math.random() * 3, 0, 7); g2.fill(); }
+    g2.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 90; i++) { g2.fillStyle = 'rgba(0,0,0,1)'; g2.beginPath(); g2.arc(Math.random() * w, Math.random() * h, 1 + Math.random() * 4, 0, 7); g2.fill(); }
+    g2.globalCompositeOperation = 'source-over';
+  });
+  // Klebeband mit Bleistiftnotizen an Konsolen (frei erfunden)
+  const HAND = '"Segoe Print","Bradley Hand","Comic Sans MS","DejaVu Sans",cursive';
+  const note = (key, text, w = 192, h = 48, tape = '#d9cfa6') => put(key, w, h, (g2) => {
+    g2.fillStyle = tape; g2.fillRect(0, 0, w, h);
+    // Kreppstruktur, ausgefranste Enden, Schmutz
+    for (let x = 0; x < w; x += 3) { g2.fillStyle = `rgba(120,100,60,${0.04 + Math.random() * 0.06})`; g2.fillRect(x, 0, 1.5, h); }
+    for (let y = 0; y < h; y += 2) { g2.fillStyle = `rgba(0,0,0,${Math.random() * 0.25})`; g2.fillRect(0, y, 2 + Math.random() * 3, 2); g2.fillRect(w - 2 - Math.random() * 3, y, 5, 2); }
+    g2.fillStyle = 'rgba(55,52,48,0.85)'; g2.textAlign = 'center'; g2.textBaseline = 'middle';
+    g2.save(); g2.translate(w / 2, h / 2); g2.rotate(-0.03); g2.font = `500 ${Math.round(h * 0.48)}px ${HAND}`;
+    let sz = Math.round(h * 0.48); while (g2.measureText(text).width > w - 14 && sz > 8) { sz--; g2.font = `500 ${sz}px ${HAND}`; }
+    g2.fillText(text, 0, 1); g2.restore();
+    for (let i = 0; i < 40; i++) { g2.fillStyle = `rgba(60,45,25,${Math.random() * 0.2})`; g2.beginPath(); g2.arc(Math.random() * w, Math.random() * h, 1 + Math.random() * 4, 0, 7); g2.fill(); }
+  });
+  note('n_entf', 'Hof 1250 · Mast 900');
+  note('n_kanal', 'K3 = Zug, K5 = Kp.');
+  note('n_oel', 'Öl gepr. 14.11. – Wolf');
+  note('n_batt', 'Batt. 2 schwach!');
+  note('n_nicht', 'NICHT DRÜCKEN!!', 160, 44);
+  note('n_band', ' ', 128, 32, '#bdb48f');
+  note('n_wk', 'Richtpkt. Kirchturm 3-40', 224, 48, '#d6cba8');
   // Funkgerät-Front (modern): Anzeige, Drehknopf-Ringe, Beschriftung
   const radioFront = (key, title, freq) => put(key, 256, 128, (g2, w, h) => {
     g2.fillStyle = '#2a2d29'; g2.fillRect(0, 0, w, h);
@@ -389,6 +435,7 @@ function screen(key, w, h) {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   const mat = cabPatch(new THREE.MeshStandardMaterial({ name: 'cab:schirm-' + key, color: 0x050605, roughness: 0.25, metalness: 0, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 1.25 }));
+  mat.userData.cabK = new THREE.Vector4(0, 0, 0, 3); mat.userData.noEdge = true;
   SCREENS[key] = { c, g: c.getContext('2d'), t, mat, last: '', at: -1 };
   return SCREENS[key];
 }
@@ -489,46 +536,154 @@ const CAB_U = {
   uCabHP: { value: new THREE.Vector3() }, uCabHC: { value: new THREE.Color(0, 0, 0) },
 };
 
-function cabinShader(sh) {
+/** Abnutzungs-Masken (cab_wear, RGBA: Kratzer, Schlieren, Abplatzer, Fingerabdrücke) – Platzhalter bis zum Laden. */
+const WEAR0 = (() => { const t = new THREE.DataTexture(new Uint8Array([0, 80, 0, 90]), 1, 1); t.needsUpdate = true; return t; })();
+CAB_U.uCabGr = { value: WEAR0 };
+CAB_U.uCabEra = { value: new THREE.Vector4(0.2, 0, 0.5, 0) }; // x Rost, y –, z Staub, w –
+
+/**
+ * Innenraum-Shader: Innenlicht (Punktlichter, gebackene Verdeckung/Schatten) und Gebrauchsspuren (Nutzer 20.11.):
+ * Kantenabrieb aus der gebackenen Kantenmaske (cabE) mit freigelegter Grundierung und blankem Metall, Lackabplatzer,
+ * Kratzer, Rost in Abplatzern und als Läufer (je Ära), Staub auf waagrechten Flächen und in Ecken, Öl/Fett, Fingerabdrücke
+ * an Griffen und Bildschirmen, abgelaufenes Riffelblech, abgewetzte Polster, verblasste/abgekratzte Aufkleber.
+ * Masken triplanar im Objektraum aus cab_wear (CAB_GR, ab medium), sonst prozedural. uCabK je Material:
+ * x Lack (Abrieb), y Rost-Neigung, z Stoff/Gummi, w Sonderfall (1 Riffelboden, 2 Aufkleber, 3 Bildschirm).
+ */
+function cabinShader(sh, renderer, mat) {
   Object.assign(sh.uniforms, CAB_U);
+  sh.uniforms.uCabK = { value: (mat && mat.userData.cabK) || new THREE.Vector4(0, 0, 0, 0) };
   ensureWorldVaryings(sh);
   sh.vertexShader = sh.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vCabO;\nattribute vec3 cabA;\nattribute vec2 cabS0;\nattribute vec2 cabS1;\nvarying vec3 vCabA;\nvarying vec4 vCabS;')
-    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCabO = position;\nvCabA = cabA;\nvCabS = vec4( cabS0, cabS1 );');
+    .replace('#include <common>', '#include <common>\nvarying vec3 vCabO;\nvarying vec3 vCabN;\nattribute vec3 cabA;\nattribute vec2 cabS0;\nattribute vec2 cabS1;\nattribute vec4 cabE;\nvarying vec3 vCabA;\nvarying vec4 vCabS;\nvarying vec4 vCabE;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCabO = position;\nvCabN = normal;\nvCabA = cabA;\nvCabS = vec4( cabS0, cabS1 );\nvCabE = cabE;');
   sh.fragmentShader = sh.fragmentShader
     .replace('#include <common>', `#include <common>
-      varying vec3 vCabO; varying vec3 vCabA; varying vec4 vCabS;
+      varying vec3 vCabO; varying vec3 vCabN; varying vec3 vCabA; varying vec4 vCabS; varying vec4 vCabE;
       uniform vec3 uCabLP[ ${NL} ]; uniform vec3 uCabLC[ ${NL} ]; uniform float uCabAmb; uniform float uCabSun; uniform float uCabWear; uniform float uCabSet;
-      uniform vec3 uCabHP; uniform vec3 uCabHC;
+      uniform vec3 uCabHP; uniform vec3 uCabHC; uniform vec4 uCabK; uniform vec4 uCabEra;
       float cbH( vec3 p ) { p = fract( p * 0.3183099 + 0.1 ); p *= 17.0; return fract( p.x * p.y * p.z * ( p.x + p.y + p.z ) ); }
       float cbN( vec3 x ) { vec3 i = floor( x ), f = fract( x ); f = f * f * ( 3.0 - 2.0 * f );
         return mix( mix( mix( cbH( i ), cbH( i + vec3( 1.0, 0.0, 0.0 ) ), f.x ), mix( cbH( i + vec3( 0.0, 1.0, 0.0 ) ), cbH( i + vec3( 1.0, 1.0, 0.0 ) ), f.x ), f.y ),
-                    mix( mix( cbH( i + vec3( 0.0, 0.0, 1.0 ) ), cbH( i + vec3( 1.0, 0.0, 1.0 ) ), f.x ), mix( cbH( i + vec3( 0.0, 1.0, 1.0 ) ), cbH( i + vec3( 1.0, 1.0, 1.0 ) ), f.x ), f.y ), f.z ); }`)
+                    mix( mix( cbH( i + vec3( 0.0, 0.0, 1.0 ) ), cbH( i + vec3( 1.0, 0.0, 1.0 ) ), f.x ), mix( cbH( i + vec3( 0.0, 1.0, 1.0 ) ), cbH( i + vec3( 1.0, 1.0, 1.0 ) ), f.x ), f.y ), f.z ); }
+      #ifdef CAB_GR
+      uniform sampler2D uCabGr;
+      vec4 cbMask( vec3 p, vec3 n ) {
+        vec3 w = pow( abs( n ), vec3( 6.0 ) ); w /= max( 1e-4, w.x + w.y + w.z );
+        const float s = 1.6667;
+        return texture2D( uCabGr, p.zy * s ) * w.x + texture2D( uCabGr, p.xz * s + 0.37 ) * w.y + texture2D( uCabGr, p.xy * s + 0.71 ) * w.z;
+      }
+      #else
+      vec4 cbMask( vec3 p, vec3 n ) {
+        return vec4( smoothstep( 0.86, 0.97, cbN( p * vec3( 70.0, 4.0, 70.0 ) ) ), cbN( p * vec3( 7.0, 1.0, 7.0 ) ), smoothstep( 0.62, 0.8, cbN( p * 19.0 ) ), cbN( p * 11.0 + 3.0 ) );
+      }
+      #endif
+      float cbPrim = 0.0, cbBare = 0.0, cbRust = 0.0, cbScr = 0.0, cbFing = 0.0, cbDust = 0.0, cbDirt = 0.0, cbAO = 0.0, cbHgt = 0.0, cbPol = 0.0;`)
     .replace('#include <map_fragment>', `#include <map_fragment>
-      // Gebrauchsspuren: fleckige Verschmutzung, dunkle Griffspuren, helle Kratzer (Objektraum, kein Texturbedarf)
-      float cbG = cbN( vCabO * 3.1 ) * 0.6 + cbN( vCabO * 11.0 + 4.0 ) * 0.4;
-      float cbD = smoothstep( 0.62, 0.8, cbN( vCabO * vec3( 7.0, 2.2, 7.0 ) + 1.7 ) );
-      float cbS = smoothstep( 0.955, 0.985, cbN( vCabO * vec3( 70.0, 4.0, 70.0 ) + 9.0 ) ) * smoothstep( 0.4, 0.7, cbN( vCabO * 2.3 ) );
-      diffuseColor.rgb *= mix( 1.0, ( 0.8 + 0.2 * cbG ) * ( 1.0 - 0.32 * cbD ), uCabWear );
-      diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * 1.6 + vec3( 0.05 ), cbS * 0.55 * uCabWear );
-      // gebackene Verdeckung: Schmutz sammelt sich in Ecken, Fugen und unter Bauteilen (bräunlich, fleckig)
-      float cbAO = clamp( vCabA.x, 0.0, 1.0 );
-      float cbDirt = smoothstep( 0.18, 0.75, cbAO ) * ( 0.45 + 0.55 * cbN( vCabO * 9.0 + 2.0 ) ) * uCabWear;
-      diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * vec3( 0.55, 0.49, 0.4 ), cbDirt * 0.6 );
-      // Abnutzung an Griffstellen: Lack abgegriffen, blankes Metall fleckig sichtbar
-      float cbW = clamp( vCabA.y, 0.0, 1.0 ) * uCabWear;
-      float cbWm = cbW * smoothstep( 0.5, 0.72, cbN( vCabO * 85.0 ) * 0.5 + cbN( vCabO * 21.0 + 3.0 ) * 0.5 + cbW * 0.22 );
-      // dunkle Teile (Gummi, schwarzer Lack) werden blank-speckig, helle Lackteile zeigen blankes Metall
-      float cbLum = dot( diffuseColor.rgb, vec3( 0.3, 0.59, 0.11 ) );
-      float cbBare = smoothstep( 0.08, 0.2, cbLum );
-      vec3 cbPol = mix( diffuseColor.rgb * 1.45 + 0.025, max( diffuseColor.rgb, vec3( 0.6, 0.59, 0.56 ) ), cbBare );
-      diffuseColor.rgb = mix( diffuseColor.rgb, cbPol * ( 0.9 + 0.2 * cbN( vCabO * 140.0 ) ), cbWm );
-      cbWm *= mix( 0.35, 1.0, cbBare );`)
+      {
+        vec3 cbNo = normalize( vCabN );
+        vec4 cbM = cbMask( vCabO, cbNo );
+        cbAO = clamp( vCabA.x, 0.0, 1.0 );
+        float cbWr = clamp( vCabA.y, 0.0, 1.0 );                         // Griffstellen (gebaut)
+        float cbE0 = min( min( vCabE.x, vCabE.y ), vCabE.z );
+        float cbEdge = max( 1.0 - smoothstep( 0.0, 0.009, cbE0 ), clamp( vCabE.w, 0.0, 1.0 ) * 0.85 );
+        float cbLo = cbN( vCabO * 1.4 + 5.0 );                            // stark/schwach abgenutzte Zonen
+        float W = uCabWear;
+        vec3 cbC = diffuseColor.rgb;
+        if ( uCabK.w > 1.5 && uCabK.w < 2.5 ) {
+          // Aufkleber/Schilder: ausgebleicht, angeschmutzt, Ecken und Streifen abgekratzt
+          float l = dot( cbC, vec3( 0.3, 0.59, 0.11 ) );
+          cbC = mix( cbC, vec3( l ) * 1.05 + 0.03, ( 0.18 + 0.35 * cbLo ) * W );
+          float sc = max( smoothstep( 0.3, 0.6, cbM.r ) * 0.9, smoothstep( 0.55, 0.7, cbM.b * ( 0.6 + cbLo ) ) );
+          cbC = mix( cbC, vec3( 0.55, 0.53, 0.48 ), sc * W );
+          cbC *= 1.0 - 0.25 * cbM.g * W;
+          cbScr = sc;
+        } else {
+          if ( uCabK.x > 0.0 ) {
+            // Kantenabrieb: Lack → Grundierung (rotbraun) → blankes Metall, ausgefranst über die Abplatzer-Maske
+            // nur stellenweise (Abplatzer-Maske × feines Rauschen × Zonen), Griffstellen stärker
+            float en = cbM.b * 0.8 + cbN( vCabO * 55.0 ) * 0.45 + cbLo * 0.35;
+            float e = cbEdge * en + cbWr * ( 0.35 + 0.5 * cbM.b + 0.2 * cbN( vCabO * 30.0 ) );
+            cbPrim = smoothstep( 0.78, 0.84, e ) * W * uCabK.x;
+            cbBare = smoothstep( 0.98, 1.06, e + cbM.r * 0.15 ) * W * uCabK.x;
+            // Abplatzer auf der Fläche (gruppiert, eher unten)
+            float fc = cbM.b * smoothstep( 0.42, 0.85, cbLo ) * ( 1.15 - 0.5 * smoothstep( 0.2, 0.7, vCabO.y ) );
+            cbPrim = max( cbPrim, smoothstep( 0.5, 0.56, fc ) * W * uCabK.x );
+            cbBare = max( cbBare, smoothstep( 0.7, 0.78, fc ) * W * uCabK.x );
+            // Kratzer und Schrammen im Lack
+            cbScr = smoothstep( 0.16, 0.5, cbM.r ) * ( 0.3 + 0.7 * smoothstep( 0.25, 0.75, cbLo ) ) * W * uCabK.x;
+            float lum = dot( cbC, vec3( 0.3, 0.59, 0.11 ) );
+            cbC = mix( cbC, mix( vec3( 0.36, 0.34, 0.31 ), cbC * 1.3 + 0.05, step( lum, 0.25 ) ), cbScr * 0.55 );
+            cbC = mix( cbC, vec3( 0.15, 0.045, 0.026 ) * ( 0.8 + 0.4 * cbN( vCabO * 70.0 ) ), cbPrim );
+            cbC = mix( cbC, vec3( 0.52, 0.51, 0.49 ) * ( 0.85 + 0.3 * cbN( vCabO * 150.0 ) ), cbBare );
+            cbHgt = -( cbPrim + cbBare ) * 0.00035;
+          }
+          if ( uCabK.z > 0.0 ) {
+            // Stoff/Gummi/Polster: abgewetzt (heller, glänzend) an Kanten und Griffstellen, Fettflecken
+            float sc = smoothstep( 0.45, 0.85, cbEdge * 0.7 + cbWr * 0.9 + cbM.g * 0.35 ) * W * uCabK.z;
+            cbC = mix( cbC, cbC * 1.45 + vec3( 0.035, 0.032, 0.028 ), sc );
+            cbC *= 1.0 - 0.3 * smoothstep( 0.55, 0.9, cbM.a * cbLo * 1.6 ) * W * uCabK.z;
+            cbPol = sc;
+          }
+          // blankes Metall (Stahl, Messing): Kratzer nur als Glanzunterschied
+          if ( uCabK.x <= 0.0 && uCabK.z <= 0.0 && uCabK.w < 0.5 ) {
+            cbScr = smoothstep( 0.2, 0.6, cbM.r ) * W * 0.5;
+            cbC *= ( 1.0 - 0.35 * smoothstep( 0.35, 0.9, cbM.g ) * W ) * ( 1.0 + 0.25 * cbScr );
+          }
+          // Rost: in Abplatzern und blankem Metall, Läufer senkrecht darunter (Weltkrieg stark)
+          float ra = uCabEra.x * uCabK.y * W;
+          if ( ra > 0.0 ) {
+            float spot = max( cbBare, cbPrim * 0.6 ) * smoothstep( 0.35, 0.65, cbN( vCabO * 40.0 ) + 0.25 * ra );
+            float run = cbM.g * smoothstep( 0.55, 0.9, cbN( vec3( vCabO.x * 9.0, vCabO.y * 0.8, vCabO.z * 9.0 ) ) ) * ( 1.0 - smoothstep( 0.4, 0.75, abs( cbNo.y ) ) );
+            float pit = smoothstep( 0.72, 0.9, cbM.b * cbLo * 1.5 );
+            cbRust = clamp( spot * 1.2 + run * 0.7 + pit * 0.6 * uCabK.y, 0.0, 1.0 ) * min( 1.0, ra );
+            vec3 rc = mix( vec3( 0.16, 0.055, 0.02 ), vec3( 0.36, 0.13, 0.04 ), cbN( vCabO * 90.0 ) );
+            cbC = mix( cbC, rc, cbRust * 0.85 );
+            cbHgt += cbRust * 0.00025;
+          }
+          // Fingerabdrücke / Fettfilm an Griffen und Bildschirmen
+          cbFing = cbM.a * smoothstep( 0.15, 0.6, cbWr + ( uCabK.w > 2.5 ? 0.7 : 0.0 ) ) * W;
+          cbC *= 1.0 - 0.22 * cbFing * ( 1.0 - cbBare );
+          // Staub auf waagrechten Flächen und in Ecken (bräunlich-grau, matt)
+          cbDust = smoothstep( 0.55, 0.95, cbNo.y ) * uCabEra.z * W * ( 0.3 + 0.7 * smoothstep( 0.2, 0.8, cbM.g + cbAO * 0.6 ) ) * ( 1.0 - cbWr );
+          cbC = mix( cbC, vec3( 0.36, 0.33, 0.28 ), cbDust * 0.55 );
+        }
+        // gebackene Verdeckung: Schmutz sammelt sich in Ecken, Fugen und unter Bauteilen (bräunlich, fleckig)
+        cbDirt = smoothstep( 0.18, 0.75, cbAO ) * ( 0.45 + 0.55 * cbN( vCabO * 9.0 + 2.0 ) ) * W;
+        cbC = mix( cbC, cbC * vec3( 0.55, 0.49, 0.4 ), cbDirt * 0.6 );
+        diffuseColor.rgb = cbC;
+      }`)
     .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-      roughnessFactor = clamp( roughnessFactor + ( cbD * 0.12 - cbS * 0.3 + cbDirt * 0.15 ) * uCabWear, 0.04, 1.0 );
-      roughnessFactor = mix( roughnessFactor, 0.32, cbWm );`)
+      #if defined( USE_ROUGHNESSMAP )
+      if ( uCabK.w > 0.5 && uCabK.w < 1.5 ) {
+        // Riffelblech: erhabene Rauten in den Laufwegen blank gelaufen (Höhe steckt im ORM-R-Kanal)
+        float raised = smoothstep( 0.86, 0.96, texelRoughness.r );
+        float path = smoothstep( 0.3, 0.75, cbN( vec3( vCabO.x * 1.6, 0.0, vCabO.z * 1.6 ) ) ) * uCabWear;
+        cbPol = raised * path;
+        diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.62, 0.61, 0.58 ), cbPol * 0.8 );
+      }
+      #endif
+      roughnessFactor = clamp( roughnessFactor + cbDirt * 0.15, 0.04, 1.0 );
+      roughnessFactor = mix( roughnessFactor, roughnessFactor + 0.15, cbScr * 0.6 );
+      roughnessFactor = mix( roughnessFactor, 0.66, cbPrim * ( 1.0 - cbBare ) );
+      roughnessFactor = mix( roughnessFactor, 0.3, cbBare );
+      roughnessFactor = mix( roughnessFactor, 0.3, cbPol * 0.7 );
+      roughnessFactor = mix( roughnessFactor, 0.92, max( cbRust, cbDust ) );
+      roughnessFactor = mix( roughnessFactor, 0.2, cbFing * 0.85 );`)
     .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
-      metalnessFactor = mix( metalnessFactor, 0.92, cbWm );`)
+      metalnessFactor = mix( metalnessFactor, 0.0, cbPrim * ( 1.0 - cbBare ) );
+      metalnessFactor = mix( metalnessFactor, 0.92, max( cbBare, cbPol * 0.8 ) * ( 1.0 - cbRust ) );
+      metalnessFactor = mix( metalnessFactor, 0.0, max( cbRust, cbDust ) );`)
+    .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      {
+        // Abplatzer liegen tiefer als der Lack, Rost trägt auf (Höhe aus den Masken, Ableitungen im Bildraum)
+        vec3 dpx = dFdx( - vViewPosition ), dpy = dFdy( - vViewPosition );
+        vec2 dh = vec2( dFdx( cbHgt ), dFdy( cbHgt ) );
+        vec3 r1 = cross( dpy, normal ), r2 = cross( normal, dpx );
+        float dt = dot( dpx, r1 );
+        if ( abs( dt ) > 1e-12 ) normal = normalize( abs( dt ) * normal - sign( dt ) * ( dh.x * r1 + dh.y * r2 ) );
+      }`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      if ( uCabK.w > 2.5 ) totalEmissiveRadiance *= 1.0 - 0.3 * cbFing; // Fingerabdrücke auf Bildschirmen`)
     .replace('#include <aomap_fragment>', `
       // geschlossener Stahlkasten: Sonne/Himmel kaum, dafür Innenleuchten (Punktlichter im Weltraum)
       float cbAmbO = 1.0 - cbAO * 0.7;
@@ -538,12 +693,13 @@ function cabinShader(sh) {
         vec3 cbNw = normalize( inverseTransformDirection( normal, viewMatrix ) );
         vec3 cbV = normalize( cameraPosition - vNpWorld );
         // Öl auf waagrechten Flächen in Bodennähe (Pfützen glänzen dunkel)
-        float cbOil = smoothstep( 0.72, 0.86, cbN( vCabO * 3.3 + 7.0 ) ) * smoothstep( 0.75, 0.95, cbNw.y ) * uCabWear * ( 0.4 + cbAO );
+        float cbOil = smoothstep( 0.72, 0.86, cbN( vCabO * 3.3 + 7.0 ) ) * smoothstep( 0.75, 0.95, cbNw.y ) * uCabWear * ( 0.4 + cbAO ) * ( 1.0 - cbDust );
         diffuseColor.rgb *= 1.0 - cbOil * 0.55;
         float cbR4 = max( pow( mix( roughnessFactor, 0.12, cbOil ), 4.0 ), 0.0015 );
         float cbSh = clamp( 2.0 / cbR4 - 2.0, 1.0, 900.0 );
         bool cbOwn = abs( vCabA.z - uCabSet ) < 0.5;
         float cbDirO = 1.0 - cbAO * 0.45; // Kontaktschatten auch für das Lampenlicht
+        float cbSpec = mix( 0.04, 1.0, metalnessFactor );
         for ( int i = 0; i < ${NL}; i ++ ) {
           vec3 L = uCabLP[ i ] - vNpWorld; float d2 = max( dot( L, L ), 1e-4 ); L *= inversesqrt( d2 );
           float att = 1.0 / ( 1.0 + d2 * 7.0 );
@@ -551,9 +707,9 @@ function cabinShader(sh) {
           if ( cbOwn && i < 4 ) vis = 1.0 - ( i == 0 ? vCabS.x : i == 1 ? vCabS.y : i == 2 ? vCabS.z : vCabS.w ) * 0.92;
           float nl = max( dot( cbNw, L ), 0.0 );
           float wrapL = clamp( ( dot( cbNw, L ) + 0.35 ) / 1.35, 0.0, 1.0 );
-          reflectedLight.directDiffuse += diffuseColor.rgb * uCabLC[ i ] * mix( nl, wrapL, 0.35 ) * att * vis * cbDirO;
+          reflectedLight.directDiffuse += diffuseColor.rgb * ( 1.0 - metalnessFactor * 0.85 ) * uCabLC[ i ] * mix( nl, wrapL, 0.35 ) * att * vis * cbDirO;
           vec3 Hh = normalize( L + cbV );
-          reflectedLight.directSpecular += uCabLC[ i ] * pow( max( dot( cbNw, Hh ), 0.0 ), cbSh ) * ( cbSh + 2.0 ) / 8.0 * nl * att * vis * mix( 0.12, 0.35, cbOil ) * mix( 0.04, 1.0, metalnessFactor );
+          reflectedLight.directSpecular += uCabLC[ i ] * pow( max( dot( cbNw, Hh ), 0.0 ), cbSh ) * ( cbSh + 2.0 ) / 8.0 * nl * att * vis * mix( 0.12, 0.35, cbOil ) * cbSpec * mix( vec3( 1.0 ), diffuseColor.rgb * 1.6 + 0.2, metalnessFactor );
         }
         // Tageslicht durch eine offene Luke: Kegel von oben, weich, ohne Schatten (Verdeckung dämpft)
         vec3 cbHL = uCabHP - vNpWorld; float cbHd2 = max( dot( cbHL, cbHL ), 1e-4 ); cbHL *= inversesqrt( cbHd2 );
@@ -562,12 +718,42 @@ function cabinShader(sh) {
       }
       #include <aomap_fragment>`);
 }
-function cabPatch(m) { addShaderPatch(m, 'cabin', cabinShader); m.userData.cabin = true; return m; }
+function cabPatch(m) {
+  if (CABGR) m.defines = { ...(m.defines || {}), CAB_GR: '' };
+  addShaderPatch(m, 'cabin', cabinShader); m.userData.cabin = true; return m;
+}
+
+/** Zusatzsätze laden (ab medium): Masken für Gebrauchsspuren, Riffelblech, Stoffstruktur der Splitterschutzmatten. */
+function loadCabinSets(det) {
+  const tier = det >= 2 ? 1024 : 512;
+  (async () => {
+    try {
+      if (!assets.renderer) return;
+      await assets.ready();
+      const [wear, riffel, fab] = await Promise.all(['cab_wear', 'cab_riffel', 'fabric_uniform'].map((id) => assets.loadTextureSet(id, tier).catch(() => null)));
+      if (wear && wear.ormMap) { const t = wear.ormMap; t.anisotropy = Math.max(t.anisotropy || 1, 4); CAB_U.uCabGr.value = t; }
+      if (riffel && CM) {
+        const f = CM.floor, rep = 1 / 0.45;
+        for (const t of [riffel.map, riffel.normalMap, riffel.ormMap]) { t.repeat.set(rep, rep); t.anisotropy = Math.max(t.anisotropy || 1, 8); }
+        Object.assign(f, { map: riffel.map, normalMap: riffel.normalMap, aoMap: riffel.ormMap, roughnessMap: riffel.ormMap, metalnessMap: riffel.ormMap, roughness: 1, metalness: 1, aoMapIntensity: 0.6 });
+        f.color.setHex(0xb6b4ad); f.normalScale.set(1, 1);
+        f.needsUpdate = true;
+      }
+      if (fab && CM) {
+        const n = fab.normalMap.clone(); n.repeat.set(5, 5); n.needsUpdate = true;
+        CM.liner.normalMap = n; CM.liner.normalScale = new THREE.Vector2(0.8, 0.8); CM.liner.needsUpdate = true;
+      }
+    } catch (err) { console.info('[cabin] Zusatztexturen nicht verfügbar – prozedural.', err && err.message); }
+  })();
+}
 
 let CM = null;
 /** Innenraum-Materialsatz (lazy). Klone der Fahrzeugmaterialien behalten deren Fotoscan-Texturen (resync bei Bedarf). */
-function cabinMats(S) {
+let CABGR = false;
+const K4 = (x = 0, y = 0, z = 0, w = 0) => new THREE.Vector4(x, y, z, w);
+function cabinMats(S, det = 2) {
   if (CM) return CM;
+  CABGR = det >= 1; // Masken-Textur nur ab medium (low: prozedurale Masken, keine Zusatztexturen)
   const pairs = [];
   const clone = (base, name, params = {}) => {
     const m = base.clone();
@@ -579,35 +765,46 @@ function cabinMats(S) {
     pairs.push([m, base]);
     return cabPatch(m);
   };
-  const std = (name, p) => cabPatch(new THREE.MeshStandardMaterial({ name: 'cab:' + name, ...p }));
+  const std = (name, p, k = null) => { const m = cabPatch(new THREE.MeshStandardMaterial({ name: 'cab:' + name, ...p })); if (k) m.userData.cabK = k; return m; };
   const A = atlas();
   const paintSrc = S.paint.null;
-  const wall = (name, color, rough, metal) => {
-    const m = std(name, { color, roughness: rough, metalness: metal, normalScale: new THREE.Vector2(0.35, 0.35) });
-    m.userData.wallFrom = paintSrc; // Normalen/ORM aus dem Lack-Fotoscan (resync)
+  // Lack: seidenmatt (Rauheit × ORM ≈ 0,45–0,5), Normalen/ORM aus dem Lack-Fotoscan (resync)
+  const wall = (name, color, rough, metal, k = K4(1, 1, 0, 0)) => {
+    const m = std(name, { color, roughness: rough, metalness: metal, normalScale: new THREE.Vector2(0.35, 0.35) }, k);
+    m.userData.wallFrom = paintSrc;
     return m;
   };
+  const tag = (m, k) => { m.userData.cabK = k; return m; };
   CM = {
     pairs,
-    // Wandanstrich je Generation: modern helles Graugrün, 2. WK Elfenbein, 1. WK roher, geölter Stahl
-    wall: { modern: wall('wand', 0x9aa591, 0.78, 0.15), wk2: wall('wand2', 0xd8cfb2, 0.72, 0.1), wk1: wall('wand1', 0x5f5a50, 0.62, 0.45) },
-    floor: clone(S.dark, 'boden', { color: 0x3a3b37 }),
-    metal: clone(S.dark, 'metall'),
-    steel: clone(S.steel, 'stahl'),
-    black: std('schwarz', { color: 0x1a1b1a, roughness: 0.55, metalness: 0.35 }),
-    olive: std('oliv', { color: 0x434a33, roughness: 0.7, metalness: 0.2 }),
-    rubber: clone(S.rubber, 'gummi'),
-    canvas: clone(S.canvas, 'segeltuch'),
-    pad: std('polster', { color: 0x2f3128, roughness: 0.62, metalness: 0, normalMap: quiltNormal(), normalScale: new THREE.Vector2(0.9, 0.9) }),
-    leather: std('leder', { color: 0x4a3322, roughness: 0.58, metalness: 0, normalMap: quiltNormal(), normalScale: new THREE.Vector2(0.6, 0.6) }),
-    red: clone(S.red, 'rot'),
-    yellow: std('gelb', { color: 0xc9a227, roughness: 0.55, metalness: 0.1 }),
-    orange: std('orange', { color: 0xb35a1a, roughness: 0.6, metalness: 0.05 }),
+    // Wandanstrich je Ära (Nutzer 20.11.): modern hellgrau/weiß, Kalter Krieg hellgrün, 2. WK Elfenbein, 1. WK Creme
+    wall: { modern: wall('wand', 0xc6c9c0, 0.95, 0.08, K4(1, 0.6, 0, 0)), kk: wall('wand-kk', 0xa3b48f, 0.95, 0.08, K4(1, 0.8, 0, 0)), wk2: wall('wand2', 0xd8ceac, 0.95, 0.06), wk1: wall('wand1', 0xcabd98, 1.0, 0.06) },
+    // Riffelblech (cab_riffel, ab medium): blanker Stahl, erhabene Rauten in den Laufwegen poliert
+    floor: std('boden', { color: 0x8c8c86, roughness: 0.6, metalness: 0.5 }, K4(0, 1, 0, 1)),
+    // Halter, Gehäuse, Gussteile: dunkel graugrün lackiert
+    metal: wall('metall', 0x585d52, 0.95, 0.15),
+    steel: tag(clone(S.steel, 'stahl', { color: 0x7e8286, roughness: 0.36, metalness: 0.85 }), K4(0, 0.8, 0, 0)),
+    breech: tag(clone(S.steel, 'verschluss', { color: 0x585c61, roughness: 0.44, metalness: 0.85 }), K4(0, 0.5, 0, 0)),
+    black: wall('schwarz', 0x1e1f1d, 0.85, 0.2, K4(0.7, 0.4, 0, 0)),
+    olive: wall('oliv', 0x4b5337, 0.95, 0.12),
+    rubber: tag(clone(S.rubber, 'gummi', { roughness: 0.9 }), K4(0, 0, 0.6, 0)),
+    canvas: tag(clone(S.canvas, 'segeltuch'), K4(0, 0, 1, 0)),
+    pad: std('polster', { color: 0x2f3128, roughness: 0.7, metalness: 0, normalMap: quiltNormal(), normalScale: new THREE.Vector2(0.9, 0.9) }, K4(0, 0, 1, 0)),
+    leather: std('leder', { color: 0x4a3322, roughness: 0.58, metalness: 0, normalMap: quiltNormal(), normalScale: new THREE.Vector2(0.6, 0.6) }, K4(0, 0, 1, 0)),
+    // Splitterschutzmatten (gesteppt) und ihr Einfassband
+    liner: std('splitterschutz', { color: 0x8f8b74, roughness: 0.95, metalness: 0 }, K4(0, 0, 0.8, 0)),
+    linerBand: std('einfassband', { color: 0x55553f, roughness: 0.85, metalness: 0 }, K4(0, 0, 1, 0)),
+    // Schaumstoff (aufgerissene Polster), Flicken, Klebeband
+    foam: std('schaumstoff', { color: 0xb59a52, roughness: 1, metalness: 0 }, K4(0, 0, 0.3, 0)),
+    patch: std('flicken', { color: 0x4e4a36, roughness: 0.9, metalness: 0, normalMap: quiltNormal(), normalScale: new THREE.Vector2(0.3, 0.3) }, K4(0, 0, 1, 0)),
+    red: tag(clone(S.red, 'rot', { roughness: 0.5 }), K4(1, 0.5, 0, 0)),
+    yellow: std('gelb', { color: 0xc9a227, roughness: 0.55, metalness: 0.1 }, K4(1, 0.5, 0, 0)),
+    orange: std('orange', { color: 0xb35a1a, roughness: 0.6, metalness: 0.05 }, K4(1, 0.5, 0, 0)),
     brass: clone(S.brass, 'messing', { emissiveIntensity: 0.4 }),
-    wood: clone(S.wood, 'holz'),
+    wood: tag(clone(S.wood, 'holz'), K4(0, 0, 0.6, 0)),
     shell: clone(S.shell, 'granate'),
     sleeve: clone(S.sleeve, 'aermel'),
-    label: std('schild', { map: A.tex, roughness: 0.62, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+    label: std('schild', { map: A.tex, roughness: 0.62, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }, K4(0, 0, 0, 2)),
     gauge: std('instrument', { map: A.tex, emissive: 0x6a8a5a, emissiveMap: A.tex, emissiveIntensity: 0.35, roughness: 0.2, metalness: 0.1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
     needle: std('zeiger', { color: 0xfff1d0, emissive: 0xffd28a, emissiveIntensity: 0.8, roughness: 0.4 }),
     // Winkelspiegel-Glas: Tageslicht aus dem Prisma (leicht grünlich vergütet)
@@ -628,10 +825,14 @@ function cabinMats(S) {
     // Streuscheibe der Kuppellampen: Farbe/Helligkeit folgt dem Lichtmodus (syncCabin)
     dome: std('kuppellampe', { color: 0x1c1a18, emissive: 0xff3020, emissiveIntensity: 1.6, roughness: 0.35 }),
     // Schablonenschrift direkt auf dem Anstrich (Atlas, durchsichtiger Grund)
-    stencil: std('schablone', { map: A.tex, alphaTest: 0.4, roughness: 0.75, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
+    stencil: std('schablone', { map: A.tex, alphaTest: 0.4, roughness: 0.75, metalness: 0.05, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }, K4(0, 0, 0, 2)),
   };
+  // Kantenmaske nur, wo der Shader sie nutzt (Lack, Stoff/Gummi, Holz)
+  for (const k of ['label', 'gauge', 'needle', 'prism', 'stencil', 'lens', 'lampRed', 'lampGreen', 'lampAmber', 'disp', 'lampOff', 'lampWarm', 'flame', 'dome', 'steel', 'brass', 'casing', 'stub', 'shell', 'sleeve', 'cableRed', 'cableYel', 'floor', 'needle', 'breech']) CM[k].userData.noEdge = true;
+  if (CABGR) loadCabinSets(det);
   for (const k of ['label', 'gauge', 'needle', 'prism', 'stencil', 'casing', 'stub']) CM[k].userData.noTess = true;
-  for (const k of ['modern', 'wk2', 'wk1']) pairs.push([CM.wall[k], null]);
+  for (const k of ['modern', 'kk', 'wk2', 'wk1']) pairs.push([CM.wall[k], null]);
+  for (const m of [CM.metal, CM.black, CM.olive]) pairs.push([m, null]);
   // Rauch-Sprite: weiche Scheibe
   const sc = document.createElement('canvas'); sc.width = sc.height = 64;
   const sg = sc.getContext('2d'), gr = sg.createRadialGradient(32, 32, 2, 32, 32, 32);
@@ -662,8 +863,8 @@ function resyncMats() {
 }
 
 /** Warmlauf (Shader vorkompilieren): Materialliste für index.js/materials.js. */
-export function cabinWarmMaterials(S) {
-  const C = cabinMats(S);
+export function cabinWarmMaterials(S, det = 2) {
+  const C = cabinMats(S, det);
   return Object.values(C).flatMap((v) => (v && v.isMaterial ? [v] : v && typeof v === 'object' && !(v instanceof Map) && !Array.isArray(v) ? Object.values(v).filter((x) => x && x.isMaterial) : []));
 }
 
@@ -786,6 +987,8 @@ function harness(B, C, pts, det, colors = 3) {
     const p = curve.getPointAt(i / n), t = curve.getTangentAt(i / n);
     B.add(tor(0.022, 0.004, 4, 10), C.steel, p.toArray(), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), t));
   }
+  // Kabelbinder zwischen den Schellen
+  if (det > 1) for (let i = 0; i < n; i++) { const u = (i + 0.5) / n; BASE.tie(B, C, curve.getPointAt(u).toArray(), curve.getTangentAt(u).toArray(), 0.017); }
 }
 
 /** Fläche nach innen kehren (Wicklung + Normalen). */
@@ -844,7 +1047,9 @@ function buildDriver(root, D, C, det, era, cab) {
   const { xl, xr, floor: yF, roof: yR, zFT, zFB, zB, eye: E } = R;
   const x0 = R.F[0], z0 = R.F[2];
   // Raum: Boden, Glacis (schräg), Decke, Rückwand, Seitenwände – nach innen gekehrt
-  B.add(roomGeom([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr), W);
+  // Raum: gerundetes Prisma (Hohlkehlen an den Stößen, leicht gewölbte Flächen) statt ebener Polygone
+  if (det) B.add(SH.prism([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr, { rc: 0.07, r0: 0.05, r1: 0.05, bulge: 0.006, steps: det > 1 ? 4 : 2, arcSteps: det > 1 ? 3 : 2, axes: 'zyx' }), W);
+  else B.add(roomGeom([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr), W);
   B.add(box(xr - xl - 0.04, 0.012, zB - zFB - 0.06), C.floor, [(xl + xr) / 2, yF + 0.006, (zB + zFB) / 2]);
   if (det) for (let z = zFB + 0.12; z < zB - 0.05; z += 0.11) B.add(box(xr - xl - 0.1, 0.004, 0.012), C.steel, [(xl + xr) / 2, yF + 0.014, z], [0, 0.35, 0]);
   // Schweißnähte / Rippen an Glacis und Decke
@@ -872,6 +1077,13 @@ function buildDriver(root, D, C, det, era, cab) {
   B.rod(C.steel, [x0 + 0.25, sy + 0.16, sz - 0.02], [x0 + 0.3, sy + 0.2, sz - 0.12], 0.008);
   B.add(cyl(0.015, 0.015, 0.05, 8), C.red, [x0 + 0.305, sy + 0.205, sz - 0.14], [HP, 0, 0]);
   label(B, C, 'sitz', [x0 + 0.231, sy + 0.12, sz + 0.12], [0, HP, 0], 0.15);
+  if (det) {
+    // durchgesessen (abgewetzt), aufgerissene Vorderkante mit Schaumstoff, aufgenähter Flicken an der Lehne
+    DT.worn(B, 0.8, () => B.add(SH.quilt(0.26, 0.22, 0.004, { nx: 1, ny: 1, res: 3 }), seatMat, [x0, sy + 0.2475, sz + 0.12], [-HP, 0, 0]));
+    B.add(box(0.12, 0.014, 0.012), C.black, [x0 - 0.08, sy + 0.21, sz - 0.118]);
+    for (let i = 0; i < 5; i++) B.add(new THREE.SphereGeometry(0.01 + (i % 2) * 0.005, 6, 4), C.foam, [x0 - 0.125 + i * 0.022, sy + 0.208 + (i % 2) * 0.004, sz - 0.118]);
+    B.add(SH.quilt(0.12, 0.1, 0.006, { nx: 1, ny: 1, res: 2 }), C.patch, [x0 + 0.1, sy + 0.632, sz + 0.358], [0.38, PI, 0.15]);
+  }
 
   // ---- Lenkung: modern Lenkbügel an der Lenksäule (dreht), sonst Lenkhebel (Drehpunkt am Boden, ziehen = Kette bremsen)
   if (!modern) for (const [nm, sx] of [['hebel:l', -1], ['hebel:r', 1]]) {
@@ -940,7 +1152,9 @@ function buildDriver(root, D, C, det, era, cab) {
     PF.add(rbox(0.19, 0.105, 0.02, 0.008), C.black, [0.07, 0.05, 0.004]);
     const sg = new THREE.PlaneGeometry(0.17, 0.085);
     PF.add(sg, s.mat, [0.07, 0.05, 0.015], null, null, true);
+    flabel(PF, C, 'n_oel', [-pw / 2 + 0.1, 0.128, 0.003], 0.11);
   } else if (era === 'wk2') {
+    flabel(PF, C, 'n_batt', [pw / 2 - 0.12, 0.128, 0.003], 0.1);
     ga2('w_rpm', -pw / 2 + 0.09, 0.05, 0.06, 'rpm', 3500);
     ga2('w_kmh', 0, 0.05, 0.06, 'kmh', 60);
     ga2('w_oel', pw / 2 - 0.09, 0.05, 0.045, 'oel', 10);
@@ -1081,7 +1295,9 @@ function buildDriver(root, D, C, det, era, cab) {
 
   // ---- Detail (Nutzer 20.11.): Riffelblech, Schweißnähte, Schraubenreihen, Bedienteile der Simulation, Leitungen
   if (det) {
-    DT.riffle(B, C.steel, { rect: [xl + 0.05, xr - 0.05, zFB + 0.05, zB - 0.06], y: yF + 0.012, det, skip: (x, z) => Math.hypot(x - x0 + 0.02, z - zB + 0.25) < 0.26 });
+    // Riffelblech: Bodenplatte trägt die Riffelblech-Textur (cab_riffel); Schweißspritzer an den Nähten
+    BASE.spatter(B, C, [xl + 0.01, yF + 0.012, zFB + 0.1], [xl + 0.01, yF + 0.012, zB - 0.1], 16, 3, 0.02);
+    BASE.spatter(B, C, [xr - 0.01, yF + 0.012, zFB + 0.1], [xr - 0.01, yF + 0.012, zB - 0.1], 12, 7, 0.02);
     for (const x of [xl + 0.004, xr - 0.004]) { DT.weld(B, C.metal, [[x, yF + 0.006, zFB + 0.02], [x, yF + 0.006, zB - 0.01]]); DT.weld(B, C.metal, [[x, yR - 0.006, zFT + 0.02], [x, yR - 0.006, zB - 0.01]]); }
     DT.weld(B, C.metal, [[xl + 0.01, yR - 0.006, zB - 0.006], [xr - 0.01, yR - 0.006, zB - 0.006]]);
     DT.weld(B, C.metal, [[xl + 0.01, yF + 0.006, zFB + 0.006], [xr - 0.01, yF + 0.006, zFB + 0.006]]);
@@ -1201,25 +1417,24 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
   // ---- Sitze
   if (c && !wk1) {
     const post = A.basket ? Math.max(0.2, 0.34 - 0.085 - A.yb) : 0.19;
-    DT.seat(B, C, det, [-0.62, 0.345, 0.55], 0, { post, back: true, w: 0.42, d: 0.4, foot: false });
+    DT.seat(B, C, det, [-0.62, 0.345, 0.55], 0, { post, back: true, w: 0.42, d: 0.4, foot: false, seed: 1 });
     label(B, C, 'w_sitz', [-0.62 + 0.215, 0.27, 0.55], [0, HP, 0], 0.07);
   }
   if (!wk1) {
-    if (rackRight) DT.seat(B, C, det, [0.6, 0.34, 1.35], PI, { post: 0.2, back: false });
+    if (rackRight) DT.seat(B, C, det, [0.6, 0.34, 1.35], PI, { post: 0.2, back: false, seed: 2 });
     else DT.seat(B, C, det, [1.15, 0.4, 0.25], HP, { folded: true, w: 0.4, d: 0.36 });
   }
   if (A.basket && g) {
     const rB = A.ringR - 0.07, [cx, , cz] = A.rc, h = -A.yb;
     const gx = cx + rB * 0.45, gz = cz - rB * 0.45;
-    DT.seat(B, C, det, [gx, A.yb + h * 0.56 + 0.045, gz], 0, { post: h * 0.56 - 0.04, back: true, w: 0.4, d: 0.38, foot: true });
+    DT.seat(B, C, det, [gx, A.yb + h * 0.56 + 0.045, gz], 0, { post: h * 0.56 - 0.04, back: true, w: 0.4, d: 0.38, foot: true, seed: 3 });
   }
   // ---- Riffelblech: Turmkorbboden bzw. Bodenplatte (1. WK)
   if (A.basket) {
     const rB = A.ringR - 0.07;
-    DT.riffle(B, C.steel, { c: A.rc, R: rB - 0.02, y: A.yb, det, skip: (x, z) => Math.hypot(x - A.rc[0], z - A.rc[2]) < 0.2 });
     // Trittkante (gelb/schwarz) am Korbrand vorn (Durchstieg)
     label(B, C, 'streifen', [A.rc[0], A.yb + 0.0045, A.rc[2] - rB + 0.07], [-HP, 0, 0], 0.4);
-  } else DT.riffle(B, C.steel, { rect: [-0.58, 0.88, -0.33, 0.93], y: 0.08, det });
+  }
   // ---- Lukenunterseiten (Kommandant: Scharnier hinten; Ladeschütze: Scharnier außen rechts)
   if (A.hatchC) DT.hatchInner(B, C, det, A.hatchC.pos, A.hatchC.r, A.hatchC.pos[1], 'x', 1);
   if (A.hatchL) { DT.hatchInner(B, C, det, A.hatchL.pos, A.hatchL.r, A.hatchL.pos[1], 'z', 1); label(B, C, 'w_luke', [A.hatchL.pos[0], A.hatchL.pos[1] - 0.011, A.hatchL.pos[2] - A.hatchL.r - 0.09], [HP, 0, PI], 0.1); }
@@ -1257,6 +1472,42 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
   if (A.hatchC && !wk1) cab.lamps.push({ obj: 'tur', pos: V3([A.hatchC.pos[0], Math.min(A.hatchC.pos[1], 0.75) - 0.18, A.hatchC.pos[2]]), col: new THREE.Color(0x9ab8c8).multiplyScalar(0.2), where: 'turm', glow: true });
 }
 
+/** Helfer für cabin-base.js (Schilder, Feuerlöscher) an einem Bucket. */
+function kit(B, C, det) {
+  return {
+    label: (key, pos, rot, w) => label(B, C, key, pos, rot, w),
+    flabel: (F, key, lpos, w, lrot = null) => flabel(F, C, key, lpos, w, lrot),
+    extinguisher: (pos, nx) => extinguisher(B, C, pos, nx, det),
+  };
+}
+
+/**
+ * Splitterschutzmatten (gesteppt, mit Einfassband und Druckknöpfen) an den Seitenwänden des Turms: Raster je Wand,
+ * Felder mit Anbauten (Schilder, Kästen, Halter – alles, was der Bucket an der Wand schon hat) bleiben frei.
+ */
+function wallLiners(B, C, det) {
+  const occ = [];
+  for (const [mat, list] of B.m) {
+    if (mat === C.wall.modern || mat === C.wall.kk) continue;
+    for (const g of list) {
+      if (!g.boundingBox) g.computeBoundingBox();
+      const bb = g.boundingBox;
+      if (bb.max.x - bb.min.x > 1.2 || bb.max.z - bb.min.z > 1.6) continue;
+      if (bb.max.x > 1.1 || bb.min.x < -1.1) occ.push(bb);
+    }
+  }
+  const zs = [-0.62, -0.24, 0.14, 0.52, 0.9, 1.28], ys = [[0.13, 0.39], [0.41, 0.66]];
+  for (const sx of [-1, 1]) {
+    const wallAt = (z) => 1.24 + (z + 0.8) / 2.25 * 0.01;
+    for (let i = 0; i < zs.length - 1; i++) for (const [y0, y1] of ys) {
+      const z0 = zs[i] + 0.006, z1 = zs[i + 1] - 0.006, zc = (z0 + z1) / 2, x = sx * (wallAt(zc) + 0.01 * Math.sin(PI * (((y0 + y1) / 2) - 0.06) / 0.69) - 0.003);
+      const blocked = occ.some((bb) => (sx > 0 ? bb.max.x > Math.abs(x) - 0.06 : bb.min.x < -Math.abs(x) + 0.06) && bb.max.z > z0 - 0.01 && bb.min.z < z1 + 0.01 && bb.max.y > y0 - 0.01 && bb.min.y < y1 + 0.01);
+      if (blocked) continue;
+      BASE.linerPad(new DT.LF(B, [x, (y0 + y1) / 2, zc], new THREE.Quaternion().setFromEuler(new THREE.Euler(0, sx > 0 ? -HP : HP, 0))), C, det, z1 - z0, y1 - y0, 0.024);
+    }
+  }
+}
+
 function buildTurret(D, C, det, era, cab, A) {
   const grp = new THREE.Group();
   grp.name = 'cabin:turm';
@@ -1268,6 +1519,10 @@ function buildTurret(D, C, det, era, cab, A) {
   const tb = (D.interior && D.interior.breech) || [0, 0.42, -0.55];
   const bs = sc * ((D.interior && D.interior.breechScale) || 1);
   const breechGun = A.gunLocal(tb);
+
+  // ---------------------------------------------------------------- Grund-Innenraum modelliert (Nutzer 20.11.)
+  // ersetzt die Kästen aus models.js (attachCabin blendet sie aus): Schale, Böden, Rahmen, Griffe, Leitungen, Geräte, Korb
+  BASE.turretBase(B, C, det, era, D, A, kit(B, C, det), { gunSeat: !!(det && A.basket && A.gun), cmdSeat: !!(det && A.cmd && !wk1), loadSeat: !!(det && !wk1) });
 
   // ---------------------------------------------------------------- Richtschütze
   const g = A.gun;
@@ -1302,6 +1557,7 @@ function buildTurret(D, C, det, era, cab, A) {
       for (let i = 0; i < 5; i++) SF.add(box(0.022, 0.01, 0.01), C.rubber, [-0.07 + i * 0.035, -0.072, 0.002]);
       SF.add(rbox(0.16, 0.06, 0.03, 0.008), C.black, [0, -0.125, -0.01]);
       flabel(SF, C, 'tasten', [0, -0.125, 0.0065], 0.15);
+      flabel(SF, C, 'n_entf', [0.04, 0.078, 0.0], 0.1);
       cab.screens.fcs = true;
       ['mbt_ap', 'mbt_he', 'mg'].forEach((k, i) => {
         const bp = part(grp, 'btn:' + k, SF.w([-0.053 + i * 0.053, -0.12, 0.01]), SF.q);
@@ -1391,6 +1647,7 @@ function buildTurret(D, C, det, era, cab, A) {
       const DF = new Frame(B, DP, aim(DP, c));
       DF.add(rbox(0.25, 0.2, 0.06, 0.012), C.black, [0, 0, -0.032]);
       DF.add(new THREE.PlaneGeometry(0.19, 0.143), screen('cmd', 256, 192).mat, [0, 0.005, 0.001], null, null, true);
+      flabel(DF, C, 'n_kanal', [-0.05, 0.087, 0.0], 0.09);
       for (let i = 0; i < 5; i++) DF.add(box(0.016, 0.012, 0.01), C.rubber, [0.112, 0.06 - i * 0.03, 0.002]);
       DF.rod(C.steel, [0, -0.1, -0.04], [0, -0.3, -0.12], 0.02);
       cab.screens.cmd = true;
@@ -1455,6 +1712,7 @@ function buildTurret(D, C, det, era, cab, A) {
     B.add(rbox(0.03, 0.2, 0.2, 0.008), C.black, [1.2, sp[1] + 0.02, sp[2]]);
     simSwitch(grp, B, C, det, era, 'sicherung', sp, l, 'p_sicherung');
     label(B, C, 'sicher', [1.184, sp[1] + 0.105, sp[2]], [0, -HP, 0], 0.12);
+    if (det) label(B, C, 'n_nicht', [1.1835, sp[1] - 0.07, sp[2] + 0.04], [0, -HP, 0.06], 0.08);
     const lp = part(grp, 'lampe:sicher', [1.18, sp[1] + 0.06, sp[2] + 0.07]);
     const lm = new THREE.Mesh(cyl(0.012, 0.012, 0.012, 10).rotateZ(HP), C.lampRed); lm.name = 'lampe'; lp.add(lm);
     B.add(tor(0.0135, 0.003, 4, 12), C.steel, [1.18, sp[1] + 0.06, sp[2] + 0.07], [0, HP, 0]);
@@ -1547,6 +1805,14 @@ function buildTurret(D, C, det, era, cab, A) {
     label(B, C, 'nicht', [rx2, A.yb + 0.2, rz2 - 0.165], [0, PI, 0], 0.12);
   }
   turretDetail(D, C, det, era, cab, A, B, grp, GB);
+  // Splitterschutzmatten an den freien Turmwänden (moderne Panzer)
+  if (modern && det) wallLiners(B, C, det);
+  // Hülsen-Abdrücke und Ölflecken auf dem Korbboden bzw. der Bodenplatte, Schweißspritzer an den Turmnähten
+  if (det) {
+    const fy = A.basket ? A.yb + 0.0015 : 0.0815, [cx, , cz] = A.basket ? A.rc : [0.15, 0, 0.3];
+    for (let i = 0; i < (det > 1 ? 7 : 3); i++) { const a = i * 2.3 + 0.4, r = 0.12 + (i % 3) * 0.13; stencil(B, C, i % 3 === 2 ? 'd_oel' : 'd_ring', [cx + Math.cos(a) * r, fy + i * 0.0002, cz + Math.sin(a) * r], [-HP, 0, a], i % 3 === 2 ? 0.16 : 0.11); }
+    if (!wk1) for (const [x, z] of [[0.9, 1.15], [-0.9, 1.15], [1.24, -0.8]]) BASE.spatter(B, C, [x * 0.985, 0.12, -z * 0.985], [x * 0.985, 0.7, -z * 0.985], 9, Math.round(x * 10 + 20), 0.02);
+  }
   B.build(grp, 'turmraum');
   GB.build(gunG, 'rohrraum');
   return { tur: grp, gun: gunG };
@@ -1555,6 +1821,7 @@ function buildTurret(D, C, det, era, cab, A) {
 /* ===================================================================== Vorlage, Anbau, Takt */
 
 const TPL = new Map();
+const ERA_WEAR = { modern: [0.18, 0.45], kk: [0.42, 0.6], wk2: [0.65, 0.72], wk1: [1.0, 0.85] };
 // Kalter Krieg (kk): analoge Instrumente und heller Innenanstrich wie im 2. WK (keine Bildschirme)
 function eraOf(D) { return D.era === 'wk2' || D.era === 'kk' ? 'wk2' : D.era === 'wk1' ? 'wk1' : 'modern'; }
 /** Hülse je Panzer: modern nur der Hülsenboden (verbrennbare Hülse), sonst Messinghülse (Länge, Radius in m). */
@@ -1563,7 +1830,7 @@ const CASE = { mbt: null, wk2: [0.36, 0.042], wk2h: [0.57, 0.052], wk1: [0.3, 0.
 /** Kampfraum der Wanne (models.js hullCompartment, gleiche Maße): Riffelblech, Schweißnähte, Schrauben am Motorschott,
  * Leitungen mit Schellen, Schablonenschrift. Gruppe 'cabin:kampfraum' im Wannenraum. */
 function buildHullExtras(D, C, det, era, A) {
-  if (!A.basket || !det) return null;
+  if (!A.basket) return null;
   const grp = new THREE.Group();
   grp.name = 'cabin:kampfraum';
   const B = new MB(), hb = D.hullBox, tp = D.turretPivot, ring = A.ringR * A.sc;
@@ -1571,7 +1838,10 @@ function buildHullExtras(D, C, det, era, A) {
   const wx = Math.max(ring + 0.12, Math.min(hb[3] - 0.5, ring + 0.3));
   const DC = driverCabin(D);
   const zF = Math.max(hb[2] - hb[5] + 0.35, tp[2] - ring - 0.75, DC ? DC.zB + 0.05 : -Infinity), zB = Math.min(hb[2] + hb[5] - 0.3, tp[2] + ring + 0.55);
-  DT.riffle(B, C.steel, { rect: [-wx + 0.07, wx - 0.07, zF + 0.07, zB - 0.07], y: yF + 0.02, det: 1 });
+  // Grund-Kampfraum modelliert (Schale, Riffelboden, Durchstieg, Munitionsstand, Motorschott, Kästen)
+  BASE.hullBase(B, C, det, era, D, A, kit(B, C, det));
+  if (!det) { B.build(grp, 'kampfraum'); return grp; }
+  BASE.spatter(B, C, [-wx + 0.01, yF + 0.022, zF + 0.1], [-wx + 0.01, yF + 0.022, zB - 0.1], 14, 11, 0.02);
   for (const sx of [-1, 1]) {
     DT.weld(B, C.metal, [[sx * (wx - 0.005), yF + 0.006, zF + 0.01], [sx * (wx - 0.005), yF + 0.006, zB - 0.01]]);
     DT.weld(B, C.metal, [[sx * (wx - 0.005), yR - 0.006, zF + 0.01], [sx * (wx - 0.005), yR - 0.006, zB - 0.01]]);
@@ -1588,8 +1858,11 @@ function buildHullExtras(D, C, det, era, A) {
   return grp;
 }
 
-function buildTemplate(D, C, det) {
+function buildTemplate(D, C0, det) {
   const era = eraOf(D);
+  CHAMF = det >= 1 ? 1 : 0; DT.setChamfer(det >= 1);
+  // Kalter Krieg: Ausstattung wie 2. WK, aber hellgrüner Anstrich
+  const C = D.era === 'kk' ? Object.assign(Object.create(C0), { wall: { ...C0.wall, wk2: C0.wall.kk } }) : C0;
   const info = { lamps: [], screens: {}, partNames: [], driverEye: null };
   const A = anchorsOf(D);
   cab_sw = [];
@@ -1610,6 +1883,7 @@ function buildTemplate(D, C, det) {
   const slots = [];
   for (let cc = 0; cc < cols; cc++) for (let r = 0; r < rows; r++) slots.push([(cc - (cols - 1) / 2) * 0.155, (r - (rows - 1) / 2) * 0.135, rz0]);
   const RP = DT.rackParts(MB, C, det, era, { slots, rw: grid ? grid[0] * 0.155 + 0.07 : 1.62, rh: grid ? grid[1] * 0.135 + 0.06 : 0.6, rz0, blast: !!I.blastDoor, wet: !!I.wet });
+  BASE.rackBox(RP.frame, C, det, { rw: grid ? grid[0] * 0.155 + 0.07 : 1.62, rh: grid ? grid[1] * 0.135 + 0.06 : 0.6, rz0, blast: !!I.blastDoor });
   const rack = new THREE.Group(); rack.name = 'cabin:gestell';
   RP.frame.build(rack, 'gestell');
   let door = null;
@@ -1623,6 +1897,7 @@ function buildTemplate(D, C, det) {
 /** Hülsen-/Dampf-Pool je Anbau (eigene Netze; Geometrie geteilt je Typ). */
 const CASE_GEO = new Map();
 function caseGeom(D) {
+  const cyl = (r1, r2, h, n = 12, open = false) => new THREE.CylinderGeometry(r1, r2, h, n, 1, open);
   if (CASE_GEO.has(D.id)) return CASE_GEO.get(D.id);
   const spec = CASE[D.id] || null, sc = (D.interior && D.interior.scale) || 1;
   let g;
@@ -1637,6 +1912,7 @@ function caseGeom(D) {
     g = mergeGeometries(parts.map((x) => x.toNonIndexed()), false);
     g.scale(sc, sc, sc);
   }
+  g.setAttribute('cabE', new THREE.BufferAttribute(SH.edgeNone(g.attributes.position.count), 4));
   for (const [k, n] of [['cabA', 3], ['cabS0', 2], ['cabS1', 2]]) g.setAttribute(k, new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * n), n));
   CASE_GEO.set(D.id, g);
   return g;
@@ -1648,13 +1924,24 @@ function caseGeom(D) {
  */
 export function attachCabin(model, D, S, quality = 'high') {
   if (!model || !model.interior || !D || D.drive !== 'tracked') return null;
-  const C = cabinMats(S);
-  resyncMats();
   const det = quality === 'low' ? 0 : quality === 'medium' ? 1 : 2;
+  const C = cabinMats(S, det);
+  resyncMats();
   const key = `${D.id}:${det}`;
   let tpl = TPL.get(key);
   if (!tpl) { tpl = buildTemplate(D, C, det); TPL.set(key, tpl); }
   const tur = tpl.tur.clone(true), gun = tpl.gun.clone(true), hull = tpl.hull.clone(true);
+  // Grund-Innenraum (models.js) ausblenden – cabin-base.js baut ihn modelliert nach. Bleiben: Granaten im Gestell,
+  // Granate/Arme in der Hand, Gestell-/Türgruppen (eigene Detailnetze); ihnen fehlt nur die Kantenmaske.
+  for (const o of model.interior.children) if (o.isMesh) o.visible = false;
+  const rg0 = model.interior.getObjectByName('rackGrp');
+  if (rg0) for (const o of rg0.children) if (o.isMesh && !o.userData.rack) o.visible = false;
+  if (model.hullInterior && tpl.A.basket) for (const o of model.hullInterior.children) if (o.isMesh) o.visible = false;
+  for (const gg of [model.interior, model.breech]) if (gg) gg.traverse((o) => {
+    if (!o.isMesh || !o.geometry || o.geometry.attributes.cabE) return;
+    const g = o.geometry, n = g.attributes.position.count;
+    g.setAttribute('cabE', new THREE.BufferAttribute(!g.index && g.attributes.normal ? SH.edgeMask(g) : SH.edgeNone(n), 4));
+  });
   model.interior.add(tur);
   if (model.gun) model.gun.add(gun);
   model.root.add(hull);
@@ -1917,6 +2204,8 @@ export function syncCabin(cab, v, dt, ctx = {}) {
   // 4–5 Bildschirme/Leuchtmelder/Tageslicht
   const where = ctx.driver ? 'fahrer' : 'turm';
   CAB_U.uCabSet.value = ctx.driver ? 1 : 0;
+  // Gebrauchsspuren je Ära: Rost (x) und Staub (z) – modern gepflegt, Weltkrieg stark verrostet
+  { const e = cab.D.era || 'modern', E = ERA_WEAR[e] || ERA_WEAR.modern; CAB_U.uCabEra.value.set(E[0], 0, E[1], 0); }
   const LP = CAB_U.uCabLP.value, LCo = CAB_U.uCabLC.value;
   const f = 1 - cab.flick * (0.55 + 0.45 * Math.sin(cab.t * 63)) * 0.8;
   const slots = cab.slots[where] || [];

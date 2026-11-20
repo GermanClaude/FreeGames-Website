@@ -228,6 +228,8 @@ const _col = new THREE.Color();
 /** Welches Decal passt zu einer Wand? → [Zelle, Breite, Höhe, Mittenhöhe über Boden] | null */
 function pick(name, r, krieg = 0.12) {
   const n = name || '';
+  // gesamt 20.11.: nie auf Scheiben (Schaufenster Stadtkern: Einschuss/Kreide schwebte als heller Fleck auf dem Glas)
+  if (/glass|glas|fenster|window/i.test(n)) return null;
   // karten-voll: Kriegsspuren (Einschüsse, Garben, Splitter, Brand) an festen Wänden – Anteil je Karte (def.lookDecals.krieg)
   if (!/container/.test(n) && r() < krieg) {
     const w = r();
@@ -269,6 +271,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
     _o.set(x, gy + 1.1, z); _d.set(Math.cos(a), 0, Math.sin(a));
     const h = world.raycast(_o, _d, 3.2);
     if (!h || Math.abs(h.normal.y) > 0.12 || h.distance < 0.25) continue;
+    if (h.surface === 'glass') continue; // gesamt 20.11.: keine Decals auf Scheiben
     const name = h.object?.name || h.object?.material?.name || h.surface || '';
     const sel = pick(name, r, opt.krieg ?? 0.12);
     if (!sel) continue;
@@ -291,7 +294,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
       _o.copy(_p).addScaledVector(_t, u * w).addScaledVector(_n, 0.15); _o.y += v * hh;
       _d.copy(_n).negate();
       const c = world.raycast(_o, _d, 0.4);
-      if (!c || Math.abs(c.distance - 0.15) > 0.06 || Math.abs(c.normal.dot(_n)) < 0.95) { ok = false; break; }
+      if (!c || c.surface === 'glass' || Math.abs(c.distance - 0.15) > 0.06 || Math.abs(c.normal.dot(_n)) < 0.95) { ok = false; break; }
     }
     if (!ok) continue;
     taken.set(k, 1);

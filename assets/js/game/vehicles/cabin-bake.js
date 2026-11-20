@@ -15,44 +15,65 @@ import * as THREE from 'three';
 
 const _v = new THREE.Vector3(), _n = new THREE.Vector3(), _m = new THREE.Matrix4(), _nm = new THREE.Matrix3();
 
-/** Dreiecke mit Kanten > maxLen rekursiv teilen (nicht indiziert, alle Attribute linear). → neue Geometrie oder null */
+/** Dreiecke mit Kanten > maxLen rekursiv teilen (nicht indiziert, alle Attribute linear). → neue Geometrie oder null
+ * (innen2: verschachtelte Puffer statt Arrays je Ecke – die modellierten Schalen haben viele große Flächen) */
 export function tessellate(geom, maxLen) {
   const g = geom.index ? geom.toNonIndexed() : geom;
   const P = g.attributes.position, n = P.count;
   if (!n) return null;
   const names = Object.keys(g.attributes);
   const src = names.map((k) => g.attributes[k]);
-  let need = false;
   const L2 = maxLen * maxLen;
-  const d2 = (i, j) => { const dx = P.getX(i) - P.getX(j), dy = P.getY(i) - P.getY(j), dz = P.getZ(i) - P.getZ(j); return dx * dx + dy * dy + dz * dz; };
-  const _u = new THREE.Vector3(), _w = new THREE.Vector3(), _o = new THREE.Vector3();
-  for (let t = 0; t < n && !need; t += 3) if (d2(t, t + 1) > L2 || d2(t + 1, t + 2) > L2 || d2(t + 2, t) > L2) {
-    _o.fromBufferAttribute(P, t); _u.fromBufferAttribute(P, t + 1).sub(_o); _w.fromBufferAttribute(P, t + 2).sub(_o);
-    if (_u.cross(_w).length() / 2 >= L2 * 0.3) need = true;
-  }
-  if (!need) return null;
-  const out = names.map(() => []);
-  const vtx = (i) => src.map((a) => { const s = a.itemSize, r = new Array(s); for (let k = 0; k < s; k++) r[k] = a.array[i * s + k]; return r; });
-  const mid = (A, B) => A.map((a, j) => a.map((x, k) => (x + B[j][k]) / 2));
-  const len2 = (A, B) => { const a = A[0], b = B[0]; return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2; };
-  const area = (A, B, C) => { const a = A[0], b = B[0], c = C[0]; const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; return Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 2; };
-  const emit = (A) => { for (let j = 0; j < out.length; j++) for (const x of A[j]) out[j].push(x); };
-  const split = (A, B, C, depth) => {
-    const ab = len2(A, B), bc = len2(B, C), ca = len2(C, A), mx = Math.max(ab, bc, ca);
-    // nur große Flächen teilen (lange, schmale Dreiecke von Rohren/Kanten bleiben)
-    if (mx <= L2 || area(A, B, C) < L2 * 0.3 || depth > 12) { emit(A); emit(B); emit(C); return; }
-    // längste Kante halbieren (keine T-Stöße innerhalb eines Dreiecks; Kanten zwischen Dreiecken teilen sich gleich)
-    if (mx === ab) { const M = mid(A, B); split(A, M, C, depth + 1); split(M, B, C, depth + 1); }
-    else if (mx === bc) { const M = mid(B, C); split(A, B, M, depth + 1); split(A, M, C, depth + 1); }
-    else { const M = mid(C, A); split(A, B, M, depth + 1); split(M, B, C, depth + 1); }
+  const pa = P.array;
+  const d2 = (i, j) => { const dx = pa[i * 3] - pa[j * 3], dy = pa[i * 3 + 1] - pa[j * 3 + 1], dz = pa[i * 3 + 2] - pa[j * 3 + 2]; return dx * dx + dy * dy + dz * dz; };
+  const ar = (i, j, k) => {
+    const ux = pa[j * 3] - pa[i * 3], uy = pa[j * 3 + 1] - pa[i * 3 + 1], uz = pa[j * 3 + 2] - pa[i * 3 + 2];
+    const wx = pa[k * 3] - pa[i * 3], wy = pa[k * 3 + 1] - pa[i * 3 + 1], wz = pa[k * 3 + 2] - pa[i * 3 + 2];
+    return Math.hypot(uy * wz - uz * wy, uz * wx - ux * wz, ux * wy - uy * wx) / 2;
   };
-  for (let t = 0; t < n; t += 3) split(vtx(t), vtx(t + 1), vtx(t + 2), 0);
+  let need = false;
+  for (let t = 0; t < n && !need; t += 3) if ((d2(t, t + 1) > L2 || d2(t + 1, t + 2) > L2 || d2(t + 2, t) > L2) && ar(t, t + 1, t + 2) >= L2 * 0.3) need = true;
+  if (!need) return null;
+  // verschachteln: je Ecke alle Attribute hintereinander (Position zuerst)
+  const pi = names.indexOf('position');
+  const order = [pi, ...names.map((_, i) => i).filter((i) => i !== pi)];
+  const sizes = order.map((i) => src[i].itemSize), stride = sizes.reduce((x, y) => x + y, 0);
+  const IN = new Float32Array(n * stride);
+  { let off = 0; for (let q = 0; q < order.length; q++) { const a = src[order[q]].array, sz = sizes[q]; for (let v = 0; v < n; v++) for (let k = 0; k < sz; k++) IN[v * stride + off + k] = a[v * sz + k]; off += sz; } }
+  let out = new Float32Array(Math.max(stride * 3 * 64, n * stride * 2)), on = 0;
+  const emit = (buf, o) => {
+    if (on + stride > out.length) { const nb = new Float32Array(out.length * 2); nb.set(out); out = nb; }
+    for (let k = 0; k < stride; k++) out[on + k] = buf[o + k];
+    on += stride;
+  };
+  const pool = new Float32Array(stride * 16);
+  const dd = (A, a, B, b) => { const dx = A[a] - B[b], dy = A[a + 1] - B[b + 1], dz = A[a + 2] - B[b + 2]; return dx * dx + dy * dy + dz * dz; };
+  const area = (A, a, B, b, C, c) => {
+    const ux = B[b] - A[a], uy = B[b + 1] - A[a + 1], uz = B[b + 2] - A[a + 2], wx = C[c] - A[a], wy = C[c + 1] - A[a + 1], wz = C[c + 2] - A[a + 2];
+    return Math.hypot(uy * wz - uz * wy, uz * wx - ux * wz, ux * wy - uy * wx) / 2;
+  };
+  const split = (A, a, B, b, C, c, depth) => {
+    const ab = dd(A, a, B, b), bc = dd(B, b, C, c), ca = dd(C, c, A, a), mx = Math.max(ab, bc, ca);
+    // nur große Flächen teilen (lange, schmale Dreiecke von Rohren/Kanten bleiben)
+    if (mx <= L2 || depth > 12 || area(A, a, B, b, C, c) < L2 * 0.3) { emit(A, a); emit(B, b); emit(C, c); return; }
+    const m = depth * stride;
+    // längste Kante halbieren (Kanten zwischen Dreiecken teilen sich gleich)
+    if (mx === ab) { for (let k = 0; k < stride; k++) pool[m + k] = (A[a + k] + B[b + k]) / 2; split(A, a, pool, m, C, c, depth + 1); split(pool, m, B, b, C, c, depth + 1); }
+    else if (mx === bc) { for (let k = 0; k < stride; k++) pool[m + k] = (B[b + k] + C[c + k]) / 2; split(A, a, B, b, pool, m, depth + 1); split(A, a, pool, m, C, c, depth + 1); }
+    else { for (let k = 0; k < stride; k++) pool[m + k] = (C[c + k] + A[a + k]) / 2; split(A, a, B, b, pool, m, depth + 1); split(pool, m, B, b, C, c, depth + 1); }
+  };
+  for (let t = 0; t < n; t += 3) split(IN, t * stride, IN, (t + 1) * stride, IN, (t + 2) * stride, 0);
+  const nv = on / stride;
   const ng = new THREE.BufferGeometry();
-  names.forEach((k, j) => {
-    const a = src[j];
+  let off = 0;
+  for (let q = 0; q < order.length; q++) {
+    const a = src[order[q]], sz = sizes[q];
     const Arr = a.array.constructor === Float32Array || a.array.constructor === Array ? Float32Array : a.array.constructor;
-    ng.setAttribute(k, new THREE.BufferAttribute(new Arr(out[j]), a.itemSize, a.normalized));
-  });
+    const arr = new Arr(nv * sz);
+    for (let v = 0; v < nv; v++) for (let k = 0; k < sz; k++) arr[v * sz + k] = out[v * stride + off + k];
+    ng.setAttribute(names[order[q]], new THREE.BufferAttribute(arr, sz, a.normalized));
+    off += sz;
+  }
   return ng;
 }
 

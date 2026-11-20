@@ -8,7 +8,7 @@
 import { esc, el } from './dom.js?v=20261115041504';
 import { ICON, deviceOf } from './icons.js?v=20261115041504';
 import { LoadoutPanel } from './loadout-panel.js?v=20261115041504';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261115041504';
+import { CLASSES, GAME_STYLES, STYLE_ORDER, SIM_MODES } from '../../shared/classes.data.js?v=20261115041504';
 import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261115041504';
 import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261115041504';
 import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261115041504';
@@ -865,7 +865,7 @@ export class NetMenus {
     const t = s.time === 'zufall' ? 'Zufall' : s.time === 'echtzeit' ? 'Echtzeit (Uhr des Hosts)' : s.time && s.time !== 'standard' ? (times.find((x) => x.id === s.time) || {}).name || s.time : `${map.timeOfDay || 'Standard'}`;
     const wd = WEATHERS[map.weatherStandard || map.weatherDefault];
     const w = s.weather === 'zufall' ? 'Zufall' : s.weather && s.weather !== 'standard' ? (WEATHERS[s.weather] || {}).name || s.weather : `Standard${wd ? ` (${wd.name})` : ''}`;
-    return { mode, map, time: t, weather: w, diff: (d.DIFF[s.difficulty] || {}).name || s.difficulty, style: (GAME_STYLES[s.style] || GAME_STYLES.arcade || {}).label || s.style };
+    return { mode, map, time: t, weather: w, diff: (d.DIFF[s.difficulty] || {}).name || s.difficulty, style: s.style === 'simulation' && !(SIM_MODES || []).includes(s.mode) ? (GAME_STYLES.realistisch || {}).label || 'Realistisch' : (GAME_STYLES[s.style] || GAME_STYLES.arcade || {}).label || s.style };
   }
 
   _settingsViewHtml() {
@@ -906,7 +906,9 @@ export class NetMenus {
     const times = [['standard', esc(map.timeOfDay || 'Standard'), 'Tageszeit der Karte'], ...(Array.isArray(map.times) ? map.times : []).map((t) => [t.id, esc(t.name || t.id), '']), ['echtzeit', 'Echtzeit', 'Passend zur echten Uhrzeit (Uhr des Hosts)'], ['zufall', 'Zufall', 'Der Host würfelt beim Start']];
     const wxs = [['standard', 'Standard', map.weather || 'Wetter der Karte'], ...(Array.isArray(map.weathers) ? map.weathers : []).filter((w) => WEATHERS[w]).map((w) => [w, esc(WEATHERS[w].name), WEATHERS[w].short || '']), ['zufall', 'Zufall', 'Der Host würfelt beim Start']];
     const diffs = DIFF_ORDER.map((id) => [id, esc((d.DIFF[id] || {}).name || id), (d.DIFF[id] || {}).description || '']);
-    const styles = (STYLE_ORDER || ['arcade', 'realistisch']).map((id) => [id, esc((GAME_STYLES[id] || {}).label || id), (GAME_STYLES[id] || {}).desc || '']);
+    // gesamt 20.11.: „Simulation“ nur in passenden Modi (SIM_MODES, wie in der Lobby) – sonst spielt sie als „Realistisch“
+    const simOk = (SIM_MODES || []).includes(s.mode);
+    const styles = (STYLE_ORDER || ['arcade', 'realistisch']).filter((id) => id !== 'simulation' || simOk || s.style === id).map((id) => [id, esc((GAME_STYLES[id] || {}).label || id), (GAME_STYLES[id] || {}).desc || '']);
     const stepper = (k, label, v, min, max, shown = v) => `
       <div class="lb-step nr-step"><span>${esc(label)}</span>
         <button type="button" class="m-icon" data-step="${k}" data-d="-1" data-fk="${k}-m" aria-label="${esc(label)} verringern"${v <= min ? ' disabled' : ''}>${ICON.minus}</button>

@@ -9,7 +9,7 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (128)
+## Texturen (130)
 
 45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
@@ -137,6 +137,18 @@ Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert).
 | Brown Mud 03 | `mud_wet` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | White Stucco | `plaster_stucco` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/white_stucco) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rusty Painted Metal (Wellung herausgerechnet, Albedo als einfärbbare Verschleißkarte) | `ctr_lack` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rusty_painted_metal) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Panzer-Innenraum: Gebrauchsspuren und Riffelblech (innen2, 20.11.2026)
+
+Masken und Riffelblech für die Panzer-Innenräume (2K-Quellen, KTX2 512/1024; Masken als UASTC-RGBA).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Scratches 005 (Kratzermaske, Kanal R) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Scratches005) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Surface Imperfections 003 (Schlieren/Läufer, Kanal G) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=SurfaceImperfections003) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Metal 004 (Abplatzer aus der Metallkarte, Kanal B) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=PaintedMetal004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Fingerprints 002 (Fingerabdrücke/Fettfilm, Kanal A) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Fingerprints002) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Diamond Plate 008 A | `cab_riffel` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=DiamondPlate008A) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
 ### Laub- und Bodenatlanten (14.11.2026)
 

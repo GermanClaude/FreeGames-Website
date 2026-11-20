@@ -11,11 +11,15 @@
 // B ist ein Sammel-Bucket aus cabin.js (add/rod/tube, Eigenschaft wear = Abnutzung 0…1 für die folgenden Teile).
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { cbox, ccyl, quilt } from './cabin-shape.js?v=20261115041504';
 
 const PI = Math.PI, HP = PI / 2;
-export const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+// Nutzer 20.11. („zu kantig“): Kästen/Zylinder mit Fase und gewichteten Normalen, low ohne (setChamfer aus cabin.js)
+let CHAMF = 1;
+export function setChamfer(on) { CHAMF = on ? 1 : 0; }
+export const box = (w, h, d) => (CHAMF ? cbox(w, h, d, Math.max(0.0015, Math.min(0.006, Math.min(w, h, d) * 0.2))) : new THREE.BoxGeometry(w, h, d));
 export const rbox = (w, h, d, r = 0.02, seg = 2) => new RoundedBoxGeometry(w, h, d, seg, Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3));
-export const cyl = (r1, r2, h, seg = 12, open = false) => new THREE.CylinderGeometry(r1, r2, h, Math.max(3, seg | 0), 1, open);
+export const cyl = (r1, r2, h, seg = 12, open = false) => (CHAMF && !open && Math.max(r1, r2) > 0.006 ? ccyl(r1, r2, h, seg, Math.max(0.0008, Math.min(0.004, Math.min(Math.max(r1, r2), h) * 0.15))) : new THREE.CylinderGeometry(r1, r2, h, Math.max(3, seg | 0), 1, open));
 export const tor = (R, r, rs = 6, ts = 24, arc = PI * 2) => new THREE.TorusGeometry(R, r, rs, ts, arc);
 const _e = new THREE.Euler(), _a = new THREE.Vector3();
 const Q = (x = 0, y = 0, z = 0, o = 'XYZ') => new THREE.Quaternion().setFromEuler(_e.set(x, y, z, o));
@@ -94,6 +98,19 @@ export function seat(B, C, det, pos, yaw, o = {}) {
   F.add(rbox(w, 0.075, d, 0.03, det > 1 ? 2 : 1), pad, [0, -0.035, 0]);
   if (det) for (const sx of [-1, 1]) F.add(rbox(0.06, 0.06, d * 0.92, 0.025), pad, [sx * (w / 2 - 0.02), -0.005, 0.01]);
   if (det > 1) F.add(box(w * 0.8, 0.004, 0.006), C.black, [0, 0.003, -d * 0.18]); // Naht
+  // Gebrauchsspuren (Nutzer 20.11.): Sitzfläche durchgesessen (Mitte abgegriffen), Flicken, Riss mit Schaumstoff
+  if (det) {
+    worn(B, 0.75, () => F.add(quilt(w * 0.5, d * 0.45, 0.004, { nx: 1, ny: 1, res: 3 }), pad, [0, 0.0005, 0.02], [-HP, 0, 0]));
+    const sd = (o.seed || 1) % 3;
+    if (sd !== 2) { // Flicken (aufgenäht) mit Steppnaht
+      F.add(quilt(0.11, 0.09, 0.005, { nx: 1, ny: 1, res: 2 }), C.patch || pad, [w * (sd ? -0.22 : 0.18), 0.002, -d * 0.12], [-HP, 0, sd ? 0.3 : -0.2]);
+      if (det > 1) for (const sy of [-1, 1]) F.add(box(0.11, 0.0015, 0.003), C.black, [w * (sd ? -0.22 : 0.18), 0.0055, -d * 0.12 + sy * 0.046], [0, sd ? 0.3 : -0.2, 0]);
+    }
+    if (sd !== 1 && C.foam) { // Riss an der Vorderkante, Schaumstoff quillt heraus
+      F.add(box(0.1, 0.012, 0.01), C.black, [w * 0.12, -0.002, -d / 2 + 0.006]);
+      for (let i = 0; i < 4; i++) F.add(new THREE.SphereGeometry(0.009 + (i % 2) * 0.004, 6, 4), C.foam, [w * 0.12 - 0.035 + i * 0.022, -0.004 + (i % 2) * 0.003, -d / 2 + 0.008]);
+    }
+  }
   // Lehne
   if (o.back !== false) {
     const bh = o.backH || 0.42;
@@ -227,11 +244,22 @@ export function breechParts(MB, C, det, era) {
   const B = new MB();
   const F = new LF(B, [0, 0, 0]);
   // Bodenstück
+  // innen2: geschmiedetes Bodenstück mit Maschinenfasen, plangefräster Stirnfläche, Ringnuten, Seitennuten,
+  // Schmiernippeln und Ringschraube; dunkel brünierter, öliger Stahl (C.breech)
+  const BS = C.breech || C.steel;
   worn(B, 0.2, () => {
-    B.add(rbox(0.5, 0.48, 0.42, 0.03, det ? 3 : 1), C.steel, [0, 0, 0]);
-    for (const sx of [-1, 1]) B.add(box(0.035, 0.5, 0.03), C.steel, [sx * 0.232, 0, 0.212]);
-    B.add(box(0.5, 0.05, 0.03), C.steel, [0, 0.218, 0.212]);
+    B.add(det ? cbox(0.5, 0.48, 0.42, 0.028) : rbox(0.5, 0.48, 0.42, 0.03, 1), BS, [0, 0, 0]);
+    for (const sx of [-1, 1]) B.add(box(0.035, 0.5, 0.03), BS, [sx * 0.232, 0, 0.212]);
+    B.add(box(0.5, 0.05, 0.03), BS, [0, 0.218, 0.212]);
   });
+  if (det) {
+    B.add(cbox(0.39, 0.37, 0.008, 0.004), BS, [0, -0.01, 0.213]);
+    for (const [r, t] of [[0.105, 0.0035], [0.13, 0.0025]]) B.add(tor(r, t, 4, det > 1 ? 32 : 16), C.black, [0, 0, 0.2175]);
+    for (const sx of [-1, 1]) for (const gy of [-0.11, 0.0, 0.11]) B.add(box(0.004, 0.01, 0.34), C.black, [sx * 0.2505, gy, -0.01]);
+    for (const sx of [-1, 1]) { B.add(cyl(0.006, 0.006, 0.012, 8), C.brass, [sx * 0.256, -0.17, 0.12], [0, 0, HP]); B.add(new THREE.SphereGeometry(0.005, 8, 6), C.brass, [sx * 0.263, -0.17, 0.12]); }
+    B.add(tor(0.025, 0.007, 6, 14), C.steel, [0.12, 0.27, -0.05], [0, HP, 0]);
+    B.add(cyl(0.016, 0.016, 0.03, 10), C.steel, [0.12, 0.248, -0.05]);
+  }
   // Ladeöffnung: Patronenlager-Ring, dunkle Tiefe
   B.add(tor(0.086, 0.012, 6, det ? 24 : 12), wk1 || era === 'wk2' ? C.brass : C.steel, [0, 0, 0.212]);
   B.add(cyl(0.078, 0.078, 0.3, det ? 20 : 10, true), C.black, [0, 0, 0.07], [HP, 0, 0]);
@@ -297,7 +325,7 @@ export function breechParts(MB, C, det, era) {
 /** Keil (Gruppenraum des Keils, Mitte 0, Ladefläche +Z). */
 export function keilParts(MB, C, det) {
   const B = new MB();
-  worn(B, 0.3, () => B.add(rbox(0.42, 0.44, 0.06, 0.012, det ? 2 : 1), C.steel, [0, 0, 0]));
+  worn(B, 0.3, () => B.add(det ? cbox(0.42, 0.44, 0.06, 0.01) : rbox(0.42, 0.44, 0.06, 0.012, 1), C.breech || C.steel, [0, 0, 0]));
   B.add(cyl(0.032, 0.036, 0.022, det ? 16 : 10), C.metal, [0, 0, 0.038], [HP, 0, 0]);
   B.add(cyl(0.01, 0.01, 0.01, 8), C.brass, [0, 0, 0.052], [HP, 0, 0]);
   for (const y of [0.15, -0.15]) B.add(box(0.36, 0.012, 0.008), C.black, [0, y, 0.031]);

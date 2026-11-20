@@ -170,7 +170,9 @@ function toGeometry(D, res, key) {
 function toTextures(T, key) {
   const mk = (data, name) => {
     const t = new THREE.DataTexture(data, T.w, T.h, THREE.RGBAFormat, THREE.UnsignedByteType);
-    t.colorSpace = name === 'a' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    // Karte A trägt Hautfaktor × 0,5 (face-skin.js) – linear speichern: sRGB-Dekodierung machte jedes Gesicht ~2,3× dunkler
+    // als Hals/Hände desselben Hauttons (gesamt 20.11.)
+    t.colorSpace = THREE.NoColorSpace;
     t.generateMipmaps = true;
     t.minFilter = THREE.LinearMipmapLinearFilter;
     t.magFilter = THREE.LinearFilter;
@@ -492,7 +494,7 @@ let neutralTex = null;
 function neutralMaps() {
   if (!neutralTex) {
     const mk = (r, g, b, a, srgb) => { const t = new THREE.DataTexture(new Uint8Array([r, g, b, a]), 1, 1); t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.needsUpdate = true; return t; };
-    neutralTex = { a: mk(128, 128, 128, 0, true), b: mk(128, 220, 118, 0, false) };
+    neutralTex = { a: mk(128, 128, 128, 0, false), b: mk(128, 220, 118, 0, false) };
   }
   return neutralTex;
 }
@@ -619,8 +621,10 @@ function skinFor(prof, opts) {
   if (typeof opts.skin === 'string') return opts.skin;
   if (typeof opts.skin === 'number') return SKIN_TONES[opts.skin % SKIN_TONES.length];
   const af = prof.african || 0, as = prof.asian || 0;
-  const r = hashN((prof.seed || 1) * 5 + 1);
-  return af > 0.7 ? SKIN_TONES[r < 0.5 ? 4 : 3] : af > 0.3 ? SKIN_TONES[r < 0.5 ? 2 : 3] : as > 0.5 ? SKIN_TONES[r < 0.5 ? 1 : 5] : SKIN_TONES[[0, 5, 1, 0][Math.floor(r * 4)]];
+  const r = hashN((prof.seed || 1) * 9 + 5);
+  // gesamt 20.11.: ohne Herkunftsangabe vor allem helle Töne (0/5), selten mittel (1) – vorher fiel Ton 0 nie und Ton 1
+  // traf auch hellhäutige Profile; je Profil fest (Samen), über die Profile gleichmäßig gemischt
+  return af > 0.7 ? SKIN_TONES[r < 0.5 ? 4 : 3] : af > 0.3 ? SKIN_TONES[r < 0.5 ? 2 : 3] : as > 0.5 ? SKIN_TONES[r < 0.5 ? 5 : 1] : SKIN_TONES[[0, 5, 0, 1, 5, 0][Math.floor(r * 6)]];
 }
 
 /**

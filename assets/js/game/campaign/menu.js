@@ -201,6 +201,8 @@ export class CampaignPane {
   render() {
     const el = this.el;
     if (!el) return;
+    // gesamt 20.11.: Fußzeile (Zusammenfassung) folgt dem Umschalter Stille Grenze / Eisenwind
+    if (this.lobby && this.lobby.tab === 'kampagne' && typeof this.lobby._renderSummary === 'function') { try { this.lobby._renderSummary(); } catch { /* */ } }
     const which = `<div class="kc-which" role="tablist"><button type="button" data-kc-which="infanterie" aria-pressed="${this.which !== 'panzer'}">Stille Grenze · Infanterie</button><button type="button" data-kc-which="panzer" aria-pressed="${this.which === 'panzer'}">Eisenwind · Panzer</button></div>`;
     if (this.which === 'panzer') {
       el.innerHTML = which + this.pz.html();
