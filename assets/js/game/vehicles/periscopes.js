@@ -73,7 +73,7 @@ function cupolaPrisms(D, H) {
 /** Drehbarer Winkelspiegel des Ladeschützen (vor der Luke bzw. im Turmdach über dem Platz). */
 export function loaderPrism(D) {
   const H = D.hatches && D.hatches.loader;
-  if (H && H.space === 'turret') return [{ head: [H.pos[0], H.pos[1] + 0.13, H.pos[2] - H.r - 0.13], yaw: 0, inner: [H.pos[0], H.pos[1] - 0.13, H.pos[2] - H.r - 0.06], rot: true, w: 0.12 }];
+  if (H && H.space === 'turret') return [{ head: [H.pos[0], H.pos[1] + 0.24, H.pos[2] - H.r - 0.1], yaw: 0, inner: [H.pos[0], H.pos[1] - 0.13, H.pos[2] - H.r - 0.06], rot: true, w: 0.12 }];
   if (D.era === 'wk1') return null;
   const I = D.interior || {}, sh = I.shift || [0, 0, 0], sc = I.scale || 1, le = I.loaderEye || [0.55, 0.62, 0.35];
   const tb = D.turretBox, roof = tb[1] + tb[4];
