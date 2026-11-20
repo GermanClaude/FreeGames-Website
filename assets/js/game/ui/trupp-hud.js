@@ -144,7 +144,7 @@ export class TruppHud {
     }
     this._updateWheel(dt);
     this._t -= dt;
-    if (this._t <= 0) { this._t = 0.25; this._renderSquad(); this._renderFront(); if (this.menu) this._renderMenu(false); }
+    if (this._t <= 0) { this._t = 0.25; toggle(this.root, 'is-touch', !!(input && input.mode === 'touch')); this._renderSquad(); this._renderFront(); if (this.menu) this._renderMenu(false); }
     this._updateMarks();
     this._declutter();
     // Einsatzkarte offen und Trupp gefallen: Knopf „Trupp wählen“
@@ -691,6 +691,16 @@ const TRUPP_CSS = `
 .tr-cmdrow i { width: 9px; height: 9px; border-radius: 2px; }
 .tr-cmdrow span { opacity: .7; font-size: 12px; margin-right: auto; }
 .tr-obj { min-width: 28px; padding: 3px 6px; background: rgba(255,255,255,.06); border: 1px solid rgba(233,230,223,.2); color: inherit; cursor: pointer; font: 700 12px/1 var(--font-hud, sans-serif); }
+/* Touch: kompakte Truppleiste oben links neben der Minikarte (links unten liegen Stick und Knöpfe), Funk darunter */
+.tr-root.is-touch .tr-squad { left: calc(var(--pad-l, 0px) + 108px); top: 4px; width: 188px; padding: 3px 5px 4px; border-left-width: 2px; }
+.tr-root.is-touch .tr-squad header { font-size: 11px; }
+.tr-root.is-touch .tr-squad header span { font-size: 10px; }
+.tr-root.is-touch .tr-squad ol { display: flex; flex-wrap: wrap; gap: 2px; margin: 3px 0 0; }
+.tr-root.is-touch .tr-squad li { display: block; width: 28px; height: 22px; padding: 2px 0 0; text-align: center; }
+.tr-root.is-touch .tr-squad li b, .tr-root.is-touch .tr-squad li span, .tr-root.is-touch .tr-squad footer { display: none; }
+.tr-root.is-touch .tr-squad li em { font-size: 9.5px; }
+.tr-root.is-touch .tr-radio { left: calc(var(--pad-l, 0px) + 108px); top: 64px; transform: none; width: 188px; }
+.tr-root.is-touch .tr-msg { font-size: 10.5px; padding: 1px 4px; }
 @media (max-width: 720px), (max-height: 480px) {
   .tr-squad { width: 168px; top: 34%; padding: 4px 6px; }
   .tr-squad li { grid-template-columns: 26px 1fr; font-size: 11.5px; }

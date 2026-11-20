@@ -470,10 +470,10 @@ export const TOUCH_BUTTONS = Object.freeze([
   { id: 'faehigkeit', sel: '.tc-faehigkeit', label: 'Klassen-Fähigkeit', auto: 'faehigkeit', def: { x: 58, y: 42, s: 46 } },
   // Befehlsrad: nur mit verbündeten Bots; oben rechts in der Reihe von Punktetabelle/Pause (frei auf 4:3 bis 20:9)
   { id: 'befehl', sel: '.tc-befehl', label: 'Befehlsrad', auto: 'allies', def: { x: 80, y: 8, s: 42 } },
-  // Modus Trupp (nur dort sichtbar): Soldat wechseln, Funkrad, Truppmenü – Reihe links neben dem Befehlsrad
-  { id: 'truppWechsel', sel: '.tc-trupp-wechsel', label: 'Soldat wechseln (Trupp)', auto: 'trupp', def: { x: 73, y: 8, s: 40 } },
-  { id: 'truppFunk', sel: '.tc-trupp-funk', label: 'Funkrad (Trupp)', auto: 'trupp', def: { x: 66, y: 8, s: 40 } },
-  { id: 'truppMenu', sel: '.tc-trupp-menu', label: 'Truppmenü', auto: 'trupp', def: { x: 59, y: 8, s: 40 } },
+  // Modus Trupp (nur dort sichtbar): Soldat wechseln, Funkrad, Truppmenü – Spalte unter dem Feuermodus (72 % frei bis Granate)
+  { id: 'truppWechsel', sel: '.tc-trupp-wechsel', label: 'Soldat wechseln (Trupp)', auto: 'trupp', def: { x: 72, y: 42, s: 40 } },
+  { id: 'truppFunk', sel: '.tc-trupp-funk', label: 'Funkrad (Trupp)', auto: 'trupp', def: { x: 72, y: 56, s: 40 } },
+  { id: 'truppMenu', sel: '.tc-trupp-menu', label: 'Truppmenü', auto: 'trupp', def: { x: 72, y: 70, s: 40 } },
   // Infanteriesimulation (isim, nur im Spielstil „Simulation“ sichtbar; plattform 19.11.)
   { id: 'simLaden', sel: '.tc-sim-laden', label: 'Durchladen (Simulation)', auto: 'sim', def: { x: 51, y: 42, s: 44 } },
   { id: 'simMag', sel: '.tc-sim-mag', label: 'Magazin prüfen (Simulation)', auto: 'sim', def: { x: 51, y: 56, s: 44 } },
