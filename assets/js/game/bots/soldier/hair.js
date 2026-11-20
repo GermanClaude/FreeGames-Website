@@ -248,6 +248,15 @@ class HairBuf {
   }
   geometry(boneIdx) {
     const n = this.n;
+    // Umlaufsinn je Dreieck an die (nach außen gerichteten) Normalen anpassen → Vorderseite = Außenseite (gl_FrontFacing)
+    const P = this.pos, Nn = this.nrm, I = this.idx;
+    for (let t = 0; t < I.length; t += 3) {
+      const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3;
+      const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+      const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+      const d = cx * (Nn[a] + Nn[b] + Nn[c]) + cy * (Nn[a + 1] + Nn[b + 1] + Nn[c + 1]) + cz * (Nn[a + 2] + Nn[b + 2] + Nn[c + 2]);
+      if (d < 0) { const x = I[t + 1]; I[t + 1] = I[t + 2]; I[t + 2] = x; }
+    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('normal', new THREE.Float32BufferAttribute(this.nrm, 3));
@@ -294,7 +303,8 @@ export function hairGeometry(geo, style, res = 'near', opts = {}) {
   const rnd = rng((opts.seed | 0) * 7919 + style.length * 131);
   // Haaransatz-Richtung je Spalte (über dem Ohr gekappt)
   const lineAt = (a) => {
-    let th = hairline(a, recede, female);
+    // leicht unregelmäßiger Ansatz (kein Topfschnitt-Rand)
+    let th = hairline(a, recede, female) + (Math.sin(a * 23 + 1.3) * 0.6 + Math.sin(a * 41) * 0.4) * 1.6 * D2R;
     const e = F.ear(a);
     if (e < 8) th = Math.min(th, e - 5 * D2R);
     return th;
@@ -336,7 +346,7 @@ export function hairGeometry(geo, style, res = 'near', opts = {}) {
       (i, j) => {
         const t = (j / rows) * (1 + OVER);
         // Ausdünnen am Ansatz (Strähne für Strähne) und am Kranz-Innenrand
-        let f = 1 - sstep(0.86, 1 + OVER * 0.9, t);
+        let f = 1 - sstep(0.74, 1 + OVER * 0.95, t);
         if (crownHole) f *= sstep(0.0, 0.25, t) * sstep(55 * D2R, 85 * D2R, Math.abs(-Math.PI + (i / cols) * TAU));
         return f;
       },
@@ -475,7 +485,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
   if (!geo || (beard !== 'voll' && beard !== 'kurz')) return null;
   const key = `${geo.userData.key || geo.uuid}|bart:${beard}|${res}`;
   if (hairGeoCache.has(key)) return hairGeoCache.get(key);
-  const len = beard === 'voll' ? 0.0068 : 0.0034;
+  const len = beard === 'voll' ? 0.0052 : 0.003;
   const P = geo.attributes.position.array, Nn = geo.attributes.normal.array, RS = geo.attributes.aRest.array, I = geo.index.array;
   const nV = P.length / 3;
   const slitY = land.slitY ?? 1.6216, cornerX = land.cornerX ?? 0.0243, noseY = (land.noseTip && land.noseTip[1]) ?? 1.6504, ey = (land.eyeL && land.eyeL[1]) ?? 1.689, tmjZ = (land.tmj && land.tmj[2]) ?? 0.0215;
@@ -490,7 +500,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
     const must = ax < cornerX + 0.006 ? noseY - 0.011 + 0.004 * sstep(0.008, 0.02, ax) : -9;
     const top = Math.max(cl, Math.min(must, noseY - 0.008));
     const bot = slitY - 0.062 + 0.022 * sstep(0.02, 0.06, ax);
-    let m = sstep(0.004, -0.006, y - top) * sstep(-0.014, 0.004, y - bot);
+    let m = sstep(0.006, -0.012, y - top) * sstep(-0.016, 0.004, y - bot);
     // Lippen frei (Ellipse um den Mund)
     const lip = Math.exp(-(((x) / (cornerX + 0.002)) ** 6 + ((y - slitY) / 0.0085) ** 2)) * sstep(-0.07, -0.09, z);
     m *= 1 - sat(lip * 3);
@@ -528,7 +538,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
       let g = [P[v * 3] * 0.6, -1, 0.15];
       const dn = g[0] * nx + g[1] * ny + g[2] * nz;
       g = norm3([g[0] - nx * dn, g[1] - ny * dn, g[2] - nz * dn]);
-      tan[o * 4] = g[0]; tan[o * 4 + 1] = g[1]; tan[o * 4 + 2] = g[2]; tan[o * 4 + 3] = sstep(0.05, 0.55, m);
+      tan[o * 4] = g[0]; tan[o * 4 + 1] = g[1]; tan[o * 4 + 2] = g[2]; tan[o * 4 + 3] = sstep(0.02, 0.85, m);
       // UV: Zylinderabwicklung (Strähnen senkrecht im Atlas)
       uv[o * 2] = Math.atan2(P[v * 3], -P[v * 3 + 2]) * 0.08 / 0.012 + s * 0.37;
       uv[o * 2 + 1] = P[v * 3 + 1] / 0.016 + s * 0.23;
@@ -536,7 +546,7 @@ export function beardGeometry(geo, beard, res = 'near', land = {}) {
       for (let mi = 0; mi < M.length; mi++) for (let q = 0; q < 3; q++) mpos[mi][o * 3 + q] = M[mi].array[v * 3 + q];
       for (let mi = 0; mi < MN.length; mi++) for (let q = 0; q < 3; q++) mnrm[mi][o * 3 + q] = MN[mi].array[v * 3 + q];
     }
-    for (let t = 0; t < keepTri.length; t++) idx.push(s * n + sel[keepTri[t]]);
+    for (let t = 0; t < keepTri.length; t++) idx.push(s * n + sel[keepTri[t]]); // Umlauf wie der Kopf (außen = vorn)
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -695,7 +705,7 @@ float npHairSpec = 1.0;
 		// Strähnenhelligkeit, innen (Tiefe) und zur Wurzel dunkler (Selbstverschattung), Spitzen etwas heller
 		float npB = 0.45 + 1.0 * npHx.r;
 		float npAo = mix( 0.5, 1.0, vHairL.z ) * mix( 0.88, 1.04, vHairL.x );
-		diffuseColor.rgb *= uHairCol * npB * npAo;
+		diffuseColor.rgb *= uHairCol * npB * npAo * ( gl_FrontFacing ? 1.0 : 0.4 ); // Innenseite der Kappe/Strähnen verschattet
 		npHairSpec = uHairSpecAmt * mix( 0.45, 1.0, vHairL.z ) * ( 0.6 + 0.6 * npHx.r );
 	}`);
     fs = fs.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>

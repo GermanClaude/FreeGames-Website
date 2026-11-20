@@ -345,8 +345,10 @@ function buildSoldier(V, lod) {
       case RG.PAD: return { color: '#a9a9a9', camo: 1, detail: 1, cls: 'gear', wear: 0.6 }; // Polstertaschen (Cordura, dunkler)
       case RG.BOOT: return C.boot;
       // 20.11.: Zehenkappe (glatteres, dunkleres Leder) und Lasche/Schnürbereich (Cordura) – Aufbau echter Kampfstiefel
-      case RG.TOE: return { pal: 'boot', shade: 0.8, detail: 0.6, shine: 0.2, cls: 'leather', wear: 0.5 };
-      case RG.TONGUE: return { pal: 'boot', shade: 1.12, detail: 1, shine: 0.05, cls: 'gear', wear: 0.4 };
+      // mensch3: Kappe/Lasche nur noch ein Hauch abgesetzt – die Bereichsgrenzen verlaufen im Netz zackig über die Dreiecke
+      // (las sich als helle/dunkle Streifen auf dem Stiefel)
+      case RG.TOE: return { pal: 'boot', shade: 0.95, detail: 0.6, shine: 0.12, cls: 'leather', wear: 0.45 };
+      case RG.TONGUE: return { pal: 'boot', shade: 1.02, detail: 0.9, shine: 0.06, cls: 'leather', wear: 0.4 };
       case RG.SOLE: return C.sole;
       case RG.NECK: return covered || V.face === 'gaiter' ? faceFab : V.shemagh ? C.sand : C.skin;
       case RG.SKULL: return covered ? faceFab : V.shemagh ? C.sand : V.head === 'wrap' ? { pal: 'gear2', shade: 1.05, detail: 1, cls: 'cloth' } : C.hair;
@@ -641,7 +643,7 @@ function buildSoldier(V, lod) {
             const yy = tp[1] - k * 0.006;
             const rb_ = surfAt(yy, 0, cz0, ox, oz, 0.012, 0.3, true);
             if (rb_ < 0.02) continue;
-            const rq = Math.max(rb_ + t + 0.002, Math.hypot(b[0], b[2] - cz0) + t * 1.2 + 0.003 + (tp[1] - yy) * 0.25); // außen über dem Steg
+            const rq = Math.max(rb_ + t + 0.007, Math.hypot(b[0], b[2] - cz0) + t * 1.2 + 0.003 + (tp[1] - yy) * 0.25); // außen über dem Steg
             const q = [ox * rq, yy, cz0 + oz * rq];
             const d = Math.hypot(q[0] - tp[0], q[1] - tp[1], q[2] - tp[2]);
             best = q;
@@ -778,7 +780,7 @@ function buildSoldier(V, lod) {
               nrm.push((shell ? -1 : 1) * nx / nl, 0, (shell ? -1 : 1) * nz / nl);
               uvA.push(th * 0.18, y);
               // mensch3: vorn folgt der Schoß dem Oberschenkel stärker (legt sich beim Hocken über das Knie), hinten hängt er am Becken
-              const wT = Math.min(1, Math.max(0, (0.985 - y) / 0.36)) * (0.5 + 0.38 * Math.cos(th));
+              const wT = Math.min(1, Math.max(0, (0.985 - y) / 0.36)) * Math.min(1, 0.56 + 0.5 * Math.cos(th)); // vorn ganz am Oberschenkel (gemischte Gewichte fallen bei 90° Beugung ein)
               const q = Math.round(wT * 255);
               ski.push(BONE.hips, BONE[thighBone], 0, 0); skw.push(255 - q, q, 0, 0);
             }

@@ -11,6 +11,7 @@ import { SHORT, loaderSeat } from './crew.js?v=20261115041504';
 const CSS = `
 .vh-root{position:absolute;inset:0;pointer-events:none;font-family:var(--font-hud,system-ui,sans-serif);color:var(--np-ink,#e9e6df);z-index:4}
 .vh-root[hidden]{display:none}
+body[data-ride-fire] .vh-panel{display:none}
 .vh-prompt{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);padding:6px 14px;border-radius:4px;background:rgba(10,11,13,.62);font-size:16px;font-weight:600;letter-spacing:.04em;white-space:nowrap;text-shadow:0 1px 2px #000}
 .vh-prompt kbd{display:inline-block;min-width:20px;padding:0 6px;margin-right:8px;border:1.5px solid currentColor;border-radius:3px;font:inherit;text-align:center}
 .vh-panel{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:300px;padding:10px 12px 9px;border-radius:6px;background:linear-gradient(180deg,rgba(10,11,13,.66),rgba(10,11,13,.48));box-shadow:0 2px 14px rgba(0,0,0,.35);text-shadow:0 1px 2px rgba(0,0,0,.8)}

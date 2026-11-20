@@ -692,7 +692,7 @@ const ALBEDO = /* glsl */`
 		sdDust = clamp( sdDust, 0.0, 0.65 ) * step( 0.5, sdC.y + sdC.z );
 		// 20.11.: Leder/Gummi (Stiefel, Handschuhe) nimmt Staub nur als Hauch in Rillen/Kanten an – vorher wurden dunkle Stiefel
 		// mit dem halben Staubton überzogen und wirkten grau-beige; Stoff behält den vollen Staub an Knien/Hosenbeinen
-		sdDust *= sdCls == 4 ? 0.3 : 1.0;
+		sdDust *= sdCls == 4 ? 0.18 : 1.0; // mensch3: 0,3 → 0,18 (Stiefel wirkten grau)
 		sdAlb = mix( sdAlb, sdAlb * 0.6 + uDust * 0.4, sdDust );
 		// gfx-soldat: Kantenabrieb + Einfassnaht an Ausrüstung/Leder/Hartteilen aus der Flächenkrümmung (abgerundete Kanten
 		// der Taschen, Platten, Stiefel): Kante heller/entsättigt, knapp innen eine dunkle Naht-/Einfasslinie
@@ -725,7 +725,7 @@ const NORMAL = /* glsl */`
 		float sdJ = exp( -pow( ( vNpPos.y - 0.5 ) / 0.075, 2.0 ) ) * step( vNpPos.y, 0.9 )
 			+ exp( -pow( ( vNpPos.y - 1.24 ) / 0.07, 2.0 ) ) * step( 0.16, abs( vNpPos.x ) )
 			+ exp( -pow( ( vNpPos.y - 0.9 ) / 0.05, 2.0 ) ) * step( abs( vNpPos.x ), 0.13 ) * 0.7;
-		vec2 sdW = ( sdMac.rg * 2.0 - 1.0 ) * uNpMacroStr * max( vNp.x, 0.6 * vNp.y ) * step( float( sdCls ), 0.5 ) * ( 1.0 + 1.3 * sdJ );
+		vec2 sdW = ( sdMac.rg * 2.0 - 1.0 ) * uNpMacroStr * step( float( sdCls ), 0.5 ) * ( max( vNp.x, 0.2 * vNp.y ) + ( vNp.x + 0.6 * vNp.y ) * 1.1 * sdJ );
 		mapN.xy += sdW;
 	#endif
 	vec3 sdFn = normalize( cross( dFdx( vViewPosition ), dFdy( vViewPosition ) ) );
