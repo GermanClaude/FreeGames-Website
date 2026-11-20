@@ -30,11 +30,12 @@ function rng(seed) {
   let s = seed >>> 0;
   return () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-function merge(list) {
-  const P = [], N = [];
-  for (const g0 of list) { const g = g0.index ? g0.toNonIndexed() : g0; P.push(...g.attributes.position.array); N.push(...g.attributes.normal.array); }
+function merge(list, farbe = false) {
+  const P = [], N = [], C = [];
+  for (const g0 of list) { const g = g0.index ? g0.toNonIndexed() : g0; P.push(...g.attributes.position.array); N.push(...g.attributes.normal.array); if (farbe) C.push(...g.attributes.color.array); }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  if (farbe) g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
   return g;
 }
 const seedOf = (id) => [...String(id || 'karte')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 17);
@@ -72,6 +73,8 @@ const ARTEN = {
   reifen: { geo: () => new THREE.TorusGeometry(0.29, 0.1, 5, 12).rotateX(Math.PI / 2).translate(0, 0.1, 0), cols: ['#1c1c1c', '#232322', '#2a2826'], r: 0.85, m: 0, s: [0.85, 1.15], fade: 1.6 },
   plane: { geo: () => { const g = new THREE.PlaneGeometry(1.6, 1.1, 4, 3).rotateX(-Math.PI / 2); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, 0.01 + Math.abs(Math.sin(i * 2.3) * Math.cos(i * 0.7)) * 0.09); g.computeVertexNormals(); return g; }, cols: ['#3a5a7a', '#4a5a3a', '#6a6a62', '#2a4a6a', '#7a5a3a'], r: 0.75, m: 0, side: THREE.DoubleSide, s: [0.8, 1.3], fade: 1.6 },
   kanister: { geo: () => new THREE.BoxGeometry(0.34, 0.46, 0.17).translate(0, 0.23, 0), cols: ['#4a5a3a', '#8a2a22', '#2a3a2a', '#b0902a'], r: 0.55, m: 0.2, s: [0.95, 1.05], fade: 1.3 },
+  // Bücherstapel (5–7 Bände, je Band eigene Helligkeit als Vertexfarbe × Instanzfarbe)
+  buchstapel: { geo: () => { const L = []; let y = 0; for (let i = 0; i < 6; i++) { const h = 0.03 + (i % 3) * 0.012, w = 0.17 + ((i * 7) % 5) * 0.012, d = 0.23 + ((i * 3) % 4) * 0.015; const g = new THREE.BoxGeometry(w, h, d).rotateY((((i * 5) % 7) - 3) * 0.06).translate(((i * 3) % 5 - 2) * 0.008, y + h / 2, 0); const c = [0.55, 1.0, 0.7, 1.25, 0.8, 1.1][i]; g.setAttribute('color', new THREE.Float32BufferAttribute(new Array(g.attributes.position.count * 3).fill(c), 3)); L.push(g); y += h; } return merge(L, true); }, cols: ['#6a3a2a', '#3a4a6a', '#4a5a3a', '#7a5a3a', '#5a3a4a', '#6a6050'], r: 0.8, m: 0, s: [0.9, 1.3], fade: 1.4, vc: true },
   zweig: { geo: () => new THREE.CylinderGeometry(0.006, 0.01, 0.42, 4, 1, true).rotateZ(Math.PI / 2).translate(0, 0.008, 0), cols: ['#4a3a2a', '#5a4632', '#3a2e22', '#6a5640'], r: 0.95, m: 0, s: [0.6, 1.5], fade: 1 },
 };
 /** Nester je Kartenstil: Gewichte der Arten außen (Wandfuß/Ecke/frei) und innen, Grün (Büschel), Büsche, Krieg. */
@@ -91,10 +94,10 @@ const STIL = {
 /** Innenräume: nur Bauschutt, Putz, Holz, Scherben (kein Laub/Grün). */
 const INNEN = ['putz', 'holz', 'glas', 'ziegel', 'kiesel', 'papier', 'buch'];
 /** Innen-Gewichte (Papier/Bücher) je Karte; Rest wie außen. */
-const INNEN_W = { bibliothek: { papier: 1.3, buch: 1.6 }, default: { papier: 0.5, buch: 0.08 } };
+const INNEN_W = { bibliothek: { papier: 1.3, buch: 1.6, buchstapel: 0.4 }, stadtkern: { papier: 0.6, buch: 0.15, buchstapel: 0.03 }, default: { papier: 0.5, buch: 0.08 } };
 
 function material(art, A, quality, f) {
-  const m = new THREE.MeshStandardMaterial({ roughness: A.r, metalness: A.m, side: A.side || THREE.FrontSide, transparent: !!A.opacity, opacity: A.opacity ?? 1, depthWrite: !A.opacity });
+  const m = new THREE.MeshStandardMaterial({ roughness: A.r, metalness: A.m, side: A.side || THREE.FrontSide, transparent: !!A.opacity, opacity: A.opacity ?? 1, depthWrite: !A.opacity, vertexColors: !!A.vc });
   m.name = 'fuell-' + art; m.userData.disposable = true; m.userData.surface = 'concrete';
   const [f0, f1] = [f[0] * A.fade, f[1] * A.fade];
   m.onBeforeCompile = (sh) => {
@@ -196,6 +199,16 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
     if (innen && !wand && r() < 0.5) continue; // Raummitte (Laufwege) noch seltener
     cluster++;
     if (innen) {
+      // Bibliothek u. ä.: Bücherstapel an Regalen/Wänden
+      if (wand && W.buchstapel && r() < W.buchstapel) {
+        const n2 = 1 + Math.floor(r() * 3), ry = Math.atan2(wand[0], wand[1]);
+        for (let i = 0; i < n2; i++) {
+          const u = (i - (n2 - 1) / 2) * 0.32, px = x + wand[0] * 0.12 - wand[1] * u, pz = z + wand[1] * 0.12 + wand[0] * u, g3 = bodenAt(world, px, pz, gy + 0.3);
+          if (!g3 || Math.abs(g3.y - gy) > 0.03) continue;
+          per.buchstapel.push({ x: px, y: g3.y, z: pz, a: ry + (r() - 0.5) * 0.6, s: 0.9 + r() * 0.4, tilt: 0, c: ARTEN.buchstapel.cols[Math.floor(r() * 6)] }); teile++;
+        }
+        continue;
+      }
       const art = wahl(INNEN);
       if (art) teile += nest(art, x, gy, z, art === 'buch' ? 1 + Math.floor(r() * 4) : art === 'papier' ? 2 + Math.floor(r() * 5) : 4 + Math.floor(r() * 10), wand ? 0.5 : 0.7, ...(wand || [0, 0]));
       continue;
