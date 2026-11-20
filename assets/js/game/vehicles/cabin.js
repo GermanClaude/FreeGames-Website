@@ -554,11 +554,12 @@ function cabinShader(sh, renderer, mat) {
   sh.uniforms.uCabK = { value: (mat && mat.userData.cabK) || new THREE.Vector4(0, 0, 0, 0) };
   ensureWorldVaryings(sh);
   sh.vertexShader = sh.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vCabO;\nvarying vec3 vCabN;\nattribute vec3 cabA;\nattribute vec2 cabS0;\nattribute vec2 cabS1;\nattribute vec4 cabE;\nvarying vec3 vCabA;\nvarying vec4 vCabS;\nvarying vec4 vCabE;')
+    .replace('#include <common>', '#include <common>\nvarying vec3 vCabO;\nvarying vec3 vCabN;\nattribute vec3 cabA;\nattribute vec2 cabS0;\nattribute vec2 cabS1;\nattribute vec4 cabE;\nvarying vec3 vCabA;\nvarying vec4 vCabS;\nvarying vec4 vCabE;\nvarying vec3 vCabV;')
+    .replace('#include <project_vertex>', '#include <project_vertex>\nvCabV = - mvPosition.xyz;')
     .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCabO = position;\nvCabN = normal;\nvCabA = cabA;\nvCabS = vec4( cabS0, cabS1 );\nvCabE = cabE;');
   sh.fragmentShader = sh.fragmentShader
     .replace('#include <common>', `#include <common>
-      varying vec3 vCabO; varying vec3 vCabN; varying vec3 vCabA; varying vec4 vCabS; varying vec4 vCabE;
+      varying vec3 vCabO; varying vec3 vCabN; varying vec3 vCabA; varying vec4 vCabS; varying vec4 vCabE; varying vec3 vCabV;
       uniform vec3 uCabLP[ ${NL} ]; uniform vec3 uCabLC[ ${NL} ]; uniform float uCabAmb; uniform float uCabSun; uniform float uCabWear; uniform float uCabSet;
       uniform vec3 uCabHP; uniform vec3 uCabHC; uniform vec4 uCabK; uniform vec4 uCabEra;
       float cbH( vec3 p ) { p = fract( p * 0.3183099 + 0.1 ); p *= 17.0; return fract( p.x * p.y * p.z * ( p.x + p.y + p.z ) ); }
@@ -676,7 +677,7 @@ function cabinShader(sh, renderer, mat) {
     .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
       {
         // Abplatzer liegen tiefer als der Lack, Rost trägt auf (Höhe aus den Masken, Ableitungen im Bildraum)
-        vec3 dpx = dFdx( - vViewPosition ), dpy = dFdy( - vViewPosition );
+        vec3 dpx = dFdx( - vCabV ), dpy = dFdy( - vCabV );
         vec2 dh = vec2( dFdx( cbHgt ), dFdy( cbHgt ) );
         vec3 r1 = cross( dpy, normal ), r2 = cross( normal, dpx );
         float dt = dot( dpx, r1 );
