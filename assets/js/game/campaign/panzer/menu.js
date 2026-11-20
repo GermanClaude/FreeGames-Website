@@ -9,7 +9,7 @@ import { CAMPAIGN_DIFF } from '../director.js?v=20261115041504';
 import { VEHICLES } from '../../vehicles/data.js?v=20261115041504';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const ROLES = [['kommandant', 'Kommandant'], ['richtschuetze', 'Richtschütze'], ['fahrer', 'Fahrer'], ['ladeschuetze', 'Ladeschütze']];
+const ROLES = [['kommandant', 'Kommandant'], ['richtschuetze', 'Richtschütze'], ['fahrer', 'Fahrer'], ['ladeschuetze', 'Ladeschütze'], ['mgschuetze', 'MG-Schütze/Funker']];
 const STYLES = [['simulation', 'Simulation'], ['arcade', 'Arcade']];
 const GUIDES = [['tutorial', 'Tutorial'], ['hilfe', 'Hilfe auf Anfrage'], ['aus', 'Aus']];
 const ROLE_HINT = {
@@ -17,6 +17,7 @@ const ROLE_HINT = {
   richtschuetze: 'Du richtest und schießt in der Hauptzieloptik; der Kommandant weist Ziele zu.',
   fahrer: 'Du fährst: Motor anlassen, Bremse, Gang – die Befehle des Kommandanten stehen oben im Bild.',
   ladeschuetze: 'Du lädst jede Granate von Hand: wählen, greifen, einschieben, schließen, entsichern.',
+  mgschuetze: 'Du bedienst Bug-MG und Funkgerät: Kanal 5 = Kompanie, Feuerstöße durch die Kugelblende, Gurtkästen von Hand wechseln.',
 };
 
 export class PanzerCampaignPane {
@@ -102,7 +103,7 @@ export class PanzerCampaignPane {
         <p>${esc(sel.summary)}</p>
         <ul>${(sel.goals || []).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
         <div class="kc-opts">
-          <div><label>Deine Rolle</label>${seg('rolle', ROLES, o.rolle)}<div class="kc-hint">${esc(o.stil === 'arcade' ? 'Arcade: Du fährst und schießt allein (Rolle gilt nur in der Simulation).' : ROLE_HINT[o.rolle])}</div></div>
+          <div><label>Deine Rolle</label>${seg('rolle', ROLES, o.rolle)}<div class="kc-hint">${esc(o.stil === 'arcade' ? 'Arcade: Du fährst und schießt allein (Rolle gilt nur in der Simulation).' : ROLE_HINT[o.rolle] || '')} Im Einsatz wechselst du den Platz mit dem Sitzrad (K halten).</div></div>
           <div><label>Spielart</label>${seg('stil', STYLES, o.stil)}<div class="kc-hint">${o.stil === 'arcade' ? 'Fahren und schießen zugleich, Automatiklader, Außenansicht.' : 'Jeder Handgriff selbst, keine Außenansicht, KI-Besatzung auf den anderen Plätzen.'}</div></div>
           ${o.stil === 'simulation' ? `<div><label>Führung</label>${seg('fuehrung', GUIDES, o.fuehrung)}</div>` : ''}
           <div><label>Schwierigkeit</label><div class="kc-seg">${Object.entries(CAMPAIGN_DIFF).map(([id, d]) => `<button type="button" data-pk-diff="${id}" aria-pressed="${id === diff}">${esc(d.name)}</button>`).join('')}</div></div>

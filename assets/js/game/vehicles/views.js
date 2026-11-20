@@ -118,6 +118,8 @@ export function spaceLocal(vehicle, space, pos, outPos, outQuat) {
 const _shift = [0, 0, 0];
 export function viewAnchor(vehicle, view, outPos, outQuat = null) {
   let pos = view.pos || [0, 1.6, 0];
+  // Winkelspiegel (periscopes.js): Kamera am Kopf des aktiven Spiegels (vehicle._prism setzt die Fahrzeugkamera nach dem Blick)
+  if (view.prisms) pos = view.prisms[clamp(vehicle._prism | 0, 0, view.prisms.length - 1)].head;
   // Ladeschütze im Turm (Nutzer 11.10.): geht zum Gestell bzw. zum Verschluss (vehicle._loaderShift −1 … +1)
   if (view.interior && vehicle._loaderShift) { _shift[0] = pos[0] - 0.12 * Math.abs(vehicle._loaderShift); _shift[1] = pos[1] - 0.04 * Math.abs(vehicle._loaderShift); _shift[2] = pos[2] + 0.42 * vehicle._loaderShift; pos = _shift; }
   spaceLocal(vehicle, view.space || 'hull', pos, _p, outQuat);
@@ -195,6 +197,11 @@ export const VIEW_CSS = `
 .vo-dot{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:rgba(242,239,230,.85);box-shadow:0 0 2px #000}
 .vo-target{position:absolute;left:0;top:0;width:44px;height:44px;margin:-22px 0 0 -22px;border:2px dashed rgba(255,194,61,.9);border-radius:50%;will-change:transform}
 .vo-label{position:absolute;left:50%;top:calc(12px + env(safe-area-inset-top));transform:translateX(-50%);padding:3px 10px;border-radius:3px;background:rgba(10,11,13,.5);font:700 12px var(--font-hud,system-ui);letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.vo-prism{position:absolute;inset:0}
+.vo-prism svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.vo-prism.is-f0{animation:vo-flip0 .2s ease-out}.vo-prism.is-f1{animation:vo-flip1 .2s ease-out}
+@keyframes vo-flip0{0%{background:#000}100%{background:transparent}}@keyframes vo-flip1{0%{background:#000}100%{background:transparent}}
+.vo-prism b{position:absolute;left:50%;top:calc(50% + 19vh);transform:translateX(-50%);font:600 11px var(--font-hud,system-ui);letter-spacing:.14em;text-transform:uppercase;color:rgba(233,230,223,.55)}
 .vo-fade{position:absolute;inset:0;background:#000;opacity:0;display:flex;align-items:center;justify-content:center;font:700 20px var(--font-hud,system-ui);letter-spacing:.08em;color:#e9e6df}
 @keyframes vo-pulse{0%,100%{opacity:.55}50%{opacity:1}}
 @media (max-height:560px),(max-width:820px){.vo-ret svg{transform:scale(.72)}.vo-wide svg{transform:scale(.8)}.vo-ring{width:62px;height:62px;margin-left:-31px}.vo-load{min-width:220px;padding:5px 10px;font-size:13px;bottom:calc(30% + env(safe-area-inset-bottom))}.vo-load .vo-do{font-size:14px}.vo-mark b{font-size:10px}}
@@ -224,6 +231,52 @@ const RING_SVG = `<svg viewBox="-50 -50 100 100" fill="none" stroke="#f2efe6" st
 <circle r="44" stroke-opacity=".6"/><path d="M0 -48V-38" stroke="#ffc23d" stroke-width="3"/>
 <g class="vo-hull"><rect x="-13" y="-22" width="26" height="44" rx="3" stroke-opacity=".8"/><path d="M-6 -22L0 -30L6 -22" stroke-opacity=".8"/></g>
 <g class="vo-tur"><circle r="9"/><path d="M0 -9V-40" stroke-width="3"/></g></svg>`;
+
+/**
+ * Winkelspiegel von innen (Nutzer 20.11.): Gehäuse mit Fenster (Prismenaustritt), Stirnpolster, innere Fase, Glas je Generation
+ * (modern vergütet/klar, Kalter Krieg leicht grün, 2. WK gelblich mit Staub und Schlieren, 1. WK offener Sehschlitz mit Schieber),
+ * Staubkörner und Kratzer (fest gesät), Randabschattung. Das Bild dahinter ist das echte Außenbild der Fahrzeugkamera am Spiegelkopf.
+ */
+const PRISM_GLASS = {
+  modern: { tint: 'rgba(70,130,125,.07)', dust: 10, scratch: 1, streak: 0.05, edge: 0.55 },
+  kk: { tint: 'rgba(95,135,90,.11)', dust: 18, scratch: 2, streak: 0.06, edge: 0.62 },
+  wk2: { tint: 'rgba(150,120,55,.15)', dust: 34, scratch: 4, streak: 0.08, edge: 0.7 },
+  wk1: { tint: 'rgba(0,0,0,0)', dust: 0, scratch: 0, streak: 0, edge: 0.75 },
+};
+function prismSvg(glass) {
+  const G = PRISM_GLASS[glass] || PRISM_GLASS.modern;
+  const slit = glass === 'wk1';
+  const [x0, y0, x1, y1, r] = slit ? [18, 42, 142, 49, 0.6] : [24, 31, 136, 61, 2.4];
+  let seed = glass.length * 977 + 13;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const win = `M${x0 + r} ${y0}H${x1 - r}Q${x1} ${y0} ${x1} ${y0 + r}V${y1 - r}Q${x1} ${y1} ${x1 - r} ${y1}H${x0 + r}Q${x0} ${y1} ${x0} ${y1 - r}V${y0 + r}Q${x0} ${y0} ${x0 + r} ${y0}Z`;
+  const o = [];
+  o.push('<defs>');
+  o.push(`<linearGradient id="vo-pe-h" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#000" stop-opacity="${G.edge}"/><stop offset=".12" stop-color="#000" stop-opacity="0"/><stop offset=".88" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${G.edge}"/></linearGradient>`);
+  o.push(`<linearGradient id="vo-pe-v" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="${G.edge * 0.9}"/><stop offset=".22" stop-color="#000" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${G.edge}"/></linearGradient>`);
+  o.push('<linearGradient id="vo-pe-m" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2a2c28"/><stop offset=".5" stop-color="#121311"/><stop offset="1" stop-color="#050505"/></linearGradient>');
+  o.push('</defs>');
+  // Gehäuse (dunkel, mit Fenster), Rahmenkanten, Stirnpolster
+  o.push(`<path fill="#050505" fill-rule="evenodd" d="M-40 -40H200V130H-40Z ${win}"/>`);
+  o.push(`<path fill="url(#vo-pe-m)" fill-rule="evenodd" opacity=".9" d="M${x0 - 9} ${y0 - 7}H${x1 + 9}V${y1 + 8}H${x0 - 9}Z ${win}"/>`);
+  o.push(`<path d="${win}" fill="none" stroke="#3a3c36" stroke-width=".9"/><path d="${win}" fill="none" stroke="#000" stroke-width=".35" transform="translate(0 .5)"/>`);
+  if (!slit) o.push(`<rect x="${x0 + 6}" y="${y0 - 19}" width="${x1 - x0 - 12}" height="9" rx="4" fill="#1b1a18" stroke="#2c2a26" stroke-width=".5"/>`);
+  else o.push(`<rect x="${x0 - 4}" y="${y0 - 10}" width="${x1 - x0 + 8}" height="8" fill="#241e17"/><rect x="${x0 - 4}" y="${y1 + 2}" width="${x1 - x0 + 8}" height="6" fill="#1c1712"/>`);
+  for (const sx of [x0 - 6, x1 + 6]) o.push(`<circle cx="${sx}" cy="${(y0 + y1) / 2}" r="1.3" fill="#2f302b" stroke="#000" stroke-width=".3"/>`);
+  // Glas: Tönung, Randabschattung, Staub, Kratzer, Lichtschliere
+  o.push(`<g><path d="${win}" fill="${G.tint}"/><path d="${win}" fill="url(#vo-pe-h)"/><path d="${win}" fill="url(#vo-pe-v)"/>`);
+  for (let i = 0; i < G.dust; i++) {
+    const x = x0 + 2 + rnd() * (x1 - x0 - 4), y = y0 + 1.5 + rnd() * (y1 - y0 - 3), rr = 0.12 + rnd() * rnd() * 0.5;
+    o.push(`<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${(rr * 0.56).toFixed(2)}" ry="${rr.toFixed(2)}" fill="${rnd() < 0.7 ? '#1a1610' : '#d8d2c0'}" opacity="${(0.18 + rnd() * 0.3).toFixed(2)}"/>`);
+  }
+  for (let i = 0; i < G.scratch; i++) {
+    const x = x0 + 8 + rnd() * (x1 - x0 - 16), y = y0 + 3 + rnd() * (y1 - y0 - 6), l = 4 + rnd() * 10, a = (rnd() - 0.5) * 0.6;
+    o.push(`<path d="M${x.toFixed(1)} ${y.toFixed(1)}l${(l * Math.cos(a)).toFixed(1)} ${(l * Math.sin(a) * 0.5).toFixed(1)}" stroke="#e8e2d2" stroke-opacity=".16" stroke-width=".18" fill="none"/>`);
+  }
+  if (G.streak) o.push(`<path d="M${x0 + 18} ${y1}L${x0 + 34} ${y0}H${x0 + 42}L${x0 + 26} ${y1}Z" fill="#fff" opacity="${G.streak}"/>`);
+  o.push('</g>');
+  return `<svg viewBox="0 0 160 90" preserveAspectRatio="none">${o.join('')}</svg>`;
+}
 
 /**
  * Geeichte Strichplatte der Hauptzieloptik (Nutzer 14.11.: „echte Strichplatte“): alle Maße in Strich (6400 je Vollkreis),
@@ -291,6 +344,7 @@ export class ViewOverlay {
     el.className = 'vo';
     el.innerHTML = `
       <div class="vo-slit" hidden>${SLIT_SVG}</div>
+      <div class="vo-prism" hidden></div>
       <div class="vo-optic" hidden></div>
       <div class="vo-bino" hidden>${BINO_SVG}</div>
       <div class="vo-peri" hidden></div>
@@ -310,7 +364,7 @@ export class ViewOverlay {
     this.root = el;
     const q = (s) => el.querySelector(s);
     this.el = {
-      slit: q('.vo-slit'), optic: q('.vo-optic'), bino: q('.vo-bino'), peri: q('.vo-peri'), ret: q('.vo-ret'), wide: q('.vo-wide'),
+      slit: q('.vo-slit'), prism: q('.vo-prism'), optic: q('.vo-optic'), bino: q('.vo-bino'), peri: q('.vo-peri'), ret: q('.vo-ret'), wide: q('.vo-wide'),
       marks: q('.vo-marks'), ammo: q('.vo-ammo'), range: q('.vo-range'), ring: q('.vo-ring'), hull: q('.vo-hull'), tur: q('.vo-tur'),
       target: q('.vo-target'), arrowL: q('.vo-arrow.is-l'), arrowR: q('.vo-arrow.is-r'), dot: q('.vo-dot'),
       load: q('.vo-load'), step: q('.vo-step'), do: q('.vo-do'), ask: q('.vo-ask'), bar: q('.vo-bar i'), label: q('.vo-label'), fade: q('.vo-fade'),
@@ -335,7 +389,7 @@ export class ViewOverlay {
   }
 
   hideAll() {
-    for (const k of ['slit', 'optic', 'bino', 'peri', 'ret', 'wide', 'marks', 'ammo', 'range', 'ring', 'target', 'arrowL', 'arrowR', 'dot', 'load', 'label']) this._set(k + 'H', this.el[k], 'hidden', true);
+    for (const k of ['slit', 'prism', 'optic', 'bino', 'peri', 'ret', 'wide', 'marks', 'ammo', 'range', 'ring', 'target', 'arrowL', 'arrowR', 'dot', 'load', 'label']) this._set(k + 'H', this.el[k], 'hidden', true);
     this._set('fadeO', this.el.fade, 'opacity', '0');
     this._set('fadeT', this.el.fade, 'text', '');
   }
@@ -346,6 +400,20 @@ export class ViewOverlay {
     const ov = s.sight && view ? view.overlay : null;
     const bino = ov === 'binocular' && s.zoom >= 1.5;
     this._set('slitH', el.slit, 'hidden', ov !== 'slit');
+    // Winkelspiegel: Gehäuse/Glas je Generation, kurzes Abblenden beim Wechsel auf den Nachbarspiegel
+    this._set('prismH', el.prism, 'hidden', ov !== 'prism');
+    if (ov === 'prism') {
+      const glass = view.glass || 'modern';
+      if (this._c.prismG !== glass) { this._c.prismG = glass; el.prism.innerHTML = prismSvg(glass) + '<b></b>'; this._c.prismL = null; }
+      const n = view.prisms ? view.prisms.length : 1, pi = s.vehicle ? s.vehicle._prism | 0 : 0;
+      const key = `${view.id}|${pi}`;
+      if (this._c.prismK !== key) {
+        if (this._c.prismK != null && this._c.prismK.split('|')[0] === view.id) { this._flip = !this._flip; el.prism.className = `vo-prism ${this._flip ? 'is-f1' : 'is-f0'}`; }
+        this._c.prismK = key;
+      }
+      const lab = n > 1 ? `Spiegel ${pi + 1} / ${n}` : view.prisms && view.prisms[0].rot ? 'drehbar' : '';
+      if (this._c.prismL !== lab) { this._c.prismL = lab; const b = el.prism.querySelector('b'); if (b) b.textContent = lab; }
+    }
     this._set('opticH', el.optic, 'hidden', ov !== 'optic');
     this._set('retH', el.ret, 'hidden', ov !== 'optic' && ov !== 'peri');
     let retHtml = ov === 'peri' ? PERI_RET : OPTIC_RET;
@@ -367,7 +435,7 @@ export class ViewOverlay {
     this._set('retK', el.ret, 'html', retHtml);
     this._set('wideH', el.wide, 'hidden', ov !== 'wide');
     this._set('periH', el.peri, 'hidden', ov !== 'peri');
-    this._set('ringH', el.ring, 'hidden', ov !== 'peri');
+    this._set('ringH', el.ring, 'hidden', ov !== 'peri' && ov !== 'prism');
     this._set('binoH', el.bino, 'hidden', !bino);
     this._set('dotH', el.dot, 'hidden', !(ov === 'loader' || (s.sight && !ov && !s.mount)));
     // Entfernungsmarken der Hauptzieloptik (Ballistik der geladenen bzw. gewählten Munition)
@@ -396,7 +464,7 @@ export class ViewOverlay {
     this._set('rangeH', el.range, 'hidden', !(ov === 'optic' && s.range));
     if (ov === 'optic' && s.range) this._set('rangeT', el.range, 'text', s.range);
     // Periskop: Richtungsring (Wanne und Turm relativ zum Blick)
-    if (ov === 'peri' && s.vehicle) {
+    if ((ov === 'peri' || ov === 'prism') && s.vehicle) {
       const v = s.vehicle;
       const hullRel = wrap(v.body.yaw() - s.lookYaw), turRel = wrap(v.body.yaw() + v.mount.turretYaw - s.lookYaw);
       // SVG: Gier positiv = links → Drehung gegen den Uhrzeigersinn (negativer Winkel)

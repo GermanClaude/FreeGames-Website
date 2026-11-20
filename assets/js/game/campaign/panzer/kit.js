@@ -107,7 +107,7 @@ export function playerPos(m) { const P = m.G.player; return P && P.vehicle ? P.v
 /** Bordsprech-Zeile der eigenen Besatzung (Rolle; spielt der Spieler sie, spricht der Kommandant bzw. Richtschütze). */
 export function crewSay(pz, role, text, o = {}) {
   if (!pz.radio) return;
-  const R = { Fahrer: 'fahrer', Richtschütze: 'richtschuetze', Ladeschütze: 'ladeschuetze', Kommandant: 'kommandant' };
+  const R = { Fahrer: 'fahrer', Richtschütze: 'richtschuetze', Ladeschütze: 'ladeschuetze', Kommandant: 'kommandant', 'MG-Schütze': 'mgschuetze', Funker: 'mgschuetze' };
   let from = role;
   if (R[role] === pz.role) from = role === 'Kommandant' ? 'Richtschütze' : 'Kommandant';
   pz.radio.say(from, text, o);
@@ -127,5 +127,6 @@ export function roleTip(pz) {
     richtschuetze: 'Richtschütze: Waffe scharf, Munition am Rechner, in der Hauptzieloptik (C) richten und auf „Feuer!“ abziehen.',
     ladeschuetze: 'Ladeschütze: Befohlene Munition wählen, greifen, einschieben, Verschluss schließen, entsichern – die Kanone wartet auf dich.',
     fahrer: 'Fahrer: Motor anlassen, Bremse lösen, Gang einlegen. Fahrbefehle des Kommandanten stehen oben im Bild.',
+    mgschuetze: 'MG-Schütze/Funker: Funkgerät auf Kanal 5, durch die Kugelblende (RMT) zielen, Feuerstöße auf Infanterie, Gurtkasten wechseln (R).',
   }[pz.role] || '';
 }

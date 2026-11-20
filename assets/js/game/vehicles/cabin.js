@@ -10,6 +10,9 @@
 //     wahltasten (leuchten je Sorte), Hilfszielfernrohr; 2. WK/1. WK: Zielfernrohr, Turmrichtungsanzeiger, Fußabzug.
 //   Kommandant: Kuppelring mit Winkelspiegeln rundum, Rundblickperiskop-Okular, Lagebildschirm (modern), Funkgeräte-
 //     stapel mit Bedienfeld, Hörer an Spiralkabel (pendelt), Kopfhörer am Haken, Kartentasche.
+//   Funker (Bug-MG, 2. WK; Nutzer 20.11.): eigene Kammer rechts vom Fahrer mit Kugelblende und MG (folgt der Lafette),
+//     Zielfernrohr, Gurt-/Hülsensack, Funkgerätestapel mit Kanalwahl und Schaltern, Gurtkasten-Regal, Winkelspiegel, Sitz.
+//   Winkelspiegel (alle Plätze): Glaslagen in info.prisms – psim/optics.js legt das Außenbild auf den Spiegel im Blick.
 //   Ladeschütze: Koaxial-MG mit Gurtkasten und Hülsenschacht (am Rohr, nickt mit), Sicherungsschalter, Hülsenauswurf nach
 //     jedem Schuss (Hülsenboden bzw. Messinghülse fliegt aus dem Verschluss, bleibt im Korb liegen) mit Pulverdampf.
 //   Allgemein: Kabelbäume und Hydraulikleitungen an Decke/Wänden, Lüfter (dreht), Stoßpolster, Schalterkästen,
@@ -38,6 +41,7 @@ import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261115041
 import * as SH from './cabin-shape.js?v=20261115041504';
 import * as BASE from './cabin-base.js?v=20261115041504';
 import { assets, tierFor } from '../../../lib/loader.js?v=20261115041504';
+import { funkerCabin, funkerLayout, loaderPrism } from './periscopes.js?v=20261115041504';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -235,7 +239,8 @@ function atlas() {
   // Schilder der Bedienteile (Simulation)
   for (const [k, t1, t2] of [['p_batterie', 'BATTERIE', 'EIN – AUS'], ['p_anlasser', 'ANLASSER', 'Vorglühen – Start'], ['p_licht', 'INNENLICHT', 'Gefecht · Arbeit · Aus'],
     ['p_bremse', 'FESTSTELLBREMSE', 'Knopf drücken – lösen'], ['p_waffe', 'WAFFE', 'Scharf – Gesichert'], ['p_antrieb', 'TURMANTRIEB', 'Elektrisch – Hand'],
-    ['p_laser', 'LASER-EM', 'Messen'], ['p_wahl', 'MUNITIONSWAHL', 'Ladeschütze'], ['p_funk', 'FUNK', 'Senden – Empfang'], ['p_sicherung', 'SICHERUNG', 'Gesichert – Feuer']]) plate(k, 'black', t1, t2, 192, 48);
+    ['p_laser', 'LASER-EM', 'Messen'], ['p_wahl', 'MUNITIONSWAHL', 'Ladeschütze'], ['p_funk', 'FUNK', 'Senden – Empfang'], ['p_sicherung', 'SICHERUNG', 'Gesichert – Feuer'],
+    ['p_funkein', 'FUNKGERÄT', 'Ein – Aus'], ['p_senden', 'SPRECHTASTE', 'Lagemeldung'], ['p_gurt', 'GURTKÄSTEN', 'je 150 Schuss']]) plate(k, 'black', t1, t2, 192, 48);
   put('streifen', 256, 32, (g2, w, h) => {
     g2.fillStyle = '#d8b021'; g2.fillRect(0, 0, w, h);
     g2.fillStyle = '#141414'; for (let i = -2; i < w / 16 + 2; i++) { g2.beginPath(); g2.moveTo(i * 32, 0); g2.lineTo(i * 32 + 16, 0); g2.lineTo(i * 32 + 16 - h, h); g2.lineTo(i * 32 - h, h); g2.fill(); }
@@ -1192,6 +1197,7 @@ function buildDriver(root, D, C, det, era, cab) {
     const F = new Frame(B, c, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -kk * 0.35, 0)));
     F.add(rbox(0.21, 0.15, 0.14, 0.012), C.metal, [0, 0, 0]);
     F.add(new THREE.PlaneGeometry(0.17, 0.07), C.prism, [0, -0.015, 0.0705], null, null, true);
+    (cab.prisms || (cab.prisms = [])).push({ obj: 'hull', pos: F.w([0, -0.015, 0.072]), quat: F.q.toArray(), w: 0.17, h: 0.07, up: 0.12 }); // Glas (optics.js: Außenbild auf dem Spiegel im Blick)
     F.add(box(0.19, 0.012, 0.02), C.rubber, [0, 0.026, 0.075]);
     F.add(rbox(0.21, 0.05, 0.06, 0.02), C.pad, [0, 0.07, 0.08]);
     if (det) for (const sx of [-1, 1]) F.add(cyl(0.01, 0.01, 0.02, 6), C.steel, [sx * 0.09, -0.06, 0.07], [HP, 0, 0]);
@@ -1361,6 +1367,145 @@ function buildDriver(root, D, C, det, era, cab) {
   return grp;
 }
 
+/**
+ * Funkerplatz (Bug-MG-Schütze, 2. WK-Panzer mit Kugelblende; Nutzer 20.11.): eigene Kammer rechts vom Fahrer (gleiche Bugform),
+ * Kugelblende mit MG (dreht mit der Lafette: 'bugmg'), Zielfernrohr mit Augenmuschel, Pistolengriff, Gurtsack und Hülsensack,
+ * Funkgerätestapel über dem Getriebe (Empfänger/Sender mit glimmenden Skalen, Kanalwahl 'rad:kanal', Schalter Ein/Aus und
+ * Sprechtaste als Bedienteile der Simulation), Kopfhörer, Regal mit Ersatz-Gurtkästen, Winkelspiegel im Dach, Sitz, Lampe.
+ */
+function buildFunker(root, D, C, det, era, cab) {
+  const F = funkerCabin(D, driverCabin);
+  if (!F) return null;
+  const L = funkerLayout(F);
+  const grp = new THREE.Group();
+  grp.name = 'cabin:funker';
+  root.add(grp);
+  const B = new MB();
+  const W = C.wall[era], wk = era !== 'modern';
+  const { xl, xr, floor: yF, roof: yR, zFT, zFB, zB, eye: E } = F;
+  const x0 = F.F[0], z0 = F.F[2];
+  if (det) B.add(SH.prism([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr, { rc: 0.07, r0: 0.05, r1: 0.05, bulge: 0.006, steps: det > 1 ? 4 : 2, arcSteps: det > 1 ? 3 : 2, axes: 'zyx' }), W);
+  else B.add(roomGeom([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr), W);
+  B.add(box(xr - xl - 0.04, 0.012, zB - zFB - 0.06), C.floor, [(xl + xr) / 2, yF + 0.006, (zB + zFB) / 2]);
+  for (const zz of [zFT + 0.25, (zFT + zB) / 2 + 0.1]) B.add(box(xr - xl - 0.04, 0.03, 0.035), C.metal, [(xl + xr) / 2, yR - 0.016, zz]);
+  if (det) for (let z = zFT + 0.1; z < zB; z += 0.16) for (const y of [yF + 0.12, yR - 0.1]) B.add(new THREE.SphereGeometry(0.011, 6, 4), C.metal, [xr - 0.006, y, z]);
+  // ---- Kugelblende: Panzerring in der Bugplatte (Normale der Schräge), Kugel, MG mit Zielfernrohr (dreht mit der Lafette)
+  const mg = F.mg;
+  const gn = new THREE.Vector3(0, -(zFB - zFT), yR - yF).normalize();
+  const qg = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), gn);
+  { const RF = new Frame(B, [mg[0], mg[1], mg[2]], qg);
+    RF.add(tor(0.17, 0.035, 8, det ? 28 : 14), C.metal, [0, 0, 0.12]);
+    RF.add(cyl(0.21, 0.21, 0.03, det ? 28 : 14), C.metal, [0, 0, 0.1], [HP, 0, 0]);
+    if (det) for (let i = 0; i < 8; i++) { const a = (i / 8) * PI * 2; RF.add(cyl(0.012, 0.012, 0.02, 6), C.steel, [Math.cos(a) * 0.19, Math.sin(a) * 0.19, 0.12], [HP, 0, 0]); }
+    label(B, C, 'w_kopf', RF.w([0, 0.26, 0.115]), qg, 0.1);
+  }
+  {
+    const p = part(grp, 'bugmg', mg);
+    const M = new MB();
+    M.add(new THREE.SphereGeometry(0.15, det ? 20 : 12, det ? 14 : 8), C.metal, [0, 0, 0]);
+    M.add(box(0.085, 0.11, 0.46), C.black, [0, -0.005, 0.32]);          // Gehäuse
+    M.add(box(0.095, 0.03, 0.2), C.black, [0, 0.06, 0.26]);              // Zuführerdeckel
+    M.wear = 0.7; M.rod(C.metal, [0, -0.06, 0.4], [0, -0.17, 0.44], 0.018, 8); M.wear = 0; // Pistolengriff
+    M.add(box(0.012, 0.035, 0.04), C.steel, [0, -0.07, 0.36]);            // Abzugsbügel
+    M.add(rbox(0.07, 0.09, 0.08, 0.02), C.rubber, [0, -0.02, 0.6]);       // Schulterstütze
+    M.rod(C.steel, [0, -0.02, 0.55], [0, -0.02, 0.5], 0.012, 6);
+    M.rod(C.metal, [0.0, 0.1, 0.02], [0.0, 0.12, 0.34], 0.022, 10);       // Zielfernrohr
+    M.add(cyl(0.032, 0.028, 0.05, 12, true), C.rubber, [0, 0.13, 0.37], [HP, 0, 0]); // Augenmuschel
+    M.add(cyl(0.02, 0.02, 0.004, 10), C.lens, [0, 0.13, 0.35], [HP, 0, 0]);
+    M.add(box(0.03, 0.05, 0.05), C.metal, [0, 0.07, 0.06]);              // Fernrohrträger
+    // Gurtsack rechts (Gurt läuft ein), Hülsensack unten
+    M.add(rbox(0.12, 0.16, 0.18, 0.03), C.canvas, [0.11, -0.12, 0.24]);
+    if (det) for (let i = 0; i < 5; i++) M.add(cyl(0.006, 0.006, 0.05, 6), C.brass, [0.055, 0.02 - i * 0.004, 0.18 + i * 0.022], [0, 0, HP]);
+    M.add(rbox(0.13, 0.18, 0.2, 0.05), C.canvas, [0, -0.2, 0.18]);
+    M.build(p, 'bugmg');
+    cab.partNames.push('bugmg');
+  }
+  // ---- Funkgeräte über dem Getriebe (links), Front zum Funker (+X)
+  const Qy = (y) => new THREE.Quaternion().setFromEuler(new THREE.Euler(0, y, 0));
+  const [rx, ry, rz] = L.radio;
+  B.add(box(0.3, 0.04, 0.4), C.metal, [rx, yF + 0.37, rz]);                 // Konsole auf dem Getriebe
+  B.add(box(0.26, 0.32, 0.36), C.metal, [rx - 0.02, yF + 0.2, rz]);
+  for (const [y, h, key] of [[yF + 0.5, 0.19, 'sender'], [yF + 0.745, 0.21, 'empf']]) {
+    BASE.cabinet(new DT.LF(B, [rx - 0.12, y, rz], Qy(HP)), C, det, 0.36, h, 0.24, { mat: wk ? C.metal : C.olive, hinge: false, handle: true, beads: det > 1 });
+    const FF = new DT.LF(B, [rx + 0.122, y, rz], Qy(HP));
+    if (key === 'empf') {
+      for (let i = 0; i < 2; i++) {
+        const lp = [-0.09 + i * 0.12, 0.035, 0.004];
+        FF.add(cyl(0.034, 0.034, 0.012, det ? 18 : 10, 0.002), C.black, lp, [HP, 0, 0]);
+        FF.add(new THREE.CircleGeometry(0.027, det ? 18 : 10), C.lampWarm, [lp[0], lp[1], lp[2] + 0.0065], null, null, true);
+        FF.add(tor(0.031, 0.004, 4, det ? 18 : 10), C.brass, [lp[0], lp[1], lp[2] + 0.006]);
+      }
+      FF.add(box(0.1, 0.03, 0.006), C.disp, [0.11, 0.05, 0.004]);
+    } else {
+      for (let i = 0; i < 3; i++) FF.add(cyl(0.016, 0.014, 0.024, 10), C.black, [0.0 + i * 0.05, 0.05, 0.012], [HP, 0, 0]);
+      FF.add(box(0.06, 0.02, 0.006), C.lampAmber, [0.12, 0.055, 0.004]);
+    }
+  }
+  label(B, C, wk ? 'wk_funk' : 'funk', [rx + 0.123, yF + 0.86, rz], Qy(HP), 0.2);
+  label(B, C, 'n_kanal', [rx + 0.123, yF + 0.645, rz + 0.12], Qy(HP), 0.09);
+  // Kanalwahl (Drehknopf mit Zeiger) – psim/sim.js 'kanal', syncCabin dreht nach vehicle._psimKanal
+  {
+    const p = part(grp, 'rad:kanal', L.kanal, Qy(HP));
+    const K = new MB();
+    K.add(cyl(0.03, 0.034, 0.03, det ? 16 : 10), C.black, [0, 0, 0.015], [HP, 0, 0]);
+    K.add(box(0.008, 0.026, 0.006), C.yellow, [0, 0.014, 0.032]);
+    K.build(p, 'kanal');
+    cab.partNames.push('rad:kanal');
+    for (let i = 0; i < 8; i++) { const a = -1.2 + (i / 7) * 2.4; B.add(box(0.004, 0.01, 0.004), C.steel, new DT.LF(B, L.kanal, Qy(HP)).w([Math.sin(a) * 0.045, Math.cos(a) * 0.045, 0.002]), Qy(HP)); }
+  }
+  simSwitch(grp, B, C, det, era, 'funkgeraet', L.ein, E, 'p_funkein');
+  simSwitch(grp, B, C, det, era, 'senden', L.senden, E, 'p_senden', { guard: false });
+  if (det) {
+    harness(B, C, [[rx, yF + 0.86, rz - 0.15], [rx + 0.02, yR - 0.08, rz - 0.2], [xl + 0.05, yR - 0.06, zB - 0.1]], det, 2);
+    B.tube(C.black, [[rx + 0.1, yF + 0.6, rz + 0.18], [rx + 0.2, yF + 0.45, rz + 0.26], [x0 - 0.1, yF + 0.55, z0 + 0.25]], 0.005, 5, 8); // Kopfhörerkabel
+  }
+  // Kopfhörer am Haken (pendelt), Bordsprechkasten an der Rückwand
+  {
+    const p = part(grp, 'pendel:kopfhoerer2', [xl + 0.05, yR - 0.2, z0 + 0.25]);
+    const K = new MB();
+    K.add(tor(0.075, 0.009, 5, 14, PI), C.black, [0, -0.08, 0], [0, HP, 0]);
+    for (const sz of [-1, 1]) K.add(cyl(0.04, 0.04, 0.03, 12), C.black, [0, -0.09, sz * 0.075], [HP, 0, 0]);
+    K.build(p, 'kopfhoerer');
+    p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
+    B.add(box(0.04, 0.03, 0.05), C.steel, [xl + 0.03, yR - 0.19, z0 + 0.25]);
+  }
+  BASE.cabinet(new DT.LF(B, [x0 + 0.2, yF + 0.62, zB - 0.005], Qy(PI)), C, det, 0.12, 0.17, 0.1, { mat: wk ? C.metal : C.olive });
+  // ---- Regal mit Ersatz-Gurtkästen an der rechten Wand
+  {
+    const [gx, gy, gz] = L.regal;
+    B.add(box(0.05, 0.02, 0.5), C.steel, [gx + 0.04, gy - 0.1, gz]);
+    for (let i = 0; i < 3; i++) {
+      const z = gz - 0.17 + i * 0.17;
+      B.add(rbox(0.1, 0.17, 0.14, 0.01), C.olive, [gx, gy, z]);
+      B.add(box(0.06, 0.012, 0.02), C.steel, [gx, gy + 0.095, z]);
+      if (det) B.add(box(0.004, 0.06, 0.08), C.black, [gx - 0.051, gy, z]);
+    }
+    B.rod(C.steel, [gx - 0.07, gy + 0.05, gz - 0.27], [gx - 0.07, gy + 0.05, gz + 0.27], 0.006);
+    label(B, C, 'p_gurt', [xr - 0.004, gy + 0.18, gz], Qy(-HP), 0.12);
+    // Ersatzlauf in Klammern darüber
+    B.rod(C.metal, [xr - 0.05, yR - 0.22, gz - 0.35], [xr - 0.05, yR - 0.22, gz + 0.25], 0.016, 10);
+    for (const dz of [-0.25, 0.15]) B.add(box(0.03, 0.04, 0.02), C.steel, [xr - 0.03, yR - 0.22, gz + dz]);
+  }
+  // ---- Winkelspiegel im Dach vor der Luke, Sitz, Lampe, Etiketten
+  {
+    const c = [x0, yR - 0.085, zFT + 0.1];
+    const P = new Frame(B, c, new THREE.Quaternion());
+    P.add(rbox(0.21, 0.15, 0.14, 0.012), C.metal, [0, 0, 0]);
+    P.add(new THREE.PlaneGeometry(0.17, 0.07), C.prism, [0, -0.015, 0.0705], null, null, true);
+    P.add(box(0.19, 0.012, 0.02), C.rubber, [0, 0.026, 0.075]);
+    P.add(rbox(0.21, 0.05, 0.06, 0.02), C.pad, [0, 0.07, 0.08]);
+    (cab.prisms || (cab.prisms = [])).push({ obj: 'hull', pos: P.w([0, -0.015, 0.072]), quat: P.q.toArray(), w: 0.17, h: 0.07, up: 0.12 });
+  }
+  if (det) DT.seat(B, C, det, L.seat, 0, { post: 0.26, back: true, w: 0.4, d: 0.38, foot: false, seed: 4 });
+  else B.add(rbox(0.4, 0.08, 0.38, 0.03), C.pad, L.seat);
+  DT.domeLamp(B, C, det, new DT.LF(B, [L.lamp[0], L.lamp[1] + 0.01, L.lamp[2]], new THREE.Quaternion().setFromEuler(new THREE.Euler(HP, 0, 0))), C.dome);
+  cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(L.lamp[0], L.lamp[1] - 0.06, L.lamp[2]), col: new THREE.Color(0xffc27a).multiplyScalar(0.8), where: 'fahrer' });
+  if (det) { stencil(B, C, 's_nr', [xr - 0.004, yF + 0.6, z0 - 0.4], [0, -HP, 0], 0.14); label(B, C, 'w_24v', [xl + 0.004, yF + 0.25, z0 + 0.3], [0, HP, 0], 0.08); extinguisher(B, C, [xr - 0.09, yF + 0.25, zB - 0.15], 1, det); }
+  B.build(grp, 'funkerraum');
+  cab.funkerEye = E;
+  return grp;
+}
+
 /* ===================================================================== Turm-/Kampfraum (Gruppenraum des Innenraums) */
 
 /** Ankerpunkte der Plätze im Gruppenraum des Innenraums (KP-1-Aufbau, um shift/scale verschoben). */
@@ -1414,6 +1559,19 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
     B.add(rbox(0.03, 0.14, 0.16, 0.006), C.black, [fp[0] - 0.08, fp[1], fp[2]]);
     simSwitch(grp, B, C, det, era, 'funk', fp, c, 'p_funk');
     if (det) { B.tube(C.black, [[fp[0] - 0.08, fp[1] - 0.06, fp[2] + 0.05], [fp[0] - 0.12, fp[1] - 0.15, fp[2] + 0.15], [fp[0] - 0.1, 0.45, modern ? 0.8 : -0.15]], 0.006, 5, 10); label(B, C, 'w_funk2', [fp[0] - 0.064, fp[1] + 0.1, fp[2]], [0, HP, 0], 0.12); }
+  }
+  // ---- Ladeschütze: drehbarer Winkelspiegel vor der Luke (Kopf im Dach, Griffe links/rechts, Stirnpolster)
+  const LP = l && !wk1 ? loaderPrism(D) : null;
+  if (LP) {
+    const ig = A.toG(LP[0].inner);
+    const P = new Frame(B, ig, new THREE.Quaternion());
+    P.add(cyl(0.085, 0.085, 0.05, det ? 20 : 12), C.steel, [0, 0.11, 0]);           // Drehring im Dach
+    P.add(rbox(0.17, 0.2, 0.12, 0.012), C.metal, [0, 0, -0.01]);
+    P.add(new THREE.PlaneGeometry(0.12, 0.06), C.prism, [0, -0.02, 0.0505], null, null, true);
+    P.add(box(0.14, 0.012, 0.02), C.rubber, [0, 0.015, 0.055]);
+    P.add(rbox(0.17, 0.045, 0.05, 0.02), C.pad, [0, 0.06, 0.06]);
+    for (const sx of [-1, 1]) { P.rod(C.steel, [sx * 0.085, -0.04, 0.02], [sx * 0.13, -0.06, 0.07], 0.008); P.add(cyl(0.015, 0.015, 0.06, 8), C.rubber, [sx * 0.13, -0.06, 0.09], [HP, 0, 0]); }
+    (cab.prisms || (cab.prisms = [])).push({ obj: 'tur', pos: P.w([0, -0.02, 0.052]), quat: P.q.toArray(), w: 0.12, h: 0.06, up: 0.3 });
   }
   if (!det) return;
   // ---- Sitze
@@ -1632,6 +1790,7 @@ function buildTurret(D, C, det, era, cab, A) {
         const F = new Frame(B, p, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, a + PI, 0)));
         F.add(rbox(0.13, 0.1, 0.08, 0.01), C.metal);
         F.add(new THREE.PlaneGeometry(0.11, 0.05), C.prism, [0, 0.005, 0.0405], null, null, true);
+        (cab.prisms || (cab.prisms = [])).push({ obj: 'tur', pos: F.w([0, 0.005, 0.042]), quat: F.q.toArray(), w: 0.11, h: 0.05, up: 0.2 });
         F.add(box(0.12, 0.01, 0.012), C.rubber, [0, 0.033, 0.042]);
       }
       B.rod(C.steel, [hx - r * 0.7, yr + 0.02, hz], [hx + r * 0.7, yr + 0.02, hz], 0.012);
@@ -1865,7 +2024,7 @@ function buildTemplate(D, C0, det) {
   CHAMF = det >= 1 ? 1 : 0; DT.setChamfer(det >= 1);
   // Kalter Krieg: Ausstattung wie 2. WK, aber hellgrüner Anstrich
   const C = D.era === 'kk' ? Object.assign(Object.create(C0), { wall: { ...C0.wall, wk2: C0.wall.kk } }) : C0;
-  const info = { lamps: [], screens: {}, partNames: [], driverEye: null };
+  const info = { lamps: [], screens: {}, partNames: [], driverEye: null, prisms: [] };
   const A = anchorsOf(D);
   cab_sw = [];
   TESS = det >= 2 ? 0.1 : det === 1 ? 0.16 : 0;
@@ -1873,6 +2032,7 @@ function buildTemplate(D, C0, det) {
   const hull = new THREE.Group();
   hull.name = 'cabin:wanne';
   buildDriver(hull, D, C, det, era, info);
+  buildFunker(hull, D, C, det, era, info);
   const hx = buildHullExtras(D, C, det, era, A);
   if (hx) hull.add(hx);
   // Verschluss (Bodenstück, Keil) und Gestell im Detail – werden beim Anbau an die Gruppen des Grund-Innenraums gehängt
@@ -1980,7 +2140,7 @@ export function attachCabin(model, D, S, quality = 'high') {
           if (lamp) { const m = warn ? C.lampAmber : on ? C.lampGreen : C.lampRed; if (lamp.material !== m) lamp.material = m; }
         },
       };
-    } else if (o.name.startsWith('hebel:') || o.name.startsWith('rad:') || ['gang', 'griff', 'luefter', 'lampe:sicher'].includes(o.name)) cab.parts[o.name] = o;
+    } else if (o.name.startsWith('hebel:') || o.name.startsWith('rad:') || ['gang', 'griff', 'luefter', 'lampe:sicher', 'bugmg'].includes(o.name)) cab.parts[o.name] = o;
   });
   for (const p of cab.pend) p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
   // Verschluss im Detail: Grundnetze aus models.js ausblenden, Detail-Baugruppen anhängen (Keil fährt mit)
@@ -2035,7 +2195,7 @@ function prepareBake(cab, model, tpl) {
       if (skipName.has(o.name) || o.name === 'huelse' || o.isSprite) return;
       const f = { ...flags };
       if (o.name === 'rackDoor' || o.name === 'cabin:tuer') f.occ = false;
-      if (o.name === 'cabin:fahrer') { f.set = 1; f.shadow = true; }
+      if (o.name === 'cabin:fahrer' || o.name === 'cabin:funker') { f.set = 1; f.shadow = true; }
       if (o.name === 'cabin:kampfraum') { f.set = 0; f.shadow = false; }
       if (o.isMesh && o.visible && o.geometry && o.geometry.attributes.position) {
         const g = o.geometry;
@@ -2130,6 +2290,9 @@ export function syncCabin(cab, v, dt, ctx = {}) {
   cab.yawPrev = m.turretYaw; cab.pitchPrev = m.gunPitch;
   if (P['rad:seite']) P['rad:seite'].rotateZ(dyaw * 14);
   if (P['rad:hoehe']) P['rad:hoehe'].rotateZ(-dp * 30);
+  // --- Funker: Bug-MG folgt der Kugelblende, Kanalwahl nach dem Funkgerät (vehicle._psimKanal 1–8)
+  if (P.bugmg) P.bugmg.rotation.set(m.cmgPitch || 0, m.cmgYaw || 0, 0, 'YXZ');
+  if (P['rad:kanal']) P['rad:kanal'].children[0].rotation.z = lerp(P['rad:kanal'].children[0].rotation.z, 1.2 - (((v._psimKanal || 5) - 1) / 7) * 2.4, Math.min(1, dt * 10));
   if (P.griff) {
     const ry = clamp(dyaw / Math.max(dt, 1e-3) * 0.35, -0.25, 0.25), rx = clamp(-dp / Math.max(dt, 1e-3) * 0.6, -0.2, 0.2);
     P.griff.userData.r = P.griff.userData.r || { x: 0, z: 0 };

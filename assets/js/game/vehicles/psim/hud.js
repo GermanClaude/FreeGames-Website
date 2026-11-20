@@ -65,6 +65,8 @@ const CSS = `
 .ps-wheel path.is-on{fill:rgba(150,170,100,.55)}
 .ps-wheel text{fill:#efe8cf;font-size:9px;text-anchor:middle;dominant-baseline:middle;font-family:inherit;letter-spacing:.04em}
 .ps-wheel .ps-wc{fill:#c9d79f;font-size:10px;letter-spacing:.14em}
+.ps-wheel text.ps-ws{font-size:7px;fill:#bdbca9}.ps-wheel path.is-cur{fill:rgba(90,130,170,.5)}.ps-wheel path.is-off{fill:rgba(10,12,10,.4)}
+.ps-swhint{position:absolute;left:50%;top:calc(50% + 200px);transform:translateX(-50%);font-size:13px;background:rgba(10,12,10,.6);padding:3px 10px;white-space:nowrap}
 .ps-crack{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(0,0,0,0) 0,rgba(0,0,0,.2) 40%,rgba(0,0,0,.95) 75%);}
 .ps-crack svg{position:absolute;inset:0;width:100%;height:100%}
 .ps-crack p{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-size:18px;color:#f08a74;text-shadow:0 1px 3px #000;letter-spacing:.08em}
@@ -115,6 +117,8 @@ export class Radio {
 
   say(from, text, { key = null, tone = null, quiet = false, prio = 0 } = {}) {
     if (!text) return;
+    // Funkgerät aus bzw. falscher Kanal (Funkerplatz, Simulation): keine Meldungen der Kompanie
+    if (from === 'Funk' && this.mode.funkMuted && this.mode.funkMuted()) return;
     const G = this.mode.G, now = G.time.elapsed;
     // Wiederholung derselben Meldung unterdrücken
     const k = `${from}|${text}`;
@@ -214,6 +218,8 @@ export class PanzerHUD {
         <div class="ps-box ps-help" hidden></div>
       </div>
       <div class="ps-wheel" hidden></div>
+      <div class="ps-wheel ps-seatw" hidden></div>
+      <div class="ps-swhint" hidden>Maus/Stick: Platz wählen · loslassen: wechseln</div>
       <div class="ps-banner" hidden></div>
       <div class="ps-sub"></div>`;
     host.appendChild(r);
@@ -221,7 +227,7 @@ export class PanzerHUD {
     const q = (s) => r.querySelector(s);
     this.el = {
       crew: q('.ps-crewl'), ammo: q('.ps-ammol'), mods: q('.ps-mods'), ord: q('.ps-ord'), mark: q('.ps-mark'), tgt: q('.ps-tgt'), tgtL: q('.ps-tgt span'),
-      hot: q('.ps-hot:not(.ps-next)'), hotL: q('.ps-hot:not(.ps-next) span'), next: q('.ps-next'), nextL: q('.ps-next span'), steps: q('.ps-steps'), stepsL: q('.ps-steps ul'), why: q('.ps-why'), hint: q('.ps-hint'), help: q('.ps-help'), wheel: q('.ps-wheel'),
+      hot: q('.ps-hot:not(.ps-next)'), hotL: q('.ps-hot:not(.ps-next) span'), next: q('.ps-next'), nextL: q('.ps-next span'), steps: q('.ps-steps'), stepsL: q('.ps-steps ul'), why: q('.ps-why'), hint: q('.ps-hint'), help: q('.ps-help'), wheel: q('.ps-wheel:not(.ps-seatw)'), seatw: q('.ps-seatw'), swhint: q('.ps-swhint'),
       sub: q('.ps-sub'), crack: q('.ps-crack'), banner: q('.ps-banner'), dot: q('.ps-dot'), vis: q('.ps-vis'), side: q('.ps-side'), right: q('.ps-right'),
       headN: q('.ps-head b'), headS: q('.ps-head span'), hull: q('.ps-hull'), hullI: q('.ps-hull i'),
     };
@@ -261,6 +267,33 @@ export class PanzerHUD {
     if (this._c.wsel === sel) return;
     this._c.wsel = sel;
     this.wheelPaths.forEach((p, i) => p.classList.toggle('is-on', i === sel));
+  }
+
+  /** Sitzrad (Platzwechsel, Taste „Sitzrad“ halten): items [{ label, sub, cur, off }], sel = gewählter Eintrag. */
+  setSeatWheel(open, items = null, sel = -1) {
+    const el = this.el.seatw;
+    this._set('swH', el, 'hidden', !open);
+    this._set('swhH', this.el.swhint, 'hidden', !open);
+    if (!open || !items) return;
+    const key = items.map((i) => `${i.label}|${i.sub}|${i.cur ? 1 : 0}|${i.off ? 1 : 0}`).join(';');
+    if (this._c.swKey !== key) {
+      this._c.swKey = key; this._c.swSel = null;
+      const n = items.length, seg = (Math.PI * 2) / n, r0 = 34, r1 = 96;
+      const p = (r, a) => `${(Math.sin(a) * r).toFixed(2)} ${(-Math.cos(a) * r).toFixed(2)}`;
+      let h = '<svg viewBox="-100 -100 200 200">';
+      items.forEach((it, i) => {
+        const a0 = i * seg - seg / 2 + 0.03, a1 = i * seg + seg / 2 - 0.03, am = i * seg;
+        h += `<path class="${it.cur ? 'is-cur' : it.off ? 'is-off' : ''}" d="M${p(r1, a0)}A${r1} ${r1} 0 0 1 ${p(r1, a1)}L${p(r0, a1)}A${r0} ${r0} 0 0 0 ${p(r0, a0)}Z"/>`;
+        const tx = Math.sin(am) * 65, ty = -Math.cos(am) * 65;
+        h += `<text x="${tx.toFixed(1)}" y="${(ty - 4).toFixed(1)}">${esc(it.label)}</text><text class="ps-ws" x="${tx.toFixed(1)}" y="${(ty + 7).toFixed(1)}">${esc(it.sub || '')}</text>`;
+      });
+      h += '<text class="ps-wc" x="0" y="0">PLATZ</text></svg>';
+      el.innerHTML = h;
+      this.seatPaths = [...el.querySelectorAll('path')];
+    }
+    if (this._c.swSel === sel) return;
+    this._c.swSel = sel;
+    this.seatPaths.forEach((pp, i) => pp.classList.toggle('is-on', i === sel));
   }
 
   update(dt, s) {

@@ -7,12 +7,15 @@
 //                  Laser-Entfernungsmesser, Handräder (Hinweis)
 //   Ladeschütze:   Munitionsgestell/-bunker (greifen), Verschluss (einschieben/schließen), Sicherung (entsichern)
 //   Kommandant:    Luke auf/zu, Funkgerät (Lagemeldung)
+//   MG-Schütze:    Funkerplatz (Bug-MG): Funkgerät Ein/Aus, Kanalwahl (5 = Kompanie), Sprechtaste, Gurtkasten wechseln
+//   alle:          Sichtgeräte zum Durchsehen (devicesOf): Winkelspiegel, Haupt-/Hilfszielfernrohr, Rundblickperiskop, Kugelblende
 // Bedienteile: wo der Detail-Innenraum (cabin.js) einen echten Schalter hat ('sw:<id>', Kippschalter unter Bügel mit
 // Leuchtmelder), ist er das Ziel des Hotspots; sonst setzt die Simulation ab medium eigene Schalterkästen, auf low gibt es
 // nur die Markierung (vereinfachte Interaktion). Kopf neigen: Q/E seitlich, Z vorbeugen (halten).
 import * as THREE from 'three';
 import { driverCabin } from '../data.js?v=20261115041504';
-import { spaceLocal, viewOf } from '../views.js?v=20261115041504';
+import { spaceLocal, viewOf, viewsOf } from '../views.js?v=20261115041504';
+import { funkerCabin, funkerLayout } from '../periscopes.js?v=20261115041504';
 import { kindOf, KINDS } from './ammo.js?v=20261115041504';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3();
@@ -44,12 +47,38 @@ function switchBox(w = 0.11, h = 0.08) {
   return { group: g, set(on, warn = false) { piv.rotation.x = on ? -0.6 : 0.6; lamp.material = warn ? M.warn : on ? M.on : M.off; } };
 }
 
+const DEV_VIEWS = new Set(['optic', 'peri']);
+
+/**
+ * Sichtgeräte eines Platzes zum Durchsehen aus der Innensicht (Nutzer 20.11.): jeder Winkelspiegel (periscopes.js), Haupt-/
+ * Hilfszielfernrohr, Rundblickperiskop, Kugelblende des Bug-MG. → [{ vi (Sichtindex), j (Spiegel), pos (innen), space, label, kind }]
+ */
+export function devicesOf(v, seat) {
+  const D = v.def, list = viewsOf(seat.def), out = [];
+  const inner = list.find((x) => x.interior);
+  const st = inner ? inner.station || inner.pos : null;
+  list.forEach((vw, vi) => {
+    if (vw.tp || vw.interior || vw.hatch) return;
+    if (vw.prisms) { vw.prisms.forEach((p, j) => out.push({ vi, j, pos: p.inner, space: vw.space === 'hull' ? 'hull' : 'turret', label: vw.label, kind: 'prism', yaw: p.yaw })); return; }
+    if (seat.def.mount === 'cmg' && D.cmgHull && vw.space === 'cupola' && vw.overlay === 'wide') {
+      const m = D.cmgPivot;
+      out.push({ vi, pos: [m[0], m[1] + 0.13, m[2] + 0.4], space: 'hull', label: vw.label, kind: 'kugel' });
+      return;
+    }
+    if (!DEV_VIEWS.has(vw.overlay) || !st || !inner) return;
+    const sp = inner.space === 'hull' ? 'hull' : 'turret';
+    out.push({ vi, pos: vw.aux ? [st[0] + 0.14, st[1] - 0.08, st[2] - 0.3] : [st[0] + 0.02, st[1] - 0.02, st[2] - 0.3], space: sp, label: vw.label, kind: vw.aux ? 'hilfs' : vw.overlay });
+  });
+  return out;
+}
+
 export class SimControls {
   constructor(mode) {
     this.mode = mode;
     this.G = mode.G;
     this.hot = null;          // Hotspot im Blick
     this.list = [];
+    this.devices = [];
     this._built = null;
     this.lean = new THREE.Vector3();
     this._p = { x: 0, y: 0, on: false };
@@ -94,7 +123,19 @@ export class SimControls {
       const H = D.hatches && D.hatches.commander;
       if (H) add({ id: 'luke', space: H.space || 'turret', label: () => `Luke – ${seat.hatchOpen ? 'offen (LMT schließen)' : 'zu (LMT öffnen)'}`, pos: [H.pos[0], H.pos[1] - 0.15, H.pos[2]], r: 0.2, use: () => this.mode.simAction('luke', 1) });
       add({ id: 'funk', space: 'turret', label: () => 'Funkgerät – Lagemeldung an die Kompanie', pos: [eye[0] - 0.3, eye[1] - 0.1, eye[2] + 0.2], panel: 'f', use: () => this.mode.simAction('funk', 1), on: () => true });
+    } else if (role === 'mgschuetze') {
+      const F = funkerCabin(D, driverCabin);
+      if (F) {
+        const Lf = funkerLayout(F);
+        add({ id: 'funkgeraet', label: () => `Funkgerät – ${st.funkOn ? 'EIN' : 'AUS'}`, pos: Lf.ein, panel: 'f', use: (d) => this.mode.simAction('funkgeraet', d), on: () => st.funkOn, warn: () => !st.funkOn });
+        add({ id: 'kanal', label: () => `Kanalwahl – Kanal ${st.kanal}${st.kanal === 5 ? ' (Kompanie)' : ''}  (LMT + · RMT −)`, part: 'rad:kanal', pos: Lf.kanal, r: 0.06, use: (d) => this.mode.simAction('kanal', d) });
+        add({ id: 'senden', label: () => 'Sprechtaste – Lagemeldung an die Kompanie', pos: Lf.senden, panel: 'f', use: () => this.mode.simAction('funk', 1), on: () => st.funkOn });
+        add({ id: 'gurt', label: () => this.mode.beltLabel(), pos: Lf.gurt, r: 0.1, use: () => this.mode.simAction('gurt', 1) });
+      }
     }
+    // Sichtgeräte zum Durchsehen (alle Rollen): Winkelspiegel, Optiken, Kugelblende
+    this.devices = devicesOf(v, seat);
+    for (const dv of this.devices) add({ id: `peek:${dv.vi}:${dv.j || 0}`, space: dv.space, label: () => `${dv.label} – durchsehen`, pos: dv.pos, r: dv.kind === 'prism' ? 0.06 : 0.07, use: () => this.mode.peek(dv) });
     for (const h of L) h.local = h.pos.slice();
     this.list = L;
     this._built = null;

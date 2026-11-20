@@ -82,7 +82,7 @@ const STIL = {
   hafen:        { laub: 0.4, kiesel: 1.3, ziegel: 0.15, putz: 0.1, holz: 0.7, glas: 0.25, huelse: 0.05, zweig: 0.2, gruen: 0.8, busch: 0.25, fassade: 0.7, palette: 0.5, reifen: 0.25, plane: 0.3, kanister: 0.3, risse: 0.45 },
   werk:         { laub: 0.6, kiesel: 1.4, ziegel: 0.6, putz: 0.4, holz: 0.7, glas: 0.6, huelse: 0.15, zweig: 0.3, gruen: 1.1, busch: 0.45, fassade: 1.0, palette: 0.45, reifen: 0.35, plane: 0.25, kanister: 0.3, risse: 1.0 },
   altstadt:     { laub: 1.3, kiesel: 0.6, ziegel: 0.35, putz: 0.4, holz: 0.25, glas: 0.15, huelse: 0.1, zweig: 0.3, gruen: 1.0, busch: 0.55, fassade: 1.3, palette: 0.15, reifen: 0.05, plane: 0.1, kanister: 0.1, risse: 0.35 },
-  bibliothek:   { menge: 0.55, laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0, fassade: 0, palette: 0, reifen: 0, plane: 0, kanister: 0, risse: 0 },
+  bibliothek:   { menge: 0.55, dach: 0, laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0, fassade: 0, palette: 0, reifen: 0, plane: 0, kanister: 0, risse: 0 },
   stadtkern:    { laub: 1.0, kiesel: 0.8, ziegel: 1.5, putz: 1.1, holz: 0.8, glas: 1.2, huelse: 0.9, zweig: 0.3, gruen: 0.9, busch: 0.4, fassade: 1.2, palette: 0.3, reifen: 0.25, plane: 0.3, kanister: 0.2, risse: 0.8 },
   range:        { laub: 0.9, kiesel: 1.0, ziegel: 0, putz: 0.05, holz: 0.3, glas: 0, huelse: 1.6, zweig: 0.5, gruen: 1.3, busch: 0.6, fassade: 0.6, palette: 0.25, reifen: 0.3, plane: 0.15, kanister: 0.3, risse: 0.7 },
   grenzland:    { laub: 1.1, kiesel: 0.9, ziegel: 0.45, putz: 0.3, holz: 0.6, glas: 0.25, huelse: 0.45, zweig: 0.8, gruen: 1.2, busch: 0.7, fassade: 1.0, palette: 0.3, reifen: 0.2, plane: 0.2, kanister: 0.2, risse: 0.5 },
@@ -169,9 +169,19 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
     }
     return m;
   };
+  // Flachdächer (begehbare Dachflächen > 2,5 m über dem Boden, waagerecht, offen): jede dritte Zelle prüft zuerst das Dach
+  const dachY = (x, z) => {
+    if (W.dach === 0) return null;
+    const base = world.heightAt ? world.heightAt(x, z) : 0;
+    _o.set(x, base + 40, z); _d.set(0, -1, 0);
+    const h = world.raycast(_o, _d, 45);
+    if (!h || h.normal.y < 0.97 || h.point.y - base < 2.5 || h.surface === 'water' || h.surface === 'glass' || h.surface === 'metal' || h.surface === 'wood') return null;
+    return h.point.y;
+  };
+  let zelle = 0;
   for (const [x0, z0] of cells) {
     if (cluster >= cap) break;
-    const gy0 = bodenY(world, x0, z0);
+    const gy0 = (zelle++ % 3 === 0 ? dachY(x0, z0) : null) ?? bodenY(world, x0, z0);
     if (gy0 == null) continue;
     let g = bodenAt(world, x0, z0, gy0 + 0.3);
     if (!g || Math.abs(g.y - gy0) > 0.05 || g.surface === 'water') continue;

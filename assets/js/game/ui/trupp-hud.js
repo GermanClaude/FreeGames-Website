@@ -143,6 +143,7 @@ export class TruppHud {
       if (!this.menu && p && p.alive && input.pressed('trupp_wechsel')) m.request({ a: 'swap' });
     }
     this._updateWheel(dt);
+    toggle(this.el.front, 'tr-hide', !!(this.wOpen || this.menu || (G.hud && G.hud.wheel && G.hud.wheel.isOpen))); // Frontzeile nicht durch das Rad scheinen lassen
     this._t -= dt;
     if (this._t <= 0) { this._t = 0.25; toggle(this.root, 'is-touch', !!(input && input.mode === 'touch')); this._renderSquad(); this._renderFront(); if (this.menu) this._renderMenu(false); }
     this._updateMarks();

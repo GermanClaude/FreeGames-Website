@@ -11,7 +11,16 @@
 //               Außenansicht erlaubt.
 // Debug-URL: spielen.html?debug=1&autostart=1&mode=panzer&map=grenzland&rolle=<fahrer|richtschuetze|lader|kommandant>
 //            &sim=<1|0>&tank=<mbt|wk2|wk2h|wk1|wk1l|…>&gegner=<leicht|mittel|schwer>&enemies=N (Infanterie)
-// Konsole: __game.panzer → { mode, tank, crew, order(cmd), ammo(kind), fire(), state }
+// Konsole: __game.panzer → { mode, tank, crew, order(cmd), ammo(kind), fire(), state, rolle(r) (sofort), sitz(r) (mit Blende), peek() }
+//
+// Platzwechsel (Nutzer 20.11.): Sitzrad (Taste „Sitzrad“ halten, Standard K; Maus/Stick wählt, Loslassen wechselt), Controller
+// ◀/▶ (seat_prev/seat_next), Touch „Sitz“ (nächster Platz) – kurze Blende, Platztausch mit dem Bot dieser Rolle; der Zustand der
+// Handgriffe bleibt (Motor, Bremse, Waffe, Gestell …), die KI übernimmt den verlassenen Platz (schaltet scharf, lässt an,
+// entsichert, wechselt Gurte). Arcade: Richtschütze ↔ Fahrer ↔ Kommandant (↔ MG-Schütze), kein Ladeschütze.
+// MG-Schütze/Funker (Bug-MG der Weltkriegs-/Nachkriegspanzer): Funkerplatz mit Funkgerät (Ein/Aus, Kanal 5 = Kompanie,
+// Sprechtaste) und Kugelblende; Simulation: Gurtkasten von Hand wechseln (R: Deckel auf → Gurtkasten tauschen → Deckel zu).
+// Durchsehen: in der Innensicht RMT (bzw. Hotspot) = Blick durch das Sichtgerät im Blick (Winkelspiegel, Optik, Kugelblende);
+// im Winkelspiegel schwenkt die Maus von Spiegel zu Spiegel, RMT/C zurück in den Innenraum.
 import * as THREE from 'three';
 import { BaseMode } from './base.js?v=20261115041504';
 import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261115041504';
@@ -27,11 +36,15 @@ import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplace
 import { SimControls } from '../vehicles/psim/sim.js?v=20261115041504';
 import { PanzerHUD, Radio, ammoRows } from '../vehicles/psim/hud.js?v=20261115041504';
 import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261115041504';
+import { prismIndex } from '../vehicles/periscopes.js?v=20261115041504';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const ROLE = { fahrer: 'Fahrer', richtschuetze: 'Richtschütze', ladeschuetze: 'Ladeschütze', kommandant: 'Kommandant' };
-const ROLE_ALIAS = { fahrer: 'fahrer', driver: 'fahrer', richtschuetze: 'richtschuetze', rs: 'richtschuetze', gunner: 'richtschuetze', schuetze: 'richtschuetze', lader: 'ladeschuetze', ladeschuetze: 'ladeschuetze', loader: 'ladeschuetze', kommandant: 'kommandant', kdt: 'kommandant', commander: 'kommandant' };
+const ROLE = { fahrer: 'Fahrer', richtschuetze: 'Richtschütze', ladeschuetze: 'Ladeschütze', kommandant: 'Kommandant', mgschuetze: 'MG-Schütze' };
+const ROLE_ALIAS = { fahrer: 'fahrer', driver: 'fahrer', richtschuetze: 'richtschuetze', rs: 'richtschuetze', gunner: 'richtschuetze', schuetze: 'richtschuetze', lader: 'ladeschuetze', ladeschuetze: 'ladeschuetze', loader: 'ladeschuetze', kommandant: 'kommandant', kdt: 'kommandant', commander: 'kommandant', mg: 'mgschuetze', mgschuetze: 'mgschuetze', funker: 'mgschuetze', bugmg: 'mgschuetze' };
+const ROLE_ORDER = ['kommandant', 'richtschuetze', 'ladeschuetze', 'fahrer', 'mgschuetze'];
+const SEAT_ROLE = { driver: 'fahrer', gunner: 'richtschuetze', loader: 'ladeschuetze', commander: 'kommandant', funker: 'mgschuetze', mg: 'mgschuetze' };
+const wrapA = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 const AMMO_KEYS = ['slot1', 'slot2', 'streak1', 'streak2'];
 const CREW_NAMES = ['Uffz. Brandt', 'Gefr. Keller', 'OGefr. Vogt', 'Fw. Lorenz', 'Gefr. Sommer', 'Uffz. Hartwig'];
 const FORCES = { leicht: { tanks: 2, pak: 1, bunker: 1 }, mittel: { tanks: 3, pak: 2, bunker: 2 }, schwer: { tanks: 5, pak: 3, bunker: 2 } };
@@ -69,7 +82,10 @@ export class PanzerMode extends BaseMode {
     this.state = {
       battery: !this.sim, engine: this.sim ? 'aus' : 'an', crankT: 0, cranking: false, engineWanted: false,
       parkBrake: this.sim, selector: 'N', lights: 'kampf', armed: !this.sim, hydraulics: true, safe: false, shiftQ: 0, extCharges: 2, burnT: 0, trackRepairT: 0,
+      funkOn: true, kanal: 5, // Funkgerät (Funkerplatz): Kanal 5 = Kompanie (Schild „K3 = Zug, K5 = Kp.“)
     };
+    this._belt = { step: 'bereit', busy: 0, pending: 0, said: false }; // Gurtwechsel am Bug-MG (Simulation)
+    this._peekFrom = null; this._peekSave = null; this._pendRole = null; this._seatW = null;
     this.marker = null; this.driverOrder = null;
     this._unhook = null; this._wheel = null; this._endAt = null; this._outcome = null; this._msgT = 0;
   }
@@ -93,7 +109,7 @@ export class PanzerMode extends BaseMode {
     this.optics = new PanzerOptics(this);
     document.body.classList.add('psim-on');
     if (!document.getElementById('psim-css2')) { const st = document.createElement('style'); st.id = 'psim-css2'; st.textContent = '.psim-on .vh-rack,.psim-on .vh-seats{display:none!important}'; document.head.appendChild(st); }
-    G.panzer = { mode: this, get tank() { return G.mode && G.mode.tank; }, order: (c, a) => this.crew && this.crew.order(c, a), ammo: (k) => this.crew && this.crew.orderAmmo(k), fire: () => this.crew && this.crew.fire(), designate: () => this._designate(), sim: (id, d = 1) => this.simAction(id, d), rolle: (r) => this.switchRole(r), get state() { return G.mode && G.mode.state; } };
+    G.panzer = { mode: this, get tank() { return G.mode && G.mode.tank; }, order: (c, a) => this.crew && this.crew.order(c, a), ammo: (k) => this.crew && this.crew.orderAmmo(k), fire: () => this.crew && this.crew.fire(), designate: () => this._designate(), sim: (id, d = 1) => this.simAction(id, d), rolle: (r) => this.switchRole(r), sitz: (r) => this.requestRole(r), rollen: () => this.rolesOf(), peek: () => this._peekNearest(), unpeek: () => this._unpeek(), get state() { return G.mode && G.mode.state; } };
     if (!s) return;
     s.on('vehicle:loaded', (e) => this._onLoaded(e));
     s.on('vehicle:destroyed', (e) => this._onDestroyed(e));
@@ -301,21 +317,45 @@ export class PanzerMode extends BaseMode {
     e.crew = bot;
   }
 
-  _seatFor(v, role) {
+  /** Platz einer Rolle (ohne Zustand zu ändern). Fehlt der Platz (z. B. LK-17: zwei Mann), die nächstliegende Rolle. → { idx, role } */
+  seatOfRole(v, role) {
     const S = v.seats;
     const by = (fn) => { const s = S.find(fn); return s ? s.index : -1; };
     const gs = gunSeat(v), ls = loaderSeat(v);
-    let i = -1;
+    let i = -1, r = role;
     if (role === 'fahrer') i = by((s) => s.def.drive);
     else if (role === 'richtschuetze') i = gs ? gs.index : -1;
     else if (role === 'ladeschuetze') i = ls ? ls.index : -1;
     else if (role === 'kommandant') i = by((s) => s.def.id === 'commander');
+    else if (role === 'mgschuetze') i = by((s) => s.def.id === 'funker' || s.def.id === 'mg');
     if (i < 0) {
-      // Panzer ohne diesen Platz (z. B. LK-17: zwei Mann): nächstliegende Rolle
-      if (role === 'ladeschuetze' || role === 'kommandant') { i = gs ? gs.index : by((s) => s.def.id === 'commander'); this.role = gs && i === gs.index ? 'richtschuetze' : 'kommandant'; }
-      if (i < 0) { i = 0; this.role = 'fahrer'; }
+      // moderne Panzer: das MG bedient der Kommandant (fernbedient); sonst wie bisher
+      if (role === 'mgschuetze') { i = by((s) => s.def.id === 'commander'); r = 'kommandant'; if (i < 0) { i = gs ? gs.index : -1; r = 'richtschuetze'; } }
+      else if (role === 'ladeschuetze' || role === 'kommandant') { i = gs ? gs.index : by((s) => s.def.id === 'commander'); r = gs && i === gs.index ? 'richtschuetze' : 'kommandant'; }
+      if (i < 0) { i = 0; r = 'fahrer'; }
     }
-    return i;
+    return { idx: i, role: r };
+  }
+
+  _seatFor(v, role) {
+    const o = this.seatOfRole(v, role);
+    this.role = o.role;
+    return o.idx;
+  }
+
+  /** Spielbare Plätze des eigenen Panzers (Sitzrad): [{ role, idx, label, sub, cur }]; Arcade ohne Ladeschütze. */
+  rolesOf(v = this.tank) {
+    if (!v) return [];
+    const out = [], seen = new Set();
+    for (const r of ROLE_ORDER) {
+      if (this.arcade && r === 'ladeschuetze') continue;
+      const o = this.seatOfRole(v, r);
+      if (o.role !== r || seen.has(o.idx)) continue;
+      seen.add(o.idx);
+      const st = v.seats[o.idx], a = st.actor;
+      out.push({ role: r, idx: o.idx, label: st.def.label || ROLE[r], sub: a === this.G.player ? 'du' : a && a.alive ? a.name || 'Besatzung' : 'unbesetzt', cur: o.idx === this.playerSeat });
+    }
+    return out;
   }
 
   _enterPlayer() {
@@ -337,23 +377,200 @@ export class PanzerMode extends BaseMode {
     return true;
   }
 
-  /** Rolle wechseln (Konsole/Tests: __game.panzer.rolle('fahrer')): Platz mit dem Bot dieser Rolle tauschen. */
+  /** Rolle wechseln (Konsole/Tests: __game.panzer.rolle('fahrer')): Platz mit dem Bot dieser Rolle tauschen, sofort. */
   switchRole(role) {
     const G = this.G, v = this.tank, sys = G.vehicles, P = G.player;
     role = ROLE_ALIAS[role] || role;
     if (!v || !v.alive || !P || !ROLE[role]) return false;
+    if (this.arcade && role === 'ladeschuetze') role = 'richtschuetze';
     const old = this.playerSeat, oldRole = this.role;
     this.role = role;
     const idx = this._seatFor(v, role);
     if (idx === old) { this.role = oldRole; return true; }
+    this._unpeek(true);
+    this._leaveRole(oldRole);
     const bot = v.seats[idx].actor;
     sys.removeFromSeat(P, { teleport: false });
     if (bot) { sys.removeFromSeat(bot, { teleport: false }); sys.enter(bot, v, old); if (bot._psim) bot._psim.role = v.seats[old].def.id; }
     this.playerSeat = idx;
     this.simc.dispose();
     this._enterPlayer();
+    this._enterRole(this.role);
     return true;
   }
+
+  /** Platzwechsel mit Blende (Sitzrad, ◀/▶, Touch): 0,25 s abblenden, tauschen, aufblenden. → bool */
+  requestRole(role) {
+    const G = this.G, v = this.tank, sys = G.vehicles;
+    role = ROLE_ALIAS[role] || role;
+    if (!v || !v.alive || !ROLE[role] || this._pendRole) return false;
+    const o = this.seatOfRole(v, this.arcade && role === 'ladeschuetze' ? 'richtschuetze' : role);
+    if (o.idx === this.playerSeat) { this.hint(`Du sitzt schon am Platz ${v.seats[o.idx].def.label}`); return false; }
+    const now = G.time.elapsed, label = v.seats[o.idx].def.label;
+    sys._switch = { at: now, until: now + 5, label };
+    this._pendRole = { role: o.role, at: now + 0.26, label };
+    return true;
+  }
+
+  /** Nächster/voriger Platz (◀/▶, Touch „Sitz“). */
+  cycleRole(step = 1) {
+    const L = this.rolesOf();
+    if (L.length < 2) return false;
+    const i = Math.max(0, L.findIndex((x) => x.cur));
+    return this.requestRole(L[(i + step + L.length) % L.length].role);
+  }
+
+  /** Verlassener Platz: die KI übernimmt – Zustände so setzen, dass der Bot weiterarbeiten kann. */
+  _leaveRole(old) {
+    const st = this.state, v = this.tank;
+    if (!this.sim) return;
+    if (old === 'richtschuetze' && !st.armed) { st.armed = true; this.radio.say('Richtschütze', 'Waffe scharf!', { quiet: true }); }
+    if (old === 'fahrer') st.engineWanted = true;
+    if (old === 'ladeschuetze') st.safe = false;
+    if (old === 'mgschuetze') {
+      st.funkOn = true; st.kanal = 5; if (v) v._psimKanal = 5;
+      const w = this._mgWeapon();
+      if (w) { if (this._belt.pending > 0) { w.mag += this._belt.pending; this._belt.pending = 0; } if (w.mag <= 0 && w.reserve > 0 && w.reloadT <= 0) w.reloadT = w.def.reload; }
+      this._belt.step = 'bereit'; this._belt.busy = 0;
+    }
+  }
+
+  /** Neuer Platz: kurzer Hinweis auf die Aufgaben. */
+  _enterRole(role) {
+    const T = {
+      fahrer: 'Fahrerplatz: Fahren, Befehle des Kommandanten oben im Bild.', richtschuetze: 'Richtschütze: Hauptzieloptik (C bzw. RMT), richten und schießen.',
+      ladeschuetze: 'Ladeschütze: befohlene Munition laden und entsichern.', kommandant: 'Kommandant: Lage durch Periskop/Winkelspiegel, Ziele übergeben, Befehle.',
+      mgschuetze: this.sim ? 'MG-Schütze/Funker: Kugelblende (RMT), Feuerstöße, Gurt wechseln (R), Funkgerät.' : 'MG-Schütze: Kugelblende, Feuerstöße.',
+    };
+    if (T[role]) this.hint(T[role]);
+    const v = this.tank;
+    if (v) v._psimKanal = this.state.kanal;
+  }
+
+  /* ------------------------------------------------------------ Durchsehen (Winkelspiegel, Optiken) */
+
+  /** Durch ein Sichtgerät sehen (sim.js devicesOf): Sicht setzen, Blick auf den Spiegel bzw. die Waffenrichtung. */
+  peek(dev) {
+    const G = this.G, P = G.player, v = this.tank, sys = G.vehicles;
+    if (!v || !dev || !P || P.vehicle !== v) return false;
+    const seat = v.seats[this.playerSeat];
+    const list = viewsOf(seat.def), cur = viewOf(seat), vw = list[dev.vi];
+    if (!vw) return false;
+    const L = seat.look;
+    if (cur.interior) { this._peekFrom = seat.view; this._peekSave = { relYaw: L.relYaw, relPitch: L.relPitch }; }
+    else if (this._peekFrom == null) { const ii = list.findIndex((x) => x.interior); this._peekFrom = ii >= 0 ? ii : null; }
+    if (vw.prisms) {
+      const pr = vw.prisms[dev.j || 0];
+      if (!pr.rot) L.relYaw = pr.yaw;
+      L.relPitch = 0;
+    } else if (vw.look === 'mount') {
+      try { v.muzzle(seat.index, _a, _b, true); } catch { G.camera.getWorldDirection(_b); }
+      if (!Number.isFinite(_b.x) || _b.lengthSq() < 0.5) G.camera.getWorldDirection(_b);
+      L.yaw = Math.atan2(-_b.x, -_b.z); L.pitch = Math.asin(clamp(_b.y, -1, 1));
+    }
+    sys.setSeatView(P, dev.vi);
+    sys._viewLabel = { text: vw.prisms && vw.prisms.length > 1 ? `${vw.label} – Maus schwenkt zum nächsten` : vw.label, until: G.time.elapsed + 1.6 };
+    this._click();
+    return true;
+  }
+
+  /** Zurück in den Innenraum (RMT/C im Sichtgerät). quiet: ohne Sichtwechsel (Platzwechsel). → bool */
+  _unpeek(quiet = false) {
+    if (this._peekFrom == null) return false;
+    const G = this.G, P = G.player, v = this.tank, from = this._peekFrom, save = this._peekSave;
+    this._peekFrom = null; this._peekSave = null;
+    if (quiet || !v || !P || P.vehicle !== v) return true;
+    const seat = v.seats[this.playerSeat];
+    G.vehicles.setSeatView(P, from);
+    if (save) { seat.look.relYaw = save.relYaw; seat.look.relPitch = save.relPitch; }
+    return true;
+  }
+
+  /** RMT in der Innensicht: Sichtgerät nahe der Bildmitte, sonst das Hauptgerät der Rolle. */
+  _peekNearest() {
+    const G = this.G, v = this.tank, devs = this.simc && this.simc.devices;
+    if (!v || !devs || !devs.length) { this.hint('Kein Sichtgerät an diesem Platz'); return false; }
+    const cam = G.camera;
+    cam.getWorldDirection(_c);
+    let best = null, ba = 0.5;
+    for (const d of devs) {
+      const p = this.simc.world(v, d, _d).sub(cam.position);
+      const len = p.length();
+      if (len > 2.2 || len < 0.03) continue;
+      const ang = Math.acos(clamp(p.multiplyScalar(1 / len).dot(_c), -1, 1));
+      if (ang < ba) { ba = ang; best = d; }
+    }
+    if (!best) {
+      const seat = v.seats[this.playerSeat], yaw = seat.look.relYaw;
+      const pref = { fahrer: ['prism'], richtschuetze: ['optic'], kommandant: ['peri', 'prism'], ladeschuetze: ['prism'], mgschuetze: ['kugel', 'prism'] }[this.role] || ['prism', 'optic', 'peri', 'kugel'];
+      for (const k of pref) {
+        const c = devs.filter((d) => d.kind === k);
+        if (!c.length) continue;
+        if (k === 'prism') { const vw = viewsOf(seat.def)[c[0].vi]; const j = prismIndex(vw, yaw); best = c.find((d) => (d.j || 0) === j) || c[0]; } else best = c[0];
+        break;
+      }
+      best = best || devs[0];
+    }
+    return this.peek(best);
+  }
+
+  /* ------------------------------------------------------------ Bug-MG: Gurtwechsel (Simulation) */
+
+  _mgWeapon() {
+    const v = this.tank;
+    if (!v) return null;
+    const o = this.seatOfRole(v, 'mgschuetze');
+    if (o.role !== 'mgschuetze') return null;
+    const s = v.seats[o.idx];
+    return s.weapons.find((w) => w.def.kind === 'mg') || null;
+  }
+
+  beltLabel() {
+    const w = this._mgWeapon(), b = this._belt;
+    if (!w) return 'Gurtkasten';
+    if (b.busy > 0) return b.step === 'offen' ? 'Gurtkasten wird getauscht …' : 'beschäftigt …';
+    const belts = Math.floor((w.reserve || 0) / w.def.mag);
+    if (b.step === 'offen') return `Gurtkasten tauschen (R) – noch ${belts} Gurtkästen`;
+    if (b.step === 'eingelegt') return 'Deckel schließen und durchladen (R)';
+    if (b.step === 'leer') return 'Gurt leer – Deckel öffnen (R)';
+    return `MG feuerbereit – ${w.mag} Schuss (R: Gurt wechseln)`;
+  }
+
+  _beltStep() {
+    const w = this._mgWeapon(), b = this._belt;
+    if (!w || b.busy > 0) { if (b.busy > 0) this.hint('Noch beschäftigt'); return; }
+    if (b.step === 'bereit' || b.step === 'leer') {
+      // Deckel auf: Restgurt heraus (Schuss zurück in den Vorrat)
+      if (w.mag > 0) { w.reserve = (w.reserve || 0) + w.mag; w.mag = 0; }
+      w.reloadT = 0;
+      b.busy = 0.6; b.next = 'offen';
+    } else if (b.step === 'offen') {
+      const n = Math.min(w.def.mag, w.reserve || 0);
+      if (n <= 0) { this.hint('Keine Gurtkästen mehr – Versorgungspunkt anfahren'); return; }
+      w.reserve -= n; b.pending = n;
+      b.busy = 2.2; b.next = 'eingelegt';
+    } else if (b.step === 'eingelegt') { b.busy = 0.8; b.next = 'bereit'; }
+    this._click();
+  }
+
+  _beltTick(dt) {
+    const w = this._mgWeapon(), b = this._belt;
+    if (!w) return;
+    const mine = this.sim && this.role === 'mgschuetze';
+    if (!mine) return;
+    if (w.reloadT > 0) w.reloadT = 0; // keine Automatik am eigenen Platz
+    if (b.busy > 0) {
+      b.busy -= dt;
+      if (b.busy <= 0) {
+        b.busy = 0; b.step = b.next || b.step; b.next = null;
+        if (b.step === 'bereit') { w.mag += b.pending; b.pending = 0; b.said = false; this.radio.say('MG-Schütze', 'MG fertig!', { quiet: true }); try { this.G.vehicles.audio.loadSound('munition', 0.8); } catch { /* */ } }
+      }
+      return;
+    }
+    if (b.step === 'bereit' && w.mag <= 0) { b.step = 'leer'; if (!b.said) { b.said = true; this.hint(`Gurt leer – Gurtkasten wechseln (${this.G.input.label('reload') || 'R'})`); } }
+  }
+
+  funkMuted() { const st = this.state; return this.sim && (!st.funkOn || st.kanal !== 5); }
 
   _hooks() {
     if (this._unhook) return;
@@ -367,7 +584,7 @@ export class PanzerMode extends BaseMode {
     R.say('Funk', `Kompanie an ${t.def.name}: Feindstellung voraus – ${this.enemies.length} Panzer, ${this.empl.filter((e) => e.kind === 'pak').length} Pak, ${this.empl.filter((e) => e.kind === 'bunker').length} Bunker. Angreifen und vernichten!`);
     void n;
     if (this.sim) {
-      const t2 = { fahrer: 'Du bist Fahrer. Hauptschalter, Anlasser, Feststellbremse lösen, Gang einlegen.', richtschuetze: 'Du bist Richtschütze. Waffe scharf schalten, dann in die Hauptzieloptik (Sicht wechseln).', ladeschuetze: 'Du bist Ladeschütze. Befohlene Munition laden und entsichern.', kommandant: 'Du bist Kommandant. Führe deine Besatzung.' }[this.role];
+      const t2 = { fahrer: 'Du bist Fahrer. Hauptschalter, Anlasser, Feststellbremse lösen, Gang einlegen.', richtschuetze: 'Du bist Richtschütze. Waffe scharf schalten, dann in die Hauptzieloptik (Sicht wechseln).', ladeschuetze: 'Du bist Ladeschütze. Befohlene Munition laden und entsichern.', kommandant: 'Du bist Kommandant. Führe deine Besatzung.', mgschuetze: 'Du bist MG-Schütze und Funker. Funkgerät auf Kanal 5, durch die Kugelblende (RMT) zielen, Feuerstöße auf Infanterie.' }[this.role];
       setTimeout(() => this.radio && this.radio.say('Hinweis', t2, { tone: 'warn', quiet: true }), 1500);
     }
   }
@@ -455,7 +672,7 @@ export class PanzerMode extends BaseMode {
     const v = e && e.victim;
     if (!v) return;
     if (v === this.G.player) { this._finish('loss', 'Gefallen'); return; }
-    if (v._psim && v._psim.crew) this.radio.say('Kommandant', `${ROLE[{ driver: 'fahrer', gunner: 'richtschuetze', loader: 'ladeschuetze', commander: 'kommandant' }[v._psim.role]] || 'Besatzung'} ausgefallen!`, { tone: 'warn' });
+    if (v._psim && v._psim.crew) this.radio.say('Kommandant', `${ROLE[SEAT_ROLE[v._psim.role]] || 'Besatzung'} ausgefallen!`, { tone: 'warn' });
   }
 
   /** Granate abgefeuert (hooks.js). */
@@ -590,7 +807,12 @@ export class PanzerMode extends BaseMode {
         if (idx >= 0) sys.setSeatView(P, idx);
         break;
       }
+      case 'funkgeraet': st.funkOn = d > 0 ? !st.funkOn : false; this._click(); this.hint(st.funkOn ? (st.kanal === 5 ? 'Funkgerät ein – Kompaniefunk' : `Funkgerät ein – Kanal ${st.kanal}: nur Rauschen`) : 'Funkgerät aus – keine Meldungen der Kompanie'); break;
+      case 'kanal': st.kanal = ((st.kanal - 1 + (d > 0 ? 1 : 7)) % 8) + 1; v._psimKanal = st.kanal; this._click(); if (st.funkOn) this.hint(st.kanal === 5 ? 'Kanal 5 – Kompanie' : st.kanal === 3 ? 'Kanal 3 – Zug (still)' : `Kanal ${st.kanal} – Rauschen`); break;
+      case 'gurt': this._beltStep(); break;
       case 'funk': {
+        if (!st.funkOn) { this.hint('Funkgerät ist aus'); break; }
+        if (st.kanal !== 5) { this.hint('Falscher Kanal – die Kompanie hört auf Kanal 5'); break; }
         const left = this.enemies.filter((x) => x.v.alive).length + this.empl.filter((x) => x.alive).length;
         this.radio.say('Kommandant', `${v.def.name} an Kompanie: Kämpfe – ${left} Ziel${left === 1 ? '' : 'e'} erkannt.`, { quiet: true });
         setTimeout(() => this.radio && this.radio.say('Funk', left ? 'Verstanden. Weiter vorgehen.' : 'Verstanden. Sammeln.'), 1400);
@@ -658,10 +880,28 @@ export class PanzerMode extends BaseMode {
   preUpdate(dt) {
     super.preUpdate(dt);
     const G = this.G, I = G.input, P = G.player, v = this.tank;
-    if (!I || !v || !P || P.vehicle !== v || G.match.state !== 'playing') { this._closeWheel(); return; }
+    // Platzwechsel mit Blende: nach dem Abblenden tauschen, dann aufblenden
+    if (this._pendRole && G.time.elapsed >= this._pendRole.at) {
+      const pr = this._pendRole; this._pendRole = null;
+      const ok = v && v.alive && this.switchRole(pr.role);
+      const now = G.time.elapsed;
+      if (G.vehicles) G.vehicles._switch = ok ? { at: now - 0.25, until: now + 0.4, label: pr.label } : null;
+    }
+    if (!I || !v || !P || P.vehicle !== v || G.match.state !== 'playing') { this._closeWheel(); this._closeSeatWheel(); return; }
     const sys = G.vehicles, seat = v.seats[this.playerSeat];
     const crew = this.crew;
     const take = (a) => { const p = I.pressed(a); if (p) I.consume(a); return p; };
+    const cv = sys.camera && sys.camera.view;
+    const inside = !!(cv && cv.interior);
+    if (this._peekFrom != null && viewOf(seat).interior) { this._peekFrom = null; this._peekSave = null; }
+    // Sitzrad (halten) bzw. ◀/▶ / Touch „Sitz“: Platz wechseln (Pad: ◀/▶ teilen sich die Tasten mit Serie 2/3)
+    if (take('sitzrad')) this._openSeatWheel();
+    if (this._seatW) { this._updSeatWheel(I); return; }
+    if (I.pressed('seat_next') || I.pressed('seat_prev') || I.pressed('v_seat')) {
+      const step = I.pressed('seat_prev') ? -1 : 1;
+      for (const a of ['seat_next', 'seat_prev', 'v_seat', 'streak2', 'streak3']) I.consume(a);
+      this.cycleRole(step);
+    }
     // Sitzwechsel-Tasten gehören hier der Munition
     const ammoKey = AMMO_KEYS.findIndex((a) => I.pressed(a));
     for (const a of AMMO_KEYS) I.consume(a);
@@ -676,6 +916,15 @@ export class PanzerMode extends BaseMode {
       else if (I.pressed('ads')) { I.consume('ads'); hot.use(-1); this._hotUsed = true; }
       else if ((hot.id === 'gang' || hot.id === 'rechner') && I.pressed('swap')) { I.consume('swap'); hot.use(1); this._hotUsed = true; }
     } else if (I.pressed('interact')) I.consume('interact'); // kein Aussteigen
+    // Durchsehen: RMT in der Innensicht → Sichtgerät; im Gerät RMT (ohne Zoomstufen) bzw. C → zurück in den Innenraum
+    if (!this._hotUsed) {
+      const cur = viewOf(seat);
+      if (inside && I.pressed('ads')) { I.consume('ads'); this._peekNearest(); }
+      else if (this._peekFrom != null && !cur.interior) {
+        if (I.pressed('crouch')) { I.consume('crouch'); this._unpeek(); }
+        else if ((cur.zoom || [1]).length <= 1 && I.pressed('ads')) { I.consume('ads'); this._unpeek(); }
+      }
+    }
     if (this.sim && take('inspect')) { this._helpOn = !this._helpOn; if (this.guide === 'aus') this.guide = 'hilfe'; }
     // Sichtgeräte: N = Polarität / Restlicht (moderne Panzer)
     if (take('verband')) { const t = this.optics.cycle(v, viewOf(seat)); sys._viewLabel = { text: t, until: G.time.elapsed + 1.6 }; }
@@ -689,7 +938,7 @@ export class PanzerMode extends BaseMode {
         else if (this._turnKey === a && !I.down(a)) { this._turnKey = null; crew.order('gerade', null, { quiet: D.cmd === 'halt' }); }
       }
       if (take('tactical')) crew.order('rumpf', v.body.yaw() + v.mount.turretYaw);
-      if (take('prone')) crew.order('deckung');
+      if (!inside && take('prone')) crew.order('deckung'); // in der Innensicht: Z = vorbeugen (sim.js)
       if (take('gadget')) this._markAndGo();
       if (take('squad_order')) this._designate();
       if (take('jump')) crew.fire();
@@ -706,6 +955,9 @@ export class PanzerMode extends BaseMode {
       if (ammoKey >= 0) { const id = v._psimAmmo[ammoKey]; if (id) this._load(P, 'munition', id); }
       // R bei geladener, gesicherter Kanone = entsichern
       if (this.sim && v.gun && v.gun.step === 'geladen' && this.state.safe && I.pressed('reload')) { I.consume('reload'); this.simAction('sicherung', 1); }
+      for (const a of ['gadget', 'tactical', 'melee', 'squad_order', 'jump']) I.consume(a);
+    } else if (role === 'mgschuetze') {
+      if (this.sim && take('reload')) this.simAction('gurt', 1);
       for (const a of ['gadget', 'tactical', 'melee', 'squad_order', 'jump']) I.consume(a);
     } else if (role === 'fahrer') {
       if (this.sim) {
@@ -773,12 +1025,43 @@ export class PanzerMode extends BaseMode {
     else c.order(id);
   }
 
+  _openSeatWheel() {
+    const I = this.G.input;
+    if (!I || typeof I.openWheel !== 'function' || this._pendRole) return;
+    this._closeWheel();
+    I.openWheel();
+    this._seatW = { sel: -1, items: this.rolesOf() };
+  }
+
+  _closeSeatWheel() {
+    if (!this._seatW) return;
+    this._seatW = null;
+    const I = this.G.input;
+    if (I && I.wheel && I.wheel.open) I.closeWheel();
+    this.hud && this.hud.setSeatWheel(false);
+  }
+
+  _updSeatWheel(I) {
+    const W = I.wheel || { x: 0, y: 0 }, items = this._seatW.items, n = items.length;
+    const m = Math.hypot(W.x || 0, W.y || 0);
+    let sel = -1;
+    if (m > 0.34 && n) { let a = Math.atan2(W.x, -W.y); if (a < 0) a += Math.PI * 2; sel = Math.round(a / (Math.PI * 2 / n)) % n; }
+    this._seatW.sel = sel;
+    this.hud.setSeatWheel(true, items, sel);
+    const done = !I.down('sitzrad') || I.pressed('fire');
+    if (!done) return;
+    if (I.pressed('fire')) I.consume('fire');
+    this._closeSeatWheel();
+    if (sel >= 0 && !items[sel].cur) this.requestRole(items[sel].role);
+  }
+
   /* ------------------------------------------------------------ Vorlauf (nach den Spielereingaben, vor dem Fahrzeugtakt) */
 
   preVehicles(dt) {
     const G = this.G, v = this.tank;
     if (!v || !v.alive || !this.started) return;
     const st = this.state, mods = modsOf(v), now = G.time.elapsed, I = G.input;
+    this._beltTick(dt);
     // Anlasser
     if (st.engine === 'start') { st.crankT -= dt; if (st.crankT <= 0) { st.engine = 'an'; st.cranking = false; this.radio.say(this.role === 'fahrer' ? 'Hinweis' : 'Fahrer', 'Motor läuft!', { quiet: true, tone: this.role === 'fahrer' ? 'warn' : null }); } }
     if (mods.motor <= 0 && st.engine !== 'aus') { st.engine = 'aus'; st.cranking = false; }
@@ -900,7 +1183,7 @@ export class PanzerMode extends BaseMode {
       S.hot = hot ? this.simc.screen(v, proj) : null;
       S.hotLabel = hot ? `${hot.label()} <kbd>${G.input.label('fire') || 'LMT'}</kbd>` : '';
       S.dot = inside && this.sim;
-      S.crack = cv && cv.overlay === 'optic' && modsOf(v).optik <= 0;
+      S.crack = cv && cv.overlay === 'optic' && !cv.aux && modsOf(v).optik <= 0;
       S.vision = label;
       if (this.marker) S.mark = proj(this.marker);
       const ds = this._designated;
@@ -931,7 +1214,7 @@ export class PanzerMode extends BaseMode {
   _crewRows() {
     const v = this.tank, rows = [];
     const P = this.G.player;
-    const map = { driver: 'Fahrer', gunner: 'Richtschütze', loader: 'Ladeschütze', commander: 'Kommandant' };
+    const map = { driver: 'Fahrer', gunner: 'Richtschütze', loader: 'Ladeschütze', commander: 'Kommandant', funker: 'Funker / MG', mg: 'MG-Schütze', mechaniker: 'Mechaniker' };
     for (const s of v.seats) {
       const a = s.actor;
       const me = a === P;
@@ -941,6 +1224,7 @@ export class PanzerMode extends BaseMode {
         if (s.def.loader && v.gun && v.gun.auto) state = `lädt ${(v.gun.autoT || 0).toFixed(1).replace('.', ',')} s`;
         if (s.def.drive && this.crew) state = { vor: 'fährt', halt: 'hält', zurueck: 'zurück', markierung: 'fährt an', deckung: 'Deckung', rumpf: 'dreht' }[this.crew.drive.cmd] || state;
         if (s.def.mount === 'gun' && this.crew && this.crew.gun.target) state = 'richtet';
+        if ((s.def.id === 'funker' || s.def.id === 'mg') && s.intent && s.intent.fire) state = 'schießt';
       }
       if (me) state = 'du';
       rows.push({ role: map[s.def.id] || s.def.label, state, cls, me });
@@ -1004,6 +1288,18 @@ export class PanzerMode extends BaseMode {
           { html: `Entsichern ${k('reload', 'R')}`, hot: 'sicherung', done: s === 'geladen' && !st.safe, why: 'Sicherung lösen und „Geladen!“ melden – der Richtschütze darf feuern.' },
         ];
       }
+      case 'mgschuetze': {
+        const seat = v.seats[this.playerSeat], w = this._mgWeapon();
+        if (!w) return null;
+        const funk = !!(this.simc && this.simc.list.some((h) => h.id === 'funkgeraet'));
+        return [
+          ...(funk ? [{ html: 'Funkgerät EIN', hot: 'funkgeraet', done: st.funkOn, why: 'Ohne Funkgerät hört die Besatzung die Kompanie nicht.' },
+            { html: 'Kanal 5 (Kompanie)', hot: 'kanal', done: st.kanal === 5, why: 'Laut Schild am Gerät: Kanal 3 = Zug, Kanal 5 = Kompanie.' }] : []),
+          { html: `Kugelblende ${k('ads', 'RMT')}`, done: viewOf(seat).id === 'kugel', why: 'Durch das Zielfernrohr der Kugelblende zielen – das MG schwenkt nur begrenzt.' },
+          { html: `Feuerstöße ${k('fire', 'LMT')}`, done: false, why: 'Kurze Feuerstöße auf Infanterie und Panzerabwehrtrupps; gegen Panzer wirkungslos.' },
+          { html: `Gurtkasten wechseln ${k('reload', 'R')}`, hot: 'gurt', done: this._belt.step === 'bereit' && w.mag > 0, why: 'Deckel auf, Gurtkasten tauschen, Gurt einlegen, Deckel zu – rund 4 Sekunden.' },
+        ];
+      }
       case 'kommandant': {
         const seat = v.seats[this.playerSeat];
         return [
@@ -1023,8 +1319,16 @@ export class PanzerMode extends BaseMode {
     const sv = `${k('crouch', 'C')} Sicht · `;
     const pad = this.G.input.lastDevice === 'gamepad'; // plattform: Controller-Hinweise statt Maus/Zifferntasten
     const aim = pad ? '<kbd>R-Stick</kbd> richten' : 'Maus richten', n14 = pad ? '' : '/1–4';
-    if (this.arcade) return `<h4>Arcade</h4><p>${k('move_forward', 'W')}${k('move_left', 'A')}${k('move_back', 'S')}${k('move_right', 'D')} fahren · ${aim} · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom</p><p>${pad ? `${k('swap', 'Y')} Munition` : '1–4 Munition'} · ${sv}${k('grenade', 'G')} Wärmebild · ${k('befehl', 'Y')} Befehlsrad</p>`;
+    const seatK = pad ? `${k('seat_prev', '◀')}/${k('seat_next', '▶')}` : `${k('sitzrad', 'K')} halten`;
+    if (this.arcade) return `<h4>Arcade – ${ROLE[this.role]}</h4><p>${seatK}: Platz wechseln (Richtschütze, Fahrer, Kommandant${this.rolesOf().some((x) => x.role === 'mgschuetze') ? ', MG' : ''})</p><p>${k('move_forward', 'W')}${k('move_left', 'A')}${k('move_back', 'S')}${k('move_right', 'D')} fahren · ${aim} · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom</p><p>${pad ? `${k('swap', 'Y')} Munition` : '1–4 Munition'} · ${sv}${k('grenade', 'G')} Wärmebild · ${k('befehl', 'Y')} Befehlsrad</p>`;
+    const seatLine = `<p>${seatK}: Platz wechseln · ${k('ads', 'RMT')} in der Innensicht: durchsehen (Winkelspiegel/Optik)</p>`;
+    const h = this._helpRole(k, sv, aim, n14);
+    return h ? h + seatLine : null;
+  }
+
+  _helpRole(k, sv, aim, n14) {
     switch (this.role) {
+      case 'mgschuetze': return `<h4>MG-Schütze / Funker</h4><p>${aim} · ${k('fire', 'LMT')} Feuerstoß · ${k('ads', 'RMT')} Kugelblende · ${k('reload', 'R')} ${this.sim ? 'Gurtkasten wechseln' : 'Nachladen'}</p><p>Funkgerät: Ein/Aus, Kanal 5 = Kompanie, Sprechtaste · ${sv}Q/E/Z Kopf</p>`;
       case 'kommandant': return `<h4>Kommandant – Befehle</h4><p>${k('move_forward', 'W')} Marsch/schneller · ${k('move_back', 'S')} Halt (2×: zurück) · ${k('move_left', 'A')}/${k('move_right', 'D')} links/rechts</p><p>${k('gadget', 'B')} zur Markierung · ${k('prone', 'Z')} Deckung · ${k('tactical', 'X')} Front zum Ziel</p><p>${k('squad_order', 'H')} Ziel übergeben · ${k('jump', 'Leertaste')} Feuer! · ${k('melee', 'V')} Feuer frei · 1–4 Munition</p><p>${k('befehl', 'Y')} Befehlsrad · ${sv}${k('verband', 'N')} Restlicht · Q/E/Z Kopf</p>`;
       case 'richtschuetze': return `<h4>Richtschütze</h4><p>${aim} · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom · ${k('swap', 'Mausrad')}${n14} Munition</p><p>${k('light', 'T')} Laser · ${k('grenade', 'G')} Wärmebild · ${k('verband', 'N')} Polarität/Restlicht · ${sv}</p><p>Der Kommandant weist Ziele zu und befiehlt „Feuer!“.</p>`;
       case 'ladeschuetze': return `<h4>Ladeschütze</h4><p>Zum Gestell drehen · ${k('reload', 'R')} greifen · zum Verschluss · ${k('fire', 'LMT')} einschieben · ${k('reload', 'R')} schließen${this.sim ? ` · ${k('reload', 'R')} entsichern` : ''}</p><p>${k('swap', 'Mausrad')}${n14} Munitionsart · ${sv}Q/E/Z Kopf neigen</p>`;

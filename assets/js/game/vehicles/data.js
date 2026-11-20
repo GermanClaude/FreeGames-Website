@@ -7,6 +7,7 @@
 
 import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261115041504';
 import { TROOP_VEHICLES, ROLE_TYPES, ROLE_KINDS } from './data-troop.js?v=20261115041504';
+import { addCrewViews } from './periscopes.js?v=20261115041504';
 
 const deg = (d) => (d * Math.PI) / 180;
 
@@ -1180,6 +1181,8 @@ for (const D of [...Object.values(NEW_TANKS), ...Object.values(TROOP_VEHICLES)])
     v.pos = [v.pos[0] + off[0] * sc, v.pos[1] + off[1] * sc, v.pos[2] + off[2] * sc];
   }
 }
+// Winkelspiegel/Periskope je Platz, Funkerplatz, Hilfszielfernrohr (periscopes.js, 20.11.) – hinten an die Sichtlisten
+addCrewViews(VEHICLES, driverCabin);
 /** Luftfahrzeug (Hubschrauber/Jet)? */
 export const isAirType = (type) => !!(VEHICLES[type] && VEHICLES[type].air);
 

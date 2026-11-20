@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { collisionRay, keepClear } from '../engine/physics.js?v=20261115041504';
 import { dirFromYawPitch, viewOf, viewAnchor, viewLookDir, viewZoom, isTp, viewsOf, firstFp } from './views.js?v=20261115041504';
+import { prismIndex } from './periscopes.js?v=20261115041504';
 
 export { dirFromYawPitch };
 
@@ -74,6 +75,8 @@ export class VehicleCamera {
     this.zoom += (wantZoom - this.zoom) * (Math.abs(wantZoom - this.zoom) < 0.01 ? 1 : 1 - Math.exp(-dt * 18));
     const dir = this.lookDir(vehicle, seat, this.dir, view);
     if (this.sight) {
+      // Winkelspiegel: aktiver Spiegel nach dem Blick (Maus schwenkt von Spiegel zu Spiegel), Kamera an seinem Kopf
+      if (view.prisms) vehicle._prism = view.prisms[0].rot ? 0 : prismIndex(view, seat.look.relYaw);
       viewAnchor(vehicle, view, _p, null);
       this.pos.copy(_p);
       this.ready = true;

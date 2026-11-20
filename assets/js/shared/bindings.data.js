@@ -66,6 +66,7 @@ export const ACTION_DEFS = Object.freeze([
   { id: 'gear_down', label: 'Herunterschalten (Panzer)', short: 'Gang runter', group: 'fahrzeug' },
   { id: 'seat_next', label: 'Nächster Sitz (Fahrzeug)', short: 'Sitz vor', group: 'fahrzeug' },
   { id: 'seat_prev', label: 'Vorheriger Sitz (Fahrzeug)', short: 'Sitz zurück', group: 'fahrzeug' },
+  { id: 'sitzrad', label: 'Sitzrad im Panzer (halten: Platz der Besatzung wählen, loslassen wechselt)', short: 'Sitzrad', group: 'fahrzeug' },
   // Infanteriesimulation (Spielstil „Simulation“, game/isim/): nur dort wirksam, sonst ohne Funktion
   { id: 'sim_durchladen', label: 'Durchladen / Ladehemmung beheben (Simulation)', short: 'Durchladen', group: 'simulation' },
   { id: 'sim_magcheck', label: 'Magazin prüfen, zweimal: Patronenlager prüfen (Simulation)', short: 'Magazin-Check', group: 'simulation' },
@@ -103,7 +104,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     streak1: ['Digit3'], streak2: ['Digit4'], streak3: ['Digit5'], streak4: ['Digit6'], interact: ['KeyF'], scoreboard: ['Tab'], pause: ['Escape'], fullscreen: ['F11'],
     prone: ['KeyZ'], plate: ['Digit4'], gadget: ['KeyB'], faehigkeit: ['KeyJ'], bauen: ['KeyK'], verband: ['KeyN'], inspect: ['KeyI'], loadout: ['KeyL'], squad_order: ['Mouse1', 'KeyH'],
     befehl: ['KeyY'], unterlauf: ['KeyU'], feuermodus: ['KeyM'],
-    gear_up: [], gear_down: [], seat_next: [], seat_prev: [],
+    gear_up: [], gear_down: [], seat_next: [], seat_prev: [], sitzrad: ['KeyK'], // K teilt sich das Bauen (nur zu Fuß)
     sim_durchladen: ['KeyO'], sim_magcheck: ['KeyI'], sim_kompass: ['Comma'], sim_karte: ['Period'], sim_inventar: ['KeyP'],
     sim_abbinden: ['Digit7'], sim_visier_auf: ['PageUp'], sim_visier_ab: ['PageDown'], sim_hilfe: ['F2'],
     trupp_wechsel: ['KeyO'], trupp_funk: ['CapsLock'], trupp_menu: ['KeyP'], // O/P teilen sich die Simulation (Modus Trupp läuft nie im Spielstil Simulation)
@@ -115,7 +116,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     swap: ['Pad3'], slot1: [], slot2: [], light: ['Pad13'],
     streak1: ['Pad12'], streak2: ['Pad14'], streak3: ['Pad15'], streak4: ['Pad6+Pad13'], interact: ['Pad2'], scoreboard: ['Pad8'], pause: ['Pad9'], fullscreen: [],
     prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], faehigkeit: ['Pad6+Pad14'], bauen: ['Pad6+Pad15'], verband: [], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'], unterlauf: ['Pad6+Pad2'], feuermodus: ['Pad6+Pad1'], // LT + B (LT + R3 = rechts lehnen; plattform 19.11.: war doppelt)
-    gear_up: ['Pad5'], gear_down: ['Pad4'], seat_next: ['Pad15'], seat_prev: ['Pad14'],
+    gear_up: ['Pad5'], gear_down: ['Pad4'], seat_next: ['Pad15'], seat_prev: ['Pad14'], sitzrad: [],
     // Simulation (isim) am Controller (plattform, 19.11.): Ansicht/Create halten + Taste – alle Einzeltasten sind belegt
     sim_durchladen: ['Pad8+Pad2'], sim_magcheck: ['Pad8+Pad3'], sim_kompass: ['Pad8+Pad14'], sim_karte: ['Pad8+Pad15'], sim_inventar: ['Pad8+Pad0'],
     sim_abbinden: ['Pad8+Pad1'], sim_visier_auf: ['Pad8+Pad12'], sim_visier_ab: ['Pad8+Pad13'], sim_hilfe: ['Pad8+Pad11'],
@@ -135,7 +136,7 @@ export const DEFAULT_BINDINGS = deepFreeze({
     swap: ['XrHUp'], slot1: [], slot2: [], light: [],
     streak1: [], streak2: [], streak3: [], streak4: [], interact: ['XrN4'], scoreboard: [], pause: ['XrN5'], fullscreen: [],
     prone: [], plate: ['XrHDown'], gadget: [], faehigkeit: [], bauen: [], verband: [], inspect: [], loadout: [], squad_order: [], befehl: [], unterlauf: [], feuermodus: [],
-    gear_up: [], gear_down: [], seat_next: ['XrH3'], seat_prev: [],
+    gear_up: [], gear_down: [], seat_next: ['XrH3'], seat_prev: [], sitzrad: [],
     sim_durchladen: [], sim_magcheck: [], sim_kompass: [], sim_karte: [], sim_inventar: [], sim_abbinden: [], sim_visier_auf: [], sim_visier_ab: [], sim_hilfe: [],
     trupp_wechsel: [], trupp_funk: [], trupp_menu: [],
   },
@@ -153,7 +154,7 @@ export function isFixed(action, device) {
 // Fahrzeugaktionen teilen sich Tasten mit Infanterie-Aktionen, die im Fahrzeug ruhen (RB/LB, Steuerkreuz ◀/▶, VR-Stick).
 export const ALLOWED_SHARES = Object.freeze([['reload', 'interact'], ['plate', 'streak2'], ['plate', 'light'], ['loadout', 'swap'],
   ['gear_up', 'tactical'], ['sim_magcheck', 'inspect'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2'],
-  ['trupp_wechsel', 'sim_durchladen'], ['trupp_menu', 'sim_inventar']]); // Trupp/Simulation schließen sich aus
+  ['trupp_wechsel', 'sim_durchladen'], ['trupp_menu', 'sim_inventar'], ['sitzrad', 'bauen']]); // Trupp/Simulation schließen sich aus
 const shareOk = (a, b) => ALLOWED_SHARES.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 
 /** Nicht belegbar: Esc (verlässt den Pointer-Lock), Browser-/Systemtasten, Home-Taste des Gamepads. */

@@ -297,13 +297,13 @@ export async function generateTerrain(spec, { onProgress } = {}) {
         // Luft und vom Feldrand), Fahrgassen alle 18 m, Vorgewende (5 m Rand) quer – statt einer gleichmäßig dunklen Fläche
         const head = Math.max(Math.abs(lx) - hw + 5, 0) > 0;
         const u = head ? lz : lx, st = 0.5 + 0.5 * Math.sin((u / 3.2) * Math.PI * 2 + noise(x / 9, z / 9) * 0.6);
-        const lane = Math.abs(((lz + 9) % 18 + 18) % 18 - 9) < 0.6 && !head ? 1 : 0;
+        const lane = Math.abs(((lz + 9) % 18 + 18) % 18 - 9) < 0.45 && !head ? 0.35 : 0;
         if (f.kind === 'acker') {
           splat[o * 4 + 3] = Math.max(splat[o * 4 + 3], Math.round(255 * w * (0.45 + 0.4 * st) * (1 - lane * 0.5)));
           splat[o * 4] = Math.max(splat[o * 4], Math.round(255 * w * (0.25 + 0.35 * (1 - st))));
           H[o] += 0.07 * (st - 0.5) * w;
         } else if (f.kind === 'stoppel') {
-          splat[o * 4] = Math.max(splat[o * 4], Math.round(w * (70 + 100 * st + lane * 60)));
+          splat[o * 4] = Math.max(splat[o * 4], Math.round(w * (70 + 100 * st + lane * 80)));
         } else if (f.kind === 'wiese') {
           splat[o * 4] = Math.max(splat[o * 4], Math.round(w * 38 * st));
         }

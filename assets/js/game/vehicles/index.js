@@ -543,7 +543,7 @@ export class VehicleSystem {
     let idx = viewIndex | 0;
     if (!allowed.includes(idx)) idx = allowed[0];
     this._applyView(seat, idx);
-    if (actor.isPlayer) this.viewPref.set(`${v.type}:${seat.index}`, viewsOf(seat.def)[idx].id);
+    if (actor.isPlayer && !viewsOf(seat.def)[idx].peek) this.viewPref.set(`${v.type}:${seat.index}`, viewsOf(seat.def)[idx].id); // Durchsehen (Winkelspiegel) nicht merken
     this.G.events.emit('vehicle:view', { vehicle: v, seat: seat.index, actor, view: idx });
     return true;
   }
@@ -885,7 +885,8 @@ export class VehicleSystem {
     if (act.thermal && thermalOk) { this.thermal.toggle(); this._viewLabel = { text: this.thermal.on ? 'Wärmebild an' : 'Wärmebild aus', until: now + 1.2 }; }
     this.thermal.update(dt, thermalOk);
     // Zielen: 1P/Optik → Blickrichtung (Strichplatte); Außenansicht → Bildmitte-Strahl (Rohr konvergiert, Ballistik)
-    if (seat.def.mount && seat.def.mount !== 'fixed') {
+    // Innensicht (Turm/Wanne von innen): Kopf schaut frei herum, die Waffe hält ihre Richtung (sonst dreht der Turm mit dem Blick)
+    if (seat.def.mount && seat.def.mount !== 'fixed' && !(eff && eff.interior)) {
       const dir = viewLookDir(v, seat, eff, _d);
       if (!eff.tp || !this.camera.ready) {
         seat.intent.aimDir = (seat.intent.aimDir || new THREE.Vector3()).copy(dir);
@@ -912,7 +913,9 @@ export class VehicleSystem {
       return;
     }
     if (act.camera && !xr) {
-      const allowed = this.allowedViews(seat);
+      // Sichten zum Durchsehen (peek: Winkelspiegel, Hilfszielfernrohr – periscopes.js) gehören nicht in den Umlauf der Taste
+      const vl = viewsOf(seat.def), all = this.allowedViews(seat), cyc = all.filter((i) => !vl[i].peek);
+      const allowed = cyc.length ? cyc : all;
       const next = allowed[(allowed.indexOf(seat.view) + 1) % allowed.length];
       this.setSeatView(player, next);
       this.camMode = isTp(viewOf(seat)) ? 'tp' : 'fp';
