@@ -365,7 +365,8 @@ export class VehicleHUD {
     if (this._swapEl && this._c.swapL !== swapLabel) { this._c.swapL = swapLabel; this._swapEl.dataset.vehWeapon = swapLabel; }
     const ov = s.sight && view ? view.overlay : null;
     this._body('vehicleSight', ov && ov !== 'loader' ? '1' : null); // Touch: Tafel in Optiken verkleinern
-    const ownRet = ov === 'optic' || ov === 'peri' || ov === 'wide' || ov === 'slit' || (ov === 'binocular' && s.zoom >= 1.5);
+    // Innensicht: kein Waffen-Fadenkreuz (die Waffe folgt dem Kopf dort nicht); Winkelspiegel: eigenes Bild
+    const ownRet = ov === 'optic' || ov === 'peri' || ov === 'wide' || ov === 'slit' || ov === 'prism' || (ov === 'binocular' && s.zoom >= 1.5) || !!(view && view.interior);
     const ret = !mount || ownRet ? '' : s.sight ? (w.def.kind === 'shell' ? TANK_RET : MG_RET) : TP_RET;
     this._set('ret', el.ret, 'html', ret);
     this._set('retH', el.ret, 'hidden', !ret);

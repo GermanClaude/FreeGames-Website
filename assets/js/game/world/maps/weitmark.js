@@ -639,8 +639,8 @@ const WEITMARK = {
   sites: [
     { id: 'stadt_west', name: 'Kesselbrück West', bounds: { minX: -236, maxX: -38, minZ: -160, maxZ: 160 }, chunkSize: 110, build: (b) => stadtWest(b), seeds: [[-100, 4], [-140, -100], [-140, 100], [-200, -20], [-60, 60]], height: 20, spacing: 1.7 },
     { id: 'stadt_ost', name: 'Kesselbrück Ost', bounds: { minX: 52, maxX: 240, minZ: -160, maxZ: 160 }, chunkSize: 110, build: (b) => stadtOst(b), seeds: [[120, 0], [120, -100], [120, 100], [180, 55], [90, -20]], height: 14, spacing: 1.7 },
-    { id: 'steinbruecke', name: 'Steinbrücke', bounds: { minX: -42, maxX: 62, minZ: -34, maxZ: -6 }, clear: { minX: -38, maxX: 56, minZ: -28, maxZ: -12 }, build: (b) => steinbruecke(b), seeds: [[8, -20, BRIDGE_Y]], height: 10, spacing: 1.8 },
-    { id: 'suedbruecke', name: 'Südbrücke', bounds: { minX: -42, maxX: 56, minZ: 122, maxZ: 138 }, clear: { minX: -38, maxX: 52, minZ: 124, maxZ: 136 }, build: (b) => suedbruecke(b), seeds: [[8, 130, BRIDGE_Y]], height: 10, spacing: 1.8 },
+    { id: 'steinbruecke', name: 'Steinbrücke', cull: false, bounds: { minX: -42, maxX: 62, minZ: -34, maxZ: -6 }, clear: { minX: -38, maxX: 56, minZ: -28, maxZ: -12 }, build: (b) => steinbruecke(b), seeds: [[8, -20, BRIDGE_Y]], height: 10, spacing: 1.8 },
+    { id: 'suedbruecke', name: 'Südbrücke', cull: false, bounds: { minX: -42, maxX: 56, minZ: 122, maxZ: 138 }, clear: { minX: -38, maxX: 52, minZ: 124, maxZ: 136 }, build: (b) => suedbruecke(b), seeds: [[8, 130, BRIDGE_Y]], height: 10, spacing: 1.8 },
     { id: 'saegewerk', name: 'Sägewerk', bounds: { minX: -492, maxX: -348, minZ: -350, maxZ: -250 }, build: (b) => saegewerk(b), seeds: [[-420, -300], [-430, -270]], height: 14, spacing: 1.7 },
     { id: 'ziegelei', name: 'Ziegelei', bounds: { minX: 358, maxX: 502, minZ: 250, maxZ: 350 }, build: (b) => ziegelei(b), seeds: [[430, 300], [420, 330]], height: 14, spacing: 1.7 },
     { id: 'lindhof', name: 'Lindhof', bounds: { minX: -566, maxX: -394, minZ: 312, maxZ: 448 }, build: (b) => lindhof(b), seeds: [[-480, 380], [-520, 380], [-440, 380]], height: 14, spacing: 1.7 },

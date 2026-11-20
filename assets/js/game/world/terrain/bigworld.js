@@ -589,12 +589,13 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
   const sitesVis = sites.map(s => {
     const r = s.def.bounds;
-    return { group: s.built.group, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, rad: Math.hypot(r.maxX - r.minX, r.maxZ - r.minZ) / 2 + 20, props: s.built.props, objects: s.b.objects, res: s.res, imp: null };
+    return { group: s.built.group, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, rad: Math.hypot(r.maxX - r.minX, r.maxZ - r.minZ) / 2 + 20, props: s.built.props, objects: s.b.objects, res: s.res, imp: null, always: s.def.cull === false };
   });
   // riesen: Fernkulisse – je Ortschaft ein Klötzchen-Modell der Gebäude (ein Draw Call), sichtbar, sobald die volle
   // Ortschaft jenseits siteCull ausgeblendet ist (statt Leere am Horizont der Riesenkarte)
   if (def.giant) {
     for (let k = 0; k < sites.length; k++) {
+      if (sites[k].def.cull === false) continue;
       const imp = siteImpostor(sites[k].b.footprints, sites[k].def.y ?? 0);
       if (!imp) continue;
       imp.name = 'fernkulisse:' + sites[k].def.id;
@@ -746,7 +747,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
         }
       }
       for (const s of sitesVis) {
-        const vis = Math.hypot(camera.position.x - s.x, camera.position.z - s.z) - s.rad < tier.siteCull;
+        const vis = s.always || Math.hypot(camera.position.x - s.x, camera.position.z - s.z) - s.rad < tier.siteCull; // weit2: cull:false (Brücken) immer sichtbar
         if (s.group.visible !== vis) { s.group.visible = vis; if (s.imp) s.imp.visible = !vis; }
         if (!vis) continue;
         s.props?.update(camera);

@@ -258,9 +258,9 @@ function prismSvg(glass) {
   o.push('</defs>');
   // Gehäuse (dunkel, mit Fenster), Rahmenkanten, Stirnpolster
   o.push(`<path fill="#050505" fill-rule="evenodd" d="M-40 -40H200V130H-40Z ${win}"/>`);
-  o.push(`<path fill="url(#vo-pe-m)" fill-rule="evenodd" opacity=".9" d="M${x0 - 9} ${y0 - 7}H${x1 + 9}V${y1 + 8}H${x0 - 9}Z ${win}"/>`);
+  o.push(`<path fill="url(#vo-pe-m)" fill-rule="evenodd" opacity=".5" d="M${x0 - 3} ${y0 - 6}H${x1 + 3}Q${x1 + 8} ${y0 - 6} ${x1 + 8} ${y0 - 1}V${y1 + 2}Q${x1 + 8} ${y1 + 7} ${x1 + 3} ${y1 + 7}H${x0 - 3}Q${x0 - 8} ${y1 + 7} ${x0 - 8} ${y1 + 2}V${y0 - 1}Q${x0 - 8} ${y0 - 6} ${x0 - 3} ${y0 - 6}Z ${win}"/>`);
   o.push(`<path d="${win}" fill="none" stroke="#3a3c36" stroke-width=".9"/><path d="${win}" fill="none" stroke="#000" stroke-width=".35" transform="translate(0 .5)"/>`);
-  if (!slit) o.push(`<rect x="${x0 + 6}" y="${y0 - 19}" width="${x1 - x0 - 12}" height="9" rx="4" fill="#1b1a18" stroke="#2c2a26" stroke-width=".5"/>`);
+  if (!slit) o.push(`<rect x="${x0 + 14}" y="${y0 - 10}" width="${x1 - x0 - 28}" height="4.5" rx="2.2" fill="#121110" stroke="#24221f" stroke-width=".35"/>`);
   else o.push(`<rect x="${x0 - 4}" y="${y0 - 10}" width="${x1 - x0 + 8}" height="8" fill="#241e17"/><rect x="${x0 - 4}" y="${y1 + 2}" width="${x1 - x0 + 8}" height="6" fill="#1c1712"/>`);
   for (const sx of [x0 - 6, x1 + 6]) o.push(`<circle cx="${sx}" cy="${(y0 + y1) / 2}" r="1.3" fill="#2f302b" stroke="#000" stroke-width=".3"/>`);
   // Glas: Tönung, Randabschattung, Staub, Kratzer, Lichtschliere
