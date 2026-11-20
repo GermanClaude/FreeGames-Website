@@ -77,7 +77,10 @@ export function makeCoarse(spec) {
     if (edge) {
       const e = Math.max(Math.abs(x), Math.abs(z));
       const k = smoothstep(edge.start, edge.end, e + fbm(noise2, x / 90, z / 90, 2) * 18);
-      if (k > 0) h += k * edge.height * (0.55 + 0.45 * ridged(noise, x / 160, z / 160, 4) * 1.6) * (1 + Math.max(0, e - edge.end) / 700);
+      // edge.soft (Weitmark): runde, bewaldbare Mittelgebirgsrücken statt Grat-Rauschen – großskaliges fBm mit 3 Oktaven
+      // (kürzeste Welle ≈ scale/4 ≫ 24-m-Raster des Kulissenrings: kein Sägezahn-Aliasing), sanfter Anstieg nach außen
+      if (k > 0 && edge.soft) { const sc = edge.scale ?? 380, f = 0.5 + 0.5 * fbm(noise, x / sc + 17.3, z / sc - 4.1, 3); h += k * edge.height * (0.45 + 0.75 * f * f) * (1 + Math.max(0, e - edge.end) / (edge.grow ?? 1400)); }
+      else if (k > 0) h += k * edge.height * (0.55 + 0.45 * ridged(noise, x / 160, z / 160, 4) * 1.6) * (1 + Math.max(0, e - edge.end) / 700);
     }
     // weiches Minimum: kein zufälliger See außerhalb des Flusses
     if (h < floor + 1.5) h = floor + 1.5 * smoothstep(-2.5, 1.5, h - floor);
@@ -365,7 +368,7 @@ export async function generateTerrain(spec, { onProgress } = {}) {
       const steep = 1 - nrm[1];
       const h = H[o];
       let rock = smoothstep(0.16, 0.34, steep + noise(x / 14, z / 14) * 0.05);
-      if (edge) rock = Math.max(rock, smoothstep(edge.height * 0.45, edge.height * 0.9, h + noise2(x / 30, z / 30) * 6) * 0.85);
+      if (edge) rock = Math.max(rock, smoothstep(edge.height * 0.45, edge.height * 0.9, h + noise2(x / 30, z / 30) * 6) * (edge.rock ?? 0.85));
       let dirt = smoothstep(0.42, 0.75, fbm(noise2, x / 38, z / 38, 3)) * 0.55;
       for (const f of forests) {
         const fd = Math.hypot(x - f.x, z - f.z) / f.r;

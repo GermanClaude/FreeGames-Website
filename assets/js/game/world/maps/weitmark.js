@@ -17,8 +17,9 @@ import { altbau } from './stadtkern-bau.js?v=20261115041504';
 import { hangar, startbahn, windsack, hauptquartier, schulflugzeug, armeeLkw } from './flugplatz-bau.js?v=20261115041504';
 import { mgNest } from './grenzland-stellungen.js?v=20261115041504';
 import { burntWreck } from './brandwald-bau.js?v=20261115041504';
-import { haus, scheune, kirche, rathaus, bruecke, halle, schornstein, holzpolter, gleis, gueterwagen, funkstation, flugleitung, strassenzug, strom } from './weitmark-bau.js?v=20261115041504';
-import { sandbags, crateStack, barrelGroup, palletStack, container, lampPost, car, jersey } from '../props.js?v=20261115041504';
+import { haus, scheune, kirche, rathaus, bruecke, halle, schornstein, holzpolter, gleis, gueterwagen, funkstation, flugleitung, strom, ortsstrasse, hofstelle, anbau, gartenzaun } from './weitmark-bau.js?v=20261115041504';
+import { sandbags, crateStack, barrelGroup, palletStack, container, lampPost, car, jersey, bench, marketStall, cafeTable } from '../props.js?v=20261115041504';
+import { strommast, leitungen, freileitung } from '../kleinkram.js?v=20261115041504';
 import { belebe, sperrpunkte } from '../kleinkram.js?v=20261115041504';
 import { reliefAvoid } from '../terrain/relief.js?v=20261115041504';
 
@@ -54,8 +55,26 @@ function leben(b, stil, einrichten = true) {
 /** Freiflächen um Flaggen/Startpunkte als Rechtecke (Häuserreihen halten Abstand). */
 function freiUm(pts, r) { return pts.map(([x, z]) => [x - r, z - r, x + r, z + r]); }
 
+// weit2: Straßenachsen der Stadt (gekrümmt, dem Fluss/Gelände folgend) – dieselben Punkte für Gelände-Straßen und Häuser
+const STR = {
+  kirch: [[-160, -160], [-150, -120], [-139, -82], [-143, -46], [-140, -20], [-145, 22], [-151, 58], [-142, 98], [-133, 130], [-140, 160]],
+  ufer: [[-36, -160], [-45, -112], [-52, -64], [-50, -20], [-46, 36], [-49, 88], [-55, 130], [-62, 160]],
+  garten: [[-236, 94], [-196, 86], [-151, 72], [-104, 82], [-56, 78]],
+  sued: [[-236, 141], [-192, 135], [-140, 130], [-36, 130]],
+  muehl: [[-139, -66], [-112, -60], [-82, -69], [-54, -64]],
+  schul: [[-196, -160], [-205, -112], [-198, -64], [-201, -21]],
+  linden: [[-200, -17], [-210, 26], [-199, 70], [-196, 86]],
+  bahnhof: [[120, -160], [127, -112], [119, -62], [120, -20], [114, 30], [120, 80], [128, 130], [124, 160]],
+  uferost: [[54, -150], [62, -102], [66, -44], [64, -20], [60, 38], [64, 90], [60, 130]],
+  kirchweg: [[124, -78], [152, -86], [188, -78]],
+  rosen: [[122, 84], [156, 76], [190, 86]],
+  suedost: [[128, 130], [168, 137], [236, 131]],
+};
+const GARTENBAUM = []; // Obst-/Hausbäume aus den Gärten (Vegetation, Liste wird beim Bau der ersten Ortschaft neu gefüllt)
+
 function stadtWest(b) {
   const rand = strom(5101);
+  GARTENBAUM.length = 0;
   b.defineSign('ortsschild_kb', { style: 'plate', text: 'KESSELBRÜCK', sub: 'Kreis Weitmark', bg: '#f2c230', fg: '#1c1c1c' });
   // Marktplatz (Pflaster), Gehwege an der Landstraße
   b.groundTiled(-128, -16, -72, 26, 'paving', { cell: 1, tint: '#c4bcae' });
@@ -67,29 +86,55 @@ function stadtWest(b) {
   altbau(b, { x: -118, zs: 30, s: 1, w: 16, d: 12, floors: 3, shop: 'baecker', gate: 'w', core: 'e', roof: 'access', nr: 3, sideWin: 'w' });
   altbau(b, { x: -100, zs: 30, s: 1, w: 16, d: 12, floors: 3, shop: null, gate: null, core: 'w', roof: 'flat', nr: 5 });
   altbau(b, { x: -82, zs: 30, s: 1, w: 16, d: 12, floors: 3, shop: 'eisen', gate: 'e', core: 'w', roof: 'access', nr: 7, sideWin: 'e' });
-  // Brunnen, Bänke, Marktstände, Laternen, Sperren (Deckung auf dem Platz)
-  b.cyl(-100, 0, 6, 2.6, 0.7, 'stone_wall', { tint: '#b9b1a2', seg: 18, minimap: 'cover' });
-  b.cyl(-100, 0.7, 6, 0.35, 1.8, 'stone_wall', { tint: '#a9a192', seg: 10, minimap: false });
-  for (const [x, z, ry] of [[-120, -4, 0], [-80, -4, 0], [-118, 16, Q], [-82, 16, Q]]) b.box(x, 0, z, 3.2, 1.0, 2.0, 'wood_planks', { ry, tint: '#7a5a40', minimap: 'cover' });
-  for (const [x, z] of [[-124, -12], [-76, -12], [-124, 22], [-76, 22]]) lampPost(b, x, z, {});
-  sandbags(b, -112, 12, -106, 14, { rows: 4 }); sandbags(b, -94, -6, -88, -8, { rows: 4 });
-  car(b, -88, 20, { ry: 0.3 }); car(b, -60, -27, { ry: Q, style: 'wreck' });
+  markt(b);
   b.box(-44, 0, -25.5, 0.1, 2.2, 0.1, 'metal_painted', { tint: '#5a5f66', minimap: false, collide: false });
   b.sign(-44, 1.4, -25.4, 1.8, 0.7, 'ortsschild_kb', {});
-  // Wohnstraßen (achsparallel): Kirchgasse (x −140), Uferstraße (x −50), Landstraße (z −20), Gartenweg (z 80), Südstraße (z 130)
-  const taken = [[-128, -46, -72, 44], [-190, 16, -160, 52], [-130, -48, -70, -28]];
-  // Straßenkorridore (Querstraßen) und Freiflächen um Flaggen/Startpunkte
-  const free = [[-144, -170, -136, 170], [-54, -170, -46, 170], [-240, -24.5, -30, -15.5], [-240, 76.5, -50, 83.5], [-240, 125.5, -30, 134.5], ...freiUm([[-100, 4], [-176, 36], [-140, 150]], 8)];
-  strassenzug(b, { axis: 'z', at: -140, from: -160, to: -30, road: 3.5, sides: [-1, 1], taken, free, rand });
-  strassenzug(b, { axis: 'z', at: -140, from: 50, to: 122, road: 3.5, sides: [-1, 1], taken, free, rand });
-  strassenzug(b, { axis: 'z', at: -50, from: -160, to: 120, road: 3, sides: [-1], taken, free, rand, twoFloor: 0.75 });
-  strassenzug(b, { axis: 'x', at: -20, from: -236, to: -150, road: 3.5, sides: [-1, 1], taken, free, rand });
-  strassenzug(b, { axis: 'x', at: 80, from: -236, to: -56, road: 3, sides: [-1, 1], taken, free, rand, twoFloor: 0.4 });
-  strassenzug(b, { axis: 'x', at: 130, from: -236, to: -56, road: 3.5, sides: [-1], taken, free, rand });
+  // gewachsene Wohnstraßen (weitmark-bau.js ortsstrasse): versetzte Fluchten, Gärten, Anbauten, Garagen
+  const taken = [[-130, -47, -70, 44], [-191, 14, -159, 54], [-131, -48, -69, -28]];
+  const free = [[-240, -24.5, -30, -15.5], ...freiUm([[-100, 4], [-176, 36], [-140, 150]], 8)];
+  const W = { rand, taken, free, baeume: GARTENBAUM };
+  ortsstrasse(b, { ...W, pts: STR.kirch, road: 3.5, sides: [-1, 1], zwei: 0.65, fachwerk: 0.35 });
+  ortsstrasse(b, { ...W, pts: STR.ufer, road: 3, sides: [1], zwei: 0.7, fachwerk: 0.2, garten: 0.75 });
+  ortsstrasse(b, { ...W, pts: [[-236, -20], [-150, -20]], road: 3.5, sides: [-1, 1], zwei: 0.7, fachwerk: 0.3, garten: 0.4 });
+  ortsstrasse(b, { ...W, pts: STR.garten, road: 2.8, sides: [-1, 1], zwei: 0.4, garten: 0.8, gap: [2.5, 9] });
+  ortsstrasse(b, { ...W, pts: STR.sued, road: 3.5, sides: [-1, 1], zwei: 0.5, garage: 0.35 });
+  ortsstrasse(b, { ...W, pts: STR.muehl, road: 2.4, sides: [-1, 1], zwei: 0.8, fachwerk: 0.5, garten: 0.3, vorgarten: 1, gap: [0.8, 3] });
+  ortsstrasse(b, { ...W, pts: STR.schul, road: 3, sides: [-1, 1], zwei: 0.5, garage: 0.3 });
+  ortsstrasse(b, { ...W, pts: STR.linden, road: 2.8, sides: [-1], zwei: 0.45, garten: 0.8 });
   // Barrikaden an der Brückenzufahrt, MG-Nest am Rathaus
   for (let k = 0; k < 3; k++) jersey(b, -40, -16 + k * 3.1, { len: 3, ry: Q });
   mgNest(b, -60, -32, { ry: Math.atan2(1, 0) });
   return leben(b, 'stadt');
+}
+
+/** Marktplatz: Brunnen mit Becken, Linden mit Rundbänken, Marktstände, Laternen, Maibaum, parkende Autos, Deckung. */
+function markt(b) {
+  const MX = -100, MZ = 5;
+  // Brunnen: achteckiges Becken, Wasserfläche, Säule mit Kugel
+  b.cyl(MX, 0, MZ, 3.2, 0.75, 'stone_wall', { tint: '#b9b1a2', seg: 8, minimap: 'cover' });
+  b.cyl(MX, 0.62, MZ, 2.85, 0.06, 'glass', { tint: '#4f6f72', seg: 8, collide: false, minimap: false, cast: false });
+  b.cyl(MX, 0.75, MZ, 0.42, 2.2, 'stone_wall', { tint: '#a9a192', seg: 8, minimap: false });
+  b.cyl(MX, 2.95, MZ, 0.62, 0.25, 'stone_wall', { tint: '#b3ab9c', seg: 8, collide: false, minimap: false });
+  b.cyl(MX, 3.2, MZ, 0.28, 0.5, 'metal_painted', { tint: '#5f6b5a', seg: 10, collide: false, minimap: false });
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) b.box(MX + dx * 0.45, 1.6, MZ + dz * 0.45, 0.1 + Math.abs(dx) * 0.3, 0.08, 0.1 + Math.abs(dz) * 0.3, 'metal_painted', { tint: '#4a5048', collide: false, minimap: false });
+  // Rundbänke um die vier Linden (Bäume: vegetation.trees) und Bänke am Platzrand
+  for (const [tx, tz] of [[-122, -7], [-78, -7], [-122, 19], [-78, 19]]) {
+    for (let k = 0; k < 4; k++) { const a = k * Q + 0.4; bench(b, tx + Math.cos(a) * 1.9, tz + Math.sin(a) * 1.9, { ry: -a + Q, back: false }); }
+  }
+  for (const [x, z, ry] of [[-110, -11.5, 0], [-90, -11.5, 0], [-126.5, 6, -Q], [-73.5, 6, Q]]) bench(b, x, z, { ry });
+  // Marktstände (Südhälfte), Kisten und Fässer als Deckung
+  const stand = [[-113, 13, 0, 0], [-104, 15, 0.08, 1], [-95, 13, -0.06, 2], [-86, 15, 0.04, 0]];
+  for (const [x, z, ry, design] of stand) marketStall(b, x, z, { ry: ry + PI, design, w: 3 });
+  crateStack(b, -117, 18, { ry: 0.2 }); barrelGroup(b, -83, 19, { n: 3 });
+  for (const [x, z] of [[-124, -12], [-76, -12], [-124, 22], [-76, 22], [-100, -12.5], [-127, 5], [-73, 5]]) lampPost(b, x, z, {});
+  // Maibaum (Kranz, Zunftschilder angedeutet)
+  b.cyl(-80, 0, -1, 0.2, 24, 'wood_planks', { r1: 0.12, tint: '#c9b08a', seg: 10, minimap: 'pillar' });
+  b.cyl(-80, 16, -1, 1.5, 0.35, 'grass', { r1: 1.2, tint: '#4f6b3a', seg: 12, collide: false, minimap: false });
+  for (let k = 0; k < 3; k++) b.box(-80 + (k - 1) * 0.02, 8 + k * 2.4, -1.24, 0.9, 0.55, 0.05, 'wood_painted', { tint: ['#3d5a8a', '#e6dfcf', '#8a3a2c'][k], collide: false, minimap: false });
+  // Sandsäcke, parkende Autos am Platzrand (nicht fahrbar – reine Kulisse), Fahrrad, Kübel
+  sandbags(b, -112, 9, -107, 10, { rows: 4 }); sandbags(b, -94, -6, -88, -8, { rows: 4 });
+  for (const [x, z, ry] of [[-125.5, -2, -Q], [-125.5, 11, -Q + 0.06], [-74.5, -2, Q]]) car(b, x, z, { ry, drivable: false });
+  car(b, -60, -27, { ry: Q, style: 'wreck' });
 }
 
 function stadtOst(b) {
@@ -100,6 +145,7 @@ function stadtOst(b) {
   b.sign(170.9, 4.2, 40, 4.8, 0.9, 'bahnhof_kb', { ry: -Q });
   b.groundTiled(196, -60, 202, 140, 'concrete_panel', { cell: 2, tint: '#a8a49a' });
   b.box(199, 0, 40, 6, 0.75, 200, 'concrete', { tint: '#b0aca2', minimap: false });
+  for (let k = 0; k < 4; k++) bench(b, 199, 10 + k * 20, { y: 0.75, ry: -Q });
   for (const gx of [207, 213]) {
     b.box(gx, 0, 0, 3.2, 0.2, 300, 'gravel', { tint: '#8e877c', collide: false, minimap: false, grad: false });
     for (const s of [-1, 1]) b.box(gx + s * 0.72, 0.2, 0, 0.08, 0.14, 300, 'metal_painted', { tint: '#6a6560', collide: false, minimap: false, grad: false, ao: false });
@@ -107,14 +153,20 @@ function stadtOst(b) {
   for (const [gz, col] of [[-20, '#6b3a2c'], [-6, '#5a4a3a'], [90, '#6b3a2c']]) gueterwagenZ(b, 213, gz, col);
   // Lagerhalle am Bahnhof
   halle(b, { x: 160, z: -110, w: 30, d: 18, h: 7, doors: [{ side: 'e', at: 0, w: 5 }, { side: 'w', at: 2, w: 3 }], tint: '#8f8a80' });
-  // Wohnstraßen: Bahnhofstraße (x 120), Landstraße (z −20), Südstraße (z 130), Uferweg Ost (x 66)
-  const taken = [[168, 30, 230, 50], [140, -124, 180, -96], [194, -160, 240, 160]];
-  const free = [[116, -170, 124, 170], [61, -160, 67, 140], [50, -24.5, 240, -15.5], [50, 125.5, 240, 134.5], ...freiUm([[150, 40], [100, 150]], 9)];
-  strassenzug(b, { axis: 'z', at: 120, from: -160, to: -30, road: 3.5, sides: [-1, 1], taken, free, rand });
-  strassenzug(b, { axis: 'z', at: 120, from: -10, to: 122, road: 3.5, sides: [-1, 1], taken, free, rand });
-  strassenzug(b, { axis: 'x', at: -20, from: 56, to: 112, road: 3.5, sides: [-1, 1], taken, free, rand });
-  strassenzug(b, { axis: 'x', at: 130, from: 56, to: 112, road: 3.5, sides: [-1, 1], taken, free, rand });
-  strassenzug(b, { axis: 'z', at: 64, from: -150, to: 120, road: 2.5, sides: [1], taken, free, rand, twoFloor: 0.3 });
+  // Bahnhofsvorplatz
+  b.groundTiled(140, 28, 168, 52, 'paving', { cell: 1, tint: '#bfb7a8' });
+  for (const [x, z] of [[144, 30], [144, 50], [164, 30], [164, 50]]) lampPost(b, x, z, {});
+  for (const [x, z, ry] of [[160, 33, Q], [160, 47, Q]]) car(b, x, z, { ry, drivable: false });
+  const taken = [[168, 30, 230, 50], [140, -124, 180, -96], [194, -160, 240, 160], [138, 26, 170, 54]];
+  const free = [[50, -24.5, 240, -15.5], [50, 125.5, 240, 134.5], ...freiUm([[150, 40], [100, 150]], 9)];
+  const W = { rand, taken, free, baeume: GARTENBAUM };
+  ortsstrasse(b, { ...W, pts: STR.bahnhof, road: 3.5, sides: [-1, 1], zwei: 0.7, fachwerk: 0.15, garage: 0.3 });
+  ortsstrasse(b, { ...W, pts: STR.uferost, road: 2.5, sides: [-1], zwei: 0.4, garten: 0.75 });
+  ortsstrasse(b, { ...W, pts: [[56, -20], [112, -20]], road: 3.5, sides: [-1, 1], zwei: 0.7 });
+  ortsstrasse(b, { ...W, pts: [[56, 130], [112, 130]], road: 3.5, sides: [-1, 1], zwei: 0.5 });
+  ortsstrasse(b, { ...W, pts: STR.kirchweg, road: 2.6, sides: [-1, 1], zwei: 0.6, fachwerk: 0.3 });
+  ortsstrasse(b, { ...W, pts: STR.rosen, road: 2.6, sides: [-1, 1], zwei: 0.4, garten: 0.8 });
+  ortsstrasse(b, { ...W, pts: STR.suedost, road: 3.2, sides: [-1, 1], zwei: 0.4, garage: 0.35 });
   for (let k = 0; k < 3; k++) jersey(b, 54, -24 + k * 3.1, { len: 3, ry: Q });
   barrelGroup(b, 150, 16, { n: 5 }); crateStack(b, 188, 64, { ry: 0.3 });
   car(b, 132, 70, { ry: 0.05 }); car(b, 108, -60, { ry: PI, style: 'wreck' });
@@ -172,24 +224,24 @@ function ziegelei(b) {
   return leben(b, 'industrie', false);
 }
 
-/** Dorf: Hofstellen um eine Kreuzung, Scheunen, Kapelle bzw. Gasthof, Obstwiese. */
-function dorf(b, X, Z, seed, name, extra) {
+/** Dorf: Hofstellen (Wohnhaus + Scheune im Winkel) unregelmäßig um den Dorfplatz, gewachsene Dorfstraße mit Gärten. */
+function dorf(b, X, Z, seed, name, strasse, extra) {
   const rand = strom(seed);
   b.defineSign('ort_' + seed, { style: 'plate', text: name.toUpperCase(), sub: 'Gemeinde Weitmark', bg: '#f2c230', fg: '#1c1c1c' });
-  b.groundTiled(X - 20, Z - 14, X + 20, Z + 14, 'paving', { cell: 1, tint: '#c4bcae' });
-  const taken = [[X - 20, Z - 14, X + 20, Z + 14]];
+  b.groundTiled(X - 16, Z - 11, X + 18, Z + 12, 'cobble', { cell: 1, tint: '#b7ae9e' });
+  const taken = [[X - 18, Z - 13, X + 20, Z + 14]];
   const free = freiUm([[X, Z]], 14);
-  // Hofstellen: Wohnhaus + Scheune (Winkelhof) in den vier Quadranten
+  const xr = extra?.(b, X, Z);
+  if (xr) taken.push(xr);
+  // Hofstellen in den vier Quadranten, unregelmäßig versetzt
   for (const [qx, qz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-    const hx = X + qx * 42, hz = Z + qz * 36;
-    haus(b, { x: hx, z: hz - qz * 8, w: 11, d: 8, floors: 2, door: qz < 0 ? 's' : 'n' });
-    scheune(b, { x: hx + qx * 14, z: hz + qz * 4, w: 10, d: 16, door: qx < 0 ? 'e' : 'w' });
-    taken.push([Math.min(hx - 7, hx + qx * 14 - 7), hz - 14, Math.max(hx + 7, hx + qx * 14 + 7), hz + 14]);
-    b.cyl(hx - qx * 6, 0.75, hz + qz * 8, 0.75, 1.2, 'sand', { axis: 'x', tint: '#d9c27a', seg: 12, minimap: 'cover' });
+    const hx = X + qx * (38 + rand() * 12), hz = Z + qz * (34 + rand() * 8);
+    taken.push(hofstelle(b, { x: hx, z: hz, qx, qz, rand, baeume: GARTENBAUM }));
   }
-  strassenzug(b, { axis: 'x', at: Z, from: X - 80, to: X - 22, road: 3, sides: [-1, 1], taken, free, rand, twoFloor: 0.5 });
-  strassenzug(b, { axis: 'x', at: Z, from: X + 22, to: X + 80, road: 3, sides: [-1, 1], taken, free, rand, twoFloor: 0.5 });
-  extra?.(b, X, Z, taken);
+  ortsstrasse(b, { pts: strasse, road: 3, sides: [-1, 1], rand, taken, free, baeume: GARTENBAUM, zwei: 0.5, fachwerk: 0.35, garten: 0.85, anbau: 0.4, garage: 0.15, gap: [4, 12], vorgarten: 5 });
+  // Dorflinde mit Bank, Brunnentrog, Ortsschild
+  bench(b, X + 6, Z + 7, { ry: PI });
+  b.box(X - 8, 0, Z + 6, 2.4, 0.7, 0.9, 'stone_wall', { tint: '#a8a092', minimap: 'cover' });
   b.box(X - 22, 0, Z - 4.5, 1.4, 2.2, 0.1, 'metal_painted', { tint: '#5a5f66', minimap: false, collide: false });
   b.sign(X - 22, 1.4, Z - 4.4, 1.8, 0.7, 'ort_' + seed, {});
   sandbags(b, X - 6, Z + 9, X + 2, Z + 11, { rows: 4 });
@@ -197,18 +249,26 @@ function dorf(b, X, Z, seed, name, extra) {
   return leben(b, 'dorf');
 }
 
+// Dorfstraßen (gekrümmt, = Gelände-Straßen lindweg/riedweg im Ortsbereich)
+const DORFSTR = {
+  lindhof: [[-396, 372], [-438, 386], [-480, 380], [-522, 369], [-564, 381]],
+  hohenried: [[388, -368], [430, -352], [470, -360], [512, -371], [554, -358]],
+};
 function lindhof(b) {
-  return dorf(b, -480, 380, 6301, 'Lindhof', (b2, X, Z) => {
+  return dorf(b, -480, 380, 6301, 'Lindhof', DORFSTR.lindhof, (b2, X, Z) => {
     // Kapelle am Dorfplatz
     b2.defineSign('kapelle', { style: 'plate', text: 'ST. WENDELIN', bg: '#3a3a3a', fg: '#efe6d4' });
     kirche(b2, X + 2, Z - 28, { w: 9, d: 14, tint: '#ebe5d6', towerH: 15 });
+    return [X - 6, Z - 47, X + 10, Z - 19];
   });
 }
 function hohenried(b) {
-  return dorf(b, 470, -360, 6402, 'Hohenried', (b2, X, Z) => {
+  return dorf(b, 470, -360, 6402, 'Hohenried', DORFSTR.hohenried, (b2, X, Z) => {
     b2.defineSign('gasthof', { style: 'plate', text: 'GASTHOF ZUR LINDE', bg: '#2d4a3a', fg: '#f1e6c8' });
-    haus(b2, { x: X, z: Z + 26, w: 16, d: 11, floors: 2, door: 'n', color: '#e8e2d2', nutzung: 'wohn' });
+    haus(b2, { x: X, z: Z + 26, w: 16, d: 11, floors: 2, door: 'n', color: '#e8e2d2', nutzung: 'wohn', fachwerk: true, roofTint: '#8f5a48' });
     b2.sign(X, 3.3, Z + 20.4, 5.6, 0.9, 'gasthof', { ry: PI });
+    for (let k = 0; k < 3; k++) { cafeTable(b2, X - 5 + k * 5, Z + 17); }
+    return [X - 10, Z + 15, X + 10, Z + 34];
   });
 }
 
@@ -299,7 +359,7 @@ const WEITMARK = {
 
   terrain: {
     size: 1800, res: 1, seed: 2611,
-    base: { amp: 5.0, scale: 260, octaves: 5, offset: 2.6 },
+    base: { amp: 4.2, scale: 300, octaves: 4, offset: 1.3 }, // weit2: flacheres Talbecken → Ortschaften ohne Plateaukanten
     detail: { amp: 0.3, scale: 10 },
     hills: [
       // Hügelkette im Norden (Fluss bricht bei x ≈ 0 hindurch)
@@ -309,7 +369,7 @@ const WEITMARK = {
       { x: -630, z: 640, r: 150, h: 18 }, { x: 560, z: 650, r: 160, h: 22 }, { x: 640, z: -190, r: 130, h: 14 },
       { x: -650, z: 190, r: 120, h: 12 }, { x: -300, z: -150, r: 100, h: 9 }, { x: 300, z: 150, r: 80, h: 7 },
     ],
-    edge: { start: 830, end: 895, height: 70 },
+    edge: { start: 805, end: 900, height: 52, soft: true, scale: 380, rock: 0.22, grow: 1500 }, // weit2: runde, bewaldete Randhöhen
     waterY: -1.4,
     river: {
       pts: [[70, -1000], [50, -800], [-5, -640], [20, -470], [40, -330], [12, -200], [6, -80], [8, 40], [12, 160], [55, 270], [150, 380], [260, 470], [330, 600], [360, 760], [380, 1000]],
@@ -317,29 +377,34 @@ const WEITMARK = {
       fords: [{ x: 40, z: -330, r: 10, depth: 0.35 }, { x: 260, z: 470, r: 10, depth: 0.4 }],
     },
     pads: [
-      { x: -136, z: 0, w: 200, d: 320, y: 0, blend: 12 },          // Kesselbrück West
-      { x: 146, z: 0, w: 188, d: 320, y: 0, blend: 12 },           // Kesselbrück Ost
-      { x: -420, z: -300, w: 160, d: 110, y: 0, blend: 20 },       // Sägewerk
-      { x: 430, z: 300, w: 160, d: 110, y: 0, blend: 20 },         // Ziegelei
-      { x: -480, z: 380, w: 190, d: 150, y: 0, blend: 20 },        // Lindhof
-      { x: 470, z: -360, w: 190, d: 150, y: 0, blend: 20 },        // Hohenried
+      { x: -136, z: 0, w: 200, d: 320, y: 0, blend: 34 },          // Kesselbrück West
+      { x: 146, z: 0, w: 188, d: 320, y: 0, blend: 34 },           // Kesselbrück Ost
+      { x: -420, z: -300, w: 160, d: 110, y: 0, blend: 40 },       // Sägewerk
+      { x: 430, z: 300, w: 160, d: 110, y: 0, blend: 40 },         // Ziegelei
+      { x: -480, z: 380, w: 190, d: 150, y: 0, blend: 40 },        // Lindhof
+      { x: 470, z: -360, w: 190, d: 150, y: 0, blend: 40 },        // Hohenried
       { x: -140, z: 586, w: 720, d: 120, y: 0, blend: 36, worn: false }, // Segelflugfeld
       { x: 150, z: -560, w: 52, d: 46, y: FUNK_Y, blend: 26 },     // Funkstation
-      { x: HQ.A.x, z: HQ.A.z + 4, w: 84, d: 92, y: 0, blend: 22 }, // Gefechtsstand West
-      { x: HQ.B.x, z: HQ.B.z + 4, w: 84, d: 92, y: 0, blend: 22 }, // Gefechtsstand Ost
+      { x: HQ.A.x, z: HQ.A.z + 4, w: 84, d: 92, y: 0, blend: 36 }, // Gefechtsstand West
+      { x: HQ.B.x, z: HQ.B.z + 4, w: 84, d: 92, y: 0, blend: 36 }, // Gefechtsstand Ost
     ],
     roads: [
-      { id: 'landstrasse', name: 'Landstraße', kind: 'asphalt', width: 7, pts: [[-900, -40], [-700, -40], [-560, -30], [-400, -40], [-240, -20], [-150, -20], [-36, -20], [52, -20], [150, -20], [240, -20], [400, 10], [560, 30], [700, 40], [900, 40]], bridge: { a: [BR.stein.x0, -20], b: [BR.stein.x1, -20], y: BRIDGE_Y } },
+      { id: 'landstrasse', name: 'Landstraße', kind: 'asphalt', width: 7, pts: [[-900, -40], [-700, -40], [-560, -30], [-400, -40], [-280, -26], [-236, -20], [-150, -20], [-36, -20], [52, -20], [150, -20], [240, -20], [400, 10], [560, 30], [700, 40], [900, 40]], bridge: { a: [BR.stein.x0, -20], b: [BR.stein.x1, -20], y: BRIDGE_Y } },
       { id: 'piste', name: 'Startbahn 09/27', kind: 'asphalt', width: RUNWAY.w, shoulder: 5, pts: [[RUNWAY.x0, RUNWAY.z], [(RUNWAY.x0 + RUNWAY.x1) / 2, RUNWAY.z], [RUNWAY.x1, RUNWAY.z]] },
-      { id: 'suedstrasse', name: 'Südstraße', kind: 'asphalt', width: 6, pts: [[-236, 130], [-140, 130], [-36, 130], [52, 130], [120, 130], [236, 130]], bridge: { a: [BR.sued.x0, 130], b: [BR.sued.x1, 130], y: BRIDGE_Y } },
-      { id: 'kirchgasse', name: 'Kirchgasse', kind: 'asphalt', width: 6, pts: [[-140, -160], [-140, -20], [-140, 60], [-140, 160]] },
-      { id: 'uferstrasse', name: 'Uferstraße', kind: 'gravel', width: 5, pts: [[-50, -160], [-50, -20], [-50, 130], [-50, 160]] },
-      { id: 'gartenweg', name: 'Gartenweg', kind: 'gravel', width: 5, pts: [[-236, 80], [-140, 80], [-56, 80]] },
-      { id: 'bahnhofstrasse', name: 'Bahnhofstraße', kind: 'asphalt', width: 6, pts: [[120, -160], [120, -20], [120, 40], [120, 130], [120, 160]] },
-      { id: 'uferweg_ost', name: 'Uferweg', kind: 'gravel', width: 4, pts: [[64, -150], [64, -20], [64, 130]] },
-      { id: 'saegeweg', name: 'Sägewerkstraße', kind: 'asphalt', width: 6, pts: [[-140, -160], [-200, -230], [-300, -290], [-340, -298], [-420, -298], [-500, -298], [-600, -380]] },
-      { id: 'lindweg', name: 'Lindhofer Straße', kind: 'gravel', width: 5, pts: [[-140, 160], [-220, 240], [-340, 352], [-400, 380], [-480, 380], [-560, 380], [-620, 300], [-680, 120], [-700, 10]] },
-      { id: 'riedweg', name: 'Hohenrieder Straße', kind: 'gravel', width: 5, pts: [[120, -160], [200, -240], [330, -340], [390, -360], [470, -360], [550, -360], [620, -290], [690, -120], [700, 0]] },
+      { id: 'suedstrasse', name: 'Südstraße', kind: 'asphalt', width: 6, pts: [...STR.sued, [52, 130], [128, 130], ...STR.suedost.slice(1)], bridge: { a: [BR.sued.x0, 130], b: [BR.sued.x1, 130], y: BRIDGE_Y } },
+      { id: 'kirchgasse', name: 'Kirchgasse', kind: 'asphalt', width: 6, pts: STR.kirch },
+      { id: 'muehlgasse', name: 'Mühlgasse', kind: 'gravel', width: 4, pts: STR.muehl },
+      { id: 'schulweg', name: 'Schulweg', kind: 'asphalt', width: 5, pts: STR.schul },
+      { id: 'lindenweg', name: 'Lindenweg', kind: 'gravel', width: 4.5, pts: STR.linden },
+      { id: 'uferstrasse', name: 'Uferstraße', kind: 'gravel', width: 5, pts: STR.ufer },
+      { id: 'gartenweg', name: 'Gartenweg', kind: 'gravel', width: 5, pts: STR.garten },
+      { id: 'bahnhofstrasse', name: 'Bahnhofstraße', kind: 'asphalt', width: 6, pts: STR.bahnhof },
+      { id: 'kirchweg', name: 'Kirchweg', kind: 'gravel', width: 4.5, pts: STR.kirchweg },
+      { id: 'rosenweg', name: 'Rosenweg', kind: 'gravel', width: 4.5, pts: STR.rosen },
+      { id: 'uferweg_ost', name: 'Uferweg', kind: 'gravel', width: 4, pts: STR.uferost },
+      { id: 'saegeweg', name: 'Sägewerkstraße', kind: 'asphalt', width: 6, pts: [[-160, -160], [-200, -230], [-300, -290], [-340, -298], [-420, -298], [-500, -298], [-600, -380]] },
+      { id: 'lindweg', name: 'Lindhofer Straße', kind: 'gravel', width: 5, pts: [[-140, 160], [-220, 240], [-340, 352], ...DORFSTR.lindhof, [-620, 300], [-680, 120], [-700, 10]] },
+      { id: 'riedweg', name: 'Hohenrieder Straße', kind: 'gravel', width: 5, pts: [[120, -160], [200, -240], [330, -340], ...DORFSTR.hohenried, [620, -290], [690, -120], [700, 0]] },
       { id: 'ziegelweg', name: 'Ziegeleistraße', kind: 'asphalt', width: 6, pts: [[120, 160], [250, 230], [340, 290], [370, 303], [430, 303], [490, 303], [560, 250], [690, 110]] },
       { id: 'flugweg', name: 'Flugfeldweg', kind: 'gravel', width: 5, pts: [[-140, 160], [-150, 330], [-130, 470], [-110, 520]] },
       { id: 'furtweg_sued', name: 'Furtweg Süd', kind: 'dirt', width: 3.6, pts: [[370, 303], [330, 420], [260, 470], [180, 520], [40, 548]] },

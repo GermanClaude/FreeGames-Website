@@ -448,6 +448,9 @@ export const MAPS = {
     cq: [{ id: 'A', name: 'Sägewerk', x: -420, z: -300 }, { id: 'B', name: 'Lindhof', x: -480, z: 380 }, { id: 'C', name: 'Marktplatz', x: -100, z: 4 }, { id: 'D', name: 'Funkstation', x: 150, z: -552 }, { id: 'E', name: 'Flugfeld', x: -110, z: 560 }, { id: 'F', name: 'Hohenried', x: 470, z: -360 }, { id: 'G', name: 'Ziegelei', x: 430, z: 300 }],
     hq: { A: [-700, -40], B: [700, 40] },
     spawns: { A: [-262, 0], B: [262, 0] },
+    // weit2: Trupp-Front als Kette West → Ost ohne Nord-Süd-Sprünge (eigene Punkte der Kartendatei, flags.trupp):
+    // Sägewerk – Marktplatz – Steinbrücke – Bahnhof – Ziegelei (punktsymmetrisch zur Kartenmitte)
+    trupp: { order: ['A', 'B', 'C', 'D', 'E'] },
   },
   // karten-neu (14.11.): dichtes Stadtviertel, Läden und Wohnungen begehbar, U-Bahn unter der Allee, Dächer
   stadtkern: {

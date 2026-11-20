@@ -310,6 +310,14 @@ export class Doors {
   update(dt) {
     const G = this.G;
     const P = G.player;
+    // weit2: Großkarten – Türblätter (je 4 Draw Calls + Tiefen-/Normalpass) jenseits ≈ 150 m ausblenden (Weitmark aus der
+    // Luft: ≈ 1700 von ≈ 2200 Draw Calls); zerstörte Türen bleiben unsichtbar
+    if (this._cullR === undefined) this._cullR = G.world && G.world.scale === 'gross' ? 150 : 0;
+    if (this._cullR && G.camera && (this._cullT = (this._cullT || 0) - dt) <= 0) {
+      this._cullT = 0.35;
+      const c = G.camera.getWorldPosition ? G.camera.getWorldPosition(this._cv || (this._cv = new THREE.Vector3())) : G.camera.position, R2 = this._cullR * this._cullR;
+      for (const it of this.items) if (it.type === 'door' && !it.broken) { const dx = it.d.hx - c.x, dz = it.d.hz - c.z; it.mesh.visible = dx * dx + dz * dz < R2; }
+    }
     for (const it of this.items) {
       if (it.type === 'door' && it.fall && it.th < Math.PI / 2) {
         // Blatt kippt um die Unterkante (Stab: ω̇ = 3g/(2h)·sin θ), schlägt flach auf

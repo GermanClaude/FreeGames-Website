@@ -428,6 +428,8 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   for (const team of ['A', 'B']) for (const s of sp.hq?.[team] || []) hqSrc.push({ team, s, i: addPt(s[0], s[1], s[3]) });
   const cqSrc = (def.flags?.cq || []).map(f => ({ f, i: addPt(f.x, f.z, f.y), sp: (f.spawns || []).map(s => addPt(s[0], s[1], s[3])) }));
   const domSrc = (def.flags?.dom || []).map(f => ({ f, i: addPt(f.x, f.z, f.y) }));
+  // weit2: eigene Front-Punkte für den Trupp-Modus (def.flags.trupp → world.objectives.trupp, modes/trupp.js)
+  const trSrc = (def.flags?.trupp || []).map(f => ({ f, i: addPt(f.x, f.z, f.y) }));
   const vehSrc = (def.vehicles || []).map(v => ({ v, i: addPt(v.x, v.z, v.y) }));
   const secSrc = (def.secrets || []).map(s => ({ s, i: addPt(s.x, s.z, s.y) }));
   const navSites = sites.filter(s => s.def.nav !== false).map(s => {
@@ -521,6 +523,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       spawns: e.sp.length ? e.sp.map((i, k) => ({ position: onNav(V(i)), yaw: e.f.spawns[k][2] ?? yawTo(pts[i].x, pts[i].z) })) : pickSpawns(V(e.i), 8, 12, e.f.radius ? e.f.radius + 14 : 34),
     })),
   };
+  if (trSrc.length) objectives.trupp = trSrc.map(e => ({ id: e.f.id, name: e.f.name, position: V(e.i), radius: e.f.radius ?? 18, heightBand: e.f.heightBand || [-3, 8], spawns: pickSpawns(V(e.i), 8, 10, (e.f.radius ?? 18) + 14) }));
   // Fahrzeug-Stellplätze: `type` = VEHICLES-Schlüssel des Fahrzeug-Agenten (tank → mbt); geheime Plätze (Traktor
   // „Gertrud“) nur in vehicleSpots, damit kein unbekannter Typ automatisch erscheint
   const VTYPE = { tank: 'mbt', jeep: 'jeep' };

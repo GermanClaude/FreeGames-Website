@@ -68,8 +68,9 @@ export function haus(b, o) {
     plinth: { h: 0.5, mat: 'stone_wall', tint: '#c3baa8', over: 0.03 },
     interiorFactor: 0.55, nutzung: o.nutzung || 'wohn',
   });
-  pitchedRoof(b, { x, z, w: w + 0.02, d: d + 0.02, y: B.roofY - 0.02, ridge: w >= d ? 'x' : 'z', pitch: o.pitch ?? 0.72, over: 0.5, gableMat: o.mat || 'plaster_white', gableTint: color, tint: o.roofTint || b.pick(ZIEGEL) });
+  pitchedRoof(b, { x, z, w: w + 0.02, d: d + 0.02, y: B.roofY - 0.02, ridge: o.ridge || (w >= d ? 'x' : 'z'), pitch: o.pitch ?? 0.72, over: 0.5, gableMat: o.mat || 'plaster_white', gableTint: o.gableTint || color, tint: o.roofTint || b.pick(ZIEGEL) });
   b.noNav(x - w / 2 - 0.6, z - d / 2 - 0.6, x + w / 2 + 0.6, z + d / 2 + 0.6, B.roofY - 0.6, y + 40);
+  if (o.fachwerk && floors > 1) fachwerk(b, x, z, w, d, y, fh, floors, o.fachwerkTint);
   if (st) {
     stairs(b, { x: st.x, z: st.z, dir: st.dir, y0: y + 0.12, y1: y + fh, w: st.w, run: st.run, style: 'solid', mat: 'wood_planks', tint: '#9c7a56', rail: 'both', railFrom: 1.4, railTint: '#5a4636' });
     const hl = holes[0];
@@ -330,4 +331,185 @@ export function strassenzug(b, o) {
 export function strom(seed) {
   let s = seed >>> 0 || 1;
   return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+}
+
+// ---------------------------------------------------------------------------
+// weit2 (20.11.): gewachsene Ortsbilder – Häuser entlang gekrümmter Straßen (Gelände/Fluss folgend), unregelmäßige
+// Parzellen, Hausvielfalt (Größe, Firstrichtung, Dachneigung/-farbe, Fachwerk, Anbauten, Garagen), Gärten mit Zaun,
+// Schuppen und Obstbäumen, Hofstellen. Weiterhin achsparallel (building()); Straßenkrümmung → versetzte Fluchten.
+// ---------------------------------------------------------------------------
+export const DACH = ['#a8705c', '#9a5e4c', '#b47a62', '#8f6a5e', '#5f5c5a', '#6e4c40', '#b9856c', '#7a5446', '#a0624e', '#4f5354'];
+export const PUTZ2 = [...PUTZ, '#e6d3b0', '#dcc6a2', '#cfd6cc', '#e8d8c8', '#d8c0ac', '#c9b9a0', '#e1dccf'];
+const HOLZ = '#4a3528';
+
+/** Fachwerk (Ständer, Riegel, Streben) auf den Fassaden der Obergeschosse – reine Optik, Fenster bleiben frei. */
+export function fachwerk(b, x, z, w, d, y0, fh, floors, tint = HOLZ) {
+  const T = 0.06, S = 0.15, O = { ...NOCOL, tint, grad: false };
+  for (let f = 1; f < floors; f++) {
+    const yb = y0 + f * fh;
+    for (const side of ['n', 's', 'e', 'w']) {
+      const ns = side === 'n' || side === 's', L = ns ? w : d;
+      const off = (ns ? d : w) / 2 + T / 2 + 0.005, sg = side === 's' || side === 'e' ? 1 : -1;
+      const bx = (a, yy, len, h) => (ns ? b.box(x + a, yy, z + sg * off, len, h, T, 'wood_dark', O) : b.box(x + sg * off, yy, z + a, T, h, len, 'wood_dark', O));
+      for (const hy of [0.0, 0.8, fh - 0.18]) bx(0, yb + hy, L, S);
+      const n = Math.max(1, Math.floor((L - 1.4) / 2.8));
+      const posts = [-L / 2 + S / 2, L / 2 - S / 2];
+      for (let k = 0; k < n; k++) { const at = -((n - 1) * 2.8) / 2 + k * 2.8; posts.push(at - 0.62, at + 0.62); }
+      for (const a of posts) bx(a, yb, S, fh);
+      // Streben in den Eckfeldern (Mann-Figur angedeutet)
+      const first = -((n - 1) * 2.8) / 2 - 0.62, span = first - (-L / 2 + S);
+      if (span > 0.9) for (const m of [-1, 1]) {
+        const cx = m * (-L / 2 + S + span / 2), len = Math.hypot(span, fh * 0.75), ang = Math.atan2(fh * 0.75, span) * m;
+        if (ns) b.box(x + cx, yb + fh / 2 - S / 2, z + sg * off, len, S, T, 'wood_dark', { ...O, rz: ang });
+        else b.box(x + sg * off, yb + fh / 2 - S / 2, z + cx, T, S, len, 'wood_dark', { ...O, rx: -ang });
+      }
+    }
+  }
+}
+
+/** Einfacher Anbau/Schuppen/Garage: geschlossener Quader (Kollision) mit Pult- bzw. Satteldach. */
+export function anbau(b, o) {
+  const { x, z, w, d } = o, y = o.y ?? 0, h = o.h ?? 2.7;
+  b.box(x, y, z, w, h, d, o.mat || 'plaster_white', { tint: o.tint || '#ddd5c4', minimap: 'building' });
+  b.box(x, y, z, w + 0.06, 0.4, d + 0.06, 'stone_wall', { tint: '#b8ae9c', ...NOCOL, grad: false });
+  if (o.roof === 'flat') b.box(x, y + h, z, w + 0.3, 0.16, d + 0.3, 'concrete', { tint: '#8d877c', minimap: 'roof' });
+  else pitchedRoof(b, { x, z, w: w + 0.02, d: d + 0.02, y: y + h - 0.02, ridge: w >= d ? 'x' : 'z', pitch: o.pitch ?? 0.6, over: 0.3, gableMat: o.mat || 'plaster_white', gableTint: o.tint || '#ddd5c4', tint: o.roofTint || '#8f6a5e', details: false });
+  b.noNav(x - w / 2 - 0.4, z - d / 2 - 0.4, x + w / 2 + 0.4, z + d / 2 + 0.4, y + h - 0.3, y + 30);
+  // Tor/Tür als Fassadenbild (nicht begehbar)
+  if (o.tor) {
+    const [sx, sz] = DIRV[o.tor], tw = o.torW ?? Math.min(2.6, (sx ? d : w) - 0.6), th = o.torH ?? 2.1;
+    const px = x + sx * (w / 2 + 0.03), pz = z + sz * (d / 2 + 0.03);
+    b.box(px, y + 0.05, pz, sx ? 0.05 : tw, th, sx ? tw : 0.05, o.torMat || 'metal_painted', { ...NOCOL, tint: o.torTint || '#7a7d80', grad: false });
+  }
+}
+
+/** Gartenzaun (Latten, ≈ 1 m) zwischen zwei Punkten; Kollision als dünne unsichtbare Wand. */
+export function gartenzaun(b, x0, z0, x1, z1, o = {}) {
+  const y = o.y ?? 0, L = Math.hypot(x1 - x0, z1 - z0);
+  if (L < 0.5) return;
+  const ry = Math.atan2(-(z1 - z0), x1 - x0), ux = (x1 - x0) / L, uz = (z1 - z0) / L, mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+  const tint = o.tint || '#8a6a4a', h = o.h ?? 1.0;
+  if (o.art === 'hecke') {
+    b.box(mx, y, mz, L, h + 0.3, 0.7, 'grass', { ry, tint: '#55703a', minimap: 'wall' });
+    return;
+  }
+  for (let s = 0; s <= L + 0.01; s += 2.2) b.box(x0 + ux * s, y, z0 + uz * s, 0.09, h + 0.1, 0.09, 'wood_dark', { ry, tint: '#5a4636', ...NOCOL });
+  for (const hy of [0.25, h - 0.2]) b.box(mx, y + hy, mz, L, 0.06, 0.03, 'wood_planks', { ry, tint, ...NOCOL, grad: false });
+  if (o.art !== 'draht') for (let s = 0.1; s < L; s += 0.24) b.box(x0 + ux * s, y + 0.05, z0 + uz * s, 0.07, h - 0.05 + ((s * 7) % 1 < 0.5 ? 0 : 0.04), 0.02, 'wood_planks', { ry, tint, ...NOCOL, grad: false, ao: false });
+  b.box(mx, y, mz, L, h, 0.1, 'black', { ry, visual: false, minimap: false, bullet: false });
+}
+
+/** Gartenausstattung innerhalb [x0,z0,x1,z1]: Schuppen, Beet, Holzstapel; Obstbäume → baeume ([x, z, s, ry]). */
+function garteninhalt(b, r, rand, o) {
+  const [x0, z0, x1, z1] = r, w = x1 - x0, d = z1 - z0, y = o.y ?? 0;
+  if (rand() < 0.45 && w > 4 && d > 4) {
+    const sx = rand() < 0.5 ? x0 + 1.4 : x1 - 1.4, sz = rand() < 0.5 ? z0 + 1.2 : z1 - 1.2;
+    anbau(b, { x: sx, z: sz, w: 2.2, d: 1.8, h: 2.1, y, mat: 'wood_planks', tint: b.pick(['#7a5a40', '#6b5038', '#8a6a4c', '#5d6b52']), roofTint: '#5f5c5a', pitch: 0.45, tor: rand() < 0.5 ? 'e' : 'w', torMat: 'wood_dark', torW: 0.9, torH: 1.8, torTint: '#4a3a2c' });
+  }
+  if (rand() < 0.55 && w > 3 && d > 3) {
+    const bx = x0 + w * (0.3 + rand() * 0.4), bz = z0 + d * (0.3 + rand() * 0.4);
+    b.box(bx, y, bz, Math.min(3.5, w * 0.4), 0.12, Math.min(2.2, d * 0.35), 'dirt', { tint: '#6a5442', ...NOCOL, grad: false });
+  }
+  const nb = w * d > 60 ? 1 + (rand() < 0.5 ? 1 : 0) : rand() < 0.5 ? 1 : 0;
+  for (let k = 0; k < nb; k++) o.baeume?.push([x0 + 1.8 + rand() * Math.max(0.1, w - 3.6), z0 + 1.8 + rand() * Math.max(0.1, d - 3.6), 0.6 + rand() * 0.25, rand() * 6.28]);
+}
+
+/**
+ * Häuser entlang einer gekrümmten Straße (Polylinie o.pts). o: { pts, road (Abstand Achse → Fluchtlinie), sides [-1, 1],
+ * rand, taken, free, y, zwei (Anteil zweigeschossig), fachwerk, garten, anbau, garage, gap [min, max], baeume (Liste),
+ * from/to (Bogenlänge), hof (Anteil Hofstellen mit Scheune) } → Anzahl Häuser.
+ */
+export function ortsstrasse(b, o) {
+  const rand = o.rand, taken = o.taken, free = o.free || [], y = o.y ?? 0, pts = o.pts;
+  const hit = (r, list) => list.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
+  const ok = (r) => !hit(r, taken) && !hit(r, free);
+  const segs = [];
+  let L = 0;
+  for (let k = 0; k + 1 < pts.length; k++) { const [ax, az] = pts[k], [bx, bz] = pts[k + 1], l = Math.hypot(bx - ax, bz - az); segs.push({ ax, az, bx, bz, l, L0: L }); L += l; }
+  const at = (t) => { let sg = segs[segs.length - 1]; for (const q of segs) if (t <= q.L0 + q.l) { sg = q; break; } const u = Math.max(0, Math.min(1, (t - sg.L0) / sg.l)); return { x: sg.ax + (sg.bx - sg.ax) * u, z: sg.az + (sg.bz - sg.az) * u, tx: (sg.bx - sg.ax) / sg.l, tz: (sg.bz - sg.az) / sg.l }; };
+  const rect = (cx, cz, w, d, m) => [cx - w / 2 - m, cz - d / 2 - m, cx + w / 2 + m, cz + d / 2 + m];
+  const [g0, g1] = o.gap || [1.6, 6];
+  let n = 0;
+  for (const s of o.sides || [-1, 1]) {
+    let t = (o.from ?? 0) + 3 + rand() * 5;
+    const tEnd = Math.min(L, o.to ?? L) - 4;
+    while (t < tEnd) {
+      const k = rand();
+      let la, dp, fl;
+      if (k < 0.2) { la = 6.5 + Math.round(rand() * 2); dp = 8 + Math.round(rand() * 2); fl = rand() < 0.45 ? 2 : 1; }
+      else if (k < 0.82) { la = 8 + Math.round(rand() * 4); dp = 7 + Math.round(rand() * 3); fl = rand() < (o.zwei ?? 0.6) ? 2 : 1; }
+      else { la = 11 + Math.round(rand() * 3); dp = 9 + Math.round(rand() * 2); fl = 2; }
+      const p = at(t + la / 2);
+      const nx = -p.tz * s, nz = p.tx * s;
+      const alongX = Math.abs(p.tx) >= Math.abs(p.tz);
+      const w = alongX ? la : dp, d = alongX ? dp : la;
+      const setback = o.road + 1.2 + rand() * (o.vorgarten ?? 3.5);
+      let cx = p.x + nx * (setback + dp / 2), cz = p.z + nz * (setback + dp / 2);
+      cx = Math.round(cx * 2) / 2; cz = Math.round(cz * 2) / 2;
+      const door = alongX ? (nz > 0 ? 'n' : 's') : (nx > 0 ? 'w' : 'e');
+      const r = rect(cx, cz, w, d, 0.9);
+      if (!ok(r)) { t += 3 + rand() * 3; continue; }
+      const fw = fl > 1 && rand() < (o.fachwerk ?? 0.25);
+      const color = fw ? b.pick(['#eee8da', '#f0e9d8', '#e9e2cf']) : b.pick(PUTZ2);
+      haus(b, { x: cx, z: cz, w, d, floors: fl, door, y, color, roofTint: b.pick(DACH), pitch: 0.55 + rand() * 0.45, ridge: rand() < 0.3 ? (w >= d ? 'z' : 'x') : undefined, fachwerk: fw });
+      taken.push(r);
+      n++;
+      // Hinterland (Richtung weg von der Straße): Anbau, Garten
+      const bxv = Math.sign(nx) * (Math.abs(nx) > Math.abs(nz) ? 1 : 0), bzv = Math.sign(nz) * (Math.abs(nz) >= Math.abs(nx) ? 1 : 0);
+      let back = (bxv ? w : d) / 2;
+      if (rand() < (o.anbau ?? 0.3)) {
+        const aw = bxv ? 3 : Math.max(3, la * 0.55), ad = bxv ? Math.max(3, la * 0.55) : 3;
+        const off = (rand() - 0.5) * (la - (bxv ? ad : aw)) * 0.8;
+        const ax = cx + bxv * (back + 1.5) + (bxv ? 0 : off), az = cz + bzv * (back + 1.5) + (bxv ? off : 0);
+        const ra = rect(ax, az, aw, ad, 0.3);
+        if (ok(ra)) { anbau(b, { x: ax, z: az, w: aw, d: ad, y, h: 2.6, tint: color, roofTint: b.pick(DACH), pitch: 0.4 }); taken.push(ra); back += 3; }
+      }
+      if (rand() < (o.garage ?? 0.22)) {
+        // Garage neben dem Haus, Tor zur Straße
+        const side = rand() < 0.5 ? -1 : 1, gl = 3.3, gd = 6;
+        const gx = alongX ? cx + side * (w / 2 + 0.6 + gl / 2) : p.x + nx * (setback + gd / 2);
+        const gz = alongX ? p.z + nz * (setback + gd / 2) : cz + side * (d / 2 + 0.6 + gl / 2);
+        const gw = alongX ? gl : gd, gdd = alongX ? gd : gl;
+        const rg = rect(gx, gz, gw, gdd, 0.3);
+        if (ok(rg)) { anbau(b, { x: gx, z: gz, w: gw, d: gdd, y, h: 2.5, roof: 'flat', mat: 'plaster_white', tint: b.pick(['#d6d0c4', '#cfc9bc', '#bfb8aa']), tor: door, torW: 2.4, torTint: b.pick(['#7a7d80', '#6a4a36', '#8e8a7c', '#3e5a6e']) }); taken.push(rg); }
+      }
+      if (rand() < (o.garten ?? 0.6)) {
+        const gd2 = 7 + rand() * 7, gwid = la + 1 + rand() * 2;
+        const g0x = cx + bxv * (back + 0.8), g0z = cz + bzv * (back + 0.8);
+        const gr = bxv ? [Math.min(g0x, g0x + bxv * gd2), cz - gwid / 2, Math.max(g0x, g0x + bxv * gd2), cz + gwid / 2] : [cx - gwid / 2, Math.min(g0z, g0z + bzv * gd2), cx + gwid / 2, Math.max(g0z, g0z + bzv * gd2)];
+        const rr = [gr[0] - 0.3, gr[1] - 0.3, gr[2] + 0.3, gr[3] + 0.3];
+        if (ok(rr)) {
+          const art = rand() < 0.25 ? 'hecke' : 'latten';
+          const [x0, z0, x1, z1] = gr;
+          // drei Seiten (die Hausseite bleibt offen), Pforte in einer Seitenlinie
+          const edges = bxv ? [[x0, z0, x1, z0], [x0, z1, x1, z1], bxv > 0 ? [x1, z0, x1, z1] : [x0, z0, x0, z1]] : [[x0, z0, x0, z1], [x1, z0, x1, z1], bzv > 0 ? [x0, z1, x1, z1] : [x0, z0, x1, z0]];
+          edges.forEach(([ax, az, ex, ez], i) => {
+            if (i === 0) { const mx = ax + (ex - ax) * 0.5, mz = az + (ez - az) * 0.5, ll = Math.hypot(ex - ax, ez - az) || 1, ux = (ex - ax) / ll, uz = (ez - az) / ll; gartenzaun(b, ax, az, mx - ux * 0.6, mz - uz * 0.6, { y, art }); gartenzaun(b, mx + ux * 0.6, mz + uz * 0.6, ex, ez, { y, art }); }
+            else gartenzaun(b, ax, az, ex, ez, { y, art });
+          });
+          garteninhalt(b, gr, rand, o);
+          taken.push(rr);
+        }
+      }
+      t += la + g0 + rand() * (g1 - g0);
+    }
+  }
+  return n;
+}
+
+/** Hofstelle: Wohnhaus und Scheune im Winkel um einen Hofplatz, Misthaufen, Holzstapel, Hofbaum. */
+export function hofstelle(b, o) {
+  const { x, z, rand } = o, y = o.y ?? 0, qx = o.qx ?? 1, qz = o.qz ?? 1;
+  const hw = 10 + Math.round(rand() * 3), hd = 8 + Math.round(rand() * 2);
+  const hx = x, hz = z - qz * 7;
+  haus(b, { x: hx, z: hz, w: hw, d: hd, floors: 2, door: qz < 0 ? 's' : 'n', y, color: b.pick(PUTZ2), roofTint: b.pick(DACH), pitch: 0.75 + rand() * 0.2, fachwerk: rand() < 0.4 });
+  const sw = 10 + Math.round(rand() * 3), sd = 15 + Math.round(rand() * 4);
+  const sx = x + qx * (hw / 2 + 2 + sw / 2), sz = z + qz * 3;
+  scheune(b, { x: sx, z: sz, w: sw, d: sd, door: qx < 0 ? 'e' : 'w', y, tint: b.pick(['#8a6a4c', '#7a5a40', '#6b4f3a', '#94704e']), roofTint: b.pick(['#b08a7c', '#9a6a5a', '#7a6a62']) });
+  b.groundTiled(Math.min(hx, sx) - 3, Math.min(hz, sz) - 1, Math.max(hx, sx) + 3, Math.max(hz, sz) + 1, 'gravel', { cell: 2, tint: '#a39886', collide: false });
+  // Misthaufen, Holzstapel, Strohballen
+  b.box(x - qx * 4, y, z + qz * 6, 3.2, 0.9, 2.4, 'dirt', { tint: '#4f3d2c', minimap: 'cover' });
+  for (let k = 0; k < 3; k++) b.cyl(x + qx * (2 + k * 1.7), y + 0.75, z + qz * 9, 0.75, 1.2, 'sand', { axis: 'x', tint: '#d9c27a', seg: 12, minimap: k === 0 ? 'cover' : false });
+  o.baeume?.push([x - qx * 8, z + qz * 2, 1.05, rand() * 6]);
+  return [Math.min(hx - hw / 2, sx - sw / 2) - 2, Math.min(hz - hd / 2, sz - sd / 2) - 2, Math.max(hx + hw / 2, sx + sw / 2) + 2, Math.max(hz + hd / 2, sz + sd / 2) + 2];
 }
