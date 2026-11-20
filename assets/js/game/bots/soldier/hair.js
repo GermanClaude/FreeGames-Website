@@ -190,7 +190,8 @@ function headField(geo) {
 // Haaransatz θ(a) [Grad] nach |a| (0 vorn … 180 Nacken), am gemalten Ansatz von face-skin.js abgegriffen (Stirn ≈ Augen + 7 cm,
 // über dem Ohr ≈ Augenhöhe, Nacken ≈ Augen − 7 cm); Koteletten vor dem Ohr tiefer
 const LINE_A = [0, 20, 35, 48, 58, 66, 72, 80, 92, 110, 135, 160, 180];
-const LINE_T = [48, 49, 53, 60, 68, 88, 90, 80, 78, 90, 117, 129, 133];
+// mensch4: Stirnansatz tiefer (48° → 56°: die Kappe endete hoch über einem kahlen Hautband und vergrößerte die Stirn), Schläfenecke weicher
+const LINE_T = [56, 57, 59, 64, 70, 81, 86, 80, 78, 90, 117, 129, 133];
 function hairline(a, recede = 0, female = false) {
   const x = Math.abs(a) / D2R;
   let th = LINE_T[LINE_T.length - 1];
@@ -334,7 +335,7 @@ export function hairGeometry(geo, style, res = 'near', opts = {}) {
     inner.push(crownHole ? dirOf(lineAt(a) - 36 * D2R * sstep(50 * D2R, 105 * D2R, Math.abs(a)), a) : pole);
   }
   // Kappe über den Ansatz hinaus ein wenig verlängern (ausdünnende Strähnen auf dem gemalten Ansatz)
-  const OVER = 0.07;
+  const OVER = 0.12; // mensch4: weiter über den gemalten Ansatz auslaufen (vorher 0,07 → harte Kante)
   const dAt = (i, j) => slerp(inner[i], edge[i], (j / rows) * (1 + OVER));
   const lenTile = 0.045, tilesU = female || style === 'offen' ? 9 : 8;
   for (let s = 0; s < Q.shells; s++) {
@@ -347,7 +348,7 @@ export function hairGeometry(geo, style, res = 'near', opts = {}) {
       (i, j) => {
         const t = (j / rows) * (1 + OVER);
         // Ausdünnen am Ansatz (Strähne für Strähne) und am Kranz-Innenrand
-        let f = 1 - sstep(0.66, 1 + OVER * 0.95, t);
+        let f = 1 - sstep(0.7, 1 + OVER * 0.95, t);
         if (crownHole) f *= sstep(0.0, 0.25, t) * sstep(55 * D2R, 85 * D2R, Math.abs(-Math.PI + (i / cols) * TAU));
         return f;
       },

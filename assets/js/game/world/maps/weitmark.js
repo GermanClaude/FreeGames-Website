@@ -140,7 +140,7 @@ function markt(b) {
   for (const [x, z] of [[-124, -12], [-76, -12], [-124, 22], [-76, 22], [-100, -12.5], [-127, 5], [-73, 5]]) lampPost(b, x, z, {});
   // Maibaum (Kranz, Zunftschilder angedeutet)
   b.cyl(-80, 0, -1, 0.2, 24, 'wood_planks', { r1: 0.12, tint: '#c9b08a', seg: 10, minimap: 'pillar' });
-  b.cyl(-80, 16, -1, 1.5, 0.35, 'grass', { r1: 1.2, tint: '#4f6b3a', seg: 12, collide: false, minimap: false });
+  b.cyl(-80, 16, -1, 0.9, 0.3, 'grass', { r1: 0.75, tint: '#4f6b3a', seg: 12, collide: false, minimap: false }); for (let k = 0; k < 4; k++) b.box(-80 + Math.cos(k * Q) * 0.5, 14.3, -1 + Math.sin(k * Q) * 0.5, 0.03, 1.8, 0.03, 'awning', { tint: ['#f2c230', '#2f5f9a'][k % 2], collide: false, minimap: false, grad: false });
   for (let k = 0; k < 3; k++) b.box(-80 + (k - 1) * 0.02, 8 + k * 2.4, -1.24, 0.9, 0.55, 0.05, 'wood_painted', { tint: ['#3d5a8a', '#e6dfcf', '#8a3a2c'][k], collide: false, minimap: false });
   // Sandsäcke, parkende Autos am Platzrand (nicht fahrbar – reine Kulisse), Fahrrad, Kübel
   sandbags(b, -112, 9, -107, 10, { rows: 4 }); sandbags(b, -94, -6, -88, -8, { rows: 4 });
@@ -507,6 +507,7 @@ const WEITMARK = {
   // Riesenkarte (terrain/bigworld.js): Sichtweite, Fernkulisse, Budgets je Stufe und Plattform
   giant: {
     farRadius: 2300,
+    splitTris: 90000, // weit2: Ortschafts-Materialien erst ab 90 000 Dreiecken je Chunk teilen (Draw Calls, terrain/bigworld.js)
     tiers: {
       low: { view: 430, far: 1300, treeFar: 400, siteCull: 260, mapPx: 768 },
       medium: { view: 720, far: 1700, treeFar: 700, siteCull: 460, mapPx: 1024 },
@@ -636,8 +637,8 @@ const WEITMARK = {
   ],
 
   sites: [
-    { id: 'stadt_west', name: 'Kesselbrück West', bounds: { minX: -236, maxX: -38, minZ: -160, maxZ: 160 }, chunkSize: 64, build: (b) => stadtWest(b), seeds: [[-100, 4], [-140, -100], [-140, 100], [-200, -20], [-60, 60]], height: 20, spacing: 1.7 },
-    { id: 'stadt_ost', name: 'Kesselbrück Ost', bounds: { minX: 52, maxX: 240, minZ: -160, maxZ: 160 }, chunkSize: 64, build: (b) => stadtOst(b), seeds: [[120, 0], [120, -100], [120, 100], [180, 55], [90, -20]], height: 14, spacing: 1.7 },
+    { id: 'stadt_west', name: 'Kesselbrück West', bounds: { minX: -236, maxX: -38, minZ: -160, maxZ: 160 }, chunkSize: 110, build: (b) => stadtWest(b), seeds: [[-100, 4], [-140, -100], [-140, 100], [-200, -20], [-60, 60]], height: 20, spacing: 1.7 },
+    { id: 'stadt_ost', name: 'Kesselbrück Ost', bounds: { minX: 52, maxX: 240, minZ: -160, maxZ: 160 }, chunkSize: 110, build: (b) => stadtOst(b), seeds: [[120, 0], [120, -100], [120, 100], [180, 55], [90, -20]], height: 14, spacing: 1.7 },
     { id: 'steinbruecke', name: 'Steinbrücke', bounds: { minX: -42, maxX: 62, minZ: -34, maxZ: -6 }, clear: { minX: -38, maxX: 56, minZ: -28, maxZ: -12 }, build: (b) => steinbruecke(b), seeds: [[8, -20, BRIDGE_Y]], height: 10, spacing: 1.8 },
     { id: 'suedbruecke', name: 'Südbrücke', bounds: { minX: -42, maxX: 56, minZ: 122, maxZ: 138 }, clear: { minX: -38, maxX: 52, minZ: 124, maxZ: 136 }, build: (b) => suedbruecke(b), seeds: [[8, 130, BRIDGE_Y]], height: 10, spacing: 1.8 },
     { id: 'saegewerk', name: 'Sägewerk', bounds: { minX: -492, maxX: -348, minZ: -350, maxZ: -250 }, build: (b) => saegewerk(b), seeds: [[-420, -300], [-430, -270]], height: 14, spacing: 1.7 },

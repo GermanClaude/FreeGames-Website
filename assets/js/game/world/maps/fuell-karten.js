@@ -53,11 +53,35 @@ export function bodenspuren(b, x0, z0, x1, z1, n, o = {}) {
   }
 }
 
+/** Abschnitte [xa, xe] einer Linie z = const, die nicht in Gebäuden/Containern liegen (Grundrisse). */
+function freiLaeufe(b, x0, x1, z) {
+  const fp = b.footprints.filter((f) => (f.kind === 'building' || f.kind === 'container' || f.kind === 'floor') && f.y0 < 0.5);
+  const drin = (x) => fp.some((f) => { const c = Math.cos(f.ry || 0), s = Math.sin(f.ry || 0), px = x - f.x, pz = z - f.z; return Math.abs(px * c - pz * s) <= f.hw + 0.3 && Math.abs(px * s + pz * c) <= f.hd + 0.3; });
+  const out = [];
+  let a = null;
+  for (let x = x0; x <= x1; x += 0.5) { const d = drin(x); if (!d && a == null) a = x; if ((d || x + 0.5 > x1) && a != null) { out.push([a, x]); a = null; } }
+  return out;
+}
+
 /** Hafen: Dehnfugen auf Kai und Terminal (Rissbeton), Fahrspuren der Containerstapler, Ölflecken. */
 export function hafenFuellen(b) {
   fugen(b, -44, -52, 50, 52, 7.5);
-  bodenspuren(b, -27, -50, 48, 50, 46);
-  bodenspuren(b, 50, -50, 74, 50, 12, { mix: ['tire', 'oil', 'cracks'] });
+  bodenspuren(b, -27, -50, 48, 50, 90, { mix: ['tire', 'tire', 'oil', 'oil', 'cracks', 'stain', 'puddle', 'drip'] });
+  bodenspuren(b, -43, -50, -28, 50, 24, { mix: ['tire', 'oil', 'cracks', 'stain', 'drip'] });
+  bodenspuren(b, 50, -50, 74, 50, 18, { mix: ['tire', 'oil', 'cracks', 'puddle'] });
+  // Entwässerungsrinnen quer über das Terminal (Gitterabdeckung bündig im Belag) und Stahlplatten über Leitungsgräben
+  if ((b.lookQuality || b.quality) !== 'low') {
+    for (const z of [-34, -12, 12, 34]) for (const [xa, xe] of freiLaeufe(b, -26, 48, z)) {
+      if (xe - xa < 3) continue;
+      b.box((xa + xe) / 2, 0.0005, z, xe - xa, 0.004, 0.34, 'metal_painted', { ...DN, tint: '#1e1e1c' });
+      b.box((xa + xe) / 2, 0.004, z, xe - xa, 0.006, 0.3, 'metal_grate', { ...DN, tint: '#6a6a64' });
+    }
+    for (let i = 0; i < 16; i++) {
+      const x = -25 + hash01(i, 7, 41) * 72, z = -48 + hash01(7, i, 42) * 96, ry = hash01(x, z, 43) < 0.5 ? 0 : Math.PI / 2;
+      const fl = freiLaeufe(b, x - 1.5, x + 1.5, z); if (fl.length !== 1 || fl[0][1] - fl[0][0] < 2.5) continue;
+      b.box(x, 0, z, 2.4, 0.018, 1.5, 'metal_rust', { ...DN, ry: ry + (hash01(x, z, 44) - 0.5) * 0.1, tint: '#9a8a7a' });
+    }
+  }
 }
 
 /** Werk: Fugen auf den Betonflächen, Fahrspuren im Lkw-Hof. */

@@ -418,7 +418,8 @@ export function gartenzaun(b, x0, z0, x1, z1, o = {}) {
   }
   for (let s = 0; s <= L + 0.01; s += 2.2) b.box(x0 + ux * s, y, z0 + uz * s, 0.09, h + 0.1, 0.09, 'wood_dark', { ry, tint: '#5a4636', ...NOCOL });
   for (const hy of [0.25, h - 0.2]) b.box(mx, y + hy, mz, L, 0.06, 0.03, 'wood_planks', { ry, tint, ...NOCOL, grad: false });
-  if (o.art !== 'draht') for (let s = 0.1; s < L; s += 0.24) b.box(x0 + ux * s, y + 0.05, z0 + uz * s, 0.07, h - 0.05 + ((s * 7) % 1 < 0.5 ? 0 : 0.04), 0.02, 'wood_planks', { ry, tint, ...NOCOL, grad: false, ao: false });
+  // Latten als eine Brettwand (Holztextur zeigt die Fugen) statt Einzellatten – ein Bruchteil der Dreiecke
+  if (o.art !== 'draht') b.box(mx, y + 0.05, mz, L, h - 0.08, 0.02, 'wood_planks', { ry, tint, ...NOCOL, grad: false, ao: false, uvScale: 0.6 });
   b.box(mx, y, mz, L, h, 0.1, 'black', { ry, visual: false, minimap: false, bullet: false });
 }
 

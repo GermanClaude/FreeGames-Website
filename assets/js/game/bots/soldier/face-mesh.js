@@ -375,34 +375,63 @@ function tongue(out, L, segU, segV) {
  * (Augenschlitz/Stirn bleiben), Ohren und Mundraum ausgenommen. → Positionen der Hülle (Float32 nV×3).
  */
 function coverShell(pos, nrm, quads, nV, mask, L) {
-  const S = new Float32Array(pos);
-  const nb = Array.from({ length: nV }, () => new Set());
-  for (let f = 0; f < quads.length; f += 4) for (let i = 0; i < 4; i++) { const a = quads[f + i], b = quads[f + ((i + 1) & 3)]; nb[a].add(b); nb[b].add(a); }
+  // Tiefenkarte z(x, y) der Gesichtsvorderseite (Raster 2 mm, ohne Mundraum/Ohren), dann wiederholt weichgezeichnet mit
+  // Zeltbedingung „höchstens allow hinter der Haut“ (z wächst nach hinten). Vorderseiten-Ecken gehen auf diese Fläche (nur z):
+  // kein seitliches Gleiten, der Mundspalt schließt sich wie eine gespannte Stoffbahn.
+  void quads;
   const eyeY = (L.eyeL[1] + L.eyeR[1]) / 2;
-  const w = new Float32Array(nV), allow = new Float32Array(nV), inner = new Uint8Array(nV);
+  const x0 = -0.085, y0 = L.chin[1] - 0.04, y1 = eyeY + 0.004, c = 0.002;
+  const NX = Math.ceil((0.085 - x0) / c) + 1, NY = Math.ceil((y1 - y0) / c) + 1;
+  const D = new Float32Array(NX * NY).fill(Infinity), AL = new Float32Array(NX * NY), AN = new Float32Array(NX * NY);
+  const front = (v) => nrm[v * 3 + 2] < -0.25 && pos[v * 3 + 2] < -0.02;
   for (let v = 0; v < nV; v++) {
-    const mIn = mask[v * 4 + 1], ear = mask[v * 4 + 3], lip = mask[v * 4];
-    inner[v] = mIn > 0.5 ? 1 : 0;
-    w[v] = inner[v] || ear > 0.5 ? 0 : 1 - sstep(eyeY - 0.024, eyeY - 0.008, pos[v * 3 + 1]);
-    allow[v] = 0.0012 + 0.0033 * sat(lip * 1.4);
-  }
-  const nbA = nb.map((st, v) => Array.from(st).filter((u) => !inner[u] || inner[v]));
-  const T = new Float32Array(nV * 3);
-  for (let it = 0; it < 48; it++) {
-    T.set(S);
-    for (let v = 0; v < nV; v++) {
-      if (w[v] <= 0) continue;
-      const A = nbA[v]; if (!A.length) continue;
-      let x = 0, y = 0, z = 0;
-      for (const u of A) { x += S[u * 3]; y += S[u * 3 + 1]; z += S[u * 3 + 2]; }
-      const k = 0.65 * w[v] / A.length;
-      T[v * 3] += (x - S[v * 3] * A.length) * k; T[v * 3 + 1] += (y - S[v * 3 + 1] * A.length) * k; T[v * 3 + 2] += (z - S[v * 3 + 2] * A.length) * k;
-      // Zeltbedingung: nicht tiefer als `allow` hinter der Haut (entlang der Hautnormalen)
-      const nx = nrm[v * 3], ny = nrm[v * 3 + 1], nz = nrm[v * 3 + 2];
-      const d = (T[v * 3] - pos[v * 3]) * nx + (T[v * 3 + 1] - pos[v * 3 + 1]) * ny + (T[v * 3 + 2] - pos[v * 3 + 2]) * nz;
-      if (d < -allow[v]) { const c = -allow[v] - d; T[v * 3] += nx * c; T[v * 3 + 1] += ny * c; T[v * 3 + 2] += nz * c; }
+    if (mask[v * 4 + 1] > 0.5 || mask[v * 4 + 3] > 0.5 || !front(v)) continue;
+    const i = Math.round((pos[v * 3] - x0) / c), j = Math.round((pos[v * 3 + 1] - y0) / c);
+    for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
+      const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= NX || jj >= NY) continue;
+      const k = jj * NX + ii;
+      const z = pos[v * 3 + 2] + 0.0004 * (di * di + dj * dj); // grob gerastert: nahe Ecken zählen mehr
+      if (z < D[k]) D[k] = z;
+      AL[k] += sat(mask[v * 4] * 1.4); AN[k] += 1;
     }
-    S.set(T);
+  }
+  // Lücken (Mundspalt, Nasenlöcher) aus den Nachbarn füllen
+  for (let it = 0; it < 12; it++) for (let k = 0; k < D.length; k++) if (!Number.isFinite(D[k])) {
+    const i = k % NX, j = (k / NX) | 0; let s_ = 0, n_ = 0;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= NX || jj >= NY) continue; const q = D[jj * NX + ii]; if (Number.isFinite(q)) { s_ += q; n_++; } }
+    if (n_) D[k] = s_ / n_ - 1e-6;
+  }
+  const allow = new Float32Array(D.length);
+  for (let k = 0; k < D.length; k++) allow[k] = 0.0012 + 0.0034 * (AN[k] ? AL[k] / AN[k] : 0);
+  // Lippenmaske weich (keine Stufe am Lippenrand)
+  const blur = (A, n) => { let B = A; for (let it = 0; it < n; it++) { const C = new Float32Array(B.length); for (let k = 0; k < B.length; k++) { const i = k % NX, j = (k / NX) | 0; let s_ = B[k] * 2, w_ = 2; for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= NX || jj >= NY || !Number.isFinite(B[jj * NX + ii])) continue; s_ += B[jj * NX + ii]; w_++; } C[k] = s_ / w_; } B = C; } return B; };
+  const AW = blur(allow, 6);
+  let Z = Float32Array.from(D, (z) => (Number.isFinite(z) ? z : 0));
+  const ok = Uint8Array.from(D, (z) => (Number.isFinite(z) ? 1 : 0));
+  for (let it = 0; it < 70; it++) {
+    const B = blur(Z, 1);
+    for (let k = 0; k < Z.length; k++) Z[k] = ok[k] ? Math.min(B[k], D[k] + AW[k]) : B[k];
+  }
+  const zAt = (x, y) => {
+    const fx = (x - x0) / c, fy = (y - y0) / c, i = Math.floor(fx), j = Math.floor(fy);
+    if (i < 0 || j < 0 || i + 1 >= NX || j + 1 >= NY) return NaN;
+    const tx = fx - i, ty = fy - j, k = j * NX + i;
+    return (Z[k] * (1 - tx) + Z[k + 1] * tx) * (1 - ty) + (Z[k + NX] * (1 - tx) + Z[k + NX + 1] * tx) * ty;
+  };
+  const S = new Float32Array(pos);
+  for (let v = 0; v < nV; v++) {
+    if (mask[v * 4 + 3] > 0.5) continue;
+    const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2];
+    const inner = mask[v * 4 + 1] > 0.5;
+    if (!inner && !front(v)) continue;
+    const zs = zAt(x, y);
+    if (!Number.isFinite(zs)) continue;
+    // Rand weich: unter den Augen, seitlich (Wangen) und unter dem Kinn auslaufen
+    const wy = (1 - sstep(eyeY - 0.024, eyeY - 0.008, y)) * sstep(y0 + 0.004, y0 + 0.02, y);
+    const wx = 1 - sstep(0.055, 0.078, Math.abs(x));
+    const wn = inner ? 1 : sstep(-0.25, -0.55, nrm[v * 3 + 2]);
+    const wgt = wy * wx * wn;
+    S[v * 3 + 2] = inner ? Math.min(z, zs) * wgt + z * (1 - wgt) : z + (zs - z) * wgt;
   }
   return S;
 }

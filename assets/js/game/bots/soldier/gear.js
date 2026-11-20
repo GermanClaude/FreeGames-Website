@@ -379,6 +379,22 @@ function buildSoldier(V, lod) {
     for (let i = 0; i < BM.n; i++) if (reg[i] === RG.POCKET && BM.pos[i * 3 + 1] > 1.0) reg[i] = RG.SHIRT;
     BM = { ...BM, reg };
   }
+  // Kopf-Ecken (face.js zeichnet den Kopf auf Stufe 0) nach den ursprünglichen Bereichen
+  const tailMask = new Uint8Array(BM.n);
+  { const HT = new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]); for (let i = 0; i < BM.n; i++) tailMask[i] = HT.has(BM.reg[i]) ? 1 : 0; }
+  if (L01 && (civ || L0)) {
+    // mensch4 (Nutzer: Hautring um den Kragen): Dreiecke, die Hals-/Kopfecken mit Stoffecken verbinden, wurden mit verlaufender
+    // Farbe gezeichnet (Haut → Stoff über eine Dreiecksbreite) – auch auf Stufe 0, wo der Kopf sonst von face.js kommt. Solche
+    // Hals-Randecken bekommen die Stofffarbe; die Kante liegt unter dem Kragen.
+    const HEADR = new Set([RG.NECK, RG.SKULL, RG.FACE, RG.EARS, RG.EYES]);
+    const reg = BM.reg.slice(), I = BM.idx;
+    for (let t = 0; t < I.length; t += 3) {
+      const a = I[t], b = I[t + 1], c = I[t + 2];
+      const ha = HEADR.has(BM.reg[a]), hb = HEADR.has(BM.reg[b]), hc = HEADR.has(BM.reg[c]);
+      if ((ha || hb || hc) && !(ha && hb && hc)) for (const v of [a, b, c]) if (BM.reg[v] === RG.NECK) reg[v] = RG.SHIRT;
+    }
+    BM = { ...BM, reg };
+  }
   if (civ && V.top === 'mantel') {
     // mensch4 (Nutzer: „Hose scheint durch die Kleidung“): unter den Mantelschößen liegt nur verdeckte Hose/Hüfte – entlang der
     // Normalen um bis zu 20 mm eingezogen (Bereichsmaske: Hose/Taschen/Hüfte zwischen Saum + 4 cm und Taille), damit Oberschenkel
@@ -395,7 +411,7 @@ function buildSoldier(V, lod) {
     BM = { ...BM, pos };
   }
   B.tag = 'koerper';
-  B.addMesh(BM, bodyMat, L0 ? new Set([RG.NECK, RG.SKULL, RG.EYES, RG.FACE, RG.EARS]) : null);
+  B.addMesh(BM, bodyMat, L0 ? tailMask : null);
   B.tag = '';
   if (V.holster && !FAR) {
     // 15.11.: an den schlankeren Oberschenkel des MakeHuman-Körpers (Außenseite x ≈ 0,186, Mitte z ≈ −0,02) gerückt
@@ -869,7 +885,7 @@ function buildSoldier(V, lod) {
               // dem Bein folgt er dem eigenen Oberschenkel (legt sich übers Knie), an der Vorderkante beiden Oberschenkeln je zur Hälfte
               // → die überlappenden Kanten beider Schöße bewegen sich gleich und klaffen in der Schrittstellung nicht auf.
               const cf = Math.max(0, Math.cos(th));
-              const wT = Math.min(1, Math.max(0, (0.985 - y) / (0.16 + 0.2 * (1 - cf)))) * (0.2 + 0.8 * Math.pow(cf, 1.6));
+              const wT = Math.min(1, Math.max(0, (0.985 - y) / (0.16 + 0.2 * (1 - cf)))) * (0.2 + 0.8 * (cf < 0.15 ? 0 : cf > 0.62 ? 1 : ((cf - 0.15) / 0.47) ** 2 * (3 - 2 * (cf - 0.15) / 0.47)));
               const share = 0.5 * (1 - Math.min(1, Math.max(0, th / 0.5)) ** 2 * (3 - 2 * Math.min(1, Math.max(0, th / 0.5)))); // Vorderkante 50 : 50
               const qo = Math.round(wT * share * 255), q = Math.round(wT * 255) - qo;
               // oben (Hüfte/Gesäß, wo der Stoff anliegt) an die Gewichte des darunterliegenden Körpers gekoppelt → bewegt sich wie

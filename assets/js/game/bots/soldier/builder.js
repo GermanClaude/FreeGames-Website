@@ -320,7 +320,7 @@ export class SkinBuilder {
           for (let c = 0; c < 4; c++) { np[k * 4 + c] = u8(m.np[c]); nq[k * 4 + c] = m.nq[c]; si[k * 4 + c] = D.ski[i * 4 + c]; sw[k * 4 + c] = D.skw[i * 4 + c]; }
         }
         for (let i = 0; i < D.idx.length; i++) idx[io + i] = D.idx[i] + vo;
-        if (p.tail) for (let i = 0; i < n; i++) if (p.tail.has(D.reg[i])) tailV[vo + i] = 1;
+        if (p.tail) for (let i = 0; i < n; i++) if (p.tail.has ? p.tail.has(D.reg[i]) : p.tail[i]) tailV[vo + i] = 1; // Set von Bereichen oder Maske je Ecke
         fieldAo.push([vo, D.ao]);
         io += D.idx.length;
         vo += n;

@@ -20,7 +20,7 @@ import { streuRaster, bodenY, placeGroundDressing } from './bodenauflage.js?v=20
 /** Mengenfaktor je Stufe (low: Modul wird nicht geladen). */
 const MENGE = { medium: 0.5, high: 1, ultra: 1.4 };
 /** Höchstzahl Nester je Stufe (bei ≈ 12 000 m² Spielfläche; Großkarten nach Fläche der Bereiche). */
-const NESTER = { medium: 600, high: 1300, ultra: 1900 };
+const NESTER = { medium: 800, high: 1800, ultra: 2600 };
 /** Ausblenden (m): [Beginn, Ende] je Stufe; kleine Teile (Hülsen, Kies) früher. */
 const FADE = { medium: [22, 30], high: [32, 44], ultra: [42, 58] };
 /** Höchstzahl Fassaden-Kabelläufe je Stufe. */
@@ -29,6 +29,13 @@ const FASSADE = { medium: 40, high: 90, ultra: 130 };
 function rng(seed) {
   let s = seed >>> 0;
   return () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function merge(list) {
+  const P = [], N = [];
+  for (const g0 of list) { const g = g0.index ? g0.toNonIndexed() : g0; P.push(...g.attributes.position.array); N.push(...g.attributes.normal.array); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3));
+  return g;
 }
 const seedOf = (id) => [...String(id || 'karte')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 17);
 
@@ -54,27 +61,32 @@ const ARTEN = {
   laub: { geo: blattGeo, cols: ['#8a5a2a', '#a8742e', '#6e4a22', '#b08a3a', '#7a6a30', '#5a4a26', '#9a5e2e'], r: 0.85, m: 0, side: THREE.DoubleSide, s: [0.8, 1.5], fade: 1 },
   kiesel: { geo: () => new THREE.OctahedronGeometry(0.022, 0).scale(1.2, 0.55, 1).translate(0, 0.01, 0), cols: ['#8a8680', '#a29c92', '#6e6a64', '#9a8e7e', '#7a746a'], r: 0.9, m: 0, s: [0.6, 1.8], fade: 0.7 },
   ziegel: { geo: () => new THREE.BoxGeometry(0.1, 0.05, 0.07).translate(0, 0.025, 0), cols: ['#9a4a32', '#a85a3c', '#8a3e2a', '#b0684a', '#7a3a28'], r: 0.92, m: 0, s: [0.5, 1.4], fade: 1 },
-  putz: { geo: () => new THREE.IcosahedronGeometry(0.035, 0).scale(1.3, 0.5, 1).translate(0, 0.012, 0), cols: ['#cfc8ba', '#bdb6a6', '#d8d2c6', '#a8a294'], r: 0.95, m: 0, s: [0.5, 1.6], fade: 0.8 },
+  putz: { geo: () => new THREE.OctahedronGeometry(0.035, 0).scale(1.3, 0.5, 1).translate(0, 0.012, 0), cols: ['#cfc8ba', '#bdb6a6', '#d8d2c6', '#a8a294'], r: 0.95, m: 0, s: [0.5, 1.6], fade: 0.8 },
   holz: { geo: () => new THREE.BoxGeometry(0.62, 0.018, 0.085).translate(0, 0.009, 0), cols: ['#7a6248', '#5e4a36', '#8a7052', '#4a3a2a', '#6a5a46'], r: 0.9, m: 0, s: [0.5, 1.3], fade: 1.1 },
   glas: { geo: scherbeGeo, cols: ['#c8d4d0', '#b0c0bc', '#a8b8b0'], r: 0.06, m: 0, side: THREE.DoubleSide, s: [0.6, 1.4], fade: 0.7, opacity: 0.75 },
   huelse: { geo: () => new THREE.CylinderGeometry(0.0055, 0.006, 0.045, 6, 1, true).rotateZ(Math.PI / 2).translate(0, 0.006, 0), cols: ['#b8903a', '#a8822e', '#c8a048', '#8a6a2a'], r: 0.32, m: 0.95, s: [0.9, 1.1], fade: 0.5 },
   buch: { geo: () => new THREE.BoxGeometry(0.16, 0.035, 0.23).translate(0, 0.0175, 0), cols: ['#5a2a22', '#2a3a5a', '#3a4a2a', '#6a4a2a', '#4a2a3a', '#7a6a4a', '#2a2a2a'], r: 0.8, m: 0, s: [0.8, 1.4], fade: 1.1 },
   papier: { geo: () => { const g = new THREE.PlaneGeometry(0.21, 0.297, 2, 2).rotateX(-Math.PI / 2); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, 0.003 + Math.abs(Math.sin(i * 1.7)) * 0.01); g.computeVertexNormals(); return g; }, cols: ['#ece6d6', '#e0d8c2', '#d8ceb4', '#f0ebe0'], r: 0.92, m: 0, side: THREE.DoubleSide, s: [0.8, 1.2], fade: 1 },
+  // fuell: flache, mittelgroße Teile (≤ 0,45 m hoch, an Wandfüßen – man steigt darüber, keine Kollision nötig)
+  palette: { geo: () => { const g = []; for (const z of [-0.33, 0, 0.33]) g.push(new THREE.BoxGeometry(1.2, 0.1, 0.1).translate(0, 0.05, z)); for (let i = 0; i < 5; i++) g.push(new THREE.BoxGeometry(0.1, 0.022, 0.8).translate(-0.54 + i * 0.27, 0.111, 0)); return merge(g); }, cols: ['#a08866', '#8a7456', '#b09a76', '#7a6a50'], r: 0.9, m: 0, s: [0.95, 1.05], fade: 1.6 },
+  reifen: { geo: () => new THREE.TorusGeometry(0.29, 0.1, 5, 12).rotateX(Math.PI / 2).translate(0, 0.1, 0), cols: ['#1c1c1c', '#232322', '#2a2826'], r: 0.85, m: 0, s: [0.85, 1.15], fade: 1.6 },
+  plane: { geo: () => { const g = new THREE.PlaneGeometry(1.6, 1.1, 4, 3).rotateX(-Math.PI / 2); const p = g.attributes.position; for (let i = 0; i < p.count; i++) p.setY(i, 0.01 + Math.abs(Math.sin(i * 2.3) * Math.cos(i * 0.7)) * 0.09); g.computeVertexNormals(); return g; }, cols: ['#3a5a7a', '#4a5a3a', '#6a6a62', '#2a4a6a', '#7a5a3a'], r: 0.75, m: 0, side: THREE.DoubleSide, s: [0.8, 1.3], fade: 1.6 },
+  kanister: { geo: () => new THREE.BoxGeometry(0.34, 0.46, 0.17).translate(0, 0.23, 0), cols: ['#4a5a3a', '#8a2a22', '#2a3a2a', '#b0902a'], r: 0.55, m: 0.2, s: [0.95, 1.05], fade: 1.3 },
   zweig: { geo: () => new THREE.CylinderGeometry(0.006, 0.01, 0.42, 4, 1, true).rotateZ(Math.PI / 2).translate(0, 0.008, 0), cols: ['#4a3a2a', '#5a4632', '#3a2e22', '#6a5640'], r: 0.95, m: 0, s: [0.6, 1.5], fade: 1 },
 };
 /** Nester je Kartenstil: Gewichte der Arten außen (Wandfuß/Ecke/frei) und innen, Grün (Büschel), Büsche, Krieg. */
 const STIL = {
-  hafen:        { laub: 0.4, kiesel: 1.3, ziegel: 0.15, putz: 0.1, holz: 0.7, glas: 0.25, huelse: 0.05, zweig: 0.2, gruen: 0.8, busch: 0.25, fassade: 0.7 },
-  werk:         { laub: 0.6, kiesel: 1.4, ziegel: 0.6, putz: 0.4, holz: 0.7, glas: 0.6, huelse: 0.15, zweig: 0.3, gruen: 1.1, busch: 0.45, fassade: 1.0 },
-  altstadt:     { laub: 1.3, kiesel: 0.6, ziegel: 0.35, putz: 0.4, holz: 0.25, glas: 0.15, huelse: 0.1, zweig: 0.3, gruen: 1.0, busch: 0.55, fassade: 1.3 },
-  bibliothek:   { menge: 0.55, laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0, fassade: 0 },
-  stadtkern:    { laub: 1.0, kiesel: 0.8, ziegel: 1.5, putz: 1.1, holz: 0.8, glas: 1.2, huelse: 0.9, zweig: 0.3, gruen: 0.9, busch: 0.4, fassade: 1.2 },
-  range:        { laub: 0.9, kiesel: 1.0, ziegel: 0, putz: 0.05, holz: 0.3, glas: 0, huelse: 1.6, zweig: 0.5, gruen: 1.3, busch: 0.6, fassade: 0.6 },
-  grenzland:    { laub: 1.1, kiesel: 0.9, ziegel: 0.45, putz: 0.3, holz: 0.6, glas: 0.25, huelse: 0.45, zweig: 0.8, gruen: 1.2, busch: 0.7, fassade: 1.0 },
-  niemandsland: { laub: 0.2, kiesel: 1.0, ziegel: 1.3, putz: 0.6, holz: 1.3, glas: 0.2, huelse: 1.2, zweig: 0.9, gruen: 0.25, busch: 0.05, fassade: 0.25 },
-  brandwald:    { laub: 0.1, kiesel: 0.7, ziegel: 0.3, putz: 0.2, holz: 1.0, glas: 0.4, huelse: 0.9, zweig: 1.1, gruen: 0.2, busch: 0, fassade: 0.2 },
-  flugplatz:    { laub: 0.6, kiesel: 1.1, ziegel: 0.2, putz: 0.2, holz: 0.4, glas: 0.25, huelse: 0.35, zweig: 0.4, gruen: 1.1, busch: 0.45, fassade: 0.9 },
-  default:      { laub: 0.8, kiesel: 1, ziegel: 0.4, putz: 0.3, holz: 0.5, glas: 0.3, huelse: 0.3, zweig: 0.4, gruen: 1, busch: 0.4, fassade: 1 },
+  hafen:        { laub: 0.4, kiesel: 1.3, ziegel: 0.15, putz: 0.1, holz: 0.7, glas: 0.25, huelse: 0.05, zweig: 0.2, gruen: 0.8, busch: 0.25, fassade: 0.7, palette: 0.5, reifen: 0.25, plane: 0.3, kanister: 0.3 },
+  werk:         { laub: 0.6, kiesel: 1.4, ziegel: 0.6, putz: 0.4, holz: 0.7, glas: 0.6, huelse: 0.15, zweig: 0.3, gruen: 1.1, busch: 0.45, fassade: 1.0, palette: 0.45, reifen: 0.35, plane: 0.25, kanister: 0.3 },
+  altstadt:     { laub: 1.3, kiesel: 0.6, ziegel: 0.35, putz: 0.4, holz: 0.25, glas: 0.15, huelse: 0.1, zweig: 0.3, gruen: 1.0, busch: 0.55, fassade: 1.3, palette: 0.15, reifen: 0.05, plane: 0.1, kanister: 0.1 },
+  bibliothek:   { menge: 0.55, laub: 0.05, kiesel: 0.1, ziegel: 0, putz: 0.5, holz: 0.35, glas: 0.05, huelse: 0, zweig: 0, gruen: 0, busch: 0, fassade: 0, palette: 0, reifen: 0, plane: 0, kanister: 0 },
+  stadtkern:    { laub: 1.0, kiesel: 0.8, ziegel: 1.5, putz: 1.1, holz: 0.8, glas: 1.2, huelse: 0.9, zweig: 0.3, gruen: 0.9, busch: 0.4, fassade: 1.2, palette: 0.3, reifen: 0.25, plane: 0.3, kanister: 0.2 },
+  range:        { laub: 0.9, kiesel: 1.0, ziegel: 0, putz: 0.05, holz: 0.3, glas: 0, huelse: 1.6, zweig: 0.5, gruen: 1.3, busch: 0.6, fassade: 0.6, palette: 0.25, reifen: 0.3, plane: 0.15, kanister: 0.3 },
+  grenzland:    { laub: 1.1, kiesel: 0.9, ziegel: 0.45, putz: 0.3, holz: 0.6, glas: 0.25, huelse: 0.45, zweig: 0.8, gruen: 1.2, busch: 0.7, fassade: 1.0, palette: 0.3, reifen: 0.2, plane: 0.2, kanister: 0.2 },
+  niemandsland: { laub: 0.2, kiesel: 1.0, ziegel: 1.3, putz: 0.6, holz: 1.3, glas: 0.2, huelse: 1.2, zweig: 0.9, gruen: 0.25, busch: 0.05, fassade: 0.25, palette: 0.25, reifen: 0.1, plane: 0.3, kanister: 0.35 },
+  brandwald:    { laub: 0.1, kiesel: 0.7, ziegel: 0.3, putz: 0.2, holz: 1.0, glas: 0.4, huelse: 0.9, zweig: 1.1, gruen: 0.2, busch: 0, fassade: 0.2, palette: 0.15, reifen: 0.1, plane: 0.2, kanister: 0.3 },
+  flugplatz:    { laub: 0.6, kiesel: 1.1, ziegel: 0.2, putz: 0.2, holz: 0.4, glas: 0.25, huelse: 0.35, zweig: 0.4, gruen: 1.1, busch: 0.45, fassade: 0.9, palette: 0.35, reifen: 0.3, plane: 0.25, kanister: 0.35 },
+  default:      { laub: 0.8, kiesel: 1, ziegel: 0.4, putz: 0.3, holz: 0.5, glas: 0.3, huelse: 0.3, zweig: 0.4, gruen: 1, busch: 0.4, fassade: 1, palette: 0.3, reifen: 0.2, plane: 0.2, kanister: 0.2 },
 };
 /** Innenräume: nur Bauschutt, Putz, Holz, Scherben (kein Laub/Grün). */
 const INNEN = ['putz', 'holz', 'glas', 'ziegel', 'kiesel', 'papier', 'buch'];
@@ -135,7 +147,7 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
     let q = r() * sum; for (const a of keys) { q -= W[a] || 0; if (q <= 0) return a; }
     return keys[keys.length - 1];
   };
-  const AUSSEN = ['laub', 'kiesel', 'ziegel', 'putz', 'holz', 'glas', 'huelse', 'zweig'];
+  const AUSSEN = ['laub', 'kiesel', 'ziegel', 'putz', 'holz', 'glas', 'huelse', 'zweig'], AN_WAND = ['palette', 'reifen', 'plane', 'kanister'];
   let cluster = 0, teile = 0;
   /** Nest um (x, gy, z): n Teile der Art im Radius rad, je Teil Bodenprobe (kein Schweben auf Kanten/Kisten). */
   const nest = (art, x, gy, z, n, rad, wx = 0, wz = 0) => {
@@ -166,7 +178,7 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
     const innen = !!world.raycast(_o, _d, 30);
     // 60 %: zum nächsten Wandfuß rücken
     let wand = null, ecke = false;
-    if (r() < 0.6) {
+    if (r() < 0.75) {
       const a = r() * Math.PI * 2, dx = Math.cos(a), dz = Math.sin(a);
       const d = wandIn(world, x, gy + 0.15, z, dx, dz, 5);
       if (d < Infinity && d > 0.3) {
@@ -206,6 +218,24 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
         plants.push({ kind: r() < 0.55 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: 0.3 + r() * 0.42, ry: r() * 6.283, tint: ['#b9b98a', '#a3ab7a', '#9aa070', '#c0b888'][Math.floor(r() * 4)] });
       }
       continue;
+    }
+    // mittelgroße flache Teile nur direkt an der Wand (nicht in Laufwegen, nicht an Startpunkten)
+    if (wand && r() < 0.16 && !nahStart(x, z, 4)) {
+      const art2 = wahl(AN_WAND);
+      if (art2) {
+        const A = ARTEN[art2], ry = Math.atan2(wand[0], wand[1]) + (r() - 0.5) * 0.5, off = art2 === 'palette' ? 0.1 : 0;
+        const px = x + wand[0] * off, pz = z + wand[1] * off;
+        // Platz: Boden eben unter dem ganzen Teil (4 Ecken)
+        let ok = true;
+        for (const [u, v] of [[-0.55, -0.35], [0.55, -0.35], [-0.55, 0.35], [0.55, 0.35]]) { const g3 = bodenAt(world, px + u * Math.cos(ry) + v * Math.sin(ry), pz - u * Math.sin(ry) + v * Math.cos(ry), gy + 0.3); if (!g3 || Math.abs(g3.y - gy) > 0.03) { ok = false; break; } }
+        if (ok) {
+          const n2 = art2 === 'reifen' ? 1 + Math.floor(r() * 3) : art2 === 'kanister' ? 1 + Math.floor(r() * 3) : 1;
+          const stapel = art2 === 'reifen';
+          for (let i = 0; i < n2; i++) per[art2].push({ x: px - (stapel ? 0 : wand[1] * i * 0.45) + (stapel ? (r() - 0.5) * 0.08 : 0), y: gy + (stapel ? i * 0.2 : 0), z: pz + (stapel ? (r() - 0.5) * 0.08 : wand[0] * i * 0.45), a: ry + (stapel ? r() * 6.28 : 0), s: A.s[0] + r() * (A.s[1] - A.s[0]), tilt: art2 === 'plane' ? 0 : (r() - 0.5) * 0.04, c: A.cols[Math.floor(r() * A.cols.length)] });
+          teile += n2;
+          continue;
+        }
+      }
     }
     const art = wahl(AUSSEN);
     if (!art) continue;

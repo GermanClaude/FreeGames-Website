@@ -184,6 +184,37 @@ function siteImpostor(footprints, y0 = 0) {
   return mesh;
 }
 
+/**
+ * weit2: Ortschafts-Geometrie der Riesenkarte schlanker halten (JS-Speicher; GPU-Inhalt gleich): Vertexfarben als
+ * Uint8 (normiert) statt Float32, Normalen als Int8 (normiert) – 44 → 27 Byte je Eckpunkt. Nur statische Meshes ohne
+ * Sonderrolle (zerstörbare Paneele, geteilte Geometrie, Farben > 1 bleiben unverändert); Positionen bleiben Float32
+ * (bruch.js/deform.js verändern sie zur Laufzeit).
+ */
+function packSiteGeometry(meshes) {
+  let saved = 0;
+  for (const o of meshes || []) {
+    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || o.userData.shared || o.userData.destructible != null) continue;
+    const g = o.geometry, c = g?.attributes?.color, n = g?.attributes?.normal;
+    if (c && c.array instanceof Float32Array && c.itemSize === 3 && !c.isInterleavedBufferAttribute) {
+      const a = c.array;
+      let max = 0; for (let i = 0; i < a.length; i++) if (a[i] > max) max = a[i];
+      if (max <= 1.001) {
+        const u = new Uint8Array(a.length);
+        for (let i = 0; i < a.length; i++) u[i] = Math.max(0, Math.min(255, Math.round(a[i] * 255)));
+        g.setAttribute('color', new THREE.BufferAttribute(u, 3, true));
+        saved += a.byteLength - u.byteLength;
+      }
+    }
+    if (n && n.array instanceof Float32Array && n.itemSize === 3 && !n.isInterleavedBufferAttribute) {
+      const a = n.array, u = new Int8Array(a.length);
+      for (let i = 0; i < a.length; i++) u[i] = Math.max(-127, Math.min(127, Math.round(a[i] * 127)));
+      g.setAttribute('normal', new THREE.BufferAttribute(u, 3, true));
+      saved += a.byteLength - u.byteLength;
+    }
+  }
+  return saved;
+}
+
 /** Unsichtbare Randwände (Kollision) um ein Rechteck. */
 function boundaryWalls(r, yMin, yMax) {
   const out = [];
@@ -251,7 +282,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     for (let k = 0; k < def.sites.length; k++) {
       const s = def.sites[k];
       const vb = { minX: s.bounds.minX - 12, maxX: s.bounds.maxX + 12, minZ: s.bounds.minZ - 12, maxZ: s.bounds.maxZ + 12 };
-      const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + k * 101, chunkSize: s.chunkSize || (quality === 'low' ? 64 : 48), groundNoise: s.groundNoise ?? 0.12, interiorTint: s.interiorTint });
+      const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + k * 101, chunkSize: s.chunkSize || (quality === 'low' ? 64 : 48), groundNoise: s.groundNoise ?? 0.12, interiorTint: s.interiorTint, ...(s.splitTris || def.giant?.splitTris ? { splitTris: s.splitTris || def.giant.splitTris } : {}) }); // weit2: Riesenkarte – Materialien erst ab mehr Dreiecken je Chunk teilen (weniger Draw Calls)
       b.lookQuality = quality; // env-look: Detailformen ab medium
       b.timeOfDay = conditions.time || meta.timeDefault || null; // props.js lampsOn (Laternen nur abends)
       if (libOk) {
@@ -261,6 +292,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       const res = s.build(b, ctx) || {};
       const p0 = 0.06 + (k / def.sites.length) * 0.44, p1 = 0.06 + ((k + 1) / def.sites.length) * 0.44;
       const built = await b.build({ quality, anisotropy: Math.min(G.renderer?.preset?.anisotropy || 4, maxAniso), onProgress: (p, l) => progress(p0 + (p1 - p0) * p, `${s.name}: ${l}`) });
+      if (def.giant) packSiteGeometry(built.meshes);
       sites.push({ def: s, b, res, built });
     }
   } finally {
@@ -281,7 +313,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     const s = def.lateSites[k];
     progress(0.52, s.name);
     const vb = { minX: s.bounds.minX - 12, maxX: s.bounds.maxX + 12, minZ: s.bounds.minZ - 12, maxZ: s.bounds.maxZ + 12 };
-    const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + 7919 + k * 101, chunkSize: s.chunkSize || 64, groundNoise: 0, interiorTint: s.interiorTint });
+    const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + 7919 + k * 101, chunkSize: s.chunkSize || 64, groundNoise: 0, interiorTint: s.interiorTint, ...(s.splitTris || def.giant?.splitTris ? { splitTris: s.splitTris || def.giant.splitTris } : {}) });
     b.lookQuality = quality;
     b.timeOfDay = conditions.time || meta.timeDefault || null;
     if (libOk) {
@@ -290,6 +322,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     }
     const res = s.build(b, { ...ctx, hf, roads: terr.roads }) || {};
     const built = await b.build({ quality, anisotropy: Math.min(G.renderer?.preset?.anisotropy || 4, maxAniso), onProgress: (p, l) => progress(0.52, `${s.name}: ${l}`) });
+    if (def.giant) packSiteGeometry(built.meshes);
     sites.push({ def: { ...s, nav: false }, b, res, built });
   }
   const pb = def.bounds;
