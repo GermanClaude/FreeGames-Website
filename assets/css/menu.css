@@ -95,7 +95,8 @@ html.shell { scroll-padding-top: 0; color-scheme: dark; }
 .shell .wordmark { font-size: clamp(48px, 9vw, 170px); }
 .shell .wordmark .fl { display: inline; }
 .shell .zero-cap { margin-bottom: 6px; font-size: 11.5px; }
-.shell .zero-line { min-height: 0; margin-top: 2px; }
+/* Ergebniszeile des Einschießens schwebt unter der Wortmarke (zero.js reserviert sonst Höhe im Menü) */
+.shell .zero-line { position: absolute; left: 0; right: 0; top: 100%; min-height: 0 !important; margin-top: 4px; }
 .shell .zero-msg { font-size: 12.5px; color: #D4DAD7; text-shadow: 0 1px 2px #000; }
 .shell .hero-foot {
   grid-row: foot; grid-column: 1; position: relative; z-index: 3;
@@ -112,8 +113,10 @@ html.shell { scroll-padding-top: 0; color-scheme: dark; }
 .shell .touch-play { grid-area: tp; margin-top: 10px; }
 .shell .menu-hint { display: none; }
 
-/* Hauptliste */
+/* Hauptliste (site.css kürzt die alte Liste quer auf drei Einträge – im Spielmenü stehen immer alle) */
 .menu-main { display: grid; gap: 3px; counter-reset: mi; }
+.shell .menu-main { grid-template-columns: minmax(0, 1fr) !important; }
+.shell .menu-main li, .shell .menu-sub li:not([hidden]) { display: block !important; }
 .menu-main li { counter-increment: mi; }
 .shell .menu-it {
   --sel: 0;
@@ -568,7 +571,7 @@ html.boot-on .boot-bar > i:not([style]) { animation: boot-pre 2.4s ease-out both
   .brief-news { margin: 0; grid-template-columns: 80px minmax(0, 1fr); padding: 4px; border: 0; background: none; }
   .brief-news img { width: 80px; height: 46px; }
   .bn-more { display: none; }
-  .shell .cam-compass, .shell .cam-tr { display: none; }
+  .shell .cam-compass, .shell .cam-tr, .shell .cam-tl { display: none; }
   .shell .p-head { min-height: 50px; padding-block: 4px; }
   .p-back .pb-t { display: none; }
   .p-ic { width: 32px; height: 32px; }

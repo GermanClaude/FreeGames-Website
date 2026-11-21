@@ -17,7 +17,7 @@
 //   ready                     Promise: Katalog der Startsprache geladen (dieses Modul wartet beim Import schon darauf)
 //   t(key, params)            übersetzter Text. Platzhalter {name} bzw. {0}; Plural: Katalogwert { one, few, many, other }
 //                             wird mit params.n (oder params.count / erstem Zahlenparameter) über Intl.PluralRules gewählt.
-//   tx(deText)                deutschen Laufzeittext übersetzen (wie die Seitenübersetzung: exakt, Zahlen-Schablonen
+//   tx(deText, ctx?)          deutschen Laufzeittext übersetzen; ctx wählt Kontextschlüssel „ctx|Text“ (mehrdeutige Wörter) (wie die Seitenübersetzung: exakt, Zahlen-Schablonen
 //                             „{#}“, Platzhalter-Muster, Teile mit „ · “) – für Canvas, Sprachausgabe, Untertitel.
 //   plural(n, forms)          Pluralform wählen; fmtNumber(n, opts), fmtDate(d, opts), fmtTime(d, opts), fmtList(arr)
 //   compass(deg)              Himmelsrichtung (0, 45, … 315 Grad) in der aktiven Sprache: N/NO/O … bzw. N/NE/E … / С/СВ/В … / 北/东北/东 …
@@ -272,11 +272,12 @@ function lookupCore(s, depth) {
     }
   }
   // Trenner am Anfang („· Realistisch“, „– Verband (2)“, „(kein Platz)“)
-  const lm = /^([·–—|,;+(]\s*)([\s\S]+)$/.exec(s);
+  const lm = /^([·–—|,;+(]\s*|[.:]\s+)([\s\S]+)$/.exec(s);
   if (lm && depth < 2) {
     const close = lm[1].startsWith('(') && lm[2].endsWith(')');
     const r = lookup(close ? lm[2].slice(0, -1) : lm[2], depth + 1);
-    if (r != null) return lm[1] + r + (close ? ')' : '');
+    const pre = lang === 'zh' && /^[.:]\s/.test(lm[1]) ? (lm[1][0] === '.' ? '。' : '：') : lm[1];
+    if (r != null) return pre + r + (close ? ')' : '');
   }
   // Satzzeichen am Ende („Bereit:“, „Lädt …“)
   const pm = /^(.*?)(\s*[:：…!.?]+)$/s.exec(s);
@@ -296,7 +297,9 @@ function lookup(s, depth = 0) {
   if (/\p{L}{2}/u.test(s)) {
     const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s);
     const core = m[2];
-    const out = core ? lookupCore(core, depth) : null;
+    let out = core ? lookupCore(core, depth) : null;
+    // Quelltext-Umbrüche in HTML-Vorlagen („…ein kleines\n    Experiment.“) wie Leerzeichen behandeln
+    if (out == null && /\s{2,}|[\n\t]/.test(core)) out = lookupCore(core.replace(/\s+/g, ' '), depth);
     if (out != null && out !== core) r = m[1] + out + m[3];
   }
   if (cache.size > 30000) cache.clear();
@@ -305,8 +308,10 @@ function lookup(s, depth = 0) {
 }
 
 /** Deutschen Laufzeittext übersetzen (unverändert, wenn unbekannt oder Sprache Deutsch). */
-export function tx(s) {
+export function tx(s, ctx) {
   if (!CAT || typeof s !== 'string') return s;
+  // Kontext für mehrdeutige Wörter: Katalogschlüssel „ctx|Text“ (z. B. „trupp|Schütze“ → Rifleman statt Marksman)
+  if (ctx) { const c = exact.get(ctx + '|' + s.trim()); if (c !== undefined) return typeof c === 'object' ? plural(1, c) : c; }
   const r = lookup(s);
   return r == null ? s : r;
 }

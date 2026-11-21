@@ -74,4 +74,9 @@ export default [
 ['PIO', 'ENG', 'ZAP', 'SAP', 'САП', '工兵'],
 ['BES', 'CRW', 'TRI', 'ÉQ', 'ЭКП', '车组'],
 ['Ziel {#} von {#}', 'Target {#} of {#}', 'Blanco {#} de {#}', 'Cible {#} sur {#}', 'Мишень {#} из {#}', '目标 {#}/{#}'],
+// Kontextschlüssel „ctx|Text“ (tx(text, ctx)): mehrdeutige Wörter. „Schütze“ ist sonst die Ausrüstungsvorlage (Marksman),
+// im Truppmodus aber der einfache Gewehrschütze.
+['trupp|Schütze', 'Rifleman', 'Fusilero', 'Fusilier', 'Стрелок', '步枪手'],
+['Rolle Schütze – Ausrüstung ab dem nächsten Einsatz.', 'Role Rifleman – equipment from the next deployment.', 'Rol Fusilero: equipo a partir del próximo despliegue.', 'Rôle Fusilier – équipement au prochain déploiement.', 'Роль Стрелок – снаряжение со следующей высадки.', '角色 步枪手——装备下次部署生效。'],
+['Du führst jetzt {0} (Schütze).', 'You now control {0} (Rifleman).', 'Ahora controlas a {0} (Fusilero).', 'Vous contrôlez maintenant {0} (Fusilier).', 'Теперь вы управляете: {0} (Стрелок).', '你现在操控 {0}（步枪手）。'],
 ];
