@@ -1971,7 +1971,7 @@ function buildTurret(D, C, det, era, cab, A) {
       B.add(tor(r + 0.05, 0.032, 6, det ? 32 : 16), C.steel, [hx, yr, hz], [HP, 0, 0]);
       B.add(tor(r + 0.1, 0.026, 6, det ? 32 : 16), C.pad, [hx, yr - 0.045, hz], [HP, 0, 0]); // Polsterring (schmal: Nutzer 21.11.)
       // Kuppelschacht: Wand zwischen Turmdecke und Spiegelkranz, die Winkelspiegel sitzen darin
-      { const hgt = Math.max(0.12, 0.76 - (yr - 0.17)); const g2 = inwardGeom(cyl(r + 0.075, r + 0.075, hgt, det ? 32 : 16, true)); B.add(g2, W, [hx, yr - 0.17 + hgt / 2, hz]); }
+      { const hgt = Math.max(0.12, Math.max(0.76, hy - 0.01) - (yr - 0.17)); const g2 = inwardGeom(cyl(r + 0.075, r + 0.075, hgt, det ? 32 : 16, true)); B.add(g2, W, [hx, yr - 0.17 + hgt / 2, hz]); } // Schacht bis an die Luke (Nutzer 21.11.: hohe Kuppel – Lücke nach außen)
       B.add(tor(r + 0.075, 0.015, 4, det ? 32 : 16), C.steel, [hx, yr - 0.17, hz], [HP, 0, 0]);
       const n = modern ? 6 : 7;
       for (let i = 0; i < n; i++) {
