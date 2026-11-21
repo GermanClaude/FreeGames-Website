@@ -5,9 +5,9 @@
 // Gleiche API wie SquadSystem (Eroberung): list, of(actor), members(sq, {alive}), leaderOf(actor), order(sq, order, by),
 // clearOrder(sq), dispose(); dazu join/leave/create/setRole/lock/promote. Entscheidet offline bzw. der Host; das Abbild
 // (Client) baut die Trupps aus dem Modus-Zustand nach (applyNet).
-import { SquadSystem } from './squads.js?v=20261115041504';
-import { TRUPP_NAMES, TRUPP_COLORS, TRUPP_ROLES, TRUPP_DEFAULT_ROLE, TRUPP_SIZE_DEFAULT, TRUPP_TYPES, TRUPP_TYPE_DEFAULT, roleLimit, roleFromBot } from '../../shared/trupp.data.js?v=20261115041504';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261115041504';
+import { SquadSystem } from './squads.js?v=20261121041936';
+import { TRUPP_NAMES, TRUPP_COLORS, TRUPP_ROLES, TRUPP_DEFAULT_ROLE, TRUPP_SIZE_DEFAULT, TRUPP_TYPES, TRUPP_TYPE_DEFAULT, roleLimit, roleFromBot } from '../../shared/trupp.data.js?v=20261121041936';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261121041936';
 
 const isHuman = (a) => !!(a && (a.isPlayer || a.isRemoteHuman));
 

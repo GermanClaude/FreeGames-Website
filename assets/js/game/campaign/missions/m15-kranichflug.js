@@ -9,9 +9,9 @@
 // Checkpoints: start, appell, kaserne1, kaserne2, jet, luft, landung.
 
 import * as THREE from 'three';
-import { actor } from './cast.js?v=20261115041504';
-import { clearAir, purgeDead } from './hilfen-b.js?v=20261115041504';
-import { pilot, circuit } from './hilfen-c.js?v=20261115041504';
+import { actor } from './cast.js?v=20261121041936';
+import { clearAir, purgeDead } from './hilfen-b.js?v=20261121041936';
+import { pilot, circuit } from './hilfen-c.js?v=20261121041936';
 
 const START = [-128, 206];
 const APPELL = [-146, 156];

@@ -3,23 +3,23 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261115041504';
-import { modeOptionsHtml } from './mode-options.js?v=20261115041504'; // Modus-Einstellungen (B6, 26.10.)
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261115041504';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261115041504'; // atmosphere-weather; Fahrzeuge je Kartengröße
-import { realTimePreset } from '../world/weather.js?v=20261115041504'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261115041504';
-import { esc, num, secs, meters } from './dom.js?v=20261115041504';
-import { ICON } from './icons.js?v=20261115041504';
-import { drawMapArt } from './mapart.js?v=20261115041504';
-import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261115041504'; // riesen: Riesenkarte nur in der App
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261115041504';
-import { openCamoEditor } from './camo-editor.js?v=20261115041504';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261115041504';
-import { ProgressView } from './progress.js?v=20261115041504';
-import { CampaignPane } from '../campaign/menu.js?v=20261115041504'; // Reiter „Kampagne“ (game/campaign)
-import { PanzerPane } from './panzer-pane.js?v=20261115041504'; // Reiter „Panzer“ (Panzersimulation, 20.11.)
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261115041504';
+import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261121041936';
+import { modeOptionsHtml } from './mode-options.js?v=20261121041936'; // Modus-Einstellungen (B6, 26.10.)
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261121041936';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261121041936'; // atmosphere-weather; Fahrzeuge je Kartengröße
+import { realTimePreset } from '../world/weather.js?v=20261121041936'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261121041936';
+import { esc, num, secs, meters } from './dom.js?v=20261121041936';
+import { ICON } from './icons.js?v=20261121041936';
+import { drawMapArt } from './mapart.js?v=20261121041936';
+import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261121041936'; // riesen: Riesenkarte nur in der App
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261121041936';
+import { openCamoEditor } from './camo-editor.js?v=20261121041936';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261121041936';
+import { ProgressView } from './progress.js?v=20261121041936';
+import { CampaignPane } from '../campaign/menu.js?v=20261121041936'; // Reiter „Kampagne“ (game/campaign)
+import { PanzerPane } from './panzer-pane.js?v=20261121041936'; // Reiter „Panzer“ (Panzersimulation, 20.11.)
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261121041936';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -289,6 +289,17 @@ export class Lobby {
     screen.addEventListener('pointerover', (e) => this._camoHover(e, true));
     screen.addEventListener('pointerout', (e) => this._camoHover(e, false));
     screen.addEventListener('focusin', (e) => this._camoHover(e, true));
+    // ges2 (21.11.): sechs Reiter – die Leiste scrollt waagerecht, wenn sie nicht passt (game.css .lb-tabs); fokussierter bzw.
+    // gewählter Reiter wird hineingeschoben, Kanten blenden aus, solange es dort weitergeht
+    const tabs = screen.querySelector('.lb-tabs');
+    if (tabs) {
+      const edge = () => { const m = tabs.scrollWidth - tabs.clientWidth; tabs.classList.toggle('is-more-l', m > 2 && tabs.scrollLeft > 2); tabs.classList.toggle('is-more-r', m > 2 && tabs.scrollLeft < m - 2); };
+      tabs.addEventListener('focusin', (e) => { const t = e.target.closest('.m-tab'); if (t) t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+      tabs.addEventListener('scroll', edge, { passive: true });
+      if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(edge); ro.observe(tabs); this._offs.push(() => ro.disconnect()); }
+      this._tabEdge = edge;
+      requestAnimationFrame(() => { const t = tabs.querySelector('[aria-selected="true"]'); if (t && tabs.scrollWidth > tabs.clientWidth) tabs.scrollLeft = Math.max(0, t.offsetLeft - (tabs.clientWidth - t.offsetWidth) / 2); edge(); });
+    }
     this._renderProfile();
     // Rufzeichen/Stufe live (Einstellungen hier, auf der Website oder in einem anderen Tab)
     this._offs.push(
@@ -360,6 +371,7 @@ export class Lobby {
   _syncTab() {
     const s = this.el.screen;
     s.querySelectorAll('[data-tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === this.tab)));
+    { const t = s.querySelector('.lb-tabs [aria-selected="true"]'), L = t && t.parentElement; if (L && L.scrollWidth > L.clientWidth) { const x = t.offsetLeft; if (x < L.scrollLeft || x + t.offsetWidth > L.scrollLeft + L.clientWidth) L.scrollTo({ left: Math.max(0, x - (L.clientWidth - t.offsetWidth) / 2) }); } }
     this.el.deploy.hidden = this.tab !== 'deploy';
     this.el.loadout.hidden = this.tab !== 'loadout';
     this.el.progress.hidden = this.tab !== 'progress';

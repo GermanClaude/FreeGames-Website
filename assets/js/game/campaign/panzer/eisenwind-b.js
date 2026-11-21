@@ -5,7 +5,7 @@
 //                         nur Optik und Winkelspiegel, Pak-Riegel, schwerer SP-6 „Moloch“ (nur von der Seite verwundbar)
 //   P6 „Brücken von Mirenfurt“ Stadtkern, Mittag – Stadtkampf mit dem Infanteriezug „Kiesel“: Panzerabwehrtrupps in den
 //                         Häusern, Pak am Markt, Bunker am Brückenkopf; Ende: Waffenstillstand
-import { foeTank, allyTank, target, destroy, infantry, playerPos, crewSay, cast, roleTip } from './kit.js?v=20261115041504';
+import { foeTank, allyTank, target, destroy, infantry, playerPos, crewSay, cast, roleTip } from './kit.js?v=20261121041936';
 
 /** Punkt neben dem Spielerpanzer (dx rechts, dz vor) als [x,z]. */
 function playerSpot(pz, dx, dz) {

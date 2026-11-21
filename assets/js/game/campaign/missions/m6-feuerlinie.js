@@ -7,7 +7,7 @@
 // Checkpoints: start, anflug, sammeln, linie1, rueckzug, evakuierung. Kartenfahrzeuge werden geräumt (mapVehicles: false),
 // damit keine KI-Hubschrauber der Karte eingreifen.
 
-import { actor } from './cast.js?v=20261115041504';
+import { actor } from './cast.js?v=20261121041936';
 
 const PAD = [24, 141];
 const YARD = [106, -22];

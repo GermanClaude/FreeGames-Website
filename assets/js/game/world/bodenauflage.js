@@ -14,7 +14,7 @@
 //
 // placeGroundDressing(world, group, { quality, seed, def }) → { count, wall, tufts, meshes, ms }
 import * as THREE from 'three';
-import { createFoliage } from './atlas.js?v=20261115041504';
+import { createFoliage } from './atlas.js?v=20261121041936';
 
 export const GROUND_CELL = { laub: 0, erde: 1, sand: 2, splitt: 3, oel: 4, pfuetze: 5, wandfuss: 6, blaetter: 7 };
 // fuell (20.11., Nutzer: „Maps sehen immer noch leer aus“): etwa doppelt so dicht; Großkarten über opt.bereiche
@@ -32,11 +32,17 @@ const MIX = {
   altstadt: { 0: 1.2, 1: 0.8, 2: 1.6, 3: 0.7, 4: 0.2, 5: 0.35, 7: 1.6 }, // fuell: weniger Pfützen/Öl (Mittagssonne)
   default: { 0: 0.9, 1: 1.1, 2: 1.0, 3: 1.0, 4: 0.9, 5: 1.1, 7: 1.0 },
   // fuell (20.11.): Großkarten-Ortschaften – Dorf: Laub/Erde statt Ölflecken; Front: Erde, Splitt, Pfützen
-  grenzland: { 0: 1.3, 1: 1.3, 2: 0.8, 3: 0.6, 4: 0.2, 5: 0.7, 7: 1.4 },
+  // ges2 (21.11.): Dorfplatz las sich fleckig-dunkel – weniger Erde/Öl/Pfützen, mehr Laub/Sand
+  grenzland: { 0: 0.55, 1: 0.25, 2: 1.1, 3: 0.9, 4: 0.02, 5: 0.25, 7: 1.1 },
+  // ges2 (21.11.): Vorfeld (vorher Standardmischung) – viele dunkle Öl-/Erdflecken; jetzt vor allem Staub/Splitt
+  flugplatz: { 0: 0.5, 1: 0.45, 2: 1.4, 3: 1.3, 4: 0.3, 5: 0.45, 7: 0.6 },
   niemandsland: { 0: 0.3, 1: 1.7, 2: 0.8, 3: 1.1, 4: 0.3, 5: 1.0, 7: 0.3 },
   brandwald: { 0: 0.2, 1: 1.6, 2: 0.9, 3: 1.0, 4: 0.4, 5: 0.9, 7: 0.2 },
   stadtkern: { 0: 0.9, 1: 1.0, 2: 1.2, 3: 1.4, 4: 0.6, 5: 1.0, 7: 0.9 },
 };
+
+/** ges2 (21.11.): Dichte je Karte (Grenzland-Dorfplatz wirkte fleckig: ≈ 40 % weniger Flächenauflage). */
+const DICHTE = { grenzland: 0.6 };
 
 let atlasTex = null, atlasP = null;
 /** Atlas (einmal je Sitzung); bis er da ist, zeigt das Material einen leeren (durchsichtigen) Platzhalter. */
@@ -151,7 +157,7 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
   const taken = new Set();
   const key = (x, z, s) => `${Math.round(x / s)}|${Math.round(z / s)}`;
   const { cells, flaeche } = streuRaster(world, opt.bereiche, step, r);
-  cap = Math.round(cap * flaeche * (opt.cap ?? 1));
+  cap = Math.round(cap * flaeche * (opt.cap ?? DICHTE[def.id] ?? 1));
   let wall = 0;
   const tuftCap = Math.round((TUFTS[quality] || 0) * flaeche * (opt.cap ?? 1));
   for (const [x, z] of cells) {
@@ -193,7 +199,10 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
             items.push({ x: cx, y: gy + 0.006, z: cz, nx: _n.x, nz: _n.z, w: L, d: D, cell: GROUND_CELL.wandfuss, wall: true, tint: 0.8 + r() * 0.3 });
             wall++;
             // Gras/Unkraut in der Fuge (nicht überdacht)
-            if (!cov && tufts.length < tuftCap && r() < 0.55) {
+            // ges2: Grün nur an echten Mauern/Hauswänden (1,8 m hoch), nicht an Schutt/Sperren auf der Fahrbahn
+            _o.set(h.point.x + _n.x * 0.3, gy + 1.8, h.point.z + _n.z * 0.3); _d.copy(_n).negate();
+            const hoch = !!world.raycast(_o, _d, 0.7);
+            if (!cov && hoch && tufts.length < tuftCap && r() < 0.55) {
               const n = 1 + Math.floor(r() * 3);
               for (let i = 0; i < n; i++) {
                 const u = (r() - 0.5) * L * 0.8, off = 0.06 + r() * 0.12;
@@ -214,7 +223,7 @@ export function placeGroundDressing(world, group, { quality = 'high', seed = 1, 
     if (taken.has(k)) continue;
     if (!flat(world, x, gy, z, a, w, d, cell === GROUND_CELL.pfuetze ? 0.025 : 0.05)) continue;
     taken.add(k);
-    items.push({ x, y: gy + 0.005 + (cell === GROUND_CELL.pfuetze ? 0.002 : 0), z, a, w, d, cell, tint: cell === GROUND_CELL.pfuetze || cell === GROUND_CELL.oel ? 1 : cell === GROUND_CELL.erde ? 0.55 + r() * 0.5 : 0.82 + r() * 0.3 });
+    items.push({ x, y: gy + 0.005 + (cell === GROUND_CELL.pfuetze ? 0.002 : 0), z, a, w, d, cell, tint: cell === GROUND_CELL.pfuetze || cell === GROUND_CELL.oel ? 1 : cell === GROUND_CELL.erde ? 0.68 + r() * 0.4 : 0.82 + r() * 0.3 });
   }
   if (!items.length) return { count: 0, wall: 0, tufts: 0, meshes: 0, ms: Math.round(performance.now() - t0) };
   const byCell = new Map(), cs = GRID[quality] || 44;

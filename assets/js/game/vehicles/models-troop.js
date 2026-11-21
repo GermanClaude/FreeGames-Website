@@ -14,11 +14,11 @@
 // Aufruf aus models.js template(): TROOP_BUILDERS[model](lod, S, K, team) → { hull, wheels, mg?, tur?, gun?, cmg?, inner?,
 // ramp?, extra? } (wheels wie models-civil.js: [{ spin, axle, side, x, z }]; Halbketten liefern nur die Vorderräder).
 import * as THREE from 'three';
-import { tire, steelRim } from './bodykit.js?v=20261115041504';
-import { seatedFigure, steeringWheel } from './models-civil.js?v=20261115041504';
-import { sprocket, idler, smokeRack, guardedLamp, towCable, jerrycan, antenna, weld, stowBox, hullShell } from './models-tanks.js?v=20261115041504';
-import { troopInner, rampGroup } from './models-heavy.js?v=20261115041504';
-import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261115041504';
+import { tire, steelRim } from './bodykit.js?v=20261121041936';
+import { seatedFigure, steeringWheel } from './models-civil.js?v=20261121041936';
+import { sprocket, idler, smokeRack, guardedLamp, towCable, jerrycan, antenna, weld, stowBox, hullShell } from './models-tanks.js?v=20261121041936';
+import { troopInner, rampGroup } from './models-heavy.js?v=20261121041936';
+import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261121041936';
 
 const PI = Math.PI, HP = PI / 2;
 const _q = new THREE.Quaternion(), _e = new THREE.Euler(), _d = new THREE.Vector3(), AZ = new THREE.Vector3(0, 0, 1);

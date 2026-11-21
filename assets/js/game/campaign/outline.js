@@ -35,10 +35,10 @@ export const CAMPAIGN = {
 };
 
 /** Build-Stempel, mit dem M1–M3 erschienen sind (Ausgangsstand für „NEU“ bei Spielern, die schon gespielt haben). */
-export const CAMPAIGN_BASE_BUILD = '20261115041504';
+export const CAMPAIGN_BASE_BUILD = '20261121041936';
 /** Kapitel dieser Runde (M0, M4–M11): erster Build danach. */
 const R2 = '20261114060747';
-/** Akt III (M12–M15, kamp3): erster Build nach 20261115041504. */
+/** Akt III (M12–M15, kamp3): erster Build nach 20261121041936. */
 const R3 = '20261115041505';
 
 export const ACTS = [

@@ -10,9 +10,9 @@
 // clear 0,78, bandage/tourniquet am Ende). Alles mit den vorhandenen Ego-Händen (gunsmith/arms.js: 'free'-Anfragen,
 // Anker magGrab/chargeGrab/slideGrab/boltGrab).
 import * as THREE from 'three';
-import { curve, windowW, clamp } from '../gunsmith/anim.js?v=20261115041504';
-import { req } from './reloads.js?v=20261115041504';
-import { inspectMech } from './inspects.js?v=20261115041504';
+import { curve, windowW, clamp } from '../gunsmith/anim.js?v=20261121041936';
+import { req } from './reloads.js?v=20261121041936';
+import { inspectMech } from './inspects.js?v=20261121041936';
 
 const Z3 = [0, 0, 0];
 

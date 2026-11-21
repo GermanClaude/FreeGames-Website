@@ -11,7 +11,7 @@
 // Clients bekommen die Liste beim Beitritt (net/sync-host.js). Clients zerbrechen nichts selbst – Kollision und
 // Deckung sind damit auf allen Geräten gleich; Trümmerflug ist reine Optik (aus der Stück-Id gewürfelt).
 import * as THREE from 'three';
-import { WEAPONS } from '../shared/weapons.data.js?v=20261115041504';
+import { WEAPONS } from '../shared/weapons.data.js?v=20261121041936';
 
 const CELL = 4;
 // Druck je Ladungsart (wie bullet-holes.js BLAST_Q) – Explosion zerlegt Holz im Umkreis von ≈ 1,5 + 1,2·Q m

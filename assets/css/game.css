@@ -3442,3 +3442,28 @@ body.np-tv .m-screen { --mp-l: max(3vw, env(safe-area-inset-left)); --mp-r: max(
 body.np-tv .m-screen :is(button, [tabindex="0"], input, select):focus-visible { outline-width: 4px; }
 /* Touch-Knöpfe der Infanteriesimulation (engine/input.js .tc-sim-*): kurze Beschriftung statt Symbol */
 #touch-ui .tc-btn[class*="tc-sim-"] .tc-fm { font: 700 9px/1 var(--np-font-mono, monospace); letter-spacing: .04em; color: var(--np-ink); white-space: nowrap; }
+
+/* ges2 (21.11.): Lobby-Kopf mit sechs Reitern – ab 1280 px rutschten die Werkzeuge in eine zweite Zeile, auf 390 px war
+   die Reiterleiste breiter als der Bildschirm. Jetzt: Kopf bleibt einzeilig, die Reiterleiste schrumpft (kompaktere
+   Reiter bis 1500 / 1300 px) und scrollt notfalls waagerecht (Wischen, Mausrad mit Umschalt, Tab-Taste: lobby.js schiebt
+   den fokussierten/gewählten Reiter in Sicht); ausgeblendete Kanten zeigen, dass es weitergeht. Unter 420 px eigene Zeile. */
+.lb-head { flex-wrap: nowrap; }
+.lb-tabs { position: relative; flex: 0 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; scroll-padding-inline: 24px; }
+.lb-tabs::-webkit-scrollbar { display: none; }
+.lb-tabs .m-tab { flex: none; }
+.lb-tabs .m-tab:focus-visible { outline-offset: -3px; }
+.lb-tabs .m-tab span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+.lb-tabs.is-more-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.lb-tabs.is-more-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+.lb-tabs.is-more-l.is-more-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+@media (max-width: 1500px) { .lb-tabs .m-tab { padding: 0 10px; gap: 6px; letter-spacing: .06em; } .lb-tabs .m-tab-beta { margin-left: 4px; } }
+@media (max-width: 1300px) { .lb-head { gap: 12px; } .lb-tabs .m-tab { padding: 0 8px; font-size: 14px; letter-spacing: .04em; } .lb-tabs .m-tab-beta { display: none; } }
+@media (max-width: 420px) {
+  .lb-head { flex-wrap: wrap; }
+  .lb-tabs { order: 3; flex: 1 1 100%; }
+  .lb-tabs .m-tab { flex: 1 0 auto; padding: 0 9px; font-size: 13px; }
+  .lb-tabs .m-tab span { overflow: visible; text-overflow: clip; }
+}
+/* ges2 (21.11.): Trupp-Touchknöpfe (Wechseln/Funk/Trupp) – Beschriftung wie die Simulationsknöpfe klein in den Kreis
+   (vorher Grundschrift: „WECHS.“ ragte aus dem 40-px-Knopf bis an den Nachladeknopf) */
+#touch-ui .tc-btn[class*="tc-trupp-"] .tc-fm { font: 700 9px/1 var(--np-font-mono, monospace); letter-spacing: .04em; color: var(--np-ink); white-space: nowrap; }

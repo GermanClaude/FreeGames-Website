@@ -7,10 +7,10 @@
 // (frischer, hellerer Bruch), Putz mit weißem Staubring, Blech glatt mit blankem Ring, Glas mit Sprüngen, Erde weich.
 // Jedes Gerät rechnet seine Löcher selbst aus den eigenen und gemeldeten Schüssen (Optik + Durchschuss).
 import * as THREE from 'three';
-import { caliberOf, penetrationDepth } from '../shared/calibers.js?v=20261115041504';
-import { hdrTarget } from './engine/post/common.js?v=20261115041504';
-import { CUTS, CUT_MAX, CUT_STRIDE, CUT_K, cutGLSL, setCutCount } from './world/shading.js?v=20261115041504';
-import { BreachDetail } from './breach-detail.js?v=20261115041504'; // Bewehrung, fallende Brocken, Schuttkegel (zerstoerung 15.11.)
+import { caliberOf, penetrationDepth } from '../shared/calibers.js?v=20261121041936';
+import { hdrTarget } from './engine/post/common.js?v=20261121041936';
+import { CUTS, CUT_MAX, CUT_STRIDE, CUT_K, cutGLSL, setCutCount } from './world/shading.js?v=20261121041936';
+import { BreachDetail } from './breach-detail.js?v=20261121041936'; // Bewehrung, fallende Brocken, Schuttkegel (zerstoerung 15.11.)
 
 const MAX = 700;
 // Durchblick: kleine Ansichten aus Durchschüssen (Atlas 4 × 4 Felder), was hinter der Wand liegt – mit Gegnern

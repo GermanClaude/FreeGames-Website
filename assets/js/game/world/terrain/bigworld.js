@@ -7,41 +7,41 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261115041504';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261115041504';
-import { createWorldAssets } from '../library.js?v=20261115041504';
-import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261115041504';
-import { createLighting } from '../lighting.js?v=20261115041504';
-import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261115041504';
-import { createAtmosphere } from '../atmos.js?v=20261115041504';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261115041504';
-import { createWater } from '../water.js?v=20261115041504';
-import { TriangleBVH } from '../bvh.js?v=20261115041504';
-import { breakableAccess, mergeAccess } from '../bruch.js?v=20261115041504'; // zerbrechliche Requisiten (game/breakables.js)
-import { makeTests } from '../navbuild.js?v=20261115041504';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261115041504';
-import { Heightfield } from './heightfield.js?v=20261115041504';
-import { makeCoarse } from './generate.js?v=20261115041504';
-import { CompositeBVH } from './composite.js?v=20261115041504';
-import { TerrainCollider } from './collide.js?v=20261115041504';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261115041504';
-import { createTerrainMaterial } from './splat.js?v=20261115041504';
-import { Vegetation } from './vegetation.js?v=20261115041504';
-import { loadTreeAtlas, TREE_BARKS } from './trees.js?v=20261115041504';
-import { Deadwood } from './deadwood.js?v=20261115041504';
-import { Litter } from './litter.js?v=20261115041504';
-import { RoadNetwork } from './roads.js?v=20261115041504';
-import { bigNavFromData } from './bignav.js?v=20261115041504';
-import { createBigMinimap } from './bigminimap.js?v=20261115041504';
-import { terrainJob, worldJob } from './bigjob.js?v=20261115041504';
-import { appClient } from '../../../shared/appgate.js?v=20261115041504';
+import { MAPS } from '../../../shared/maps.data.js?v=20261121041936';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261121041936';
+import { createWorldAssets } from '../library.js?v=20261121041936';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261121041936';
+import { createLighting } from '../lighting.js?v=20261121041936';
+import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261121041936';
+import { createAtmosphere } from '../atmos.js?v=20261121041936';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261121041936';
+import { createWater } from '../water.js?v=20261121041936';
+import { TriangleBVH } from '../bvh.js?v=20261121041936';
+import { breakableAccess, mergeAccess } from '../bruch.js?v=20261121041936'; // zerbrechliche Requisiten (game/breakables.js)
+import { makeTests } from '../navbuild.js?v=20261121041936';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261121041936';
+import { Heightfield } from './heightfield.js?v=20261121041936';
+import { makeCoarse } from './generate.js?v=20261121041936';
+import { CompositeBVH } from './composite.js?v=20261121041936';
+import { TerrainCollider } from './collide.js?v=20261121041936';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261121041936';
+import { createTerrainMaterial } from './splat.js?v=20261121041936';
+import { Vegetation } from './vegetation.js?v=20261121041936';
+import { loadTreeAtlas, TREE_BARKS } from './trees.js?v=20261121041936';
+import { Deadwood } from './deadwood.js?v=20261121041936';
+import { Litter } from './litter.js?v=20261121041936';
+import { RoadNetwork } from './roads.js?v=20261121041936';
+import { bigNavFromData } from './bignav.js?v=20261121041936';
+import { createBigMinimap } from './bigminimap.js?v=20261121041936';
+import { terrainJob, worldJob } from './bigjob.js?v=20261121041936';
+import { appClient } from '../../../shared/appgate.js?v=20261121041936';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261115041504'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261115041504'),
-  brandwald: () => import('../maps/brandwald.js?v=20261115041504'),
-  flugplatz: () => import('../maps/flugplatz.js?v=20261115041504'), // karten-neu: Fliegerhorst mit Startbahn
-  weitmark: () => import('../maps/weitmark.js?v=20261115041504'), // riesen: Riesenkarte 1600 × 1600 m (nur App, shared/appgate.js)
+  grenzland: () => import('../maps/grenzland.js?v=20261121041936'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261121041936'),
+  brandwald: () => import('../maps/brandwald.js?v=20261121041936'),
+  flugplatz: () => import('../maps/flugplatz.js?v=20261121041936'), // karten-neu: Fliegerhorst mit Startbahn
+  weitmark: () => import('../maps/weitmark.js?v=20261121041936'), // riesen: Riesenkarte 1600 × 1600 m (nur App, shared/appgate.js)
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 
@@ -50,7 +50,7 @@ export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
  * Android-App (lädt die Website) legt sie beim ersten Laden der Karte in den eigenen Speicher np-app – danach offline
  * spielbar. Die Desktop-App hat sie ohnehin lokal (extraResources, desktop/package.json).
  */
-const APP_FILES = { weitmark: ['../maps/weitmark.js?v=20261115041504', '../maps/weitmark-bau.js?v=20261115041504'] };
+const APP_FILES = { weitmark: ['../maps/weitmark.js?v=20261121041936', '../maps/weitmark-bau.js?v=20261121041936'] };
 function keepAppFiles(id) {
   if (appClient().kind !== 'android-app' || typeof caches === 'undefined' || !APP_FILES[id]) return;
   const urls = APP_FILES[id].map((p) => new URL(p, import.meta.url).href);
@@ -79,7 +79,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261115041504', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261121041936', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -803,7 +803,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   for (const s of sites) s.built.props?.showAll();
   // fuell (20.11.): Wand-Decals, Bodenauflage und Kleinmüll auch in den Ortschaften der Großkarten (medium+, nur Optik)
   if (quality !== 'low' && !def.giant && id !== 'weitmark') {
-    try { const { fuelleGrosskarte } = await import('../fuellung.js?v=20261115041504'); world.stats.fuell = await fuelleGrosskarte(world, group, { quality, def: { ...def, id }, sites: (def.sites || []).map((s) => s.bounds) }); } catch (err) { console.warn('[world] Füllung', err); }
+    try { const { fuelleGrosskarte } = await import('../fuellung.js?v=20261121041936'); world.stats.fuell = await fuelleGrosskarte(world, group, { quality, def: { ...def, id }, sites: (def.sites || []).map((s) => s.bounds) }); } catch (err) { console.warn('[world] Füllung', err); }
   }
   // erste Kamera-Stellung: Gelände-LOD + Vegetation am ersten Startpunkt vorbereiten
   const cam0 = new THREE.PerspectiveCamera(70, 1.7, 0.1, 900);

@@ -4,14 +4,14 @@
 // Mission (Einsatzart, Karte, Ziele, Bestwert) und Start ab Beginn oder ab Checkpoint. Der Fußknopf der Lobby wird in
 // diesem Reiter zu „Mission starten“ (data-act camp-start → start()).
 
-import { CAMPAIGN, OUTLINE, ACTS, TO_BE_CONTINUED, TOTAL_MINUTES } from './outline.js?v=20261115041504';
-import { MISSIONS, MISSION_ORDER, STORY_ORDER } from './missions/index.js?v=20261115041504';
-import { CampaignProgress } from './progress.js?v=20261115041504';
-import { CAMPAIGN_DIFF, CAMPAIGN_SIM } from './director.js?v=20261115041504';
-import { missionConfig } from './mode.js?v=20261115041504';
-import { ensureCampaignStyles } from './ui.js?v=20261115041504';
-import { textToVisemes, sampleMouth } from './lipsync.js?v=20261115041504';
-import { PanzerCampaignPane } from './panzer/menu.js?v=20261115041504'; // Panzer-Kampagne „Eisenwind“ (Umschalter oben)
+import { CAMPAIGN, OUTLINE, ACTS, TO_BE_CONTINUED, TOTAL_MINUTES } from './outline.js?v=20261121041936';
+import { MISSIONS, MISSION_ORDER, STORY_ORDER } from './missions/index.js?v=20261121041936';
+import { CampaignProgress } from './progress.js?v=20261121041936';
+import { CAMPAIGN_DIFF, CAMPAIGN_SIM } from './director.js?v=20261121041936';
+import { missionConfig } from './mode.js?v=20261121041936';
+import { ensureCampaignStyles } from './ui.js?v=20261121041936';
+import { textToVisemes, sampleMouth } from './lipsync.js?v=20261121041936';
+import { PanzerCampaignPane } from './panzer/menu.js?v=20261121041936'; // Panzer-Kampagne „Eisenwind“ (Umschalter oben)
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SPEEDS = [['langsam', 'Langsam'], ['normal', 'Normal'], ['schnell', 'Schnell']];

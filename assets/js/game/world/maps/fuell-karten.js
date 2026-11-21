@@ -3,7 +3,7 @@
 // Zufall nur über hash01 (Lage). Kollision nur für Dinge, die man als Hindernis erwartet (Baumstämme, Masten); alles
 // Kleinere ist reine Optik (keine Kollision, keine Minikarte). Symmetrie der Karten bleibt erhalten (Platzierung
 // gespiegelt bzw. punktsymmetrisch wie die Karte selbst).
-import { frame, hash01 } from '../props.js?v=20261115041504';
+import { frame, hash01 } from '../props.js?v=20261121041936';
 
 const KEIN = { collide: false, minimap: false };
 const VG = { ...KEIN, grad: false };
@@ -113,6 +113,7 @@ export function rangeFuellen(b) {
 
 /** Flugplatz-Vorfeld: Reifenspuren, Ölflecken, Tropfspuren und Risse auf den Betonfeldern. */
 export function vorfeldFuellen(b) {
-  bodenspuren(b, -168, -130, 168, -47, 90, { mix: ['tire', 'tire', 'oil', 'oil', 'stain', 'drip', 'cracks', 'puddle'] });
-  bodenspuren(b, 100, -142, 205, -100, 16, { mix: ['tire', 'oil', 'stain', 'cracks'] });
+  // ges2 (21.11.): weniger dunkle Flecken (vorher 90 Stück, ein Drittel Öl/Fleck) – Reifenspuren und Risse überwiegen
+  bodenspuren(b, -168, -130, 168, -47, 55, { mix: ['tire', 'tire', 'tire', 'oil', 'drip', 'cracks', 'cracks'] });
+  bodenspuren(b, 100, -142, 205, -100, 12, { mix: ['tire', 'tire', 'oil', 'cracks'] });
 }

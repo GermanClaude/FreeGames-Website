@@ -5,10 +5,10 @@
 // (Schaufenster, Auslagen), Treppenhäusern bis aufs Dach, möblierten Wohnungen, Balkonen und Toreinfahrten; dahinter
 // Hinterhöfe, das Kaufhaus am Platz mit Dachterrasse, Hinterhäuser, eine Hinterstraße (Startbereich) und Querstraßen.
 // Vertikales Spiel: Dächer (verbunden über die Brüstungen), Balkone, U-Bahn. Alle Namen frei erfunden.
-import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261115041504';
-import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261115041504';
-import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261115041504';
-import { stadtkernFuellen } from './fuell-karten.js?v=20261115041504'; // fuell (20.11.): Linden der Lindenallee u. a.
+import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261121041936';
+import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261121041936';
+import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261121041936';
+import { stadtkernFuellen } from './fuell-karten.js?v=20261121041936'; // fuell (20.11.): Linden der Lindenallee u. a.
 
 const PI = Math.PI, Q = PI / 2;
 const HX = 56, HZ = 56; // Spielfläche (Kulissen dahinter)
@@ -173,6 +173,8 @@ export default {
   // texturen 14.11.: neue Fotoscan-Sätze – dunkler Straßenasphalt, Gehwegplatten; Beton/Putz/Ziegel aus der Standardzuordnung
   assets: { hdri: 'np_sky_nachmittag_dunst', materials: { asphalt: { id: 'asphalt_dark', color: [1.4, 2.1, 2.95] }, paving: 'paving_slabs' } }, // tex4: neutral dunkelgrau statt rotbraun
   defaultSurface: 'concrete',
+  // ges2 (21.11.): Fahrbahnen (Lindenallee, Hinter- und Querstraßen) – Füllschicht setzt dort kein Grün
+  fuellung: { fahrbahn: [[-HX, -6, HX, 6], [-48, 48, 48, HZ], [-48, -HZ, 48, -48], [-HX, 6, -48, HZ], [48, 6, HX, HZ], [-HX, -HZ, -48, -6], [48, -HZ, HX, -6]] },
   navSpacing: 1.5,
   groundNoise: 0.18,
   interiorTint: [1, 0.96, 0.9],

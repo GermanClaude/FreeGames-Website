@@ -22,21 +22,21 @@
 // Durchsehen: in der Innensicht RMT (bzw. Hotspot) = Blick durch das Sichtgerät im Blick (Winkelspiegel, Optik, Kugelblende);
 // im Winkelspiegel schwenkt die Maus von Spiegel zu Spiegel, RMT/C zurück in den Innenraum.
 import * as THREE from 'three';
-import { BaseMode } from './base.js?v=20261115041504';
-import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261115041504';
-import { VEHICLES, VEHICLE_WEAPONS, TANK_ERAS, tankTypeFor } from '../vehicles/data.js?v=20261115041504';
-import { prepareVehicleModels } from '../vehicles/models.js?v=20261115041504';
-import { projectToScreen } from '../vehicles/hud.js?v=20261115041504';
-import { viewOf, viewsOf, viewLookDir } from '../vehicles/views.js?v=20261115041504';
-import { gunSeat, loaderSeat } from '../vehicles/crew.js?v=20261115041504';
-import { equipTank, registerAmmo, rackFor, KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from '../vehicles/psim/ammo.js?v=20261115041504';
-import { installHooks } from '../vehicles/psim/hooks.js?v=20261115041504';
-import { TankCrew, EnemyTank, TARGET_LABEL, targetPoint, bearingWord, roundRange } from '../vehicles/psim/crew-ai.js?v=20261115041504';
-import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplacement.js?v=20261115041504';
-import { SimControls } from '../vehicles/psim/sim.js?v=20261115041504';
-import { PanzerHUD, Radio, ammoRows } from '../vehicles/psim/hud.js?v=20261115041504';
-import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261115041504';
-import { prismIndex } from '../vehicles/periscopes.js?v=20261115041504';
+import { BaseMode } from './base.js?v=20261121041936';
+import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261121041936';
+import { VEHICLES, VEHICLE_WEAPONS, TANK_ERAS, tankTypeFor } from '../vehicles/data.js?v=20261121041936';
+import { prepareVehicleModels } from '../vehicles/models.js?v=20261121041936';
+import { projectToScreen } from '../vehicles/hud.js?v=20261121041936';
+import { viewOf, viewsOf, viewLookDir } from '../vehicles/views.js?v=20261121041936';
+import { gunSeat, loaderSeat } from '../vehicles/crew.js?v=20261121041936';
+import { equipTank, registerAmmo, rackFor, KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from '../vehicles/psim/ammo.js?v=20261121041936';
+import { installHooks } from '../vehicles/psim/hooks.js?v=20261121041936';
+import { TankCrew, EnemyTank, TARGET_LABEL, targetPoint, bearingWord, roundRange } from '../vehicles/psim/crew-ai.js?v=20261121041936';
+import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplacement.js?v=20261121041936';
+import { SimControls } from '../vehicles/psim/sim.js?v=20261121041936';
+import { PanzerHUD, Radio, ammoRows } from '../vehicles/psim/hud.js?v=20261121041936';
+import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261121041936';
+import { prismIndex } from '../vehicles/periscopes.js?v=20261121041936';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

@@ -4,9 +4,9 @@
 // (guns-m17.js: Gehäuse, Schienen-Handschutz, Schaft, Griff, Korn, Magazin nach Referenzfoto) und setzt die Goldteile darauf:
 // Ring an der Laufmutter-Hülse, Laufring, Mündungsring, Abzug, Zeichen beidseitig am Magazinschacht.
 // Werksoptik: Rotpunkt (wie bisher).
-import * as R from './m17-ref.js?v=20261115041504';
-import { m17 } from './guns-m17.js?v=20261115041504';
-import { redDot } from './parts.js?v=20261115041504';
+import * as R from './m17-ref.js?v=20261121041936';
+import { m17 } from './guns-m17.js?v=20261121041936';
+import { redDot } from './parts.js?v=20261121041936';
 
 const { U, V } = R;
 const AX = R.AXIS;

@@ -17,8 +17,8 @@
 // Signatur wie models-tanks.js: (lod, S, team, K) → { hull, tur, gun, cmg, inner?, ramp? }; inner/ramp nur Stufe 0.
 // low (K.HQ aus) bleibt bei Extrusionen/Quadern (Handy); Nieten, Schweißnähte, Gitter nur high/ultra (K.DET 2).
 import * as THREE from 'three';
-import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261115041504';
-import { sprocket, idler, smokeRack, guardedLamp, towCable, spareLinks, jerrycan, antenna, weld, stowBox, hullShell, castTurret, buildTroop } from './models-tanks.js?v=20261115041504';
+import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261121041936';
+import { sprocket, idler, smokeRack, guardedLamp, towCable, spareLinks, jerrycan, antenna, weld, stowBox, hullShell, castTurret, buildTroop } from './models-tanks.js?v=20261121041936';
 
 const PI = Math.PI, HP = PI / 2;
 
@@ -315,7 +315,9 @@ export function buildWK2S(lod, S, team, K) {
   // Schachtellaufwerk: neun Doppelrollen je Seite, abwechselnd innen/außen, Triebrad vorn, Leitrad hinten
   runningGear(K, B, S, paint, hull, lod, W, {
     roadZ: D.roadZ, roadR: W.radius, stagger: 0.12, trackW: 0.72, sag: 0.018,
-    front: { z: -3.3, y: 0.72, r: 0.38, sprocket: true, teeth: 18, w: 0.72 }, back: { z: 3.25, y: 0.62, r: 0.35, w: 0.7 },
+    // ges2 (21.11.): Triebrad tiefer/kleiner (vorher y 0,72, r 0,38) – die Kette stieg vorn über die Rollenlinie und ragte
+    // als Buckel durch den flachen Bug vor die Wanne
+    front: { z: -3.25, y: 0.62, r: 0.34, sprocket: true, teeth: 17, w: 0.72 }, back: { z: 3.25, y: 0.62, r: 0.35, w: 0.7 },
   });
   K.addLenses(hull, D, seg, 0.075);
 

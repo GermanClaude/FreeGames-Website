@@ -12,10 +12,10 @@
 // Feindpanzer (EnemyTank): ein Bot fährt und richtet (Stellvertreter-Richtschütze, vehicle._proxyGunner), virtuelle
 //   Restbesatzung (ammo.js crewOf) – fällt der Fahrer/Richtschütze virtuell aus, steht bzw. schweigt der Panzer.
 import * as THREE from 'three';
-import { VEHICLE_WEAPONS } from '../data.js?v=20261115041504';
-import { Vehicle } from '../vehicle.js?v=20261115041504';
-import { gunSeat, loaderSeat } from '../crew.js?v=20261115041504';
-import { KINDS, kindOf, idFor, modsOf, crewOf } from './ammo.js?v=20261115041504';
+import { VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
+import { Vehicle } from '../vehicle.js?v=20261121041936';
+import { gunSeat, loaderSeat } from '../crew.js?v=20261121041936';
+import { KINDS, kindOf, idFor, modsOf, crewOf } from './ammo.js?v=20261121041936';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

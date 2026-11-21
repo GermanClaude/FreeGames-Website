@@ -17,8 +17,8 @@
 // jeder Aufruf liefert eigene Kopien (Bucket.add verwirft die übergebene Geometrie). Reines JS + three (Worker-tauglich).
 // Lage: vorwärts −z, x rechts, y oben, y = 0 Boden.
 import * as THREE from 'three';
-import { subdivide, toGeometry, cornerNormals, faceNormals, vertexFaces, vertexNormals, borderFaces, seamGeometry, edgeKey, toLimit } from '../engine/subsurf.js?v=20261115041504';
-import { curve } from './bodykit.js?v=20261115041504';
+import { subdivide, toGeometry, cornerNormals, faceNormals, vertexFaces, vertexNormals, borderFaces, seamGeometry, edgeKey, toLimit } from '../engine/subsurf.js?v=20261121041936';
+import { curve } from './bodykit.js?v=20261121041936';
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

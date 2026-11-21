@@ -8,9 +8,9 @@
 // Panzer-Kampagne (19.11.): Funkstelle, Nachschublager, Behelfsbrücke – feste Ziele ohne Bedienung (nur Granaten wirken).
 // Typen werden zur Laufzeit in VEHICLES angelegt (registerEmplacements), nicht in data.js → keine Netz-Indizes.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261115041504';
-import { Vehicle } from '../vehicle.js?v=20261115041504';
-import { vehicleMaterials } from '../materials.js?v=20261115041504';
+import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
+import { Vehicle } from '../vehicle.js?v=20261121041936';
+import { vehicleMaterials } from '../materials.js?v=20261121041936';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

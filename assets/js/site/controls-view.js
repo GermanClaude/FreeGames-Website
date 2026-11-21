@@ -2,9 +2,9 @@
 // Gamepad-Abfrage nur, solange der Reiter sichtbar und das Dokument im Vordergrund ist.
 // Seit 20.11.: Tastatur, Gamepad und VR lesen die Belegung aus shared/bindings.data.js (Standard + eigene Änderungen aus
 // den Einstellungen) – die Tabellen stimmen so immer mit dem Spiel überein. KEYS/PAD unten bleiben als Rückfall.
-import { h, $, tabs } from './dom.js?v=20261115041504';
-import { loop } from './loop.js?v=20261115041504';
-import { pointerCoarse, reduced } from './motion.js?v=20261115041504';
+import { h, $, tabs } from './dom.js?v=20261121041936';
+import { loop } from './loop.js?v=20261121041936';
+import { pointerCoarse, reduced } from './motion.js?v=20261121041936';
 
 /*
  * Touch-Belegung wie im Spiel: Mitte jedes Knopfs in Prozent der Bildfläche im Querformat (915 × 412), gemessen an
@@ -112,7 +112,7 @@ const XR_GRIPS = [
   ['Echter Körper', 'Gehen, Ducken und Lehnen im Raum werden übernommen.'],
 ];
 
-function bindData() { return import('../shared/bindings.data.js?v=20261115041504').catch(() => null); }
+function bindData() { return import('../shared/bindings.data.js?v=20261121041936').catch(() => null); }
 
 export async function init(sec, D, ctx = {}) {
   const root = $('#controls-root', sec);

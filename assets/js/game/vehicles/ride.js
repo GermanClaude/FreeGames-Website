@@ -2,7 +2,9 @@
 // Läuft nur offline bzw. beim Host (nicht im Abbild), nur in Team-Modi mit Militärfahrzeugen (nicht Panzer/Kampagne).
 //
 // Ablauf je Transporter (def.transport) ohne menschliche Insassen:
-//   1. warten   – geparkt; sind ≥ 2 Bots des Teams (ohne sichtbares Ziel) in 28 m oder eben in ≤ 140 m erschienen, steigen bis zu 7 ein: erst Fahrer,
+//   1. warten   – geparkt; Bots des Teams (ohne sichtbares Ziel) in 45 m oder eben in ≤ 140 m erschienen werden gerufen und
+//                 laufen hin (bot._rideCall → brain.js Ziel 'ride'); eingestiegen wird erst ab ≤ 12 m (ges2 21.11.: vorher
+//                 „teleportierten“ Bots bis 140 m direkt in die Sitze). Sind ≥ 2 nah, steigen bis zu 7 ein: erst Fahrer,
 //                 dann Lafette (bewaffnete Transporter), dann Mitfahrer
 //   2. fahren   – Fahrer folgt dem geplanten Weg (VehicleSystem.planPath) zu einem Absetzpunkt 55 % des Wegs zur
 //                 feindlichen Basis bzw. zum nächsten Ziel (Flagge/Zone) der Karte; Schütze feuert auf sichtbare Feinde
@@ -13,7 +15,7 @@
 import * as THREE from 'three';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3();
-const BOARD_R = 28, MAX_RIDERS = 7, DRIVE_MAX = 80, PAUSE = 25, DANGER_R = 45;
+const BOARD_R = 12, CALL_R = 45, CALL_T = 14, MAX_RIDERS = 7, DRIVE_MAX = 80, PAUSE = 25, DANGER_R = 45;
 
 export class TransportRides {
   constructor(sys) {
@@ -56,16 +58,27 @@ export class TransportRides {
     const G = this.sys.G, team = this._team(v);
     if (!team || v.isOccupied) return;
     const vp = v.position;
-    const cand = [];
+    const cand = [], call = [];
     for (const b of G.bots.bots) {
       if (!b.alive || b.puppet || b.vehicle || b.team !== team || b.isRemoteHuman) continue;
-      // in der Nähe – oder gerade an der Basis erschienen (≤ 8 s, ≤ 140 m – TDM-Startpunkte liegen vor dem Fahrzeughof): sitzt direkt auf („am HQ aufsitzen“)
-      const d2 = b.position.distanceToSquared(vp), fresh = now - (b.spawnTime ?? -1e9) < 8 && d2 < 140 * 140;
-      if (d2 > BOARD_R * BOARD_R && !fresh) continue;
       if (b.target || now - (b.lastDamageTime ?? -1e9) < 4) continue; // im Gefecht nicht einsteigen
-      cand.push(b);
+      // nah (≤ 12 m): steigt ein; weiter weg (≤ 45 m) oder gerade an der Basis erschienen (≤ 8 s, ≤ 140 m – TDM-Startpunkte
+      // liegen vor dem Fahrzeughof): wird gerufen und läuft hin – kein Sprung in den Sitz über große Entfernung
+      const d2 = b.position.distanceToSquared(vp), fresh = now - (b.spawnTime ?? -1e9) < 8 && d2 < 140 * 140;
+      if (d2 <= BOARD_R * BOARD_R) cand.push(b);
+      else if ((d2 <= CALL_R * CALL_R || fresh) && now > (b._rideCallBan ?? -1e9)) call.push(b);
     }
+    if (cand.length + call.length < 2) return;
+    // Rufen: Mitfahrer laufen höchstens CALL_T s zum Fahrzeug, danach wird mit denen losgefahren, die da sind
+    if (call.length && !(st.callUntil && now > st.callUntil)) {
+      if (!st.callUntil) st.callUntil = now + CALL_T;
+      for (const b of call.slice(0, MAX_RIDERS)) b._rideCall = { x: vp.x, y: vp.y, z: vp.z, until: st.callUntil };
+      return;
+    }
+    for (const b of call) b._rideCallBan = now + 40; // nicht angekommen (Weg versperrt o. Ä.): eine Weile nicht mehr rufen
+    st.callUntil = 0;
     if (cand.length < 2) return;
+    for (const b of cand) b._rideCall = null;
     cand.sort((a, b) => a.position.distanceToSquared(vp) - b.position.distanceToSquared(vp));
     const goal = this._goalFor(v, team);
     if (!goal) return;

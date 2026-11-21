@@ -17,7 +17,7 @@
 // Kosten (near): Kappe 2 Schalen ≈ 2 300 Dreiecke, Vorhang/Dutt/Zopf ≈ 1 000–1 600, Bart ≈ 1 500; ein Draw Call je Frisur bzw.
 // Bart; Telefon/mittel: nur Grundschicht + eine Schale, gröberes Gitter. Gemeinsames Programm 'np-hair-1'.
 import * as THREE from 'three';
-import { BONE } from './rig.js?v=20261115041504';
+import { BONE } from './rig.js?v=20261121041936';
 
 const HC = [0, 1.7, -0.004]; // Kopfmitte (Bindepose)
 const D2R = Math.PI / 180;

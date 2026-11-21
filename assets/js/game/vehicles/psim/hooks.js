@@ -10,8 +10,8 @@
 //   sys.requestExit   Aussteigen gesperrt (Besatzung bleibt im Panzer), außer bei Brand/Ausbooten
 //   sys.audio.update  Motor aus → Motorklang stumm
 import * as THREE from 'three';
-import { VEHICLE_WEAPONS } from '../data.js?v=20261115041504';
-import { penetration, applyEffects, modsOf, knockedOut, KINDS } from './ammo.js?v=20261115041504';
+import { VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
+import { penetration, applyEffects, modsOf, knockedOut, KINDS } from './ammo.js?v=20261121041936';
 
 const _d = new THREE.Vector3(), _n = new THREE.Vector3(), _c = new THREE.Vector3(), _o = new THREE.Vector3();
 

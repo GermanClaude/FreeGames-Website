@@ -1,17 +1,17 @@
 /* NULLPUNKT – © 2026 German Legend. Alle Rechte vorbehalten. Nutzung, Kopie oder Übernahme nur mit vorheriger
  * schriftlicher Erlaubnis (Discord German_Legend_26201, legendgerman749@gmail.com). Siehe LICENSE. */
 // NULLPUNKT — Website. Start: Chrom und Hero sofort, Daten parallel, Abschnitte erst in Sichtnähe.
-import { loadData } from './data.js?v=20261115041504';
-import { initNav, setNavSound } from './nav.js?v=20261115041504';
-import { initCursor } from './cursor.js?v=20261115041504';
-import { initZero } from './zero.js?v=20261115041504';
-import { fitAll, fontsReady } from './fit.js?v=20261115041504';
-import { initDeploy } from './deploy.js?v=20261115041504';
-import { sound } from './sound.js?v=20261115041504';
-import { setSettingReduced } from './motion.js?v=20261115041504';
-import { signalLost } from './dom.js?v=20261115041504';
-import { startSiteClock } from '../shared/sitetime.js?v=20261115041504';
-import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261115041504';
+import { loadData } from './data.js?v=20261121041936';
+import { initNav, setNavSound } from './nav.js?v=20261121041936';
+import { initCursor } from './cursor.js?v=20261121041936';
+import { initZero } from './zero.js?v=20261121041936';
+import { fitAll, fontsReady } from './fit.js?v=20261121041936';
+import { initDeploy } from './deploy.js?v=20261121041936';
+import { sound } from './sound.js?v=20261121041936';
+import { setSettingReduced } from './motion.js?v=20261121041936';
+import { signalLost } from './dom.js?v=20261121041936';
+import { startSiteClock } from '../shared/sitetime.js?v=20261121041936';
+import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261121041936';
 
 const html = document.documentElement;
 const DEBUG = /[?&]debug=1/.test(location.search);
@@ -83,17 +83,17 @@ const fontsP = (document.fonts?.ready || Promise.resolve()).then(() => {
 setTimeout(() => { if (!fontsDone) { fontsReady(); fitAll(document, { now: true }); } }, 3000);
 
 const VIEWS = {
-  news: () => import('./news-view.js?v=20261115041504'), // §02 Neu (20.11.)
-  campaign: () => import('./campaign-view.js?v=20261115041504'), // §03 Kampagne
-  sim: () => import('./sim-view.js?v=20261115041504'), // §04 Simulation
-  modes: () => import('./modes-view.js?v=20261115041504'),
-  maps: () => import('./maps-view.js?v=20261115041504'),
-  arsenal: () => import('./arsenal-view.js?v=20261115041504'),
-  profile: () => import('./profile-view.js?v=20261115041504'),
-  settings: () => import('./settings-view.js?v=20261115041504'),
-  controls: () => import('./controls-view.js?v=20261115041504'),
-  about: () => import('./about-view.js?v=20261115041504'),
-  app: () => import('./app-view.js?v=20261115041504'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
+  news: () => import('./news-view.js?v=20261121041936'), // §02 Neu (20.11.)
+  campaign: () => import('./campaign-view.js?v=20261121041936'), // §03 Kampagne
+  sim: () => import('./sim-view.js?v=20261121041936'), // §04 Simulation
+  modes: () => import('./modes-view.js?v=20261121041936'),
+  maps: () => import('./maps-view.js?v=20261121041936'),
+  arsenal: () => import('./arsenal-view.js?v=20261121041936'),
+  profile: () => import('./profile-view.js?v=20261121041936'),
+  settings: () => import('./settings-view.js?v=20261121041936'),
+  controls: () => import('./controls-view.js?v=20261121041936'),
+  about: () => import('./about-view.js?v=20261121041936'),
+  app: () => import('./app-view.js?v=20261121041936'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
 };
 
 function heroData(D) {
@@ -227,7 +227,7 @@ async function boot() {
   if (D.profile) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 400));
     idle(async () => {
-      try { (await import('./fahne.js?v=20261115041504')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
+      try { (await import('./fahne.js?v=20261121041936')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
     });
   }
 }

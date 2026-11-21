@@ -16,10 +16,10 @@
 //   prop(m, def)                    – Figur ohne KI im Spiel (Verwundeter, Gefangener), Rollen-Aussehen, echte Bodenhöhe
 
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261115041504';
-import { issueCommand } from '../../bots/ai/orders.js?v=20261115041504';
-import { schemeForTeam } from '../../bots/character.js?v=20261115041504';
-import { StageActor } from '../stage.js?v=20261115041504';
+import { MAPS } from '../../../shared/maps.data.js?v=20261121041936';
+import { issueCommand } from '../../bots/ai/orders.js?v=20261121041936';
+import { schemeForTeam } from '../../bots/character.js?v=20261121041936';
+import { StageActor } from '../stage.js?v=20261121041936';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();

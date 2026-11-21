@@ -5,10 +5,10 @@
 // (data-act pz-start → start()) bzw. den Knopf im Reiter; Einstieg in die Panzer-Kampagne „Eisenwind“ (Reiter Kampagne).
 // Einstellungen wie bisher in settings.modeOptions.panzer (modes/panzer.js liest sie), Karte in settings.lastPanzerMap.
 // Startseite: spielen.html?tab=panzer öffnet die Lobby in diesem Reiter (ui/lobby.js).
-import { VEHICLES } from '../vehicles/data.js?v=20261115041504';
-import { armorOf, caliberOf } from '../vehicles/psim/ammo.js?v=20261115041504';
-import { modeOptionValues } from '../../shared/modes.data.js?v=20261115041504';
-import { drawMapArt } from './mapart.js?v=20261115041504';
+import { VEHICLES } from '../vehicles/data.js?v=20261121041936';
+import { armorOf, caliberOf } from '../vehicles/psim/ammo.js?v=20261121041936';
+import { modeOptionValues } from '../../shared/modes.data.js?v=20261121041936';
+import { drawMapArt } from './mapart.js?v=20261121041936';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const TANKS = ['mbt', 'spz', 'lp21', 'kk', 'kks', 'wk2', 'wk2m', 'wk2h', 'wk2s', 'wk2l', 'wk2j', 'wk1', 'wk1l'];

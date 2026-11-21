@@ -3,7 +3,7 @@
 // Anleitung für iPhone/Firefox/Safari), Offline-Paket, VR-Hinweis, Vergleich. In der Desktop-App statt der Downloads:
 // „Du spielst in der App“ mit großem „Spielen.“, Systemangaben, App-Einstellungen (VSync, Start im Vollbild,
 // Absturzmerker), Vollbild und Beenden. Plattform-Erkennung und Service Worker: shared/pwa.js.
-import { appKind, installState, onInstallChange, promptInstall, precache, swStatus, storageUsage, registerSW } from '../shared/pwa.js?v=20261115041504';
+import { appKind, installState, onInstallChange, promptInstall, precache, swStatus, storageUsage, registerSW } from '../shared/pwa.js?v=20261121041936';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const mb = (b) => `${Math.round(b / 1048576)} MB`;

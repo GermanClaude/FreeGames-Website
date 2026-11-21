@@ -9,9 +9,9 @@
 //   'relTurret' relYaw/relPitch relativ zum Turm (Ladeschütze)
 // Welche Sicht gilt, entscheidet VehicleSystem (seat.view, erlaubte Sichten); update() bekommt die wirksame Sicht.
 import * as THREE from 'three';
-import { collisionRay, keepClear } from '../engine/physics.js?v=20261115041504';
-import { dirFromYawPitch, viewOf, viewAnchor, viewLookDir, viewZoom, isTp, viewsOf, firstFp } from './views.js?v=20261115041504';
-import { prismIndex } from './periscopes.js?v=20261115041504';
+import { collisionRay, keepClear } from '../engine/physics.js?v=20261121041936';
+import { dirFromYawPitch, viewOf, viewAnchor, viewLookDir, viewZoom, isTp, viewsOf, firstFp } from './views.js?v=20261121041936';
+import { prismIndex } from './periscopes.js?v=20261121041936';
 
 export { dirFromYawPitch };
 

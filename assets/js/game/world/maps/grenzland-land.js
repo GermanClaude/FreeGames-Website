@@ -11,10 +11,10 @@
 // Kollision nur für Masten (dünn), Ballen, Polter und Sandsäcke – unabhängig von der Grafikstufe; Navigation tastet
 // sie mit ab (Geländeraster). Frei bleiben Straßen (Breite/2 + 1,5 m), Ortschaften, Wasser, Startpunkte, Flaggen,
 // Fahrzeugstellplätze und Kampagnenpunkte (m3). Optik (Spuren, Pfosten, Zaun) je Stufe gedünnt.
-import { frame, hash01, sandbags } from '../props.js?v=20261115041504';
-import { wireFence } from '../barbed-wire.js?v=20261115041504';
-import { burntWreck } from './brandwald-bau.js?v=20261115041504';
-import { freileitung, sperrpunkte, KAMPAGNE, stufe } from '../kleinkram.js?v=20261115041504';
+import { frame, hash01, sandbags } from '../props.js?v=20261121041936';
+import { wireFence } from '../barbed-wire.js?v=20261121041936';
+import { burntWreck } from './brandwald-bau.js?v=20261121041936';
+import { freileitung, sperrpunkte, KAMPAGNE, stufe } from '../kleinkram.js?v=20261121041936';
 
 const D = { collide: false, minimap: false, grad: false };
 

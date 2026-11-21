@@ -14,8 +14,8 @@
 //
 // placeFuellung(world, group, { quality, seed, def, bereiche }) → { cluster, teile, gruen, meshes, ms }
 import * as THREE from 'three';
-import { createFoliage } from './atlas.js?v=20261115041504';
-import { streuRaster, bodenY, placeGroundDressing } from './bodenauflage.js?v=20261115041504';
+import { createFoliage } from './atlas.js?v=20261121041936';
+import { streuRaster, bodenY, placeGroundDressing } from './bodenauflage.js?v=20261121041936';
 
 /** Mengenfaktor je Stufe (low: Modul wird nicht geladen). */
 const MENGE = { medium: 0.5, high: 1, ultra: 1.4 };
@@ -144,6 +144,11 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
   const plants = [];
   const frei = [...['A', 'B', 'ffa'].flatMap((t) => (world.spawns?.[t] || []).map((s) => s.position)), ...(world.objectives?.dom || []).map((o) => o.position)];
   const nahStart = (x, z, rr) => frei.some((p) => (p.x - x) ** 2 + (p.z - z) ** 2 < rr * rr);
+  // ges2 (21.11.): Grün nur an echten Mauern/Hauswänden (Strahl in 1,8 m Höhe) – nicht an Schutt, Sperren oder Wracks
+  // mitten auf der Fahrbahn; opt.fahrbahn = [[x0, z0, x1, z1], …]: dort gar kein Grün (nur 0,5 m Rand am Bordstein)
+  const fahrbahn = opt.fahrbahn || [];
+  const aufFahrbahn = (x, z) => fahrbahn.some(([x0, z0, x1, z1]) => x > x0 + 0.5 && x < x1 - 0.5 && z > z0 + 0.5 && z < z1 - 0.5);
+  const hoheWand = (x, gy, z, dx, dz, L) => wandIn(world, x, gy + 1.8, z, dx, dz, L) < Infinity;
   const wahl = (keys) => {
     let sum = 0; for (const a of keys) sum += W[a] || 0;
     if (sum <= 0) return null;
@@ -224,7 +229,7 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
       continue;
     }
     // außen: Grün an Wandfuß/Ecke (Fugen), sonst Nester
-    if (wand && W.gruen && r() < 0.5 * W.gruen) {
+    if (wand && W.gruen && r() < 0.5 * W.gruen && hoheWand(x, gy, z, wand[0], wand[1], 0.9)) {
       // Busch in Ecken (nicht an Startpunkten/Flaggen; ganze Ecke Wand bis 1,6 m Höhe – keine Türlaibung)
       if (ecke && W.busch && r() < W.busch * 0.55 && !nahStart(x, z, 5)) {
         const ok = wandIn(world, x, gy + 1.6, z, wand[0], wand[1], 0.8) < Infinity
@@ -237,13 +242,15 @@ export function placeFuellung(world, group, { quality = 'high', seed, def = {}, 
         const u = (r() - 0.5) * 3.6, off = r() * 0.3;
         const px = x + wand[0] * (0.25 - off) - wand[1] * u, pz = z + wand[1] * (0.25 - off) + wand[0] * u;
         const g2 = bodenAt(world, px, pz, gy + 0.3);
-        if (!g2 || Math.abs(g2.y - gy) > 0.04) continue;
+        if (!g2 || Math.abs(g2.y - gy) > 0.04 || aufFahrbahn(px, pz)) continue;
         plants.push({ kind: r() < 0.35 ? 'weeds' : 'grass', x: px, y: g2.y - 0.02, z: pz, s: (0.36 + r() * 0.5) * (1 - off), ry: r() * 6.283, tint: ['#9c9a74', '#8c9068', '#8a8a62', '#a49c7a', '#7e8660'][Math.floor(r() * 5)] }); // gedämpft (sattes Grün las sich als „Salatblätter“)
       }
       continue;
     }
     // Unkraut in Belagsrissen auf freier Fläche (verlassene Höfe/Straßen), klein – verdeckt nichts
     if (!wand && W.risse && r() < 0.35 * W.risse) {
+      // nur am Rand (Hauswand/Mauer ≤ 2,5 m), nicht auf Fahrspuren oder mitten auf Vorfeld/Platz
+      if (aufFahrbahn(x, z) || ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => hoheWand(x, gy, z, dx, dz, 2.5))) continue;
       const n = 1 + Math.floor(r() * 3);
       for (let i = 0; i < n; i++) {
         const px = x + (r() - 0.5) * 0.7, pz = z + (r() - 0.5) * 0.7, g2 = bodenAt(world, px, pz, gy + 0.3);
@@ -382,7 +389,7 @@ export async function fuelleGrosskarte(world, group, { quality = 'high', def = {
   if (!bereiche.length) return null;
   const out = {};
   if (def.lookDecals !== false) {
-    try { out.decals = (await import('./decals.js?v=20261115041504')).placeLookDecals(world, group, { quality, seed, def: { ...def, lookDecals: { ...(def.lookDecals || {}), bereiche } } }).count; } catch (err) { console.warn('[world] Decals (Großkarte)', err); }
+    try { out.decals = (await import('./decals.js?v=20261121041936')).placeLookDecals(world, group, { quality, seed, def: { ...def, lookDecals: { ...(def.lookDecals || {}), bereiche } } }).count; } catch (err) { console.warn('[world] Decals (Großkarte)', err); }
   }
   if (def.groundDressing !== false) {
     try { const g = placeGroundDressing(world, group, { quality, seed, def: { ...def, groundDressing: { ...(def.groundDressing || {}), bereiche } } }); out.boden = g.count; out.muell = g.litter; } catch (err) { console.warn('[world] Bodenauflage (Großkarte)', err); }

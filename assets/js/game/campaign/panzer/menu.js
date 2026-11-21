@@ -2,11 +2,11 @@
 // Missionsliste (p1…p6, der Reihe nach freigeschaltet), Details (Einsatzart, Karte, Panzer, Sichtgeräte, Ziele),
 // Rollenwahl (Kommandant als Standard), Spielart (Simulation/Arcade), Führung, Schwierigkeit, Start ab Beginn/Checkpoint.
 // Einstellungen: settings.modeOptions.pkampagne = { rolle, stil, fuehrung } (liest campaign/panzer/mode.js).
-import { PZ_CAMPAIGN, PZ_MISSIONS, PZ_ORDER } from './missions.js?v=20261115041504';
-import { pzMissionConfig } from './mode.js?v=20261115041504';
-import { CampaignProgress } from '../progress.js?v=20261115041504';
-import { CAMPAIGN_DIFF } from '../director.js?v=20261115041504';
-import { VEHICLES } from '../../vehicles/data.js?v=20261115041504';
+import { PZ_CAMPAIGN, PZ_MISSIONS, PZ_ORDER } from './missions.js?v=20261121041936';
+import { pzMissionConfig } from './mode.js?v=20261121041936';
+import { CampaignProgress } from '../progress.js?v=20261121041936';
+import { CAMPAIGN_DIFF } from '../director.js?v=20261121041936';
+import { VEHICLES } from '../../vehicles/data.js?v=20261121041936';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ROLES = [['kommandant', 'Kommandant'], ['richtschuetze', 'Richtschütze'], ['fahrer', 'Fahrer'], ['ladeschuetze', 'Ladeschütze'], ['mgschuetze', 'MG-Schütze/Funker']];
