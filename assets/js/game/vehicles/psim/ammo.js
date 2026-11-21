@@ -369,8 +369,12 @@ export function knockedOut(v) {
   if (v._psimCookoff) return 'Munition';
   const crew = v._psimCrew;
   if (!crew || !crew.length) return null;
-  // Spielerpanzer: Besatzungsausfälle legen ihn nicht still – der Spieler kann den Platz wechseln (Sitzrad)
-  if (v.seats.some((s) => s.actor && s.actor.isPlayer && s.actor.alive)) return null;
+  // Spielerpanzer: einzelne Ausfälle legen ihn nicht still (der Spieler kann den Platz wechseln, Sitzrad) – erst wenn
+  // mindestens 60 % der Besatzung ausgefallen sind, ist er kampfunfähig
+  if (v.seats.some((s) => s.actor && s.actor.isPlayer && s.actor.alive)) {
+    const n = v.seats.length, deadP = v.seats.filter((s) => !s.actor || !s.actor.alive).length;
+    return n >= 3 && deadP / n >= 0.6 ? 'Besatzung' : null;
+  }
   // KI-Panzer: fällt der Bot an Bord (fährt und richtet stellvertretend), steht der Panzer still und schweigt → ausgefallen
   const ai = v._psimAI;
   if (ai && !(ai.bot && ai.bot.alive && ai.bot.vehicle === v)) return 'Besatzung';

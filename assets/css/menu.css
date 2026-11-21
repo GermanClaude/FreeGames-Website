@@ -145,7 +145,7 @@ html.shell { scroll-padding-top: 0; color-scheme: dark; }
 @keyframes mi-pulse { 50% { box-shadow: 0 0 0 2px var(--np-signal), 0 0 6px rgba(255, 91, 31, .15); } }
 
 /* Kacheln */
-.menu-sub { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.menu-sub { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 .shell .tile {
   position: relative; display: grid; justify-items: center; align-content: center; gap: 6px; width: 100%; min-height: 72px; padding: 10px 6px 9px;
   background: rgba(9, 12, 13, .74); border: 1px solid rgba(190, 212, 206, .16); color: #E6E9E5; text-decoration: none; text-align: center;
@@ -153,7 +153,7 @@ html.shell { scroll-padding-top: 0; color-scheme: dark; }
   transition: background-color 140ms, color 140ms, border-color 140ms, transform 200ms var(--mn-ease);
 }
 .shell .tile .mi-ic { width: 26px; height: 26px; }
-.tl-l { font-family: var(--font-hud); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; line-height: 1.1; }
+.tl-l { font-family: var(--font-hud); font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; line-height: 1.1; max-width: 100%; overflow-wrap: anywhere; }
 .tl-badge {
   position: absolute; top: 6px; left: 6px; padding: 1px 5px; background: var(--np-signal); color: #0B0E0F;
   font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
@@ -277,13 +277,14 @@ html.shell { scroll-padding-top: 0; color-scheme: dark; }
 
 /* Abschnitte im Bildschirm */
 .shell .panel .sec {
-  display: block; padding: clamp(18px, 2.6vw, 36px) var(--gr) clamp(40px, 5vw, 72px) var(--gl);
-  max-width: 1520px; margin: 0 auto; min-height: 0;
+  /* Raster aus site.css bleibt (Waffenkammer/Karten nutzen subgrid), Randspalte entfällt */
+  padding-block: clamp(18px, 2.6vw, 36px) clamp(40px, 5vw, 72px);
+  max-width: 1600px; margin: 0 auto; min-height: 0;
 }
 .shell .panel .sec + .sec { margin-top: 8px; }
 .shell .panel .sec + .sec::before { left: var(--gl); right: var(--gr); }
 .shell .panel .rail { display: none; }
-.shell .panel .content { grid-column: auto; grid-row: auto; }
+.shell .panel .content { grid-column: rail-start / main-end; grid-row: 2; }
 .shell .panel .hl {
   position: absolute !important; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
@@ -377,8 +378,9 @@ html.shell { scroll-padding-top: 0; color-scheme: dark; }
 .shell .camp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
 .shell .camp-m { transition: border-color 140ms, transform 200ms var(--mn-ease); }
 .shell .camp-m:hover, .shell .camp-m:focus-within { border-color: rgba(255, 91, 31, .7); transform: translateY(-2px); }
-.shell .camp-mhead { display: grid; gap: 10px; }
+.shell .camp-mhead { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .shell .camp-thumb { width: 100%; height: auto; aspect-ratio: 8 / 3; object-fit: cover; }
+.shell .camp-mtitle { overflow-wrap: anywhere; hyphens: auto; }
 
 /* ───────── Mehrspieler, Übungsgelände */
 .mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
