@@ -189,7 +189,7 @@ export class Director {
       ui.timer(this.timerLeft, this.timerLabel);
       const wp = !this.cutscene ? this.objs.find((o) => !o.done && !o.hidden && o.pos) : null;
       const P = this.G.player;
-      ui.waypoint(wp ? this._objPos(wp) : null, wp ? wp.label || '' : '', this.G.camera, P && P.alive ? P.position : null);
+      ui.waypoint(wp ? this._objPos(wp) : null, wp && wp.label ? tx(wp.label, 'kampagne') : '', this.G.camera, P && P.alive ? P.position : null); // Kontext: Wegmarken (z. B. „Galerie“ = Empore)
       ui.update(dt);
     }
   }

@@ -37,6 +37,7 @@ import { SimControls } from '../vehicles/psim/sim.js?v=20261121041936';
 import { PanzerHUD, Radio, ammoRows } from '../vehicles/psim/hud.js?v=20261121041936';
 import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261121041936';
 import { prismIndex } from '../vehicles/periscopes.js?v=20261121041936';
+import { tx } from '../../shared/i18n.js?v=20261121041936';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
 const _q = new THREE.Quaternion();
@@ -1261,7 +1262,7 @@ export class PanzerMode extends BaseMode {
         if ((s.def.id === 'funker' || s.def.id === 'mg') && s.intent && s.intent.fire) state = 'schießt';
       }
       if (me) state = 'du';
-      rows.push({ role: map[s.def.id] || s.def.label, state, cls, me });
+      rows.push({ role: map[s.def.id] || s.def.label, state: tx(state, 'pz'), cls, me }); // Anzeige in der gewählten Sprache (Kontext: „hält“ = steht)
     }
     return rows;
   }
