@@ -180,7 +180,7 @@ function setBg(P) {
   if (P.bgSet) return;
   P.bgSet = true;
   const src = P.el.dataset.bg;
-  if (src) P.bg.style.setProperty('--pbg', `url("${src}")`);
+  if (src) P.bg.style.setProperty('--pbg', `url("${new URL(src, location.href).href}")`); // absolut: url() in Variablen gilt sonst relativ zu menu.css
 }
 
 function wipe() {
@@ -580,7 +580,7 @@ export function warpTo(href) {
   if (!box) { location.href = url.href; return; }
   const ms = reduced() ? 120 : 650;
   box.style.setProperty('--warp-ms', `${ms + 400}ms`);
-  $('#warp-pic', box)?.style.setProperty('--wbg', `url("${warpPic(url)}")`);
+  $('#warp-pic', box)?.style.setProperty('--wbg', `url("${new URL(warpPic(url), location.href).href}")`);
   const tt = $('#warp-t', box);
   if (tt) tt.textContent = warpLabel(url);
   const kk = $('.warp-k', box);

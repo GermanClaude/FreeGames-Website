@@ -88,11 +88,21 @@ export function getLanguageSetting() { const v = settings.get('language'); retur
 export function locale() { return (LANGUAGES.find((l) => l.id === lang) || LANGUAGES[0]).locale; }
 export function onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
+// Kataloge als feste import()-Literale: so findet auch das Offline-Paket (sw.js) sie, und ?v= bleibt die Fassung
+const CATALOGS = {
+  en: () => import('./i18n/en.js?v=20261121041936'),
+  es: () => import('./i18n/es.js?v=20261121041936'),
+  fr: () => import('./i18n/fr.js?v=20261121041936'),
+  ru: () => import('./i18n/ru.js?v=20261121041936'),
+  zh: () => import('./i18n/zh.js?v=20261121041936'),
+};
+void BUILD;
+
 async function loadCatalog(id) {
   if (id === 'de') return null;
   if (catalogs.has(id)) return catalogs.get(id);
   try {
-    const m = await import(`./i18n/${id}.js?v=${BUILD}`);
+    const m = await CATALOGS[id]();
     const c = (m && m.default) || {};
     catalogs.set(id, c);
     return c;
@@ -236,12 +246,13 @@ function lookupCore(s, depth) {
     return sub(p.out, params, n);
   }
   // Zusammengesetzt: „Hafen · Tag“, „A / B“
-  for (const sep of [' · ', ' | ', ' / ', ' – ']) {
+  // Komma-Listen nur in Platzhalter-Werten („große Karten ({0})“ mit {0} = „Hafen, Werk“)
+  for (const sep of depth > 0 ? [' · ', ' | ', ' / ', ' – ', ', '] : [' · ', ' | ', ' / ', ' – ']) {
     if (s.includes(sep) && depth < 2) {
       const parts = s.split(sep);
       let any = false;
       const outp = parts.map((p) => { const r = lookup(p.trim(), depth + 1); if (r != null) { any = true; return r; } return p; });
-      if (any) return outp.join(sep);
+      if (any) return outp.join(sep === ', ' && lang === 'zh' ? '、' : sep);
     }
   }
   // Trenner am Anfang („· Realistisch“, „– Verband (2)“, „(kein Platz)“)

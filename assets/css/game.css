@@ -1434,6 +1434,9 @@ body[data-input-mode="touch"] .m-btn kbd { display: none; }
 .lb-kit-row small { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--np-dim); }
 .lb-kit-row b { font-size: 15px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-kit-row .ico svg { width: 60px; height: 20px; display: block; }
+/* Mehrsprachigkeit (shared/i18n.js): lange Wörter (Russisch, Französisch …) umbrechen statt in die Nachbarkachel zu laufen */
+.lb-mode b { overflow-wrap: anywhere; hyphens: auto; }
+.lb-kit-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .lb-kit-row .ico.sm svg { width: 22px; height: 22px; }
 .lb-kit-streaks { display: flex; gap: 14px; padding-top: 6px; border-top: 1px solid var(--np-line); font: 700 13px var(--font-hud); color: var(--np-ink-2); }
 .lb-kit-streaks span { display: inline-flex; align-items: center; gap: 4px; }

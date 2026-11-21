@@ -19,6 +19,7 @@ import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js
 import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261121041936';
 import { prepareVehicleModels } from '../vehicles/models.js?v=20261121041936';
 import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261121041936';
+import { tx } from '../../shared/i18n.js?v=20261121041936'; // Zeilen in der gewählten Sprache (Untertitel + Mund)
 import { createFaceRig, FaceDriver } from './face.js?v=20261121041936';
 import { issueCommand } from '../bots/ai/orders.js?v=20261121041936';
 
@@ -595,7 +596,7 @@ export class Director {
       const inside = this.inZone(id) && this.G.player.alive;
       if (inside) t += this.rush ? dt * Math.max(1, secs / 1.5) : dt; // Tests (__game.campaign.director.rush): Halten im Zeitraffer
       ob.progress = t / secs;
-      if (this.ui) this.ui.hold(inside && t < secs ? `${action} … ${Math.ceil(secs - t)} s` : null, t / secs);
+      if (this.ui) this.ui.hold(inside && t < secs ? `${tx(action)} … ${Math.ceil(secs - t)} s` : null, t / secs);
       if (t >= secs) { if (this.ui) this.ui.hold(null); this.done(id); return true; }
       return false;
     });
@@ -883,7 +884,8 @@ export class Director {
       const bot = this.allyByRole.get(l.who);
       const P = this.G.player;
       const near = bot && bot.alive && P && bot.position.distanceTo(P.position) < 25 && l.radio !== true;
-      const track = textToVisemes(l.text, { cps: this.cps });
+      const text = tx(l.text); // Untertitel und Lippen in der gewählten Sprache (Quelltext bleibt deutsch)
+      const track = textToVisemes(text, { cps: this.cps });
       l.track = track;
       l.t = 0;
       l.dur = subtitleDuration(track, this.lines.length >= 2 ? 0.25 : 0.7); // Rückstau: kürzerer Nachlauf
@@ -896,7 +898,7 @@ export class Director {
         }
         f.driver.say(track, l.expr);
       }
-      if (ui) ui.subtitle({ name: near || sp.radioOnly ? sp.name : `${sp.name} · Funk`, color: sp.color }, l.text, { track, radio: true });
+      if (ui) ui.subtitle({ name: near || sp.radioOnly ? sp.name : `${sp.name} · Funk`, color: sp.color }, text, { track, radio: true });
       this.line = l;
     }
     const l = this.line;

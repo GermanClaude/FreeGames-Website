@@ -78,7 +78,7 @@ function walk(p) {
 targets.forEach(walk);
 
 const known = new Set();
-for (const r of rows) known.add(r.key);
+for (const r of rows) { known.add(r.key); if (/\{\w+\}/.test(r.key)) known.add(r.key.replace(/\{#?\w*\}/g, "{#}")); }
 const DE_HINT = /[äöüÄÖÜß]|\b(der|die|das|und|nicht|mit|für|auf|ist|ein|eine|zu|von|im|den|dem|des|bei|aus|oder|wird|kein|keine|nach|über|Spieler|Karte|Modus|Waffe|Ziel|Feind|Runde|Zurück|Einsatz|Sekunden|Abschuss|Treffer|Taste)\b/;
 /** Deutscher Anzeigetext? (grob: Wörter mit Großbuchstaben/Umlaut, keine Ids/CSS/Pfade) */
 function isText(s) {

@@ -184,7 +184,7 @@ export default [
 ['Fahrzeuge zerstört', 'Vehicles destroyed', 'Vehículos destruidos', 'Véhicules détruits', 'Уничтожено техники', '摧毁载具'],
 ['Marken', 'Tags', 'Placas', 'Plaques', 'Жетоны', '狗牌'],
 ['{0} verweigert', '{0} denied', '{0} denegadas', '{0} refusées', 'Отказано: {0}', '阻止 {0} 次'],
-['Infiziert', 'Infected', 'Infectado', 'Infecté', 'Заражён', '感染'],
+['Infiziert', 'Infected', 'Infectados', 'Infectés', 'Заражение', '感染'],
 ['Überlebt', 'Survived', 'Sobrevivido', 'Survécu', 'Выжил', '存活'],
 ['Halte­zeit', 'Hold time', 'Tiempo de control', 'Temps de contrôle', 'Время удержания', '控制时间'],
 ['{0}× eingenommen', 'Captured {0}×', 'Capturado {0}×', 'Capturé {0}×', 'Захвачено {0}×', '占领 {0} 次'],

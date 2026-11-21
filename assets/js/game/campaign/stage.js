@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import { createFaceRig, FaceDriver } from './face.js?v=20261121041936';
 import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261121041936';
+import { tx } from '../../shared/i18n.js?v=20261121041936'; // Zeilen in der gewählten Sprache
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -432,17 +433,18 @@ export class Cutscene {
       const sp = this._speaker(b.say.who);
       this.speaker = sp;
       const cps = this.hooks.cps;
+      const sayText = tx(b.say.text); // Untertitel und Lippen in der gewählten Sprache
       if (sp.actor) {
-        this.track = sp.actor.say(b.say.text, b.say.expr, cps);
+        this.track = sp.actor.say(sayText, b.say.expr, cps);
         // Zuhörer schauen den Sprecher an (außer ausdrücklich anders)
         for (const a of Object.values(this.cast)) if (a !== sp.actor && !b.keepLooks) a.look(sp.actor);
         // Sprecher: zum angegebenen Gegenüber bzw. geradeaus (Nahaufnahmen zeigen das Gesicht)
         if (!b.keepLooks) sp.actor.look(b.say.look ? this.cast[b.say.look] || null : null);
       } else {
-        this.track = textToVisemes(b.say.text, { cps });
+        this.track = textToVisemes(sayText, { cps });
       }
       sayDur = subtitleDuration(this.track, b.say.linger ?? 0.85);
-      if (ui) ui.subtitle({ name: sp.radio && !((this.hooks.speakers || {})[b.say.who] || {}).radioOnly ? `${sp.name} · Funk` : sp.name, color: sp.color }, b.say.text, { track: this.track, radio: false });
+      if (ui) ui.subtitle({ name: sp.radio && !((this.hooks.speakers || {})[b.say.who] || {}).radioOnly ? `${sp.name} · Funk` : sp.name, color: sp.color }, sayText, { track: this.track, radio: false });
     } else if (ui) ui.subtitle(null, '');
     this.beatDur = Math.max(b.dur || 0, sayDur, b.say ? 0 : (b.cam && b.cam.dur) || 2.5);
     if (b.cam) this.cam.start(b.cam, this.beatDur);

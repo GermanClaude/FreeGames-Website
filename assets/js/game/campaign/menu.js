@@ -11,6 +11,7 @@ import { CAMPAIGN_DIFF, CAMPAIGN_SIM } from './director.js?v=20261121041936';
 import { missionConfig } from './mode.js?v=20261121041936';
 import { ensureCampaignStyles } from './ui.js?v=20261121041936';
 import { textToVisemes, sampleMouth } from './lipsync.js?v=20261121041936';
+import { tx } from '../../shared/i18n.js?v=20261121041936';
 import { PanzerCampaignPane } from './panzer/menu.js?v=20261121041936'; // Panzer-Kampagne „Eisenwind“ (Umschalter oben)
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -310,7 +311,7 @@ export class CampaignPane {
     const svg = this.el && this.el.querySelector('.kc-mouth ellipse');
     if (!svg) return;
     if (this._demo) cancelAnimationFrame(this._demo);
-    const track = textToVisemes('Funkstille seit drei Stunden. Wir gehen rein.', { cps: this.store.cps() });
+    const track = textToVisemes(tx('Funkstille seit drei Stunden. Wir gehen rein.'), { cps: this.store.cps() });
     const t0 = performance.now();
     const step = () => {
       const t = (performance.now() - t0) / 1000;

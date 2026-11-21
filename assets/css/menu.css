@@ -108,7 +108,7 @@ html.shell { scroll-padding-top: 0; color-scheme: dark; }
 .shell .cta-cfg { grid-area: cfg; margin: 8px 0 10px; }
 .shell .menu-main { grid-area: main; }
 .shell .menu-sub { grid-area: sub; }
-.shell .hero-foot > .hero-brief { grid-area: side; grid-column: auto; grid-row: auto; order: 0; align-self: end; justify-self: stretch; width: auto; margin-bottom: 10px; }
+.shell .hero-foot > .hero-brief { grid-area: side; order: 0; align-self: end; justify-self: stretch; width: auto; margin-bottom: 10px; }
 .shell .touch-play { grid-area: tp; margin-top: 10px; }
 .shell .menu-hint { display: none; }
 

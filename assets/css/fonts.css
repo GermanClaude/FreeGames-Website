@@ -27,3 +27,16 @@
 @font-face { font-family: 'Rajdhani NP'; src: url(../fonts/rajdhani-500.woff2) format('woff2'); font-weight: 500; font-display: swap; }
 @font-face { font-family: 'Rajdhani NP'; src: url(../fonts/rajdhani-600.woff2) format('woff2'); font-weight: 600; font-display: swap; }
 @font-face { font-family: 'Rajdhani NP'; src: url(../fonts/rajdhani-700.woff2) format('woff2'); font-weight: 700; font-display: swap; }
+
+/* Mehrsprachigkeit (shared/i18n.js setzt <html lang>): Archivo, Rajdhani und JetBrains Mono decken Latein ab; für Kyrillisch
+   und Chinesisch springen schmale bzw. CJK-Systemschriften ein (keine eingebetteten Riesendateien). Lateinische Zeichen
+   bleiben in den Hausschriften, nur fehlende Glyphen kommen aus der Rückfallkette. */
+:root:lang(ru) {
+  --font-display: 'Archivo NP', 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, system-ui, sans-serif;
+  --font-hud: 'Rajdhani NP', 'Roboto Condensed', 'Arial Narrow', 'Liberation Sans Narrow', 'Segoe UI', Roboto, Arial, sans-serif;
+}
+:root:lang(zh) {
+  --font-display: 'Archivo NP', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'WenQuanYi Zen Hei', system-ui, sans-serif;
+  --font-hud: 'Rajdhani NP', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'WenQuanYi Zen Hei', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono NP', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC', monospace;
+}

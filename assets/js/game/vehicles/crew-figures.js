@@ -54,7 +54,27 @@ function shellMesh() {
 function anchorsOf(v) {
   let list = null;
   try { list = cabinSeatAnchors(v); } catch { list = null; }
-  if (list && list.length) return list;
+  if (list && list.length) {
+    // Richtschütze: Kopf am Okular (station der Innensicht), Hüfte ~0,3 m dahinter – nicht unter der Optik
+    for (const a of list) {
+      const sd = v.seats[a.index] && v.seats[a.index].def;
+      const inner = sd && (sd.views || []).find((x) => x.interior);
+      if (sd && sd.mount === 'gun' && inner && inner.station) {
+        const st = inner.station;
+        a.eye = [st[0], st[1] + 0.02, st[2] + 0.06];
+        a.hip = [st[0], st[1] - 0.6, st[2] + 0.34];
+        a.grip = [st[0], st[1] - 0.3, st[2] + 0.1];
+      }
+    }
+    // Plausibilität: Hüfte unter dem Auge (stehend ~0,72 m, sitzend ~0,62 m) – sonst aus dem Augpunkt ableiten
+    for (const a of list) {
+      if (!a.hip || !a.eye) continue;
+      const want = a.posture === 'stehend' ? 0.72 : 0.6;
+      const d = a.eye[1] - a.hip[1];
+      if (d < want - 0.25 || d > want + 0.3) a.hip = [a.hip[0], a.eye[1] - want, a.hip[2]];
+    }
+    return list;
+  }
   return v.seats.map((s, index) => {
     const inner = (s.def.views || []).find((x) => x.interior);
     const eye = inner ? inner.station || inner.pos : null;
@@ -115,7 +135,8 @@ class Figure {
     const role = s.def.drive ? 'fahrer' : s.def.loader ? 'lader' : s.def.id === 'commander' ? 'kommandant' : s.def.mount === 'gun' ? 'richtschuetze' : s.def.id === 'funker' ? 'funker' : s.def.mount ? 'mg' : 'mitfahrer';
     const o = { role, l: null, r: null, lookAt: null, steady: false, stand: a.posture === 'stehend', yawTo: null, shell: false };
     if (role === 'richtschuetze') {
-      o.l = [eye[0] - 0.13, eye[1] - 0.36, eye[2] - 0.3]; o.r = [eye[0] + 0.13, eye[1] - 0.36, eye[2] - 0.3]; o.steady = true;
+      const gp = a.grip || [eye[0], eye[1] - 0.32, eye[2] - 0.25];
+      o.l = [gp[0] - 0.13, gp[1], gp[2]]; o.r = [gp[0] + 0.13, gp[1], gp[2]]; o.steady = true;
       const seatI = s.intent;
       if (seatI && seatI.fire) { o.r[1] += 0.02; o.r[2] += 0.02; } // Daumen am Abzug
     } else if (role === 'kommandant') {
