@@ -801,11 +801,12 @@ export function driverCabin(D) {
   if (!hatch && slit) roof = Math.max(roof, slit.pos[1] + 0.12);
   roof = Math.max(roof, floor + 1.0);
   const half = Math.max(0.6, hb[3] - 0.32);
-  const xl = Math.max(-half, F[0] - 0.56), xr = Math.min(half, F[0] + 0.56);
+  // etwas großzügiger (Nutzer 21.11.: „zu wenig Platz“): ±0,6 m statt ±0,56 m, Rückwand 0,68 m hinter dem Sitz
+  const xl = Math.max(-half, F[0] - 0.6), xr = Math.min(half, F[0] + 0.6);
   const zFT = Math.min((slit ? slit.pos[2] : F[2] - 0.35) - 0.14, F[2] - 0.28);
   const zFB = Math.min(zFT - 0.25, Math.max(hb[2] - hb[5] + 0.14, F[2] - 1.0));
   // Rückwand vor dem Kampfraum (models.js hullCompartment beginnt dahinter)
-  const zB = F[2] + 0.62;
+  const zB = F[2] + 0.68;
   const eye = [F[0], Math.min(Math.max(F[1] + 0.86, floor + 0.62), roof - 0.17), F[2] + 0.12];
   return { F, xl, xr, floor, roof, zFT, zFB, zB, eye, hatch };
 }

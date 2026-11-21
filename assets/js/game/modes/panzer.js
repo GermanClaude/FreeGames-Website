@@ -29,7 +29,7 @@ import { prepareVehicleModels } from '../vehicles/models.js?v=20261121041936';
 import { projectToScreen } from '../vehicles/hud.js?v=20261121041936';
 import { viewOf, viewsOf, viewLookDir } from '../vehicles/views.js?v=20261121041936';
 import { gunSeat, loaderSeat } from '../vehicles/crew.js?v=20261121041936';
-import { equipTank, registerAmmo, rackFor, KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from '../vehicles/psim/ammo.js?v=20261121041936';
+import { equipTank, registerAmmo, rackFor, KINDS, kindOf, idFor, modsOf, crewOf, eraOf, penetration, applyEffects, knockedOut } from '../vehicles/psim/ammo.js?v=20261121041936';
 import { installHooks } from '../vehicles/psim/hooks.js?v=20261121041936';
 import { TankCrew, EnemyTank, TARGET_LABEL, targetPoint, bearingWord, roundRange } from '../vehicles/psim/crew-ai.js?v=20261121041936';
 import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplacement.js?v=20261121041936';
@@ -39,6 +39,7 @@ import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261121041936';
 import { prismIndex } from '../vehicles/periscopes.js?v=20261121041936';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
+const _q = new THREE.Quaternion();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const ROLE = { fahrer: 'Fahrer', richtschuetze: 'Richtschütze', ladeschuetze: 'Ladeschütze', kommandant: 'Kommandant', mgschuetze: 'MG-Schütze' };
 const ROLE_ALIAS = { fahrer: 'fahrer', driver: 'fahrer', richtschuetze: 'richtschuetze', rs: 'richtschuetze', gunner: 'richtschuetze', schuetze: 'richtschuetze', lader: 'ladeschuetze', ladeschuetze: 'ladeschuetze', loader: 'ladeschuetze', kommandant: 'kommandant', kdt: 'kommandant', commander: 'kommandant', mg: 'mgschuetze', mgschuetze: 'mgschuetze', funker: 'mgschuetze', bugmg: 'mgschuetze' };
@@ -302,6 +303,36 @@ export class PanzerMode extends BaseMode {
     v.def = Object.create(v.def);
     // Gestell-Sollbestand in Modus-Munition: sonst füllt die Versorgung (resupply.js) mit den Grundsorten PG/SG auf
     if (v._psimAmmo) v.def.ammo = rackFor(v.type);
+    this._wrapDamage(v);
+  }
+
+  /**
+   * Panzerfäuste/Raketen (Panzerabwehrtrupps, weapons/ballistics/rockets.js) gegen Modus-Panzer: statt pauschalem
+   * Granatenschaden mit Besatzungstreffer (vehicle.js _penetration: bis 190 Schaden im Umkreis → Sofort-Tod) wie eine
+   * Hohlladung (~330 mm) nach Platte und Winkel – vorn am Kampfpanzer wirkungslos, Seite/Heck gefährlich (ammo.js).
+   */
+  _wrapDamage(v) {
+    if (v._psimDmgWrapped || !v.def.armored) return;
+    v._psimDmgWrapped = true;
+    const orig = v.applyDamage.bind(v), sys = this.G.vehicles;
+    v.applyDamage = (amount, info = {}) => {
+      const w = info.weaponId && VEHICLE_WEAPONS[info.weaponId];
+      if (info.kind !== 'shell' || (w && w.psim) || !info.point || !info.dir) return orig(amount, info);
+      const dl = _c.copy(info.dir).applyQuaternion(_q.copy(v.body.quat).invert());
+      const face = info.zone === 'turret' && dl.y < -0.7 ? 'top' : Math.abs(dl.z) >= Math.abs(dl.x) ? (dl.z > 0 ? 'front' : 'rear') : 'side';
+      const ln = face === 'front' ? _d.set(0, 0, -1) : face === 'rear' ? _d.set(0, 0, 1) : face === 'top' ? _d.set(0, 1, 0) : _d.set(dl.x > 0 ? -1 : 1, 0, 0);
+      const def = { id: info.weaponId || 'rakete', psim: { role: 'ce', pen0: 330, penLoss: 0, rico: 85, norm: 0, cone: 9, coneLen: 1.8, filler: 0 } };
+      const hit = { zone: info.zone, face, localNormal: ln.clone(), point: info.point };
+      const res = penetration(v, def, hit, info.dir, 50);
+      const dealt = orig(res.penetrated ? Math.min(amount, 300) * 0.55 : amount * 0.08, { ...info, kind: 'explosive' });
+      if (v.alive && res.penetrated) {
+        const notes = applyEffects(sys, v, { attacker: info.attacker || null, weaponId: info.weaponId, point: info.point, dir: info.dir, def, res, hit });
+        const ko = knockedOut(v);
+        if (ko && v.alive) { v._psimKo = ko; v.destroy(info.attacker || null, info.weaponId); }
+        if (notes.length) this.G.events.emit('vehicle:crit', { vehicle: v, attacker: info.attacker || null, notes });
+      }
+      return dealt;
+    };
   }
 
   _emplCrew(e) {
@@ -661,6 +692,7 @@ export class PanzerMode extends BaseMode {
 
   _onHit(e) {
     if (!e || e.vehicle !== this.tank) return;
+    try { this.crew && this.crew.onHit(e); } catch (err) { console.warn('[Panzer] Treffer', err); }
     const now = this.G.time.elapsed;
     if (now - (this._hitSaid || -9) < 2) return;
     this._hitSaid = now;

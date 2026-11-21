@@ -314,6 +314,13 @@ export function applyEffects(sys, v, info) {
     const a = s.actor;
     if (a && a.alive && G.combat) {
       const inv = a.invulnerable;
+      // Spieler (Nutzer 21.11.: „kein Sofort-Tod“): Splitterschutzauskleidung/Helm mindern; ein tödlicher Treffer macht ihn
+      // höchstens alle 30 s nur schwer verwundet (Besatzungsausfälle statt Rundenende) – Munitionsbrand bleibt tödlich
+      if (a.isPlayer) {
+        dmg *= 0.6;
+        const now = G.time.elapsed;
+        if (dmg >= a.health && a.health > 15 && now - (a._psimSaved || -1e9) > 30) { a._psimSaved = now; dmg = a.health - 12; notes.push('Du bist schwer verwundet'); }
+      }
       a.invulnerable = false;
       try { G.combat.damage(a, { amount: Math.round(dmg), attacker: info.attacker || null, weaponId: info.weaponId, explosive: true, point: pt.clone(), zone: 'body' }); } catch { /* */ }
       if (a.alive) a.invulnerable = inv;
@@ -354,6 +361,8 @@ export function knockedOut(v) {
   if (v._psimCookoff) return 'Munition';
   const crew = v._psimCrew;
   if (!crew || !crew.length) return null;
+  // Spielerpanzer: Besatzungsausfälle legen ihn nicht still – der Spieler kann den Platz wechseln (Sitzrad)
+  if (v.seats.some((s) => s.actor && s.actor.isPlayer && s.actor.alive)) return null;
   const dead = crew.filter((c) => c.state === 'tot').length;
   const dr = crew.find((c) => c.role === 'driver'), gu = crew.find((c) => c.role === 'gunner');
   if ((dr && dr.state === 'tot' && gu && gu.state === 'tot') || dead / crew.length >= 0.6) return 'Besatzung';

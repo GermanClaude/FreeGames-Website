@@ -1,26 +1,31 @@
 // NULLPUNKT — Panzersimulation: KI-Besatzung des Spielerpanzers und KI der Feindpanzer.
 //
 // Eigene Besatzung (Bots in den Sitzen, Team A) – jede nicht gespielte Rolle arbeitet selbst:
-//   Fahrer         Befehle: vor (3 Stufen) / halt / links / rechts / zurück / zur Markierung / Deckung / Front zum Ziel
-//   Richtschütze   sucht Ziele (Sichtlinie, Erkennungszeit nach Entfernung), meldet sie, richtet mit Vorhalt und
-//                  abklingendem Richtfehler, schießt nur auf „Feuer!“ (oder „Feuer frei“), MG gegen nahe Infanterie
+//   Fahrer         Befehle: vor (3 Stufen) / halt / links / rechts / zurück / zur Markierung / Deckung / Front zum Ziel;
+//                  frei sich Festfahren (zurücksetzen, neu anfahren); ohne Befehl unter Beschuss: Front zum Gegner
+//   Richtschütze   Ziele aus der gemeinsamen Zielliste (Erkennen nach Entfernung/Tarnung/Bewegung, skill.js), richtet mit
+//                  Vorhalt und Entfernung, Fehler schrumpft nach jedem Schuss (Korrektur), schießt auf „Feuer!“ oder bei
+//                  „Feuer frei“ (Standard: an – Selbstverteidigung), Koax-MG gegen Infanterie, nur mit freier Schusslinie
+//                  ab der Mündung; nimmt das gefährlichste Ziel zuerst (zielt es auf uns: Vorrang)
 //   Ladeschütze    lädt die befohlene Art (Automatik von crew.js mit echter Ladezeit), meldet „… geladen!“
 //   Kommandant     (wenn der Spieler nicht Kommandant ist) Zielansprache „Richtschütze – Panzer – halbrechts – 800 –
-//                  Wucht – Feuer!“, Munitionsbefehle an den Lader, Fahrbefehle (Marsch auf das nächste Ziel, Halt zum
-//                  Schuss, Deckung nach schwerem Treffer), Kommandantenübersteuerung des Turms für den Spieler-Richtschützen
+//                  Wucht!“, Munitionsbefehle an den Lader, Feuerbefehl sobald gerichtet und geladen, Fahrbefehle
+//                  (Marsch auf das nächste Ziel, Halt zum Schuss, Deckung nach schwerem Treffer), Kommandantenübersteuerung
+//                  des Turms für den Spieler-Richtschützen
 //   Bug-/Zusatz-MG nahe Infanterie in Feuerstößen
 // Feindpanzer (EnemyTank): ein Bot fährt und richtet (Stellvertreter-Richtschütze, vehicle._proxyGunner), virtuelle
-//   Restbesatzung (ammo.js crewOf) – fällt der Fahrer/Richtschütze virtuell aus, steht bzw. schweigt der Panzer.
+//   Restbesatzung (ammo.js crewOf) – fällt der Fahrer/Richtschütze virtuell aus, steht bzw. schweigt der Panzer. Können nach
+//   Stufe (skill.js: Erkennungszeit, Richtzeit, Fehler des ersten Schusses, Korrektur, Ladezeit).
 import * as THREE from 'three';
 import { VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
-import { Vehicle } from '../vehicle.js?v=20261121041936';
 import { gunSeat, loaderSeat } from '../crew.js?v=20261121041936';
-import { KINDS, kindOf, idFor, modsOf, crewOf } from './ammo.js?v=20261121041936';
+import { KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from './ammo.js?v=20261121041936';
+import { OWN, FRIEND, skillAt, foeLevel, detectTime, sigmaFor, SETTLE, DISP, randn } from './skill.js?v=20261121041936';
 
-const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3(), _e = new THREE.Vector3(), _o = new THREE.Vector3(), _m = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
-const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) * 1.15;
+const UP = new THREE.Vector3(0, 1, 0);
 
 export const TARGET_LABEL = { panzer: 'Panzer', pak: 'Pak', bunker: 'Bunker', infanterie: 'Infanterie', panzerabwehr: 'Panzerabwehrtrupp', fahrzeug: 'Fahrzeug', funk: 'Funkstelle', lager: 'Nachschublager', bruecke: 'Brücke' };
 const PRIO = { panzer: 6, pak: 5, panzerabwehr: 4, bunker: 3, fahrzeug: 2.5, infanterie: 2, funk: 1.5, lager: 1.2, bruecke: 1 };
@@ -36,37 +41,87 @@ export function bearingWord(rel) {
 }
 export const roundRange = (d) => (d < 300 ? Math.round(d / 25) * 25 : d < 1000 ? Math.round(d / 50) * 50 : Math.round(d / 100) * 100);
 
-/** Zielpunkt eines Eintrags (Welt, aktuell). */
+/** Zielpunkt eines Eintrags (Welt, aktuell): Fahrzeug Wannenmitte (bzw. Turm, wenn nur er sichtbar ist), Mensch Brust. */
 export function targetPoint(t, out) {
   const e = t.ent;
-  if (e.isVehicle) { out.copy(e.body.pos); out.y += e.isEmplacement ? (e.kind === 'bunker' ? 0.2 : -0.1) : 0.25; return out; }
-  out.copy(e.position); out.y += 1.15; return out;
+  if (e.isVehicle) {
+    out.copy(e.body.pos);
+    if (e.isEmplacement) out.y += e.kind === 'bunker' ? 0.2 : -0.1;
+    else if (t.hullDown) out.y += topOffset(e) - 0.15;
+    else out.y += 0.25;
+    return out;
+  }
+  out.copy(e.position); out.y += e.crouching || e.prone ? 0.7 : 1.15; return out;
 }
+/** Höhe (über Wannenmitte) der Turmmitte bzw. Wannenoberkante + 0,4 m. */
+const topOffset = (v) => (v.def.hullBox ? v.def.hullBox[1] + v.def.hullBox[4] - (v.def.com ? v.def.com[1] : 0) + 0.45 : 1.6);
 const entVel = (e, out) => (e.isVehicle ? out.copy(e.body.vel) : e.body && e.body.velocity ? out.copy(e.body.velocity) : out.set(0, 0, 0));
+const entSpeed = (e) => (e.isVehicle ? Math.abs(e.body.speed || 0) : e.body && e.body.velocity ? Math.hypot(e.body.velocity.x, e.body.velocity.z) : 0);
 
 function classify(e) {
   if (e.isVehicle) return e.isEmplacement ? e.kind : e.def.armored ? 'panzer' : 'fahrzeug';
   return typeof e._launcherSlot === 'function' && e._launcherSlot() >= 0 ? 'panzerabwehr' : 'infanterie';
 }
 
+/** Zielt dieses Fahrzeug/diese Stellung gerade auf v? */
+function threatens(ent, v) {
+  if (!ent || !v) return false;
+  if (ent.isEmplacement) return ent.target === v;
+  const ai = ent._psimAI;
+  return !!(ai && ai.target && ai.target.ent === v);
+}
+
+/** Sichtanteil eines Ziels vom Auge: 1 ganz, 0.5 nur Turm/Kopf (Rumpf in Deckung), 0 verdeckt. */
+function visibility(W, eye, e) {
+  if (!W || !W.lineOfSight) return 1;
+  if (e.isVehicle) {
+    _e.copy(e.body.pos); _e.y += 0.4;
+    if (W.lineOfSight(eye, _e)) return 1;
+    if (e.isEmplacement) return 0;
+    _e.copy(e.body.pos); _e.y += topOffset(e);
+    return W.lineOfSight(eye, _e) ? 0.5 : 0;
+  }
+  _e.copy(e.position); _e.y += 1.15;
+  if (W.lineOfSight(eye, _e)) return 1;
+  _e.copy(e.position); _e.y += 1.55;
+  return W.lineOfSight(eye, _e) ? 0.5 : 0;
+}
+
 /**
- * Sichtbare Gegner aus Sicht eines Auges (gedrosselt). known: Map ent → { t: Erkennungsfortschritt } (Erkennen dauert
- * 0,3 s + Entfernung/700 m). → [{ ent, kind, dist, pos }], nach Bedrohung sortiert
+ * Sichtbare/erinnerte Gegner aus Sicht eines Auges (gedrosselt). known: Map ent → { t (Erkennungsfortschritt 0..1),
+ * seen (letzte Sicht, s), pos (letzte Lage), vis }. Erkennen dauert nach skill.js detectTime; ein erkannter Gegner bleibt
+ * 4 s nach Sichtverlust in der Liste (an der letzten Lage, vis = false). o: { maxLos, vehicle (eigenes Fahrzeug, für
+ * Bedrohung), skill, moving (Beobachter fährt) }. → [{ ent, kind, dist, pos, vis, hullDown, score }], gefährlichstes zuerst
  */
-export function scanTargets(G, eye, range, team, known, dt, { maxLos = 28, vehicle = null } = {}) {
-  const out = [], W = G.world;
+export function scanTargets(G, eye, range, team, known, dt, { maxLos = 28, vehicle = null, skill = OWN, moving = false } = {}) {
+  const out = [], W = G.world, now = G.time.elapsed, smoke = G.weapons && typeof G.weapons.smokeVisibility === 'function' ? G.weapons : null;
   let los = 0;
+  const push = (e, kind, d, k, vis) => {
+    let s = (PRIO[kind] || 1) / Math.max(80, d);
+    if (vehicle && threatens(e, vehicle)) s *= 1.8;
+    if (kind === 'panzerabwehr' && d < 300) s *= 1.5;
+    out.push({ ent: e, kind, dist: d, pos: k.pos.clone(), vis, hullDown: k.vis < 1, score: s });
+  };
   const consider = (e, kind, p) => {
     const d = p.distanceTo(eye);
     if (d > range) { known.delete(e); return; }
-    if (los >= maxLos) { const k = known.get(e); if (k && k.t >= 1) out.push({ ent: e, kind, dist: d, pos: p.clone() }); return; }
-    los++;
-    const vis = !W || !W.lineOfSight || W.lineOfSight(eye, p);
     let k = known.get(e);
-    if (!vis) { if (k) { k.t = Math.max(0, k.t - dt * 0.5); if (k.t <= 0) known.delete(e); } return; }
-    if (!k) { k = { t: 0, first: G.time.elapsed }; known.set(e, k); }
-    k.t = Math.min(1, k.t + dt / (0.3 + d / 700) * (e.isVehicle && e.body.speed > 2 ? 1.6 : 1));
-    if (k.t >= 1) out.push({ ent: e, kind, dist: d, pos: p.clone() });
+    if (los >= maxLos) { if (k && k.t >= 1 && now - k.seen < 4) push(e, kind, d, k, false); return; }
+    los++;
+    let vis = visibility(W, eye, e);
+    let sm = 1;
+    if (vis > 0 && smoke) { try { sm = smoke.smokeVisibility(eye, _e.copy(p)); } catch { sm = 1; } if (sm < 0.15) vis = 0; }
+    if (!vis) {
+      if (k) { if (k.t < 1) { k.t = Math.max(0, k.t - dt * 0.3); if (k.t <= 0) known.delete(e); } else if (now - k.seen < 4) push(e, kind, d, k, false); else if (now - k.seen > 20) known.delete(e); }
+      return;
+    }
+    if (!k) { k = { t: 0, first: now, seen: now, pos: p.clone(), vis }; known.set(e, k); }
+    k.seen = now; k.pos.copy(p); k.vis = vis;
+    if (k.t < 1) {
+      const T = detectTime(skill, { dist: d, vis, infantry: !e.isVehicle, moving: entSpeed(e) > 2, fired: e._psimFiredAt != null ? now - e._psimFiredAt : null, smoke: sm, observerMoving: moving });
+      k.t = Math.min(1, k.t + dt / Math.max(0.2, T));
+    }
+    if (k.t >= 1) push(e, kind, d, k, true);
   };
   const V = G.vehicles;
   for (const v of (V && V.list) || []) {
@@ -74,6 +129,7 @@ export function scanTargets(G, eye, range, team, known, dt, { maxLos = 28, vehic
     const t = v.team;
     if (t == null || t === team) continue;
     if (!v.isEmplacement && !v.isOccupied) continue;
+    if (v.isEmplacement && !v.crew && (v.kind === 'pak' || v.kind === 'bunker')) { /* unbesetzt: weiter Ziel */ }
     _a.copy(v.body.pos); _a.y += 0.5;
     consider(v, classify(v), _a);
   }
@@ -82,8 +138,17 @@ export function scanTargets(G, eye, range, team, known, dt, { maxLos = 28, vehic
     _a.copy(a.position); _a.y += 1.2;
     consider(a, classify(a), _a);
   }
-  out.sort((x, y) => (PRIO[y.kind] || 1) / Math.max(80, y.dist) - (PRIO[x.kind] || 1) / Math.max(80, x.dist));
+  out.sort((x, y) => y.score - x.score);
   return out;
+}
+
+/** Wirkung einer Munitionsart gegen ein Ziel: 2 gut, 1 schwach, 0 wirkungslos. */
+export function ammoEffect(kind, tkind, dist = 0) {
+  const role = KINDS[kind] ? KINDS[kind].role : 'ke';
+  if (tkind === 'panzer') return role === 'ke' || role === 'ce' ? 2 : role === 'he' ? 1 : 0;
+  if (tkind === 'pak') return role === 'can' ? (dist < 450 ? 2 : 0) : 2;
+  if (tkind === 'infanterie' || tkind === 'panzerabwehr') return role === 'he' || role === 'ce' ? 2 : role === 'can' ? (dist < 450 ? 2 : 0) : 1;
+  return role === 'he' || role === 'ce' ? 2 : role === 'ke' ? 1 : 0;
 }
 
 /** Passende Munitionsart für ein Ziel (Art-Kennung der Generation). */
@@ -91,11 +156,42 @@ export function ammoForTarget(v, t) {
   const has = (k) => !!idFor(v, k) && v.gun && v.gun.rack[idFor(v, k)] > 0;
   const pick = (...ks) => ks.find(has) || ks.find((k) => !!idFor(v, k)) || null;
   const kind = t ? t.kind : 'panzer';
-  if (kind === 'panzer') return pick('lfk', 'wucht', 'tsg', 'pzgr', 'mz', 'hl');
+  if (kind === 'panzer') return pick('wucht', 'tsg', 'pzgr', 'lfk', 'mz', 'hl');
   if (kind === 'pak' || kind === 'bunker' || kind === 'fahrzeug' || kind === 'funk' || kind === 'lager' || kind === 'bruecke') return pick('spreng', 'qk', 'mz', 'hl', 'pzgr');
-  if (t && t.dist < (idFor(v, 'kan') ? 420 : 200)) return pick('kan', 'kart', 'spreng', 'qk', 'mz');
+  if (t && t.dist < (idFor(v, 'kan') ? 380 : 200)) return pick('kan', 'kart', 'spreng', 'qk', 'mz');
   return pick('spreng', 'qk', 'mz', 'pzgr');
 }
+
+/**
+ * Schütze: Haltepunkt mit Fehlermodell (skill.js). st = { bias: Vector2 (rad), lead (Faktor), shots } je Ziel.
+ * Ziel (Welt, ohne Fehler) in P; Ergebnis (mit Vorhalt + Fehler) in out.
+ */
+function newBias(st, era, skill, speed) {
+  const s = sigmaFor(era, skill, speed);
+  st.bias.set(randn() * s, randn() * s * (era === 'modern' ? 1.1 : 1.35));
+  st.lead = randn() * skill.lead;
+  st.shots = 0;
+}
+function aimWithError(st, from, P, ent, speed, out) {
+  const dist = Math.max(5, P.distanceTo(from));
+  // Vorhalt (geschätzte Zielgeschwindigkeit, Fehler st.lead)
+  entVel(ent, _m);
+  out.copy(P).addScaledVector(_m, (dist / Math.max(100, speed)) * (1 + st.lead));
+  // Seiten-/Höhenfehler (Entfernungsfehler wirkt als Höhenfehler)
+  _d.copy(out).sub(from).setY(0);
+  if (_d.lengthSq() < 1e-6) return out;
+  _d.normalize();
+  _e.set(-_d.z, 0, _d.x);
+  out.addScaledVector(_e, (st.bias.x + st.disp.x) * dist).addScaledVector(UP, (st.bias.y + st.disp.y) * dist);
+  return out;
+}
+function afterShot(st, skill) {
+  st.shots++;
+  st.bias.multiplyScalar(skill.corr);
+  st.lead *= skill.corr;
+  st.disp.set(randn() * DISP, randn() * DISP);
+}
+const aimState = () => ({ bias: new THREE.Vector2(), disp: new THREE.Vector2(randn() * DISP, randn() * DISP), lead: 0, shots: 0 });
 
 /* ====================================================================== eigene Besatzung */
 
@@ -113,25 +209,31 @@ export class TankCrew {
       loader: ls ? ls.index : -1,
       commander: find((s) => s.def.id === 'commander'),
     };
-    this.extra = S.filter((s) => s.def.mount === 'cmg' && s.def.id !== 'commander' && s.index !== this.idx.gunner).map((s) => s.index);
+    this.extra = S.filter((s) => (s.def.mount === 'cmg' || s.def.mount === 'mg') && s.index !== this.idx.gunner).map((s) => s.index);
+    this.skill = OWN;
+    this.era = eraOf(v.def);
     this.known = new Map();
     this.targets = [];
     this.scanT = 0;
     // Fahrer
-    this.drive = { cmd: 'halt', speed: 1, turn: 0, turnT: 0, goal: null, since: 0, blockedT: 0, said: '' };
-    // Richtschütze
-    this.gun = { target: null, aimT: 0, noise: new THREE.Vector2(), fireOrder: 0, fireFree: false, lastShot: -1e9, designate: null, coax: 0, reported: new WeakSet() };
+    this.drive = { cmd: 'halt', speed: 1, turn: 0, turnT: 0, goal: null, since: 0, blockedT: 0, said: '', unstuck: 0, unstuckSteer: 0, autoT: -1e9 };
+    // Richtschütze (Feuer frei als Standard: die Besatzung verteidigt sich selbst; Kommandant kann „Feuer einstellen“)
+    this.gun = { target: null, aimT: 0, fireOrder: 0, fireFree: true, lastShot: -1e9, designate: null, coax: 0, reported: new WeakSet(), aim: aimState(), ready: false };
     // Lader / Kommandant
-    this.ammoOrder = null;
-    this.cmd = { target: null, phase: 'suche', sinceFire: 0, calledFor: null, overrideT: 0, overYaw: 0, overPitch: 0, objective: null, lastDrive: '', driveSaidT: -1e9, hurtT: -1e9, fireSaidT: -1e9 };
+    this.ammoOrder = null; this.ammoBy = null; this.ammoT = -1e9;
+    this.cmd = { target: null, phase: 'suche', sinceFire: 0, calledFor: null, overrideT: 0, overYaw: 0, overPitch: 0, objective: null, lastDrive: '', driveSaidT: -1e9, hurtT: -1e9, fireSaidT: -1e9, sinceCall: 0, lostT: 0 };
     this.mg = new Map();
+    this.stats = { shots: 0, mg: 0 };
+    v._reloadMul = this.skill.reload; // Ladeschütze lädt zügig
   }
 
   seatActor(role) { const i = this.idx[role]; return i >= 0 ? this.v.seats[i].actor : null; }
   isPlayer(role) { const a = this.seatActor(role); return !!(a && a.isPlayer); }
   isBot(role) { const a = this.seatActor(role); return !!(a && !a.isPlayer && a.alive); }
-  say(from, text, o) { this.mode.radio.say(from, text, o); }
+  say(from, text, o) { this.mode.radio && this.mode.radio.say(from, text, o); }
   eye(out) { return this.v.body.toWorld(out.set(0, (this.v.def.hullBox[1] + this.v.def.hullBox[4]) + 0.9, 0), out); }
+  /** KI-Kommandant aktiv (Platz mit Bot besetzt bzw. ohne Kommandantenplatz)? */
+  aiCommander() { return this.idx.commander < 0 ? !this.isPlayer('gunner') : this.isBot('commander'); }
 
   /* ---------------------------------------------------------- Befehle (Spieler-Kommandant oder KI-Kommandant) */
 
@@ -154,19 +256,20 @@ export class TankCrew {
     else if (cmd === 'rumpf') { D.cmd = 'rumpf'; D.goalYaw = arg != null ? arg : V.body.yaw() + V.mount.turretYaw; }
     else D.cmd = cmd;
     D.since = now;
-    D.blockedT = 0;
+    D.blockedT = 0; D.unstuck = 0;
     if (driverBot && !quiet) setTimeout(() => { if (this.isBot('driver')) this.say('Fahrer', { vor: 'Fahre!', halt: 'Halte!', zurueck: 'Fahre zurück!', markierung: 'Fahre Markierung an!', deckung: 'Gehe in Deckung!', rumpf: 'Drehe!', links: 'Links!', rechts: 'Rechts!' }[cmd] || 'Verstanden!', { key: 'drv-ack', quiet: true }); }, 500);
   }
 
   /** Munitionsbefehl an den Ladeschützen. kind = Art (wucht, mz, …) */
-  orderAmmo(kind, { quiet = false, from = 'Kommandant' } = {}) {
+  orderAmmo(kind, { quiet = false, from = 'Kommandant', by = 'player' } = {}) {
     const id = idFor(this.v, kind);
     if (!id) return false;
-    this.ammoOrder = id;
+    const same = this.ammoOrder === id;
+    this.ammoOrder = id; this.ammoBy = by; this.ammoT = this.G.time.elapsed;
     const gs = this.v.seats[this.idx.gunner];
-    if (gs) { const wi = gs.weapons.findIndex((w) => w.def.id === id); if (wi >= 0) gs.intent.weapon = wi; gs._shellWish = id; }
+    if (gs) { gs._shellWish = id; const w = gs.weapons[gs.weaponIndex]; if (w && w.def.kind === 'shell') { const wi = gs.weapons.findIndex((x) => x.def.id === id); if (wi >= 0) gs.intent.weapon = wi; } }
     if (this.v.gun && !this.v.gun.held && this.v.gun.step !== 'geladen') this.v.gun.select = id;
-    if (!quiet) this.say(from, `${KINDS[kind].call} laden!`, { key: 'ammo' });
+    if (!quiet && !same) this.say(from, `${KINDS[kind].call} laden!`, { key: 'ammo' });
     return true;
   }
 
@@ -186,14 +289,15 @@ export class TankCrew {
         if (!v.alive || v === this.v || v.team === 'A' || v.team == null || (!v.isOccupied && !v.isEmplacement)) continue;
         _a.copy(v.body.pos).sub(eye); const d = _a.length(); _a.normalize();
         const ang = Math.acos(clamp(_a.dot(dir), -1, 1));
-        if (ang < ba && d < 3000) { ba = ang; best = { ent: v, kind: classify(v), dist: d, pos: v.body.pos.clone() }; }
+        if (ang < ba && d < 3000) { ba = ang; best = { ent: v, kind: classify(v), dist: d, pos: v.body.pos.clone(), vis: true, score: 1 }; }
       }
     }
     const G = this.gun;
     G.designate = { dir: dir.clone(), t: this.G.time.elapsed };
     if (best) {
-      this.known.set(best.ent, { t: 1, first: this.G.time.elapsed });
-      G.target = best; G.aimT = 0;
+      const now = this.G.time.elapsed;
+      this.known.set(best.ent, { t: 1, first: now, seen: now, pos: best.pos.clone(), vis: 1 });
+      this._setGunTarget(best, true);
       const rel = wrap(Math.atan2(-(best.pos.x - eye.x), -(best.pos.z - eye.z)) - this.v.body.yaw());
       this.say(from, `Richtschütze – ${TARGET_LABEL[best.kind]} – ${bearingWord(rel)} – ${roundRange(best.dist)}!`, { key: 'ziel' });
       if (this.isBot('gunner')) setTimeout(() => this.say('Richtschütze', 'Erkannt!', { quiet: true }), 900);
@@ -207,14 +311,36 @@ export class TankCrew {
     return best;
   }
 
-  fire({ from = 'Kommandant' } = {}) {
-    this.say(from, 'Feuer!', { key: 'feuer' });
+  fire({ from = 'Kommandant', quiet = false } = {}) {
+    if (!quiet) this.say(from, 'Feuer!', { key: 'feuer' });
     this.gun.fireOrder = this.G.time.elapsed + 6;
   }
 
   toggleFireFree({ from = 'Kommandant' } = {}) {
     this.gun.fireFree = !this.gun.fireFree;
     this.say(from, this.gun.fireFree ? 'Feuer frei!' : 'Feuer einstellen!', { key: 'feuerfrei' });
+  }
+
+  _setGunTarget(t, designated = false) {
+    const Gs = this.gun;
+    if (Gs.target && t && Gs.target.ent === t.ent) { Gs.target = t; return; }
+    Gs.target = t; Gs.aimT = 0; Gs.ready = false; Gs.designated = designated;
+    if (t) newBias(Gs.aim, this.era, this.skill, this.v.body.speed);
+  }
+
+  /** Treffer am eigenen Panzer (modes/panzer.js): Fahrer ohne Befehl dreht die Front zum Schützen. */
+  onHit(e) {
+    const v = this.v, now = this.G.time.elapsed, D = this.drive;
+    const src = e && e.attacker && e.attacker.vehicle ? e.attacker.vehicle : null;
+    const from = src ? src.body.pos : (this.targets.find((t) => t.kind === 'panzer' || t.kind === 'pak') || {}).pos;
+    if (src && !this.known.has(src)) this.known.set(src, { t: 1, first: now, seen: now, pos: src.body.pos.clone(), vis: 1 });
+    if (!from || !this.isBot('driver') || this.arcade) return;
+    if (D.cmd !== 'halt' || now - D.autoT < 8) return;
+    const yaw = Math.atan2(-(from.x - v.position.x), -(from.z - v.position.z));
+    if (Math.abs(wrap(yaw - v.body.yaw())) < 0.5) return;
+    D.autoT = now;
+    this.order('rumpf', yaw, { quiet: true });
+    this.say('Fahrer', 'Drehe Front zum Feind!', { key: 'drv-auto' });
   }
 
   /* ---------------------------------------------------------- Takt */
@@ -225,8 +351,8 @@ export class TankCrew {
     this.scanT -= dt;
     if (this.scanT <= 0) {
       this.scanT = 0.45;
-      const range = (v.def.era || 'modern') === 'modern' ? 3000 : 1600;
-      this.targets = scanTargets(this.G, this.eye(_c), range, 'A', this.known, 0.45, { vehicle: v });
+      const range = this.era === 'modern' ? 3000 : 1600;
+      this.targets = scanTargets(this.G, this.eye(_c), range, v.team || 'A', this.known, 0.45, { vehicle: v, skill: this.skill, moving: Math.abs(v.body.speed) > 4 });
     }
     if (this.isBot('driver')) this._driver(dt);
     if (this.isBot('gunner')) this._gunner(dt);
@@ -240,7 +366,7 @@ export class TankCrew {
     const v = this.v, D = this.drive, bot = this.seatActor('driver');
     const it = v.intentFor(bot);
     if (!it) return;
-    const mode = this.mode;
+    const mode = this.mode, now = this.G.time.elapsed;
     // Motor: Bot-Fahrer lässt an, sobald es befohlen ist (Simulation: Motor aus beim Start)
     if (mode.engineOff()) {
       if ((mode.state.engineWanted || D.cmd !== 'halt') && !mode.state.cranking) mode.crankEngine('Fahrer');
@@ -248,14 +374,23 @@ export class TankCrew {
       return;
     }
     mode.state.parkBrake = false;
-    it.gearbox = 'auto';
+    it.gearbox = 'auto'; it.handbrake = false;
     if (D.turnT > 0) { D.turnT -= dt; if (D.turnT <= 0) D.turn = 0; }
     const sp = v.body.speed;
+    // Freifahren: zurücksetzen mit Lenkeinschlag, danach neu anfahren
+    if (D.unstuck > 0) {
+      D.unstuck -= dt;
+      it.path = it.moveTo = null;
+      const back = D.cmd !== 'zurueck';
+      it.throttle = back ? -0.6 : 0.6; it.brake = 0; it.steer = D.unstuckSteer;
+      if (D.unstuck <= 0) { D.routed = false; D.blockedT = 0; D.since = now; }
+      return;
+    }
     const lvl = [0, 0.42, 0.7, 1][D.speed] || 0.42;
     switch (D.cmd) {
       case 'vor':
         it.path = it.moveTo = null;
-        it.throttle = lvl; it.brake = 0; it.steer = D.turn * 0.75;
+        it.throttle = lvl; it.brake = 0; it.steer = D.turn * 0.75 + this._avoid(1) * (D.turn ? 0.3 : 0.8);
         break;
       case 'zurueck':
         it.path = it.moveTo = null;
@@ -268,6 +403,9 @@ export class TankCrew {
           v.stop(bot);
           this.say('Fahrer', D.cmd === 'deckung' ? 'In Deckung!' : 'Markierung erreicht!', { key: 'drv-arr' });
           D.cmd = 'halt';
+        } else if (D.routed && !it.path && !it.moveTo) {
+          // Wegsuche ohne Ergebnis: direkt anfahren
+          it.moveTo = D.goal.clone();
         }
         break;
       case 'rumpf': {
@@ -276,7 +414,7 @@ export class TankCrew {
         const e = wrap(want - v.body.yaw());
         it.throttle = 0; it.brake = 0;
         it.steer = clamp(-e * 2.2, -1, 1);
-        if (Math.abs(e) < 0.05) { it.steer = 0; D.cmd = 'halt'; this.say('Fahrer', 'Front steht!', { key: 'drv-arr' }); }
+        if (Math.abs(e) < 0.05 || now - D.since > 12) { it.steer = 0; D.cmd = 'halt'; this.say('Fahrer', 'Front steht!', { key: 'drv-arr' }); }
         break;
       }
       case 'halt':
@@ -286,11 +424,38 @@ export class TankCrew {
         it.brake = D.turn && D.pivot ? 0 : 1;
         it.steer = D.turn && D.pivot ? D.turn * 0.8 : 0;
     }
-    // Festgefahren melden
-    if ((D.cmd === 'vor' || D.cmd === 'zurueck') && Math.abs(sp) < 0.4 && this.G.time.elapsed - D.since > 3) {
+    // Festgefahren: melden, zurücksetzen, neu anfahren
+    const moving = D.cmd === 'vor' || D.cmd === 'zurueck' || D.cmd === 'markierung' || D.cmd === 'deckung';
+    if (moving && Math.abs(sp) < 0.4 && now - D.since > 3) {
       D.blockedT += dt;
-      if (D.blockedT > 2.5) { D.blockedT = -6; this.say('Fahrer', 'Komme nicht weiter!', { key: 'drv-blk' }); }
-    } else if (D.blockedT > 0) D.blockedT = 0;
+      if (D.blockedT > 2.5) {
+        D.blockedT = 0; D.stuckN = (D.stuckN || 0) + 1;
+        if (D.stuckN % 3 === 1) this.say('Fahrer', 'Hänge fest – setze zurück!', { key: 'drv-blk' });
+        D.unstuck = 2.2; D.unstuckSteer = (this._avoid(1) || (Math.random() < 0.5 ? -1 : 1)) * 0.9;
+      }
+    } else if (D.blockedT > 0 && Math.abs(sp) > 1) { D.blockedT = 0; D.stuckN = 0; }
+  }
+
+  /** Hindernis voraus (Welt-Strahl in 2 Höhen): Lenkrichtung weg vom Hindernis (−1 links … 1 rechts), 0 = frei. */
+  _avoid(dirSign = 1) {
+    const v = this.v, W = this.G.world;
+    if (!W || !W.raycast || (this._avT = (this._avT || 0) - 1) > 0) return this._avS || 0;
+    this._avT = 6;
+    const y = v.body.yaw(), hb = v.def.hullBox;
+    const look = 9 + Math.abs(v.body.speed) * 1.2;
+    let best = 0;
+    const probe = (ang) => {
+      _d.set(-Math.sin(y + ang) * dirSign, 0, -Math.cos(y + ang) * dirSign);
+      _o.copy(v.body.pos); _o.y += 0.9; _o.addScaledVector(_d, hb[5] * 0.9);
+      const h = W.raycast(_o, _d, look);
+      return h ? h.distance : look;
+    };
+    const c = probe(0);
+    if (c >= look - 0.5) { this._avS = 0; return 0; }
+    const l = probe(0.45), r = probe(-0.45);
+    best = l > r ? -1 : 1; // Gier positiv = links → Lenkung −1 (A) nach links
+    this._avS = best;
+    return best;
   }
 
   /** Deckungspunkt: 15–35 m weg vom Bedrohungsrichtungs-Mittel, Sicht vom Gegner blockiert. */
@@ -322,60 +487,87 @@ export class TankCrew {
     it.fire = false;
     const now = G.time.elapsed;
     const mods = modsOf(v);
-    // Ziel wählen: übergebenes/angesprochenes, sonst bei „Feuer frei“ oder KI-Kommandant das bedrohlichste
+    const aiCmd = this.aiCommander();
+    // Ziel wählen: übergebenes/angesprochenes; mit KI-Kommandant dessen Ziel; sonst bei „Feuer frei“ das gefährlichste
     let t = Gs.target;
-    if (t && (!t.ent.alive || (t.ent.isVehicle && t.ent.wreck))) { t = Gs.target = null; }
-    if (!t && (Gs.fireFree || !this.isPlayer('commander'))) {
-      t = this.targets[0] || null;
-      if (t && !this.isPlayer('commander')) t = this.cmd.target || null; // KI-Kommandant weist zu
-      if (t && Gs.fireFree && !Gs.reported.has(t.ent)) { Gs.reported.add(t.ent); this._report(t); }
-      Gs.target = t; Gs.aimT = 0;
+    if (t && (!t.ent.alive || (t.ent.isVehicle && t.ent.wreck))) { t = null; this._setGunTarget(null); }
+    const fresh = t ? this.targets.find((x) => x.ent === t.ent) : null;
+    if (t && !fresh && !Gs.designated) { t = null; this._setGunTarget(null); }
+    if (fresh) { t.dist = fresh.dist; t.pos.copy(fresh.pos); t.vis = fresh.vis; t.hullDown = fresh.hullDown; }
+    if (aiCmd && this.cmd.target && (!t || this.cmd.target.ent !== t.ent)) { t = this.cmd.target; this._setGunTarget(t); }
+    else if (!t && Gs.fireFree && this.targets.length) {
+      t = this.targets.find((x) => x.vis) || null;
+      if (t) {
+        this._setGunTarget(t);
+        if (!aiCmd && !Gs.reported.has(t.ent)) { Gs.reported.add(t.ent); this._report(t); }
+      }
+    } else if (t && Gs.fireFree && !Gs.designated && !aiCmd) {
+      // gefährlicheres Ziel aufgetaucht (zielt auf uns, näher): umschwenken
+      const best = this.targets.find((x) => x.vis);
+      if (best && best.ent !== t.ent && best.score > (fresh ? fresh.score : 0) * 1.7) { t = best; this._setGunTarget(t); if (!Gs.reported.has(t.ent)) { Gs.reported.add(t.ent); this._report(t); } }
     }
     if (!t) {
       // Blickrichtung der Übergabe halten
       if (Gs.designate && now - Gs.designate.t < 8) { it.aimDir = (it.aimDir || new THREE.Vector3()).copy(Gs.designate.dir); it.aimAt = null; }
+      this._coaxIdle(seat);
       return;
     }
-    // Richten mit Vorhalt und abklingendem Fehler
-    const shellIdx = seat.weapons.findIndex((w) => w.def.id === (this.ammoOrder || v.gun.loaded || seat._shellWish));
+    // Eigene Munitionswahl, wenn niemand befohlen hat (Spieler-Kommandant ohne Befehl): passende Sorte nachladen lassen
+    if (!aiCmd && this.idx.loader >= 0 && this.ammoBy !== 'player') {
+      const k = ammoForTarget(v, t);
+      const id = k && idFor(v, k);
+      if (id && this.ammoOrder !== id && now - this.ammoT > 3) this.orderAmmo(k, { from: 'Richtschütze', by: 'gunner', quiet: !this.isPlayer('loader') });
+    }
+    // Waffe: Koax gegen Infanterie (Kanone bleibt geladen), sonst Kanone
     const coaxIdx = seat.weapons.findIndex((w) => w.def.kind === 'mg');
-    const useMg = coaxIdx >= 0 && (t.kind === 'infanterie') && t.dist < 420 && (Gs.fireFree || now < Gs.fireOrder) && !(this.ammoOrder && kindOf(this.ammoOrder) === 'kan');
+    const lk = kindOf(v.gun.loaded);
+    const canInf = lk && (KINDS[lk].role === 'can') && t.dist < 420;
+    const useMg = coaxIdx >= 0 && (t.kind === 'infanterie' || (t.kind === 'panzerabwehr' && !canInf)) && t.dist < 650;
     if (useMg && seat.weaponIndex !== coaxIdx) it.weapon = coaxIdx;
-    else if (!useMg && shellIdx >= 0 && seat.weaponIndex !== shellIdx && seat.weapons[seat.weaponIndex].def.kind === 'mg') it.weapon = shellIdx;
-    const def = useMg ? seat.weapons[coaxIdx].def : VEHICLE_WEAPONS[v.gun.loaded] || seat.weapons[0].def;
+    else if (!useMg && seat.weapons[seat.weaponIndex].def.kind === 'mg') {
+      const si = seat.weapons.findIndex((w) => w.def.id === (v.gun.loaded || this.ammoOrder || seat._shellWish));
+      it.weapon = si >= 0 ? si : seat.weapons.findIndex((w) => w.def.kind === 'shell');
+    }
+    const def = useMg ? seat.weapons[coaxIdx].def : VEHICLE_WEAPONS[v.gun.loaded] || VEHICLE_WEAPONS[this.ammoOrder] || seat.weapons[0].def;
     const P = targetPoint(t, _a);
-    const eye = this.eye(_c);
-    const dist = P.distanceTo(eye);
-    const tof = useMg ? dist / 820 : dist / (def.speed || 1000);
-    P.addScaledVector(entVel(t.ent, _b), tof);
-    Gs.aimT += dt;
-    const skill = { rekrut: 1.6, regulaer: 1, veteran: 0.75, elite: 0.55 }[G.match && G.match.difficulty] || 1;
+    v.muzzle(seat.index, _o, _b);
+    const speed = useMg ? 850 : def.speed || 1000;
     const optic = mods.optik <= 0 ? 3 : mods.optik < 1 ? 1.6 : 1;
-    const sig = (0.0028 * Math.exp(-Gs.aimT / 1.6) + 0.00035) * (1 + Math.abs(v.body.speed) * ((v.def.era || 'modern') === 'modern' ? 0.03 : 0.25)) * optic;
-    if (Math.random() < dt * 2) Gs.noise.set(gauss() * sig, gauss() * sig);
-    _d.copy(P).sub(eye);
-    const yaw = Math.atan2(-_d.x, -_d.z) + Gs.noise.x, pitch = Math.atan2(_d.y, Math.hypot(_d.x, _d.z)) + Gs.noise.y * 0.6;
-    const r = _d.length();
-    _b.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(r).add(eye);
-    v.aimAt(bot, _b, false);
+    if (useMg) { _c.copy(P).addScaledVector(entVel(t.ent, _m), P.distanceTo(_o) / speed); }
+    else {
+      aimWithError(Gs.aim, _o, P, t.ent, speed, _c);
+      if (optic > 1) _c.addScaledVector(_d.set(Gs.aim.bias.x, Gs.aim.bias.y, -Gs.aim.bias.x).normalize(), (optic - 1) * 0.0015 * P.distanceTo(_o));
+    }
+    v.aimAt(bot, _c, false);
     it.fireWhenAligned = true;
-    // Feuern
+    Gs.aimT += dt;
+    const settle = (SETTLE[this.era] || 2.5) * this.skill.settle * (Gs.aim.shots > 0 ? 0.5 : 1);
+    Gs.ready = t.vis !== false && Gs.aimT >= settle && seat.aimError < 0.0015;
+    // Feuern: „Feuer frei“, Feuerbefehl (Spieler oder KI-Kommandant)
     const ordered = now < Gs.fireOrder || Gs.fireFree;
-    if (!ordered || this.mode.gunBlocked()) return;
+    if (!ordered || this.mode.gunBlocked() || t.vis === false) { if (useMg) Gs.coax = 0; return; }
+    const W = G.world;
     if (useMg) {
-      if (seat.aimError < 0.02) { Gs.coax -= dt; if (Gs.coax <= -1.2) Gs.coax = 0.9; it.fire = Gs.coax > 0; }
+      if (seat.aimError < 0.02 && (!W || !W.lineOfSight || W.lineOfSight(_o, P))) { Gs.coax -= dt; if (Gs.coax <= -1.0) Gs.coax = 0.8 + Math.random() * 0.6; it.fire = Gs.coax > 0; if (it.fire) this.stats.mg++; }
       return;
     }
     const g = v.gun;
-    const wk = (v.def.era || 'modern') !== 'modern';
-    if (g.step !== 'geladen' || seat.aimError > 0.004 || Gs.aimT < (wk ? 1.6 : 1.0) || (wk && Math.abs(v.body.speed) > 1.5)) return;
-    if (now - Gs.lastShot < 1.5) return;
-    const W = G.world;
-    if (W && W.lineOfSight && !W.lineOfSight(eye, targetPoint(t, _d))) return;
+    const wk = this.era !== 'modern';
+    if (g.step !== 'geladen' || seat.aimError > 0.0007 || Gs.aimT < settle || (wk && Math.abs(v.body.speed) > 1.2 && t.dist > 200)) return;
+    if (now - Gs.lastShot < 1.0) return;
+    if (W && W.lineOfSight && !W.lineOfSight(_o, P)) return; // Schusslinie ab der Mündung (Hang, Haus, Baum)
     it.firePressed = true; it.fire = true;
     Gs.lastShot = now;
+    afterShot(Gs.aim, this.skill);
+    Gs.aimT = 0;
+    this.stats.shots++;
     if (!Gs.fireFree) Gs.fireOrder = 0;
     this.say('Richtschütze', 'Schuss!', { key: 'schuss', quiet: true });
+  }
+
+  _coaxIdle(seat) {
+    const w = seat.weapons[seat.weaponIndex];
+    if (w && w.def.kind === 'mg') { const si = seat.weapons.findIndex((x) => x.def.kind === 'shell'); if (si >= 0) seat.intent.weapon = si; }
   }
 
   _report(t) {
@@ -388,52 +580,59 @@ export class TankCrew {
 
   _commander(dt) {
     const v = this.v, C = this.cmd, G = this.G, now = G.time.elapsed, mode = this.mode;
-    if (this.idx.commander >= 0 && !this.isBot('commander') && !this.isPlayer('commander')) return; // Kommandant ausgefallen
+    if (this.idx.commander >= 0 && !this.isBot('commander')) return; // Kommandant ausgefallen (oder Spieler)
     // Motor anlassen (Simulation)
     if (mode.engineOff() && !mode.state.engineWanted) {
       mode.state.engineWanted = true;
       this.say('Kommandant', 'Fahrer – Motor anlassen!', { key: 'motor' });
     }
-    // Ziel
+    // Ziel: gefährlichstes sichtbares; das alte bleibt, bis es vernichtet, 4 s verschwunden oder deutlich weniger gefährlich ist
     const ts = this.targets;
     let t = C.target;
-    if (t && (!t.ent.alive || (t.ent.isVehicle && t.ent.wreck) || !ts.some((x) => x.ent === t.ent))) {
-      if (t && (!t.ent.alive || t.ent.wreck)) this.say('Kommandant', t.kind === 'infanterie' ? 'Ziel bekämpft!' : 'Ziel vernichtet!', { key: 'erfolg' });
+    const cur = t ? ts.find((x) => x.ent === t.ent) : null;
+    if (t && (!t.ent.alive || (t.ent.isVehicle && t.ent.wreck))) {
+      this.say('Kommandant', t.kind === 'infanterie' ? 'Ziel bekämpft!' : 'Ziel vernichtet!', { key: 'erfolg' });
       t = C.target = null; C.phase = 'suche';
-    }
-    if (!t && ts.length) {
-      t = C.target = ts[0];
+    } else if (t && !cur) { t = C.target = null; C.phase = 'suche'; }
+    const best = ts.find((x) => x.vis) || null;
+    if (best && (!t || (best.ent !== t.ent && best.score > (cur ? cur.score : 0) * 1.7) || (cur && !cur.vis && now - C.sinceCall > 3))) {
+      t = C.target = best;
       C.phase = 'ansprache'; C.calledFor = null;
-      this.gun.target = t; this.gun.aimT = 0;
     }
     if (t) {
-      const fresh = ts.find((x) => x.ent === t.ent); if (fresh) { t.dist = fresh.dist; t.pos.copy(fresh.pos); }
+      if (cur) { t.dist = cur.dist; t.pos.copy(cur.pos); t.vis = cur.vis; t.hullDown = cur.hullDown; }
       const kind = ammoForTarget(v, t);
+      const coax = t.kind === 'infanterie' && t.dist < 650 && v.seats[this.idx.gunner] && v.seats[this.idx.gunner].weapons.some((w) => w.def.kind === 'mg');
       if (C.calledFor !== t.ent) {
         C.calledFor = t.ent;
         const eye = this.eye(_c);
         const rel = wrap(Math.atan2(-(t.pos.x - eye.x), -(t.pos.z - eye.z)) - v.body.yaw());
-        this.say('Kommandant', `Richtschütze – ${TARGET_LABEL[t.kind]} – ${bearingWord(rel)} – ${roundRange(t.dist)}${kind ? ` – ${KINDS[kind].call}` : ''}!`, { key: 'ziel' });
-        if (kind) this.orderAmmo(kind, { quiet: true });
+        this.say('Kommandant', `Richtschütze – ${TARGET_LABEL[t.kind]} – ${bearingWord(rel)} – ${roundRange(t.dist)}${coax ? ' – MG' : kind ? ` – ${KINDS[kind].call}` : ''}!`, { key: 'ziel' });
+        // Munition für den nächsten Schuss (Infanterie mit dem MG: Panzermunition bleibt, solange Panzer/Pak bekannt sind)
+        const armor = ts.some((x) => x.kind === 'panzer' || x.kind === 'pak');
+        if (kind && !(coax && armor)) this.orderAmmo(kind, { quiet: false, by: 'commander' });
         if (this.isPlayer('gunner') && !this.arcade) { C.overrideT = 1.4; this._overrideTo(t); }
         else if (this.isBot('gunner')) setTimeout(() => this.say('Richtschütze', 'Erkannt!', { quiet: true }), 800);
         C.phase = 'richten'; C.sinceCall = now;
         // Fahrer: zum Schuss anhalten (Weltkrieg immer, modern auf große Entfernung)
-        const wk = (v.def.era || 'modern') !== 'modern';
-        if (!this.arcade && (wk || t.dist > 1200) && Math.abs(v.body.speed) > 1 && (this.drive.cmd === 'vor' || this.drive.cmd === 'markierung' || this.isPlayer('driver'))) this._driveOrder('halt');
+        const wk = this.era !== 'modern';
+        if (!this.arcade && (wk || t.dist > 1200) && Math.abs(v.body.speed) > 1 && t.kind !== 'infanterie' && (this.drive.cmd === 'vor' || this.drive.cmd === 'markierung' || this.isPlayer('driver'))) this._driveOrder('halt');
       }
-      // Feuerbefehl, sobald geladen und gerichtet
+      // Feuerbefehl, sobald geladen und gerichtet (falsche Sorte im Rohr: trotzdem schießen – der nächste Schuss passt)
       const g = v.gun;
-      const loaded = g && g.step === 'geladen' && (!this.ammoOrder || g.loaded === this.ammoOrder || now - C.sinceCall > 9);
-      if (C.phase === 'richten' && loaded && !mode.gunBlocked()) {
+      const loaded = coax || (g && g.step === 'geladen');
+      if (C.phase === 'richten' && loaded && !mode.gunBlocked() && t.vis !== false) {
         let aimed = false;
         if (this.isPlayer('gunner')) {
           const seat = v.seats[this.idx.gunner];
           const dir = _d.set(-Math.sin(seat.look.yaw) * Math.cos(seat.look.pitch), Math.sin(seat.look.pitch), -Math.cos(seat.look.yaw) * Math.cos(seat.look.pitch));
           const eye = this.eye(_c);
           aimed = Math.acos(clamp(targetPoint(t, _a).sub(eye).normalize().dot(dir), -1, 1)) < 0.012;
-        } else aimed = this.gun.aimT > 0.8 && v.seats[this.idx.gunner] && v.seats[this.idx.gunner].aimError < 0.01;
-        if (aimed && now - C.fireSaidT > 5) { C.fireSaidT = now; this.fire(); }
+        } else aimed = this.gun.ready || coax;
+        if (aimed && now - C.fireSaidT > (this.isPlayer('gunner') ? 5 : 1.5) && now > this.gun.fireOrder - 5.5) {
+          C.fireSaidT = now;
+          this.fire({ quiet: coax && now - C.sinceCall > 2 });
+        }
       }
     } else if (C.phase !== 'suche') C.phase = 'suche';
     // Fahrbefehle: ohne Ziel auf das nächste Angriffsziel vorrücken
@@ -441,13 +640,13 @@ export class TankCrew {
       const obj = mode.nextObjective();
       if (obj) {
         const d = obj.distanceTo(v.position);
-        if (d > 120 && (this.drive.cmd === 'halt' || (this.isPlayer('driver') && Math.abs(v.body.speed) < 0.5))) {
+        const stand = this.era === 'modern' ? 900 : 380;
+        if (d > stand * 0.7 && (this.drive.cmd === 'halt' || (this.isPlayer('driver') && Math.abs(v.body.speed) < 0.5))) {
           C.objective = obj;
-          // Vorrücken bis ~350 m (Weltkrieg) bzw. ~900 m (modern) vor das Ziel
-          const stand = (v.def.era || 'modern') === 'modern' ? 900 : 380;
+          // Vorrücken bis ~380 m (Weltkrieg) bzw. ~900 m (modern) vor das Ziel, je Sprung höchstens 260 m
           const p = obj.clone().sub(v.position).setY(0);
           const L = p.length();
-          const goal = v.position.clone().addScaledVector(p.normalize(), Math.max(30, Math.min(L - stand, 260)));
+          const goal = v.position.clone().addScaledVector(p.normalize(), Math.max(40, Math.min(L - stand * 0.6, 260)));
           const W = G.world; if (W && W.groundHeight) { const h = W.groundHeight(goal.x, goal.z, goal.y + 30); if (h != null) goal.y = h; }
           mode.setMarker(goal);
           this._driveOrder('markierung', goal);
@@ -490,12 +689,17 @@ export class TankCrew {
     const st = this.mg.get(i) || { t: 0, burst: 0 };
     this.mg.set(i, st);
     const it = s.intent;
-    const t = this.targets.find((x) => (x.kind === 'infanterie' || x.kind === 'panzerabwehr') && x.dist < 380);
-    if (!t) { it.fire = false; v.aimAt(bot, null, false); return; }
-    v.aimAt(bot, targetPoint(t, _a), false);
+    if (!s.weapons.length) return;
+    const t = this.targets.find((x) => x.vis && (x.kind === 'infanterie' || x.kind === 'panzerabwehr') && x.dist < 420);
+    if (!t || !this.gun.fireFree && !(this.G.time.elapsed < this.gun.fireOrder)) { it.fire = false; v.aimAt(bot, null, false); return; }
+    const P = targetPoint(t, _a);
+    v.aimAt(bot, P, false);
     st.t -= dt;
     if (st.t <= 0) { st.burst = 0.7 + Math.random() * 0.6; st.t = 2 + Math.random() * 1.5; }
-    if (st.burst > 0) { st.burst -= dt; it.fire = s.aimError < 0.05; } else it.fire = false;
+    v.muzzle(i, _o, _b);
+    const W = this.G.world;
+    const clear = !W || !W.lineOfSight || W.lineOfSight(_o, P);
+    if (st.burst > 0) { st.burst -= dt; it.fire = s.aimError < 0.05 && clear; if (it.fire) this.stats.mg++; } else it.fire = false;
   }
 }
 
@@ -510,8 +714,14 @@ export class EnemyTank {
     this.leg = 0;
     this.known = new Map(); this.targets = [];
     this.scanT = Math.random(); this.aimT = 0; this.shots = 0; this.target = null;
-    this.state = 'halten'; this.moveT = 0; this.cool = 2 + Math.random() * 2;
-    this.noise = new THREE.Vector2();
+    this.state = 'halten'; this.moveT = 0; this.cool = 1 + Math.random() * 2;
+    this.era = eraOf(v.def);
+    this.skill = team === 'B' ? skillAt(foeLevel(this.G, mode)) : FRIEND;
+    this.aim = aimState();
+    v._psimAI = this;
+    v._reloadMul = this.skill.reload;
+    // virtuelle Ladeschützen (nur ein Bot an Bord): lädt in Ladeschützenzeit, solange er „lebt“
+    v._virtualLoader = () => { const c = crewOf(v).find((x) => x.role === 'loader'); return !!c && c.state !== 'tot'; };
   }
 
   update(dt) {
@@ -524,19 +734,27 @@ export class EnemyTank {
     const gunOk = (!role('gunner') || role('gunner').state !== 'tot') && mods.rohr > 0;
     const it = v.intentFor(bot);
     if (!it) return;
+    const now = G.time.elapsed;
     this.scanT -= dt;
     if (this.scanT <= 0) {
-      this.scanT = 0.7;
-      const range = (v.def.era || 'modern') === 'modern' ? 2600 : 1200;
+      this.scanT = 0.6;
+      const range = this.era === 'modern' ? 2600 : 1300;
       _c.copy(v.body.pos); _c.y += 1.6;
-      this.targets = scanTargets(G, _c, range, this.team, this.known, 0.7, { maxLos: 10, vehicle: v });
-      const tank = this.targets.find((t) => t.kind === 'panzer' || t.kind === 'fahrzeug');
-      const nt = tank || this.targets.find((t) => t.dist < 500) || null;
-      if (nt && (!this.target || nt.ent !== this.target.ent)) { this.target = nt; this.aimT = 0; }
-      if (!nt) this.target = null;
+      const sk = mods.optik <= 0 ? { ...this.skill, detect: this.skill.detect * 2 } : this.skill;
+      this.targets = scanTargets(G, _c, range, this.team, this.known, 0.6, { maxLos: 10, vehicle: v, skill: sk, moving: Math.abs(v.body.speed) > 4 });
+      // gefährlichstes sichtbares Ziel; Panzer vor Infanterie (Infanterie nur bis 500 m)
+      const cand = this.targets.filter((t) => t.vis && (t.ent.isVehicle || t.dist < 500));
+      const nt = cand[0] || null;
+      const cur = this.target ? this.targets.find((t) => t.ent === this.target.ent) : null;
+      if (cur) { this.target.dist = cur.dist; this.target.pos.copy(cur.pos); this.target.vis = cur.vis; this.target.hullDown = cur.hullDown; }
+      if (!cur) this.target = null;
+      if (nt && (!this.target || (nt.ent !== this.target.ent && (nt.score > cur.score * 1.7 || !cur.vis)))) {
+        this.target = nt; this.aimT = 0; newBias(this.aim, this.era, this.skill, v.body.speed);
+      }
     }
     const t = this.target;
-    const wk = (v.def.era || 'modern') !== 'modern';
+    if (t && (!t.ent.alive || t.ent.wreck)) { this.target = null; return; }
+    const wk = this.era !== 'modern';
     // Bewegung
     if (!drvOk || mods.ketten <= 0 || mods.motor <= 0) { v.stop(bot); }
     else if (t) {
@@ -557,35 +775,32 @@ export class EnemyTank {
       else if (this.team !== 'B' && this.leg >= this.route.length && (this._followT = (this._followT || 0) - dt) <= 0) { this._followT = 4; this._next(); }
     }
     // Waffe
+    it.fire = false;
     if (!t || !gunOk) { if (!t) v.aimAt(bot, null, false); return; }
     const seat = v.seats.find((s) => s.def.mount === 'gun');
     if (!seat) return;
-    // Munition: Panzer → Wucht/PzGr, sonst Spreng
+    // Munition: Panzer → Wucht/PzGr, sonst Spreng (nächste Ladung)
     const kind = ammoForTarget(v, t);
     const id = idFor(v, kind);
-    if (id) { const wi = seat.weapons.findIndex((w) => w.def.id === id); if (wi >= 0 && wi !== seat.weaponIndex) it.weapon = wi; }
+    if (id) { seat._shellWish = id; const wi = seat.weapons.findIndex((w) => w.def.id === id); if (wi >= 0 && wi !== seat.weaponIndex) it.weapon = wi; }
     const def = VEHICLE_WEAPONS[v.gun.loaded] || seat.weapons[0].def;
-    _c.copy(v.body.pos); _c.y += 1.8;
     const P = targetPoint(t, _a);
-    const dist = P.distanceTo(_c);
-    P.addScaledVector(entVel(t.ent, _b), dist / (def.speed || 900));
+    v.muzzle(seat.index, _o, _b);
+    aimWithError(this.aim, _o, P, t.ent, def.speed || 900, _c);
+    if (mods.optik < 1) _c.addScaledVector(UP, (mods.optik <= 0 ? 0.004 : 0.0015) * P.distanceTo(_o) * (this.aim.bias.y >= 0 ? 1 : -1));
+    v.aimAt(bot, _c, false);
+    if (t.vis === false) return; // nur erinnert: Turm bleibt drauf, kein Schuss
     this.aimT += dt;
-    const diff = { rekrut: 1.8, regulaer: 1.2, veteran: 0.9, elite: 0.65 }[G.match && G.match.difficulty] || 1.2;
-    const sig = (0.004 * Math.exp(-this.aimT / 3) + 0.0007 + 0.0009 / (1 + this.shots)) * diff * (mods.optik < 1 ? 2 : 1);
-    if (Math.random() < dt * 1.5) this.noise.set(gauss() * sig, gauss() * sig);
-    _d.copy(P).sub(_c);
-    const yaw = Math.atan2(-_d.x, -_d.z) + this.noise.x, pitch = Math.atan2(_d.y, Math.hypot(_d.x, _d.z)) + this.noise.y * 0.6;
-    _b.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)).multiplyScalar(_d.length()).add(_c);
-    v.aimAt(bot, _b, false);
-    it.fire = false;
     this.cool -= dt;
+    const settle = (SETTLE[this.era] || 2.5) * this.skill.settle * (this.aim.shots > 0 ? 0.55 : 1);
+    if (this.cool > 0 || v.gun.step !== 'geladen' || this.aimT < settle || seat.aimError > 0.0008) return;
+    if (wk && Math.abs(v.body.speed) > 1.2) return;
     const W = G.world;
-    if (this.cool <= 0 && v.gun.step === 'geladen' && this.aimT > (wk ? 2.6 : 1.8) && seat.aimError < 0.006 && (!wk || Math.abs(v.body.speed) < 1.2)) {
-      if (!W || !W.lineOfSight || W.lineOfSight(_c, targetPoint(t, _d))) {
-        it.fire = true; it.firePressed = true;
-        this.shots++; this.cool = 1.5;
-      }
-    }
+    if (W && W.lineOfSight && !W.lineOfSight(_o, P)) return; // Schusslinie ab der Mündung
+    it.fire = true; it.firePressed = true;
+    this.shots++; this.cool = 1.5;
+    afterShot(this.aim, this.skill);
+    this.aimT = 0;
   }
 
   _next() {

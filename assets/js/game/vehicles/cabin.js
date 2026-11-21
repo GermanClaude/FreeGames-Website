@@ -2275,11 +2275,11 @@ function troopDriverRoom(D) {
   if (!hatch && slit) roof = Math.max(roof, slit.pos[1] + 0.12);
   roof = Math.max(roof, floor + 1.0);
   const half = Math.max(0.6, hb[3] - 0.32);
-  const xl = Math.max(-half, F[0] - 0.56), xr = Math.min(half, F[0] + 0.56);
+  const xl = Math.max(-half, F[0] - 0.6), xr = Math.min(half, F[0] + 0.6);
   const zFT = Math.min((slit ? slit.pos[2] : F[2] - 0.35) - 0.14, F[2] - 0.28);
   const zFB = Math.min(zFT - 0.25, Math.max(hb[2] - hb[5] + 0.14, F[2] - 1.0));
   const eye = [F[0], Math.min(Math.max(F[1] + 0.86, floor + 0.62), roof - 0.17), F[2] + 0.12];
-  return { F, xl, xr, floor, roof, zFT, zFB, zB: F[2] + 0.62, eye, hatch };
+  return { F, xl, xr, floor, roof, zFT, zFB, zB: F[2] + 0.68, eye, hatch };
 }
 
 /** Durchgang Fahrerkabine ↔ Mannschaftsraum (Rückwand des Fahrers, Stirnwand des Mannschaftsraums). */
@@ -2757,7 +2757,7 @@ export function syncCabin(cab, v, dt, ctx = {}) {
 /** Hülse aus dem Verschluss (Lage im Turmgruppenraum), fliegt nach hinten unten, rollt aus. */
 function eject(cab) {
   const M = cab.model;
-  if (!M.breech) return;
+  if (!M.breech || !cab.A || !cab.casings.length) return;
   const slot = cab.casings.reduce((a, x) => (x.t > a.t ? x : a), cab.casings[0]);
   cab.casings.forEach((x) => { x.t += 1; });
   slot.t = 0;
@@ -2782,6 +2782,7 @@ function eject(cab) {
   }
 }
 function stepCasings(cab, dt) {
+  if (!cab.A || !cab.casings.length) return; // Transporter (attachTroopCabin): keine Hülsen
   const A = cab.A, s = A.sc, floor = A.yb + 0.03 / s;
   for (const c of cab.casings) {
     if (!c.m.visible || c.rest) continue;

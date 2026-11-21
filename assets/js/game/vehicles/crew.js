@@ -140,7 +140,9 @@ function startAuto(v) {
   if (g.step === 'eingeschoben' && g.loaded) { g.auto = true; g.autoT = g.autoMax = 0.4; return; }
   const ls = loaderSeat(v);
   const w = vehicleWeapon(v.type, ammoWish(v)) || vehicleWeapon(v.type, g.select);
-  g.autoT = g.autoMax = ls && ls.actor ? (w.reload || 5) : (w.reloadNoLoader || 8);
+  // Panzermodus: virtuelle Ladeschützen der Feindpanzer (nur ein Bot an Bord) und Ladezeit nach Können (psim/skill.js)
+  const virt = typeof v._virtualLoader === 'function' && v._virtualLoader();
+  g.autoT = g.autoMax = (ls && (ls.actor || virt) ? (w.reload || 5) : (w.reloadNoLoader || 8)) * (v._reloadMul || 1);
   g.auto = true;
 }
 

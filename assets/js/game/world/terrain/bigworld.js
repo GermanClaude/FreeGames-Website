@@ -42,6 +42,7 @@ const BIG_MAPS = {
   brandwald: () => import('../maps/brandwald.js?v=20261121041936'),
   flugplatz: () => import('../maps/flugplatz.js?v=20261121041936'), // karten-neu: Fliegerhorst mit Startbahn
   weitmark: () => import('../maps/weitmark.js?v=20261121041936'), // riesen: Riesenkarte 1600 × 1600 m (nur App, shared/appgate.js)
+  range: () => import('../maps/range.js?v=20261121041936'), // Übungsgelände um den Schießstand (nur Training/Panzer-Übung)
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
 

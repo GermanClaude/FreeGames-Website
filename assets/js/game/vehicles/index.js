@@ -899,7 +899,10 @@ export class VehicleSystem {
     this.thermal.update(dt, thermalOk);
     // Zielen: 1P/Optik → Blickrichtung (Strichplatte); Außenansicht → Bildmitte-Strahl (Rohr konvergiert, Ballistik)
     // Innensicht (Turm/Wanne von innen): Kopf schaut frei herum, die Waffe hält ihre Richtung (sonst dreht der Turm mit dem Blick)
-    if (seat.def.mount && seat.def.mount !== 'fixed' && !(eff && eff.interior)) {
+    // Winkelspiegel/Sehschlitze (Sichtgeräte, keine Waffenvisiere) führen die Waffe ebenfalls nicht nach (Nutzer 21.11.:
+    // „schießt durch Wände, wenn du dich umdrehst“ – das Turm-MG folgte dem Blick durch den Winkelspiegel)
+    const visionOnly = !!(eff && (eff.prisms || eff.overlay === 'prism' || eff.overlay === 'slit'));
+    if (seat.def.mount && seat.def.mount !== 'fixed' && !(eff && eff.interior) && !visionOnly) {
       const dir = viewLookDir(v, seat, eff, _d);
       if (!eff.tp || !this.camera.ready) {
         seat.intent.aimDir = (seat.intent.aimDir || new THREE.Vector3()).copy(dir);

@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
 import { Vehicle } from '../vehicle.js?v=20261121041936';
 import { vehicleMaterials } from '../materials.js?v=20261121041936';
+import { skillAt, foeLevel, detectTime, SIGMA0, SETTLE, DISP, randn } from './skill.js?v=20261121041936';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -317,16 +318,30 @@ export class Emplacement extends Vehicle {
     const G = this.G, W = G.world, eye = this._eye(_a);
     let best = null, bd = 1e9;
     if (this.kind === 'pak') {
+      // Erkennen braucht Zeit (skill.js detectTime: Entfernung, Teilsicht, Bewegung, Mündungsfeuer); erkannte Ziele bleiben
+      const known = this._known || (this._known = new Map()), now = G.time.elapsed;
+      const sk = this._skill || (this._skill = skillAt(foeLevel(G)));
       for (const v of this.sys.list) {
-        if (!v.alive || v.isEmplacement || !v.hostileTo || !v.isOccupied || !v.hostileTo(this.crew)) continue;
+        if (!v.alive || v.isEmplacement || !v.hostileTo || !v.isOccupied || !v.hostileTo(this.crew)) { known.delete(v); continue; }
         const d = v.position.distanceTo(eye);
-        if (d > 900 || d > bd) continue;
+        if (d > 900) { known.delete(v); continue; }
         _b.copy(v.body.pos); _b.y += 0.6;
         const yaw = wrap(Math.atan2(-(_b.x - eye.x), -(_b.z - eye.z)) - this.body.yaw());
         if (Math.abs(yaw) > 0.55) continue;
-        if (W && W.lineOfSight && !W.lineOfSight(eye, _b)) continue;
+        let vis = !W || !W.lineOfSight || W.lineOfSight(eye, _b) ? 1 : 0;
+        if (!vis) { _b.y += 1.2; vis = W.lineOfSight(eye, _b) ? 0.5 : 0; }
+        let k = known.get(v);
+        if (!vis) { if (k && k.t < 1) k.t = Math.max(0, k.t - 0.6 * 0.3); continue; }
+        if (!k) { k = { t: 0 }; known.set(v, k); }
+        if (k.t < 1) {
+          const T = detectTime(sk, { dist: d, vis, moving: Math.abs(v.body.speed) > 2, fired: v._psimFiredAt != null ? now - v._psimFiredAt : null });
+          k.t = Math.min(1, k.t + 0.6 / Math.max(0.2, T));
+          if (k.t < 1) continue;
+        }
+        if (d > bd) continue;
         best = v; bd = d;
       }
+      if (best !== this.target) { this._aim = { bias: new THREE.Vector2(randn() * SIGMA0.wk2 * sk.aim, randn() * SIGMA0.wk2 * sk.aim * 1.3), n: 0 }; this._aimT = 0; }
     } else {
       for (const a of G.actors) {
         if (!a.alive || a.team === this.crew.team || a.team == null) continue;
@@ -359,14 +374,20 @@ export class Emplacement extends Vehicle {
     this.aimYaw += clamp(wrap(yaw - this.aimYaw), -0.35 * dt, 0.35 * dt);
     this.aimPitch += clamp(el - this.aimPitch, -0.2 * dt, 0.2 * dt);
     this.cool -= dt;
-    if (this.cool > 0 || Math.abs(wrap(yaw - this.aimYaw)) > 0.01) return;
-    this.cool = 6.5 + Math.random() * 2.5;
-    // Streuung: erster Schuss grob, dann eingeschossen
-    const diff = { rekrut: 1.5, regulaer: 1, veteran: 0.75, elite: 0.55 }[G.match && G.match.difficulty] || 1;
-    const err = (0.006 / (1 + this.shots * 0.8) + 0.0012) * diff;
+    this._aimT = (this._aimT || 0) + dt;
+    const sk = this._skill || (this._skill = skillAt(foeLevel(G)));
+    // Richten nach dem Erkennen (Seite/Höhe kurbeln, Entfernung schätzen) – erster Schuss frühestens nach ~3 s
+    if (this.cool > 0 || Math.abs(wrap(yaw - this.aimYaw)) > 0.004 || this._aimT < SETTLE.wk2 * sk.settle) return;
+    // Schusslinie ab der Mündung frei (Hang, Hecke, Haus)?
+    if (G.world && G.world.lineOfSight && !G.world.lineOfSight(this.body.toWorld(_a.set(0, 0.95, -1), new THREE.Vector3()), tp)) return;
+    this.cool = (6.5 + Math.random() * 2.5) * sk.reload;
+    // Fehler: Grundfehler (Seite/Entfernung) schrumpft nach jedem Schuss (Korrektur), dazu die Streuung der Waffe
+    const A = this._aim || (this._aim = { bias: new THREE.Vector2(randn() * SIGMA0.wk2 * sk.aim, randn() * SIGMA0.wk2 * sk.aim * 1.3), n: 0 });
     this.shots++;
-    const wy = this.body.yaw() + this.aimYaw + (Math.random() - 0.5) * 2 * err;
-    const wp = this.aimPitch + (Math.random() - 0.5) * 2 * err * 0.7;
+    const wy = this.body.yaw() + this.aimYaw + A.bias.x + randn() * DISP;
+    const wp = this.aimPitch + A.bias.y + randn() * DISP;
+    A.bias.multiplyScalar(sk.corr); A.n++;
+    this._aimT = SETTLE.wk2 * sk.settle * 0.5;
     _d.set(-Math.sin(wy) * Math.cos(wp), Math.sin(wp), -Math.cos(wy) * Math.cos(wp));
     const muzzle = this.body.toWorld(_a.set(0, 0.95, 0), new THREE.Vector3()).addScaledVector(_d, 3.3);
     this.sys.fire(this, { actor: crew, index: 0 }, { def, shots: this.shots }, muzzle, _d.clone());

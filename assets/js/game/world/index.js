@@ -25,12 +25,11 @@ const MAP_MODULES = {
   altstadt: () => import('./maps/altstadt.js?v=20261121041936'),
   werk: () => import('./maps/werk.js?v=20261121041936'),
   bibliothek: () => import('./maps/bibliothek.js?v=20261121041936'),
-  range: () => import('./maps/range.js?v=20261121041936'),
   stadtkern: () => import('./maps/stadtkern.js?v=20261121041936'), // karten-neu: Stadtviertel mit Innenräumen
 };
 
 /** Großkarten (MAPS[id].scale === 'gross'): eigener Lader, nur per import() (GROSSKAMPF_PLAN §12.5). */
-const BIG_MAPS = new Set(['grenzland', 'niemandsland', 'brandwald', 'flugplatz', 'weitmark']); // riesen: weitmark (Riesenkarte, nur App)
+const BIG_MAPS = new Set(['grenzland', 'niemandsland', 'brandwald', 'flugplatz', 'weitmark', 'range']); // riesen: weitmark (Riesenkarte, nur App); range: Übungsgelände (21.11.)
 
 export const MAP_IDS = [...Object.keys(MAP_MODULES), ...BIG_MAPS];
 

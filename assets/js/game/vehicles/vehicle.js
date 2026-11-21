@@ -414,6 +414,11 @@ export class Vehicle {
       fw = seat.weapons.find((x) => x.def.id === this.gun.loaded) || { def: vehicleWeapon(this.type, this.gun.loaded), mag: 1, reloadT: 0, cooldown: 0, shots: 0 };
     } else if (w.mag <= 0 || w.reloadT > 0 || w.cooldown > 0) return;
     this.muzzle(seat.index, _ro, _rd);
+    // Feuersperre: Lafetten-MG (Turmdach, Luke, Ringlafette) schießt nicht durch das eigene Fahrzeug (Turm, Wanne, Rohr)
+    if (!shell && seat.def.mount !== 'gun' && this.raycast(_ro, _rd, 9)) {
+      if (isHuman(shooter) && shooter.isPlayer && this.sys._flash && this.G.time.elapsed - (this._lockMsgT || -9) > 1.5) { this._lockMsgT = this.G.time.elapsed; this.sys._flash('Feuersperre – eigenes Fahrzeug im Schussfeld'); }
+      return;
+    }
     const fseat = seat.actor ? seat : Object.create(seat, { actor: { value: shooter } });
     this.sys.fire(this, fseat, fw, _ro.clone(), _rd.clone());
     fw.shots += 1;
