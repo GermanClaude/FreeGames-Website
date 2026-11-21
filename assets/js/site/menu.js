@@ -611,11 +611,86 @@ function initWarp() {
   window.addEventListener('pageshow', (e) => { if (e.persisted) { warping = false; const b = $('#warp'); if (b) b.hidden = true; } });
 }
 
+/* ------------------------------------------------------------------ Hinweise: neue Fassung, App-Update */
+
+/** Kleine Hinweis-Leiste unten rechts; actions: [{ label, main, run }]. Gleiche id ersetzt den alten Hinweis. */
+export function toast(id, text, actions = []) {
+  document.querySelector(`.toast[data-id="${id}"]`)?.remove();
+  const box = document.createElement('div');
+  box.className = 'toast';
+  box.dataset.id = id;
+  box.setAttribute('role', 'status');
+  const p = document.createElement('p');
+  p.textContent = text;
+  box.append(p);
+  for (const a of actions) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = a.main ? 'dl-btn is-main' : 'toast-x';
+    b.textContent = a.label;
+    b.addEventListener('click', () => { if (a.run) a.run(); box.remove(); });
+    box.append(b);
+  }
+  document.body.append(box);
+  snd?.ui('toggle');
+  return box;
+}
+
+/** Webseite/Web-App/Android: neue Fassung online → sanft anbieten, neu zu laden (Stile ohne ?v= vorher frisch holen,
+ *  sonst liefert der Service Worker beim ersten Neuladen noch die alten aus). */
+let webNotified = '';
+export function notifyNewBuild(build) {
+  if (window.nullpunktDesktop || !build || build === webNotified) return;
+  webNotified = build;
+  toast('web-update', t('upd.web'), [
+    { label: t('upd.web.reload'), main: true, run: async () => {
+      try { await (await navigator.serviceWorker?.getRegistration())?.update(); } catch { /* */ }
+      try { await Promise.all(['assets/css/fonts.css', 'assets/css/tokens.css', 'assets/css/site.css', 'assets/css/menu.css', 'index.html', 'version.json'].map((u) => fetch(u, { cache: 'reload' }).catch(() => null))); } catch { /* */ }
+      location.reload();
+    } },
+    { label: t('upd.later') },
+  ]);
+}
+/** Alle 10 Minuten (nur sichtbar, nicht in der PC-App) version.json gegen die geladene Fassung prüfen. */
+export function watchNewBuild(current) {
+  if (window.nullpunktDesktop || !current) return;
+  const check = async () => {
+    if (document.hidden) return;
+    try {
+      const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+      const web = String((await r.json()).build || '');
+      if (web && web > current) notifyNewBuild(web);
+    } catch { /* offline */ }
+  };
+  setInterval(check, 10 * 60 * 1000);
+}
+
+/** PC-App: Selbstaktualisierung (desktop/updater.js) – fertig geladenes Update bzw. neue portable Version melden. */
+function initAppUpdates(A) {
+  if (!A.update || typeof A.update.onChange !== 'function') return;
+  let shown = '';
+  const show = (st) => {
+    if (!st || !st.version) return;
+    const key = `${st.status}:${st.version}`;
+    if (key === shown) return;
+    if (st.status === 'downloaded') {
+      shown = key;
+      toast('app-update', t('upd.app.ready', { version: st.version }), [{ label: t('upd.app.now'), main: true, run: () => A.update.install() }, { label: t('upd.later') }]);
+    } else if (st.status === 'manual') {
+      shown = key;
+      toast('app-update', t('upd.app.manual', { version: st.version }), [{ label: t('upd.app.download'), main: true, run: () => A.update.openDownload() }, { label: t('upd.later') }]);
+    }
+  };
+  A.update.onChange(show);
+  A.update.state().then(show).catch(() => {});
+}
+
 /* ------------------------------------------------------------------ App: Beenden, Titel */
 
 function initApp() {
   const A = window.nullpunktDesktop;
   if (!A) return;
+  initAppUpdates(A);
   const appPanel = $('.panel[data-panel="app"]');
   const label = t('menu.app.desktop');
   if (appPanel) { appPanel.dataset.title = label; appPanel.setAttribute('aria-label', label); appPanel.dataset.icon = 'i-update'; appPanel.dataset.kicker = 'Version, Updates, App-Einstellungen'; }

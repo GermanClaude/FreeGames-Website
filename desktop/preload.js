@@ -8,6 +8,8 @@ let info = {};
 try { info = ipcRenderer.sendSync('np:info') || {}; } catch { info = {}; }
 
 const fsListeners = new Set();
+const updListeners = new Set();
+ipcRenderer.on('np:update', (_e, st) => { for (const fn of updListeners) { try { fn(st); } catch { /* */ } } });
 ipcRenderer.on('np:fullscreen', (_e, on) => { for (const fn of fsListeners) { try { fn(!!on); } catch { /* */ } } });
 
 contextBridge.exposeInMainWorld('nullpunktDesktop', Object.freeze({
@@ -31,6 +33,15 @@ contextBridge.exposeInMainWorld('nullpunktDesktop', Object.freeze({
   bootStep: (st) => { try { ipcRenderer.send('np:boot', { label: String(st && st.label || '').slice(0, 160), pct: Number(st && st.pct) || 0, ok: !!(st && st.ok) }); } catch { /* */ } },
   /** Startseite fertig: Hauptfenster zeigen, Startfenster schließen. */
   bootDone: () => { try { ipcRenderer.send('np:boot-done'); } catch { /* */ } },
+  /** Selbstaktualisierung (updater.js): state()/check() → Promise<Zustand>, install() startet neu und installiert,
+   *  openDownload() öffnet den Download (portable), onChange(fn) → Abmeldefunktion. */
+  update: Object.freeze({
+    state: () => ipcRenderer.invoke('np:update-state'),
+    check: () => ipcRenderer.invoke('np:update-check'),
+    install: () => ipcRenderer.invoke('np:update-install'),
+    openDownload: () => ipcRenderer.invoke('np:update-open'),
+    onChange: (fn) => { if (typeof fn === 'function') updListeners.add(fn); return () => updListeners.delete(fn); },
+  }),
   /** Webseite nach neuerer Spielfassung fragen → Promise<{ local, web, newer, error }>. */
   checkUpdate: () => ipcRenderer.invoke('np:check-update'),
 }));

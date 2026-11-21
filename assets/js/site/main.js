@@ -14,7 +14,7 @@ import { startSiteClock } from '../shared/sitetime.js?v=20261121041936';
 import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261121041936';
 import { initHud } from './hud.js?v=20261121041936'; // Startbildschirm (21.11.)
 import { bootStep, bootDone } from './boot.js?v=20261121041936'; // Spielmenü (21.11.): Ladebildschirm
-import { initMenu } from './menu.js?v=20261121041936'; // Spielmenü (21.11.): Kategorien als Bildschirme
+import { initMenu, notifyNewBuild, watchNewBuild } from './menu.js?v=20261121041936'; // Spielmenü (21.11.): Kategorien als Bildschirme
 import { t, attachI18n } from './lang.js?v=20261121041936';
 import { BUILD } from '../shared/build.js?v=20261121041936';
 
@@ -151,6 +151,9 @@ async function bootSequence() {
     const reg = await Promise.race([swP, wait(1200).then(() => null)]);
     bootStep(offline ? t('boot.update.off', { build: BUILD }) : web && web > BUILD ? t('boot.update.new', { build: web }) : t('boot.update.ok', { build: BUILD }), 96, { ok: true });
     if (reg) bootStep(t('boot.update.sw'), 98, { ok: true });
+    // Neue Fassung online (Browser, Web-App, Android): sanfter Hinweis „Neu laden“, danach alle 10 min erneut prüfen
+    if (!offline && web && web > BUILD) setTimeout(() => notifyNewBuild(web), 1500);
+    watchNewBuild(BUILD);
     bootStep(t('boot.ready'), 100);
   } catch (err) { console.error('[NULLPUNKT] Ladebildschirm:', err); }
   bootDone();

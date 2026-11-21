@@ -64,6 +64,14 @@ export const STRINGS = Object.freeze({
   'quick.profile.go': 'Profil und Spielername',
   // Beenden
   'quit.ask': 'NULLPUNKT schließen?',
+  // Neue Fassung (Webseite, Web-App, Android) und App-Update (PC-App)
+  'upd.web': 'Neue Version von NULLPUNKT ist da.',
+  'upd.web.reload': 'Neu laden',
+  'upd.later': 'Später',
+  'upd.app.ready': 'Update {version} ist geladen und wird beim Beenden installiert.',
+  'upd.app.now': 'Jetzt neu starten und installieren',
+  'upd.app.manual': 'Neue App-Version {version} verfügbar.',
+  'upd.app.download': 'Herunterladen',
 });
 
 /** Sprachen der Auswahl (Name in der eigenen Sprache). */

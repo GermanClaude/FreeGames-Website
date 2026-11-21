@@ -3,7 +3,12 @@
 # Die Webseite (GitHub Pages) ist davon unabhängig und wird hier nicht angefasst.
 # Ergebnis: Windows-Installer + portable .exe (und ein Linux-AppImage) als Artefakte; bei Tags zusätzlich als Release.
 # Dateinamen ohne Versionsnummer (NULLPUNKT-Setup.exe, NULLPUNKT-portable.exe, NULLPUNKT-linux.AppImage), damit die
-# Download-Knöpfe der Startseite (…/releases/latest/download/<Name>) immer auf die neueste Fassung zeigen.
+# Download-Knöpfe der Startseite (…/releases/latest/download/<Name>) immer auf die neueste Fassung zeigen. Die Namen
+# legt desktop/package.json fest (nsis/portable/linux.artifactName) – hier wird nichts umbenannt.
+# Selbstaktualisierung (desktop/updater.js, electron-updater): zum Release gehören zusätzlich latest.yml (Windows-
+# Installer), latest-linux.yml (AppImage) und die .blockmap-Dateien (Teil-Downloads). electron-builder schreibt sie, weil
+# package.json „publish: github“ enthält; hochgeladen wird trotzdem nur hier (--publish never beim Bauen).
+# Die App-Version kommt aus dem Tag (release_tag, z. B. v1.0.1) – ein Update erkennt die App nur an einer höheren Version.
 name: Desktop-App bauen
 
 on:
@@ -33,10 +38,13 @@ jobs:
             target: --win nsis portable --x64
             files: |
               desktop/dist/*.exe
+              desktop/dist/*.exe.blockmap
+              desktop/dist/latest.yml
           - os: ubuntu-latest
             target: --linux AppImage --x64
             files: |
               desktop/dist/*.AppImage
+              desktop/dist/latest-linux.yml
     runs-on: ${{ matrix.os }}
     defaults:
       run:

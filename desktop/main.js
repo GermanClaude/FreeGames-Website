@@ -18,6 +18,8 @@
 //   gegen die Webseite, danach die Schritte der Startseite (Spieldaten, Texturen …, über preload.js bootStep/bootDone).
 //   Das Hauptfenster bleibt verborgen, bis die Startseite fertig meldet (höchstens 15 s), dann Übergang ins Hauptmenü.
 //   NULLPUNKT_NO_SPLASH=1 schaltet das Startfenster ab (Tests).
+// • Selbstaktualisierung (21.11., updater.js): Installer/AppImage laden neue Releases im Hintergrund und installieren
+//   beim Beenden oder per „Jetzt neu starten und installieren“; die portable .exe meldet nur „Neue Version verfügbar“.
 // • VR: WebXR/OpenXR-Schalter gesetzt; ob Electron eine Brille meldet, hängt von der Electron-Fassung ab (Spiel zeigt
 //   sonst im VR-Abschnitt einen Hinweis auf Chrome/Edge bzw. den Quest-Browser).
 'use strict';
@@ -27,6 +29,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 const { Readable } = require('node:stream');
+const { createUpdater } = require('./updater.js');
 
 const SCHEME = 'app';
 const HOST = 'nullpunkt';
@@ -321,6 +324,22 @@ async function splashSteps() {
   });
 }
 
+/* ------------------------------------------------------------------ Selbstaktualisierung */
+
+let updater = null;
+const UPD_ERR = { offline: 'offline', 'kein-release': 'noch kein Release', gesperrt: 'GitHub gerade nicht erreichbar' };
+function onUpdateState(st) {
+  if (win && !win.isDestroyed()) win.webContents.send('np:update', st);
+  if (!splash || splash.isDestroyed()) return;
+  const label = st.status === 'checking' ? 'App-Update: Prüfung …'
+    : st.status === 'downloading' ? `App-Update ${st.version || ''} wird im Hintergrund geladen${st.percent ? ` (${st.percent} %)` : ''}`
+      : st.status === 'downloaded' ? `App-Update ${st.version || ''} bereit – wird beim Beenden installiert`
+        : st.status === 'none' ? `App ${st.current} ist aktuell`
+          : st.status === 'manual' ? `Neue App-Version ${st.version} verfügbar (Download unter „Updates & App“)`
+            : st.status === 'error' ? `App-Update: ${UPD_ERR[st.error] || 'nicht möglich'}` : '';
+  if (label) splashSend('npStep', { label, pct: 11, ok: st.status !== 'checking' && st.status !== 'downloading' });
+}
+
 function showMain() {
   if (mainShown || !win || win.isDestroyed()) return;
   mainShown = true;
@@ -370,6 +389,8 @@ function fetchWebBuild(force = false) {
 
 async function checkWebVersion() {
   if (process.env.NULLPUNKT_NO_UPDATE_CHECK === '1') return;
+  // Installer/AppImage aktualisieren sich selbst (updater.js) – dann kein zusätzlicher Dialog
+  if (updater && updater.state().mode === 'auto') return;
   try {
     const chk = await fetchWebBuild();
     const web = chk.web;
@@ -421,6 +442,11 @@ else {
   });
   ipcMain.on('np:boot-done', () => { if (!mainShown) setTimeout(showMain, 120); });
   ipcMain.handle('np:check-update', () => fetchWebBuild(true));
+  // Selbstaktualisierung: Zustand, Prüfen, Installieren (Neustart), Download im Browser (portable)
+  ipcMain.handle('np:update-state', () => (updater ? updater.state() : null));
+  ipcMain.handle('np:update-check', () => (updater ? updater.check() : null));
+  ipcMain.handle('np:update-install', () => (updater ? updater.install() : false));
+  ipcMain.handle('np:update-open', () => (updater ? updater.openDownload() : false));
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
@@ -434,6 +460,11 @@ else {
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => ALLOW.has(perm));
     createSplash();
     createWindow();
+    try {
+      const ulog = DEV || process.env.NULLPUNKT_UPDATE_LOG === '1'; // Diagnose: Updater-Meldungen auf stdout
+      updater = createUpdater({ app, shell, net, onState: (st) => { if (ulog) console.log('[update] Zustand', JSON.stringify(st)); onUpdateState(st); }, log: (m) => { if (ulog) console.log(m); } });
+      updater.start();
+    } catch (err) { console.error('[NULLPUNKT] Updater:', err); updater = null; }
     setTimeout(checkWebVersion, 8000);
   });
   app.on('window-all-closed', () => app.quit());

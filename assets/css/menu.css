@@ -617,3 +617,17 @@ html.rm .menu-it:hover, html.rm .menu-it:focus-visible, html.rm .tile:hover, htm
 .app-upd { display: grid; gap: 10px; padding: 16px 18px; margin: 8px 0 24px; background: var(--lb-panel); border: 1px solid var(--line); border-left: 2px solid var(--np-signal); }
 .app-upd-st { font-family: var(--font-mono); font-size: 14px; }
 .app-upd .app-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.app-upd-bar { position: relative; height: 6px; background: rgba(190, 212, 206, .14); overflow: hidden; }
+.app-upd-bar > i { position: absolute; inset: 0; transform-origin: left; transform: scaleX(.02); background: linear-gradient(90deg, #C9471A, var(--np-signal) 70%, #FFB08A); transition: transform 300ms ease; }
+
+/* Hinweis-Leiste (neue Fassung, App-Update bereit) */
+.toast {
+  position: fixed; z-index: 70; right: var(--gr); bottom: calc(var(--hints-h, 0px) + 14px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; max-width: min(520px, calc(100vw - 32px)); padding: 12px 14px 12px 16px;
+  background: rgba(14, 18, 20, .96); border: 1px solid rgba(190, 212, 206, .25); border-left: 3px solid var(--np-signal); color: #E4E7E2;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .5); animation: p-body-in 320ms ease both;
+}
+.toast p { flex: 1 1 220px; font-size: 15px; line-height: 1.35; }
+.toast .dl-btn { min-height: 40px; }
+.toast-x { min-height: 40px; padding: 0 10px; color: #A9B2B0; font-family: var(--font-hud); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; }
+.toast-x:hover, .toast-x:focus-visible { color: #fff; }
