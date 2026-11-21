@@ -171,6 +171,13 @@ function newBias(st, era, skill, speed) {
   st.bias.set(randn() * s, randn() * s * (era === 'modern' ? 1.1 : 1.35));
   st.lead = randn() * skill.lead;
   st.shots = 0;
+  st.sig = s; st.era = era;
+  freshErr(st, skill, speed);
+}
+/** Frischer Fehler je Schuss: Waffenstreuung + Richtfehler (fresh × Grundfehler, eigene Fahrt eingerechnet). */
+function freshErr(st, skill, speed) {
+  const f = Math.hypot(DISP, (skill.fresh || 0.5) * sigmaFor(st.era || 'modern', skill, speed));
+  st.disp.set(randn() * f, randn() * f);
 }
 function aimWithError(st, from, P, ent, speed, out) {
   const dist = Math.max(5, P.distanceTo(from));
@@ -185,11 +192,11 @@ function aimWithError(st, from, P, ent, speed, out) {
   out.addScaledVector(_e, (st.bias.x + st.disp.x) * dist).addScaledVector(UP, (st.bias.y + st.disp.y) * dist);
   return out;
 }
-function afterShot(st, skill) {
+function afterShot(st, skill, speed = 0) {
   st.shots++;
   st.bias.multiplyScalar(skill.corr);
   st.lead *= skill.corr;
-  st.disp.set(randn() * DISP, randn() * DISP);
+  freshErr(st, skill, speed);
 }
 const aimState = () => ({ bias: new THREE.Vector2(), disp: new THREE.Vector2(randn() * DISP, randn() * DISP), lead: 0, shots: 0 });
 
@@ -558,7 +565,7 @@ export class TankCrew {
     if (W && W.lineOfSight && !W.lineOfSight(_o, P)) return; // Schusslinie ab der Mündung (Hang, Haus, Baum)
     it.firePressed = true; it.fire = true;
     Gs.lastShot = now;
-    afterShot(Gs.aim, this.skill);
+    afterShot(Gs.aim, this.skill, v.body.speed);
     Gs.aimT = 0;
     this.stats.shots++;
     if (!Gs.fireFree) Gs.fireOrder = 0;
@@ -610,7 +617,8 @@ export class TankCrew {
         this.say('Kommandant', `Richtschütze – ${TARGET_LABEL[t.kind]} – ${bearingWord(rel)} – ${roundRange(t.dist)}${coax ? ' – MG' : kind ? ` – ${KINDS[kind].call}` : ''}!`, { key: 'ziel' });
         // Munition für den nächsten Schuss (Infanterie mit dem MG: Panzermunition bleibt, solange Panzer/Pak bekannt sind)
         const armor = ts.some((x) => x.kind === 'panzer' || x.kind === 'pak');
-        if (kind && !(coax && armor)) this.orderAmmo(kind, { quiet: false, by: 'commander' });
+        if (kind && !coax) this.orderAmmo(kind, { quiet: false, by: 'commander' });
+        else if (coax && !armor && this.ammoOrder && KINDS[kindOf(this.ammoOrder)].role === 'ke') { const k2 = ammoForTarget(v, { kind: 'bunker' }); if (k2) this.orderAmmo(k2, { by: 'commander' }); }
         if (this.isPlayer('gunner') && !this.arcade) { C.overrideT = 1.4; this._overrideTo(t); }
         else if (this.isBot('gunner')) setTimeout(() => this.say('Richtschütze', 'Erkannt!', { quiet: true }), 800);
         C.phase = 'richten'; C.sinceCall = now;
@@ -635,18 +643,19 @@ export class TankCrew {
         }
       }
     } else if (C.phase !== 'suche') C.phase = 'suche';
-    // Fahrbefehle: ohne Ziel auf das nächste Angriffsziel vorrücken
-    if (!t && !this.arcade && now - C.driveSaidT > 6 && !mode.engineOff()) {
+    // Fahrbefehle: solange kein schweres Ziel (Panzer, Pak, Bunker, Panzerabwehr) bekämpft wird, auf das nächste
+    // Angriffsziel vorrücken (Infanterie nimmt das MG während der Fahrt) – in Sprüngen bis ~150 m vor das Ziel
+    const heavy = t && t.kind !== 'infanterie' && t.vis !== false;
+    if (!heavy && !this.arcade && now - C.driveSaidT > 6 && !mode.engineOff()) {
       const obj = mode.nextObjective();
       if (obj) {
         const d = obj.distanceTo(v.position);
-        const stand = this.era === 'modern' ? 900 : 380;
-        if (d > stand * 0.7 && (this.drive.cmd === 'halt' || (this.isPlayer('driver') && Math.abs(v.body.speed) < 0.5))) {
+        const stand = 150;
+        if (d > stand + 30 && (this.drive.cmd === 'halt' || (this.isPlayer('driver') && Math.abs(v.body.speed) < 0.5))) {
           C.objective = obj;
-          // Vorrücken bis ~380 m (Weltkrieg) bzw. ~900 m (modern) vor das Ziel, je Sprung höchstens 260 m
           const p = obj.clone().sub(v.position).setY(0);
           const L = p.length();
-          const goal = v.position.clone().addScaledVector(p.normalize(), Math.max(40, Math.min(L - stand * 0.6, 260)));
+          const goal = v.position.clone().addScaledVector(p.normalize(), Math.max(30, Math.min(L - stand, this.era === 'modern' ? 260 : 180)));
           const W = G.world; if (W && W.groundHeight) { const h = W.groundHeight(goal.x, goal.z, goal.y + 30); if (h != null) goal.y = h; }
           mode.setMarker(goal);
           this._driveOrder('markierung', goal);
@@ -799,7 +808,7 @@ export class EnemyTank {
     if (W && W.lineOfSight && !W.lineOfSight(_o, P)) return; // Schusslinie ab der Mündung
     it.fire = true; it.firePressed = true;
     this.shots++; this.cool = 1.5;
-    afterShot(this.aim, this.skill);
+    afterShot(this.aim, this.skill, v.body.speed);
     this.aimT = 0;
   }
 

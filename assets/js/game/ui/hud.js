@@ -1524,17 +1524,21 @@ export class HUD {
   _updatePrompt(touch) {
     const G = this.G;
     const mode = G.mode;
-    let pr = null;
+    let pr = null, trp;
     const B = G.building && G.building.mode;
     const med = G.injuries && G.injuries.medicInfo();
     if (med) {
       pr = { text: `Sanitäter ${med.name} kommt · ${med.dist} m · Aufgeben`, key: this._keyFor('interact'), action: () => G.injuries.giveUp() };
     } else if (B) {
       pr = { text: `Bauen: ${B.ok ? '' : '(kein Platz) '}${B.name} · Klick setzt · ${this._keyFor('bauen') || 'K'} weiter`, key: this._keyFor('interact'), action: () => G.building.close() };
-    } else if (mode && mode.id === 'training' && G.player && G.player.alive && mode.targets && mode.targets.length) {
-      const P = mode.parcours;
-      const running = P.state === 'running' || P.state === 'countdown';
-      pr = { text: running ? 'Parcours abbrechen' : 'Parcours starten', key: this._keyFor('interact'), action: () => mode.interact() };
+    } else if (mode && mode.id === 'training' && G.player && G.player.alive && mode.targets && mode.targets.length && (trp = typeof mode.prompt === 'function' ? mode.prompt() : undefined) !== null) {
+      // Übungsgelände (Großkarte): Teleport-Tafel bzw. Parcours nur am Stand (mode.prompt → null: kein Hinweis hier)
+      if (trp) pr = { text: trp.text, key: this._keyFor('interact'), action: trp.action };
+      else {
+        const P = mode.parcours;
+        const running = P.state === 'running' || P.state === 'countdown';
+        pr = { text: running ? 'Parcours abbrechen' : 'Parcours starten', key: this._keyFor('interact'), action: () => mode.interact() };
+      }
     } else if (G.injuries && G.injuries.progress()) {
       const a = G.injuries.progress();
       pr = { text: `${a.kind === 'revive' ? 'Wiederbeleben' : 'Verband anlegen'} … ${Math.round(a.p * 100)} %`, key: '', action: () => {} };

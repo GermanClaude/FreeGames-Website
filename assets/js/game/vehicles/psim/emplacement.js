@@ -384,8 +384,9 @@ export class Emplacement extends Vehicle {
     // Fehler: Grundfehler (Seite/Entfernung) schrumpft nach jedem Schuss (Korrektur), dazu die Streuung der Waffe
     const A = this._aim || (this._aim = { bias: new THREE.Vector2(randn() * SIGMA0.wk2 * sk.aim, randn() * SIGMA0.wk2 * sk.aim * 1.3), n: 0 });
     this.shots++;
-    const wy = this.body.yaw() + this.aimYaw + A.bias.x + randn() * DISP;
-    const wp = this.aimPitch + A.bias.y + randn() * DISP;
+    const fr = Math.hypot(DISP, 0.7 * SIGMA0.wk2 * sk.aim); // frischer Richtfehler je Schuss
+    const wy = this.body.yaw() + this.aimYaw + A.bias.x + randn() * fr;
+    const wp = this.aimPitch + A.bias.y + randn() * fr;
     A.bias.multiplyScalar(sk.corr); A.n++;
     this._aimT = SETTLE.wk2 * sk.settle * 0.5;
     _d.set(-Math.sin(wy) * Math.cos(wp), Math.sin(wp), -Math.cos(wy) * Math.cos(wp));

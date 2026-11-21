@@ -6,7 +6,8 @@
 //   Richten    nach dem Erkennen braucht der Schütze settle Sekunden (Turm schwenken, Entfernung messen, Haltepunkt)
 //   Treffen    jeder Schuss = Haltepunkt + Fehler: Grundfehler σ0 (rad) je Generation × Können, fahrender Schütze ×,
 //              Vorhaltfehler bei fahrendem Ziel; nach jedem Schuss schrumpft der Grundfehler (Korrektur nach Fehlschuss,
-//              Faktor corr) – erster Schuss auf 1000 m stehend: Feind „mittel“ ≈ 30 %, eigene Besatzung modern ≈ 80 %
+//              Faktor corr), dazu je Schuss ein frischer Richtfehler (fresh × Grundfehler, Zittern/Haltepunkt) – erster Schuss
+//              auf 1000 m stehend: Feind „mittel“ ≈ 30 %, eigene Besatzung modern ≈ 80 %
 //   Laden      Ladezeit × reload (crew.js, Fahrzeugfeld _reloadMul)
 // Stufe der Gegner: Schwierigkeit (Kampagne Rekrut … Elite; frei: Einstellung) + Option „gegner“ (leicht −1, mittel 0,
 // schwer +1) → −1 … 4. Eigene Besatzung: feste, gute Werte (OWN).
@@ -40,12 +41,12 @@ export function foeLevel(G, mode = G && G.mode) {
 
 /** Können einer Stufe. */
 export function skillAt(L) {
-  return { level: L, aim: tab(T.aim, L), detect: tab(T.detect, L), settle: tab(T.settle, L), reload: tab(T.reload, L), corr: tab(T.corr, L), lead: 0.3, own: false };
+  return { level: L, aim: tab(T.aim, L), detect: tab(T.detect, L), settle: tab(T.settle, L), reload: tab(T.reload, L), corr: tab(T.corr, L), fresh: 0.7, lead: 0.3, own: false };
 }
 /** Eigene KI-Besatzung (Spielerpanzer): erfasst schnell, schießt präzise, korrigiert gut. */
-export const OWN = { level: 5, aim: 0.55, detect: 0.55, settle: 0.6, reload: 0.92, corr: 0.35, lead: 0.12, own: true };
+export const OWN = { level: 5, aim: 0.55, detect: 0.55, settle: 0.6, reload: 0.92, corr: 0.35, fresh: 0.35, lead: 0.12, own: true };
 /** Verbündete KI-Panzer (Kampagne): ordentliche Besatzungen. */
-export const FRIEND = { level: 3, aim: 0.85, detect: 0.9, settle: 0.95, reload: 1.0, corr: 0.5, lead: 0.25, own: false };
+export const FRIEND = { level: 3, aim: 0.85, detect: 0.9, settle: 0.95, reload: 1.0, corr: 0.5, fresh: 0.55, lead: 0.25, own: false };
 
 /** Grundfehler (rad, σ) des ersten Schusses je Generation: modern mit Laser/Rechner, Weltkrieg mit Strichplatte. */
 export const SIGMA0 = { modern: 0.0016, wk2: 0.0022, wk1: 0.0028 };

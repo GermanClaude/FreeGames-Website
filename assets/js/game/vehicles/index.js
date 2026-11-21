@@ -29,6 +29,7 @@ import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261121041
 import { Aircraft } from './air/aircraft.js?v=20261121041936';
 import { AirSupport, AIR_CAP } from './air/index.js?v=20261121041936';
 import { TransportRides } from './ride.js?v=20261121041936';
+import { CrewFigures } from './crew-figures.js?v=20261121041936';
 import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261121041936';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
@@ -1046,6 +1047,8 @@ export class VehicleSystem {
     }
     for (const v of this.list) { v.sync(dt); this._pinOccupants(v); }
     this._updatePlayer(dt);
+    // sichtbare Besatzung im Innenraum des eigenen Fahrzeugs (crew-figures.js; nur Innensicht)
+    (this.crewFigures || (this.crewFigures = new CrewFigures(this))).update(dt);
     this.air.update(dt);
     this.audio.update(dt, this.list, G.player && G.player.vehicle);
     this._stats.ms = performance.now() - t0;
@@ -1070,6 +1073,7 @@ export class VehicleSystem {
     this.shells.update(dt);
     for (const v of this.list) { v.sync(dt); this._pinOccupants(v); }
     this._updatePlayer(dt);
+    (this.crewFigures || (this.crewFigures = new CrewFigures(this))).update(dt);
     this.air.update(dt);
     this.audio.update(dt, this.list, G.player && G.player.vehicle);
   }

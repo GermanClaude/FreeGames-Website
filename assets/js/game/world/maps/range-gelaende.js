@@ -56,8 +56,9 @@ export const BAYS = [
   ...ROW2.map((type, i) => ({ id: 'hof2-' + i, type, x: -63 + i * 18, z: 168, yaw: PI, area: 'hof' })),
   ...ROW3.map(([type, variant], i) => ({ id: 'hof3-' + i, type, variant, x: -45 + i * 18, z: 210, yaw: 0, area: 'hof' })),
   ...['mbt', 'kk', 'wk2h', 'wk2', 'lp21', 'spz'].map((type, i) => ({ id: 'fl-' + i, type, x: TANK_X[i], z: FIRE_Z - 4, yaw: 0, area: 'schiessbahn' })),
-  { id: 'jet-1', type: 'jet', x: RUNWAY.x0 + 30, z: RUNWAY.z - 10, yaw: -Q, area: 'flugfeld' },
-  { id: 'jet-2', type: 'jet', x: RUNWAY.x0 + 30, z: RUNWAY.z + 10, yaw: -Q, area: 'flugfeld', minQuality: 'medium' },
+  // Jets auf der Bahn am Rollweg, Nase nach Westen (740 m Startstrecke bis zur Schwelle 09)
+  { id: 'jet-1', type: 'jet', x: 720, z: RUNWAY.z + 10, yaw: Q, area: 'flugfeld' },
+  { id: 'jet-2', type: 'jet', x: 690, z: RUNWAY.z - 10, yaw: Q, area: 'flugfeld', minQuality: 'medium' },
   ...HELIPADS.map(([x, z], i) => ({ id: 'heli-' + i, type: 'heli', x, z, yaw: 0, area: 'flugfeld', minQuality: i ? 'medium' : null })),
 ];
 /** Ziel-Panzer der Schießbahn (echte Fahrzeuge ohne Besatzung, heilen nach jedem Treffer). */

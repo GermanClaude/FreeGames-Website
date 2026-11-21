@@ -259,6 +259,7 @@ export class Menus {
           <button type="button" class="m-btn m-primary" data-act="resume">${ICON.play}<span>Fortsetzen</span><kbd>Esc</kbd></button>
           ${G.xr && G.xr.available && !G.xr.presenting ? `<button type="button" class="m-btn" data-act="vr">${VR_ICON}<span>VR starten</span></button>` : ''}
           ${training ? `<button type="button" class="m-btn" data-act="armory">${ICON.target}<span>Waffenkammer</span></button>` : ''}
+          ${training && mode.gelaende ? `<button type="button" class="m-btn" data-act="uebung">${ICON.map}<span>Übungsgelände</span></button>` : ''}
           ${!training && mode && !mode.lockLoadout ? `<button type="button" class="m-btn" data-act="equip">${ICON.target}<span>Ausrüstung</span></button>` : ''}
           <button type="button" class="m-btn" data-act="settings">${ICON.gear}<span>Einstellungen</span></button>
           <button type="button" class="m-btn" data-act="controls">${ICON.pad}<span>Steuerung</span></button>
@@ -291,6 +292,7 @@ export class Menus {
         (G.fullscreen ? G.fullscreen.install() : Promise.resolve('unavailable')).then(() => { if (this.current === 'pause' && G.match.state === 'paused') this.showPause(); });
       }
       else if (act === 'armory') this.showArmory();
+      else if (act === 'uebung') import('./uebung-menu.js?v=20261121041936').then((m) => { if (this.current === 'pause') m.showUebung(this); }).catch((err) => console.error('[NULLPUNKT] Übungsmenü:', err)); // Übungsgelände (Karte range)
       else if (act === 'equip') this.showEquip();
       else if (act === 'restart') { this.sound('confirm'); if (this.onRestart) this.onRestart(); }
       else if (act === 'finish') this._finishTraining();
@@ -538,7 +540,7 @@ export class Menus {
         if (c && !c.hidden) { c.hidden = true; e.preventDefault(); return; }
         e.preventDefault();
         this._resume();
-      } else if (['settings', 'controls', 'armory', 'equip'].includes(this.current)) { e.preventDefault(); if (this._equipPanel) this._equipPanel.unmount(); this._back(); }
+      } else if (['settings', 'controls', 'armory', 'equip', 'uebung'].includes(this.current)) { e.preventDefault(); if (this._equipPanel) this._equipPanel.unmount(); this._back(); }
       else if (this.current === 'room') { e.preventDefault(); if (typing) t.blur(); else this.net.back(); }
       else if (this.current === 'roomequip') { e.preventDefault(); this.net.backFromEquip(); }
       return;
@@ -619,7 +621,7 @@ export class Menus {
     }
     if (released(1)) {
       if (this.current === 'pause') this._resume();
-      else if (['settings', 'controls', 'armory', 'equip'].includes(this.current)) { if (this._equipPanel) this._equipPanel.unmount(); this._back(); }
+      else if (['settings', 'controls', 'armory', 'equip', 'uebung'].includes(this.current)) { if (this._equipPanel) this._equipPanel.unmount(); this._back(); }
       else if (this.current === 'room') this.net.back();
       else if (this.current === 'roomequip') this.net.backFromEquip();
     }
