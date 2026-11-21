@@ -199,10 +199,20 @@ export class SimControls {
     if (Math.abs(this.lean.x) + Math.abs(this.lean.z) > 1e-3) {
       cam.getWorldDirection(_f);
       _r.crossVectors(_f, _u.set(0, 1, 0)).normalize();
-      cam.position.addScaledVector(_r, this.lean.x).addScaledVector(_f, this.lean.z);
-      cam.position.y -= this.lean.z * 0.25;
+      _b.set(0, 0, 0).addScaledVector(_r, this.lean.x).addScaledVector(_f, this.lean.z);
+      _b.y -= this.lean.z * 0.25;
+      // Kopf stößt an die Innenschale (Nutzer 21.11.: beim Neigen sah man durch Wände): Strahl in Neigerichtung gegen den
+      // Innenraum, höchstens alle 0,2 s; Abstand zur Fläche ≥ 14 cm (Near-Plane 5 cm schneidet dann nichts weg)
+      const len = _b.length();
+      this._leanT = (this._leanT || 0) - dt;
+      if (this._leanT <= 0 || this._leanMax == null) {
+        this._leanT = 0.2;
+        this._leanMax = this._leanRoom(v, cam.position, _b, len + 0.2);
+      }
+      if (len > this._leanMax) _b.multiplyScalar(Math.max(0, this._leanMax) / len);
+      cam.position.add(_b);
       cam.updateMatrixWorld();
-    }
+    } else this._leanMax = null;
     // Hotspot im Blick (Bildmitte)
     cam.getWorldDirection(_f);
     let best = null, ba = 1e9;
@@ -217,6 +227,21 @@ export class SimControls {
     }
     this.hot = best;
     return best;
+  }
+
+  /** Freier Weg vom Auge in Richtung dir (Innenraum-Netze: Detail-Innenraum, Grund-Innenraum) minus Kopfabstand. */
+  _leanRoom(v, from, dir, far) {
+    const M = v.model, cab = M && M.cabin;
+    const roots = [cab && cab.hull, cab && cab.tur, M && M.interior, M && M.hullInterior].filter((o) => o && o.visible);
+    if (!roots.length || dir.lengthSq() < 1e-8) return far;
+    const rc = this._rc || (this._rc = new THREE.Raycaster());
+    rc.set(from, _a.copy(dir).normalize()); rc.far = far; rc.camera = this.G.camera;
+    const ms = this._leanMs || (this._leanMs = []);
+    ms.length = 0;
+    for (const r of roots) r.traverseVisible((o) => { if (o.isMesh && !o.isSprite) ms.push(o); });
+    let best = far;
+    try { const h = rc.intersectObjects(ms, false)[0]; if (h) best = h.distance; } catch { /* Strahltest ausgelassen */ }
+    return best - 0.14;
   }
 
   /** Bildschirmlage des aktiven Hotspots (HUD). */

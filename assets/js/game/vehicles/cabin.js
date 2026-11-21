@@ -2947,3 +2947,38 @@ export function syncCockpit(cab, v, dt) {
     n.rotation.z = lerp(n.rotation.z, 0.75 * PI - 1.5 * PI * clamp(t, 0, 1.04) + (on ? Math.sin(cab.t * 41 + n.id) * 0.005 : 0), Math.min(1, dt * 6));
   }
 }
+
+/* ===================================================================== Sitz-Anker für Besatzungsfiguren */
+
+const ROLE = { driver: 'fahrer', gunner: 'richtschuetze', commander: 'kommandant', loader: 'ladeschuetze', funker: 'funker', mg: 'mg', mechaniker: 'mechaniker' };
+/**
+ * Sitz-Anker je Platz (Strang crew-figures.js, Nutzer 21.11.: sichtbare Besatzung im Innenraum) – reine Daten aus der
+ * Fahrzeugdefinition, gleiche Lagen, die cabin.js/cabin-troop.js für Sitze und Augpunkte nutzt. vehicleOrDef: Fahrzeug
+ * (mit .def) oder Definition. → [{ index, seat, role, space ('hull' | 'turret'), hip [x,y,z] (Mitte Sitzfläche oben),
+ * eye [x,y,z] (Augpunkt der Innensicht), yaw (rad, 0 = Fahrtrichtung −Z, positiv = nach links gedreht), posture
+ * ('sitzend' | 'stehend'), interior (Platz liegt im geschlossenen Innenraum) }]. Koordinaten im Raum `space` (Wanne:
+ * Fahrzeug lokal; Turm: Turmraum wie die Sichten). Plätze ohne Innenraum (offene Sitze) bekommen interior: false.
+ */
+export function cabinSeatAnchors(vehicleOrDef) {
+  const D = vehicleOrDef && vehicleOrDef.def ? vehicleOrDef.def : vehicleOrDef;
+  if (!D || !D.seats) return [];
+  const I = D.interior || {}, sh = I.shift || [0, 0, 0], sc = I.scale || 1;
+  const fromG = (p) => [p[0] * sc + sh[0], p[1] * sc + sh[1], p[2] * sc + sh[2]];
+  const R = D.troop ? troopDriverRoom(D) : driverCabin(D);
+  const FK = funkerCabin(D, driverCabin);
+  const out = [];
+  D.seats.forEach((s, index) => {
+    const inner = (s.views || []).find((v) => v.interior) || null;
+    const role = ROLE[s.id] || (s.loader ? 'ladeschuetze' : /^schuetze|^bank|^reihe|^hinten/.test(s.id) ? 'mitfahrer' : s.id);
+    const eye = inner ? (inner.pos || null) : null;
+    const a = { index, seat: s.id, role, space: inner && inner.space === 'turret' ? 'turret' : 'hull', hip: null, eye: eye ? eye.slice() : null, yaw: 0, posture: 'sitzend', interior: !!inner };
+    if (s.drive && R) { a.space = 'hull'; a.hip = [R.F[0], R.floor + 0.29, R.F[2] + 0.1]; a.eye = R.eye.slice(); }
+    else if (s.id === 'funker' && FK) { const L = funkerLayout(FK); a.space = 'hull'; a.hip = [L.seat[0], L.seat[1] + 0.04, L.seat[2]]; a.eye = FK.eye.slice(); }
+    else if (s.loader && inner && inner.space === 'turret') { a.posture = 'stehend'; a.hip = fromG([I.loaderEye ? I.loaderEye[0] : 0.55, 0.07 + 0.95, I.loaderEye ? I.loaderEye[2] : 0.35]); a.eye = fromG(I.loaderEye || [0.55, 0.62, 0.35]); a.yaw = 0; }
+    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos; a.hip = [st[0], st[1] - 0.62 * sc, st[2] + 0.05 * sc]; a.eye = inner.pos.slice(); }
+    else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + Math.min(0.42, (D.troop.roof - D.troop.floor) * 0.3) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; }
+    else if (s.pos) { a.hip = [s.pos[0], s.pos[1] + 0.45, s.pos[2]]; a.interior = !!inner; }
+    out.push(a);
+  });
+  return out;
+}
