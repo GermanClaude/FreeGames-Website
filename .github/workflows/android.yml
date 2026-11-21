@@ -48,6 +48,8 @@ jobs:
 
       # ubuntu-latest bringt das Android-SDK mit (ANDROID_HOME); fehlende Plattformen lädt Gradle selbst
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
 
       - name: Abhängigkeiten
         run: npm install --no-audit --no-fund
