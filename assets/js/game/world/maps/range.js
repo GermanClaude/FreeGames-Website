@@ -35,6 +35,9 @@ const RANGE = {
   defaultSurface: 'grass',
   wallMargin: 30,
   wallTop: 30, // Randwand nur für Bodenfahrzeuge/Fußgänger; Luftfahrzeuge regelt der Luftraum (air/aircraft.js)
+  // Sichtweite je Stufe über den Großkarten-Standard hinaus: Panzerziele bis 2500 m, Luftraum (terrain/bigworld.js)
+  viewTiers: { low: { view: 800, far: 1100 }, medium: { view: 1500, far: 1700 }, high: { view: 2700, far: 2800 }, ultra: { view: 2800, far: 2900 } },
+  groundDressing: false, // gepflegtes Übungsgelände: keine Ölflecken/Bodenauflage auf Hof und Feuerlinie (fuellung.js)
   navGrid: 24, // keine Bots außer Zielen: grobes Geländenetz genügt (Panzer-Übung: Infanterie im Zielgebiet)
   lighting: {
     sun: { elevation: 31, azimuth: 118, color: '#fff2dc', intensity: 3.7 },
@@ -42,7 +45,7 @@ const RANGE = {
     hemi: { sky: '#d3dbe2', ground: '#7a7458', intensity: 1.1, hdriIntensity: 0.9 },
     env: { intensity: 1.3, ground: '#7a7458', groundIntensity: 0.55, tint: '#f2ebe0', hdriIntensity: 1.1, hdriTint: '#f0e8dc' },
     // atmosphere-weather: Morgendunst – Gegenlicht-Einstreuung zur Morgensonne
-    fog: { color: '#cfdae3', nearFactor: 0.22, density: 0.002, falloff: 0.022, start: 30, max: 0.85, sun: 0.65, sunExp: 4 },
+    fog: { color: '#cfdae3', nearFactor: 0.3, density: 0.0007, falloff: 0.022, start: 30, max: 0.85, sun: 0.65, sunExp: 4 },
     shadow: { size: 60, bias: -0.0004, normalBias: 0.04, near: 40, farMaxY: 40 },
     exposure: 1.0,
     atmos: { beams: 0.02, beamG: 0.45, dust: 0.6, dustSize: 0.014 },

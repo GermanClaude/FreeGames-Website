@@ -571,7 +571,7 @@ export function createDynamicTargets(world, quality) {
         if (!k.m.visible) continue;
         if ((k.t -= dt) <= 0) { k.m.visible = false; continue; }
         const dist = camera ? _v.copy(k.m.position).distanceTo(camera.position) : 50;
-        k.m.scale.setScalar(Math.max(0.12, dist * 0.0028) * Math.min(1, k.t / 1.5 + 0.3));
+        k.m.scale.setScalar(Math.max(0.12, dist * 0.0011) * Math.min(1, k.t / 1.5 + 0.3));
       }
     },
     reset() { for (const t of dyn) t.reset(); for (const k of marks) k.m.visible = false; },

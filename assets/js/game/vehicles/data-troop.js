@@ -506,7 +506,7 @@ export const TROOP_VEHICLES = {
     },
     // Kampfraum der Schützen hinten (Aufbau wie SZ-8: Bänke, Rampe, Dachluken); Turmraum klein (Einmann-Turm)
     interior: { scale: 0.8, shift: [0, -0.05, 0.05], breech: [0, 0.42, -0.55], breechScale: 0.42, loaderEye: [0.5, 0.62, 0.35], rack: [0, 0.4, 0.9], rackGrid: [6, 2], basket: false },
-    troop: { z0: 0.15, z1: 3.62, floor: 0.95, roof: 2.18, halfW: 1.18 },
+    troop: { z0: 0.15, z1: 3.62, floor: 0.95, roof: 2.18, halfW: 0.92 }, // innen zwischen den Radkästen (Nutzer 21.11.: Räder ragten in den Raum)
     ramp: { z: 3.89, y0: 0.82, y1: 2.12, w: 2.0, kind: 'rampe' },
     crew: { switchTime: 1.1, faceTol: 0.6 },
     ammo: { mbt_ap: 160, mbt_he: 240 },

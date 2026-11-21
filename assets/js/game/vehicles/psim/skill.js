@@ -24,12 +24,12 @@ const DIFF_IDX = { rekrut: 0, regulaer: 1, veteran: 2, elite: 3 };
 const GEGNER_OFF = { leicht: -1, mittel: 0, schwer: 1 };
 // Tabellen über die Stufen −1 … 4
 const T = {
-  aim: [1.7, 1.25, 0.85, 0.62, 0.52, 0.45],
-  detect: [1.9, 1.4, 1.0, 0.75, 0.65, 0.6],
-  settle: [1.7, 1.3, 0.95, 0.7, 0.6, 0.55],
-  reload: [1.35, 1.2, 1.08, 1.0, 0.95, 0.9],
-  corr: [0.8, 0.7, 0.55, 0.42, 0.38, 0.35],
-  fresh: [0.8, 0.7, 0.55, 0.42, 0.38, 0.35],
+  aim: [1.7, 1.2, 0.78, 0.46, 0.4, 0.36],
+  detect: [1.9, 1.35, 0.95, 0.56, 0.5, 0.46],
+  settle: [1.7, 1.25, 0.88, 0.52, 0.48, 0.44],
+  reload: [1.35, 1.2, 1.06, 0.95, 0.92, 0.88],
+  corr: [0.8, 0.68, 0.52, 0.34, 0.31, 0.28],
+  fresh: [0.8, 0.68, 0.52, 0.34, 0.31, 0.28],
 };
 const tab = (arr, L) => { const i = clamp(L + 1, 0, arr.length - 1), a = Math.floor(i), f = i - a; return arr[a] + (arr[Math.min(a + 1, arr.length - 1)] - arr[a]) * f; };
 

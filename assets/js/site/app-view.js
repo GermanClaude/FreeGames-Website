@@ -10,6 +10,9 @@ const mb = (b) => `${Math.round(b / 1048576)} MB`;
 
 export function init(sec, D, ctx) {
   const kind = appKind();
+  // Startbildschirm (21.11.): In der PC-App führt der Menüeintrag zu den App-Einstellungen statt zu den Downloads
+  const mi = document.querySelector('#hero-menu a[href="#app"]');
+  if (mi && kind === 'desktop-app') mi.lastChild.nodeValue = 'App-Einstellungen';
   if (kind === 'desktop-app') { initDesktop(sec, D, ctx); return; }
   initWeb(sec, kind);
 }

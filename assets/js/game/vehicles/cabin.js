@@ -2274,7 +2274,8 @@ function troopDriverRoom(D) {
   let roof = hatch ? hatch.pos[1] - 0.04 : hb[1] + hb[4] - 0.06;
   if (!hatch && slit) roof = Math.max(roof, slit.pos[1] + 0.12);
   roof = Math.max(roof, floor + 1.0);
-  const half = Math.max(0.6, hb[3] - 0.32);
+  // Radfahrzeug: zwischen den Radkästen bleiben (Reifen ragten sonst in den Fahrerraum)
+  const half = Math.max(0.6, Math.min(hb[3] - 0.32, D.wheels && D.wheels.x ? D.wheels.x - 0.3 : 9));
   const xl = Math.max(-half, F[0] - 0.6), xr = Math.min(half, F[0] + 0.6);
   const zFT = Math.min((slit ? slit.pos[2] : F[2] - 0.35) - 0.14, F[2] - 0.28);
   const zFB = Math.min(zFT - 0.25, Math.max(hb[2] - hb[5] + 0.14, F[2] - 1.0));

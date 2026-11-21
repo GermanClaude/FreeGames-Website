@@ -12,6 +12,7 @@ import { setSettingReduced } from './motion.js?v=20261121041936';
 import { signalLost } from './dom.js?v=20261121041936';
 import { startSiteClock } from '../shared/sitetime.js?v=20261121041936';
 import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261121041936';
+import { initHud } from './hud.js?v=20261121041936'; // Startbildschirm (21.11.)
 
 const html = document.documentElement;
 const DEBUG = /[?&]debug=1/.test(location.search);
@@ -55,13 +56,14 @@ showTouch();
 coarseMq.addEventListener?.('change', showTouch);
 // app (14.11.): in der Desktop-/Android-App heißt es nicht „im Browser, kein Download“
 if (html.classList.contains('is-app')) {
-  const lead = document.querySelector('.hero-body .lead');
+  const lead = document.querySelector('#nullpunkt .lead');
   if (lead) lead.textContent = window.nullpunktDesktop ? 'Ego-Shooter. Du gegen Bots oder online mit allen – PC-App mit Extrem-Grafik.' : 'Ego-Shooter. Du gegen Bots oder online mit allen.';
 }
 startSiteClock(); // Zeit auf der Webseite fürs Zwiegespräch (§09 Über)
 initNav();
 setNavSound(sound);
 initZero({ sound });
+initHud({ sound });
 
 initJumps();
 

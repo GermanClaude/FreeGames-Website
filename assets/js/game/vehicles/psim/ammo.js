@@ -312,7 +312,9 @@ export function applyEffects(sys, v, info) {
     if (dmg <= 0) continue;
     dmg *= 0.75 + rnd() * 0.5;
     const a = s.actor;
-    if (a && a.alive && G.combat) {
+    // KI-Panzer (EnemyTank, ein Bot fährt und richtet für alle): nur die virtuelle Besatzung wird getroffen – sonst legte ein
+    // Splitter am Fahrersitz den ganzen Panzer still (der Bot steht stellvertretend für Fahrer und Richtschütze)
+    if (a && a.alive && G.combat && !v._psimAI) {
       const inv = a.invulnerable;
       // Spieler (Nutzer 21.11.: „kein Sofort-Tod“): Splitterschutzauskleidung/Helm mindern; ein tödlicher Treffer macht ihn
       // höchstens alle 30 s nur schwer verwundet (Besatzungsausfälle statt Rundenende) – Munitionsbrand bleibt tödlich
@@ -363,6 +365,9 @@ export function knockedOut(v) {
   if (!crew || !crew.length) return null;
   // Spielerpanzer: Besatzungsausfälle legen ihn nicht still – der Spieler kann den Platz wechseln (Sitzrad)
   if (v.seats.some((s) => s.actor && s.actor.isPlayer && s.actor.alive)) return null;
+  // KI-Panzer: fällt der Bot an Bord (fährt und richtet stellvertretend), steht der Panzer still und schweigt → ausgefallen
+  const ai = v._psimAI;
+  if (ai && !(ai.bot && ai.bot.alive && ai.bot.vehicle === v)) return 'Besatzung';
   const dead = crew.filter((c) => c.state === 'tot').length;
   const dr = crew.find((c) => c.role === 'driver'), gu = crew.find((c) => c.role === 'gunner');
   if ((dr && dr.state === 'tot' && gu && gu.state === 'tot') || dead / crew.length >= 0.6) return 'Besatzung';

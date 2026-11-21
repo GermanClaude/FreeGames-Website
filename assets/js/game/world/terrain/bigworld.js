@@ -262,6 +262,8 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     if (extreme) for (const k of ['view', 'far', 'treeFar', 'siteCull', 'mapPx']) tier[k] = Math.max(tier[k] ?? 0, BIG_EXTREME[k] ?? 0, gt[k] ?? 0);
     if (appClient().kind === 'android-app' && def.giant.android) for (const [k, v] of Object.entries(def.giant.android)) tier[k] = Math.min(tier[k] ?? v, v);
   }
+  // Übungsgelände (range, 21.11.): eigene Sichtweite je Stufe (Panzerschießbahn bis 2500 m) – def.viewTiers[q] { view, far }
+  if (def.viewTiers && def.viewTiers[quality]) tier = { ...tier, ...def.viewTiers[quality] };
   const runner = createRunner();
   const ms = {};
   // 1) Gelände im Worker (parallel zu den Ortschaften)

@@ -748,7 +748,7 @@ export class EnemyTank {
     if (this.scanT <= 0) {
       this.scanT = 0.6;
       const range = this.era === 'modern' ? 2600 : 1300;
-      _c.copy(v.body.pos); _c.y += 1.6;
+      v.body.toWorld(_c.set(0, v.def.hullBox[1] + v.def.hullBox[4] + 0.9, 0), _c); // Auge wie die eigene Besatzung (Winkelspiegel/Kuppel)
       const sk = mods.optik <= 0 ? { ...this.skill, detect: this.skill.detect * 2 } : this.skill;
       this.targets = scanTargets(G, _c, range, this.team, this.known, 0.6, { maxLos: 10, vehicle: v, skill: sk, moving: Math.abs(v.body.speed) > 4 });
       // gefährlichstes sichtbares Ziel; Panzer vor Infanterie (Infanterie nur bis 500 m)

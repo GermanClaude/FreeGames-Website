@@ -247,7 +247,7 @@ export const MAPS = {
     short: 'Trainingsanlage mit Klappzielen 10–100 m plus Übungsgelände: alle Fahrzeuge, Fahrstrecke, Panzerschießbahn bis 2500 m, Flugfeld.',
     size: 'groß',
     scale: 'gross',
-    viewDistance: { low: 340, medium: 600, high: 850, ultra: 850 },
+    viewDistance: { low: 800, medium: 1500, high: 2700, ultra: 2800 },
     dimensions: { x: 2600, z: 2600 },
     timeOfDay: 'Klarer Morgen',
     weather: 'Klar, frische Luft',

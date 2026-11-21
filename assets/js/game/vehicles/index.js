@@ -688,6 +688,9 @@ export class VehicleSystem {
   removeFromSeat(actor, { teleport = true } = {}) {
     const v = actor && actor.vehicle;
     if (!v) return false;
+    // Near-Plane der Innensicht (camera.js) zurück auf den Normalwert
+    const cam = this.G.camera;
+    if (actor === this.G.player && cam && cam.userData.npNear != null) { cam.near = cam.userData.npNear; cam.userData.npNear = null; cam.updateProjectionMatrix(); }
     const idx = v.seatOf(actor);
     let pos = null;
     if (teleport) {

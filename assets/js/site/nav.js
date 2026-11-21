@@ -203,7 +203,8 @@ export function initNav() {
   if (cta) {
     const io = new IntersectionObserver(([e]) => {
       const away = !e.isIntersecting;
-      if (stPlay) stPlay.hidden = !away;
+      // Startbildschirm (21.11.): „Spielen“ steht in der Statuszeile immer; nur die Leiste unten (Telefon) folgt dem Hero
+      if (stPlay) stPlay.hidden = false;
       document.body.classList.toggle('past-hero', away);
       if (bar) {
         bar.hidden = !away;

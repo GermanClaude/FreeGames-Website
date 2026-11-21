@@ -213,6 +213,7 @@ export class UebungsGelaende {
     const shell = wd && (wd.kind === 'shell' || wd.drop || wd.look);
     if (!shell) return; // MG am Panzer: keine Wirkung, keine Meldung
     const d = this._dist(P, v.position);
+    try { this.U.mark?.(_b.copy(v.position).setY(v.position.y + 1.4), '#ff4a2a'); } catch { /* */ }
     this.stats.hits++;
     this.stats.longest = Math.max(this.stats.longest, Math.round(d));
     const where = [FACE[e.face] || '', ZONE[e.zone] || ''].filter(Boolean).join(' · ');
@@ -363,7 +364,7 @@ export class UebungsGelaende {
     const G = this.G;
     try {
       const all = { ...(G.settings.get('modeOptions') || {}) };
-      all.panzer = { ...(all.panzer || {}), stil: opts.stil || 'simulation', rolle: opts.rolle || 'kommandant', panzer: opts.panzer || 'karte', gegner: 'leicht', fuehrung: opts.stil === 'arcade' ? (all.panzer && all.panzer.fuehrung) || 'hilfe' : 'tutorial' };
+      all.panzer = { ...(all.panzer || {}), stil: opts.stil || 'simulation', rolle: opts.rolle || 'kommandant', panzer: opts.panzer || 'karte', gegner: 'leicht', fuehrung: (all.panzer && all.panzer.fuehrung) || (opts.stil === 'arcade' ? 'hilfe' : 'tutorial') };
       G.settings.set('modeOptions', all);
     } catch { /* Einstellungen gesperrt */ }
     const cfg = { ...(G.lastConfig || {}), modeId: 'panzer', mapId: 'range', enemies: 0, allies: 0 };

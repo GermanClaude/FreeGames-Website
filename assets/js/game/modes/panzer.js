@@ -1171,6 +1171,7 @@ export class PanzerMode extends BaseMode {
     } else st._trackSaid = false;
     // Feindpanzer: Module
     for (const e of this.enemies) {
+      if (e.v.alive && !(e.bot && e.bot.alive && e.bot.vehicle === e.v) && e.v._psimCrew) { e.v._psimKo = 'Besatzung'; e.v.destroy(e.v.lastAttacker, e.v.lastWeaponId); continue; } // Bot an Bord gefallen → Panzer steht/schweigt
       const m = e.v._psimMods;
       if (!m || !e.v.alive) continue;
       const b = e.v._psimBase || e.v.def;

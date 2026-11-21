@@ -35,7 +35,7 @@ export function initZero({ sound } = {}) {
   split(h1, { sr: 'NULLPUNKT' });
   const hero = h1.closest('.hero') || document.body;
   // Obergrenze auch aus der Höhe: Was nach der Wortmarke kommt (Satz, Aufruf), bleibt im ersten Bildschirm.
-  const others = ['.hero-top', '#zero-cap', '.zero-line', '.data-line', '.hero-body'];
+  const others = ['.hero-top', '#zero-cap', '.zero-line', '.hero-foot']; // Startbildschirm (21.11.): Lage + Hauptmenü in einer Fußzeile
   const px = (v) => parseFloat(v) || 0;
   h1.fitOpts = {
     weight: true,
