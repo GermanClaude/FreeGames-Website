@@ -12,6 +12,11 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Versions-Tag für ein Release (z. B. v1.0.0) – leer = nur Artefakte bauen'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -51,7 +56,8 @@ jobs:
         run: |
           npx cap add android
           export APP_VERSION="${GITHUB_REF_NAME}"
-          [[ "$GITHUB_REF" == refs/tags/v* ]] || export APP_VERSION="$(node -p "require('./package.json').version")"
+          if [[ -n "${{ inputs.release_tag }}" ]]; then export APP_VERSION="${{ inputs.release_tag }}"; fi
+          [[ "$GITHUB_REF" == refs/tags/v* || -n "${{ inputs.release_tag }}" ]] || export APP_VERSION="$(node -p "require('./package.json').version")"
           APP_VERSION_CODE="${GITHUB_RUN_NUMBER}" node scripts/patch-android.mjs
           npx cap sync android
 
@@ -89,10 +95,14 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Release (nur bei Tags)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Release (bei Tags oder mit release_tag)
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          name: NULLPUNKT ${{ inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
           files: mobile/dist/NULLPUNKT-android.apk
           fail_on_unmatched_files: true
           body: |
