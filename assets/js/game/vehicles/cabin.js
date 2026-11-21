@@ -2982,8 +2982,10 @@ export function cabinSeatAnchors(vehicleOrDef) {
     const a = { index, seat: s.id, role, space: inner && inner.space === 'turret' ? 'turret' : 'hull', hip: null, eye: eye ? eye.slice() : null, yaw: 0, posture: 'sitzend', interior: !!inner };
     if (s.drive && R) { a.space = 'hull'; a.hip = [R.F[0], R.floor + 0.29, R.F[2] + 0.1]; a.eye = R.eye.slice(); }
     else if (s.id === 'funker' && FK) { const L = funkerLayout(FK); a.space = 'hull'; a.hip = [L.seat[0], L.seat[1] + 0.04, L.seat[2]]; a.eye = FK.eye.slice(); }
-    else if (s.loader && inner && inner.space === 'turret') { a.posture = 'stehend'; a.hip = fromG([I.loaderEye ? I.loaderEye[0] : 0.55, 0.07 + 0.95, I.loaderEye ? I.loaderEye[2] : 0.35]); a.eye = fromG(I.loaderEye || [0.55, 0.62, 0.35]); a.yaw = 0; }
-    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos; a.hip = [st[0], st[1] - 0.62 * sc, st[2] + 0.05 * sc]; a.eye = inner.pos.slice(); }
+    // Ladeschütze steht: Hüfte ≈ 0,68 m unter dem Auge, leicht hinter dem Kopf (Nutzer/Crew-Strang 21.11.: lag über dem Auge)
+    else if (s.loader && inner && inner.space === 'turret') { const le = I.loaderEye || [0.55, 0.62, 0.35]; a.posture = 'stehend'; a.hip = fromG([le[0], le[1] - 0.68, le[2] + 0.06]); a.eye = fromG(le); a.yaw = 0; }
+    // Richtschütze sitzt hinter der Optik (Station = Okular), Kommandant vor seiner Lehne (Sitz bei Station + 0,2 m)
+    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos; a.hip = [inner.pos[0], st[1] - 0.6 * sc, st[2] + (s.mount === 'gun' ? 0.34 : 0.2) * sc]; a.eye = inner.pos.slice(); }
     else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + Math.min(0.42, (D.troop.roof - D.troop.floor) * 0.3) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; }
     else if (s.pos) { a.hip = [s.pos[0], s.pos[1] + 0.45, s.pos[2]]; a.interior = !!inner; }
     out.push(a);

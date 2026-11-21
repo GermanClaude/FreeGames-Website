@@ -215,7 +215,7 @@ async function boot() {
   // Abschnitte erst initialisieren, wenn sie innerhalb eines Bildschirms herankommen
   bootStep(t('boot.fonts'), 48);
   await fontsP;
-  bootStep(t('boot.fonts'), 56, { ok: true });
+  bootStep(t('boot.fonts.ok'), 56, { ok: true });
   bootSequence();
   const started = new Map();
   const start = (sec) => {

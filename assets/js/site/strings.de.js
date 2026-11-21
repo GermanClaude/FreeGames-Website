@@ -8,6 +8,7 @@ export const STRINGS = Object.freeze({
   'boot.data': 'Spieldaten: Waffen, Karten, Modi …',
   'boot.data.ok': 'Spieldaten bereit',
   'boot.fonts': 'Schriften und Startbildschirm …',
+  'boot.fonts.ok': 'Schriften und Startbildschirm bereit',
   'boot.tex': 'Texturen werden vorgeladen …',
   'boot.tex.ok': 'Texturen vorgeladen ({n})',
   'boot.update': 'Service Worker und Update-Prüfung …',
