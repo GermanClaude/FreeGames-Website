@@ -192,11 +192,12 @@ export function t(key, params) {
 const NUM_RE = /\d+(?:[.,]\d+)*/g;
 let exact = null; // Map deutscher Text → Übersetzung
 let numeric = null; // Map Schablone mit {#} → Übersetzung
+let exactU = null, numericU = null; // dieselben Schlüssel in Großbuchstaben („KARTEN“, „AB STUFE 2“ auf der Startseite)
 let patterns = null; // [{ re, keys, out, first }]
 let cache = new Map();
 
 function buildIndex() {
-  exact = new Map(); numeric = new Map(); patterns = [];
+  exact = new Map(); numeric = new Map(); patterns = []; exactU = new Map(); numericU = new Map();
   cache = new Map();
   if (!CAT) return;
   for (const [k, v] of Object.entries(CAT)) {
@@ -212,7 +213,7 @@ function buildIndex() {
   patterns.sort((x, y) => y.lit - x.lit);
 }
 function addKey(k, v) {
-  if (k.includes('{#}')) { numeric.set(k, v); return; }
+  if (k.includes('{#}')) { numeric.set(k, v); const u = k.toUpperCase(); if (!numericU.has(u)) numericU.set(u, v); return; }
   if (/\{\w+\}/.test(k)) {
     const keys = [];
     const src = k.split(/(\{\w+\})/).map((p) => {
@@ -220,10 +221,11 @@ function addKey(k, v) {
       if (m) { keys.push(m[1]); return '(.+?)'; }
       return p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }).join('');
-    patterns.push({ re: new RegExp('^' + src + '$', 's'), keys, out: v, lit: k.replace(/\{\w+\}/g, '').length });
+    patterns.push({ re: new RegExp('^' + src + '$', 's'), reI: new RegExp('^' + src + '$', 'si'), keys, out: v, lit: k.replace(/\{\w+\}/g, '').length });
     return;
   }
   exact.set(k, v);
+  const u = k.toUpperCase(); if (!exactU.has(u)) exactU.set(u, v);
 }
 
 function sub(out, params, n) {
@@ -231,14 +233,14 @@ function sub(out, params, n) {
   return out.replace(/\{(\w+)\}/g, (m, k) => (k in params ? params[k] : m));
 }
 
-function lookupCore(s, depth) {
-  let v = exact.get(s);
+function lookupCore(s, depth, caps = false) {
+  let v = (caps ? exactU : exact).get(s);
   if (v !== undefined) return typeof v === 'object' ? plural(1, v) : v;
   // Zahlen-Schablone: „Runde 3 von 10“ ↔ „Runde {#} von {#}“
   if (/\d/.test(s)) {
     const nums = [];
     const key = s.replace(NUM_RE, (m) => { nums.push(m); return '{#}'; });
-    v = numeric.get(key);
+    v = (caps ? numericU : numeric).get(key);
     if (v !== undefined) {
       const n0 = nums.length ? Number(nums[0].replace(/\./g, '').replace(',', '.')) : 0;
       let o = typeof v === 'object' ? plural(n0, v) : v;
@@ -249,7 +251,7 @@ function lookupCore(s, depth) {
     }
   }
   for (const p of patterns) {
-    const m = p.re.exec(s);
+    const m = (caps ? p.reI : p.re).exec(s);
     if (!m) continue;
     const params = {};
     let n = 0;
@@ -300,6 +302,12 @@ function lookup(s, depth = 0) {
     let out = core ? lookupCore(core, depth) : null;
     // Quelltext-Umbrüche in HTML-Vorlagen („…ein kleines\n    Experiment.“) wie Leerzeichen behandeln
     if (out == null && /\s{2,}|[\n\t]/.test(core)) out = lookupCore(core.replace(/\s+/g, ' '), depth);
+    // Versalien („KARTEN“, „AB STUFE 2“, „STURM­GEWEHR“): gleiche Schlüssel ohne Groß-/Kleinschreibung, Ergebnis in Versalien
+    if (out == null && core.length > 1 && core === core.toUpperCase() && core !== core.toLowerCase()) {
+      const c = core.replace(/\u00ad/g, '').replace(/\s+/g, ' ');
+      const r2 = lookupCore(c, depth, true);
+      if (r2 != null) { try { out = r2.toLocaleUpperCase(locale()); } catch { out = r2.toUpperCase(); } }
+    }
     if (out != null && out !== core) r = m[1] + out + m[3];
   }
   if (cache.size > 30000) cache.clear();

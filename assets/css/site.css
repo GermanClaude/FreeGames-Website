@@ -1907,3 +1907,32 @@ html.rm .menu-it:hover, html.rm .menu-it:focus-visible, html.rm .cta-fill:hover 
   .sim-table { table-layout: fixed; }
   .sim-table th, .sim-table td { padding-left: 8px; padding-right: 6px; overflow-wrap: anywhere; hyphens: auto; }
 }
+
+/* ───────── Mehrsprachigkeit (shared/i18n.js setzt <html lang>): CSS-Texte aus ::before/::after */
+:root:lang(en) .cta-cfg::before { content: 'READY · '; }
+:root:lang(es) .cta-cfg::before { content: 'LISTO · '; }
+:root:lang(fr) .cta-cfg::before { content: 'PRÊT · '; }
+:root:lang(ru) .cta-cfg::before { content: 'ГОТОВ · '; }
+:root:lang(zh) .cta-cfg::before { content: '就绪 · '; }
+:root:lang(en) .brief-h::after { content: ' · State of play'; }
+:root:lang(es) .brief-h::after { content: ' · Estado actual'; }
+:root:lang(fr) .brief-h::after { content: ' · État des lieux'; }
+:root:lang(ru) .brief-h::after { content: ' · Текущее положение'; }
+:root:lang(zh) .brief-h::after { content: ' · 当前状况'; }
+:root:lang(en) .camp-panel::before { content: 'Classified · for official use only'; }
+:root:lang(es) .camp-panel::before { content: 'Clasificado · solo para uso oficial'; }
+:root:lang(fr) .camp-panel::before { content: 'Confidentiel · usage officiel uniquement'; }
+:root:lang(ru) .camp-panel::before { content: 'Для служебного пользования'; }
+:root:lang(zh) .camp-panel::before { content: '机密 · 仅限内部使用'; }
+@media (max-width: 599px) {
+  :root:lang(en) .runs-on td:nth-of-type(1)::before { content: 'How: '; }
+  :root:lang(en) .runs-on td:nth-of-type(2)::before { content: 'Note: '; }
+  :root:lang(es) .runs-on td:nth-of-type(1)::before { content: 'Cómo: '; }
+  :root:lang(es) .runs-on td:nth-of-type(2)::before { content: 'Nota: '; }
+  :root:lang(fr) .runs-on td:nth-of-type(1)::before { content: 'Comment : '; }
+  :root:lang(fr) .runs-on td:nth-of-type(2)::before { content: 'Remarque : '; }
+  :root:lang(ru) .runs-on td:nth-of-type(1)::before { content: 'Как: '; }
+  :root:lang(ru) .runs-on td:nth-of-type(2)::before { content: 'Примечание: '; }
+  :root:lang(zh) .runs-on td:nth-of-type(1)::before { content: '方式：'; }
+  :root:lang(zh) .runs-on td:nth-of-type(2)::before { content: '说明：'; }
+}

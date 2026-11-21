@@ -11,7 +11,7 @@ export default [
 ['Neue Kampagnenkapitel', 'New campaign chapters', 'Nuevos capítulos de campaña', 'Nouveaux chapitres de campagne', 'Новые главы кампании', '新的战役章节'],
 ['Neues Kampagnenkapitel', 'New campaign chapter', 'Nuevo capítulo de campaña', 'Nouveau chapitre de campagne', 'Новая глава кампании', '新的战役章节'],
 ['Stille Grenze · Infanterie', 'Silent Border · Infantry', 'Frontera Silenciosa · Infantería', 'Frontière silencieuse · Infanterie', 'Тихая граница · Пехота', '寂静边境 · 步兵'],
-['Eisenwind · Panzer', 'Eisenwind · Tanks', 'Eisenwind · Tanques', 'Eisenwind · Chars', 'Eisenwind · Танки', 'Eisenwind · 坦克'],
+['Eisenwind · Panzer', 'Iron Wind · Tanks', 'Viento de Hierro · Tanques', 'Vent de fer · Chars', 'Железный ветер · Танки', '铁风 · 坦克'],
 ['In Vorbereitung', 'In preparation', 'En preparación', 'En préparation', 'В разработке', '筹备中'],
 ['Checkpoint', 'Checkpoint', 'Punto de control', 'Point de contrôle', 'Контрольная точка', '检查点'],
 ['Offen', 'Open', 'Abierta', 'Ouverte', 'Открыта', '未完成'],

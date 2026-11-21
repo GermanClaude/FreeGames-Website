@@ -53,7 +53,7 @@ export default [
 ['Panzersimulation', 'Tank simulation', 'Simulación de tanque', 'Simulation de char', 'Танковая симуляция', '坦克模拟'],
 ['Eine Besatzung, ein Auftrag', 'One crew, one mission', 'Una tripulación, una misión', 'Un équipage, une mission', 'Один экипаж, одна задача', '一个车组，一项任务'],
 ['Wähle Panzer, Karte und deinen Platz. Die KI besetzt den Rest der Besatzung; Winkelspiegel, Optiken und Innenräume für jeden Platz.', 'Choose tank, map and your seat. The AI fills the rest of the crew; periscopes, optics and interiors for every seat.', 'Elige tanque, mapa y tu puesto. La IA ocupa el resto de la tripulación; periscopios, ópticas e interiores para cada puesto.', 'Choisissez le char, la carte et votre poste. L’IA complète l’équipage ; épiscopes, optiques et intérieurs pour chaque poste.', 'Выберите танк, карту и своё место. Остальной экипаж – ИИ; перископы, оптика и интерьер для каждого места.', '选择坦克、地图和你的座位。其余乘员由 AI 担任；每个座位都有潜望镜、光学瞄具和内饰。'],
-['Panzer-Kampagne „Eisenwind“ →', 'Tank campaign “Eisenwind” →', 'Campaña de tanques «Eisenwind» →', 'Campagne de chars « Eisenwind » →', 'Танковая кампания «Eisenwind» →', '坦克战役“Eisenwind”→'],
+['Panzer-Kampagne „Eisenwind“ →', 'Tank campaign “Iron Wind” →', 'Campaña de tanques «Viento de Hierro» →', 'Campagne de chars « Vent de fer » →', 'Танковая кампания «Железный ветер» →', '坦克战役“铁风”→'],
 ['Kaliber', 'Caliber', 'Calibre', 'Calibre', 'Калибр', '口径'],
 ['Panzerung vorn', 'Front armor', 'Blindaje frontal', 'Blindage avant', 'Лобовая броня', '正面装甲'],
 ['Gewicht · Tempo', 'Weight · speed', 'Peso · velocidad', 'Poids · vitesse', 'Масса · скорость', '重量 · 速度'],

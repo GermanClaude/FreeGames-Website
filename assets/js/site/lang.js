@@ -11,6 +11,19 @@ let pending = null; // Wahl vor dem Laden der API
 const fns = new Set();
 const notify = (code) => { for (const fn of [...fns]) { try { fn(code); } catch { /* */ } } };
 
+// Himmelsrichtungen im Körperkamera-Kompass (N/O/S/W) in der gewählten Sprache (Einzelbuchstaben übersetzt der Katalog nicht)
+const DEG = { N: 0, O: 90, S: 180, W: 270 };
+function compassStrip() {
+  if (!api?.compass) return;
+  for (const s of document.querySelectorAll('.cam-strip span')) {
+    const d = s.dataset.deg ?? DEG[s.textContent.trim()];
+    if (d == null) continue;
+    s.dataset.deg = d;
+    s.textContent = api.compass(+d);
+  }
+}
+fns.add(compassStrip);
+
 /** Übersetzungs-API anschließen (main.js, nach dem Laden von shared/i18n.js). */
 export function attachI18n(mod) {
   if (!mod || typeof mod.t !== 'function') return;
