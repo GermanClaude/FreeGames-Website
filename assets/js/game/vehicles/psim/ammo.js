@@ -95,7 +95,7 @@ function kindSpec(kind, cal, era) {
     default: {
       // Panzergranate: Durchschlag nach Kaliber/Mündungsgeschwindigkeit; 2. WK mit Haube und Sprengladung (filler)
       const D0 = era === 'wk1' ? (cal < 45 ? { v: 380, p: 26 } : { v: 480, p: 48 }) : cal >= 85 ? { v: 780, p: 165 } : { v: 620, p: 102 };
-      return { speed: D0.v, life: 6, pen0: D0.p, penLoss: era === 'wk1' ? 0.012 : 0.02, norm: era === 'wk1' ? 2 : 4, rico: era === 'wk1' ? 62 : 70, dmgPen: (era === 'wk1' ? 220 : 300) * Math.sqrt(k), dmgNo: 14, cone: 22, coneLen: 2.2, filler: era === 'wk1' ? 0 : 1.6, splash: { radius: 2.0, maxDamage: 70 }, actorDamage: 200, penetrating: true };
+      return { speed: D0.v, life: 6, pen0: D0.p, penLoss: era === 'wk1' ? 0.012 : 0.02, norm: era === 'wk1' ? 2 : 4, rico: era === 'wk1' ? 62 : 70, dmgPen: (era === 'wk1' ? 220 : 300) * Math.sqrt(k), dmgNo: 14, cone: 22, coneLen: 2.2, filler: era === 'wk1' ? 0 : 1.2, splash: { radius: 2.0, maxDamage: 70 }, actorDamage: 200, penetrating: true };
     }
   }
 }
@@ -340,13 +340,19 @@ export function applyEffects(sys, v, info) {
     const rp = _c.set(rk[0] * sc + sh[0], rk[1] * sc + sh[1], rk[2] * sc + sh[2]).applyQuaternion(_q).add(_b.fromArray(D.turretPivot));
     v.body.toWorld(rp, rp);
     const n = Object.values(g.rack).reduce((x, y) => x + (y | 0), 0);
-    const near = rp.distanceTo(pt) < 1.6 || (burst && rp.distanceTo(burst) < 1.6);
-    if (near && n > 0 && rnd() < (P.role === 'ke' ? 0.45 : P.role === 'ce' ? 0.6 : 0.3) * Math.min(1, 0.4 + n / 14)) {
+    // Zündung nur bei Treffern nahe am Gestell (1,1 m), wahrscheinlicher mit vollem Gestell
+    const near = rp.distanceTo(pt) < 1.1 || (burst && rp.distanceTo(burst) < 1.1);
+    if (near && n > 0 && rnd() < (P.role === 'ke' ? 0.3 : P.role === 'ce' ? 0.4 : 0.18) * Math.min(1, 0.4 + n / 14)) {
       if (I.blastDoor && g.step !== 'offen' && g.busyKind !== 'tuer' && g.busyKind !== 'greifen') {
         for (const k of Object.keys(g.rack)) g.rack[k] = 0;
         mods.munition = 0;
         notes.push('Munitionsbunker getroffen – Sprengklappen haben gehalten');
         G.effects?.explosion?.(rp.clone(), 3);
+      } else if (v.seats.some((s) => s.actor && s.actor.isPlayer && s.actor.alive)) {
+        // Spielerpanzer: Munitionsbrand statt Sofort-Explosion – Löschanlage (geringe Aussicht) oder Ausbooten (modes/panzer.js)
+        notes.push('Munitionsbrand!');
+        mods.munition = 0; mods.brand = Math.max(mods.brand, 1);
+        v._psimAmmoFire = true;
       } else {
         notes.push('Munition gezündet!');
         mods.munition = 0;

@@ -30,6 +30,10 @@
 //
 // attachCabin(model, D, quality) → cab | null; syncCabin(cab, vehicle, dt) je Bild (vehicle.js _syncCrew, nur innen);
 // setCabinVisible(cab, on).
+// Nutzer 21.11.: Transporter (MTW-13, RS-8) über attachTroopCabin (Fahrerkabine mit Durchgang + Mannschaftsraum aus
+// cabin-troop.js), Schützenpanzer mit Mannschaftsraum im Detail, 2.-WK-Fahrerplatz epochentypisch (Sehklappe, Blechtafel,
+// Kurskreisel, Zündschloss/Anlasserknopf), Funker mit Durchgang zum Kampfraum; cabinSeatAnchors(vehicle) liefert die
+// Sitz-Anker (Hüfte, Auge, Blickrichtung je Platz) für die sichtbaren Besatzungsfiguren (crew-figures.js).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -1761,8 +1765,10 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
   // ---- Sitze
   if (c && !wk1) {
     const post = A.basket ? Math.max(0.2, 0.34 - 0.085 - A.yb) : 0.19;
-    DT.seat(B, C, det, [-0.62, 0.345, 0.55], 0, { post, back: true, w: 0.42, d: 0.4, foot: false, seed: 1 });
-    label(B, C, 'w_sitz', [-0.62 + 0.215, 0.27, 0.55], [0, HP, 0], 0.07);
+    // am Platz des Kommandanten, Lehne gut hinter dem Augpunkt (Nutzer 21.11.: Auge zwischen Polstern, zu wenig Platz)
+    const cz = Math.max(0.55, c[2] + 0.2);
+    DT.seat(B, C, det, [c[0], 0.345, cz], 0, { post, back: true, w: 0.42, d: 0.4, foot: false, seed: 1 });
+    label(B, C, 'w_sitz', [c[0] + 0.215, 0.27, cz], [0, HP, 0], 0.07);
   }
   if (!wk1) {
     if (rackRight) DT.seat(B, C, det, [0.6, 0.34, 1.35], PI, { post: 0.2, back: false, seed: 2 });

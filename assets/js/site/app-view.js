@@ -10,9 +10,8 @@ const mb = (b) => `${Math.round(b / 1048576)} MB`;
 
 export function init(sec, D, ctx) {
   const kind = appKind();
-  // Startbildschirm (21.11.): In der PC-App führt der Menüeintrag zu den App-Einstellungen statt zu den Downloads
-  const mi = document.querySelector('#hero-menu a[href="#app"]');
-  if (mi && kind === 'desktop-app') mi.lastChild.nodeValue = 'App-Einstellungen';
+  // Spielmenü (21.11.): In der PC-App heißt die Kategorie „Updates & App“ (menu.js) – statt Downloads: Version,
+  // Update-Prüfung, App-Einstellungen
   if (kind === 'desktop-app') { initDesktop(sec, D, ctx); return; }
   initWeb(sec, kind);
 }
@@ -92,6 +91,11 @@ function initDesktop(sec, D, ctx) {
   const crash = A.lastCrash;
   const os = { win32: 'Windows', linux: 'Linux', darwin: 'macOS' }[A.platform] || A.platform;
   box.innerHTML = `
+    <h3 class="mono-h">Updates</h3>
+    <div class="app-upd" data-upd>
+      <p class="app-upd-st" data-upd-st aria-live="polite">Installiert: Spielfassung ${esc(A.build || '?')} · App ${esc(A.version || '?')}</p>
+      <p class="app-acts"><button class="dl-btn is-main" type="button" data-act="upd">Nach Updates suchen</button> <button class="dl-btn" type="button" data-act="rel">Download-Seite öffnen</button></p>
+    </div>
     <p class="app-play"><a class="cta-fill" href="${esc(href)}" data-play data-kill>Spielen<span class="o">.</span></a>
       <a class="dl-btn" href="spielen.html">Lobby &amp; Mehrspieler</a></p>
     <dl class="keys app-sys">
@@ -138,6 +142,29 @@ function initDesktop(sec, D, ctx) {
     else if (act === 'quit') A.quit();
     else if (act === 'relaunch') A.relaunch();
     else if (act === 'web') A.openExternal(A.webUrl);
+    else if (act === 'rel') A.openExternal(A.releasesUrl || 'https://github.com/GermanClaude/FreeGames-Website/releases');
+    else if (act === 'upd') checkUpdate(A, box.querySelector('[data-upd-st]'), b);
     else if (act === 'crash-reset') { A.setConfig('lastCrash', null).then(() => { b.closest('p').textContent = 'Zurückgesetzt. Extrem nutzt wieder 8K-Schatten, wo die Grafikkarte es kann.'; }); }
   });
+}
+
+/** Spielmenü (21.11.): Webseite nach einer neueren Spielfassung fragen (über die App, sonst direkt). */
+async function checkUpdate(A, out, btn) {
+  if (!out) return;
+  btn.disabled = true;
+  out.textContent = 'Suche nach Updates …';
+  let r = null;
+  try {
+    if (typeof A.checkUpdate === 'function') r = await A.checkUpdate();
+    else {
+      const res = await fetch(`${A.webUrl}version.json?t=${Date.now()}`, { cache: 'no-store' });
+      const web = String((await res.json()).build || '');
+      r = { local: A.build, web, newer: !!(web && A.build && web > A.build) };
+    }
+  } catch { r = null; }
+  btn.disabled = false;
+  if (!r || r.error) { out.textContent = 'Keine Verbindung – Update-Prüfung nicht möglich. Offline spielst du weiter wie bisher.'; return; }
+  out.textContent = r.newer
+    ? `Neue Spielfassung ${r.web} verfügbar (installiert: ${r.local}). Für Online-Spiele mit Browser-Spielern bitte die neue Version installieren – „Download-Seite öffnen“.`
+    : `Aktuell: Spielfassung ${r.local} ist die neueste.`;
 }

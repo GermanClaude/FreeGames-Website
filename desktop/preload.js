@@ -27,4 +27,10 @@ contextBridge.exposeInMainWorld('nullpunktDesktop', Object.freeze({
   setConfig: (key, value) => ipcRenderer.invoke('np:set-config', String(key), value),
   /** App neu starten (z. B. nach VSync-Wechsel). */
   relaunch: () => ipcRenderer.invoke('np:relaunch'),
+  /** Spielmenü (21.11.): Ladeschritt der Startseite ans Startfenster ({ label, pct 0–100, ok }). */
+  bootStep: (st) => { try { ipcRenderer.send('np:boot', { label: String(st && st.label || '').slice(0, 160), pct: Number(st && st.pct) || 0, ok: !!(st && st.ok) }); } catch { /* */ } },
+  /** Startseite fertig: Hauptfenster zeigen, Startfenster schließen. */
+  bootDone: () => { try { ipcRenderer.send('np:boot-done'); } catch { /* */ } },
+  /** Webseite nach neuerer Spielfassung fragen → Promise<{ local, web, newer, error }>. */
+  checkUpdate: () => ipcRenderer.invoke('np:check-update'),
 }));

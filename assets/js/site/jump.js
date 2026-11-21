@@ -12,6 +12,10 @@ const ensureUpTo = async (el) => {
   if (fn) await fn(el);
 };
 
+let router = null;
+/** Spielmenü (21.11.): Sprünge öffnen statt zu scrollen die Kategorie, in der das Ziel liegt (menu.js). */
+export function setRouter(fn) { router = typeof fn === 'function' ? fn : null; }
+
 /** main.js meldet hier, wie Abschnitte bis zu einem Element aufgebaut werden. */
 export function setEnsureUpTo(fn) { setReady(fn); }
 
@@ -32,6 +36,7 @@ function focusTarget(el) {
 export async function jumpTo(id, { smooth = true, focus = true, hash = true } = {}) {
   const el = document.getElementById(id);
   if (!el) return false;
+  if (router) return router(id, { smooth, focus, hash });
   const my = ++token;
   await ensureUpTo(el);
   await frames(2);

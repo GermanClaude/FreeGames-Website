@@ -1156,13 +1156,14 @@ export class PanzerMode extends BaseMode {
       st.burnT += dt;
       if (st.burnT > 3 && st.extCharges > 0 && !st._extTried) {
         st._extTried = true; st.extCharges--;
-        if (Math.random() < 0.72) { mods.brand = 0; st.burnT = 0; st._extTried = false; this.radio.say('Fahrer', 'Feuerlöschanlage ausgelöst – Brand gelöscht!', { tone: 'warn' }); }
+        if (Math.random() < (v._psimAmmoFire ? 0.35 : 0.72)) { mods.brand = 0; v._psimAmmoFire = false; st.burnT = 0; st._extTried = false; this.radio.say('Fahrer', 'Feuerlöschanlage ausgelöst – Brand gelöscht!', { tone: 'warn' }); }
         else this.radio.say('Fahrer', 'Löschanlage versagt – es brennt weiter!', { tone: 'warn' });
       }
       if (st.burnT > 3 && st._extTried && st.extCharges > 0 && st.burnT > 9) { st._extTried = false; }
-      if (st.burnT > 22) { this.radio.say('Kommandant', 'Ausbooten! Ausbooten!', { tone: 'warn' }); v.destroy(v.lastAttacker, v.lastWeaponId); }
+      if (st.burnT > (v._psimAmmoFire ? 12 : 22)) { this.radio.say('Kommandant', 'Ausbooten! Ausbooten!', { tone: 'warn' }); v._psimKo = v._psimAmmoFire ? 'Munition' : 'Brand'; v.destroy(v.lastAttacker, v.lastWeaponId); }
+      else if (v._psimAmmoFire && st.burnT > 5 && !st._bootSaid) { st._bootSaid = true; this.radio.say('Kommandant', 'Munitionsbrand – fertigmachen zum Ausbooten!', { tone: 'warn' }); }
       if (G.effects && (this._fireFx = (this._fireFx || 0) - dt) <= 0) { this._fireFx = 0.25; G.effects.smoke?.(_a.copy(v.body.pos).setY(v.body.pos.y + 1.6), { count: 1, color: 0x221d18, size: 1.4, life: 2.6, rise: 2, alpha: 0.5 }); }
-    } else st.burnT = 0;
+    } else { st.burnT = 0; st._bootSaid = false; }
     // Kette: Besatzung repariert im Stand (~25 s)
     if (mods.ketten <= 0) {
       if (Math.abs(v.body.speed) < 0.3) st.trackRepairT += dt; else st.trackRepairT = 0;

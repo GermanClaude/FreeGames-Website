@@ -2,8 +2,7 @@
 // Startbildschirm (21.11.): Körperkamera-Einblendung (Uhr, REC) und Hauptmenü wie im Spiel.
 // - Uhr läuft nur, solange der Startbildschirm sichtbar ist; außerhalb pausieren auch die CSS-Bewegungen (.hero.off).
 // - Hauptmenü: Pfeiltasten ↑/↓ (und Pos1/Ende) wandern durch die Einträge, Enter folgt dem Link (Standardverhalten).
-// - Controller: Steuerkreuz/linker Stick hoch/runter, A bestätigt – nur solange der Startbildschirm im Bild ist und
-//   ein Controller verbunden ist (keine Dauerschleife ohne Controller).
+// - Controller und räumliche Tastaturbedienung: menu.js (Spielmenü, 21.11.).
 // - Klänge nur über sound.ui (spielt erst nach ausdrücklichem Einschalten „Ton: an“).
 
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -24,56 +23,31 @@ export function initHud({ sound } = {}) {
   const startClock = () => { if (!timer) { tick(); timer = setInterval(tick, 1000); } };
   const stopClock = () => { clearInterval(timer); timer = 0; };
 
-  /* Hauptmenü */
+  /* Hauptmenü: Tastatur- und Controller-Bedienung übernimmt seit dem Spielmenü (21.11.) menu.js – räumlich für alle
+     Bildschirme. Ohne Spielmenü (kein html.shell) bleibt die einfache Pfeiltasten-Bedienung der Liste. */
   const items = menu ? [...menu.querySelectorAll('a')] : [];
-  const idx = () => items.indexOf(document.activeElement);
-  const focusAt = (i) => {
-    const n = items.length;
-    if (!n) return;
-    const el = items[((i % n) + n) % n];
-    el.focus({ preventScroll: true });
-    sound?.ui('hover');
-  };
-  menu?.addEventListener('keydown', (e) => {
-    const i = idx();
-    if (i < 0) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); focusAt(i + 1); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); focusAt(i - 1); }
-    else if (e.key === 'Home') { e.preventDefault(); focusAt(0); }
-    else if (e.key === 'End') { e.preventDefault(); focusAt(items.length - 1); }
-  });
-  for (const a of items) a.addEventListener('pointerenter', () => sound?.ui('hover'));
-  for (const a of items) if (!a.matches('.cta-fill')) a.addEventListener('click', () => sound?.ui('click'));
-
-  /* Controller */
-  let padLoop = 0;
-  let last = { up: false, down: false, a: false };
-  const padTick = () => {
-    padLoop = 0;
-    const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
-    if (!pads.length || !visible) return;
-    const p = pads[0];
-    const ax = p.axes?.[1] || 0;
-    const now = {
-      up: !!p.buttons?.[12]?.pressed || ax < -0.6,
-      down: !!p.buttons?.[13]?.pressed || ax > 0.6,
-      a: !!p.buttons?.[0]?.pressed,
+  if (!document.documentElement.classList.contains('shell')) {
+    const idx = () => items.indexOf(document.activeElement);
+    const focusAt = (i) => {
+      const n = items.length;
+      if (!n) return;
+      items[((i % n) + n) % n].focus({ preventScroll: true });
+      sound?.ui('hover');
     };
-    const i = idx();
-    if (now.down && !last.down) focusAt(i < 0 ? 0 : i + 1);
-    if (now.up && !last.up) focusAt(i < 0 ? 0 : i - 1);
-    if (now.a && !last.a && i >= 0) items[i].click();
-    last = now;
-    padLoop = requestAnimationFrame(padTick);
-  };
-  const startPad = () => { if (!padLoop && visible && navigator.getGamepads && [...navigator.getGamepads()].some(Boolean)) padLoop = requestAnimationFrame(padTick); };
-  window.addEventListener('gamepadconnected', startPad);
+    menu?.addEventListener('keydown', (e) => {
+      const i = idx();
+      if (i < 0) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); focusAt(i + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); focusAt(i - 1); }
+    });
+  }
+  for (const a of items) if (!a.matches('.cta-fill') && !a.dataset.cat) a.addEventListener('click', () => sound?.ui('click'));
 
   /* Sichtbarkeit */
   const io = new IntersectionObserver(([e]) => {
     visible = e.isIntersecting;
     hero.classList.toggle('off', !visible);
-    if (visible && !document.hidden) { startClock(); startPad(); } else stopClock();
+    if (visible && !document.hidden) startClock(); else stopClock();
   });
   io.observe(hero);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopClock(); else if (visible) startClock(); });

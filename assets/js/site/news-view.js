@@ -72,7 +72,7 @@ function initJumps(sec, ctx) {
   });
 }
 
-function initCompare(sec) {
+export function initCompare(sec) {
   const stage = $('#vgl-stage', sec);
   const pick = $('#vgl-pick', sec);
   if (!stage) return;

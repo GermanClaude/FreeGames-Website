@@ -16,6 +16,7 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
+import '../shared/i18n.js?v=20261121041936'; // Mehrsprachigkeit: Katalog laden, Seite/Canvas/Sprachausgabe übersetzen (vor allen Oberflächen)
 import { settings } from '../shared/settings.js?v=20261121041936';
 import { profile } from '../shared/profile.js?v=20261121041936';
 import { TrophyToasts } from './ui/trophy-toast.js?v=20261121041936';

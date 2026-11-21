@@ -273,7 +273,7 @@ export class Emplacement extends Vehicle {
     this.crew = null;      // Bot an der Stellung
     this.ammoId = opts.ammoId || null;
     this.aimYaw = 0; this.aimPitch = 0;
-    this.cool = 4 + Math.random() * 3;
+    this.cool = 1 + Math.random() * 2; // Pak liegt in Lauerstellung: Rohr schon grob auf den Anmarschweg gerichtet
     this.shots = 0;
     this.target = null;
     this._scanT = 0; this._burst = 0; this._burstT = 0;
@@ -377,7 +377,7 @@ export class Emplacement extends Vehicle {
     this._aimT = (this._aimT || 0) + dt;
     const sk = this._skill || (this._skill = skillAt(foeLevel(G)));
     // Richten nach dem Erkennen (Seite/Höhe kurbeln, Entfernung schätzen) – erster Schuss frühestens nach ~3 s
-    if (this.cool > 0 || Math.abs(wrap(yaw - this.aimYaw)) > 0.004 || this._aimT < SETTLE.wk2 * sk.settle) return;
+    if (this.cool > 0 || Math.abs(wrap(yaw - this.aimYaw)) > 0.004 || this._aimT < 1.6 * sk.settle) return;
     // Schusslinie ab der Mündung frei (Hang, Hecke, Haus)?
     if (G.world && G.world.lineOfSight && !G.world.lineOfSight(this.body.toWorld(_a.set(0, 0.95, -1), new THREE.Vector3()), tp)) return;
     this.cool = (6.5 + Math.random() * 2.5) * sk.reload;
@@ -388,7 +388,7 @@ export class Emplacement extends Vehicle {
     const wy = this.body.yaw() + this.aimYaw + A.bias.x + randn() * fr;
     const wp = this.aimPitch + A.bias.y + randn() * fr;
     A.bias.multiplyScalar(sk.corr); A.n++;
-    this._aimT = SETTLE.wk2 * sk.settle * 0.5;
+    this._aimT = 0.8 * sk.settle;
     _d.set(-Math.sin(wy) * Math.cos(wp), Math.sin(wp), -Math.cos(wy) * Math.cos(wp));
     const muzzle = this.body.toWorld(_a.set(0, 0.95, 0), new THREE.Vector3()).addScaledVector(_d, 3.3);
     this.sys.fire(this, { actor: crew, index: 0 }, { def, shots: this.shots }, muzzle, _d.clone());

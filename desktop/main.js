@@ -13,6 +13,11 @@
 //   Einladungslink oder --query startet direkt im Spiel. Fenstergröße/Vollbild werden gemerkt. App-Einstellungen in
 //   userData/nullpunkt-app.json: Bildrate ohne VSync (Neustart), Start im Vollbild. Stürzt der Spielprozess ab, merkt
 //   sich die App das (lastCrash) – „Extrem“ nimmt dann 4K- statt 8K-Schatten (engine/renderer.js).
+// • Spielmenü (21.11.): Beim Start zuerst ein eigenes Startfenster (splash.html, über app://nullpunkt/__splash.html,
+//   damit es die Spielschriften nutzen kann) mit echten Ladeschritten: App/Spielfassung, Grafikkarte, Update-Prüfung
+//   gegen die Webseite, danach die Schritte der Startseite (Spieldaten, Texturen …, über preload.js bootStep/bootDone).
+//   Das Hauptfenster bleibt verborgen, bis die Startseite fertig meldet (höchstens 15 s), dann Übergang ins Hauptmenü.
+//   NULLPUNKT_NO_SPLASH=1 schaltet das Startfenster ab (Tests).
 // • VR: WebXR/OpenXR-Schalter gesetzt; ob Electron eine Brille meldet, hängt von der Electron-Fassung ab (Spiel zeigt
 //   sonst im VR-Abschnitt einen Hinweis auf Chrome/Edge bzw. den Quest-Browser).
 'use strict';
@@ -111,8 +116,13 @@ async function serve(request) {
   let rel;
   try { rel = decodeURIComponent(url.pathname); } catch { return notFound(); }
   if (rel.endsWith('/')) rel += 'index.html';
-  const file = path.normalize(path.join(GAME_DIR, rel));
-  if (file !== GAME_DIR && !file.startsWith(GAME_DIR + path.sep)) return notFound(); // nichts außerhalb des Spielordners
+  // Startfenster (gehört zur App, nicht zum Spielordner)
+  let file;
+  if (rel === '/__splash.html') file = path.join(__dirname, 'splash.html');
+  else {
+    file = path.normalize(path.join(GAME_DIR, rel));
+    if (file !== GAME_DIR && !file.startsWith(GAME_DIR + path.sep)) return notFound(); // nichts außerhalb des Spielordners
+  }
   let st;
   try { st = await fs.promises.stat(file); } catch { return notFound(); }
   if (!st.isFile()) return notFound();
@@ -209,7 +219,10 @@ function createWindow() {
     },
   });
   win.setMenu(null);
-  win.once('ready-to-show', () => win.show());
+  // Startseite: erst zeigen, wenn sie „fertig“ meldet (Ladebildschirm im Startfenster); Spiel direkt: sobald bereit
+  const url = startUrl();
+  const waitBoot = !!splash && /\/index\.html$/.test(url);
+  win.once('ready-to-show', () => { if (!waitBoot) showMain(); else setTimeout(showMain, 15000); });
   // Titel bleibt „NULLPUNKT“ (die Seite setzt sonst ihren eigenen)
   win.on('page-title-updated', (e) => e.preventDefault());
   win.on('enter-full-screen', () => win.webContents.send('np:fullscreen', true));
@@ -260,7 +273,63 @@ function createWindow() {
     if (r === 0) win.loadURL(startUrl()); else app.quit();
   });
 
-  win.loadURL(startUrl());
+  win.loadURL(url);
+}
+
+/* ------------------------------------------------------------------ Startfenster (Ladebildschirm) */
+
+let splash = null;
+let mainShown = false;
+
+function splashSend(fn, arg) {
+  if (!splash || splash.isDestroyed()) return;
+  splash.webContents.executeJavaScript(`window.${fn} && window.${fn}(${JSON.stringify(arg ?? null)})`).catch(() => {});
+}
+
+function createSplash() {
+  if (process.env.NULLPUNKT_NO_SPLASH === '1') return;
+  splash = new BrowserWindow({
+    title: 'NULLPUNKT',
+    width: 760, height: 428, center: true, frame: false, resizable: false, movable: true, minimizable: true, maximizable: false,
+    fullscreenable: false, show: false, backgroundColor: '#070909', skipTaskbar: false,
+    icon: path.join(GAME_DIR, 'assets', 'img', process.platform === 'win32' ? 'icon-192.png' : 'icon-512.png'),
+    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false, devTools: DEV },
+  });
+  splash.setMenu(null);
+  splash.once('ready-to-show', () => { if (!mainShown) splash.show(); });
+  splash.on('closed', () => { splash = null; });
+  splash.webContents.on('will-navigate', (e) => e.preventDefault());
+  splash.webContents.once('did-finish-load', () => { splashSteps().catch(() => {}); });
+  splash.loadURL(`${ORIGIN}/__splash.html`);
+}
+
+/** Eigene Schritte des Startfensters (vor bzw. neben den Schritten der Startseite). */
+async function splashSteps() {
+  splashSend('npInfo', { version: app.getVersion(), build: INFO.build, platform: process.platform });
+  splashSend('npStep', { label: `PC-App ${app.getVersion()} · Spielfassung ${INFO.build || '?'}`, pct: 4, ok: true });
+  let gpu = '';
+  try {
+    const st = app.getGPUFeatureStatus();
+    gpu = /^enabled/.test(st.webgl2 || '') ? 'Grafikkarte: WebGL 2 mit Hardwarebeschleunigung' : `Grafik: ${st.webgl2 || 'unbekannt'} (Software-Darstellung möglich)`;
+  } catch { gpu = 'Grafikkarte geprüft'; }
+  splashSend('npStep', { label: gpu, pct: 8, ok: true });
+  splashSend('npStep', { label: 'Update-Prüfung …', pct: 10 });
+  const r = await fetchWebBuild();
+  splashSend('npStep', {
+    label: r.error ? 'Update-Prüfung: offline – du spielst die installierte Fassung' : r.newer ? `Neuere Spielfassung ${r.web} online (Hinweis folgt)` : 'Update-Prüfung: aktuell',
+    pct: 12, ok: true,
+  });
+}
+
+function showMain() {
+  if (mainShown || !win || win.isDestroyed()) return;
+  mainShown = true;
+  win.show();
+  win.focus();
+  if (splash && !splash.isDestroyed()) {
+    splashSend('npDone');
+    setTimeout(() => { try { splash?.close(); } catch { /* */ } }, 420);
+  }
 }
 
 /** Start: die Startseite (index.html). Mit Abfrageteil aus der Befehlszeile (--query=debug=1&autostart=1 …) oder einem
@@ -280,16 +349,31 @@ function startUrl() {
 
 // Online spielen Desktop und Browser nur mit gleicher Spielfassung (BUILD + NET_VERSION). Ist die Webseite neuer, sagt
 // die App das einmal – ohne etwas selbst herunterzuladen.
+let webCheck = null;
+/** Spielfassung der Webseite → { local, web, newer, error }. Einmal je Start zwischengespeichert (force: neu fragen). */
+function fetchWebBuild(force = false) {
+  if (webCheck && !force) return webCheck;
+  webCheck = (async () => {
+    if (process.env.NULLPUNKT_NO_UPDATE_CHECK === '1') return { local: INFO.build, web: '', newer: false, error: 'aus' };
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const res = await net.fetch(`${WEB_URL}version.json?t=${Date.now()}`, { signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(t);
+      if (!res.ok) return { local: INFO.build, web: '', newer: false, error: `http ${res.status}` };
+      const web = String((await res.json()).build || '');
+      return { local: INFO.build, web, newer: !!(web && INFO.build && web > INFO.build), error: null };
+    } catch (err) { return { local: INFO.build, web: '', newer: false, error: String(err && err.name || 'offline') }; }
+  })();
+  return webCheck;
+}
+
 async function checkWebVersion() {
   if (process.env.NULLPUNKT_NO_UPDATE_CHECK === '1') return;
   try {
-    const ctl = new AbortController();
-    const t = setTimeout(() => ctl.abort(), 6000);
-    const res = await net.fetch(`${WEB_URL}version.json?t=${Date.now()}`, { signal: ctl.signal, cache: 'no-store' });
-    clearTimeout(t);
-    if (!res.ok) return;
-    const web = String((await res.json()).build || '');
-    if (!web || !INFO.build || web <= INFO.build || !win || win.isDestroyed()) return;
+    const chk = await fetchWebBuild();
+    const web = chk.web;
+    if (chk.error || !chk.newer || !win || win.isDestroyed()) return;
     const r = await dialog.showMessageBox(win, {
       type: 'info', title: 'NULLPUNKT', buttons: ['Später', 'Download-Seite öffnen'], defaultId: 0, cancelId: 0,
       message: 'Eine neuere Spielversion ist online.',
@@ -327,6 +411,16 @@ else {
   ipcMain.handle('np:is-fullscreen', (e) => { const w = BrowserWindow.fromWebContents(e.sender); return !!(w && w.isFullScreen()); });
   ipcMain.handle('np:open-external', (_e, url) => { if (/^https:\/\//.test(String(url))) shell.openExternal(String(url)); });
   ipcMain.handle('np:quit', () => app.quit());
+  // Spielmenü (21.11.): Ladeschritte der Startseite ins Startfenster, „fertig“ zeigt das Hauptfenster
+  ipcMain.on('np:boot', (_e, st) => {
+    if (!st || typeof st !== 'object') return;
+    const label = String(st.label || '').slice(0, 160);
+    const pct = Math.max(0, Math.min(100, Number(st.pct) || 0));
+    // Die Seite zählt 0–100; im Startfenster sind 0–12 % die eigenen Schritte der App
+    splashSend('npStep', { label, pct: 12 + pct * 0.88, ok: !!st.ok });
+  });
+  ipcMain.on('np:boot-done', () => { if (!mainShown) setTimeout(showMain, 120); });
+  ipcMain.handle('np:check-update', () => fetchWebBuild(true));
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
@@ -338,6 +432,7 @@ else {
     const ALLOW = new Set(['media', 'fullscreen', 'pointerLock', 'keyboardLock', 'clipboard-sanitized-write', 'clipboard-read', 'speaker-selection', 'window-management']);
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(ALLOW.has(perm)));
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => ALLOW.has(perm));
+    createSplash();
     createWindow();
     setTimeout(checkWebVersion, 8000);
   });
