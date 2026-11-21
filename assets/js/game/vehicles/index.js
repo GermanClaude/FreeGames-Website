@@ -991,8 +991,11 @@ export class VehicleSystem {
     const busy = typeof player._busy === 'function' ? player._busy(G.time.elapsed) : null;
     const blocked = frozen || !!busy;
     const sp = Math.abs(v.body.speed || 0);
-    it.fire = !blocked && input.down('fire');
-    it.firePressed = !blocked && input.pressed('fire');
+    // nicht durch das eigene Fahrzeug (Turm, Lukendeckel, Aufbau) schießen: Blickstrahl trifft die eigene Wanne → Feuersperre
+    const own = !!(G.camera && v.raycast(G.camera.position, G.camera.getWorldDirection(_n), 4));
+    if (own && input.pressed('fire')) this._flash('Feuersperre – eigenes Fahrzeug im Schussfeld');
+    it.fire = !blocked && !own && input.down('fire');
+    it.firePressed = !blocked && !own && input.pressed('fire');
     it.ads = !blocked && (input.active ? input.active('ads') : input.down('ads'));
     it.reload = !frozen && !busy && input.pressed('reload');
     it.swap = !blocked && input.pressed('swap');

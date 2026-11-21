@@ -24,11 +24,12 @@ const DIFF_IDX = { rekrut: 0, regulaer: 1, veteran: 2, elite: 3 };
 const GEGNER_OFF = { leicht: -1, mittel: 0, schwer: 1 };
 // Tabellen über die Stufen −1 … 4
 const T = {
-  aim: [2.1, 1.6, 1.2, 0.95, 0.8, 0.7],
-  detect: [2.1, 1.7, 1.3, 1.05, 0.9, 0.8],
-  settle: [1.9, 1.55, 1.25, 1.05, 0.9, 0.8],
-  reload: [1.4, 1.28, 1.15, 1.05, 1.0, 0.95],
-  corr: [0.85, 0.75, 0.64, 0.56, 0.5, 0.45],
+  aim: [1.7, 1.25, 0.85, 0.62, 0.52, 0.45],
+  detect: [1.9, 1.4, 1.0, 0.75, 0.65, 0.6],
+  settle: [1.7, 1.3, 0.95, 0.7, 0.6, 0.55],
+  reload: [1.35, 1.2, 1.08, 1.0, 0.95, 0.9],
+  corr: [0.8, 0.7, 0.55, 0.42, 0.38, 0.35],
+  fresh: [0.8, 0.7, 0.55, 0.42, 0.38, 0.35],
 };
 const tab = (arr, L) => { const i = clamp(L + 1, 0, arr.length - 1), a = Math.floor(i), f = i - a; return arr[a] + (arr[Math.min(a + 1, arr.length - 1)] - arr[a]) * f; };
 
@@ -41,7 +42,7 @@ export function foeLevel(G, mode = G && G.mode) {
 
 /** Können einer Stufe. */
 export function skillAt(L) {
-  return { level: L, aim: tab(T.aim, L), detect: tab(T.detect, L), settle: tab(T.settle, L), reload: tab(T.reload, L), corr: tab(T.corr, L), fresh: 0.7, lead: 0.3, own: false };
+  return { level: L, aim: tab(T.aim, L), detect: tab(T.detect, L), settle: tab(T.settle, L), reload: tab(T.reload, L), corr: tab(T.corr, L), fresh: tab(T.fresh, L), lead: 0.3, own: false };
 }
 /** Eigene KI-Besatzung (Spielerpanzer): erfasst schnell, schießt präzise, korrigiert gut. */
 export const OWN = { level: 5, aim: 0.55, detect: 0.55, settle: 0.6, reload: 0.92, corr: 0.35, fresh: 0.35, lead: 0.12, own: true };
