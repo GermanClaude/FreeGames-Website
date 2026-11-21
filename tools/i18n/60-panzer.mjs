@@ -413,4 +413,7 @@ export default [
 ['{0} – durchsehen', '{0} – look through', '{0}: mirar a través', '{0} – regarder à travers', '{0} – смотреть', '{0}——观察'],
 ['Hauptschalter Waffe', 'Main weapon switch', 'Interruptor del arma', 'Interrupteur de l’arme', 'Выключатель оружия', '主武器开关'],
 ['Hauptschalter', 'Master switch', 'Interruptor general', 'Interrupteur principal', 'Главный выключатель', '总开关'],
+['Im Rohr: {0} (gesichert)', 'Chambered: {0} (safe)', 'En la recámara: {0} (con seguro)', 'Dans le tube : {0} (sécurité)', 'В стволе: {0} (на предохр.)', '膛内：{0}（保险）'],
+['pz|Panzer', 'Tank', 'Tanque', 'Char', 'Танк', '坦克'],
+['Richtschütze – Panzer – {0} – {1}!', 'Gunner – tank – {0} – {1}!', 'Tirador – tanque – {0} – {1}!', 'Tireur – char – {0} – {1} !', 'Наводчик – танк – {0} – {1}!', '炮手——坦克——{0}——{1}！'],
 ];

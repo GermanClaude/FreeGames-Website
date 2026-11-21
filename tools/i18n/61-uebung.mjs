@@ -107,4 +107,15 @@ export default [
 ['Zielscheibe', 'Target', 'Diana', 'Cible', 'Мишень', '靶子'],
 // Kontext Kampagnen-Wegmarken (director.js: tx(label, 'kampagne')): „Galerie“ in Mission 5 = Empore der Bibliothek, nicht Bildergalerie
 ['kampagne|Galerie', 'Gallery', 'Galería', 'Galerie', 'Галерея', '回廊'],
+['Geländewagen (MG-Ring)', 'Off-road vehicle (MG ring)', 'Todoterreno (anillo de ametralladora)', 'Tout-terrain (tourelleau MG)', 'Внедорожник (пулемётная турель)', '越野车（机枪环）'],
+['Halbkettenwagen (Zugkraftwagen)', 'Half-track (prime mover)', 'Semioruga (tractor)', 'Semi-chenillé (tracteur)', 'Полугусеничный тягач', '半履带车（牵引车）'],
+['Lkw (Truppentransport)', 'Truck (troop transport)', 'Camión (transporte de tropas)', 'Camion (transport de troupes)', 'Грузовик (перевозка личного состава)', '卡车（运兵）'],
+['Mannschaftstransportwagen', 'Armored personnel carrier', 'Transporte blindado de personal', 'Véhicule de transport de troupes', 'Бронетранспортёр', '装甲运兵车'],
+['Mannschaftswagen', 'Personnel carrier', 'Vehículo de personal', 'Véhicule de personnel', 'Машина для личного состава', '人员运输车'],
+['Radschützenpanzer', 'Wheeled IFV', 'Vehículo de combate de ruedas', 'VCI à roues', 'Колёсная БМП', '轮式步兵战车'],
+['Schwerer Panzer (Kalter Krieg)', 'Heavy tank (Cold War)', 'Tanque pesado (Guerra Fría)', 'Char lourd (guerre froide)', 'Тяжёлый танк (холодная война)', '重型坦克（冷战）'],
+['Schützenpanzerwagen', 'Armored half-track', 'Semioruga blindado', 'Semi-chenillé blindé', 'Бронетранспортёр', '装甲半履带车'],
+['Motor anlassen!', 'Start the engine!', '¡Arranca el motor!', 'Démarrez le moteur !', 'Заводи мотор!', '启动引擎！'],
+['Fahrer – Motor anlassen!', 'Driver – start the engine!', 'Conductor: ¡arranca el motor!', 'Pilote – démarrez le moteur !', 'Механик – заводи мотор!', '驾驶员——启动引擎！'],
+['/1–4 Munition', '/1–4 ammo', '/1–4 munición', '/1–4 munitions', '/1–4 боеприпас', '/1–4 弹种'],
 ];

@@ -236,6 +236,9 @@ function sub(out, params, n) {
 function lookupCore(s, depth, caps = false) {
   let v = (caps ? exactU : exact).get(s);
   if (v !== undefined) return typeof v === 'object' ? plural(1, v) : v;
+  // Textstück mit Trenner am Ende („Marsch/schneller ·“ zwischen zwei <kbd>): erst das Stück selbst
+  const tm = depth < 2 ? /^(.*?\S)(\s*·)$/s.exec(s) : null;
+  if (tm) { const r = lookup(tm[1], depth + 1); if (r != null) return r + tm[2]; }
   // Zahlen-Schablone: „Runde 3 von 10“ ↔ „Runde {#} von {#}“
   if (/\d/.test(s)) {
     const nums = [];
@@ -282,7 +285,7 @@ function lookupCore(s, depth, caps = false) {
     if (r != null) return pre + r + (close ? ')' : '');
   }
   // Satzzeichen am Ende („Bereit:“, „Lädt …“)
-  const pm = /^(.*?)(\s*[:：…!.?]+)$/s.exec(s);
+  const pm = /^(.*?)(\s*[:：…!.?·]+)$/s.exec(s);
   if (pm && pm[1] && depth < 2) {
     const r = lookup(pm[1], depth + 1);
     if (r != null) return r + (lang === 'zh' ? pm[2].replace(':', '：').replace(/^\s+/, '') : (lang === 'fr' && /^[:!?]/.test(pm[2]) ? ' ' + pm[2] : pm[2]));
