@@ -26,6 +26,7 @@ import { actionKey } from './settings/keys.js?v=20261121041936';
 import { DeployScreen } from './deploy.js?v=20261121041936';
 import { CommandWheel } from './command-wheel.js?v=20261121041936';
 import { DroneHud } from './drone-hud.js?v=20261121041936';
+import { compass, onChange as onLangChange } from '../../shared/i18n.js?v=20261121041936';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -196,9 +197,11 @@ export class HUD {
     for (let d = -360; d <= 720; d += 15) {
       const deg = ((d % 360) + 360) % 360;
       const lab = COMPASS.find((c) => c[0] === deg);
-      strip += `<span class="${lab ? 'c-lab' : deg % 45 === 0 ? 'c-mid' : 'c-tick'}" style="left:${(d + 360) * DEG_PX}px">${lab ? lab[1] : deg % 45 === 0 ? deg : ''}</span>`;
+      strip += `<span class="${lab ? 'c-lab' : deg % 45 === 0 ? 'c-mid' : 'c-tick'}"${lab ? ` data-noi18n data-deg="${deg}"` : ''} style="left:${(d + 360) * DEG_PX}px">${lab ? compass(deg) : deg % 45 === 0 ? deg : ''}</span>`;
     }
     this.el.strip.innerHTML = strip;
+    // Himmelsrichtungen in der gewählten Sprache (N/NO/O … ↔ N/NE/E … ↔ С/СВ/В …), auch beim Sprachwechsel im Match
+    onLangChange(() => { for (const s of this.el.strip.querySelectorAll('[data-deg]')) s.textContent = compass(+s.dataset.deg); });
     // Pool für Schadenszahlen (Schießstand)
     for (let i = 0; i < 10; i++) {
       const n = el('span', 'h-dmgnum');

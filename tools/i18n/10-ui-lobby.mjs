@@ -120,7 +120,7 @@ export default [
 ['Realistisch', 'Realistic', 'Realista', 'Réaliste', 'Реализм', '写实'],
 ['Simulation', 'Simulation', 'Simulación', 'Simulation', 'Симуляция', '模拟'],
 ['Arcade', 'Arcade', 'Arcade', 'Arcade', 'Аркада', '街机'],
-['Primär', 'Primary', 'Principal', 'Principale', 'Основное', '主武器'],
+['Primär', 'Primary', 'Principal', 'Principale', 'Главное', '主武器'],
 ['Sekundär', 'Secondary', 'Secundaria', 'Secondaire', 'Второе', '副武器'],
 ['Messer', 'Knife', 'Cuchillo', 'Couteau', 'Нож', '刀'],
 ['Granate', 'Grenade', 'Granada', 'Grenade', 'Граната', '手雷'],

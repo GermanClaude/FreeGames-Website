@@ -20,6 +20,7 @@
 //   tx(deText)                deutschen Laufzeittext übersetzen (wie die Seitenübersetzung: exakt, Zahlen-Schablonen
 //                             „{#}“, Platzhalter-Muster, Teile mit „ · “) – für Canvas, Sprachausgabe, Untertitel.
 //   plural(n, forms)          Pluralform wählen; fmtNumber(n, opts), fmtDate(d, opts), fmtTime(d, opts), fmtList(arr)
+//   compass(deg)              Himmelsrichtung (0, 45, … 315 Grad) in der aktiven Sprache: N/NO/O … bzw. N/NE/E … / С/СВ/В … / 北/东北/东 …
 //   locale()                  BCP-47-Tag der Sprache (z. B. 'zh-CN'), für eigene Intl-Aufrufe
 //   translateDom(root)        Teilbaum sofort übersetzen (läuft sonst automatisch über einen MutationObserver)
 //   voiceFor(seed)            passende Stimme (speechSynthesis) der Sprache oder null → dann nur Untertitel
@@ -129,6 +130,19 @@ export function plural(n, forms) {
 export function fmtNumber(n, opts) { try { return new Intl.NumberFormat(locale(), opts).format(n); } catch { return String(n); } }
 export function fmtDate(d, opts = { dateStyle: 'medium' }) { try { return new Intl.DateTimeFormat(locale(), opts).format(d); } catch { return String(d); } }
 export function fmtTime(d, opts = { hour: '2-digit', minute: '2-digit' }) { try { return new Intl.DateTimeFormat(locale(), opts).format(d); } catch { return String(d); } }
+const COMPASS_LABELS = {
+  de: ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'],
+  en: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'],
+  es: ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'],
+  fr: ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'],
+  ru: ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'],
+  zh: ['北', '东北', '东', '东南', '南', '西南', '西', '西北'],
+};
+/** Himmelsrichtung für 0/45/…/315 Grad in der aktiven Sprache (Kompassleisten im HUD). */
+export function compass(deg) {
+  const i = ((Math.round(deg / 45) % 8) + 8) % 8;
+  return (COMPASS_LABELS[lang] || COMPASS_LABELS.de)[i];
+}
 export function fmtList(arr, opts = { type: 'conjunction' }) { try { return new Intl.ListFormat(locale(), opts).format(arr); } catch { return arr.join(', '); } }
 
 /** Deutsche Zahl im Text („1.234“, „0,5“) in die Schreibweise der Zielsprache. Andere Zahlen bleiben. */
@@ -194,6 +208,8 @@ function buildIndex() {
     }
     addKey(k, v);
   }
+  // Spezifischere Schablonen zuerst („Ziel {0} von {1}“ vor „Ziel {0}“)
+  patterns.sort((x, y) => y.lit - x.lit);
 }
 function addKey(k, v) {
   if (k.includes('{#}')) { numeric.set(k, v); return; }
@@ -204,7 +220,7 @@ function addKey(k, v) {
       if (m) { keys.push(m[1]); return '(.+?)'; }
       return p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }).join('');
-    patterns.push({ re: new RegExp('^' + src + '$', 's'), keys, out: v });
+    patterns.push({ re: new RegExp('^' + src + '$', 's'), keys, out: v, lit: k.replace(/\{\w+\}/g, '').length });
     return;
   }
   exact.set(k, v);
