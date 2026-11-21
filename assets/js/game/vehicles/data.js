@@ -913,7 +913,7 @@ const NEW_TANKS = {
       ...[[-0.55, 1.45], [0.55, 1.95], [-0.55, 2.45]].map(([x, z], i) => ({
         id: `schuetze${i + 1}`, label: `Schütze ${i + 1}`, weapons: [], pos: [x, 0.62, z], exit: [[x * 1.6, 0, 4.4], [x < 0 ? -2.6 : 2.6, 0, z], [0, 0, 4.6]],
         views: [
-          { id: 'innen', label: 'Kampfraum', space: 'hull', pos: [x * 0.85, 1.44, z], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.6], zoom: [1], interior: true }, // Auge sitzend (Nutzer 21.11.)
+          { id: 'innen', label: 'Kampfraum', space: 'hull', pos: [x * 0.85, 1.44, z], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.6], zoom: [1], interior: true },
           { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.4, pivot: 2.4 } },
         ],
       })),
