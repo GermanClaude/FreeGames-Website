@@ -1213,7 +1213,7 @@ export class PanzerMode extends BaseMode {
     if (mine) {
       S.crew = this._crewRows();
       const keyOf = this.role === 'fahrer' ? null : (i) => G.input.label(AMMO_KEYS[i]) || String(i + 1);
-      S.ammo = ammoRows(v, keyOf, this.crew ? this.crew.ammoOrder || v.gun.select : null);
+      S.ammo = v.gun ? ammoRows(v, keyOf, this.crew ? this.crew.ammoOrder || v.gun.select : null) : null; // Transporter ohne Kanone (tank=mtw …)
       S.loadText = this._loadText();
       S.hot = hot ? this.simc.screen(v, proj) : null;
       S.hotLabel = hot ? `${hot.label()} <kbd>${G.input.label('fire') || 'LMT'}</kbd>` : '';
