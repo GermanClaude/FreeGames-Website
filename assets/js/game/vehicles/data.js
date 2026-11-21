@@ -831,7 +831,7 @@ for (const D of Object.values(VEHICLES)) {
     if (!v || v.station) continue;
     // Kommandant (Nutzer 21.11.): vorher +0,22 m nach hinten → Auge in der Sitzlehne zwischen den Polstern; jetzt knapp vor
     // der Lehne und etwas tiefer (unter dem Polsterring der Kuppel), Blick in den Kampfraum frei
-    const off = s.mount === 'gun' ? [Math.sign(v.pos[0] || 1) * 0.1, 0.05, 0.28] : [0, -0.05, 0.06];
+    const off = s.mount === 'gun' ? [Math.sign(v.pos[0] || 1) * 0.1, 0.05, 0.36] : [0, -0.05, 0.06]; // Richtschütze 36 cm hinter der Optik (Augenmuschel nicht im Gesicht)
     v.station = v.pos.slice();
     v.pos = [v.pos[0] + off[0] * sc, v.pos[1] + off[1] * sc, v.pos[2] + off[2] * sc];
   }

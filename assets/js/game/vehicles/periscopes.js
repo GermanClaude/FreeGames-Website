@@ -93,7 +93,7 @@ function cupolaPrisms(D, H) {
 export function loaderPrism(D) {
   const H = D.hatches && D.hatches.loader;
   // Spiegelkopf über den Dachaufbauten (Nutzer 21.11.: beim KP-1 verdeckte das Gehäuse der Zieloptik die Bildmitte)
-  if (H && H.space === 'turret') return [{ head: [H.pos[0], H.pos[1] + 0.44, H.pos[2] - H.r - 0.06], yaw: 0, inner: [H.pos[0], H.pos[1] - 0.13, H.pos[2] - H.r - 0.06], rot: true, w: 0.12 }];
+  if (H && H.space === 'turret') return [{ head: [H.pos[0], H.pos[1] + 0.44, H.pos[2] - H.r - 0.06], yaw: 0, inner: [H.pos[0], H.pos[1] - 0.06, H.pos[2] - H.r - 0.06], rot: true, w: 0.12 }]; // Gehäuse höher (Nutzer 21.11.: 3 cm über dem Auge)
   if (D.era === 'wk1') return null;
   const I = D.interior || {}, sh = I.shift || [0, 0, 0], sc = I.scale || 1, le = I.loaderEye || [0.55, 0.62, 0.35];
   const tb = D.turretBox, roof = tb[1] + tb[4];

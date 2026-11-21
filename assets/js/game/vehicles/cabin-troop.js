@@ -166,7 +166,7 @@ export function buildTroopRoom(B, C, det, D, K, cab, { era = 'modern', frontDoor
     // Haltegriffe beidseits, Hydraulikzylinder, Scharniere unten
     for (const s2 of [-1, 1]) DT.worn(B, 0.9, () => B.add(SH.bentTube([F.w([s2 * (rw / 2 - 0.12), 0.05, 0.04]), F.w([s2 * (rw / 2 - 0.12), 0.05, 0.1]), F.w([s2 * (rw / 2 - 0.12), 0.35, 0.1]), F.w([s2 * (rw / 2 - 0.12), 0.35, 0.04])], 0.012, 0.025, det ? 8 : 6), C.steel));
     for (const s2 of [-1, 1]) {
-      const a = F.w([s2 * (rw / 2 + 0.02), rh / 2 - 0.15, 0.08]), b = [s2 * (wx - 0.08), yF + H * 0.75, z1 - 0.55];
+      const a = F.w([-s2 * (rw / 2 - 0.05), rh / 2 - 0.15, 0.08]), b = [s2 * (wx - 0.08), yF + H * 0.75, z1 - 0.55]; // F ist um 180° gedreht → −s2
       B.rod(C.steel, a, b, 0.022, det ? 10 : 6);
       B.rod(C.metal, a, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2], 0.034, det ? 10 : 6);
     }

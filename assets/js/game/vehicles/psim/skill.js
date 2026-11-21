@@ -64,6 +64,7 @@ export function detectTime(skill, o) {
   let t = (0.8 + o.dist / 330) * skill.detect;
   if (o.vis < 1) t *= 1.8;
   if (o.infantry) t *= 1.7;
+  if (o.camo) t *= o.camo; // getarnte Stellung (Pak unter Tarnnetz, Bunker im Hang)
   if (o.smoke != null && o.smoke < 1) t /= Math.max(0.08, o.smoke);
   if (o.moving) t *= 0.55;
   if (o.fired != null && o.fired < 4) t *= 0.35;

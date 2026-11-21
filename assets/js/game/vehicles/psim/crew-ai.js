@@ -46,13 +46,30 @@ export function targetPoint(t, out) {
   const e = t.ent;
   if (e.isVehicle) {
     out.copy(e.body.pos);
-    if (e.isEmplacement) out.y += e.kind === 'bunker' ? 0.2 : -0.1;
+    if (e.isEmplacement) out.y += e.kind === 'bunker' ? 0.2 : t.hullDown ? 0.75 : 0.3; // Pak: Schutzschild
     else if (t.hullDown) out.y += topOffset(e) - 0.15;
     else out.y += 0.25;
     return out;
   }
   out.copy(e.position); out.y += e.crouching || e.prone ? 0.7 : 1.15; return out;
 }
+/**
+ * Haltepunkt mit freier Schusslinie ab der Mündung (gedrosselt je Ziel): Mitte, sonst oberer Teil (Turm, Schild, Scharte,
+ * Kopf) – Ziele hinter einer Bodenwelle/Mauer werden am sichtbaren Teil bekämpft statt gar nicht (oder durchs Hindernis).
+ */
+function visiblePoint(W, from, t, out) {
+  targetPoint(t, out);
+  if (!W || !W.lineOfSight) return out;
+  const now = performance.now();
+  if (t._lpT && now - t._lpT < 250) { out.y += t._lpUp || 0; return out; }
+  t._lpT = now; t._lpUp = 0;
+  if (W.lineOfSight(from, out)) return out;
+  const e = t.ent;
+  const ups = e.isVehicle ? (e.isEmplacement ? (e.kind === 'pak' ? [0.5, 0.8] : [0.6, 1.0]) : [0.6, Math.max(0.9, topOffset(e) - 0.25)]) : [0.3, 0.5];
+  for (const u of ups) { out.y += u; if (W.lineOfSight(from, out)) { t._lpUp = u; return out; } out.y -= u; }
+  return out;
+}
+
 /** Höhe (über Wannenmitte) der Turmmitte bzw. Wannenoberkante + 0,4 m. */
 const topOffset = (v) => (v.def.hullBox ? v.def.hullBox[1] + v.def.hullBox[4] - (v.def.com ? v.def.com[1] : 0) + 0.45 : 1.6);
 const entVel = (e, out) => (e.isVehicle ? out.copy(e.body.vel) : e.body && e.body.velocity ? out.copy(e.body.velocity) : out.set(0, 0, 0));
@@ -77,8 +94,7 @@ function visibility(W, eye, e) {
   if (e.isVehicle) {
     _e.copy(e.body.pos); _e.y += 0.4;
     if (W.lineOfSight(eye, _e)) return 1;
-    if (e.isEmplacement) return 0;
-    _e.copy(e.body.pos); _e.y += topOffset(e);
+    _e.copy(e.body.pos); _e.y += e.isEmplacement ? (e.kind === 'pak' ? 0.85 : 1.6) : topOffset(e);
     return W.lineOfSight(eye, _e) ? 0.5 : 0;
   }
   _e.copy(e.position); _e.y += 1.15;
@@ -118,7 +134,7 @@ export function scanTargets(G, eye, range, team, known, dt, { maxLos = 28, vehic
     if (!k) { k = { t: 0, first: now, seen: now, pos: p.clone(), vis }; known.set(e, k); }
     k.seen = now; k.pos.copy(p); k.vis = vis;
     if (k.t < 1) {
-      const T = detectTime(skill, { dist: d, vis, infantry: !e.isVehicle, moving: entSpeed(e) > 2, fired: e._psimFiredAt != null ? now - e._psimFiredAt : null, smoke: sm, observerMoving: moving });
+      const T = detectTime(skill, { dist: d, vis, infantry: !e.isVehicle, camo: e.isEmplacement ? (e.kind === 'pak' ? 2.4 : 1.6) : 1, moving: entSpeed(e) > 2, fired: e._psimFiredAt != null ? now - e._psimFiredAt : null, smoke: sm, observerMoving: moving });
       k.t = Math.min(1, k.t + dt / Math.max(0.2, T));
     }
     if (k.t >= 1) push(e, kind, d, k, true);
@@ -536,8 +552,8 @@ export class TankCrew {
       it.weapon = si >= 0 ? si : seat.weapons.findIndex((w) => w.def.kind === 'shell');
     }
     const def = useMg ? seat.weapons[coaxIdx].def : VEHICLE_WEAPONS[v.gun.loaded] || VEHICLE_WEAPONS[this.ammoOrder] || seat.weapons[0].def;
-    const P = targetPoint(t, _a);
     v.muzzle(seat.index, _o, _b);
+    const P = visiblePoint(G.world, _o, t, _a);
     const speed = useMg ? 850 : def.speed || 1000;
     const optic = mods.optik <= 0 ? 3 : mods.optik < 1 ? 1.6 : 1;
     if (useMg) { _c.copy(P).addScaledVector(entVel(t.ent, _m), P.distanceTo(_o) / speed); }
@@ -793,8 +809,8 @@ export class EnemyTank {
     const id = idFor(v, kind);
     if (id) { seat._shellWish = id; const wi = seat.weapons.findIndex((w) => w.def.id === id); if (wi >= 0 && wi !== seat.weaponIndex) it.weapon = wi; }
     const def = VEHICLE_WEAPONS[v.gun.loaded] || seat.weapons[0].def;
-    const P = targetPoint(t, _a);
     v.muzzle(seat.index, _o, _b);
+    const P = visiblePoint(G.world, _o, t, _a);
     aimWithError(this.aim, _o, P, t.ent, def.speed || 900, _c);
     if (mods.optik < 1) _c.addScaledVector(UP, (mods.optik <= 0 ? 0.004 : 0.0015) * P.distanceTo(_o) * (this.aim.bias.y >= 0 ? 1 : -1));
     v.aimAt(bot, _c, false);
