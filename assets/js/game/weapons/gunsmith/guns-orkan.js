@@ -6,10 +6,10 @@
 // senkrechter Vordergriff, kurze Schulterstütze. Ohne Zeichen/Schilder mit echten Namen.
 // Teile wie beim HM-60: Gurtkasten 'mag' mit Deckel 'lid', Gurt 'belt', Zuführdeckel 'cover', Ladehebel 'charge';
 // Laufbündel 'rotor' (Drehpunkt auf der Bündelachse) – das Viewmodel dreht es mit der Hochdrehzahl (controller.js spin).
-import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261119182451';
-import { magRounds } from './magfill.js?v=20261119182451';
-import { notchSight } from './pistol-parts.js?v=20261119182451';   // Kimme mit echter Kerbe (visier, 14.11.)
-import { schrift } from './schrift.js?v=20261119182451';   // Gravuren (14.11., gfx-waffen)
+import { mm, slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261121041936';
+import { magRounds } from './magfill.js?v=20261121041936';
+import { notchSight } from './pistol-parts.js?v=20261121041936';   // Kimme mit echter Kerbe (visier, 14.11.)
+import { schrift } from './schrift.js?v=20261121041936';   // Gravuren (14.11., gfx-waffen)
 const MARK_ORKAN = schrift('orkan').mark;
 
 const AXIS = 0.072;          // Achse des Laufbündels

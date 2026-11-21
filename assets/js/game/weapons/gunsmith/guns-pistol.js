@@ -1,10 +1,10 @@
 // Pistolen: P-9 Kompakt (Polymer, Schlagbolzen). Adler .50 nach Foto in guns-adler.js (25.10.).
-import { slots } from './parts.js?v=20261119182451';
-import { notchSight } from './pistol-parts.js?v=20261119182451';   // Kimme mit echter Kerbe (visier, 14.11.)
-import { magRounds } from './magfill.js?v=20261119182451';
-import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, sdEllipsoid, simplifyPoly, grid2D, cavityColors } from './sdf.js?v=20261119182451';
-import * as R from './p9-ref.js?v=20261119182451';
-import { slideUV, frameUV, atlasUV } from './p9-tex.js?v=20261119182451';
+import { slots } from './parts.js?v=20261121041936';
+import { notchSight } from './pistol-parts.js?v=20261121041936';   // Kimme mit echter Kerbe (visier, 14.11.)
+import { magRounds } from './magfill.js?v=20261121041936';
+import { sdPolygon, extrudeRound, smin, surfaceNets, sdBox, sdEllipsoid, simplifyPoly, grid2D, cavityColors } from './sdf.js?v=20261121041936';
+import * as R from './p9-ref.js?v=20261121041936';
+import { slideUV, frameUV, atlasUV } from './p9-tex.js?v=20261121041936';
 
 const RAKE = 0.3;
 

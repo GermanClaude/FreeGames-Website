@@ -1,7 +1,7 @@
 // NULLPUNKT — Canvas-Atlanten: Decals (Flecken, Pfützen, Markierungen), Schilder (fiktive Beschriftung),
 // Foliage (Büsche, Gräser, Palmwedel, Blüten) als instanzierte Karten mit Wind (Owner: world)
 import * as THREE from 'three';
-import { buildCrown, buildBush, createLeafMaterial, loadTreeAtlas } from './terrain/trees.js?v=20261119182451';
+import { buildCrown, buildBush, createLeafMaterial, loadTreeAtlas } from './terrain/trees.js?v=20261121041936';
 
 const FONT = '"Archivo NP", "Arial Narrow", "Helvetica Neue", Arial, sans-serif';
 const MONO = '"JetBrains Mono NP", "Courier New", monospace';
@@ -206,13 +206,14 @@ function drawDecalAtlas(ctx, S) {
   const chip = (masonry) => {
     const pts = [];
     const n = 22;
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2, rr = 84 + (r() - 0.5) * 24 + Math.sin(a * 3 + r()) * 10;
-      pts.push([128 + Math.cos(a) * rr * 1.18, 128 + Math.sin(a) * rr * 0.82]);
+    // platz2 (20.11.): zerklüfteter Rand (zwei Frequenzen + Zacken) statt einer glatten Ellipse – las sich als Klumpen
+    for (let i = 0; i < n * 2; i++) {
+      const a = (i / (n * 2)) * Math.PI * 2, rr = 80 + (r() - 0.5) * 30 + Math.sin(a * 3 + 1.7) * 12 + (i % 2 ? -7 * r() : 4);
+      pts.push([128 + Math.cos(a) * rr * 1.18, 128 + Math.sin(a) * rr * 0.8]);
     }
     const path = () => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); };
     // Putzkante (heller Rand, etwas größer)
-    ctx.save(); ctx.translate(128, 128); ctx.scale(1.08, 1.1); ctx.translate(-128, -128); path(); ctx.fillStyle = 'rgba(236,230,218,0.95)'; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(128, 128); ctx.scale(1.07, 1.09); ctx.translate(-128, -128); path(); ctx.fillStyle = 'rgba(200,192,178,0.42)'; ctx.fill(); ctx.restore();
     ctx.save(); path(); ctx.clip();
     masonry();
     // Schatten der oberen Putzkante + leichte Verschmutzung
@@ -223,12 +224,23 @@ function drawDecalAtlas(ctx, S) {
     ctx.restore();
   };
   cell(16, () => chip(() => {
-    ctx.fillStyle = '#6f675c'; ctx.fillRect(0, 0, 256, 256); // Mörtel
-    for (let y = 18; y < 256; y += 30 + r() * 10) {
-      for (let x = -20 + r() * 30; x < 256; x += 34 + r() * 22) {
-        const w = 26 + r() * 22, h = 20 + r() * 9, v = 120 + r() * 60;
-        ctx.fillStyle = `rgb(${v + 18},${v + 8},${v - 12})`;
-        ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, (r() - 0.5) * 0.3, 0, Math.PI * 2); ctx.fill();
+    // Bruchsteinmauerwerk: unregelmäßige, kantige Steine in Lagen, dunkle vertiefte Mörtelfugen, je Stein Licht oben,
+    // Schatten unten, Farbe zwischen Kalk-/Sandstein (vorher gleichförmige helle Ellipsen auf Grau)
+    ctx.fillStyle = '#4a443c'; ctx.fillRect(0, 0, 256, 256); // Fuge
+    for (let y = 6; y < 256; y += 24 + r() * 12) {
+      for (let x = -24 + r() * 26; x < 256; x += 30 + r() * 26) {
+        const w = 24 + r() * 26, h = 17 + r() * 12, cx = x + w / 2, cy = y + h / 2, k = 6 + Math.floor(r() * 3);
+        const poly = [];
+        for (let i = 0; i < k; i++) { const a = (i / k) * Math.PI * 2 + r() * 0.5; poly.push([cx + Math.cos(a) * (w / 2) * (0.78 + r() * 0.24), cy + Math.sin(a) * (h / 2) * (0.78 + r() * 0.24)]); }
+        const v = 112 + r() * 58, t = r();
+        const base = [v + 14 + t * 10, v + 6, v - 10 - t * 12];
+        const shp = () => { ctx.beginPath(); poly.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.closePath(); };
+        ctx.save(); shp(); ctx.clip();
+        const g2 = ctx.createLinearGradient(0, cy - h / 2, 0, cy + h / 2);
+        g2.addColorStop(0, `rgb(${base[0] + 26},${base[1] + 24},${base[2] + 20})`); g2.addColorStop(0.5, `rgb(${base[0]},${base[1]},${base[2]})`); g2.addColorStop(1, `rgb(${base[0] - 34},${base[1] - 34},${base[2] - 30})`);
+        ctx.fillStyle = g2; ctx.fillRect(cx - w, cy - h, w * 2, h * 2);
+        for (let d = 0; d < 6; d++) { ctx.fillStyle = `rgba(${r() < 0.5 ? '40,34,28' : '220,212,196'},${0.12 + r() * 0.12})`; ctx.fillRect(cx + (r() - 0.5) * w, cy + (r() - 0.5) * h, 1 + r() * 3, 1 + r() * 2); }
+        ctx.restore();
       }
     }
   }));
@@ -299,6 +311,23 @@ export function createDecalMaterials(quality = 'high') {
       #endif`);
   };
   decalMats.light.customProgramCacheKey = () => 'decal-light-v1';
+  // tex4 (15.11.): Fahrbahn-/Bodenmarkierungen abgefahren – Farbe bricht in Weltkoordinaten körnig auf (Splitt schaut
+  // durch, Ränder ausgefranst), leicht rauer; vorher deckend glatt wie ein aufgeklebtes Brett
+  decalMats.paint.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vNpPw;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\n{ vec4 npW = vec4( transformed, 1.0 );\n#ifdef USE_INSTANCING\nnpW = instanceMatrix * npW;\n#endif\nvNpPw = ( modelMatrix * npW ).xyz; }');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec3 vNpPw;
+      float npPh( vec2 p ) { return fract( sin( dot( floor( p ), vec2( 127.1, 311.7 ) ) ) * 43758.5453 ); }
+      float npPn( vec2 p ) { vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3.0 - 2.0 * f ); return mix( mix( npPh( i ), npPh( i + vec2( 1, 0 ) ), f.x ), mix( npPh( i + vec2( 0, 1 ) ), npPh( i + vec2( 1, 1 ) ), f.x ), f.y ); }`)
+      .replace('#include <alphamap_fragment>', `#include <alphamap_fragment>
+      {
+        vec2 npQ = vNpPw.xz;
+        float npWear = npPn( npQ * 1.3 ) * 0.5 + npPn( npQ * 7.0 ) * 0.3 + npPn( npQ * 41.0 ) * 0.2;
+        diffuseColor.a *= smoothstep( 0.28, 0.5, npWear ) * ( 0.75 + 0.25 * npPh( npQ * 160.0 ) );
+      }`);
+  };
+  decalMats.paint.customProgramCacheKey = () => 'decal-paint-wear-1';
   // Pfützen: Himmelsspiegelung dämpfen (sonst flach gesehen ein gleichmäßig helles Oval statt dunklem Wasserfilm)
   decalMats.wet.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <aomap_fragment>', '#include <aomap_fragment>\n\treflectedLight.indirectSpecular *= 0.25;');

@@ -8,8 +8,8 @@
 // Koordinaten je Karte (COORDS): „stadtkern“ (Strang karten-neu) nur, wenn die Karte existiert UND Koordinaten hat.
 
 import * as THREE from 'three';
-import { actor } from './cast.js?v=20261119182451';
-import { mapFor, purgeDead, prop, ostbund, guardZone, stopGuard } from './hilfen-b.js?v=20261119182451';
+import { actor } from './cast.js?v=20261121041936';
+import { mapFor, purgeDead, prop, ostbund, guardZone, stopGuard } from './hilfen-b.js?v=20261121041936';
 
 const COORDS = {
   // Stadtkern „Lindenplatz“ (karten-neu): Team A Süd (+z, Hinterstraße z ≈ 51), Lindenallee bei z 0, Kaufhaus Nord
@@ -136,7 +136,7 @@ const CUT_OUTRO = (m) => {
         say: { who: 'kranich', text: 'Kessar ist gescheitert. Das war vorhersehbar. Phase zwei beginnt.' } },
       { cam: { close: 'brandt', side: -0.3, dist: 0.85 },
         say: { who: 'brandt', text: 'Wer spricht da? Melden Sie sich!', expr: 'fragend' }, fadeOut: 1.6 },
-      { cam: { from: cam([sx + 6, 6, sz + 10]), to: cam([sx + 8, 12, sz + 16]), look: cam([sx, 1.5, sz]) }, card: ['Ende von Akt II · Feuer im Tal', 'Die Geschichte geht weiter', 'Akt III erscheint mit einem kommenden Update.'], dur: 6, fadeIn: 1.2 },
+      { cam: { from: cam([sx + 6, 6, sz + 10]), to: cam([sx + 8, 12, sz + 16]), look: cam([sx, 1.5, sz]) }, card: ['Ende von Akt II · Feuer im Tal', 'Die Geschichte geht weiter', 'Akt III · Phase zwei – Mission 12 „Nachtsicht“'], dur: 6, fadeIn: 1.2 },
     ],
   };
 };
@@ -145,8 +145,8 @@ const CUT_OUTRO = (m) => {
 function civGroup(m, g, i) {
   const [x, z] = g.at;
   return [
-    prop(m, { role: 'zivil', name: 'Einwohner', team: 'A', variant: 'zivil', weapon: null, at: [x, z], yaw: g.yaw, crouch: true, aim: -1.0 }),
-    prop(m, { role: 'zivil', name: 'Einwohnerin', team: 'A', variant: i ? 'zivil-hemd' : 'zivil-strick', weapon: null, at: [x + 0.9, z + 0.6], yaw: g.yaw + 0.4, crouch: true, aim: -1.1 }),
+    prop(m, { role: 'zivil', name: 'Einwohner', team: 'A', variant: 'zivil', weapon: null, at: [x, z], yaw: g.yaw, crouch: true, aim: -1.0, protect: true }),
+    prop(m, { role: 'zivil', name: 'Einwohnerin', team: 'A', variant: i ? 'zivil-hemd' : 'zivil-strick', weapon: null, at: [x + 0.9, z + 0.6], yaw: g.yaw + 0.4, crouch: true, aim: -1.1, protect: true }),
   ];
 }
 
@@ -260,7 +260,7 @@ export const MISSION_11 = {
         const c = C(m);
         m.clearObjectives();
         m.order('hold');
-        const k = prop(m, { role: 'kessar', at: c.kessar, yaw: c.kessarYaw, aim: -1.2, weapon: null, top: !!c.roof });
+        const k = prop(m, { role: 'kessar', at: c.kessar, yaw: c.kessarYaw, aim: -1.2, weapon: null, top: !!c.roof, protect: true, failText: 'Kessar wurde getroffen. Ohne seine Aussage bleibt die Wahrheit im Dunkeln – wir brauchen ihn lebend.' });
         if (c.roof) {
           const roofAt = [c.kessar[0], (c.Y || 0) + 0.1, c.kessar[1]];
           m.zone('dach', { at: roofAt, r: 9, h: 2.5 });

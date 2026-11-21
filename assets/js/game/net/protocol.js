@@ -21,7 +21,7 @@
 //           löscht encode selbst (nach vr).
 //   vr:     null | { aimYaw, aimPitch, main: [x,y,z] | null, off: [x,y,z] | null } (decode liefert immer das Feld vr).
 // Pure Logik ohne DOM/three.js – läuft auch in Node (tools/net-proto-test.mjs).
-import { WEAPON_IDS } from '../../shared/weapons.data.js?v=20261119182451';
+import { WEAPON_IDS } from '../../shared/weapons.data.js?v=20261121041936';
 
 export const PKT_SNAPSHOT = 1;
 export const PKT_STATE = 2;
@@ -94,6 +94,19 @@ export const VR_REACH = 1.27;
 /** Fahrzeug-Anhang im Snapshot: Kennbyte, Block je Fahrzeug (Byte), Fahrzeug-Absicht im Zustand (Byte). */
 export const VEH_TAG = 0x56;
 export const VEH_BLOCK = 64;
+/**
+ * Byte 1 des Fahrzeugblocks („kind“): Typindex (VEHICLE_IDS) 6 Bit + Team 2 Bit (NET_VERSION 20, 20.11.: mehr als 16
+ * Fahrzeugtypen – bits0–3 Typ niedrig, bits4–5 Team 0/A 1/B 2, bits6–7 Typ hoch). Höchstens 64 Typen.
+ */
+export const VEH_TYPES_MAX = 64;
+export function packVehKind(typeIdx, team) {
+  const t = Math.max(0, Math.min(VEH_TYPES_MAX - 1, typeIdx | 0)), tc = Math.max(0, Math.min(3, team | 0));
+  return (t & 15) | (tc << 4) | ((t >> 4) << 6);
+}
+export function unpackVehKind(kind) {
+  const k = kind & 255;
+  return { type: (k & 15) | ((k >> 6) << 4), team: (k >> 4) & 3 };
+}
 export const VEH_INPUT = 16;
 /** Höchstzahl Fahrzeuge je Snapshot (u8). */
 export const MAX_VEHICLES = 255;

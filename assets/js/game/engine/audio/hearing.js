@@ -14,13 +14,15 @@ export const SHOT_DOSE = { pistol: 0.022, pistol_heavy: 0.045, smg: 0.02, ar: 0.
 
 export class Hearing {
   constructor() {
-    this.dose = 0; this.ring = 0; this.protection = false;
+    this.dose = 0; this.ring = 0; this.protection = false; this.tinnitus = true;
     this.ctx = null; this.dest = null; this.osc = null; this._quiet = 0; this._f = 3800;
     this.stats = { peakDose: 0, exposures: 0 };
   }
 
   attach(ctx, dest) { this.ctx = ctx; this.dest = dest; }
   setProtection(on) { this.protection = !!on; }
+  /** Einstellung „Ohrenklingeln“ (20.11.): aus → kein Pfeifton, die Welt wird nur halb so stark dumpf. */
+  setTinnitus(on) { this.tinnitus = on !== false; if (!this.tinnitus) this._sync(0.05); }
 
   /** Dosis hinzufügen (0 … ~1,6). Gibt die neue Dosis zurück. */
   expose(amount) {
@@ -50,9 +52,9 @@ export class Hearing {
   }
 
   /** Klingeln 1 → 650 Hz, 0,35 → ≈ 11 kHz, 0,1 → ≈ 19 kHz (logarithmisch). */
-  get muffle() { return this.ring > 0.002 ? NO_MUFFLE * Math.pow(650 / NO_MUFFLE, Math.pow(this.ring, 1.6)) : NO_MUFFLE; }
+  get muffle() { const r = this.tinnitus ? this.ring : this.ring * 0.5; return r > 0.002 ? NO_MUFFLE * Math.pow(650 / NO_MUFFLE, Math.pow(r, 1.6)) : NO_MUFFLE; }
 
-  _level() { return this.ring * this.ring * 0.075 * (this.protection ? 0.35 : 1); }
+  _level() { return this.tinnitus ? this.ring * this.ring * 0.075 * (this.protection ? 0.35 : 1) : 0; }
 
   _sync(tau) {
     if (!this.ctx || !this.dest) return;

@@ -3,7 +3,7 @@
 import {
   len, buf, white, brown, filt, sweep, expGlide, env, ad, ahr, bell, mix, mixAt, drive, normalize,
   sine, modal, metalModes, click, burst, grains, echoes, decorrelate, fadeOut, dcBlock, trim, clamp,
-} from './dsp.js?v=20261119182451';
+} from './dsp.js?v=20261121041936';
 
 /**
  * Charakter je Schussprofil.
@@ -514,4 +514,111 @@ export function shellDrop(sr, R) {
   const d = buf(sr, 0.45);
   shellTinkle(d, sr, 0.002, R, 0.5);
   return trim(normalize(d, 0.7), sr);
+}
+
+// ---------------------------------------------------------------- Kanonen (Nutzer 20.11. „Sounds realistischer“)
+// Bisher spielte der Panzer eine hochgepitchte Explosions-Aufnahme. Echte Kanonen (75–120 mm) außen: extrem steile
+// Druckfront (N-Welle, Anstieg < 1 ms), kurzer harter „Bark“ (Mündungsbremse), tiefer Druckkörper 30–60 Hz, Bodenreflexion
+// nach ~10 ms und ein langes Rollen über das Gelände. Im Turm: dumpf (Wanne filtert > 300 Hz), Sub-Schlag in der Brust,
+// Rücklauf schlägt an, der Keil öffnet, die Hülse (bzw. der Stummel der Treibladung) fällt scheppernd auf den Boden.
+
+/** Steile Druckfront: N-Welle der Breite w (s) + Rausch-Knack. */
+function nWave(d, sr, at, w, amp, R) {
+  const i0 = Math.round(at * sr), n = Math.max(3, Math.round(w * sr));
+  for (let i = 0; i < n && i0 + i < d.length; i++) d[i0 + i] += amp * (1 - 2 * i / n);
+  click(d, sr, at, { dur: 0.006, tau: 0.0009, hp: 900, amp: amp * 0.5, R });
+}
+
+/** Kanone nah/außen (Stereo, ~3,8 s): Front, Bark, Druckkörper, Bodenreflexion, Gelände-Rollen. */
+export function* cannonNear(sr, R) {
+  const N = len(sr, 3.8), L = new Float32Array(N), Rt = new Float32Array(N);
+  const core = buf(sr, 1.2);
+  nWave(core, sr, 0, R.range(0.0035, 0.0055), 1.2, R);
+  burst(core, sr, 0, { dur: 0.5, type: 'lowpass', freqAt: expGlide(R.range(7000, 9000), 520, 0.09), q: 0.7, envFn: ad(0.0004, 0.045), R, amp: 1.1 });
+  burst(core, sr, 0.001, { dur: 0.18, type: 'bandpass', freq: R.range(260, 360), q: 1.1, envFn: ad(0.0008, 0.028), R, amp: 0.9 });
+  sine(core, sr, 0, 1.1, expGlide(R.range(62, 72), 31, 0.18), ad(0.0015, 0.21));
+  sine(core, sr, 0, 0.4, expGlide(160, 70, 0.05), t => ad(0.001, 0.05)(t) * 0.5);
+  yield;
+  const gnd = core.slice(); filt(gnd, sr, 'lowpass', 2500, 0.7);
+  for (const [ch, pan] of [[L, -1], [Rt, 1]]) {
+    mix(ch, core, 0, 1);
+    mixAt(ch, sr, gnd, 0.009 + pan * 0.0006, 0.45);                       // Bodenreflexion
+    // Gelände-Rollen: verzögerte, tiefpassgefilterte Echos (Hänge, Häuser, Waldrand), je Kanal anders
+    let t = 0.12 + R.range(0, 0.06);
+    for (const [g, lp] of [[0.42, 1600], [0.34, 1100], [0.3, 900], [0.22, 700], [0.16, 520], [0.1, 420]]) {
+      t += R.range(0.14, 0.42);
+      const c = core.slice(0, len(sr, 0.9)); filt(c, sr, 'lowpass', lp, 0.6, 2);
+      mixAt(ch, sr, c, t, g * R.range(0.8, 1.15));
+    }
+    const rum = brown(len(sr, 3.4), R); filt(rum, sr, 'lowpass', 170, 0.7, 2); env(rum, sr, ad(0.08, 1.05));
+    mix(ch, rum, 0, 0.55);
+    drive(ch, 2.2); dcBlock(ch, sr, 18);
+    yield;
+  }
+  normalize([L, Rt], 0.97);
+  return trim([L, Rt], sr);
+}
+
+/** Kanone fern (mono, ~4,5 s): Höhen weg, Donner mit langem Rollen. */
+export function cannonFar(sr, R) {
+  const d = new Float32Array(len(sr, 4.5));
+  const body = buf(sr, 1.4);
+  burst(body, sr, 0, { dur: 1.2, type: 'lowpass', freqAt: expGlide(1300, 220, 0.25), q: 0.7, envFn: ad(0.003, 0.18), R, amp: 1 });
+  sine(body, sr, 0, 1.4, expGlide(55, 28, 0.35), ad(0.006, 0.4));
+  mix(d, body, 0, 1);
+  let t = 0;
+  for (const [g, lp] of [[0.6, 700], [0.45, 560], [0.36, 450], [0.26, 360], [0.18, 300], [0.12, 260]]) {
+    t += R.range(0.18, 0.5);
+    const c = body.slice(); filt(c, sr, 'lowpass', lp, 0.6, 2); mixAt(d, sr, c, t, g);
+  }
+  const rum = brown(d.length, R); filt(rum, sr, 'lowpass', 130, 0.7, 2); env(rum, sr, ad(0.2, 1.4));
+  mix(d, rum, 0, 0.9);
+  dcBlock(d, sr, 20); drive(d, 1.5);
+  return trim(normalize(d, 0.92), sr);
+}
+
+/** Kanone im Turm (Stereo, ~1,9 s): dumpfer Schlag, Wanne dröhnt, Rücklauf, Keil auf, Hülse fällt. */
+export function cannonIn(sr, R) {
+  const N = len(sr, 1.9), L = new Float32Array(N), Rt = new Float32Array(N);
+  const core = buf(sr, 1.0);
+  sine(core, sr, 0, 1.0, expGlide(R.range(48, 56), 24, 0.2), ad(0.002, 0.24));
+  sine(core, sr, 0, 0.3, expGlide(130, 60, 0.04), t => ad(0.001, 0.05)(t) * 0.6);
+  burst(core, sr, 0, { dur: 0.35, type: 'lowpass', freqAt: expGlide(1400, 200, 0.06), q: 0.7, envFn: ad(0.0008, 0.05), R, amp: 0.9 });
+  // Stahlwanne klingt kurz mit (tiefe Plattenmoden)
+  modal(core, sr, 0.002, [[R.range(165, 190), 0.5, 0.22], [R.range(395, 430), 0.35, 0.15], [R.range(880, 960), 0.18, 0.08]], 0.6, R);
+  const mech = buf(sr, 1.9);
+  // Rücklauf schlägt an (≈ 0,1 s), Vorlauf (≈ 0,4 s) – schwere, gedämpfte Stahlschläge
+  thud(mech, sr, R.range(0.09, 0.12), 70, 0.05, 0.8);
+  modal(mech, sr, 0.1, metalModes(R.range(340, 420), R, { count: 5, decay: 0.12 }), 0.35, R);
+  thud(mech, sr, R.range(0.38, 0.44), 85, 0.04, 0.45);
+  modal(mech, sr, 0.41, metalModes(R.range(520, 640), R, { count: 4, decay: 0.08 }), 0.25, R);
+  // Keil öffnet halbautomatisch (≈ 0,6 s): Klack + Gleiten
+  const tk = R.range(0.58, 0.66);
+  click(mech, sr, tk, { dur: 0.006, tau: 0.0012, hp: 1500, amp: 0.5, R });
+  modal(mech, sr, tk, metalModes(R.range(900, 1100), R, { count: 5, decay: 0.05 }), 0.3, R);
+  // Hülse/Bodenstück fällt in den Hülsensack/auf den Boden: zwei Aufschläge + Nachklingen
+  const tc = tk + R.range(0.06, 0.1), fc = R.range(620, 760);
+  modal(mech, sr, tc, [[fc, 1, 0.18], [fc * 2.7, 0.55, 0.1], [fc * 5.1, 0.3, 0.05], [fc * 7.9, 0.15, 0.03]], 0.32, R);
+  modal(mech, sr, tc + R.range(0.13, 0.18), [[fc * 1.02, 1, 0.12], [fc * 2.75, 0.5, 0.06]], 0.16, R);
+  thud(mech, sr, tc, 120, 0.02, 0.25);
+  // Rauchabsaugung zischt kurz
+  burst(mech, sr, 0.05, { dur: 0.9, type: 'bandpass', freq: 1800, q: 0.6, envFn: ad(0.05, 0.25), R, amp: 0.05 });
+  const mono = new Float32Array(N); mix(mono, core, 0, 1); mix(mono, mech, 0, 1);
+  const [a, b] = decorrelate(mono, sr, R, 0.25); L.set(a.subarray(0, N)); Rt.set(b.subarray(0, N));
+  drive(L, 1.6); drive(Rt, 1.6); dcBlock(L, sr, 18); dcBlock(Rt, sr, 18);
+  normalize([L, Rt], 0.95);
+  return trim([L, Rt], sr);
+}
+
+/**
+ * Druckfront einer nahen Explosion (Hybrid-Schicht, ~0,35 s): die Explosions-Aufnahmen setzen weich ein (Kinoton,
+ * gemessen 60–140 ms Anstieg) – echte Detonationen haben eine Front < 1 ms. Diese Schicht liefert den Knall vorn.
+ */
+export function blastFront(sr, R) {
+  const d = buf(sr, 0.35);
+  nWave(d, sr, 0, R.range(0.0018, 0.003), 1, R);
+  burst(d, sr, 0, { dur: 0.3, type: 'lowpass', freqAt: expGlide(R.range(8000, 10000), 700, 0.06), q: 0.7, envFn: ad(0.0003, 0.03), R, amp: 0.95 });
+  sine(d, sr, 0, 0.3, expGlide(150, 60, 0.05), t => ad(0.001, 0.04)(t) * 0.5);
+  drive(d, 1.8); dcBlock(d, sr, 30);
+  return trim(normalize(d, 0.95), sr);
 }

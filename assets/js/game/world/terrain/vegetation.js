@@ -17,10 +17,10 @@
 // weiches Ausblenden im Shader, spärliche Wiesenblumen (medium+). Alles aus Positions-Hashes – berührt weder die
 // Zufallsströme noch die Kollision (Felsen werden nur gelesen, um Gras aus ihnen herauszuhalten).
 import * as THREE from 'three';
-import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM, spruceMaterial } from '../atlas.js?v=20261119182451';
-import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261119182451';
-import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261119182451';
-import { TREE_SPECIES, DEFAULT_MIX, TREE_LOD, buildTreeVariant, buildBush, buildFern, createLeafMaterial, createBarkMaterial, renderImpostors, impostorGeometry, createImpostorMaterial } from './trees.js?v=20261119182451';
+import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM, spruceMaterial } from '../atlas.js?v=20261121041936';
+import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261121041936';
+import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261121041936';
+import { TREE_SPECIES, DEFAULT_MIX, TREE_LOD, buildTreeVariant, buildBush, buildFern, createLeafMaterial, createBarkMaterial, renderImpostors, impostorGeometry, createImpostorMaterial } from './trees.js?v=20261121041936';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 const _c = new THREE.Color();
@@ -524,6 +524,21 @@ export class Vegetation {
         const x = b.minX + rs() * (b.maxX - b.minX), z = b.minZ + rs() * (b.maxZ - b.minZ);
         if (noise(x / 70, z / 70) < 0.1 || !okWiese(x, z)) continue;
         if (tree(x, z, 0.2, rs)) made++;
+      }
+    }
+    // fuell (20.11.): Buschgruppen (nur Büsche, keine Bäume – keine Kollision) auf Wiesen, an Feld- und Wegrändern;
+    // eigener Zufallsstrom → alle übrigen Abschnitte bleiben gleich. spec.scatter.buesche = Anzahl Gruppen
+    if (sc?.buesche) {
+      const rb = rng(seed * 17 + 29), b = this.bounds, okWiese = (x, z) => !inField(x, z) && okTree(x, z);
+      for (let g = 0, tries = 0; g < sc.buesche && tries < sc.buesche * 25; tries++) {
+        const cx = b.minX + 15 + rb() * (b.maxX - b.minX - 30), cz = b.minZ + 15 + rb() * (b.maxZ - b.minZ - 30);
+        if (noise(cx / 50 + 7, cz / 50) < -0.1 || !okWiese(cx, cz)) continue;
+        g++;
+        const n = 2 + Math.floor(rb() * 4), rad = 1.2 + rb() * 2.4;
+        for (let k = 0; k < n; k++) {
+          const a = rb() * 6.283, d = Math.sqrt(rb()) * rad, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d, sz = 0.6 + rb() * 0.7, ry = rb() * 6.28;
+          if (okWiese(x, z)) this._add('busch', x, z, sz, ry);
+        }
       }
     }
     // Hecken/Baumreihen entlang Linien

@@ -5,13 +5,14 @@
 // Spricht nur mit G.net (NetSystem, net/index.js) und hört auf net:* – baut selbst keine Verbindung auf und lädt keine
 // Netz-Module. Fehlt G.net (Modul nicht geladen), bleibt der Reiter mit einem Hinweis bedienbar.
 
-import { esc, el } from './dom.js?v=20261119182451';
-import { ICON, deviceOf } from './icons.js?v=20261119182451';
-import { LoadoutPanel } from './loadout-panel.js?v=20261119182451';
-import { CLASSES, GAME_STYLES, STYLE_ORDER } from '../../shared/classes.data.js?v=20261119182451';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261119182451';
-import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261119182451';
-import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261119182451';
+import { esc, el } from './dom.js?v=20261121041936';
+import { ICON, deviceOf } from './icons.js?v=20261121041936';
+import { LoadoutPanel } from './loadout-panel.js?v=20261121041936';
+import { CLASSES, GAME_STYLES, STYLE_ORDER, SIM_MODES } from '../../shared/classes.data.js?v=20261121041936';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261121041936';
+import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261121041936';
+import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261121041936';
+import { isAppClient, mapLockedHere } from '../../shared/appgate.js?v=20261121041936'; // riesen: App-exklusive Karten
 
 /** Gerät eines Mitspielers (Roster device: PC/Handy/VR-Brille) – Abzeichen in der Raumliste bzw. Symbol vor dem Namen. */
 const devBadge = (r) => { const d = deviceOf(r.device); return `<em class="nr-badge is-dev" data-dev="${esc(r.device || 'pc')}" title="${esc(d.label)}">${d.icon}${esc(d.short)}</em>`; };
@@ -415,7 +416,7 @@ export class NetMenus {
       const rows = sorted.slice(0, 40).map((g) => {
         const mode = d.MODES[g.mode] || {};
         const map = d.MAPS[g.map] || {};
-        const why = !g.compatible ? 'Anderer Spielstand – Seite neu laden' : g.full ? 'Raum ist voll' : '';
+        const why = !g.compatible ? 'Anderer Spielstand – Seite neu laden' : g.full ? 'Raum ist voll' : mapLockedHere(map) ? 'Riesenkarte – nur in der App' : '';
         const code = String(g.code || '').replace(/[^A-Z0-9]/g, '');
         return `<div class="nm-row${g.compatible && !g.full ? '' : ' is-off'}" role="listitem">
           <span class="nm-mode" title="${esc(mode.name || g.mode)}">${mode.icon || ICON.globe}</span>
@@ -865,7 +866,7 @@ export class NetMenus {
     const t = s.time === 'zufall' ? 'Zufall' : s.time === 'echtzeit' ? 'Echtzeit (Uhr des Hosts)' : s.time && s.time !== 'standard' ? (times.find((x) => x.id === s.time) || {}).name || s.time : `${map.timeOfDay || 'Standard'}`;
     const wd = WEATHERS[map.weatherStandard || map.weatherDefault];
     const w = s.weather === 'zufall' ? 'Zufall' : s.weather && s.weather !== 'standard' ? (WEATHERS[s.weather] || {}).name || s.weather : `Standard${wd ? ` (${wd.name})` : ''}`;
-    return { mode, map, time: t, weather: w, diff: (d.DIFF[s.difficulty] || {}).name || s.difficulty, style: (GAME_STYLES[s.style] || GAME_STYLES.arcade || {}).label || s.style };
+    return { mode, map, time: t, weather: w, diff: (d.DIFF[s.difficulty] || {}).name || s.difficulty, style: s.style === 'simulation' && !(SIM_MODES || []).includes(s.mode) ? (GAME_STYLES.realistisch || {}).label || 'Realistisch' : (GAME_STYLES[s.style] || GAME_STYLES.arcade || {}).label || s.style };
   }
 
   _settingsViewHtml() {
@@ -885,7 +886,7 @@ export class NetMenus {
       ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}${item('Munition pro Abschuss', s.killAmmo === false ? 'aus' : s.style === 'realistisch' ? 'an der Leiche' : 'an')}
       ${item('Waffen von Leichen', s.lootWeapons === false ? 'aus' : 'erlaubt')}
       ${item('Fahrzeuge', vehOn(s) ? 'Panzer + Geländewagen' : VEH_MODES.has(s.mode) && !vehMap(s) ? 'nur zivile (kleine Karte)' : 'aus')}
-      ${vehOn(s) ? `${item('Außenansicht (Fahrzeuge)', s.thirdPerson === false ? 'aus' : 'erlaubt')}${item('Panzer nachladen', s.vehReload === 'automatisch' ? 'automatisch' : 'manuell')}${item('Panzer-Generation', ({ karte: 'je Karte', modern: 'modern', wk2: '2. Weltkrieg', wk1: '1. Weltkrieg' })[s.tankEra] || 'je Karte')}` : ''}
+      ${vehOn(s) ? `${item('Außenansicht (Fahrzeuge)', s.thirdPerson === false ? 'aus' : 'erlaubt')}${item('Panzer nachladen', s.vehReload === 'automatisch' ? 'automatisch' : 'manuell')}${item('Panzer-Generation', ({ karte: 'je Karte', modern: 'modern', kk: 'Kalter Krieg', wk2: '2. Weltkrieg', wk1: '1. Weltkrieg' })[s.tankEra] || 'je Karte')}` : ''}
       ${item('Cheat-Menü', s.cheatMenu === false ? 'verboten' : 'erlaubt')}
     </div>`;
   }
@@ -902,11 +903,18 @@ export class NetMenus {
       const on = ONLINE_MODES.includes(id);
       return [id, `${m.icon ? `<i class="nr-mico">${m.icon}</i>` : ''}<span>${esc(m.short || id)}</span>`, on ? m.name : `${m.name} – folgt in Stufe 2`, !on];
     }).sort((a, b) => a[3] - b[3]);
-    const maps = this._mapsFor(s.mode).map((id) => [id, esc(d.MAPS[id].name), d.MAPS[id].subtitle || '']);
+    // riesen: App-exklusive Karte nur wählbar, wenn Host und alle Mitspieler die App nutzen (net.appMapAllowed)
+    const appOk = typeof this.net.appMapAllowed === 'function' ? this.net.appMapAllowed() : isAppClient();
+    const maps = this._mapsFor(s.mode).map((id) => {
+      const app = !!d.MAPS[id].appOnly, off = app && !appOk;
+      return [id, `${off ? '🔒 ' : ''}${esc(d.MAPS[id].name)}`, app ? (off ? (isAppClient() ? 'Nur in der App – ein Mitspieler nutzt den Browser' : 'Nur in der App (PC-App oder Android-App)') : 'Riesenkarte – nur App-Spieler können beitreten') : d.MAPS[id].subtitle || '', off];
+    });
     const times = [['standard', esc(map.timeOfDay || 'Standard'), 'Tageszeit der Karte'], ...(Array.isArray(map.times) ? map.times : []).map((t) => [t.id, esc(t.name || t.id), '']), ['echtzeit', 'Echtzeit', 'Passend zur echten Uhrzeit (Uhr des Hosts)'], ['zufall', 'Zufall', 'Der Host würfelt beim Start']];
     const wxs = [['standard', 'Standard', map.weather || 'Wetter der Karte'], ...(Array.isArray(map.weathers) ? map.weathers : []).filter((w) => WEATHERS[w]).map((w) => [w, esc(WEATHERS[w].name), WEATHERS[w].short || '']), ['zufall', 'Zufall', 'Der Host würfelt beim Start']];
     const diffs = DIFF_ORDER.map((id) => [id, esc((d.DIFF[id] || {}).name || id), (d.DIFF[id] || {}).description || '']);
-    const styles = (STYLE_ORDER || ['arcade', 'realistisch']).map((id) => [id, esc((GAME_STYLES[id] || {}).label || id), (GAME_STYLES[id] || {}).desc || '']);
+    // gesamt 20.11.: „Simulation“ nur in passenden Modi (SIM_MODES, wie in der Lobby) – sonst spielt sie als „Realistisch“
+    const simOk = (SIM_MODES || []).includes(s.mode);
+    const styles = (STYLE_ORDER || ['arcade', 'realistisch']).filter((id) => id !== 'simulation' || simOk || s.style === id).map((id) => [id, esc((GAME_STYLES[id] || {}).label || id), (GAME_STYLES[id] || {}).desc || '']);
     const stepper = (k, label, v, min, max, shown = v) => `
       <div class="lb-step nr-step"><span>${esc(label)}</span>
         <button type="button" class="m-icon" data-step="${k}" data-d="-1" data-fk="${k}-m" aria-label="${esc(label)} verringern"${v <= min ? ' disabled' : ''}>${ICON.minus}</button>
@@ -972,7 +980,7 @@ export class NetMenus {
           ${sw('thirdPerson', 'Außenansicht (Fahrzeuge)', '3P-Kamera in Fahrzeugen erlaubt', s.thirdPerson !== false)}
           ${seg('vehReload', [['manuell', 'Manuell', 'Ladeschütze lädt von Hand'], ['automatisch', 'Automatisch', 'Nachladen nach Zeit']], s.vehReload === 'automatisch' ? 'automatisch' : 'manuell', 'Panzer nachladen')}
         </div>
-        <div class="nr-two">${seg('tankEra', [['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild und Munitionsbunker, 4 Mann'], ['wk2', '2. WK', 'Team A: MP-4 Bison (mittel, 75 mm, schnell) – Team B: SP-6 Moloch (schwer, 88 mm)'], ['wk1', '1. WK', 'Team A: LK-17 Libelle (leicht, Drehturm, 2 Mann) – Team B: SK-18 Koloss (Sturmpanzer, 6 Mann)']], s.tankEra || 'karte', 'Panzer-Generation')}</div>` : ''}
+        <div class="nr-two">${seg('tankEra', [['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild und Munitionsbunker, 4 Mann; zweiter Stellplatz: SZ-8 Igel (Schützenpanzer, 30 mm + Lenkflugkörper); dazu LP-21 Gämse (leicht, 105 mm) und Transporter RS-8 Waran (8×8, 30 mm), LKW-5, GMW-6, GW-7 (MG-Ring)'], ['kk', 'Kalter Krieg', 'KP-68 Auerochs: Gussturm, 105 mm, Infrarot-Scheinwerfer, 4 Mann; zweiter Stellplatz SP-58 Mastodon (schwer, 120 mm); Transporter MTW-13 Kröte (Ketten, MG), LKW-5, GMW-6'], ['wk2', '2. WK', 'Team A: MP-4 Bison (mittel, 75 mm, schnell), zweiter Stellplatz MP-43 Elch (85 mm) – Team B: SP-6 Moloch (schwer, 88 mm), zweiter Stellplatz JP-44 Stier (Jagdpanzer); dazu LP-39 Frettchen (leicht), SP-45 Walross (schwer) und Halbketten SPW-41 Hamster (MG-Schild) / ZK-8 Packesel'], ['wk1', '1. WK', 'Team A: LK-17 Libelle (leicht, Drehturm, 2 Mann) – Team B: SK-18 Koloss (Sturmpanzer, 6 Mann)']], s.tankEra || 'karte', 'Panzer-Generation')}</div>` : ''}
         <div class="nr-two">
           ${sw('cheatMenu', 'Cheat-Menü', s.cheatMenu === false ? 'Verboten: das Menü öffnet sich bei niemandem' : 'Erlaubt (alle Modi): wer es nutzt, trägt ein Symbol in der Punktetabelle', s.cheatMenu !== false)}
         </div>
@@ -1067,6 +1075,11 @@ export class NetMenus {
       return;
     }
     if (ds.mopt) { const s = net.room.settings; this._update({ modeOpts: { ...(s.modeOpts || {}), [ds.mopt]: ds.v } }); return; } // Modus-Einstellungen (B6)
+    if (ds.set === 'map' && this._data().MAPS[ds.v]?.appOnly && !(typeof net.appMapAllowed === 'function' && net.appMapAllowed())) {
+      this.menus.sound('error');
+      this.toast(isAppClient() ? 'Die Riesenkarte geht nur, wenn alle im Raum die App nutzen.' : 'Riesenkarte nur in der App – PC-App oder Android-App auf der Startseite unter „App“.', 'warn');
+      return;
+    }
     if (ds.set) { this._update({ [ds.set]: ds.v }); return; }
     if (ds.step) {
       const s = net.room.settings;

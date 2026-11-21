@@ -1,9 +1,16 @@
 // NULLPUNKT — Kampagne, Mission 2 „Werk Sieben“ (Werk): Verteidigung einer Stellung.
 // Die Familien der Werkssiedlung werden aus dem Werkshof abtransportiert. Der Trupp hält das Werkstor der Walzhalle gegen
 // drei Angriffswellen (Süden durch die Halle, Westhof, beides), bis der letzte Lkw draußen ist. Die Stellung fällt,
-// wenn Angreifer das Tor 15 s lang ohne Verteidiger halten. Checkpoints: start, welle1, welle2, welle3.
+// wenn Angreifer das Tor 15 s lang ohne Verteidiger halten. Checkpoints: start, welle1, welle2, welle3, pumpe.
 
-import { actor } from './cast.js?v=20261119182451';
+import { actor } from './cast.js?v=20261121041936';
+import { buildCount } from './hilfen-c.js?v=20261121041936';
+
+// kamp3 (15.11.): vertieft – Nachzügler aus dem Pförtnerhaus zum Werkshof bringen, Sandsäcke am Tor (Bauen), am Ende
+// Sprengladung an der Pumpstation entschärfen (Kessars Leute wollten die Pumpen für das Tal mitnehmen).
+const GATEHOUSE = [13, 33.5];
+const YARD = [6, 46];
+const PUMP = [26, -2];
 
 const SOUTH = [[0, -42], [-9, -44], [9, -44], [-17, -39], [17, -39]];
 const WEST = [[-60, 8], [-64, -6], [-58, 22], [-70, 0], [-56, -18]];
@@ -117,11 +124,29 @@ export const MISSION_2 = {
       checkpoint: { at: [1.5, 44], yaw: 0 },
       *run(m) {
         yield m.cutsceneAt('intro');
+        // Nachzügler im Pförtnerhaus: zwei Arbeiter, die ihre Familien suchen
+        m.say('hofer', 'Im Pförtnerhaus sitzen noch zwei Arbeiter. Sie wollen nicht ohne ihre Familien gehen – bring sie zu den Lkw, Falke.', { expr: 'ernst' });
+        const men = [
+          m.extra('arb1', { pos: GATEHOUSE, yaw: 1.6, variant: 'zivil-arbeit', name: 'Arbeiter', crouch: true, protect: true, aim: -1.1 }),
+          m.extra('arb2', { pos: [GATEHOUSE[0] + 1, GATEHOUSE[1] + 0.8], yaw: 1.2, variant: 'zivil-hemd', name: 'Arbeiter', crouch: true, protect: true, aim: -1.1 }),
+        ];
+        yield m.holdZone('pforte', 'Hol die Arbeiter aus dem Pförtnerhaus', { at: GATEHOUSE, r: 2.8, secs: 2.5, label: 'Pförtnerhaus', action: 'Zureden' });
+        for (const x of men) { x.crouch = false; x.follow(m.G.player); }
+        m.say('zivil', 'Unsere Frauen sind im ersten Lkw? Dann gehen wir. Danke.', { radio: false });
+        yield m.reach('hof', 'Bring die Arbeiter zu den Lkw im Werkshof', { at: YARD, r: 4, label: 'Werkshof' });
+        for (const x of men) { x.follow(null); x.walk([[YARD[0] + 4, YARD[1] + 6]], 1.6); }
+        m.say('brandt', 'Gut gemacht. Jetzt zum Tor – sie kommen gleich.', { radio: true });
+        yield 1.5;
+        for (const x of men) x.remove();
         yield m.reach('stellung', 'Beziehe Stellung am Werkstor', { at: [0, 33], r: 6, label: 'Werkstor' });
         m.order('defend', [0, 32]);
         m.tip('Befehlsrad (Z bzw. Touch-Knopf oben rechts): Befehle an deine Kameraden.', 6);
-        m.say('lenz', 'Ich nehme die linke Seite, Weber die Rohrbrücke. Falke, du hältst die Mitte.');
-        yield m.timer(25, 'Angriff in');
+        m.say('lenz', 'Ich nehme die linke Seite, Weber die Rohrbrücke. Falke, du hältst die Mitte. Und setz dir Sandsäcke vor das Tor, solange noch Zeit ist.');
+        const built = buildCount(m);
+        m.objective('sack', `Optional: Sandsackwall vor dem Tor bauen ${m.key('bauen', 'Bauen')}`, { optional: true });
+        m.tip(`Bauen: ${m.key('bauen', 'Bauen')} öffnet die Vorschau, ${m.key('fire', 'Feuer')} setzt, ${m.key('bauen', 'Bauen')} wechselt das Bauwerk.`, 7);
+        m.every(() => { if (built() > 0) { m.done('sack'); return true; } return m.stageIndex > 1; });
+        yield m.timer(40, 'Angriff in');
       },
     },
     {
@@ -183,8 +208,33 @@ export const MISSION_2 = {
         yield m.killObjective('rest', 'Vertreibe die restlichen Angreifer', rest);
         m.say('lenz', 'Sie ziehen ab. Feuer einstellen!');
         yield 2;
+      },
+    },
+    {
+      id: 'pumpe',
+      checkpoint: { at: [0, 30], yaw: 3.1 },
+      setup(m) { m.order('follow'); },
+      *run(m) {
+        m.clearObjectives();
+        m.order('follow');
+        m.say('weber', 'Moment – auf ihrer Frequenz zählt jemand rückwärts. An der Pumpstation in der Halle! Sie haben eine Ladung gelegt!', { expr: 'angespannt' });
+        m.wave('pw', { count: 3, at: [[17, -39], [9, -44], [-9, -44]], attack: PUMP, radius: 7 });
+        let boom = false;
+        m.timer(90, 'Zündung in', () => { boom = true; m.fail('Die Pumpstation ist explodiert. Das Tal ist ohne Wasser.'); });
+        yield m.reach('halle', 'Lauf zur Pumpstation in der Halle', { at: PUMP, r: 5, label: 'Pumpstation' });
+        m.say('lenz', 'Wir halten dir den Rücken frei! Finger weg vom roten Kabel – das hat Krell dir beigebracht!', { expr: 'angespannt' });
+        yield m.holdZone('entschaerfen', 'Entschärfe die Sprengladung', { at: PUMP, r: 3, secs: 8, label: 'Ladung', action: 'Ladung wird entschärft' });
+        if (boom) return;
+        m.stopTimer();
+        m.say('funk', 'Anker hier: Druck in der Talleitung ist stabil. Die Pumpen laufen.', { radio: true });
+        yield m.killObjective('pwk', 'Schalte die Sprengtrupp-Reste aus', 'pw');
+        yield 1.5;
         m.complete();
       },
     },
   ],
+
+  /** Testlauf (run.js): Zündzeit der Ladung nicht verkürzen. */
+  _test(d) { if (d.timerLabel === 'Zündung in' && d.timerLeft != null && d.timerLeft < 30) d.timerLeft = 60; },
 };
+

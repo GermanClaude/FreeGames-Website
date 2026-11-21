@@ -7,7 +7,7 @@
 // wählen bzw. überschreiben; main setzt standardmäßig die Karten-ID.
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261119182451';
+import { FULLSCREEN_VERT, GLSL_COMMON } from './common.js?v=20261121041936';
 
 /* ------------------------------------------------------------ Stimmungen */
 
@@ -97,7 +97,7 @@ export const MOODS = Object.freeze({
 });
 
 /** Karten-ID → Stimmung (Karten ohne eigenen Eintrag nehmen `neutral`; „nachtschicht“/„innenraum“ → `nacht`). */
-export const MOOD_FOR_MAP = Object.freeze({ hafen: 'hafen', altstadt: 'altstadt', werk: 'werk', range: 'range', grenzland: 'grenzland', niemandsland: 'grenzland', brandwald: 'grenzland', flugplatz: 'grenzland', stadtkern: 'werk', nachtschicht: 'nacht', innenraum: 'nacht' });
+export const MOOD_FOR_MAP = Object.freeze({ hafen: 'hafen', altstadt: 'altstadt', werk: 'werk', range: 'range', grenzland: 'grenzland', niemandsland: 'grenzland', brandwald: 'grenzland', flugplatz: 'grenzland', weitmark: 'grenzland', stadtkern: 'werk', nachtschicht: 'nacht', innenraum: 'nacht' });
 
 /**
  * Stimmung auflösen: id | { mood, lut, exposure, bloom } → vollständiges Objekt (Kopie). look: Farbstimmung

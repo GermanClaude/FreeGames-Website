@@ -218,3 +218,30 @@ ID_TO_MODEL.sg_zwilling = 'zwilling';
 HANDLING.zwilling = { ...RIFLE, hip: [0.125, -0.13, -0.37], kick: { back: 0.07, up: 0.12, side: 0.012, roll: 0.06, kickRot: 0.09 }, action: 'break', reload: 'break',
   leftGrip: 'under', shell: 'shotgun', weight: 1.1, flash: 2.0, flashLen: 1.1, reloadTime: 2.0, emptyTime: 2.5, equipTime: 0.5, inspect: 3.0, heat: 0.06 };
 BODYCAM.zwilling = bcRifle('zwilling', BC_RIFLE_HIP, BC_RIFLE_ROT);
+
+// Waffen-Welle 3 (20.11.2026): Haltung und Abläufe nach Bauart (Modelle guns-neu-a.js / guns-neu-b.js). Bewegliche Teile und Anker
+// wie bei den Vorgängern: Magazinwaffen (mag/bullpup), Repetierer (bolt), Vorderschaftrepetierer (pump/shell), Gurt (belt).
+Object.assign(ID_TO_MODEL, { smg_uhu: 'uhu', ar_luchs: 'luchs', ar_dachs: 'dachs', mr_elster: 'elster', sr_habicht: 'habicht', sr_kranich: 'kranich',
+  smg_hornisse: 'hornisse', lmg_lindwurm: 'lindwurm', sg_stier: 'stier' });
+// MS-9 Uhu: Dämpfer schluckt das Mündungsfeuer fast ganz (flash klein), leichter Stoß
+HANDLING.uhu = { ...RIFLE, hip: [0.125, -0.13, -0.36], kick: { back: 0.017, up: 0.028, side: 0.009, roll: 0.03, kickRot: 0.013 }, shell: 'pistol', weight: 0.85,
+  flash: 0.12, flashLen: 0.3, boltTravel: 0.05, reloadTime: 2.0, emptyTime: 2.6, equipTime: 0.5, inspectStyle: 'magcheck', inspect: 3.0 };
+HANDLING.luchs = { ...RIFLE, hip: [0.12, -0.15, -0.36], leftGrip: 'under', reload: 'bullpup', weight: 1.0, boltTravel: 0.06, reloadTime: 2.5, emptyTime: 3.1, equipTime: 0.58, inspectStyle: 'rifle' };
+HANDLING.dachs = { ...RIFLE, hip: [0.12, -0.15, -0.38], kick: { back: 0.03, up: 0.055, side: 0.014, roll: 0.055, kickRot: 0.024 }, flash: 1.4, flashLen: 1.3, boltTravel: 0.07,
+  shell: 'rifle', weight: 0.95, reloadTime: 2.2, emptyTime: 2.8, equipTime: 0.5, inspectStyle: 'magcheck' };
+HANDLING.elster = { ...RIFLE, hip: [0.13, -0.15, -0.42], kick: { back: 0.036, up: 0.072, side: 0.01, roll: 0.04, kickRot: 0.036 }, action: 'semi', flash: 1.2, flashLen: 1.2, weight: 1.2,
+  boltTravel: 0.08, reloadTime: 2.5, emptyTime: 3.2, equipTime: 0.7, inspectStyle: 'magcheck' };
+HANDLING.habicht = { ...HANDLING.brecher, hip: [0.13, -0.14, -0.4], kick: { back: 0.05, up: 0.095, side: 0.01, roll: 0.045, kickRot: 0.07 }, weight: 1.3, flash: 1.3, flashLen: 1.3,
+  reloadTime: 2.7, emptyTime: 3.5, equipTime: 0.75, inspectStyle: 'bolt' };
+HANDLING.kranich = { ...HANDLING.brecher, hip: [0.13, -0.135, -0.42], leftGrip: 'under', kick: { back: 0.055, up: 0.1, side: 0.012, roll: 0.05, kickRot: 0.075 }, weight: 1.15, flash: 1.5, flashLen: 1.5,
+  reloadTime: 2.8, emptyTime: 3.6, equipTime: 0.7, inspectStyle: 'bolt' };
+HANDLING.hornisse = { ...RIFLE, hip: [0.118, -0.14, -0.38], kick: { back: 0.019, up: 0.03, side: 0.012, roll: 0.035, kickRot: 0.014 }, shell: 'pistol', openBolt: true, cycle: 0.1, boltTravel: 0.06,
+  weight: 0.95, flash: 0.8, flashLen: 0.8, reloadTime: 2.3, emptyTime: 2.9, equipTime: 0.52, inspectStyle: 'magcheck' };
+HANDLING.lindwurm = { ...HANDLING.hm60, hip: [0.135, -0.16, -0.4], kick: { back: 0.026, up: 0.042, side: 0.016, roll: 0.05, kickRot: 0.022 }, weight: 1.7, flash: 1.25, flashLen: 1.3,
+  cycle: 0.05, reloadTime: 5.2, emptyTime: 6.2, equipTime: 0.9, inspectStyle: 'belt' };
+HANDLING.stier = { ...HANDLING.bulldog, hip: [0.13, -0.13, -0.38], kick: { back: 0.062, up: 0.095, side: 0.012, roll: 0.06, kickRot: 0.078 }, inspectStyle: 'pump' };
+// Körperkamera: Bullpup sitzt mit dem Schaft hinter dem Griff – weiter vorn, sonst füllt das Visier die rechte untere Ecke
+BODYCAM.luchs = bcRifle('luchs', [0.14, -0.16, -0.38], BC_RIFLE_ROT);
+// Körperkamera: Zielfernrohr/Kampfvisier lägen sonst groß vor der rechten Bildhälfte – Waffe weiter weg und tiefer
+BODYCAM.habicht = bcRifle('habicht', [0.15, -0.2, -0.42], [0.08, 0.1, 0.25]);
+BODYCAM.elster = bcRifle('elster', [0.15, -0.19, -0.4], [0.08, 0.1, 0.27]);

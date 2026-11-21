@@ -10730,17 +10730,17 @@
    "surface": "metal",
    "replaces": [],
    "sizeM": [
-    2.44,
-    2.44
+    2.2,
+    2.2
    ],
    "tintable": true,
    "alpha": false,
    "hero": false,
    "stats": {
-    "avgColor": "#c4c4c2",
-    "avgRoughness": 0.62,
-    "avgMetalness": 0.004,
-    "avgAO": 0.999,
+    "avgColor": "#c2c1c0",
+    "avgRoughness": 0.82,
+    "avgMetalness": 0.0,
+    "avgAO": 0.988,
     "coverage": 1
    },
    "tiers": {
@@ -10749,72 +10749,108 @@
      "normal": "textures/ctr_lack/ctr_lack_512_normal.ktx2",
      "orm": "textures/ctr_lack/ctr_lack_512_orm.ktx2",
      "sizes": {
-      "albedo": 22002,
-      "normal": 1687,
-      "orm": 14737
+      "albedo": 55635,
+      "normal": 12586,
+      "orm": 29487
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "normal": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       },
       "orm": {
        "desktop": 174763,
        "mobile": 174763,
-       "rgba8": 1398101
+       "rgba8": 1398102
       }
      },
-     "bytes": 38426,
+     "bytes": 97708,
      "gpu": {
       "desktop": 524289,
       "mobile": 524289,
-      "rgba8": 4194303
+      "rgba8": 4194306
      }
     },
     "1024": {
      "albedo": "textures/ctr_lack/ctr_lack_1024_albedo.ktx2",
-     "normal": "textures/ctr_lack/ctr_lack_1024_normal.ktx2",
+     "normal": "textures/ctr_lack/ctr_lack_1024_nxy.ktx2",
      "orm": "textures/ctr_lack/ctr_lack_1024_orm.ktx2",
      "sizes": {
-      "albedo": 55301,
-      "normal": 4803,
-      "orm": 34365
+      "albedo": 160115,
+      "normal": 205088,
+      "orm": 87093
      },
      "gpuFiles": {
       "albedo": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       },
       "normal": {
-       "desktop": 699051,
-       "mobile": 699051,
-       "rgba8": 5592405
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
       },
       "orm": {
        "desktop": 699051,
        "mobile": 699051,
-       "rgba8": 5592405
+       "rgba8": 5592406
       }
      },
-     "bytes": 94469,
+     "bytes": 452296,
      "gpu": {
-      "desktop": 2097153,
-      "mobile": 2097153,
-      "rgba8": 16777215
-     }
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/ctr_lack/ctr_lack_2048_albedo.ktx2",
+     "normal": "textures/ctr_lack/ctr_lack_2048_nxy.ktx2",
+     "orm": "textures/ctr_lack/ctr_lack_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 577078,
+      "normal": 997835,
+      "orm": 321840
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 1896753,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
     }
    },
-   "license": "eigen (NULLPUNKT)",
-   "source": "procedural",
-   "sourceId": "ctr_lack",
-   "maps": []
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "rusty_painted_metal",
+   "maps": [],
+   "scan": "normal+orm aus Fotoscan, Albedo neutrale Verschleißkarte (einfärbbar), Wellung herausgerechnet, Normalen ab 1024 als XY (RGB+Alpha)"
   },
   "bark_brown": {
    "type": "texture",
@@ -15127,6 +15163,710 @@
       "rgba8": 67108866
      },
      "normalXY": true
+    }
+   }
+  },
+  "soil_wall": {
+   "type": "texture",
+   "name": "Aushubwand Lehm",
+   "category": "ground",
+   "surface": "dirt",
+   "replaces": [],
+   "sizeM": [
+    2.0,
+    2.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#6d4e2b",
+    "avgRoughness": 0.967,
+    "avgMetalness": 0.0,
+    "avgAO": 0.815,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "excavated_soil_wall",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha)",
+   "tiers": {
+    "512": {
+     "albedo": "textures/soil_wall/soil_wall_512_albedo.ktx2",
+     "normal": "textures/soil_wall/soil_wall_512_normal.ktx2",
+     "orm": "textures/soil_wall/soil_wall_512_orm.ktx2",
+     "sizes": {
+      "albedo": 60420,
+      "normal": 98270,
+      "orm": 58523
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 217213,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/soil_wall/soil_wall_1024_albedo.ktx2",
+     "normal": "textures/soil_wall/soil_wall_1024_nxy.ktx2",
+     "orm": "textures/soil_wall/soil_wall_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 188959,
+      "normal": 450185,
+      "orm": 194102
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 833246,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/soil_wall/soil_wall_2048_albedo.ktx2",
+     "normal": "textures/soil_wall/soil_wall_2048_nxy.ktx2",
+     "orm": "textures/soil_wall/soil_wall_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 695500,
+      "normal": 1671292,
+      "orm": 701016
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3067808,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "burned_ground": {
+   "type": "texture",
+   "name": "Brandboden mit Nadelstreu",
+   "category": "ground",
+   "surface": "dirt",
+   "replaces": [],
+   "sizeM": [
+    1.0,
+    1.0
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#716354",
+    "avgRoughness": 0.519,
+    "avgMetalness": 0.0,
+    "avgAO": 0.604,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "burned_ground_01",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha)",
+   "tiers": {
+    "512": {
+     "albedo": "textures/burned_ground/burned_ground_512_albedo.ktx2",
+     "normal": "textures/burned_ground/burned_ground_512_normal.ktx2",
+     "orm": "textures/burned_ground/burned_ground_512_orm.ktx2",
+     "sizes": {
+      "albedo": 78380,
+      "normal": 80267,
+      "orm": 59985
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 218632,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/burned_ground/burned_ground_1024_albedo.ktx2",
+     "normal": "textures/burned_ground/burned_ground_1024_nxy.ktx2",
+     "orm": "textures/burned_ground/burned_ground_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 241252,
+      "normal": 424325,
+      "orm": 205912
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 871489,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/burned_ground/burned_ground_2048_albedo.ktx2",
+     "normal": "textures/burned_ground/burned_ground_2048_nxy.ktx2",
+     "orm": "textures/burned_ground/burned_ground_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 890198,
+      "normal": 1590574,
+      "orm": 748523
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3229295,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "mud_wet": {
+   "type": "texture",
+   "name": "Nasser Schlamm mit Trittspuren",
+   "category": "ground",
+   "surface": "dirt",
+   "replaces": [],
+   "sizeM": [
+    1.3,
+    1.3
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#574d3e",
+    "avgRoughness": 0.523,
+    "avgMetalness": 0.0,
+    "avgAO": 0.787,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "brown_mud_03",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha)",
+   "tiers": {
+    "512": {
+     "albedo": "textures/mud_wet/mud_wet_512_albedo.ktx2",
+     "normal": "textures/mud_wet/mud_wet_512_normal.ktx2",
+     "orm": "textures/mud_wet/mud_wet_512_orm.ktx2",
+     "sizes": {
+      "albedo": 69885,
+      "normal": 98952,
+      "orm": 64256
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 233093,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/mud_wet/mud_wet_1024_albedo.ktx2",
+     "normal": "textures/mud_wet/mud_wet_1024_nxy.ktx2",
+     "orm": "textures/mud_wet/mud_wet_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 214036,
+      "normal": 458095,
+      "orm": 220302
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 892433,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/mud_wet/mud_wet_2048_albedo.ktx2",
+     "normal": "textures/mud_wet/mud_wet_2048_nxy.ktx2",
+     "orm": "textures/mud_wet/mud_wet_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 777574,
+      "normal": 1696981,
+      "orm": 817085
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 3291640,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "plaster_stucco": {
+   "type": "texture",
+   "name": "Kratzputz weiß gestrichen",
+   "category": "plaster",
+   "surface": "concrete",
+   "replaces": [],
+   "sizeM": [
+    1.998,
+    1.998
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#d7d3d0",
+    "avgRoughness": 0.881,
+    "avgMetalness": 0.0,
+    "avgAO": 0.743,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "polyhaven",
+   "sourceId": "white_stucco",
+   "maps": [],
+   "scan": "albedo+normal+orm, Normalen ab 1024 als XY (RGB+Alpha)",
+   "tiers": {
+    "512": {
+     "albedo": "textures/plaster_stucco/plaster_stucco_512_albedo.ktx2",
+     "normal": "textures/plaster_stucco/plaster_stucco_512_normal.ktx2",
+     "orm": "textures/plaster_stucco/plaster_stucco_512_orm.ktx2",
+     "sizes": {
+      "albedo": 47232,
+      "normal": 55599,
+      "orm": 14274
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 117105,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/plaster_stucco/plaster_stucco_1024_albedo.ktx2",
+     "normal": "textures/plaster_stucco/plaster_stucco_1024_nxy.ktx2",
+     "orm": "textures/plaster_stucco/plaster_stucco_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 173433,
+      "normal": 387042,
+      "orm": 83173
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 643648,
+     "gpu": {
+      "desktop": 2796204,
+      "mobile": 2796204,
+      "rgba8": 16777218
+     },
+     "normalXY": true
+    },
+    "2048": {
+     "albedo": "textures/plaster_stucco/plaster_stucco_2048_albedo.ktx2",
+     "normal": "textures/plaster_stucco/plaster_stucco_2048_nxy.ktx2",
+     "orm": "textures/plaster_stucco/plaster_stucco_2048_orm.ktx2",
+     "sizes": {
+      "albedo": 666548,
+      "normal": 1472840,
+      "orm": 325975
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      },
+      "normal": {
+       "desktop": 5592406,
+       "mobile": 5592406,
+       "rgba8": 22369622
+      },
+      "orm": {
+       "desktop": 2796203,
+       "mobile": 2796203,
+       "rgba8": 22369622
+      }
+     },
+     "bytes": 2465363,
+     "gpu": {
+      "desktop": 11184812,
+      "mobile": 11184812,
+      "rgba8": 67108866
+     },
+     "normalXY": true
+    }
+   }
+  },
+  "cab_wear": {
+   "type": "texture",
+   "name": "cab_wear",
+   "category": "mask",
+   "surface": "metal",
+   "replaces": [],
+   "sizeM": [
+    0.6,
+    0.6
+   ],
+   "tintable": false,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#808080",
+    "avgRoughness": 0.5,
+    "avgMetalness": 0,
+    "avgAO": 1,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "ambientcg",
+   "sourceId": "Scratches005, SurfaceImperfections003, PaintedMetal004, Fingerprints002",
+   "maps": [],
+   "scan": "Masken für Gebrauchsspuren im Panzer-Innenraum (ORM-Datei = RGBA, UASTC): R Kratzer (ambientCG Scratches005), G Schlieren/Läufer (SurfaceImperfections003), B Lackabplatzer (PaintedMetal004 Metalness), A Fingerabdrücke (Fingerprints002); Albedo/Normalen nur Platzhalter",
+   "tiers": {
+    "512": {
+     "albedo": "textures/cab_wear/cab_wear_512_albedo.ktx2",
+     "normal": "textures/cab_wear/cab_wear_512_normal.ktx2",
+     "orm": "textures/cab_wear/cab_wear_512_orm.ktx2",
+     "sizes": {
+      "albedo": 498,
+      "normal": 500,
+      "orm": 333689
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "normal": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "orm": {
+       "desktop": 349526,
+       "mobile": 349526,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 334687,
+     "gpu": {
+      "desktop": 349868,
+      "mobile": 349868,
+      "rgba8": 1400834
+     }
+    },
+    "1024": {
+     "albedo": "textures/cab_wear/cab_wear_1024_albedo.ktx2",
+     "normal": "textures/cab_wear/cab_wear_1024_normal.ktx2",
+     "orm": "textures/cab_wear/cab_wear_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 498,
+      "normal": 500,
+      "orm": 1318028
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "normal": {
+       "desktop": 171,
+       "mobile": 171,
+       "rgba8": 1366
+      },
+      "orm": {
+       "desktop": 1398102,
+       "mobile": 1398102,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 1319026,
+     "gpu": {
+      "desktop": 1398444,
+      "mobile": 1398444,
+      "rgba8": 5595138
+     }
+    }
+   }
+  },
+  "cab_riffel": {
+   "type": "texture",
+   "name": "cab_riffel",
+   "category": "metal",
+   "surface": "metal",
+   "replaces": [],
+   "sizeM": [
+    0.45,
+    0.45
+   ],
+   "tintable": true,
+   "alpha": false,
+   "hero": false,
+   "stats": {
+    "avgColor": "#adadb0",
+    "avgRoughness": 0.289,
+    "avgMetalness": 0.905,
+    "avgAO": 0.77,
+    "coverage": 1
+   },
+   "license": "CC0 1.0",
+   "source": "ambientcg",
+   "sourceId": "DiamondPlate008A",
+   "maps": [],
+   "scan": "Riffelblech (ambientCG DiamondPlate008A), Albedo entsättigt (Innenraum tönt je Ära), Normalen OpenGL, Bild senkrecht gespiegelt kodiert",
+   "tiers": {
+    "512": {
+     "albedo": "textures/cab_riffel/cab_riffel_512_albedo.ktx2",
+     "normal": "textures/cab_riffel/cab_riffel_512_normal.ktx2",
+     "orm": "textures/cab_riffel/cab_riffel_512_orm.ktx2",
+     "sizes": {
+      "albedo": 63723,
+      "normal": 51697,
+      "orm": 75581
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "normal": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      },
+      "orm": {
+       "desktop": 174763,
+       "mobile": 174763,
+       "rgba8": 1398102
+      }
+     },
+     "bytes": 191001,
+     "gpu": {
+      "desktop": 524289,
+      "mobile": 524289,
+      "rgba8": 4194306
+     }
+    },
+    "1024": {
+     "albedo": "textures/cab_riffel/cab_riffel_1024_albedo.ktx2",
+     "normal": "textures/cab_riffel/cab_riffel_1024_normal.ktx2",
+     "orm": "textures/cab_riffel/cab_riffel_1024_orm.ktx2",
+     "sizes": {
+      "albedo": 192932,
+      "normal": 167899,
+      "orm": 243139
+     },
+     "gpuFiles": {
+      "albedo": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "normal": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      },
+      "orm": {
+       "desktop": 699051,
+       "mobile": 699051,
+       "rgba8": 5592406
+      }
+     },
+     "bytes": 603970,
+     "gpu": {
+      "desktop": 2097153,
+      "mobile": 2097153,
+      "rgba8": 16777218
+     }
     }
    }
   }
@@ -21779,8 +22519,8 @@
  },
  "totals": {
   "textures": {
-   "files": 957,
-   "bytes": 284574797
+   "files": 1053,
+   "bytes": 305418308
   },
   "hdri": {
    "files": 80,
@@ -21791,17 +22531,17 @@
    "bytes": 30929416
   },
   "all": {
-   "files": 1139,
-   "bytes": 330774792
+   "files": 1235,
+   "bytes": 351618303
   },
   "byTier": {
-   "512": 22974103,
-   "1024": 83640853,
-   "2048": 158623604,
+   "512": 24345116,
+   "1024": 89162492,
+   "2048": 172574463,
    "4096": 45168916
   },
   "counts": {
-   "textures": 124,
+   "textures": 130,
    "hdris": 20,
    "models": 53
   }

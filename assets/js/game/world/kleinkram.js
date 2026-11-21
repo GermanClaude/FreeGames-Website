@@ -15,8 +15,8 @@
 // Geometrie landet in den Material-Eimern des MapBuilders (zusammengefasst je Material/Chunk → kaum zusätzliche
 // Draw Calls); Fotoscan-Modelle laufen über b.model (instanziert, LOD).
 import * as THREE from 'three';
-import { frame, hash01, cable, pallet } from './props.js?v=20261119182451';
-import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261119182451';
+import { frame, hash01, cable, pallet } from './props.js?v=20261121041936';
+import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261121041936';
 
 const D = { collide: false, minimap: false };
 const DG = { ...D, grad: false };
@@ -151,8 +151,9 @@ export function holzstapel(b, x, y, z, ry, L = 1.8, H = 1.1) {
 }
 
 /** Angelehnte Leiter (Fotoscan wooden_ladder bzw. Holme + Sprossen), lehnt in lokal −z an der Wand. */
-export function leiter(b, x, y, z, ry, h = 3) {
-  const lean = 0.28;
+export function leiter(b, x, y, z, ry, h = 3, wand = null) {
+  // platz (19.11.): Neigung aus dem Wandabstand – vorher fester Winkel, die Leiterspitze steckte bis 0,4 m in der Wand
+  const lean = wand != null ? Math.asin(Math.min(0.42, Math.max(0.12, (wand - 0.06) / h))) : 0.28;
   lib(b, 'wooden_ladder', x, y, z, { ry, rx: -lean, s: h / 2.9 }, (bb) => {
     const f = frame(bb, x, y, z, ry);
     for (const sx of [-0.22, 0.22]) f.box(sx, 0, 0, 0.05, h, 0.07, 'wood_planks', { ...DN, tint: '#9a7a52', rx: -lean });
@@ -194,6 +195,37 @@ export function blumenkasten(b, x, y, z, ry, w = 0.9) {
     b.plant('bush', px, y + 0.1, pz, { s: 0.22 + hash01(px, pz, 77) * 0.1, ry: hash01(px, pz, 78) * 6.28, tint: i % 2 ? col : undefined });
   }
 }
+
+/**
+ * platz (19.11.): Pflanzkübel neben einer Haustür (Boden) – ersetzt den flachen Fensterblumenkasten, der vorher an
+ * beliebigen Wandstellen auf dem Pflaster lag. Kübel 0,5 m hoch (Beton bzw. Holz), Erde, Busch/Blüten.
+ */
+export function pflanzkuebel(b, x, y, z, ry) {
+  const f = frame(b, x, y, z, ry), holz = hash01(x, z, 79) < 0.4, w = 0.55 + hash01(x, z, 80) * 0.25;
+  f.box(0, 0, 0, w, 0.48, w, holz ? 'wood_planks' : 'concrete', { ...DG, tint: holz ? '#7a5a3e' : '#a8a296' });
+  if (holz) for (const sy of [0.06, 0.4]) f.box(0, sy, 0, w + 0.02, 0.03, w + 0.02, 'metal_painted', { ...DN, tint: '#2b2d30' });
+  f.box(0, 0.45, 0, w - 0.08, 0.02, w - 0.08, 'dirt', DN);
+  const col = ['#c8302f', '#e0a32c', '#d85a8a', '#f0ece0'][Math.floor(hash01(x, z, 81) * 4)];
+  b.plant(hash01(x, z, 82) < 0.5 ? 'flowers' : 'bush', x, y + 0.46, z, { s: 0.42 + hash01(x, z, 83) * 0.14, ry: hash01(x, z, 84) * 6.28, tint: hash01(x, z, 85) < 0.6 ? col : undefined });
+}
+
+/**
+ * platz (19.11.): Gehört der Punkt zu einem Wohnhaus? Gebäude aus arch.building() (b._gebaeude) mit Nutzung
+ * (o.nutzung) bzw. – ohne Angabe – nach Wandmaterial: Holz (Schuppen/Scheunen), Wellblech, Beton (Hallen, Bunker,
+ * Garagen) sind keine Wohnhäuser. Punkte außerhalb aller erfassten Gebäude gelten als Wohnhaus (Kartenbauten mit
+ * eigenem Hausbau, z. B. Altstadt-Fassaden).
+ */
+export function wohnhaus(b, x, z, y = 0) {
+  for (const g of b._gebaeude || []) {
+    if (Math.abs(x - g.x) > g.w / 2 + 0.8 || Math.abs(z - g.z) > g.d / 2 + 0.8 || y < g.y0 - 0.5 || y > g.roofY + 0.5) continue;
+    return g.nutzung ? g.nutzung === 'wohn' : !/wood|metal|concrete|corrugated/.test(g.mat || '');
+  }
+  return true;
+}
+
+/** platz: Fensterdeko (Blumenkästen) merken – kein zweiter Kasten am selben Fenster (Kartenbau + fensterleben). */
+export function merkeFensterdeko(b, x, y, z) { (b._fensterdeko || (b._fensterdeko = [])).push([x, y, z]); }
+const hatFensterdeko = (b, x, y, z) => (b._fensterdeko || []).some(([px, py, pz]) => Math.abs(py - y) < 1.2 && Math.hypot(px - x, pz - z) < 0.9);
 
 /** Zähler-/Hausanschlusskasten (graues Kunststoffgehäuse) an der Wand, Unterkante y. */
 export function zaehlerkasten(b, x, y, z, ry) {
@@ -328,7 +360,8 @@ function industrieKram(b, x, y, z, ry, k) {
   } else if (k < 0.62) { // Palette, evtl. mit Kartons
     pallet(b, x, y, z, { ry, collide: false, load: hash01(x, z, 5) < 0.5 ? 'boxes' : null });
   } else if (k < 0.75) { // an die Wand gelehnte Palette
-    f.box(0, 0, -0.05, 1.2, 0.14, 0.8, 'wood_planks', { ...DN, tint: '#b09670', rx: -1.35 });
+    // platz (19.11.): Drehung um die Unterkante – vorher steckte die halbe Palette im Boden und kippte von der Wand weg
+    f.box(0, 0.39, -0.36, 1.2, 0.14, 0.8, 'wood_planks', { ...DN, tint: '#b09670', rx: 1.35 });
   } else if (k < 0.88) { // Gasflasche
     lib(b, 'propane_tank', x, y, z, { ry }, (bb) => bb.cyl(x, y, z, 0.15, 0.9, 'metal_painted', { ...DG, seg: 10, tint: '#c8402f' }));
   } else { // Werkzeugkiste / Karton
@@ -510,8 +543,15 @@ export function wandkram(b, o = {}) {
           if (inRect(g, px, pz, 0.25) || inRect(g, qx, qz, 0)) { blocked = true; break; }
         }
         if (blocked) continue;
+        // platz (19.11.): Pflanzkübel nur neben einer Haustür eines Wohnhauses (nicht an Scheunen, Hallen, Mauern)
+        if (pick.tuer && !(f.kind === 'building' && wohnhaus(b, f.x, f.z, f.y0 + 0.5) && doors.some(([dx, dz, r, dy]) => Math.abs(dy - f.y0 - 1) < 2 && Math.hypot(px - dx, pz - dz) < r + 1.2))) continue;
+        // platz: wandnahe Stücke (Zählerkasten, angelehntes Werkzeug) nicht vor Fenster-/Türöffnungen
+        if (off < 0.2 && f.kind === 'building') {
+          const [wx0, wz0] = W(lx, lz), onx = nx * c + nz * s, onz = -nx * s + nz * c;
+          if (!wandStelle(b, near, null, onx, onz, 0, wx0 + onx * 0.01, f.y0 + 0.9, wz0 + onz * 0.01, 0.35)) continue;
+        }
         const ry = Math.atan2(nx * c + nz * s, -nx * s + nz * c); // lokal +z = Außennormale
-        pick.fn(b, px, f.y0, pz, ry, hash01(px, pz, 302));
+        pick.fn(b, px, f.y0, pz, ry, hash01(px, pz, 302), f.y1 - f.y0);
         n++;
       }
     }
@@ -531,7 +571,7 @@ const TABELLE = {
       { fn: (b, x, y, z, ry) => getraenkekisten(b, x, y, z, ry, 2 + Math.floor(hash01(x, z, 5) * 3)), off: 0.25 },
       { fn: (b, x, y, z) => muellsaecke(b, x, y, z, 1 + Math.floor(hash01(x, z, 6) * 3)), off: 0.4 },
       { fn: (b, x, y, z, ry) => zaehlerkasten(b, x, y + 0.6, z, ry), off: 0.09 },
-      { fn: (b, x, y, z, ry) => blumenkasten(b, x, y, z, ry, 0.8 + hash01(x, z, 8) * 0.6), off: 0.12 },
+      { fn: (b, x, y, z, ry) => pflanzkuebel(b, x, y, z, ry), off: 0.5, tuer: true }, // platz: nur neben Haustüren
       { fn: (b, x, y, z, ry) => { werkzeug(b, x, y, z, ry, 3); const [ex, ez] = frame(b, x, y, z, ry).P(0.4, 0.05); eimer(b, ex, y, ez); }, off: 0.12 },
     ],
   },
@@ -542,8 +582,8 @@ const TABELLE = {
       { fn: (b, x, y, z, ry) => fahrrad(b, x, y, z, along(ry)), off: 0.25 },
       { fn: (b, x, y, z, ry) => werkzeug(b, x, y, z, ry), off: 0.12 },
       { fn: (b, x, y, z, ry) => { eimer(b, x, y, z); const [wx, wz] = frame(b, x, y, z, ry).P(0.5, -0.1); werkzeug(b, wx, y, wz, ry); }, off: 0.2 },
-      { fn: (b, x, y, z, ry) => leiter(b, x, y, z, ry, 2.6 + hash01(x, z, 9)), off: 0.62 },
-      { fn: (b, x, y, z, ry) => blumenkasten(b, x, y, z, ry, 0.8 + hash01(x, z, 8) * 0.6), off: 0.12 },
+      { fn: (b, x, y, z, ry, h, wh) => leiter(b, x, y, z, ry, Math.min(2.6 + hash01(x, z, 9), wh + 0.5), 0.85), off: 0.85 },
+      { fn: (b, x, y, z, ry) => pflanzkuebel(b, x, y, z, ry), off: 0.5, tuer: true }, // platz: nur neben Haustüren
       { fn: (b, x, y, z, ry) => zaehlerkasten(b, x, y + 0.6, z, ry), off: 0.09 },
       { fn: (b, x, y, z, ry) => getraenkekisten(b, x, y, z, ry, 2), off: 0.25 },
     ],
@@ -551,7 +591,7 @@ const TABELLE = {
   hof: {
     p: 0.7, items: [
       { fn: (b, x, y, z, ry, h) => holzstapel(b, x, y, z, ry, 1.8 + h * 1.6, 1.0 + h * 0.6), off: 0.2 },
-      { fn: (b, x, y, z, ry) => leiter(b, x, y, z, ry, 3 + hash01(x, z, 9)), off: 0.7 },
+      { fn: (b, x, y, z, ry, h, wh) => leiter(b, x, y, z, ry, Math.min(3 + hash01(x, z, 9), wh + 0.5), 0.95), off: 0.95 },
       { fn: (b, x, y, z, ry) => werkzeug(b, x, y, z, ry), off: 0.12 },
       { fn: (b, x, y, z, ry) => { eimer(b, x, y, z); const [ex, ez] = frame(b, x, y, z, ry).P(0.35, 0.1); eimer(b, ex, y, ez); }, off: 0.2 },
       { fn: (b, x, y, z, ry, h) => industrieKram(b, x, y, z, ry, 0.5 + h * 0.25), off: 0.45 },
@@ -572,7 +612,7 @@ const TABELLE = {
     p: 0.62, items: [
       { fn: (b, x, y, z, ry, h) => industrieKram(b, x, y, z, ry, h), off: 0.5 },
       { fn: (b, x, y, z, ry, h) => industrieKram(b, x, y, z, ry, 0.2 + h * 0.6), off: 0.5 },
-      { fn: (b, x, y, z, ry) => leiter(b, x, y, z, ry, 3.2), off: 0.75 },
+      { fn: (b, x, y, z, ry, h, wh) => leiter(b, x, y, z, ry, Math.min(3.2, wh + 0.5), 0.95), off: 0.95 },
       { fn: (b, x, y, z, ry) => zaehlerkasten(b, x, y + 0.7, z, ry), off: 0.09 },
       { fn: (b, x, y, z, ry) => { werkzeug(b, x, y, z, ry, 3); const [ex, ez] = frame(b, x, y, z, ry).P(0.4, 0.05); eimer(b, ex, y, ez); }, off: 0.15 },
       { fn: (b, x, y, z, ry) => muelltonne(b, x, y, z, ry), off: 0.42 },
@@ -598,6 +638,22 @@ const TABELLE = {
 };
 
 /**
+ * platz (19.11.): Ist an der Wandstelle (ax, ay, az) wirklich Wand? Hinter der Stelle (Außennormale ox/oz, Wandtiefe
+ * dt) muss ein Gebäude-Grundriss liegen (sonst hinge das Teil neben der Hausecke in der Luft), und keine andere
+ * Öffnung (Fenster, Tür) darf die Stelle überdecken (Briefkasten im Fensterloch). halb = halbe Breite des Teils.
+ */
+function wandStelle(b, near, p, ox, oz, dt, ax, ay, az, halb = 0.2) {
+  const ix = ax - ox * (dt + 0.15), iz = az - oz * (dt + 0.15);
+  if (!near(ix, iz).some((f) => f.kind === 'building' && ay > f.y0 && ay < f.y1 && inRect(f, ix, iz, -halb))) return false;
+  for (const q of b.openings || []) {
+    if (q === p || Math.abs(q.y - ay) > q.h / 2 + 0.2) continue;
+    const dx = ax - q.x, dz = az - q.z;
+    if (Math.abs(dx * q.ux + dz * q.uz) < q.w / 2 + halb + 0.05 && Math.abs(-dx * q.uz + dz * q.ux) < 0.7) return false;
+  }
+  return true;
+}
+
+/**
  * Hausanschlüsse an Außentüren im Erdgeschoss: Briefkasten, Hausnummer, Wandleuchte, Fußabtreter/Stufe.
  * o: { bereich, stil, sperr } – nur Türen in Gebäudewänden (eine Seite im Gebäude, die andere frei).
  */
@@ -617,11 +673,17 @@ export function tuerdetails(b, o = {}) {
     const y0 = p.y - p.h / 2, wall = p.t / 2 + 0.005;
     const side = hash01(p.x, p.z, 401) < 0.5 ? -1 : 1, sx = p.ux * side, sz = p.uz * side;
     const off = p.w / 2 + 0.38;
-    if (o.stil !== 'industrie' && o.stil !== 'militaer') {
-      briefkasten(b, p.x + sx * off + ox * (wall + 0.06), y0 + 1.05, p.z + sz * off + oz * (wall + 0.06), ry);
-      hausnummer(b, p.x - sx * (off - 0.08) + ox * (wall + 0.006), y0 + 1.75, p.z - sz * (off - 0.08) + oz * (wall + 0.006), ry);
+    // platz (19.11.): jedes Teil nur, wo Wand ist (nicht neben der Hausecke, nicht im Nachbarfenster); Briefkasten
+    // und Hausnummer nur an Wohnhäusern (nicht an Scheunen, Ställen, Hallen)
+    const ok = (ax, ay, az, h) => wandStelle(b, near, p, ox, oz, p.t / 2, ax, ay, az, h);
+    if (o.stil !== 'industrie' && o.stil !== 'militaer' && wohnhaus(b, p.x - ox, p.z - oz, y0 + 1)) {
+      const bx = p.x + sx * off + ox * (wall + 0.06), bz2 = p.z + sz * off + oz * (wall + 0.06);
+      if (ok(bx, y0 + 1.25, bz2, 0.2)) briefkasten(b, bx, y0 + 1.05, bz2, ry);
+      const hx = p.x - sx * (off - 0.08) + ox * (wall + 0.006), hz = p.z - sz * (off - 0.08) + oz * (wall + 0.006);
+      if (ok(hx, y0 + 1.85, hz, 0.12)) hausnummer(b, hx, y0 + 1.75, hz, ry);
     }
-    wandleuchte(b, p.x - sx * (p.w / 2 + 0.25) + ox * wall, y0 + p.h + 0.15, p.z - sz * (p.w / 2 + 0.25) + oz * wall, ry);
+    const lx = p.x - sx * (p.w / 2 + 0.25) + ox * wall, lz = p.z - sz * (p.w / 2 + 0.25) + oz * wall;
+    if (ok(lx, y0 + p.h + 0.3, lz, 0.1)) wandleuchte(b, lx, y0 + p.h + 0.15, lz, ry);
     // Fußabtreter vor der Tür
     if (fein(b)) b.box(p.x + ox * (wall + 0.32), y0 + 0.002, p.z + oz * (wall + 0.32), Math.min(0.9, p.w - 0.2), 0.015, 0.5, 'rubber_floor', { ...DN, ry: Math.atan2(-p.uz, p.ux), tint: '#4a4440' });
     n++;
@@ -666,9 +728,13 @@ export function fensterleben(b, o = {}) {
       if (h1 > 0.6) b.box(p.x + ex + ox * 0.03, top - 0.35, p.z + ez + oz * 0.03, p.w - 0.04, 0.36, 0.03, 'metal_shutter', { ...DN, ry: rw, tint: '#c8c4b8' });
     }
     const h3 = hash01(p.x + 3, p.z, 412);
-    if (bot > 2 && (o.stil === 'stadt' || o.stil === 'dorf') && h3 < P.kasten) { blumenkasten(b, p.x + ex + ox * 0.12, bot - 0.04, p.z + ez + oz * 0.12, ry, Math.min(1.2, p.w)); n++; }
+    // platz (19.11.): Blumenkasten nur unter echten Fenstern (keine Fenstertür/Balkontür, kein Gitter) eines
+    // Wohnhauses und nicht doppelt (Kartenbau hat dort schon einen) – vorher auch an Kapelle/Stall und auf Balkonböden
+    const kastenOk = p.h <= 1.75 && !p.bars && wohnhaus(b, p.x - ox * 0.6, p.z - oz * 0.6, bot) && !hatFensterdeko(b, p.x, bot, p.z);
+    if (bot > 2 && (o.stil === 'stadt' || o.stil === 'dorf') && h3 < P.kasten && kastenOk) { blumenkasten(b, p.x + ex + ox * 0.12, bot - 0.04, p.z + ez + oz * 0.12, ry, Math.min(1.2, p.w)); merkeFensterdeko(b, p.x, bot, p.z); n++; }
+    else if (bot > 2 && (o.stil === 'stadt' || o.stil === 'dorf') && h3 < P.kasten) { /* kein Ersatz: Fenster bleibt frei */ }
     else if (o.stil === 'stadt' && bot > 1.5 && h3 < P.kasten + P.klima) { (b._acs || (b._acs = [])).push([p.x + ex + ox * 0.25, bot - 0.75, p.z + ez + oz * 0.25, ry]); n++; }
-    else if (o.stil === 'stadt' && bot > 3 && h3 < P.kasten + P.klima + P.sat) { satschuessel(b, p.x + p.ux * (p.w / 2 + 0.5) + ex + ox * 0.05, bot + 0.2, p.z + p.uz * (p.w / 2 + 0.5) + ez + oz * 0.05, ry); n++; }
+    else if (o.stil === 'stadt' && bot > 3 && h3 < P.kasten + P.klima + P.sat && wandStelle(b, near, p, ox, oz, p.t / 2, p.x + p.ux * (p.w / 2 + 0.5) + ex, bot + 0.5, p.z + p.uz * (p.w / 2 + 0.5) + ez, 0.35)) { satschuessel(b, p.x + p.ux * (p.w / 2 + 0.5) + ex + ox * 0.05, bot + 0.2, p.z + p.uz * (p.w / 2 + 0.5) + ez + oz * 0.05, ry); n++; }
   }
   // Klimageräte gesammelt (Fotoscan exterior_aircon_unit, sonst Primitive)
   for (const [x, y, z, ry] of b._acs || []) {
@@ -792,10 +858,17 @@ export function bodenmarken(b, o = {}) {
     } else if (h < 0.14 && !sperrt) { kanaldeckel(b, px, y, pz); n++; }
     else if (o.asphalt && h < 0.24) {
       // Fahrbahnfarbe: Pfeil, Sperrfläche oder Haltelinie (vom Verkehr abgefahren)
-      const k2 = hash01(px, pz, 466), ry = Math.round(hash01(px, pz, 467) * 4) * Math.PI / 2;
+      // platz2 (20.11.): Richtung aus dem Straßenverlauf (vorher zufällig in 90°-Schritten → Pfeile zeigten zur Wand):
+      // freie Lauflänge zwischen Gebäuden/Mauern längs x und längs z; Pfeile und Haltelinien nur, wo eine Achse
+      // klar überwiegt (Straße), auf Plätzen/Kreuzungen stattdessen Ölfleck
+      const run = (dx, dz) => { let L = 0; for (let k = 1; k <= 16; k++) { const qx = px + dx * k, qz = pz + dz * k; if (qx < bz.minX || qx > bz.maxX || qz < bz.minZ || qz > bz.maxZ || near(qx, qz).some((f) => f.kind !== 'floor' && f.y1 > y + 1.4 && f.y0 < y + 1 && inRect(f, qx, qz, 0.3))) break; L = k; } return L; };
+      const lx = run(1, 0) + run(-1, 0), lz = run(0, 1) + run(0, -1);
+      const gerade = Math.max(lx, lz) >= 10 && Math.max(lx, lz) >= 1.8 * Math.min(lx, lz) && Math.min(lx, lz) >= 4;
+      const k2 = gerade ? hash01(px, pz, 466) : 0.9, ry = (lx > lz ? Math.PI / 2 : 0) + (hash01(px, pz, 467) < 0.5 ? Math.PI : 0);
       if (k2 < 0.4) b.decal(px, y + 0.011, pz, 1.1, 3.2, 'arrow', { ry, tint: k2 < 0.2 ? '#f0eee6' : '#e8c22c', opacity: 0.75, kind: 'paint' });
       else if (k2 < 0.7) b.decal(px, y + 0.011, pz, 3.0, 2.2, 'hatch', { ry, tint: '#e8c22c', opacity: 0.7, kind: 'paint' });
-      else b.decal(px, y + 0.011, pz, 4.0, 0.25, 'line', { ry, tint: '#f0eee6', opacity: 0.75, kind: 'paint' });
+      else if (gerade) b.decal(px, y + 0.011, pz, 4.0, 0.25, 'line', { ry, tint: '#f0eee6', opacity: 0.75, kind: 'paint' });
+      else b.decal(px, y + 0.011, pz, 1.6, 1.1, 'stain', { ry: hash01(px, pz, 465) * 6.28, tint: '#2a2a28', opacity: 0.38, kind: 'grime' });
       n++;
     } else if (o.asphalt && h < 0.38 && fein(b)) {
       const w = 1.2 + hash01(px, pz, 463) * 2.5, d = 0.8 + hash01(px, pz, 464) * 1.8;
@@ -810,7 +883,7 @@ export function bodenmarken(b, o = {}) {
 // Einrichtung leerer Räume
 // ---------------------------------------------------------------------------
 /** Möbel: L = Breite an der Wand, D = Tiefe, H = Höhe (Kollision ab H > 0.6), fn baut das Stück (Unterkante-Mitte,
- *  lokal +z in den Raum). */
+ *  lokal +z in den Raum; mit wand: true liegt der Ursprung an der Wandlinie, sonst in der Mitte des Stücks). */
 const MOEBEL = {
   schrank: { L: 1.0, D: 0.6, H: 2.0, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry), t = ['#7a5a3a', '#8a6a4a', '#d8d0c0', '#5a4636'][Math.floor(hash01(x, z, 800) * 4)];
@@ -830,7 +903,7 @@ const MOEBEL = {
       if (k < 4 && fein(b)) for (let i = 0; i < 8; i++) { const hh = 0.2 + hash01(x + i, z + k, 801) * 0.1; if (hash01(x + k, z + i, 802) < 0.2) continue; f.box(-0.4 + i * 0.11, 0.065 + k * 0.38, 0.02, 0.07 + hash01(i, k, 803) * 0.04, hh, 0.24, 'tarp', { ...DN, tint: ['#7a2a20', '#2a4a6a', '#3a5a3a', '#c8b890', '#5a3a5a', '#2a2a2a'][Math.floor(hash01(x + i, k, 804) * 6)] }); }
     }
   } },
-  bett: { L: 0.95, D: 2.02, H: 0.62, fn: (b, x, y, z, ry) => {
+  bett: { L: 0.95, D: 2.02, H: 0.62, wand: true, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry);
     const [bx, bz] = f.P(0, 1.0);
     lib(b, 'old_bed_frame', bx, y, bz, { ry }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0, 1.0, 0.92, 0.35, 2.0, 'wood_dark', DG); g.box(0, 0, 0.03, 0.92, 1.0, 0.06, 'wood_dark', DG); });
@@ -848,13 +921,13 @@ const MOEBEL = {
     f.box(0, 1.45, -0.12, 1.8, 0.7, 0.35, 'wood_painted', { ...DN, tint: t }); // Hängeschrank
     if (fein(b)) { f.cyl(-0.5, 0.9, 0.05, 0.1, 0.12, 'metal_galvanized', { ...DN, seg: 10 }); f.cyl(-0.2, 0.9, 0.1, 0.05, 0.1, 'white', { ...DN, seg: 8, tint: '#d8d0c0' }); }
   } },
-  tisch: { L: 1.6, D: 1.15, H: 0.78, stuehle: true, fn: (b, x, y, z, ry) => {
+  tisch: { L: 1.6, D: 1.15, H: 0.78, stuehle: true, wand: true, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry);
     const [tx, tz] = f.P(0, 0.58);
     lib(b, 'painted_wooden_table', tx, y, tz, { ry, sx: 0.66, sy: 0.8, sz: 0.85 }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0.72, 0.58, 1.55, 0.05, 0.9, 'wood_planks', { ...DN, tint: '#a8845e' }); for (const sx of [-0.7, 0.7]) for (const sz of [0.2, 0.96]) g.box(sx, 0, sz, 0.06, 0.72, 0.06, 'wood_dark', DN); });
     for (const sx of [-0.45, 0.45]) { const [cx, cz] = f.P(sx, 1.35); lib(b, 'painted_wooden_chair_01', cx, y, cz, { ry: ry + Math.PI + (hash01(cx, cz, 807) - 0.5) * 0.4 }, (bb) => { const g = frame(bb, cx, y, cz, ry + Math.PI); g.box(0, 0.44, 0, 0.42, 0.04, 0.42, 'wood_planks', DN); g.box(0, 0.48, -0.19, 0.42, 0.45, 0.03, 'wood_planks', DN); for (const a of [-0.18, 0.18]) for (const c of [-0.18, 0.18]) g.box(a, 0, c, 0.03, 0.44, 0.03, 'wood_dark', DN); }); }
   } },
-  schreibtisch: { L: 2.0, D: 0.95, H: 0.79, buero: true, fn: (b, x, y, z, ry) => {
+  schreibtisch: { L: 2.0, D: 0.95, H: 0.79, buero: true, wand: true, fn: (b, x, y, z, ry) => {
     const f = frame(b, x, y, z, ry), [cx, cz] = f.P(0, 0.47);
     lib(b, 'metal_office_desk', cx, y, cz, { ry }, (bb) => { const g = frame(bb, x, y, z, ry); g.box(0, 0.74, 0.47, 2.0, 0.045, 0.94, 'wood_planks', { ...DN, tint: '#8a7a62' }); g.box(-0.72, 0, 0.47, 0.5, 0.74, 0.9, 'metal_painted', { ...DG, tint: '#6f7a80' }); });
     f.box(0.2, 0.79, 0.25, 0.5, 0.32, 0.04, 'polymer', { ...DN, tint: '#1e2023' });
@@ -1073,7 +1146,9 @@ export function einrichten(b, o = {}) {
           if (!ok) { cur += 0.45; continue; }
           if (M.H > 0.6) lauf.setze(cx, cz, hx, hz);
           const ry = Math.atan2(nx, nz);
-          const [wx, wz] = along ? [u, c] : [c, u];
+          // platz (19.11.): Stücke ohne „wand“ bauen um ihre Mitte – vorher an der Wandlinie gesetzt, d. h. halb in der Wand
+          // (Schrank/Herd schauten außen aus der Fassade); Kollision lag schon richtig (cx, cz)
+          const [wx, wz] = M.wand ? (along ? [u, c] : [c, u]) : [cx, cz];
           M.fn(b, wx, fy, wz, ry);
           if (M.H > 0.6) {
             b.box(cx, fy, cz, hx * 2 - 0.04, Math.min(M.H, 1.9), hz * 2 - 0.04, 'black', { visual: false, minimap: false });

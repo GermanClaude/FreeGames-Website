@@ -1,11 +1,11 @@
 // NULLPUNKT — MapBuilder: sammelt statische Geometrie, verschmilzt sie pro Material/Chunk,
 // backt Ambient Occlusion in Vertexfarben, erzeugt Kollisions- und Kugel-Geometrie (Owner: world)
 import * as THREE from 'three';
-import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261119182451';
-import { applyGrateFade } from './gitterrost.js?v=20261119182451';
-import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261119182451';
-import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261119182451';
-import { assets } from '../../../lib/loader.js?v=20261119182451';
+import { getMaterial, surfaceOf, preloadMaterials, proceduralNames, libraryPendingNames, materialAlbedo } from '../engine/textures.js?v=20261121041936';
+import { applyGrateFade } from './gitterrost.js?v=20261121041936';
+import { createDecalMaterials, createSignAtlas, createFoliage, DECAL_CELLS, DECAL_ROWS, DEFAULT_SIGNS } from './atlas.js?v=20261121041936';
+import { PropInstances, placementMatrix, forEachBulletTri, MODEL_SURFACE } from './libprops.js?v=20261121041936';
+import { assets } from '../../../lib/loader.js?v=20261121041936';
 
 export const SURFACES = ['concrete', 'metal', 'wood', 'dirt', 'sand', 'grass', 'glass', 'water', 'tile', 'fabric', 'flesh', 'vehicle']; // vehicle = Fahrzeugblech (Durchschuss)
 const SURF_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s, i]));
@@ -240,6 +240,8 @@ export class MapBuilder {
     this.floors = [];     // { minX, maxX, minZ, maxZ, y }
     this.openings = [];   // Fenster/Tore aus arch.wall(): { x, y, z (Mitte), ux, uz (Wandrichtung), w, h, t, kind, glass } – Lichtstrahlen
     this.models = [];     // Bibliotheks-Requisiten: { id, x, y, z, o } (model())
+    this.breakables = []; // zerbrechliche Requisiten (Kisten, Paletten, Zaunfelder; game/breakables.js): beginBreak/endBreak
+    this._brk = null;
     this.interiorScale = null; // 0..1: Anteil des gebackenen Innenraumlichts (null = voll; mit Sonden-Gitter gesetzt)
     this.lib = null;      // Set verfügbarer Modell-IDs (Bibliothek nutzbar) oder null (nur prozedural)
     this.library = null;  // async ({ names, models }, onProgress) → { models: Map id → Vorlage|null } (loadWorld)
@@ -252,6 +254,20 @@ export class MapBuilder {
     this._p = new THREE.Vector3();
     this._nm = new THREE.Matrix3();
   }
+
+  /**
+   * Zerbrechliche Requisite (zerstoerung 15.11., game/breakables.js): alles, was bis endBreak() gebaut wird, gehört zu
+   * einem Stück. Der Bau merkt sich Dreiecke von Optik, Kugel-BVH und Kollision; zerbricht es, schaltet die Welt genau
+   * diese ab (BVH disableOrig, Octree-Dreiecke, Optik zu Punkten). def: { kind, x, y, z, w, h, d, ry, surface, hp }.
+   */
+  beginBreak(def) {
+    if (this._brk) this.endBreak();
+    const rec = { id: this.breakables.length, kind: def.kind || 'kiste', x: def.x, y: def.y ?? 0, z: def.z, w: def.w || 1, h: def.h || 1, d: def.d || 1, ry: def.ry || 0, surface: def.surface || 'wood', hp: def.hp || 120, col: [], vis: [], bul: null };
+    this.breakables.push(rec);
+    this._brk = rec;
+    return rec;
+  }
+  endBreak() { this._brk = null; }
 
   /** Zufall im Bereich */
   rnd(a = 0, b = 1) { return a + (b - a) * this.rand(); }
@@ -346,6 +362,7 @@ export class MapBuilder {
       GR[fi] = grad && ny > -0.6 && ny < 0.6 ? Math.round(255 * (1 - smoothstep(0, 1.6, wy - floorY))) : 0;
       pi += 3; ui += 2; fi++;
     }
+    if (this._brk) this._brk.vis.push([bk, bk.pos.n, pi]); // Gleitzahl-Bereich im Bucket (zerbrechliche Requisite)
     bk.pos.n = bk.nor.n = bk.col.n = pi; bk.uv.n = ui; bk.flg.n = bk.grm.n = fi;
     const bv = o.bullet === false ? 0 : 1;
     for (let t = 0; t < nV / 3; t++) bk.bullet.push(bv);
@@ -356,6 +373,7 @@ export class MapBuilder {
     const e = m.elements, lp = prim.p, n = lp.length / 3;
     this.colTris.ensure(n * 3);
     const C = this.colTris.a; let ci = this.colTris.n;
+    if (this._brk) { const L = this._brk.col, t0 = ci / 9, last = L[L.length - 1]; if (last && last[0] + last[1] === t0) last[1] += n / 3; else L.push([t0, n / 3]); }
     for (let i = 0; i < n; i++) {
       const x = lp[i * 3], y = lp[i * 3 + 1], z = lp[i * 3 + 2];
       C[ci++] = e[0] * x + e[4] * y + e[8] * z + e[12];
@@ -674,9 +692,14 @@ export class MapBuilder {
             for (let i = 0; i < n; i++) { const sh = 0.5 + R() * 0.22; if (b0 + sh < h - 0.3) dec(-w / 2 + 0.05 + (i + 0.5) * sw, b0 + sh / 2, sw + 0.02, sh, 'damp', 0.42 + R() * 0.14); }
           }
           // Abplatzung an der Kante (Ecke/Laibung) direkt über dem Sockel – Bruchstein darunter
-          if (w >= 1.3 && R() < 0.38) {
-            const sw = Math.min(w * 0.42, 0.5 + R() * 0.4), sh = sw * (0.55 + R() * 0.2), e = R() < 0.5 ? -1 : 1;
-            dec(e * (w / 2 - sw / 2 - 0.03), base + 0.03 + sh / 2, sw, sh, 'chip_stone', 1);
+          // platz2 (20.11.): nur an geschosshohen Pfeilern – auf dem kurzen Brüstungsstück unter einem Fenster saß die
+          // Abplatzung direkt unter der Fensterbank und las sich als grauer Klumpen (Grenzland, Gasthaus)
+          if (w >= 1.3 && h >= 2 && R() < 0.38) {
+            const sw = Math.min(w * 0.42, 0.5 + R() * 0.4), sh = sw * (0.55 + R() * 0.2), e = R() < 0.5 ? -1 : 1, yc = base + 0.03 + sh / 2;
+            // nicht neben einer Fensterbrüstung: läuft die Wand hinter der Kante in Abplatzungshöhe weiter (Brüstungsstück
+            // unter einem Fenster), säße die Stelle direkt unter der Fensterbank (Grenzland, Gasthaus: „grauer Klumpen“)
+            const ex = e * (w / 2 + 0.15);
+            if (find(x + tx * ex, y + yc, z + tz * ex) < 0) dec(e * (w / 2 - sw / 2 - 0.03), yc, sw, sh, 'chip_stone', 1);
           }
         } else if (w >= 1.3 && h >= 2 && R() < 0.16) {
           // Obergeschoss: vereinzelt unter dem Gesims an der Kante
@@ -882,6 +905,7 @@ export class MapBuilder {
       const bullet = new Uint8Array(total / 9), grm = new Uint8Array(total / 3);
       let o = 0, ou = 0, ot = 0, og = 0, anyGrime = false;
       for (const b of list) {
+        b._off = o; // Lage im Mesh (zerbrechliche Requisiten)
         pos.set(b.pos.view(), o); nor.set(b.nor.view(), o); col.set(b.col.view(), o); uv.set(b.uv.view(), ou); bullet.set(b.bullet.view(), ot);
         const gv = b.grm.view(); grm.set(gv, og); if (!anyGrime) for (let i = 0; i < gv.length; i++) if (gv[i]) { anyGrime = true; break; }
         o += b.pos.n; ou += b.uv.n; ot += b.bullet.n; og += b.grm.n;
@@ -907,6 +931,7 @@ export class MapBuilder {
       if (mat === 'metal_grate') applyGrateFade(material); // 26.10. (K0): kein Moiré-Rauschen in der Ferne (gitterrost.js)
       group.add(mesh);
       meshes.push(mesh);
+      for (const b of list) b._mesh = mesh;
       return mesh;
     };
     for (const list of perMat.values()) {
@@ -973,9 +998,12 @@ export class MapBuilder {
     // im Sonden-Gitter (world/probes.js)
     let balb = new Uint8Array(triCount * 3);
     let bi = 0;
+    const brkMesh = new Set();
+    for (const r of this.breakables) for (const [bk] of r.vis) if (bk._mesh) brkMesh.add(bk._mesh);
     meshes.forEach(m => {
       const objIndex = objects.push(m) - 1;
       const pos = m.geometry.attributes.position.array, bl = m.userData.bullet;
+      if (brkMesh.has(m)) { const bo = new Int32Array(bl.length); for (let t = 0, k = bi; t < bl.length; t++) bo[t] = bl[t] ? k++ : -1; m.userData._bi = bo; }
       const col = m.geometry.attributes.color?.array || null;
       const alb = materialAlbedo(m.material);
       const sid = SURF_INDEX[m.userData.surface] ?? 0;
@@ -990,6 +1018,26 @@ export class MapBuilder {
       }
       delete m.userData.bullet;
     });
+    // zerbrechliche Requisiten: Optik-Bereiche (Mesh, erster Eckpunkt, Anzahl) und Kugel-Dreiecke (Ursprungsindex) auflösen
+    for (const r of this.breakables) {
+      const vis = [], bul = [];
+      for (const [bk, a, e] of r.vis) {
+        const m = bk._mesh;
+        if (!m || bk._off == null) continue;
+        const v0 = (bk._off + a) / 3, vn = (e - a) / 3;
+        vis.push([m, v0, vn]);
+        const bo = m.userData._bi;
+        if (!bo) continue;
+        for (let t = v0 / 3; t < (v0 + vn) / 3; t++) {
+          const k = bo[t];
+          if (k < 0) continue;
+          const last = bul[bul.length - 1];
+          if (last && last[0] + last[1] === k) last[1]++; else bul.push([k, 1]);
+        }
+      }
+      r.vis = vis; r.bul = bul;
+    }
+    for (const m of brkMesh) delete m.userData._bi;
     // Kugeltreffer auf Bibliotheks-Requisiten (gröbste LOD-Stufe je Instanz)
     if (this._propBullet && this._propBullet.tris.n) {
       const pb = this._propBullet, n = pb.tris.n / 9;

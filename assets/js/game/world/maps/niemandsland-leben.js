@@ -8,10 +8,10 @@
 // Alles außer den Lastwagen ohne Kollision (Gräben bleiben begehbar, Navigation unverändert); Menge je Grafikstufe.
 // Deterministisch über hash01 (kein Zufall der Karte).
 import * as THREE from 'three';
-import { frame, hash01 } from '../props.js?v=20261119182451';
-import { sampleSpline } from '../terrain/generate.js?v=20261119182451';
-import { burntWreck } from './brandwald-bau.js?v=20261119182451';
-import { schutt, stufe, DICHTE, eimer, ziegelstapel, sperrpunkte } from '../kleinkram.js?v=20261119182451';
+import { frame, hash01 } from '../props.js?v=20261121041936';
+import { sampleSpline } from '../terrain/generate.js?v=20261121041936';
+import { burntWreck } from './brandwald-bau.js?v=20261121041936';
+import { schutt, stufe, DICHTE, eimer, ziegelstapel, sperrpunkte } from '../kleinkram.js?v=20261121041936';
 
 const D = { collide: false, minimap: false, grad: false };
 const DN = { ...D, ao: false, bullet: false };
@@ -86,7 +86,9 @@ export function grabenLeben(b, ctx, trenches, o = {}) {
       const h = hash01(bx, bz, 700);
       if (h > 0.75) continue;
       const side = hash01(bx, bz, 701) < 0.5 ? -1 : 1;
-      const px = bx + nx * side * (hw - 0.32), pz = bz + nz * side * (hw - 0.32), py = H(px, pz) + 0.07;
+      // platz2 (20.11.): Höhe nicht am Wandfuß abtasten – dort steigt das Höhenfeld schon an, das grobere Geländenetz
+      // nicht (Kisten/Kanister schwebten 0,2–0,65 m über der Grabensohle); tiefster Wert aus Fußpunkt und Grabenmitte
+      const px = bx + nx * side * (hw - 0.4), pz = bz + nz * side * (hw - 0.4), py = Math.min(H(px, pz), fl, H((px + bx) / 2, (pz + bz) / 2)) + 0.03;
       const ry = Math.atan2(nx * side, nz * side) + Math.PI; // lokal +z zur Grabenmitte
       const kind = Math.floor(hash01(bx, bz, 702) * 9);
       if (kind === 0 && Math.sign(nz * side) === enemy) sturmleiter(b, px - nx * side * 0.1, py, pz - nz * side * 0.1, ry, 2.6);
@@ -145,7 +147,7 @@ export function truemmerfeld(b, ctx, o) {
   // zwei ausgebrannte Lastwagen (Deckung, Kollision): feste Plätze, nur wo frei
   for (const [x, z, ry, kind] of o.wracks || []) {
     if (sperr.some(([sx, sz, r]) => Math.hypot(x - sx, z - sz) < r + 3) || near(x, z)) continue;
-    burntWreck(b, x, H(x, z) - 0.1, z, ry, kind, Math.round(x * 7 + z));
+    burntWreck(b, x, H(x, z) - 0.1, z, ry, kind, Math.round(x * 7 + z), H);
   }
   return n;
 }

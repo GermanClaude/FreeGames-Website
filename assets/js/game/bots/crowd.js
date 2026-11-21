@@ -31,7 +31,7 @@
 //   1000       Absturz (Speicher, ≈ 2 MB je Bot) bzw. vorher 314 ms/Bild → nicht freigegeben
 //   (* Rauschen; bei 100 greift nur die leichte Skalierung.) Draw Calls: Silhouetten 1–5 statt ≈ 4 je ferner Soldat.
 import * as THREE from 'three';
-import { SCHEMES } from './soldier/materials.js?v=20261119182451';
+import { SCHEMES } from './soldier/materials.js?v=20261121041936';
 
 /* ============================================================== Raster */
 
@@ -128,6 +128,10 @@ const POSES = ['stand', 'runA', 'runB', 'crouch', 'prone'];
 // Vertex-Farben je Teil (× Teamfarbe der Instanz): Uniform ≈ 1, Ausrüstung dunkler, Haut heller/wärmer
 // (gemessen am Bild: volle Soldaten wirken durch Schattierung/Tarnmuster deutlich dunkler als die Grundfarbe)
 const C_UNI = [0.95, 0.95, 0.92], C_PANTS = [0.86, 0.86, 0.82], C_GEAR = [0.62, 0.62, 0.58], C_SKIN = [1.5, 1.15, 0.92], C_GUN = [0.28, 0.28, 0.3], C_BOOT = [0.46, 0.43, 0.38];
+// mensch3: wie die vollen Modelle – Kopf unter Sturmhaube/Halstuch (dunkler Stoff, nur ein schmaler Hautstreifen an den Augen),
+// Hände in Handschuhen, Hosenbeine unten mit Kartenstaub aufgehellt, Stiefel dunkler
+const C_HOOD = [0.5, 0.49, 0.47], C_GLOVE = [0.42, 0.41, 0.4], C_SHIN = [0.92, 0.9, 0.84];
+void C_SKIN;
 
 /** Geometrie (nicht indiziert) mit Farbe in die Sammelpuffer übernehmen. */
 function put(out, g, col) {
@@ -168,8 +172,8 @@ function leg(out, hx, hy, hz, ang, knee = 0) {
   limb(out, hx, hy, hz, kx, ky, kz, 0.095, 0.072, C_PANTS);
   const a2 = ang - knee;
   const fy = ky - Math.cos(a2) * sh, fz = kz - Math.sin(a2) * sh;
-  limb(out, kx, ky, kz, kx, fy + 0.06, fz, 0.068, 0.052, C_PANTS);
-  box(out, kx, fy + 0.05, fz - 0.05, 0.11, 0.1, 0.26, C_BOOT);
+  limb(out, kx, ky, kz, kx, fy + 0.06, fz, 0.068, 0.052, C_SHIN);
+  box(out, kx, fy + 0.05, fz - 0.05, 0.11, 0.1, 0.26, [C_BOOT[0] * 0.85, C_BOOT[1] * 0.85, C_BOOT[2] * 0.85]);
 }
 
 /** Geometrie einer Pose (Füße bei y = 0, Blick −Z), ≈ 400 Dreiecke. */
@@ -194,12 +198,14 @@ function poseGeometry(pose) {
   box(out, 0, hipY + 0.03, 0, 0.34, 0.18, 0.22, C_PANTS);
   const tl = 0.54;
   const ty = hipY + 0.1 + Math.cos(lean) * tl / 2, tz = -Math.sin(lean) * tl / 2;
-  limb(out, 0, hipY + 0.08, 0, 0, hipY + 0.1 + Math.cos(lean) * tl, -Math.sin(lean) * tl, 0.15, 0.19, C_UNI);
+  // Rumpf nach dem Körper aus body-mesh.js (soldier-body-v2: Taille ≈ 0,14, Brust/Schultern ≈ 0,175 Halbbreite)
+  limb(out, 0, hipY + 0.08, 0, 0, hipY + 0.1 + Math.cos(lean) * tl, -Math.sin(lean) * tl, 0.14, 0.175, C_UNI);
   box(out, 0, ty - 0.02, tz - 0.07, 0.36, tl * 0.66, 0.16, C_GEAR, -lean);
   box(out, 0, ty + 0.02, tz + 0.14, 0.3, tl * 0.6, 0.14, C_GEAR, -lean);
   const shY = hipY + 0.1 + Math.cos(lean) * tl, shZ = -Math.sin(lean) * tl;
   // Kopf + Helm
-  const hd = new THREE.SphereGeometry(0.1, 7, 5).toNonIndexed(); hd.translate(0, shY + 0.15, shZ - 0.02); put(out, hd, C_SKIN);
+  const hd = new THREE.SphereGeometry(0.1, 7, 5).toNonIndexed(); hd.translate(0, shY + 0.15, shZ - 0.02); put(out, hd, C_HOOD);
+  box(out, 0, shY + 0.165, shZ - 0.105, 0.11, 0.03, 0.02, [1.25, 1.0, 0.82]); // Augenpartie
   const hm = new THREE.SphereGeometry(0.128, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.55).toNonIndexed(); hm.translate(0, shY + 0.17, shZ); put(out, hm, C_GEAR);
   // Arme im Anschlag (Schulter → Ellbogen → Hand an der Waffe)
   const gy = shY - 0.16, gz = shZ - 0.42;
@@ -207,6 +213,8 @@ function poseGeometry(pose) {
   limb(out, -0.2, shY - 0.27, shZ - 0.2, -0.05, gy - 0.04, gz - 0.12, 0.05, 0.04, C_UNI);
   limb(out, 0.2, shY - 0.03, shZ, 0.19, shY - 0.3, shZ - 0.06, 0.06, 0.05, C_UNI);
   limb(out, 0.19, shY - 0.3, shZ - 0.06, 0.06, gy - 0.05, gz + 0.12, 0.05, 0.04, C_UNI);
+  box(out, -0.05, gy - 0.04, gz - 0.12, 0.06, 0.06, 0.08, C_GLOVE);
+  box(out, 0.06, gy - 0.05, gz + 0.12, 0.06, 0.06, 0.08, C_GLOVE);
   // Gewehr (Schaft an der rechten Schulter)
   box(out, 0.05, gy, gz, 0.05, 0.08, 0.84, C_GUN);
   box(out, 0.05, gy - 0.1, gz + 0.06, 0.04, 0.13, 0.06, C_GUN);

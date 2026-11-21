@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261119182451';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261121041936';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -11,6 +11,7 @@ export const DEFAULTS = Object.freeze({
   playerName: 'Operator', sensitivity: 1.0, adsSensitivity: 0.85, touchSensitivity: 1.0,
   invertY: false, fov: 80, quality: 'auto' /* auto|low|medium|high|ultra */,
   masterVolume: 0.8, sfxVolume: 1.0, musicVolume: 0.5, uiVolume: 0.7,
+  ambienceVolume: 1.0, vehicleVolume: 1.0, tinnitus: true, // Klang 20.11. (audio): Umgebung, Fahrzeuge, Ohrenklingeln
   crosshairStyle: 'cross' /* cross|dot|circle */, crosshairColor: '#ffffff', reticleSize: 1.0,
   showFps: false, aimAssist: true /* nur Touch */, autoFire: false /* Touch: „einfacher Modus“ */,
   difficulty: 'regulaer', lastMode: 'tdm', lastMap: 'hafen', lastLoadout: null, reducedMotion: false,
@@ -36,7 +37,7 @@ export const DEFAULTS = Object.freeze({
   renderScale: 'auto', fpsLimit: '0',
   gyroBiasX: 0, gyroBiasY: 0, gyroBiasZ: 0, padIcons: 'auto',
   // Kernmechanik (core-mechanics): Spielstil, Klassen, stufenlose Zielhilfe und Auto-Feuer
-  gameStyle: 'arcade', realisticCrosshair: false, lastClass: 'sturm', classLoadouts: Object.freeze({}),
+  gameStyle: 'arcade', simGuide: 'tutorial', realisticCrosshair: false, lastClass: 'sturm', classLoadouts: Object.freeze({}),
   aimAssistLevel: 0.5, aimAssistDevices: 'touch_pad', autoFireLevel: 0.6, autoFireDevices: 'touch',
   // Vollbild (engine/fullscreen.js): auto = bei „Einsatz starten“, „Fortsetzen“ und (Touch) Tippen auf die Steuerung im Match | off = nur Knopf/Taste
   fullscreen: 'auto',
@@ -60,6 +61,11 @@ export const DEFAULTS = Object.freeze({
   vrEnabled: false, vrHand: 'rechts', vrTurn: 'schritt', vrTurnStep: '30', vrTurnSpeed: 120, vrMoveDir: 'kopf',
   vrVignette: true, vrVignetteStrength: 0.6, vrSeated: false, vrPhysical: true, vrRoomScale: true, vrSmoothing: true, vrGripHold: true, vrTwoHand: true, vrHeight: 0,
   vrQuality: 'auto', vrScale: 'auto', vrLaser: true,
+  // VR wie ein echtes VR-Spiel (plattform, 19.11.): Fortbewegung Stick/Teleport, Nachladen per Hand, echtes Zielfernrohrbild,
+  // Granaten an der Weste greifen, Munitionszähler an der Waffe, Bildrate, Foveated Rendering
+  vrLocomotion: 'stick', vrReload: 'hand', vrScope: true, vrGrenadeGrab: true, vrGunAmmo: true, vrFrameRate: 'auto', vrFoveation: 'auto',
+  // TV-/Konsolen-Modus (plattform, 19.11.): größere Oberfläche für Couch-Abstand; auto = an auf Xbox/PlayStation/Fernseher
+  tvMode: 'auto', uiScale: 'auto',
 });
 
 const HOLD_TOGGLE = Object.freeze({ options: ['hold', 'toggle'], labels: { hold: 'Halten', toggle: 'Umschalten' } });
@@ -84,8 +90,11 @@ export const SETTINGS_SCHEMA = Object.freeze({
   },
   masterVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Gesamtlautstärke', group: 'audio' },
   sfxVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Effekte', group: 'audio' },
-  musicVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Musik & Atmosphäre', group: 'audio' },
+  musicVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Musik', group: 'audio' },
   uiVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Oberfläche', group: 'audio' },
+  ambienceVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Umgebung (Wind, Vögel, Stadt)', group: 'audio' },
+  vehicleVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Fahrzeuge (Motoren, Ketten, Rotoren)', group: 'audio' },
+  tinnitus: { type: 'boolean', label: 'Ohrenklingeln nach Explosionen und Knalltrauma', group: 'audio' },
   crosshairStyle: {
     type: 'enum', label: 'Fadenkreuz', group: 'hud',
     options: ['cross', 'dot', 'circle'], labels: { cross: 'Kreuz', dot: 'Punkt', circle: 'Kreis' },
@@ -156,7 +165,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   // Bild (core-render; Bedeutung im Changelog „core-render“)
   colorLook: {
     type: 'enum', label: 'Farbstimmung', group: 'grafik',
-    options: ['natuerlich', 'video'], labels: { natuerlich: 'Natürlich', video: 'Video-Look (grau, wie die Vorlage)' },
+    options: ['natuerlich', 'video'], labels: { natuerlich: 'Natürlich', video: 'Video-Look (grau)' },
   },
   lensStyle: {
     type: 'enum', label: 'Bildstil', group: 'grafik',
@@ -247,11 +256,16 @@ export const SETTINGS_SCHEMA = Object.freeze({
   gyroBiasZ: { type: 'number', min: -5, max: 5, step: 0.001, label: 'Gyro-Nullpunkt Z (°/s)', group: 'intern' },
   padIcons: {
     type: 'enum', label: 'Controller-Symbole', group: 'belegung',
-    options: ['auto', 'xbox', 'ps'], labels: { auto: 'Automatisch', xbox: 'Xbox', ps: 'PlayStation' },
+    options: ['auto', 'xbox', 'ps', 'nintendo'], labels: { auto: 'Automatisch', xbox: 'Xbox', ps: 'PlayStation', nintendo: 'Nintendo' },
   },
   gameStyle: {
     type: 'enum', label: 'Spielstil', group: 'spiel',
-    options: ['arcade', 'realistisch'], labels: { arcade: 'Arcade', realistisch: 'Realistisch' },
+    options: ['arcade', 'realistisch', 'simulation'], labels: { arcade: 'Arcade', realistisch: 'Realistisch', simulation: 'Simulation' },
+  },
+  // Infanteriesimulation (isim/): Führung wie im Panzer-Modus – Tutorial (Handgriffe + Erklärung), Hilfe auf Anfrage, aus
+  simGuide: {
+    type: 'enum', label: 'Simulation: Führung', group: 'spiel',
+    options: ['tutorial', 'hilfe', 'aus'], labels: { tutorial: 'Tutorial', hilfe: 'Hilfe auf Anfrage', aus: 'Aus' },
   },
   realisticCrosshair: { type: 'boolean', label: 'Fadenkreuz im Spielstil „Realistisch“', group: 'hud' },
   lastClass: { type: 'id', label: 'Letzte Klasse', group: 'intern' },
@@ -321,6 +335,33 @@ export const SETTINGS_SCHEMA = Object.freeze({
     options: ['auto', '0.6', '0.7', '0.8', '0.9', '1'], labels: { auto: 'Automatisch', 0.6: '60 %', 0.7: '70 %', 0.8: '80 %', 0.9: '90 %', 1: '100 %' },
   },
   vrLaser: { type: 'boolean', label: 'Zielpunkt der Waffe anzeigen', group: 'vr' },
+  vrLocomotion: {
+    type: 'enum', label: 'Fortbewegung', group: 'vr',
+    options: ['stick', 'teleport'], labels: { stick: 'Stick (flüssig)', teleport: 'Teleport (Bogen zielen)' },
+  },
+  vrReload: {
+    type: 'enum', label: 'Nachladen', group: 'vr',
+    options: ['hand', 'einfach'], labels: { hand: 'Per Hand (Magazin wechseln, durchladen)', einfach: 'Vereinfacht (Taste)' },
+  },
+  vrScope: { type: 'boolean', label: 'Echtes Bild im Zielfernrohr', group: 'vr' },
+  vrGrenadeGrab: { type: 'boolean', label: 'Granaten an der Weste greifen und werfen', group: 'vr' },
+  vrGunAmmo: { type: 'boolean', label: 'Munitionszähler an der Waffe', group: 'vr' },
+  vrFrameRate: {
+    type: 'enum', label: 'Bildrate der Brille', group: 'vr',
+    options: ['auto', '72', '90', '120'], labels: { auto: 'Automatisch', 72: '72 Hz', 90: '90 Hz', 120: '120 Hz' },
+  },
+  vrFoveation: {
+    type: 'enum', label: 'Foveated Rendering (Rand unschärfer, schneller)', group: 'vr',
+    options: ['auto', '0', '0.5', '1'], labels: { auto: 'Automatisch', 0: 'Aus', 0.5: 'Mittel', 1: 'Stark' },
+  },
+  tvMode: {
+    type: 'enum', label: 'TV-/Konsolen-Modus', group: 'hud',
+    options: ['auto', 'an', 'aus'], labels: { auto: 'Automatisch', an: 'An', aus: 'Aus' },
+  },
+  uiScale: {
+    type: 'enum', label: 'Größe der Oberfläche', group: 'hud',
+    options: ['auto', '90', '100', '115', '130', '150'], labels: { auto: 'Automatisch', 90: '90 %', 100: '100 %', 115: '115 %', 130: '130 %', 150: '150 %' },
+  },
 });
 
 /**

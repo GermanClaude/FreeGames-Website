@@ -1,10 +1,10 @@
-// §08 Über: Datenschutz (lokale Daten löschen) und das optionale Impressum aus config.js.
-import { $, h } from './dom.js?v=20261119182451';
-import { IMPRESSUM } from './config.js?v=20261119182451';
-import { site } from './state.js?v=20261119182451';
-import { announce } from './live.js?v=20261119182451';
-import { eligible as feedbackUnlocked, revealHtml, bindPoem, openFeedback } from '../shared/feedback.js?v=20261119182451';
-import { OG_KEY, secureOg } from '../shared/og.js?v=20261119182451';
+// §13 Über: Datenschutz (lokale Daten löschen) und das optionale Impressum aus config.js.
+import { $, h } from './dom.js?v=20261121041936';
+import { IMPRESSUM } from './config.js?v=20261121041936';
+import { site } from './state.js?v=20261121041936';
+import { announce } from './live.js?v=20261121041936';
+import { eligible as feedbackUnlocked, revealHtml, bindPoem, openFeedback } from '../shared/feedback.js?v=20261121041936';
+import { OG_KEY, secureOg } from '../shared/og.js?v=20261121041936';
 
 /** Alle Schlüssel 'nullpunkt:*' und 'nullpunkt.*' (Aufsätze, Panzer) im lokalen bzw. Sitzungsspeicher, dazu 'np-retry'. */
 function ourKeys(store = 'localStorage') {
@@ -40,9 +40,19 @@ function impressum() {
  * Feedback und „Wie NULLPUNKT entstanden ist“ (über den Rechten): beides ab 20 Minuten Spielzeit. Die Geschichte wird nirgends
  * angekündigt – man findet sie nur beim Herunterscrollen (Nutzer 12.10.).
  */
-function feedback() {
+/** Zahlen in der Zeitleiste ({zahl:…} → data-count) aus den Spieldaten – neue Waffen, Modi und Karten zählen mit. */
+function fillCounts(box, D) {
+  const c = {
+    modes: D?.M?.MODE_ORDER?.length,
+    maps: D?.P?.MAP_ORDER?.length,
+    weapons: D?.W ? D.W.WEAPON_IDS.filter((id) => D.W.WEAPONS[id].cls !== 'melee').length : undefined,
+  };
+  for (const el of box.querySelectorAll('[data-count]')) if (c[el.dataset.count]) el.textContent = String(c[el.dataset.count]);
+}
+
+function feedback(D) {
   const box = document.getElementById('entstehung');
-  const showReveal = () => { if (box && feedbackUnlocked()) { box.innerHTML = revealHtml(); box.hidden = false; bindPoem(box); } };
+  const showReveal = () => { if (box && feedbackUnlocked()) { box.innerHTML = revealHtml(); box.hidden = false; bindPoem(box); fillCounts(box, D); } };
   showReveal();
   const cta = document.getElementById('fb-cta');
   const btn = document.getElementById('fb-open');
@@ -56,7 +66,7 @@ function feedback() {
 
 export async function init(sec, D, ctx = {}) {
   impressum();
-  feedback();
+  feedback(D);
   const open = $('#wipe-open', sec);
   const dlg = document.getElementById('wipe-dialog');
   const go = document.getElementById('wipe-go');

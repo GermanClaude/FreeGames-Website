@@ -1,17 +1,17 @@
 /* NULLPUNKT – © 2026 German Legend. Alle Rechte vorbehalten. Nutzung, Kopie oder Übernahme nur mit vorheriger
  * schriftlicher Erlaubnis (Discord German_Legend_26201, legendgerman749@gmail.com). Siehe LICENSE. */
 // NULLPUNKT — Website. Start: Chrom und Hero sofort, Daten parallel, Abschnitte erst in Sichtnähe.
-import { loadData } from './data.js?v=20261119182451';
-import { initNav, setNavSound } from './nav.js?v=20261119182451';
-import { initCursor } from './cursor.js?v=20261119182451';
-import { initZero } from './zero.js?v=20261119182451';
-import { fitAll, fontsReady } from './fit.js?v=20261119182451';
-import { initDeploy } from './deploy.js?v=20261119182451';
-import { sound } from './sound.js?v=20261119182451';
-import { setSettingReduced } from './motion.js?v=20261119182451';
-import { signalLost } from './dom.js?v=20261119182451';
-import { startSiteClock } from '../shared/sitetime.js?v=20261119182451';
-import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261119182451';
+import { loadData } from './data.js?v=20261121041936';
+import { initNav, setNavSound } from './nav.js?v=20261121041936';
+import { initCursor } from './cursor.js?v=20261121041936';
+import { initZero } from './zero.js?v=20261121041936';
+import { fitAll, fontsReady } from './fit.js?v=20261121041936';
+import { initDeploy } from './deploy.js?v=20261121041936';
+import { sound } from './sound.js?v=20261121041936';
+import { setSettingReduced } from './motion.js?v=20261121041936';
+import { signalLost } from './dom.js?v=20261121041936';
+import { startSiteClock } from '../shared/sitetime.js?v=20261121041936';
+import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261121041936';
 
 const html = document.documentElement;
 const DEBUG = /[?&]debug=1/.test(location.search);
@@ -83,14 +83,17 @@ const fontsP = (document.fonts?.ready || Promise.resolve()).then(() => {
 setTimeout(() => { if (!fontsDone) { fontsReady(); fitAll(document, { now: true }); } }, 3000);
 
 const VIEWS = {
-  modes: () => import('./modes-view.js?v=20261119182451'),
-  maps: () => import('./maps-view.js?v=20261119182451'),
-  arsenal: () => import('./arsenal-view.js?v=20261119182451'),
-  profile: () => import('./profile-view.js?v=20261119182451'),
-  settings: () => import('./settings-view.js?v=20261119182451'),
-  controls: () => import('./controls-view.js?v=20261119182451'),
-  about: () => import('./about-view.js?v=20261119182451'),
-  app: () => import('./app-view.js?v=20261119182451'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
+  news: () => import('./news-view.js?v=20261121041936'), // §02 Neu (20.11.)
+  campaign: () => import('./campaign-view.js?v=20261121041936'), // §03 Kampagne
+  sim: () => import('./sim-view.js?v=20261121041936'), // §04 Simulation
+  modes: () => import('./modes-view.js?v=20261121041936'),
+  maps: () => import('./maps-view.js?v=20261121041936'),
+  arsenal: () => import('./arsenal-view.js?v=20261121041936'),
+  profile: () => import('./profile-view.js?v=20261121041936'),
+  settings: () => import('./settings-view.js?v=20261121041936'),
+  controls: () => import('./controls-view.js?v=20261121041936'),
+  about: () => import('./about-view.js?v=20261121041936'),
+  app: () => import('./app-view.js?v=20261121041936'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
 };
 
 function heroData(D) {
@@ -106,6 +109,9 @@ function heroData(D) {
   }
   // Jede Angabe bleibt zusammen; umbrochen wird nur an den Mittelpunkten.
   const items = [`${modes} MODI`, `${maps} KARTEN`, `${weapons} WAFFEN`, `BIS ZU ${bots} BOTS`];
+  // Zahlen im Fließtext (data-count) aus denselben Daten – neue Waffen, Modi oder Karten zählen von selbst mit
+  const counts = { modes, maps, weapons, bots };
+  for (const el of document.querySelectorAll('[data-count]')) if (counts[el.dataset.count] !== undefined) el.textContent = String(counts[el.dataset.count]);
   line.replaceChildren(...items.flatMap((t, i) => {
     const sp = document.createElement('span');
     sp.className = 'nw';
@@ -221,7 +227,7 @@ async function boot() {
   if (D.profile) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 400));
     idle(async () => {
-      try { (await import('./fahne.js?v=20261119182451')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
+      try { (await import('./fahne.js?v=20261121041936')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
     });
   }
 }

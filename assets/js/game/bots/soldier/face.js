@@ -7,6 +7,8 @@
 //   (shape: Index in SHAPE_PRESETS oder Profil { age, african, asian, weight, muscle, jaw, chin, nose, noseW, brow, cheek, lips,
 //    mouthW, skull, eyes, neck, bags, laugh, fat, prog, angles, cleft, asym, seed } – Werte meist −1…1, age in Jahren;
 //    look: beard 'none'|'stoppel'|'kurz'|'voll'|'schnauzer'|'kinnbart', stubble 0…1, hairAmt 0 kahl…1, recede, brows, freckles)
+//   hairStyle: Frisur als Geometrie (hair.js) 'kurz'|'scheitel'|'buerste'|'kranz'|'glatze'|'dutt'|'zopf'|'offen', '' = keine;
+//    ohne Angabe: Zivilistinnen nach Ausführung, Männer nach Profil – nur ohne Helm/Mütze/Abdeckung; Voll-/kurzer Bart als Geometrie
 //   const f = s.face;               // SoldierFace | null (null nur bei face: false)
 //
 //   Lippen / Mund
@@ -48,11 +50,13 @@
 // Telefone (quality low) bekommen im Spiel keinen Detailkopf (Detailstufe 1 schon aus der Nähe), in Zwischensequenzen den
 // einfachen Shader (NP_LOW, ohne Relief) und kleine Karten.
 import * as THREE from 'three';
-import { FACE_MORPHS, HEAD_C, loadHeadAsset, buildHeadData, normProfile } from './face-mesh.js?v=20261119182451';
-import { bakeFaceMaps, normLook } from './face-skin.js?v=20261119182451';
-import { BONE } from './rig.js?v=20261119182451';
-import { VARIANTS, variantDef } from './gear.js?v=20261119182451';
-import { SKIN_TONES, SCHEMES } from './materials.js?v=20261119182451';
+import { FACE_MORPHS, HEAD_C, loadHeadAsset, buildHeadData, normProfile } from './face-mesh.js?v=20261121041936';
+import { bakeFaceMaps, normLook } from './face-skin.js?v=20261121041936';
+import { BONE } from './rig.js?v=20261121041936';
+import { VARIANTS, variantDef, EAR_CUP } from './gear.js?v=20261121041936';
+import { SKIN_TONES, SCHEMES } from './materials.js?v=20261121041936';
+import { BODY_MESH } from './body-mesh.js?v=20261121041936';
+import { hairGeometry, beardGeometry, hairMaterial, pickHairStyle, disposeHair } from './hair.js?v=20261121041936';
 
 export { FACE_MORPHS };
 
@@ -111,15 +115,34 @@ const exprOf = (id) => EXPR[id] || EXPR[EXPR_ALIAS[id]] || EXPR.neutral;
  * Vorgefertigte Gesichter (Bots: Auswahl je Soldat; Kampagne: je Name). Jeweils Form (face-mesh.js normProfile) und
  * Aussehen der Haut (face-skin.js normLook). Alter 21–56, verschiedene Herkunft, Statur, Bart.
  */
+// mensch4: Kieferbreite der Ausreißer zurückgenommen (Kiefer/Jochbein 0,92–0,96 → ≈ 0,88)
 export const SHAPE_PRESETS = Object.freeze([
   { age: 24, jaw: 0.3, chin: 0.2, brow: 0.2, cheek: 0.2, lips: -0.2, nose: 0.1, muscle: 0.5, weight: -0.2, laugh: -0.2, seed: 11, look: { beard: 'stoppel', stubble: 0.45, freckles: 0.4, moles: 0.4, recede: 0.05 } },
-  { age: 41, african: 0.9, jaw: 0.5, chin: 0.1, nose: 0.2, noseW: 0.4, brow: 0.5, cheek: 0.3, lips: 0.2, skull: 0.2, muscle: 0.6, bags: 0.4, seed: 23, look: { beard: 'kurz', stubble: 0.8, freckles: 0, moles: 0.3, recede: 0.3 } },
+  { age: 41, african: 0.9, jaw: 0.3, chin: 0.1, nose: 0.2, noseW: 0.4, brow: 0.5, cheek: 0.3, lips: 0.2, skull: 0.2, muscle: 0.6, bags: 0.4, seed: 23, look: { beard: 'kurz', stubble: 0.8, freckles: 0, moles: 0.3, recede: 0.3 } },
   { age: 33, asian: 0.85, jaw: -0.2, chin: -0.1, nose: -0.3, noseW: 0.1, brow: -0.3, cheek: 0.5, lips: -0.1, skull: 0.3, weight: -0.1, seed: 37, look: { beard: 'stoppel', stubble: 0.3, freckles: 0.05, moles: 0.6, recede: 0.1, brows: 0.85 } },
-  { age: 52, jaw: 0.6, chin: 0.4, nose: 0.7, noseW: 0.3, brow: 0.6, cheek: -0.2, lips: -0.4, skull: 0.4, weight: 0.4, fat: 0.3, bags: 0.7, laugh: 0.6, prog: 0.2, seed: 41, look: { beard: 'stoppel', stubble: 0.9, freckles: 0.3, moles: 0.8, recede: 0.8, brows: 1.2 } },
+  { age: 52, jaw: 0.3, chin: 0.4, nose: 0.7, noseW: 0.3, brow: 0.6, cheek: -0.2, lips: -0.4, skull: 0.4, weight: 0.4, fat: 0.3, bags: 0.7, laugh: 0.6, prog: 0.2, seed: 41, look: { beard: 'stoppel', stubble: 0.9, freckles: 0.3, moles: 0.8, recede: 0.8, brows: 1.2 } },
   { age: 29, african: 0.35, asian: 0.1, jaw: 0.1, chin: 0.5, nose: 0.4, noseW: -0.2, brow: 0.3, cheek: 0.4, lips: 0.1, weight: -0.4, muscle: 0.3, cleft: 0.6, seed: 53, look: { beard: 'schnauzer', stubble: 0.6, freckles: 0.1, moles: 0.4, recede: 0.2 } },
-  { age: 46, jaw: 0.8, chin: 0.6, nose: -0.2, noseW: 0.5, brow: 0.8, cheek: 0.6, lips: -0.3, skull: 0.5, weight: 0.2, muscle: 0.9, bags: 0.3, laugh: 0.4, angles: -0.4, seed: 67, look: { beard: 'voll', stubble: 1, freckles: 0.15, moles: 0.5, recede: 0.5, brows: 1.15 } },
+  { age: 46, jaw: 0.4, chin: 0.5, nose: -0.2, noseW: 0.5, brow: 0.8, cheek: 0.6, lips: -0.3, skull: 0.5, weight: 0.2, muscle: 0.9, bags: 0.3, laugh: 0.4, angles: -0.4, seed: 67, look: { beard: 'voll', stubble: 1, freckles: 0.15, moles: 0.5, recede: 0.5, brows: 1.15 } },
   { age: 21, asian: 0.3, jaw: -0.4, chin: -0.3, nose: -0.1, noseW: -0.3, brow: -0.2, cheek: 0.1, lips: 0.2, weight: -0.5, eyes: 0.2, seed: 79, look: { beard: 'none', stubble: 0.25, freckles: 0.5, moles: 0.3, recede: 0 } },
-  { age: 37, african: 0.6, jaw: 0.3, chin: -0.3, nose: 0.3, noseW: 0.7, brow: 0.4, cheek: 0.2, lips: 0.5, weight: 0.3, fat: 0.2, prog: 0.3, seed: 97, look: { beard: 'kinnbart', stubble: 0.7, freckles: 0, moles: 0.4, recede: 0.4 } },
+  { age: 37, african: 0.6, jaw: 0.1, chin: -0.3, nose: 0.3, noseW: 0.7, brow: 0.4, cheek: 0.2, lips: 0.5, weight: 0.3, fat: 0.2, prog: 0.3, seed: 97, look: { beard: 'kinnbart', stubble: 0.7, freckles: 0, moles: 0.4, recede: 0.4 } },
+  // 20.11.: mehr Alter/Bart/Herkunft (Zivilisten der Kampagne werden über den Namen zugeordnet)
+  { age: 63, jaw: 0.2, chin: 0.3, nose: 0.6, noseW: 0.2, brow: 0.5, cheek: -0.4, lips: -0.5, skull: 0.2, weight: 0.1, bags: 0.9, laugh: 0.9, seed: 173, look: { beard: 'voll', stubble: 1, freckles: 0.4, moles: 0.9, recede: 0.95, brows: 1.3 } },
+  { age: 27, african: 0.95, jaw: 0.2, chin: 0.3, nose: 0.1, noseW: 0.6, brow: 0.3, cheek: 0.4, lips: 0.4, weight: -0.2, muscle: 0.5, seed: 181, look: { beard: 'schnauzer', stubble: 0.5, freckles: 0, moles: 0.2, recede: 0.05 } },
+  { age: 49, asian: 0.9, jaw: 0.1, chin: 0.2, nose: -0.2, noseW: 0.2, brow: -0.1, cheek: 0.6, lips: -0.2, weight: 0.3, fat: 0.2, bags: 0.5, seed: 191, look: { beard: 'kinnbart', stubble: 0.6, freckles: 0.05, moles: 0.5, recede: 0.5 } },
+  { age: 34, jaw: -0.1, chin: -0.2, nose: 0.3, noseW: -0.1, brow: 0.2, cheek: 0.1, lips: 0.1, weight: -0.3, seed: 199, look: { beard: 'kurz', stubble: 0.85, freckles: 0.6, moles: 0.3, recede: 0.15, brows: 0.9 } },
+]);
+
+/**
+ * Gesichter der Zivilistinnen (20.11., Ausführungen mit `female` in gear.js CIVIL_VARIANTS): Form-Ziel 'female' des Kopf-Assets,
+ * kein Bart, feinere Brauen; Alter 23–61, verschiedene Herkunft. Frisur als Geometrie (gear.js), Haaransatz gemalt.
+ */
+export const FEMALE_PRESETS = Object.freeze([
+  { female: 1, age: 44, jaw: -0.1, chin: 0.2, nose: 0.2, noseW: -0.2, brow: -0.2, cheek: 0.4, lips: 0.1, weight: -0.2, bags: 0.3, laugh: 0.3, seed: 113, look: { beard: 'none', stubble: 0, freckles: 0.2, moles: 0.5, recede: 0, brows: 0.75 } },
+  { female: 1, age: 29, african: 0.85, jaw: -0.2, nose: 0.1, noseW: 0.5, cheek: 0.5, lips: 0.6, weight: -0.1, seed: 127, look: { beard: 'none', stubble: 0, freckles: 0, moles: 0.3, recede: 0, brows: 0.8 } },
+  { female: 1, age: 36, asian: 0.8, jaw: -0.3, chin: -0.2, nose: -0.3, cheek: 0.6, lips: 0.1, eyes: 0.1, weight: -0.3, seed: 131, look: { beard: 'none', stubble: 0, freckles: 0.05, moles: 0.4, recede: 0, brows: 0.7 } },
+  { female: 1, age: 58, jaw: 0.1, chin: 0.1, nose: 0.4, brow: 0.1, cheek: -0.2, lips: -0.3, weight: 0.3, fat: 0.3, bags: 0.8, laugh: 0.7, seed: 137, look: { beard: 'none', stubble: 0, freckles: 0.35, moles: 0.8, recede: 0, brows: 0.7 } },
+  { female: 1, age: 24, jaw: -0.3, chin: 0.3, nose: -0.1, noseW: -0.3, cheek: 0.2, lips: 0.3, weight: -0.4, eyes: 0.15, seed: 149, look: { beard: 'none', stubble: 0, freckles: 0.6, moles: 0.3, recede: 0, brows: 0.8 } },
+  { female: 1, age: 41, african: 0.4, asian: 0.1, jaw: 0.0, chin: 0.1, nose: 0.2, noseW: 0.3, cheek: 0.3, lips: 0.3, weight: 0.1, laugh: 0.2, seed: 157, look: { beard: 'none', stubble: 0, freckles: 0.1, moles: 0.4, recede: 0, brows: 0.8 } },
 ]);
 
 /* ------------------------------------------------------------------ Kopfnetz + Karten (Hintergrund-Rechner, geteilt) */
@@ -133,6 +156,8 @@ function toGeometry(D, res, key) {
   g.setAttribute('normal', new THREE.BufferAttribute(D.nrm, 3));
   g.setAttribute('uv', new THREE.BufferAttribute(D.uv, 2));
   g.setAttribute('aRest', new THREE.BufferAttribute(D.rest, 4));
+  // mensch4: Stoffhülle unter Sturmhaube/Halstuch (face-mesh.js coverShell): Versatz zur Hülle + deren Normale
+  if (D.cov) { g.setAttribute('aCov', new THREE.BufferAttribute(D.cov, 3)); g.setAttribute('aCovN', new THREE.BufferAttribute(D.covN, 3)); }
   g.setAttribute('skinIndex', new THREE.BufferAttribute(D.ski, 4));
   g.setAttribute('skinWeight', new THREE.BufferAttribute(D.skw, 4, true));
   g.setIndex(new THREE.BufferAttribute(D.idx, 1));
@@ -152,7 +177,9 @@ function toGeometry(D, res, key) {
 function toTextures(T, key) {
   const mk = (data, name) => {
     const t = new THREE.DataTexture(data, T.w, T.h, THREE.RGBAFormat, THREE.UnsignedByteType);
-    t.colorSpace = name === 'a' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    // Karte A trägt Hautfaktor × 0,5 (face-skin.js) – linear speichern: sRGB-Dekodierung machte jedes Gesicht ~2,3× dunkler
+    // als Hals/Hände desselben Hauttons (gesamt 20.11.)
+    t.colorSpace = THREE.NoColorSpace;
     t.generateMipmaps = true;
     t.minFilter = THREE.LinearMipmapLinearFilter;
     t.magFilter = THREE.LinearFilter;
@@ -173,7 +200,7 @@ const jobs = new Map(), pending = new Map();
 function getWorker() {
   if (worker || workerBroken || typeof Worker === 'undefined') return worker;
   try {
-    worker = new Worker(new URL('./face-worker.js?v=20261119182451', import.meta.url), { type: 'module', name: 'gesichter' });
+    worker = new Worker(new URL('./face-worker.js?v=20261121041936', import.meta.url), { type: 'module', name: 'gesichter' });
     worker.onmessage = (e) => {
       const { id, D, T, error } = e.data || {};
       const j = jobs.get(id);
@@ -236,6 +263,7 @@ export function disposeFaceGeometries() {
   for (const g of geoCache.values()) g.dispose();
   for (const t of texCache.values()) { t.a.dispose(); t.b.dispose(); }
   geoCache.clear(); texCache.clear(); stats.texBytes = 0;
+  disposeHair();
 }
 
 /* ------------------------------------------------------------------ Shader */
@@ -263,11 +291,16 @@ float npCoverMask( vec3 q ) {
 
 const VERT_HEAD = /* glsl */`
 attribute vec4 aRest;
+attribute vec3 aCov;
+attribute vec3 aCovN;
 varying vec4 vRest;
 flat varying float vPart;
 varying vec3 vMp;
 varying vec2 vFUv;
 uniform float uCoverEars;
+uniform vec4 uEarCup; // mensch4: Gehörschutz – x Polster-Innenseite, y/z Ringmitte (relativ Kopfmitte), w an
+uniform float uEarFill; // Kopfseite bis ans Polster andrücken (m, je Kopfform)
+uniform vec4 uNeckLine; // mensch4: Halsausschnitt der Kleidung (y vorn, seitlich, hinten; z Mitte) relativ Kopfmitte
 ${GLSL_COMMON}
 `;
 
@@ -383,7 +416,11 @@ const FACE_ALBEDO = /* glsl */`
 		alb = eyeC;
 		npRough = mix( 0.12, 0.03, iris );
 		npSss = 0.15;
-		npAoT = fAo;
+		// mensch3: Oberlid und Wimpern verschatten den oberen Augapfel (sonst „starrer“ Blick), Augenwinkel dunkler/feucht
+		float lidSh = smoothstep( -0.15, 0.8, ( q.y - E.y ) / E.w );
+		float cornerSh = smoothstep( 0.55, 0.95, abs( d.x ) );
+		alb *= ( 1.0 - 0.4 * lidSh ) * ( 1.0 - 0.3 * cornerSh );
+		npAoT = fAo * ( 1.0 - 0.5 * lidSh );
 	} else if ( part < 3.5 ) {
 		// Zähne (uv.x = Bogen −1…1, uv.y = Höhe 0…1, unten +2) und Zahnfleisch
 		float s = vFUv.x, t = vFUv.y - ( vFUv.y > 1.5 ? 2.0 : 0.0 );
@@ -421,7 +458,7 @@ const FACE_ALBEDO = /* glsl */`
 		npRough = mix( npRough, 0.96, cov );
 		npSss *= 1.0 - cov;
 		npThin *= 1.0 - cov;
-		npAoT = mix( npAoT, fAo * 0.9 + 0.1, cov );
+		npAoT = mix( npAoT, fAo * 0.15 + 0.8, cov ); // mensch4: Mund-/Nasenfalten-Verdeckung zeichnet sich nicht durch den Stoff
 		npMouthOcc = mix( npMouthOcc, 1.0, cov );
 	}
 	diffuseColor.rgb *= alb;
@@ -474,7 +511,7 @@ let neutralTex = null;
 function neutralMaps() {
   if (!neutralTex) {
     const mk = (r, g, b, a, srgb) => { const t = new THREE.DataTexture(new Uint8Array([r, g, b, a]), 1, 1); t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.needsUpdate = true; return t; };
-    neutralTex = { a: mk(128, 128, 128, 0, true), b: mk(128, 220, 118, 0, false) };
+    neutralTex = { a: mk(128, 128, 128, 0, false), b: mk(128, 220, 118, 0, false) };
   }
   return neutralTex;
 }
@@ -491,6 +528,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
   const L = HEAD_C;
   const U = (m.userData.faceU = {
     uCover: { value: 0 }, uCoverEars: { value: 0 },
+    uEarCup: { value: new THREE.Vector4(EAR_CUP.x, EAR_CUP.y - L[1], EAR_CUP.z - L[2], 0) }, uEarFill: { value: 0 }, uNeckLine: { value: new THREE.Vector4(-9, -9, -9, 0) },
     uMapA: { value: N.a }, uMapB: { value: N.b },
     uSkin: { value: lin('#b08c74') }, uHairCol: { value: lin('#2a2119') },
     uIris: { value: lin('#5a3c22') },
@@ -506,16 +544,40 @@ export function faceMaterial({ low = false, shared = null } = {}) {
   if (low) m.defines = { NP_LOW: '' };
   m.onBeforeCompile = (shader) => {
     for (const k of Object.keys(U)) shader.uniforms[k] = U[k];
-    shader.vertexShader = VERT_HEAD + shader.vertexShader.replace('#include <morphtarget_vertex>', `#include <morphtarget_vertex>
+    shader.vertexShader = VERT_HEAD + shader.vertexShader.replace('#include <morphnormal_vertex>', `#include <morphnormal_vertex>
+	{ float npCovN = npCoverMask( aRest.xyz ) * ( aRest.w > 3.9 && aRest.w < 6.0 ? 0.0 : 1.0 ); objectNormal = normalize( mix( objectNormal, aCovN, npCovN ) ); }`).replace('#include <morphtarget_vertex>', `#include <morphtarget_vertex>
 	vRest = aRest;
 	vPart = floor( aRest.w * 0.5 + 0.01 );
 	vFUv = uv;
 	{
 		// Stoff über dem Gesicht: etwas aufgetragen, Mundbewegung gedämpft; Ohren unter der Haube angelegt
+		// mensch4: Stoff spannt sich über die geglättete Hülle (aCov) statt 1:1 über Lippen/Nase; Mimik/Lippen darunter nur als
+		// leichte Stoffbewegung (18 %)
 		float npCov = npCoverMask( aRest.xyz ) * ( aRest.w > 3.9 && aRest.w < 6.0 ? 0.0 : 1.0 );
-		transformed = position + ( transformed - position ) * ( 1.0 - npCov * 0.5 ) + normal * npCov * 0.0026;
+		transformed = position + aCov * npCov + ( transformed - position ) * ( 1.0 - npCov * 0.82 ) + normalize( mix( normal, aCovN, npCov ) ) * npCov * 0.0026;
 		float npPart = floor( aRest.w * 0.5 + 0.01 );
 		if ( npPart > 0.5 && npPart < 1.5 && uCoverEars > 0.5 ) transformed.x = mix( transformed.x, sign( transformed.x ) * 0.071, 0.6 );
+		if ( uEarCup.w > 0.5 && npPart < 1.5 ) {
+			// mensch4: Kapsel-Gehörschutz – Kopfseite unter dem Polsterring an dessen Innenseite, Ohr in der Kapsel angelegt
+			float npAx = abs( aRest.x );
+			float npR = length( vec2( ( aRest.y - uEarCup.y ) / ${EAR_CUP.sy.toFixed(3)}, ( aRest.z - uEarCup.z ) / ${EAR_CUP.sz.toFixed(3)} ) );
+			float npFoot = ( 1.0 - smoothstep( ${(EAR_CUP.r + 0.006).toFixed(4)}, ${(EAR_CUP.r + 0.026).toFixed(4)}, npR ) ) * smoothstep( 0.035, 0.058, npAx );
+			transformed.x += sign( aRest.x ) * uEarFill * npFoot;
+			if ( npPart > 0.5 ) {
+				vec3 npEc = vec3( sign( aRest.x ) * ( uEarCup.x + 0.004 ), uEarCup.y + ${L[1].toFixed(3)}, uEarCup.z + ${L[2].toFixed(3)} ); // Modellraum (uEarCup relativ zur Kopfmitte)
+				transformed = npEc + ( transformed - npEc ) * vec3( 0.75, 0.8, 0.8 );
+			}
+		}
+		{
+			// mensch4 (Nutzer: Hautring zwischen Kragen und Hals): Halsansatz des Kopfnetzes unterhalb des Ausschnitts unter den Stoff
+			// ziehen – sonst lag er gleichauf mit Hemd/Jacke und schimmerte rund um den Kragen durch
+			vec2 npH = normalize( vec2( aRest.x, aRest.z - uNeckLine.w ) + 1e-5 );
+			float npF = max( 0.0, -npH.y ), npB = max( 0.0, npH.y );
+			npF *= npF; npB *= npB;
+			float npYl = uNeckLine.x * npF + uNeckLine.z * npB + uNeckLine.y * max( 0.0, 1.0 - npF - npB );
+			float npSink = ( 1.0 - smoothstep( npYl - 0.014, npYl + 0.008, aRest.y ) ) * ( npPart < 0.5 ? 1.0 : 0.0 );
+			transformed -= normal * npSink * 0.009;
+		}
 		vMp = transformed - vec3( ${L[0].toFixed(3)}, ${L[1].toFixed(3)}, ${L[2].toFixed(3)} );
 	}`);
     let fs = FRAG_HEAD + shader.fragmentShader;
@@ -541,7 +603,7 @@ export function faceMaterial({ low = false, shared = null } = {}) {
 	#include <opaque_fragment>`);
     shader.fragmentShader = fs;
   };
-  m.customProgramCacheKey = () => 'np-face-6' + (low ? 'l' : 'h');
+  m.customProgramCacheKey = () => 'np-face-8' + (low ? 'l' : 'h');
   return m;
 }
 
@@ -580,17 +642,50 @@ function profileFor(soldier, V, opts) {
   const nameSeed = soldier.name ? hashS(String(soldier.name)) : 0;
   const pick = nameSeed ? nameSeed : Math.floor(hashN(soldier.id * 31 + VARIANTS.indexOf(V) * 7 + 3) * 4294967296);
   let pre;
+  const PRE = V.female ? FEMALE_PRESETS : SHAPE_PRESETS;
   if (typeof opts.shape === 'object' && opts.shape) pre = opts.shape;
-  else pre = SHAPE_PRESETS[((typeof opts.shape === 'number' ? opts.shape : pick % SHAPE_PRESETS.length) + SHAPE_PRESETS.length) % SHAPE_PRESETS.length];
+  else pre = PRE[((typeof opts.shape === 'number' ? opts.shape : pick % PRE.length) + PRE.length) % PRE.length];
   const prof = { ...pre };
   delete prof.look;
+  if (V.female) { prof.female = 1; }
   if (opts.age !== undefined) prof.age = +opts.age;
   const look = { ...(pre.look || {}), age: prof.age ?? 30, seed: pre.seed ?? 1 };
   if (opts.stubble !== undefined) look.stubble = +opts.stubble;
   if (opts.beard !== undefined) look.beard = opts.beard;
   if (opts.hairAmt !== undefined) look.hair = +opts.hairAmt;
   for (const k of ['recede', 'brows', 'freckles', 'moles']) if (opts[k] !== undefined) look[k] = +opts[k];
+  if (V.female) { look.beard = 'none'; look.stubble = 0; look.recede = 0; look.brows = Math.min(look.brows ?? 0.8, 0.85); }
+  // mensch4: Brauen schmaler (Brauen 1,15–1,3 wirkten mit dem Wulst zu schwer/tief)
+  else if (opts.brows === undefined) look.brows = Math.min(0.95, (look.brows ?? 1) * 0.85);
   return { prof, look };
+}
+
+/** Frisur (hair.js) zu Ausführung/Optionen: ausdrücklich (opts.hairStyle, '' = keine), sonst nur ohne Kopfbedeckung/Abdeckung. */
+function hairStyleFor(V, opts, look, prof, cover) {
+  if (opts.hairStyle !== undefined) return opts.hairStyle || null;
+  if (V.head || (cover && cover !== 'none')) return null;
+  if (V.female) return V.hairStyle || pickHairStyle(look, true, prof.seed || 1);
+  return pickHairStyle(look, false, prof.seed || 1);
+}
+
+/** Hautton zu Profil/Optionen (Gesicht und Körper – Hände, Hals, Kopf der fernen Stufen – bekommen denselben). */
+function skinFor(prof, opts) {
+  if (typeof opts.skin === 'string') return opts.skin;
+  if (typeof opts.skin === 'number') return SKIN_TONES[opts.skin % SKIN_TONES.length];
+  const af = prof.african || 0, as = prof.asian || 0;
+  const r = hashN((prof.seed || 1) * 9 + 5);
+  // gesamt 20.11.: ohne Herkunftsangabe vor allem helle Töne (0/5), selten mittel (1) – vorher fiel Ton 0 nie und Ton 1
+  // traf auch hellhäutige Profile; je Profil fest (Samen), über die Profile gleichmäßig gemischt
+  return af > 0.7 ? SKIN_TONES[r < 0.5 ? 4 : 3] : af > 0.3 ? SKIN_TONES[r < 0.5 ? 2 : 3] : as > 0.5 ? SKIN_TONES[r < 0.5 ? 5 : 1] : SKIN_TONES[[0, 5, 0, 1, 5, 0][Math.floor(r * 6)]];
+}
+
+/**
+ * Hautton eines Soldaten wie ihn sein Gesicht bekäme (auch ohne Gesicht, z. B. Telefon/ferne Stufen): character.js setzt
+ * damit die Hautfarbe des Körpers (Palettenplatz 'skin'), damit Hände/Hals zum Gesicht passen.
+ */
+export function soldierSkin(soldier, opts = {}) {
+  const V = variantDef(soldier.variant);
+  return skinFor(profileFor(soldier, V, opts).prof, opts);
 }
 
 export class SoldierFace {
@@ -610,15 +705,10 @@ export class SoldierFace {
     const U = (this.u = mat.userData.faceU);
     const { prof, look } = profileFor(soldier, V, opts);
     // Hautton: Option, sonst passend zur Herkunft des Profils (sonst Variante)
-    let skin;
-    if (typeof opts.skin === 'string') skin = opts.skin;
-    else if (typeof opts.skin === 'number') skin = SKIN_TONES[opts.skin % SKIN_TONES.length];
-    else {
-      const af = prof.african || 0, as = prof.asian || 0;
-      const r = hashN((prof.seed || 1) * 5 + 1);
-      skin = af > 0.7 ? SKIN_TONES[r < 0.5 ? 4 : 3] : af > 0.3 ? SKIN_TONES[r < 0.5 ? 2 : 3] : as > 0.5 ? SKIN_TONES[r < 0.5 ? 1 : 5] : SKIN_TONES[[0, 5, 1, 0][Math.floor(r * 4)]];
-    }
+    const skin = skinFor(prof, opts);
     U.uSkin.value.set(skin);
+    // Körper (Hände, Hals, Kopf der fernen Stufen) im selben Ton
+    if (shared && shared.uPal && shared.uPal.value[9]) shared.uPal.value[9].set(skin);
     const lum = U.uSkin.value.r * 0.3 + U.uSkin.value.g * 0.59 + U.uSkin.value.b * 0.11;
     look.dark = clamp((0.35 - lum) / 0.3, 0, 1);
     const hair = opts.hair || (prof.african > 0.5 || prof.asian > 0.5 ? '#16110d' : V.hair || '#2a2119');
@@ -630,6 +720,16 @@ export class SoldierFace {
     this.profile = prof;
     this.look = look;
     this.setCover(opts.cover || 'auto');
+    // mensch3: Frisur als Geometrie (hair.js) nur bei unbedecktem Kopf (Zivil, Kampagne ohne Helm); unter Helm/Mütze/Haube
+    // bleibt das gemalte Kurzhaar. Haarkranz/Glatze passen die gemalten Haare an (Oberkopf kahl).
+    this.hairStyle = hairStyleFor(V, opts, look, prof, this.cover);
+    if (this.hairStyle === 'kranz') { look.crown = 1; look.recede = Math.max(look.recede ?? 0, 0.6); }
+    if (this.hairStyle === 'glatze') look.hair = Math.min(look.hair ?? 1, 0.18);
+    // Bart als Geometrie (Vollbart/kurzer Bart) nur ohne Abdeckung über dem Mund
+    this.beardKind = (this.cover === 'none' || !this.cover) && !V.female && (look.beard === 'voll' || look.beard === 'kurz') ? look.beard : null;
+    this.hairMesh = null; this.beardMesh = null;
+    this.hairMat = this.hairStyle || this.beardKind ? hairMaterial({ low, shared, color: '#' + U.uHairCol.value.getHexString() }) : null;
+    if (this.hairMat) this.hairMat.userData.hairU.uHairCol.value.copy(U.uHairCol.value);
     // Netz + Karten kommen aus dem Hintergrund-Rechner (face-worker.js); bis dahin zeichnet der Soldat seinen einfachen Körperkopf.
     this.mesh = null;
     this.castShadow = false;
@@ -645,6 +745,8 @@ export class SoldierFace {
         this.eyeL = new THREE.Vector3(e.L[0], e.L[1], e.L[2]);
         this.eyeR = new THREE.Vector3(e.R[0], e.R[1], e.R[2]);
       }
+      this._skullX = earSkullX(geo);
+      this._earFill();
       const mesh = (this.mesh = new THREE.SkinnedMesh(geo, mat));
       mesh.name = 'soldat-gesicht';
       mesh.frustumCulled = false;
@@ -653,6 +755,23 @@ export class SoldierFace {
       mesh.bind(soldier.skeleton, new THREE.Matrix4());
       mesh.visible = false;
       soldier.root.add(mesh);
+      // mensch3: Frisur/Bart am selben Skelett (Bart folgt den Mimik-Gewichten des Kopfes – geteiltes Gewichtsfeld)
+      const hres = this.res === 'cine' ? 'cine' : low || this.res === 'mid' ? 'mid' : 'near';
+      try {
+        const hg = this.hairStyle ? hairGeometry(geo, this.hairStyle, hres, { recede: look.recede, female: !!V.female, seed: prof.seed || 1 }) : null;
+        if (hg) {
+          const hm = (this.hairMesh = new THREE.SkinnedMesh(hg, this.hairMat));
+          hm.name = 'soldat-frisur'; hm.frustumCulled = false; hm.castShadow = false; hm.receiveShadow = true;
+          hm.bind(soldier.skeleton, new THREE.Matrix4()); hm.visible = false; soldier.root.add(hm);
+        }
+        const bg = this.beardKind ? beardGeometry(geo, this.beardKind, hres) : null;
+        if (bg) {
+          const bm = (this.beardMesh = new THREE.SkinnedMesh(bg, this.hairMat));
+          bm.name = 'soldat-bart'; bm.frustumCulled = false; bm.castShadow = false; bm.receiveShadow = true;
+          bm.morphTargetInfluences = mesh.morphTargetInfluences;
+          bm.bind(soldier.skeleton, new THREE.Matrix4()); bm.visible = false; soldier.root.add(bm);
+        }
+      } catch (err) { if (typeof console !== 'undefined') console.warn('[Gesicht] Frisur nicht verfügbar.', err); }
       warmProgram(mesh, low);
       this._step(0);
       if (typeof soldier._faceReady === 'function') soldier._faceReady(this);
@@ -705,6 +824,21 @@ export class SoldierFace {
       U.uCoverCol.value.set('#4b4c3c'); U.uCoverCol2.value.set('#3e3f31');
     }
     this.cover = id;
+    U.uEarCup.value.w = V.ears ? 1 : 0;
+    // Halsausschnitt der Kleidung (body-mesh.js) für das Versenken des Halsansatzes
+    const NL = BODY_MESH.boots && BODY_MESH.boots.neck && BODY_MESH.boots.neck[V.civil ? (V.female ? 'female' : 'civil') : 'soldier'];
+    if (NL && NL.length > 4) {
+      const cz = NL.reduce((a, p) => a + p[2], 0) / NL.length;
+      const f = NL.reduce((a, p) => (p[2] < a[2] ? p : a)), b = NL.reduce((a, p) => (p[2] > a[2] ? p : a)), sd = NL.reduce((a, p) => (Math.abs(p[0]) > Math.abs(a[0]) ? p : a));
+      U.uNeckLine.value.set(f[1] - HEAD_C[1], sd[1] - HEAD_C[1], b[1] - HEAD_C[1], cz - HEAD_C[2]);
+    }
+    this._earFill();
+  }
+
+  /** mensch4: Kopfseite bis an die Polster des Gehörschutzes (gear.js EAR_CUP) – Sturmhaube trägt 2,6 mm auf. */
+  _earFill() {
+    if (this._skullX === undefined) return;
+    this.u.uEarFill.value = clamp(EAR_CUP.x + 0.0005 - (this._skullX + (this.cover === 'balaclava' ? 0.0026 : 0)), 0, 0.012);
   }
 
   /* ---------------------------------------------------------------- Mund */
@@ -872,7 +1006,12 @@ export class SoldierFace {
   }
 
   /** Sichtbarkeit nach Detailstufe des Soldaten. */
-  syncVisible(lod) { if (this.mesh) this.mesh.visible = this.forceVisible || lod === 0; }
+  syncVisible(lod) {
+    if (!this.mesh) return;
+    const v = (this.mesh.visible = this.forceVisible || lod === 0);
+    if (this.hairMesh) this.hairMesh.visible = v;
+    if (this.beardMesh) this.beardMesh.visible = v;
+  }
 
   setShadows(on) { this.castShadow = !!on; if (this.mesh) this.mesh.castShadow = this.castShadow; }
 
@@ -881,9 +1020,27 @@ export class SoldierFace {
     this.disposed = true;
     if (--liveFaces <= 0) { liveFaces = 0; warmed.clear(); }
     if (this.mesh) this.mesh.removeFromParent();
+    if (this.hairMesh) this.hairMesh.removeFromParent();
+    if (this.beardMesh) this.beardMesh.removeFromParent();
+    if (this.hairMat) this.hairMat.dispose();
     this.material.dispose();
     // Geometrie und Karten bleiben im Cache (geteilt)
   }
+}
+
+/** mensch4: größte Kopfbreite (x) unter dem Polsterring des Gehörschutzes (Haut ohne Ohr, rechte Seite) – gecacht je Geometrie. */
+function earSkullX(geo) {
+  if (geo.userData.earSkullX !== undefined) return geo.userData.earSkullX;
+  const P = geo.attributes.position.array, R = geo.attributes.aRest.array, n = geo.attributes.position.count;
+  let mx = 0;
+  for (let i = 0; i < n; i++) {
+    const x = P[i * 3];
+    if (x < 0.03 || Math.floor(R[i * 4 + 3] * 0.5 + 0.01) !== 0) continue;
+    const r = Math.hypot((P[i * 3 + 1] - EAR_CUP.y) / EAR_CUP.sy, (P[i * 3 + 2] - EAR_CUP.z) / EAR_CUP.sz);
+    if (Math.abs(r - EAR_CUP.r) < 0.006 && x > mx) mx = x;
+  }
+  geo.userData.earSkullX = mx || EAR_CUP.x;
+  return geo.userData.earSkullX;
 }
 
 function bindPosOf(soldier, bone) {

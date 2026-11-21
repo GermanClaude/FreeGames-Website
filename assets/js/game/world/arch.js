@@ -3,6 +3,13 @@
 
 const SIDE_DIR = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 
+// tex4: Farbumrechnung ohne three (Rückwand der Lamellenläden = Ladenfarbe abgedunkelt)
+class ShadeHex {
+  constructor(hex) { const v = parseInt(String(hex).replace('#', ''), 16) || 0; this.r = (v >> 16) & 255; this.g = (v >> 8) & 255; this.b = v & 255; }
+  multiplyScalar(k) { this.r = Math.round(this.r * k); this.g = Math.round(this.g * k); this.b = Math.round(this.b * k); return this; }
+  getStyle() { return '#' + [this.r, this.g, this.b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join(''); }
+}
+
 /**
  * Wand von (x0,z0) nach (x1,z1). Öffnungen: [{ at (Mitte, m ab Start), w, h, sill=0, kind:'door'|'window'|'gap',
  * glass, frame=true, shutters:'#hex', leaf:'open'|'closed', bars }]
@@ -124,7 +131,26 @@ function openingDetails(b, o, op, g) {
   }
   if (op.closed) {
     // geschlossene Fensterläden (massiv)
-    at(op.at, y + sill + 0.01, op.w - fw * 2 + 0.02, top - sill - fw - 0.01, Math.min(0.08, t * 0.5), 'wood_painted', { tint: op.closed === true ? (o.shutterTint || '#2f6f9a') : op.closed, collide: true });
+    const sw = op.w - fw * 2 + 0.02, sh = top - sill - fw - 0.01, sd = Math.min(0.08, t * 0.5);
+    const stint = op.closed === true ? (o.shutterTint || '#2f6f9a') : op.closed;
+    if (b.lookQuality && b.lookQuality !== 'low' && sh > 0.5 && sw > 0.4) {
+      // tex4 (15.11.): Lamellenläden als Form (ab medium) statt bemalter Platte – zwei Flügel mit Rahmen und schräg
+      // gestellten Lamellen vor einer dunklen Rückwand. Kollision und Kugeltreffer wie vorher (Rückwand = volle Fläche,
+      // Holz; Lamellen ohne Kugel-Dreiecke), daher gleich auf allen Stufen.
+      const y0 = y + sill + 0.01, dark = new ShadeHex(stint).multiplyScalar(0.28).getStyle();
+      at(op.at, y0, sw, sh, 0.012, 'wood_painted', { tint: dark, collide: false });
+      at(op.at, y0, sw, sh, sd, 'black', { visual: false, collide: true });
+      const lw = sw / 2, st = 0.055, rail = 0.075, P = { tint: stint, collide: false, bullet: false };
+      for (const c of [op.at - lw / 2, op.at + lw / 2]) {
+        at(c - lw / 2 + st / 2, y0, st, sh, sd, 'wood_painted', P);
+        at(c + lw / 2 - st / 2, y0, st, sh, sd, 'wood_painted', P);
+        at(c, y0, lw - st * 2, rail, sd * 0.9, 'wood_painted', P);
+        at(c, y0 + sh - rail, lw - st * 2, rail, sd * 0.9, 'wood_painted', P);
+        const n = Math.max(3, Math.floor((sh - rail * 2) / 0.052));
+        const pitch = (sh - rail * 2) / n;
+        for (let i = 0; i < n; i++) at(c, y0 + rail + (i + 0.5) * pitch - 0.028, lw - st * 2, 0.062, 0.011, 'wood_painted', { ...P, rx: 0.75, ao: false });
+      }
+    } else at(op.at, y + sill + 0.01, sw, sh, sd, 'wood_painted', { tint: stint, collide: true });
   }
   if (op.bars) {
     const n = Math.max(2, Math.round(op.w / 0.14));
@@ -396,7 +422,9 @@ export function building(b, o) {
   // Zufallsstrom der Karte nicht), Holzschuppen und Gebäude ohne Dach ohne Rohre. o.pipes: false schaltet ab.
   if (o.pipes !== false && o.roof !== false && floors >= 1 && !/wood/.test(mat) && w > 3 && d > 3) {
     const hsh = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
-    const top = roofY + (o.roof && o.roof.parapet ? o.roof.parapet - 0.12 : -0.05);
+    // platz (19.11.): Rinnenkasten unter der Brüstungskrone bzw. – bei Satteldach (edge: false) – unter dem Dachüberstand;
+    // vorher stak er 13 cm über der Traufkante sichtbar durch die Dachziegel
+    const top = roofY + (o.roof && o.roof.parapet ? o.roof.parapet - 0.2 : o.roof && o.roof.edge === false ? -0.3 : -0.05);
     const pm = o.pipeMat || 'metal_galvanized', pt = o.pipeTint || '#8d9296', r = 0.055, off = 0.11;
     const corners = hsh < 0.5 ? [[x0, z0, 1, 1], [x1, z1, -1, -1]] : [[x1, z0, -1, 1], [x0, z1, 1, -1]];
     for (const [cx, cz, sx, sz] of corners) {
@@ -418,7 +446,7 @@ export function building(b, o) {
   // Antennen, Lüfterrohre, Klimageräte (nur Optik)
   if (o.roof && (o.roof.parapet || o.roof.edge !== false) && o.roofDeko !== false) (b._flachdaecher || (b._flachdaecher = [])).push({ x, z, x0, x1, z0, z1, y: roofY, inset: o.roof.parapet ? (o.roof.parapetT ?? 0.22) : 0.15 });
   // karten-voll: Gebäude für die automatische Einrichtung leerer Räume merken (world/kleinkram.js einrichten())
-  (b._gebaeude || (b._gebaeude = [])).push({ x, z, w, d, t, fh, y0, levels, roofY, openings: o.openings || [], holes: o.holes || [], interior: o.interior !== false, mat, skip: o.skipWalls || [] });
+  (b._gebaeude || (b._gebaeude = [])).push({ x, z, w, d, t, fh, y0, levels, roofY, openings: o.openings || [], holes: o.holes || [], interior: o.interior !== false, mat, skip: o.skipWalls || [], nutzung: o.nutzung || null }); // platz: nutzung ('wohn'|'kapelle'|'stall'|…) für Fensterdeko
   // Footprint für die Minikarte (Gebäude als Block)
   b.footprints.push({ x, z, hw: w / 2, hd: d / 2, ry: 0, y0, y1: roofY, kind: 'building' });
   return { x0, x1, z0, z1, levels, roofY, fh, t };

@@ -5,8 +5,8 @@
 // markieren Kessars Panzerkolonne für einen Präzisionsschlag zweier Jäger und bergen zum Schluss die Verwundeten.
 // Checkpoints: start, halten, funk, schlag, bergen. Team A (Spieler) im Süden (+z), Kessar im Norden (−z).
 
-import { actor } from './cast.js?v=20261119182451';
-import { guardZone, stopGuard, ostbund, squad, purgeDead, strike, jetPass, prop } from './hilfen-b.js?v=20261119182451';
+import { actor } from './cast.js?v=20261121041936';
+import { guardZone, stopGuard, ostbund, squad, purgeDead, strike, jetPass, prop } from './hilfen-b.js?v=20261121041936';
 
 const CHAPEL = [125, -6];
 const NORTH = [[95, -92], [125, -98], [155, -92], [110, -80], [140, -82], [80, -84], [170, -86]];

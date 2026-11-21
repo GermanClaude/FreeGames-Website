@@ -11,11 +11,11 @@
 // Punktlicht wie Explosionen → konstante Lichterzahl), Pulvergas eigener Schüsse, Rauchfäden aus heißen Läufen.
 
 import * as THREE from 'three';
-import { caliberOf } from '../../shared/calibers.js?v=20261119182451'; // Austritts-Splitter nach Geschossenergie
-import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261119182451';
-import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261119182451';
-import { Debris } from '../weapons/ballistics/debris.js?v=20261119182451';
-import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261119182451';
+import { caliberOf } from '../../shared/calibers.js?v=20261121041936'; // Austritts-Splitter nach Geschossenergie
+import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261121041936';
+import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261121041936';
+import { Debris } from '../weapons/ballistics/debris.js?v=20261121041936';
+import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261121041936';
 
 const ALPHA_CAP = 900;
 const ADD_CAP = 640;
@@ -61,7 +61,7 @@ for (const k in SURF) { const d = SURF[k].dust; SURF[k].dustDark = [d[0] * 0.62,
 const C = {
   spark: [1.0, 0.62, 0.26], sparkHot: [1.0, 0.85, 0.55], flash: [1.0, 0.78, 0.5], muzzle: [1.0, 0.66, 0.32],
   blood: lin('#a3160f'), bloodDark: lin('#640a07'), smoke: lin('#4c4945'), smokeLight: lin('#7d7770'), smokeDark: lin('#211d1a'),
-  ember: [1.0, 0.45, 0.12], brass: lin('#c9a24a'), glint: [0.85, 0.95, 1.0], debris: lin('#3a342e'),
+  ember: [1.0, 0.45, 0.12], soot: lin('#2a2723'), sootBrown: lin('#3b3129'), brass: lin('#c9a24a'), glint: [0.85, 0.95, 1.0], debris: lin('#3a342e'),
 };
 
 export class Effects {
@@ -79,6 +79,7 @@ export class Effects {
     this._lightPeak = 0;
     this._lightDur = 0.32;
     this._lightPrio = 0;
+    this._lightFade = 0;
     this._light = null;
     this._delayed = [];
     // Welle 2 (arsenal): Emitter für Rauchwolken und Brandflächen, Blendung des Spielers (DOM-Weißblende)
@@ -309,17 +310,28 @@ export class Effects {
     const S = SURF[surface] || SURF.concrete;
     const lod = this._lod(point.x, point.y, point.z);
     if (lod <= 0) return;
-    const n = Math.round((lod >= 2 ? 14 : 7) * Math.min(1.6, size));
+    // zer2 19.11.: dichte Staubballen (Volumen) in Wandfarbe beidseits, Schleier am Boden, kantige Brocken bzw.
+    // Holzspäne/Blechfetzen je Werkstoff
+    const n = Math.max(3, Math.round(9 * lod * Math.min(1.6, size)));
     for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1, ox = rnd(-0.5, 0.5) * size, oy = rnd(-0.5, 0.5) * size;
-      this._puff(point.x + ox * normal.z, point.y + oy, point.z - ox * normal.x, normal.x * side * rnd(0.6, 1.8), rnd(0.1, 0.9), normal.z * side * rnd(0.6, 1.8),
-        rnd(1.2, 2.4), 0.3 * size, rnd(1.2, 2.2) * size, i % 3 ? S.dust : S.dustDark, 0.85, 1.6, 0.15);
+      const j = this._puff(point.x + ox * normal.z, point.y + oy, point.z - ox * normal.x, normal.x * side * rnd(0.6, 2.2), rnd(0.1, 0.9), normal.z * side * rnd(0.6, 2.2),
+        rnd(1.8, 3.4), 0.3 * size, rnd(1.1, 2) * size, i % 3 ? S.dust : S.dustDark, 0.8, 1.8, 0.1, i % 2 ? CELL.SOOT_A : CELL.SOOT_B);
+      this.alpha.fadeIn[j] = 0.06;
     }
-    const nc = (lod >= 2 ? 22 : 10);
+    for (let i = 0; i < Math.max(1, Math.round(3 * lod)); i++) {
+      const side = i % 2 ? 1 : -1;
+      const j = this._puff(point.x + normal.x * side * 0.4, point.y - size * 0.45, point.z + normal.z * side * 0.4, normal.x * side * rnd(1, 2.5) + rnd(-1, 1), 0.15, normal.z * side * rnd(1, 2.5) + rnd(-1, 1),
+        rnd(3, 5), 0.5 * size, rnd(1.6, 2.4) * size, S.dust, 0.5, 1.2, -0.02, CELL.DUST);
+      this.alpha.fadeIn[j] = 0.1;
+    }
+    const nc = Math.round(16 * lod * Math.min(1.5, size));
+    const cell = S.kind === 'wood' ? CELL.SPLINTER : S.kind === 'metal' ? CELL.SHARD : CELL.CHUNK;
     for (let i = 0; i < nc; i++) {
       const side = i % 2 ? 1 : -1;
-      this._chip(point.x + rnd(-0.5, 0.5) * size * normal.z, point.y + rnd(-0.5, 0.5) * size, point.z - rnd(-0.5, 0.5) * size * normal.x,
-        normal.x * side * rnd(0.5, 3) + rnd(-1, 1), rnd(0, 3), normal.z * side * rnd(0.5, 3) + rnd(-1, 1), rnd(1.4, 2.6), rnd(0.04, 0.12), S.chip, 14);
+      const j = this._chip(point.x + rnd(-0.5, 0.5) * size * normal.z, point.y + rnd(-0.5, 0.5) * size, point.z - rnd(-0.5, 0.5) * size * normal.x,
+        normal.x * side * rnd(0.5, 3) + rnd(-1, 1), rnd(0, 3), normal.z * side * rnd(0.5, 3) + rnd(-1, 1), rnd(1.4, 2.6), rnd(0.04, 0.13), i % 3 ? S.chip : S.dustDark, 14);
+      this.alpha.cell[j] = i % 3 === 2 ? CELL.CHIP : cell;
     }
   }
 
@@ -703,6 +715,7 @@ export class Effects {
     if (this._lightLife > 0 && prio < this._lightPrio) return;
     L.position.set(pos.x, pos.y, pos.z);
     L.color.setHex(0xffb066);
+    this._lightFade = 0;
     L.distance = distance;
     this._lightLife = this._lightDur = dur;
     this._lightPeak = peak;
@@ -877,7 +890,7 @@ export class Effects {
     const gy = ground ? ground.point.y : y - 0.1;
     const water = surf.kind === 'water';
 
-    // Kamerawackeln + Licht
+    // Kamerawackeln + Licht (kurz: weißgelber Blitz, der rasch orange verglimmt – update() färbt nach)
     const p = G.player;
     if (p && p.alive && typeof p.shake === 'function') {
       const d = p.position.distanceTo(position);
@@ -886,17 +899,18 @@ export class Effects {
     }
     if (this._light) {
       this._light.position.set(x, y + 0.8, z);
-      this._light.color.setHex(0xffa456);
-      this._light.distance = 16;
-      this._lightLife = this._lightDur = 0.32;
-      this._lightPeak = 70 * R;
+      this._light.color.setHex(0xffd9a0);
+      this._light.distance = 18;
+      this._lightLife = this._lightDur = 0.26;
+      this._lightPeak = 80 * R;
       this._lightPrio = 3;
+      this._lightFade = 1;
       this._light.intensity = this._lightPeak;
     }
 
-    // Blitz
-    this._flash(x, y + 0.4, z, 5 * R, 0.14, C.flash, 4);
-    this._flash(x, y + 0.4, z, 3.2 * R, 0.09, C.sparkHot, 5, CELL.STAR);
+    // Blitz: sehr kurz und kompakt (2–3 Bilder), kein flächiger Schein
+    this._flash(x, y + 0.3, z, 2.6 * R, 0.07, C.flash, 3.2);
+    this._flash(x, y + 0.3, z, 2.2 * R, 0.05, C.sparkHot, 4.5, CELL.STAR);
 
     if (water) {
       // Wasserfontäne statt Feuer
@@ -914,73 +928,138 @@ export class Effects {
       return;
     }
 
-    // Feuerball: alpha-geblendet (Kontrast auch vor hellem Himmel) + additiver Kern (Bloom)
-    const fires = Math.max(5, Math.round(10 * sc));
+    // zer2 19.11.: Wand dicht daneben? (Granate an der Mauer, Panzergranate in der Fassade) → Staub in Wandfarbe,
+    // Wolke quillt von der Wand weg statt kugelrund
+    let wall = null, wallCol = null;
+    if (w && typeof w.raycast === 'function') {
+      let best = 2.2;
+      _t1.set(x, y + 0.15, z);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        _dir.set(Math.cos(a), 0, Math.sin(a));
+        const f = w.raycast(_t1, _dir, best);
+        if (f && !f.actor && !f.vehicle && Math.abs(f.normal.y) < 0.4 && f.distance < best) { best = f.distance; wall = f; }
+      }
+      if (wall) {
+        const ws = SURF[wall.surface] || SURF.concrete;
+        const alb = typeof w.albedoAt === 'function' && wall.tri != null ? w.albedoAt(wall.tri, [0, 0, 0]) : null;
+        wallCol = alb ? [alb[0] * 0.6 + ws.dust[0] * 0.4, alb[1] * 0.6 + ws.dust[1] * 0.4, alb[2] * 0.6 + ws.dust[2] * 0.4] : ws.dust;
+        _n.copy(wall.normal).setY(0).normalize();
+        if (_n.x * (x - wall.point.x) + _n.z * (z - wall.point.z) < 0) _n.negate();
+      }
+    }
+    // Hauptrichtung der Wolke: von der Wand weg (halb aufwärts) bzw. senkrecht nach oben
+    const ux = wall ? _n.x * 0.75 : 0, uz = wall ? _n.z * 0.75 : 0, uy = wall ? 0.65 : 1;
+    const dustC = wallCol || surf.dust;
+    const dustD = [dustC[0] * 0.62, dustC[1] * 0.6, dustC[2] * 0.58];
+
+    // Feuerball: wenige, kurzlebige Ballen (≈ 0,3–0,55 s), die von gelbweiß über orange zu Ruß verlaufen (Atlas)
+    const fires = Math.max(3, Math.round(7 * sc));
     for (let i = 0; i < fires; i++) {
       const L = this.fire;
-      const j = L.spawn(x + rnd(-0.6, 0.6) * R, y + rnd(0.2, 1.1) * R, z + rnd(-0.6, 0.6) * R,
-        rnd(-4.5, 4.5) * R, rnd(2, 6.5) * R, rnd(-4.5, 4.5) * R, rnd(0.55, 0.95), rnd(1.4, 2.1) * R, rnd(3.4, 4.8) * R, 3.2, 2.1, 1.3, 1, CELL.FIRE);
+      const j = L.spawn(x + rnd(-0.35, 0.35) * R, y + rnd(0.15, 0.7) * R, z + rnd(-0.35, 0.35) * R,
+        (rnd(-3, 3) + ux * 4) * R, (rnd(1, 3.5) + uy * 1.5) * R, (rnd(-3, 3) + uz * 4) * R, rnd(0.32, 0.55), rnd(0.6, 0.9) * R, rnd(1.7, 2.5) * R, 2.5, 2.0, 1.55, 1, CELL.FIRE);
       L.flags[j] |= PF.ANIM;
       L.frames[j] = CELL.FIRE_FRAMES;
-      L.drag[j] = 3.4;
-      L.grav[j] = -3;
-      L.rv[j] = rnd(-1.4, 1.4);
-      L.fadePow[j] = 0.6;
+      L.drag[j] = 5.5;
+      L.grav[j] = -2.5;
+      L.rv[j] = rnd(-1.2, 1.2);
+      L.fadePow[j] = 0.45;
     }
-    for (let i = 0; i < Math.max(2, Math.round(4 * sc)); i++) {
+    // heißer Kern (additiv, Bloom) – nur die ersten Bilder
+    for (let i = 0; i < Math.max(1, Math.round(2 * sc)); i++) {
       const L = this.add;
-      const j = L.spawn(x + rnd(-0.4, 0.4) * R, y + rnd(0.3, 0.9) * R, z + rnd(-0.4, 0.4) * R, rnd(-2, 2), rnd(1, 3), rnd(-2, 2),
-        rnd(0.3, 0.45), 1.6 * R, 3.2 * R, 1.8, 1.0, 0.45, 1, CELL.FIRE);
+      const j = L.spawn(x + rnd(-0.25, 0.25) * R, y + rnd(0.2, 0.6) * R, z + rnd(-0.25, 0.25) * R, rnd(-1, 1), rnd(0.5, 1.5), rnd(-1, 1),
+        rnd(0.12, 0.18), 1.1 * R, 1.9 * R, 1.6, 0.95, 0.5, 1, CELL.FIRE);
       L.flags[j] |= PF.ANIM;
       L.frames[j] = CELL.FIRE_FRAMES;
       L.drag[j] = 3;
-      L.fadePow[j] = 1.2;
+      L.fadePow[j] = 1.6;
     }
-    // Glut / Funken
-    const embers = Math.round(30 * sc);
+    // Druckwelle: dünner Ring aus Staub/Luftschliere, der in ≈ 0,15 s aufreißt (kamerazugewandt)
+    {
+      const j = this.alpha.spawn(x, y + 0.4 * R, z, 0, 0, 0, 0.17, 0.6 * R, 7.5 * R, dustC[0], dustC[1], dustC[2], 0.42, CELL.RING);
+      this.alpha.fadePow[j] = 1.2;
+    }
+    // Funken + Glut: schnell und kurz, wenige glimmen nach
+    const embers = Math.round(26 * sc);
     for (let i = 0; i < embers; i++) {
-      _v.set(rnd(-1, 1), rnd(0.15, 1.2), rnd(-1, 1)).normalize();
-      const sp = rnd(9, 24) * Math.sqrt(R);
-      this._spark(x, y + 0.2, z, _v.x * sp, _v.y * sp, _v.z * sp, rnd(0.45, 1.2), rnd(0.03, 0.05), i % 2 ? C.ember : C.spark, 3.5, 9, 0.03);
+      _v.set(rnd(-1, 1) + ux, rnd(0.1, 1.2), rnd(-1, 1) + uz).normalize();
+      const sp = rnd(10, 26) * Math.sqrt(R);
+      const slow = i % 5 === 0;
+      this._spark(x, y + 0.2, z, _v.x * sp * (slow ? 0.35 : 1), _v.y * sp * (slow ? 0.35 : 1), _v.z * sp * (slow ? 0.35 : 1), slow ? rnd(0.9, 1.6) : rnd(0.18, 0.45), rnd(0.02, 0.04), slow ? C.ember : i % 2 ? C.spark : C.sparkHot, slow ? 2.5 : 4, 9, slow ? 0.012 : 0.03);
     }
-    // Trümmer
-    const debris = Math.round(18 * sc);
+    // Trümmer: kantige Brocken in Wand-/Bodenfarbe, Splitter, prallen am Boden ab
+    const debris = Math.round(22 * sc);
+    const chipW = wall ? (SURF[wall.surface] || surf).chip : surf.chip;
     for (let i = 0; i < debris; i++) {
-      _v.set(rnd(-1, 1), rnd(0.4, 1.5), rnd(-1, 1)).normalize();
-      const sp = rnd(5, 14) * Math.sqrt(R);
-      this._chip(x, y + 0.2, z, _v.x * sp, _v.y * sp, _v.z * sp, rnd(1.1, 1.8), rnd(0.05, 0.11) * R, i % 3 ? C.debris : surf.chip, 18, gy + 0.03);
+      _v.set(rnd(-1, 1) + ux * 1.2, rnd(0.3, 1.5), rnd(-1, 1) + uz * 1.2).normalize();
+      const sp = rnd(4, 15) * Math.sqrt(R);
+      const big = i % 4 === 0;
+      const j = this._chip(x, y + 0.2, z, _v.x * sp, _v.y * sp, _v.z * sp, rnd(1.2, 2.2), (big ? rnd(0.08, 0.16) : rnd(0.03, 0.08)) * R, i % 3 ? (wallCol ? dustD : chipW) : C.debris, 16, gy + 0.03);
+      this.alpha.cell[j] = big ? CELL.CHUNK : i % 3 === 1 ? CELL.SHARD : CELL.CHIP;
     }
-    // Dunkler Qualm im Feuer, dann Rauchsäule
-    const dark = Math.max(3, Math.round(7 * sc));
-    for (let i = 0; i < dark; i++) {
-      const j = this._puff(x + rnd(-0.7, 0.7) * R, y + rnd(0.4, 1.5) * R, z + rnd(-0.7, 0.7) * R, rnd(-1.5, 1.5), rnd(1.5, 3.5) * R, rnd(-1.5, 1.5),
-        rnd(1.6, 2.6), 1.3 * R, rnd(3.2, 4.4) * R, C.smokeDark, 0.82, 1.6, 0.6);
-      this.alpha.delay[j] = rnd(0.04, 0.14);
-      this.alpha.fadeIn[j] = 0.06;
+    // Ruß: dichte, dunkle Ballen quellen aus dem Feuerball (verzögert), steigen und weiten sich – beleuchtet (Volumen)
+    const soot = Math.max(4, Math.round(13 * sc));
+    for (let i = 0; i < soot; i++) {
+      const sp = rnd(1.5, 4.5) * R;
+      _v.set(rnd(-1, 1) + ux * 1.4, rnd(0.2, 1) + uy * 0.6, rnd(-1, 1) + uz * 1.4).normalize();
+      const j = this._puff(x + rnd(-0.4, 0.4) * R, y + rnd(0.2, 0.9) * R, z + rnd(-0.4, 0.4) * R, _v.x * sp, _v.y * sp, _v.z * sp,
+        rnd(2.8, 4.5), rnd(0.7, 1.0) * R, rnd(1.8, 2.8) * R, i % 3 ? C.soot : C.sootBrown, 1, 2.4, 0.55, i % 2 ? CELL.SOOT_A : CELL.SOOT_B);
+      this.alpha.delay[j] = rnd(0.08, 0.2);
+      this.alpha.fadeIn[j] = 0.04;
+      this.alpha.fadePow[j] = 0.75;
+      this.alpha.rv[j] = rnd(-0.35, 0.35);
     }
-    const smokes = Math.max(4, Math.round(12 * sc));
-    for (let i = 0; i < smokes; i++) {
-      const j = this._puff(x + rnd(-0.9, 0.9) * R, y + rnd(0.3, 1.6) * R, z + rnd(-0.9, 0.9) * R,
-        rnd(-0.8, 0.8), rnd(1.4, 3.4) * R, rnd(-0.8, 0.8), rnd(3.5, 6), rnd(1.3, 1.9) * R, rnd(5, 7.5) * R,
-        i % 3 ? C.smoke : C.smokeLight, rnd(0.62, 0.8), 1.0, 0.45);
-      this.alpha.delay[j] = rnd(0.12, 0.45);
-      this.alpha.fadeIn[j] = 0.1;
+    // Staub in Wand-/Bodenfarbe: aufgewirbelt, heller als der Ruß, bleibt länger stehen und sinkt
+    const dusts = Math.max(3, Math.round(10 * sc));
+    for (let i = 0; i < dusts; i++) {
+      const sp = rnd(2, 6) * R;
+      _v.set(rnd(-1, 1) + ux * 1.6, rnd(0, 0.7), rnd(-1, 1) + uz * 1.6).normalize();
+      const j = this._puff(x + rnd(-0.6, 0.6) * R, y + rnd(0, 0.9) * R, z + rnd(-0.6, 0.6) * R, _v.x * sp, _v.y * sp, _v.z * sp,
+        rnd(3.5, 6.5), rnd(0.8, 1.2) * R, rnd(3.2, 5) * R, i % 3 ? dustC : dustD, rnd(0.55, 0.75), 2.2, 0.12, i % 2 ? CELL.SOOT_A : CELL.SMOKE_B);
+      this.alpha.delay[j] = rnd(0.02, 0.15);
+      this.alpha.fadeIn[j] = 0.08;
       this.alpha.fadePow[j] = 0.9;
-      this.alpha.rv[j] = rnd(-0.3, 0.3);
+      this.alpha.rv[j] = rnd(-0.25, 0.25);
     }
-    // Staubring am Boden
+    // an der Wand: Staubschleier, der sich entlang der Fläche ausbreitet
+    if (wall) {
+      const tx = -_n.z, tz = _n.x;
+      const wn = Math.max(2, Math.round(6 * sc));
+      for (let i = 0; i < wn; i++) {
+        const sgn = i % 2 ? 1 : -1, sp = rnd(2.5, 6) * R;
+        const j = this._puff(x + _n.x * 0.2, y + rnd(-0.3, 0.8) * R, z + _n.z * 0.2, tx * sgn * sp + _n.x * 1.2, rnd(-0.5, 1.2), tz * sgn * sp + _n.z * 1.2,
+          rnd(2.5, 4), 0.6 * R, rnd(2.2, 3.2) * R, dustC, 0.6, 2.8, 0.05, CELL.DUST);
+        this.alpha.fadeIn[j] = 0.05;
+      }
+    }
+    // Rauchsäule danach (grau, langsam, verweht)
+    const smokes = Math.max(2, Math.round(6 * sc));
+    for (let i = 0; i < smokes; i++) {
+      const j = this._puff(x + rnd(-0.7, 0.7) * R + ux * R, y + rnd(0.8, 2) * R, z + rnd(-0.7, 0.7) * R + uz * R,
+        rnd(-0.6, 0.6), rnd(1.0, 2.4) * R, rnd(-0.6, 0.6), rnd(4.5, 7.5), rnd(1.4, 2) * R, rnd(4.5, 6.5) * R,
+        i % 2 ? C.smoke : C.smokeLight, rnd(0.45, 0.6), 0.9, 0.35);
+      this.alpha.delay[j] = rnd(0.5, 1.2);
+      this.alpha.fadeIn[j] = 0.2;
+      this.alpha.fadePow[j] = 1.1;
+      this.alpha.rv[j] = rnd(-0.2, 0.2);
+    }
+    // aufgewirbelter Schmutz am Boden: flacher, schneller Ring (Druckwelle), dazu Erdbrocken
     if (ground) {
-      const ring = Math.max(6, Math.round(14 * sc));
+      const ring = Math.max(5, Math.round(12 * sc));
+      const gd = surf.dustDark || surf.dust;
       for (let i = 0; i < ring; i++) {
         const a = (i / ring) * Math.PI * 2 + rnd(-0.2, 0.2);
-        const sp = rnd(6, 10) * R;
-        this._puff(x + Math.cos(a) * 0.6, gy + 0.3, z + Math.sin(a) * 0.6, Math.cos(a) * sp, rnd(0.4, 1.2), Math.sin(a) * sp,
-          rnd(1.6, 2.8), 0.7 * R, rnd(2.8, 4.2) * R, surf.dustDark || surf.dust, 0.8, 2.6, 0.12);
+        const sp = rnd(7, 12) * R;
+        const j = this._puff(x + Math.cos(a) * 0.6, gy + 0.25, z + Math.sin(a) * 0.6, Math.cos(a) * sp, rnd(0.3, 1.0), Math.sin(a) * sp,
+          rnd(1.8, 3.2), 0.5 * R, rnd(2.4, 3.6) * R, i % 2 ? gd : surf.dust, 0.7, 3.2, 0.08, CELL.DUST);
+        this.alpha.fadeIn[j] = 0.04;
       }
       // Brandfleck
-      if (this.preset.decals > 0 && ground.normal.y > 0.5) {
+      if (this.preset.decals > 0 && ground.normal.y > 0.5 && y - gy < 1.6) {
         _t1.copy(ground.point);
-        this.decals.add(DECAL.SCORCH, _t1, ground.normal, rnd(2.8, 3.6) * R, 45, this._time, 0.95);
+        this.decals.add(DECAL.SCORCH, _t1, ground.normal, rnd(2.4, 3.2) * R, 45, this._time, 0.95);
       }
     }
   }
@@ -1026,6 +1105,7 @@ export class Effects {
     if (this._light) {
       this._light.position.set(x, y + 0.5, z);
       this._light.color.setHex(0xf2f6ff);
+      this._lightFade = 0;
       this._light.distance = 22;
       this._lightLife = this._lightDur = 0.22;
       this._lightPeak = 140;
@@ -1296,11 +1376,20 @@ export class Effects {
 
   /* ================================================================ Takt */
 
+  /** Sonnenrichtung in Kamerasicht für die Volumen-Schattierung der Rauchballen (fxlayers.js uSunV). */
+  _sunView() {
+    const L = this.G.world && this.G.world.lighting, cam = this.G.camera, v = this.alpha.sunV;
+    if (!L || !L.sunDirection || !cam) { v.w = 0; return; }
+    _w.copy(L.sunDirection).transformDirection(cam.matrixWorldInverse);
+    v.set(_w.x, _w.y, _w.z, clamp((L.sunIntensity ?? 2.5) / 3, 0.25, 0.9));
+  }
+
   update(dt) {
     if (!this._built || !this._subs) return;
     this._time += dt;
     this._syncCamera();
     this._flushDecals();
+    this._sunView();
     this.alpha.update(dt);
     this.fire.update(dt);
     this.add.update(dt);
@@ -1333,6 +1422,8 @@ export class Effects {
       this._lightLife -= dt;
       const k = Math.max(0, this._lightLife / this._lightDur);
       this._light.intensity = this._lightPeak * k * k;
+      // Explosion: Blitz weißgelb → Glut orange (zer2)
+      if (this._lightFade) { this._light.color.setRGB(1, 0.55 + 0.3 * k, 0.25 + 0.4 * k * k); if (this._lightLife <= 0) this._lightFade = 0; }
       if (this._lightLife <= 0) this._lightPrio = 0;
     } else if (this._light) { this._light.intensity = 0; this._lightPrio = 0; }
   }

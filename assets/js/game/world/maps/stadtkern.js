@@ -5,9 +5,10 @@
 // (Schaufenster, Auslagen), Treppenhäusern bis aufs Dach, möblierten Wohnungen, Balkonen und Toreinfahrten; dahinter
 // Hinterhöfe, das Kaufhaus am Platz mit Dachterrasse, Hinterhäuser, eine Hinterstraße (Startbereich) und Querstraßen.
 // Vertikales Spiel: Dächer (verbunden über die Brüstungen), Balkone, U-Bahn. Alle Namen frei erfunden.
-import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261119182451';
-import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01 } from '../props.js?v=20261119182451';
-import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261119182451';
+import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261121041936';
+import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261121041936';
+import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261121041936';
+import { stadtkernFuellen } from './fuell-karten.js?v=20261121041936'; // fuell (20.11.): Linden der Lindenallee u. a.
 
 const PI = Math.PI, Q = PI / 2;
 const HX = 56, HZ = 56; // Spielfläche (Kulissen dahinter)
@@ -72,6 +73,8 @@ function haelfte(b, s, zones) {
   haltestelle(b, 30, Z(7.8), s);
   b.model('fire_hydrant', -30, 0, Z(8.2), { ry: s > 0 ? PI : 0, collide: false });
   b.box(-30, 0, Z(8.2), 0.4, 0.8, 0.4, 'black', { visual: false, minimap: 'prop' });
+  // platz (19.11.): Poller an der Bordsteinkante vor dem Platz (Kommentar oben versprach sie, es gab keine) – Abstand 2,5 m
+  for (let x = -12.5; x <= 12.6; x += 2.5) bollard(b, x, Z(6.45), { tint: '#3d4247' });
   // Hinterstraße (Startbereich): Autos, Container, Absperrung
   car(b, -26, Z(52.5), { ry: Q, color: '#6a7a52' });
   car(b, 12, Z(52.5), { ry: -Q, color: '#8c2b24' });
@@ -107,7 +110,8 @@ function allee(b, zones) {
   for (const [x, z, r] of [[-30, 3.2, 1.3], [30, -3.2, 1.3], [0, 4.6, 0.9], [0, -4.6, 0.9], [-44, -3.5, 1.0], [44, 3.5, 1.0]]) {
     b.decal(x, 0.012, z, r * 3.4, r * 3.4, 'cracks', { opacity: 0.9 });
     b.decal(x, 0.014, z, r * 2.2, r * 2.2, 'soot', { opacity: 0.7 });
-    rubble(b, x + r * 0.9, z, r * 0.7, { mat: 'asphalt', tint: '#5a5854' });
+    // platz (19.11.): Auswurf aus Erde mit grauen Belagbrocken statt schwarzem Asphaltkegel (QA: „schwarzer Klotz“)
+    rubble(b, x + r * 0.9, z, r * 0.7, { mat: 'dirt', tint: '#8f8270', chunkMat: 'concrete_dirty', chunkTint: '#7c7872' });
   }
   // Barrikaden auf der Allee (versetzt, beidseits gleich)
   for (const s of [-1, 1]) {
@@ -167,8 +171,10 @@ export default {
   chunkSize: 32,
   ambience: 'industrial',
   // texturen 14.11.: neue Fotoscan-Sätze – dunkler Straßenasphalt, Gehwegplatten; Beton/Putz/Ziegel aus der Standardzuordnung
-  assets: { hdri: 'np_sky_nachmittag_dunst', materials: { asphalt: 'asphalt_dark', paving: 'paving_slabs' } },
+  assets: { hdri: 'np_sky_nachmittag_dunst', materials: { asphalt: { id: 'asphalt_dark', color: [1.4, 2.1, 2.95] }, paving: 'paving_slabs' } }, // tex4: neutral dunkelgrau statt rotbraun
   defaultSurface: 'concrete',
+  // ges2 (21.11.): Fahrbahnen (Lindenallee, Hinter- und Querstraßen) – Füllschicht setzt dort kein Grün
+  fuellung: { fahrbahn: [[-HX, -6, HX, 6], [-48, 48, 48, HZ], [-48, -HZ, 48, -48], [-HX, 6, -48, HZ], [48, 6, HX, HZ], [-HX, -HZ, -48, -6], [48, -HZ, HX, -6]] },
   navSpacing: 1.5,
   groundNoise: 0.18,
   interiorTint: [1, 0.96, 0.9],
@@ -190,6 +196,7 @@ export default {
     haelfte(b, 1, zones);
     haelfte(b, -1, zones);
     rand(b);
+    stadtkernFuellen(b);
     // Startpunkte: Hinterstraßen (A Süd, B Nord); FFA verteilt (Höfe, Läden, Platz, U-Bahn, Dächer nicht)
     const spawns = { A: [], B: [], ffa: [] };
     for (const x of [-44, -36, -20, -12, -2, 6, 18, 24, 36, 44, -52, 52]) { spawns.A.push({ x, z: x === -52 || x === 52 ? 46 : 51.5, yaw: 0 }); spawns.B.push({ x, z: x === -52 || x === 52 ? -46 : -51.5, yaw: PI }); }

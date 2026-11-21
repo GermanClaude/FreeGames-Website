@@ -1,6 +1,7 @@
 // NULLPUNKT — Android-Projekt nach `npx cap add android` anpassen (läuft im Workflow .github/workflows/android.yml und
 // lokal). Das erzeugte Projekt mobile/android/ gehört nicht ins Repo – es wird bei jedem Bau neu erzeugt und gepatcht:
 //   • Rechte: Mikrofon (Sprachchat, WebRTC) + Audio-Einstellungen; INTERNET bringt Capacitor mit
+//   • Geräte: Touchscreen/Controller optional, Android-TV-Starter (Leanback) – Spiel ist komplett per Controller bedienbar
 //   • Aktivität: Querformat/Hochformat frei (Startseite hochkant, Spiel quer), Bildschirm an, Hardwarebeschleunigung
 //   • MainActivity: Vollbild (System-Leisten ausblenden, mit Wischen kurz einblenden), Mikrofon-Freigabe für getUserMedia
 //   • Symbol: assets/img/icon-512.png als Launcher-Symbol (adaptive Symbole der Vorlage entfernt)
@@ -29,6 +30,15 @@ for (const perm of ['android.permission.RECORD_AUDIO', 'android.permission.MODIF
   if (!man.includes(perm)) man = man.replace(/(<\/manifest>)/, `    <uses-permission android:name="${perm}" />\n$1`);
 }
 if (!man.includes('android.hardware.microphone')) man = man.replace(/(<\/manifest>)/, '    <uses-feature android:name="android.hardware.microphone" android:required="false" />\n$1');
+// plattform (19.11.): auch ohne Touchscreen installierbar (Android-TV, Chromebook, Konsolen-artige Geräte mit Controller);
+// Controller sind optional. Android TV listet die App im Leanback-Starter (Kategorie LEANBACK_LAUNCHER, Banner = Symbol).
+for (const f of ['android.hardware.touchscreen', 'android.hardware.gamepad', 'android.software.leanback']) {
+  if (!man.includes(`"${f}"`)) man = man.replace(/(<\/manifest>)/, `    <uses-feature android:name="${f}" android:required="false" />\n$1`);
+}
+if (!man.includes('LEANBACK_LAUNCHER')) {
+  man = man.replace(/(<category android:name="android.intent.category.LAUNCHER"\s*\/>)/, '$1\n                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />');
+}
+if (!/android:banner=/.test(man)) man = man.replace(/<application\b/, '<application\n        android:banner="@mipmap/ic_launcher"');
 man = man.replace(/<activity\b([^>]*?)>/, (m, attrs) => {
   let a = attrs;
   if (!/screenOrientation=/.test(a)) a += '\n            android:screenOrientation="fullUser"';

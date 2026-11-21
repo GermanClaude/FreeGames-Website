@@ -5,13 +5,13 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261119182451';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261119182451';
+import { sampleSpline } from '../terrain/generate.js?v=20261121041936';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261121041936';
 // karten-voll (14.11.): Trümmer im Niemandsland (Wagenreste, Blech, Hülsen, Kisten, Drahtreste)
-import { truemmerfeld } from './niemandsland-leben.js?v=20261119182451';
-import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261119182451';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261119182451'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261119182451';
+import { truemmerfeld } from './niemandsland-leben.js?v=20261121041936';
+import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261121041936';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261121041936'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261121041936';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -74,7 +74,8 @@ const BRANDWALD = {
   climbMax: 2.8, // Gräben ≈ 2–2,7 m bis zur Brustwehr: Ausstieg per Klettern (27.10.)
   defaultSurface: 'dirt',
   wallMargin: 35,
-  assets: { hdri: 'np_sky_vormittag_bewoelkt' },
+  assets: { hdri: 'np_sky_vormittag_bewoelkt', // tex4: Verschalung/Roste aus verwittertem Bretterscan (statt lackiertem Dielenboden)
+    materials: { wood_planks: { id: 'wood_planks_weathered', color: [2.6, 2.5, 2.5], roughness: 1.1 } } },
   lighting: {
     // heller, gleichmäßig bedeckter Himmel (fast weiß), Sonne nur angedeutet; Dunst lässt die fernen Stämme verblassen
     sun: { elevation: 48, azimuth: 205, color: '#e4e0d8', intensity: 0.9 },
@@ -124,7 +125,8 @@ const BRANDWALD = {
     mix: { hoch: 0.3, gebrochen: 0.36, stumpf: 0.16, grau: 0.18 },
     // dichtere Haine hinter den Linien, Lichtungen an Flaggen/Bauten
     groves: [[-150, 120, 40, 4], [150, -120, 40, 4], [-40, -130, 30, 3.6], [60, 130, 30, 3.6]],
-    clearings: [[8, 6, 12], [-100, 14, 26], [106, -22, 22]],
+    // platz2 (20.11.): auch um die Wracks – vorher stand ein Baumstamm mitten im ausgebrannten Lastwagen (30/−8)
+    clearings: [[8, 6, 12], [-100, 14, 26], [106, -22, 22], ...WRECKS.map((w) => [w[0], w[1], w[3] === 'lkw' ? 6.5 : 5])],
   },
   // Bodenstreu (je m², Ring um die Kamera): verkohlte Zweige, graue Stöcke, Äste, Rindenstücke, Holzkohle, Steine
   embers: { count: 26, seed: 2115 },   // schwelende Stümpfe/Stämme mit dünnem Rauch
@@ -174,6 +176,9 @@ const BRANDWALD = {
   vehicles: [
     { id: 'A-panzer-1', team: 'A', kind: 'tank', x: 50, z: HQZ + 8, yaw: 0 },
     { id: 'B-panzer-1', team: 'B', kind: 'tank', x: -50, z: -HQZ - 8, yaw: Math.PI },
+    // Schützentransporter je Team (20.11., Rolle → Typ je Panzergeneration, vehicles/data-troop.js)
+    { id: 'A-apc-1', team: 'A', kind: 'apc', x: 34, z: HQZ + 10, yaw: 0 },
+    { id: 'B-apc-1', team: 'B', kind: 'apc', x: -34, z: -HQZ - 10, yaw: Math.PI },
   ],
   secrets: [],
 };

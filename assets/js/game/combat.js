@@ -7,8 +7,8 @@
 // Punkte (stats.score) und captures zählt der Modus.
 
 import * as THREE from 'three';
-import { isLongshot } from '../shared/modes.data.js?v=20261119182451';
-import { createArmorState, absorbDamage, canInsertPlate, insertPlate, plateCount, classDef } from '../shared/classes.data.js?v=20261119182451';
+import { isLongshot } from '../shared/modes.data.js?v=20261121041936';
+import { createArmorState, absorbDamage, canInsertPlate, insertPlate, plateCount, classDef } from '../shared/classes.data.js?v=20261121041936';
 
 const _ray = new THREE.Ray();
 const _v1 = new THREE.Vector3();
@@ -383,6 +383,8 @@ export class Combat {
     const absorbed = armorRes ? armorRes.plates + armorRes.helmet : 0;
     const before = target.health;
     target.health = Math.max(0, target.health - amount);
+    // Infanteriesimulation (isim/body.js): tödlicher Treffer am Spieler → bewusstlos statt tot (Leben bleibt bei 1)
+    if (target.health <= 0 && target.isPlayer && G.isim && G.isim.interceptDeath(target, info, amount, before)) target.health = 1;
     target.lastDamageTime = now;
     const dealt = before - target.health;
     const killed = target.health <= 0;

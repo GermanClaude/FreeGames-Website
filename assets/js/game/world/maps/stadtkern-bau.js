@@ -5,12 +5,12 @@
 // Verteilerebene unter der Straße mit zwei Abgängen, Litfaßsäule, Telefonzelle, Kulissenfassaden am Kartenrand.
 // Spiegelung: Bausteine bekommen s = ±1 (Team-Hälfte); Straßenseite liegt bei kleinerem |z|.
 import * as THREE from 'three';
-import { building, wall, railing, slab } from '../arch.js?v=20261119182451';
-import { frame, hash01, sandbags, car, jersey, lampPost, awning, tree, bench, dumpster, electricBox, crateStack, barrelGroup, palletStack, tires, cone } from '../props.js?v=20261119182451';
-import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, chip, igel, tonnen, bauzaun } from './neu-bau.js?v=20261119182451';
-import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, regal, kommode, kueche, bild, teppich, theke, waschtisch } from './grenzland-innen.js?v=20261119182451';
-import { shelf, armchair, wardrobe, dresser, picture, rug } from './altstadt-ausstattung.js?v=20261119182451';
-import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde, pinnwand } from './hafen-ausstattung.js?v=20261119182451';
+import { building, wall, railing, slab } from '../arch.js?v=20261121041936';
+import { frame, hash01, sandbags, car, jersey, lampPost, awning, tree, bench, dumpster, electricBox, crateStack, barrelGroup, palletStack, tires, cone } from '../props.js?v=20261121041936';
+import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, chip, igel, tonnen, bauzaun } from './neu-bau.js?v=20261121041936';
+import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, regal, kommode, kueche, bild, teppich, theke, waschtisch } from './grenzland-innen.js?v=20261121041936';
+import { shelf, armchair, wardrobe, dresser, picture, rug } from './altstadt-ausstattung.js?v=20261121041936';
+import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde, pinnwand } from './hafen-ausstattung.js?v=20261121041936';
 
 const PI = Math.PI, Q = PI / 2;
 export const FH = 3.4;
@@ -203,7 +203,12 @@ export function altbau(b, o) {
   for (let f = 0; f < floors; f++) {
     const yy = f === 0 ? 0.12 : f * fh, hh = fh - 0.25 - (f === 0 ? 0.12 : 0);
     // Hausflurwand mit Wohnungs-/Ladentür am Podest (EG: Tür zum Laden-Lager)
-    wall(b, { x0: fx, z0: wz0, x1: fx, z1: wz1, y: yy, h: hh, t: 0.15, mat: 'plaster_white', tint: '#e6dcc6', openings: [{ at: landZ - wz0, w: 1.0, h: 2.1, kind: 'gap', frameMat: 'wood_dark', frameTint: '#6a4a32' }] }); // Wohnungstüren herausgerissen (Krieg) – spart bewegliche Türen
+    // platz2 (20.11.): der Flurrest hinter dem Treppenhaus (zwischen Treppenhaus-Rückwand und Hofwand) war in den
+    // Obergeschossen ringsum geschlossen („Nicht erreichbare Fläche“ bei −32,3/27,8; ±15,8/±20,3) → Durchgang vom
+    // hinteren Zimmer (Kammer)
+    // Tür gleich hinter dem Treppenhaus: Schrank/Waschtisch des Hinterzimmers stehen an dieser Wand in Raummitte
+    const kz = cz + s * (L / 2 + 0.85), kammer = f > 0 && Math.abs(zIn1 - (cz + s * L / 2)) > 2.2;
+    wall(b, { x0: fx, z0: wz0, x1: fx, z1: wz1, y: yy, h: hh, t: 0.15, mat: 'plaster_white', tint: '#e6dcc6', openings: [{ at: landZ - wz0, w: 1.0, h: 2.1, kind: 'gap', frameMat: 'wood_dark', frameTint: '#6a4a32' }, ...(kammer ? [{ at: kz - wz0, w: 0.9, h: 2.05, kind: 'gap', frameMat: 'wood_dark', frameTint: '#6a4a32' }] : [])] }); // Wohnungstüren herausgerissen (Krieg) – spart bewegliche Türen
     if (f === 0 && gx != null) for (const sx of [-1, 1]) wall(b, { x0: gx + sx * (gw / 2 + 0.08), z0: wz0, x1: gx + sx * (gw / 2 + 0.08), z1: wz1, y: yy, h: hh, t: 0.16, mat: 'plaster_white', tint: shadeHex(color, 0.92) });
     // Mittelwand (Vorder-/Hinterzimmer) zwischen Flur und Außenwand bzw. Torwand
     const mx0 = ce > 0 ? (f === 0 && o.gate === 'w' ? gx + gw / 2 + 0.16 : x0 + t) : fx + 0.08;
@@ -409,7 +414,7 @@ export function hofAusstattung(b, x0, z0, x1, z1, s) {
   tires(b, sx + outer * 0.8, sz + 1.2, { n: 3, y: 0.12 });
   // Linde mit Bank
   tree(b, cx, cz + s * 1, { kind: 'tree', h: 4.2, s: 1.35 });
-  bench(b, cx, cz + s * 3.0, { ry: s > 0 ? PI : 0 });
+  bench(b, cx, cz + s * 2.6, { ry: s > 0 ? 0 : PI }); // platz (19.11.): Lehne zum Stamm, Blick in den Hof (vorher Blick 2 m vor den Stamm)
   // Schutt, Kisten (Deckung), Müllcontainer
   rubble(b, cx + outer * 9, z0 + s * 5, 1.3, { mat: 'plaster_damaged', brick: true });
   crateStack(b, cx - outer * 7, cz + s * 3, { ry: 0.3 });

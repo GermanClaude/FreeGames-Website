@@ -263,9 +263,24 @@ export const CLASSES = deepFreeze({
     look: { id: 'besatzung', variant: 'funker', camo: 'oliv', sleeve: '#3d4034', glove: '#232320', vest: 'brustgurt', helmet: 'gefechtshelm', pack: 'funk', patch: 'zahnrad', accent: '#9a8a5a' },
     bot: { weight: 0, aggression: 0.4 },
   },
+  // Pilot (Nutzer 20.11.: „Für Jets und Helikopter einen extra Platz als Spawn-Option“): nur diese Klasse fliegt Hubschrauber
+  // und Jets (vehicles/air/policy.js) und setzt auf Karten mit Luftfahrzeugen direkt im Cockpit ein (vehicles/air/deploy.js,
+  // Auswahl im Einsatzbildschirm). Zu Fuß bewusst schwach: Fliegerkombi mit leichter Weste, MP/Pistole, Rauch, kein Werfer.
+  // Bots ziehen die Klasse nie (weight 0).
+  pilot: {
+    id: 'pilot', name: 'Pilot', short: 'PIL', icon: 'pilot',
+    role: 'Fliegt Hubschrauber und Jets: setzt auf Karten mit Luftfahrzeugen direkt im Cockpit eines freien Musters ein. Zu Fuß nur leichte Weste, MP und Pistole, Rauch- und Splittergranate, Fernglas.',
+    armor: 'leicht', helmet: 'standard', gadget: 'fernglas', tactical: 'smoke',
+    weaponClasses: ['smg', ...SIDEARMS],
+    signature: ['smg'],
+    prefer: { primary: ['smg_qx90', 'smg_vp9'], secondary: ['pi_p9', 'pi_adler'], lethal: ['frag'] },
+    perks: {},
+    look: { id: 'pilot', variant: 'schatten', camo: 'oliv', sleeve: '#6f6e55', glove: '#3a3326', vest: 'brustgurt', helmet: 'gefechtshelm', pack: 'keins', patch: 'pfeil', accent: '#8fa3b0' },
+    bot: { weight: 0, aggression: 0.3 },
+  },
 });
 // Eigener Name: G.data.CLASS_ORDER ist die Waffenklassen-Reihenfolge (weapons.data.js).
-export const SOLDIER_CLASS_ORDER = Object.freeze(['sturm', 'sanitaeter', 'pionier', 'aufklaerer', 'besatzung']);
+export const SOLDIER_CLASS_ORDER = Object.freeze(['sturm', 'sanitaeter', 'pionier', 'aufklaerer', 'besatzung', 'pilot']);
 export const DEFAULT_CLASS = 'sturm';
 
 export const classDef = (id) => CLASSES[id] || CLASSES[DEFAULT_CLASS];
@@ -384,8 +399,22 @@ export const GAME_STYLES = deepFreeze({
     killfeed: 'eigene', enemyMarkers: false, crosshair: 'einstellung', hudMin: 'reduziert', spotting: true, damageDirection: false,
     staminaMult: 1.4, // ≈ 5 s Dauersprint, Rutschen/Sprung entsprechend teurer
   },
+  // Infanteriesimulation (isim/, Nutzer 19.11.): alles selbst – Magazine einzeln, Durchladen, Sicherung, Ladehemmungen,
+  // Visiereinstellung, Verwundungen je Körperteil, Bewusstlosigkeit, Gewicht, kein HUD. Baut auf „Realistisch“ auf:
+  // main.applyStyle setzt G.match.style = 'realistisch' (alle Realismus-Regeln gelten) und G.match.sim = true.
+  // Nur in SIM_MODES; sonst gilt „Realistisch“. crosshair 'aus' = nie (auch nicht per Einstellung).
+  simulation: {
+    id: 'simulation', label: 'Simulation', short: 'Sim',
+    desc: 'Alles selbst: Magazine, Durchladen, Sicherung, Ladehemmungen, Visier, Verwundungen, Gewicht – kein HUD, kein Fadenkreuz.',
+    bulletMult: 1.5, explosiveMult: 1.25, regenDelay: 60, regenRate: 2, bleedout: 8,
+    nameplates: 'team', minimapEnemies: false, uavEnemies: false, hitmarkers: 'aus', hitmarkerThroughWalls: false,
+    killfeed: 'eigene', enemyMarkers: false, crosshair: 'aus', hudMin: 'aus', spotting: false, damageDirection: false,
+    staminaMult: 1.4,
+  },
 });
-export const STYLE_ORDER = Object.freeze(['arcade', 'realistisch']);
+export const STYLE_ORDER = Object.freeze(['arcade', 'realistisch', 'simulation']);
+/** Modi mit Infanteriesimulation (Spielstil „Simulation“); übrige Modi spielen ihn als „Realistisch“. */
+export const SIM_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'hp', 'cq', 'kc', 'kampagne']);
 export const DEFAULT_STYLE = 'arcade';
 
 /**
@@ -396,7 +425,7 @@ export const DEFAULT_STYLE = 'arcade';
  */
 export function styleFlags(styleId, { realisticCrosshair = false, rules = null } = {}) {
   const s = GAME_STYLES[styleId] || GAME_STYLES[DEFAULT_STYLE];
-  const out = { ...s, crosshair: s.crosshair === 'an' ? true : !!realisticCrosshair };
+  const out = { ...s, crosshair: s.crosshair === 'an' ? true : s.crosshair === 'aus' ? false : !!realisticCrosshair };
   if (!rules) return out;
   Object.assign(out, rules, { id: s.id });
   if (Number.isFinite(rules.damageMult)) out.bulletMult = rules.damageMult;

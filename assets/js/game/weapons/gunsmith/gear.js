@@ -1,5 +1,5 @@
 // Nahkampf & Wurfwaffen: Kampfmesser, Splittergranate, Haftgranate
-import { ellipsePts } from './parts.js?v=20261119182451';
+import { ellipsePts } from './parts.js?v=20261121041936';
 
 export function knife(b) {
   // Kampfmesser (13.11., nach dem Vorbild USMC-Kampfmesser): Griff aus gepressten Lederscheiben (Ringe mit dunklen

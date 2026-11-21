@@ -1,9 +1,9 @@
 // NULLPUNKT — Reiter „HUD“: HUD-Stil (Voll · Reduziert · Realismus wie Bodycam) mit Schema-Vorschau,
 // Fadenkreuz (Form, Farbe, Vorschau), Bodycam-Einblendung, FPS-Anzeige.
 
-import { esc } from '../dom.js?v=20261119182451';
-import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261119182451';
-import { HINTS } from './schema-page.js?v=20261119182451';
+import { esc } from '../dom.js?v=20261121041936';
+import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261121041936';
+import { HINTS } from './schema-page.js?v=20261121041936';
 
 const STYLES = [
   { id: 'voll', label: 'Voll', desc: 'Alles im Blick: Minikarte, Kompass, Munition, Leben, Treffermarker.' },
@@ -31,7 +31,7 @@ export function hudPage(P) {
   const S = P.settings;
   let host = null;
   let off = null;
-  const ROWS = ['crosshairStyle', 'crosshairColor', 'reticleSize', 'bodycamStamp', 'showFps'];
+  const ROWS = ['crosshairStyle', 'crosshairColor', 'reticleSize', 'bodycamStamp', 'showFps', 'tvMode', 'uiScale'];
 
   function sync() {
     if (!host) return;
@@ -65,7 +65,10 @@ export function hudPage(P) {
         ${rowHtml(P, 'reticleSize', { hint: 'Größe des Leuchtpunkts in Leuchtpunkt- und Holo-Visieren (beim Holo nur der Mittelpunkt, der Ring bleibt).' })}
         ${headHtml('Anzeigen')}
         ${rowHtml(P, 'bodycamStamp', { hint: HINTS.bodycamStamp })}
-        ${rowHtml(P, 'showFps', { hint: HINTS.showFps })}`;
+        ${rowHtml(P, 'showFps', { hint: HINTS.showFps })}
+        ${headHtml('Oberfläche')}
+        ${rowHtml(P, 'tvMode', { hint: 'Für Fernseher und Konsolen: größere Schrift und Knöpfe, Abstand zum Bildschirmrand. Automatisch an im Xbox- und PlayStation-Browser und auf Fernsehern.' })}
+        ${rowHtml(P, 'uiScale', { hint: 'Größe von Menüs und HUD-Anzeigen. Automatisch: 130 % im TV-Modus, sonst 100 %.' })}`;
       off = bindRows(host, { ...P, after: sync });
       host.addEventListener('click', onClick);
       sync();

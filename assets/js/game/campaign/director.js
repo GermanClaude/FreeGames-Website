@@ -15,12 +15,12 @@
 // Wiedereinstieg am Checkpoint k: mission.prepare(m) (gemeinsam, z. B. Verbündete), stages[k].setup(m), dann ab k.
 
 import * as THREE from 'three';
-import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261119182451';
-import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261119182451';
-import { prepareVehicleModels } from '../vehicles/models.js?v=20261119182451';
-import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261119182451';
-import { createFaceRig, FaceDriver } from './face.js?v=20261119182451';
-import { issueCommand } from '../bots/ai/orders.js?v=20261119182451';
+import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261121041936';
+import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261121041936';
+import { prepareVehicleModels } from '../vehicles/models.js?v=20261121041936';
+import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261121041936';
+import { createFaceRig, FaceDriver } from './face.js?v=20261121041936';
+import { issueCommand } from '../bots/ai/orders.js?v=20261121041936';
 
 const _v = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -32,6 +32,8 @@ export const CAMPAIGN_DIFF = {
   veteran: { name: 'Veteran', enemies: 1.25, lives: 5, hint: 'Mehr und härtere Gegner, 5 Wiedereinstiege je Mission.' },
   elite: { name: 'Elite', enemies: 1.5, lives: 3, hint: 'Gnadenlos: 3 Wiedereinstiege je Mission.' },
 };
+/** Infanteriesimulation als Kampagnen-Schwierigkeit (nur Infanterie-Kampagne): Gegner wie Veteran, Spielstil „Simulation“. */
+export const CAMPAIGN_SIM = { name: 'Simulation', base: 'veteran', hint: 'Alles selbst: Magazine, Durchladen, Sicherung, Verwundungen, kein HUD – Gegner wie Veteran, 5 Wiedereinstiege.' };
 
 class Handle {
   constructor(test) { this.test = test; this._done = false; }
@@ -227,7 +229,7 @@ export class Director {
 
   _event(name, e) {
     if (name === 'kill' && e && e.victim) this._onKill(e);
-    if (name === 'weapon:fire' && e && this.extras.size) this._shotAtExtras(e);
+    if (name === 'weapon:fire' && e && (this.extras.size || (this._kbProps && this._kbProps.some((a) => a.protect)))) this._shotAtExtras(e);
     // Befehle enden mit dem Tod eines Bots: wiederkehrende Verbündete bekommen den letzten Befehl erneut
     if (name === 'actor:spawn' && e && e.actor && e.actor._kc && e.actor._kc.ally && this.lastOrder) {
       const b = e.actor, o = this.lastOrder;
@@ -435,8 +437,11 @@ export class Director {
     const W = this.G.world;
     let wall = Infinity;
     try { const h = W && W.raycast ? W.raycast(e.origin, e.dir, 200) : null; if (h) wall = h.distance; } catch { /* */ }
-    for (const x of this.extras.values()) {
-      if (!x.protect || x.removed || x.a.hidden) continue;
+    // Geschützte Figuren: Extras (protect) und Figuren aus hilfen-b prop({ protect: true }) (Einwohner, Kessar …)
+    const targets = [];
+    for (const x of this.extras.values()) if (x.protect && !x.removed && !x.a.hidden) targets.push({ a: x.a, hit: (s) => x.hit(s) });
+    for (const a of this._kbProps || []) if (a.protect && !a.hidden && typeof a.hit === 'function') targets.push({ a, hit: (s) => a.hit(s) });
+    for (const x of targets) {
       // Strahl gegen eine senkrechte Kapsel (Füße bis Kopf, r 0,32 m; geduckt niedriger)
       const p = x.a.pos, top = x.a.crouch ? 1.15 : 1.75;
       const ox = e.origin.x - p.x, oz = e.origin.z - p.z, dx = e.dir.x, dz = e.dir.z;
@@ -838,11 +843,20 @@ export class Director {
    * Zeile sprechen: who = Sprecher-Id (mission.speakers). Lebt ein Verbündeter mit dieser Rolle in der Nähe (≤ 25 m),
    * spricht er vor Ort (Mund bewegt sich), sonst kommt die Zeile über Funk. → Handle (fertig, wenn gesprochen)
    */
-  say(who, text, { expr = null, radio = null } = {}) {
+  say(who, text, { expr = null, radio = null, minor = false } = {}) {
     const h = new Handle(null);
-    this.lines.push({ who, text, expr, radio, h });
-    // Warteschlange kurz halten: veraltete Zeilen (das Geschehen ist schon weiter) entfallen
-    while (this.lines.length > 2) this.lines.shift().h.finish();
+    this.lines.push({ who, text, expr, radio, h, minor, at: this.elapsed });
+    // Warteschlange (kamp3, 15.11.): früher fielen ab drei wartenden Zeilen die ältesten weg – auch Story-Zeilen. Jetzt
+    // entfallen zuerst Nebenzeilen (minor: true, z. B. Zurufe im Gefecht); Story-Zeilen bleiben, solange höchstens sechs
+    // warten (lange Warteschlangen werden schneller abgespielt, siehe _updateLines).
+    while (this.lines.length > 3) {
+      // zuerst Nebenzeilen, dann Zeilen, die schon über 25 s warten (das Geschehen ist weiter)
+      let i = this.lines.findIndex((l) => l.minor);
+      if (i < 0) i = this.lines.findIndex((l) => this.elapsed - l.at > 25);
+      if (i >= 0) { this.lines.splice(i, 1)[0].h.finish(); continue; }
+      if (this.lines.length > 6) { this.lines.shift().h.finish(); continue; }
+      break;
+    }
     return h;
   }
 
@@ -872,7 +886,7 @@ export class Director {
       const track = textToVisemes(l.text, { cps: this.cps });
       l.track = track;
       l.t = 0;
-      l.dur = subtitleDuration(track, 0.7);
+      l.dur = subtitleDuration(track, this.lines.length >= 2 ? 0.25 : 0.7); // Rückstau: kürzerer Nachlauf
       if (near) {
         let f = this.faces.get(bot);
         if (!f || f.soldier !== bot.soldier) {
@@ -940,7 +954,7 @@ export class Director {
   checkpoint(id, cp, { silent = false, save = true } = {}) {
     if (cp) this._setSpawn(cp);
     this.checkpointId = id;
-    if (save && this.store) { try { this.store.saveCheckpoint(this.mission.id, id, this.diffId); } catch (err) { console.error(err); } }
+    if (save && this.store) { try { this.store.saveCheckpoint(this.mission.id, id, this.G.match.sim ? 'simulation' : this.diffId); } catch (err) { console.error(err); } }
     if (!silent && this.ui) this.ui.toast('Checkpoint erreicht', 'ok', 2.2);
     this.G.events.emit('campaign:checkpoint', { mission: this.mission.id, id });
   }
@@ -993,6 +1007,7 @@ class Extra {
     this.m = m;
     this.id = id;
     this.protect = !!def.protect;
+    this.failText = def.failText || null; // eigener Fehlschlag-Text (z. B. Geisel, Zeuge)
     this.removed = false;
     this.target = null;
     this.trail = [];
@@ -1015,7 +1030,7 @@ class Extra {
     this.hits += 1;
     this.m.G.events.emit('campaign:extraHit', { id: this.id, by });
     for (const h of this.m.handlers) if (h.name === 'extra:hit') { try { h.fn({ id: this.id, by, extra: this }); } catch (err) { console.error(err); } }
-    if (this.protect && by === this.m.G.player) this.m.fail('Ein Zivilist wurde getroffen. Wir schießen nur, wenn wir sicher sind.');
+    if (this.protect && by === this.m.G.player) this.m.fail(this.failText || 'Ein Zivilist wurde getroffen. Wir schießen nur, wenn wir sicher sind.');
   }
 
   update(dt, cam) {

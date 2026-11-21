@@ -9,13 +9,13 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, vehicleWeapon } from './data.js?v=20261119182451';
-import { VehicleBody } from './sim.js?v=20261119182451';
-import { gearName } from './drivetrain.js?v=20261119182451';
-import { createVehicleModel } from './models.js?v=20261119182451';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261119182451';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261119182451';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261119182451';
+import { VEHICLES, vehicleWeapon } from './data.js?v=20261121041936';
+import { VehicleBody } from './sim.js?v=20261121041936';
+import { gearName } from './drivetrain.js?v=20261121041936';
+import { createVehicleModel } from './models.js?v=20261121041936';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261121041936';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261121041936';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261121041936';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -23,6 +23,7 @@ const _iq = new THREE.Quaternion(), _ro = new THREE.Vector3(), _rd = new THREE.V
 const Y = new THREE.Vector3(0, 1, 0), X = new THREE.Vector3(1, 0, 0);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
+const gauss = () => { let u = 0; while (u === 0) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); };
 const approach = (cur, target, maxStep) => { const d = wrap(target - cur); return Math.abs(d) <= maxStep ? target : cur + Math.sign(d) * maxStep; };
 
 /** Ersatzmunition eines MG in Schuss (def.belts Gurte zu je def.mag); ohne belts unbegrenzt (null). */
@@ -296,7 +297,10 @@ export class Vehicle {
     let want = null;
     if (it.aimAt) {
       this.muzzle(seat.index, _ro, _rd);
-      _a.copy(it.aimAt).sub(_ro);
+      _a.copy(it.aimAt);
+      const shooter = seat.actor || seat.proxy;
+      if (shooter && !isHuman(shooter) && !shooter._psim) this._botAimError(seat, _a, w, dt); // Panzermodus: eigene Zielfehler (psim/crew-ai.js)
+      _a.sub(_ro);
       if (w && w.def.kind === 'shell') {
         // Ballistik der geladenen Granate (sonst der gewählten)
         const bd = (this.gun && this.gun.loaded && vehicleWeapon(this.type, this.gun.loaded)) || w.def;
@@ -327,12 +331,38 @@ export class Vehicle {
     } else if (seat.def.mount === 'cmg') {
       m.cmgYaw = wrap(approach(m.cmgYaw, wrap(yawH - m.turretYaw), 2.6 * dt));
       m.cmgPitch = approach(m.cmgPitch, clamp(pitchH, -0.17, 0.85), 2.0 * dt);
+    } else if (seat.def.mount === 'mg' && def.mgYaw) {
+      // MG mit Schutzschild (Schützenpanzerwagen): Schwenkbereich nach vorn begrenzt
+      m.mgYaw = clamp(approach(m.mgYaw, clamp(yawH, def.mgYaw[0], def.mgYaw[1]), 3.2 * dt), def.mgYaw[0], def.mgYaw[1]);
+      m.mgPitch = approach(m.mgPitch, clamp(pitchH, def.mgLimits.min, def.mgLimits.max), 2.4 * dt);
     } else if (seat.def.mount === 'mg') {
       m.mgYaw = wrap(approach(m.mgYaw, yawH, 3.2 * dt));
       m.mgPitch = approach(m.mgPitch, clamp(pitchH, def.mgLimits.min, def.mgLimits.max), 2.4 * dt);
     }
     this.muzzle(seat.index, _ro, _rd);
     seat.aimError = Math.acos(clamp(_rd.dot(want), -1, 1));
+  }
+
+  /**
+   * Zielfehler der Bot-Schützen an Lafetten (Nutzer 20.11.: KI soll nicht „jeden Treffer landen“): wandernder Versatz
+   * (MG ≈ 1,1°, Kanone ≈ 0,26° je Sigma, Schwierigkeit skaliert), dazu Reaktionszeit 0,7–1,5 s nach einem Zielwechsel
+   * (seat._bot.readyAt, _updateWeapons). point wird in place verschoben.
+   */
+  _botAimError(seat, point, w, dt) {
+    const now = this.G.time.elapsed;
+    const st = seat._bot || (seat._bot = { off: new THREE.Vector3(), want: new THREE.Vector3(), last: new THREE.Vector3(), has: false, t: 0, readyAt: 0, fireT: 0, on: true });
+    if (!st.has || st.last.distanceToSquared(point) > 36) st.readyAt = now + 0.7 + Math.random() * 0.8; // neues Ziel
+    st.last.copy(point); st.has = true;
+    const dist = Math.max(5, _ro.distanceTo(point));
+    st.t -= dt;
+    if (st.t <= 0) {
+      st.t = 0.6 + Math.random() * 0.9;
+      const diff = { rekrut: 1.6, regulaer: 1.2, veteran: 0.9, elite: 0.7 }[this.G.match && this.G.match.difficulty] || 1.2;
+      const sig = (w && w.def.kind === 'shell' ? 0.0045 : 0.02) * diff * dist;
+      st.want.set(gauss() * sig, gauss() * sig * 0.5, gauss() * sig);
+    }
+    st.off.lerp(st.want, 1 - Math.exp(-dt * 2.5));
+    point.add(st.off);
   }
 
   _updateWeapons(seat, dt) {
@@ -367,6 +397,16 @@ export class Vehicle {
     it.firePressed = false;
     if (frozen || !wants || !this.alive) return;
     if (it.fireWhenAligned && seat.aimError > 0.026) return;
+    // Bot-Schütze (nicht Panzermodus): erst nach der Reaktionszeit, MG in Feuerstößen (1–1,6 s an, 0,8–1,5 s Pause)
+    const bst = seat._bot;
+    if (bst && shooter && !isHuman(shooter) && !shooter._psim) {
+      const now = this.G.time.elapsed;
+      if (now < bst.readyAt) return;
+      if (!shell) {
+        if (now >= bst.fireT) { bst.on = !bst.on; bst.fireT = now + (bst.on ? 1 + Math.random() * 0.6 : 0.8 + Math.random() * 0.7); }
+        if (!bst.on) return;
+      }
+    }
     let fw = w;
     if (shell) {
       // gefeuert wird die geladene Granate, egal welche Sorte gewählt ist
@@ -732,6 +772,7 @@ export class Vehicle {
       M.steerWheel.rotation.z = -st * (def.wheelLock || 2.4);
     }
     if (M.occ.length) this._syncOccupants();
+    if (M.ramp) this._syncRamp(dt);
     if (M.lightsOn !== this.lights) M.setLights(this.lights);
     this._syncCrew(dt);
   }
@@ -775,13 +816,31 @@ export class Vehicle {
     }
   }
 
+  /**
+   * Heckrampe/Hecktüren der Truppentransporter (data-troop.js ramp): offen im Stand, solange jemand auf- oder absitzt
+   * (Sitzbelegung geändert, 6 s) oder kein Fahrer an Bord ist; zu beim Anfahren. Läuft auch im Abbild (liest nur Zustand).
+   */
+  _syncRamp(dt) {
+    const now = this.G.time.elapsed;
+    let sig = 0;
+    for (const s of this.seats) if (s.actor) sig += 2 ** s.index;
+    if (sig !== this._rampSig) { this._rampSig = sig; this._rampAt = now; }
+    const still = Math.abs(this.body.speed || 0) < 0.6;
+    const want = this.alive && still && (now - (this._rampAt ?? -99) < 6 || !this.driver) ? 1 : 0;
+    const t = this._rampT ?? want;
+    this._rampT = want > t ? Math.min(1, t + dt / 1.6) : Math.max(0, t - dt / 1.2);
+    if (this._rampSent !== this._rampT) { this._rampSent = this._rampT; this.model.setRamp(this._rampT); }
+  }
+
   /** Insassenfiguren der Kabine (Zivilfahrzeuge): sichtbar je besetztem Sitz, der eigene Sitz nicht in der Ego-Sicht. */
   _syncOccupants() {
     const M = this.model, st = this._modelState, p = this.G.player;
     const cv = this.sys && this.sys.camera ? this.sys.camera.view : null;
     for (const s of this.seats) {
       const own = !!(p && s.actor === p && cv && !cv.tp);
-      const want = !!s.actor && this.alive && !!s.def.cabin && !own;
+      // Mitfahrer, der aufsteht und feuert (Sicht fireOut): statt der sitzenden Figur das Soldatenmodell (index.js)
+      const firing = !!(s.actor && s.def.cabin && fpViewOf(s).fireOut && s.hatchT >= 0.5);
+      const want = !!s.actor && this.alive && !!s.def.cabin && !own && !firing;
       if (st['o' + s.index] !== want) { st['o' + s.index] = want; M.setOccupant(s.index, want); }
     }
   }

@@ -16,64 +16,67 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import { settings } from '../shared/settings.js?v=20261119182451';
-import { profile } from '../shared/profile.js?v=20261119182451';
-import { TrophyToasts } from './ui/trophy-toast.js?v=20261119182451';
-import * as weaponsData from '../shared/weapons.data.js?v=20261119182451';
-import * as modesData from '../shared/modes.data.js?v=20261119182451';
-import * as mapsData from '../shared/maps.data.js?v=20261119182451';
-import * as classesData from '../shared/classes.data.js?v=20261119182451'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261119182451'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
-import { EventBus } from './engine/events.js?v=20261119182451';
-import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261119182451';
-import { learnTier, deviceInfo } from './engine/device.js?v=20261119182451';
-import { Input } from './engine/input.js?v=20261119182451';
-import { watchForUpdates } from './engine/update.js?v=20261119182451'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261119182451';
-import { DynamicResolution } from './engine/dynres.js?v=20261119182451';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261119182451'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261119182451';
-import { Combat } from './combat.js?v=20261119182451';
-import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261119182451'; // Interaktionspunkte der Karten (Taste F)
-import { Building } from './building.js?v=20261119182451'; // Bauen (Taste K)
-import { Injuries } from './injuries.js?v=20261119182451'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
-import { Gore } from './gore.js?v=20261119182451'; // Blutlachen + Spritzer
-import { Destruction } from './destruction.js?v=20261119182451'; // zerstörbare Fassaden
-import { CarDeform } from './deform.js?v=20261119182451'; // verformbare Autos
-import { Digging } from './digging.js?v=20261119182451'; // Graben mit dem Klappspaten (Großkarten)
-import { Doors } from './doors.js?v=20261119182451'; // bewegliche Türen und Tore (Taste F)
-import { BulletHoles } from './bullet-holes.js?v=20261119182451'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
-import { TreeFall } from './treefall.js?v=20261119182451'; // Bäume brechen unter Beschuss und fallen
-import * as Feedback from '../shared/feedback.js?v=20261119182451'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
+import { settings } from '../shared/settings.js?v=20261121041936';
+import { profile } from '../shared/profile.js?v=20261121041936';
+import { TrophyToasts } from './ui/trophy-toast.js?v=20261121041936';
+import { initTvMode } from './ui/tv-mode.js?v=20261121041936'; // TV-/Konsolen-Modus (plattform)
+import * as weaponsData from '../shared/weapons.data.js?v=20261121041936';
+import * as modesData from '../shared/modes.data.js?v=20261121041936';
+import * as mapsData from '../shared/maps.data.js?v=20261121041936';
+import { mapLockedHere } from '../shared/appgate.js?v=20261121041936'; // riesen: Riesenkarte nur in der App
+import * as classesData from '../shared/classes.data.js?v=20261121041936'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261121041936'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
+import { EventBus } from './engine/events.js?v=20261121041936';
+import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261121041936';
+import { learnTier, deviceInfo } from './engine/device.js?v=20261121041936';
+import { Input } from './engine/input.js?v=20261121041936';
+import { watchForUpdates } from './engine/update.js?v=20261121041936'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261121041936';
+import { DynamicResolution } from './engine/dynres.js?v=20261121041936';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261121041936'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261121041936';
+import { Combat } from './combat.js?v=20261121041936';
+import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261121041936'; // Interaktionspunkte der Karten (Taste F)
+import { Building } from './building.js?v=20261121041936'; // Bauen (Taste K)
+import { Injuries } from './injuries.js?v=20261121041936'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
+import { InfantrySim } from './isim/index.js?v=20261121041936'; // Infanteriesimulation (Spielstil „Simulation“)
+import { Gore } from './gore.js?v=20261121041936'; // Blutlachen + Spritzer
+import { Destruction } from './destruction.js?v=20261121041936'; // zerstörbare Fassaden
+import { CarDeform } from './deform.js?v=20261121041936'; // verformbare Autos
+import { Digging } from './digging.js?v=20261121041936'; // Graben mit dem Klappspaten (Großkarten)
+import { Doors } from './doors.js?v=20261121041936'; // bewegliche Türen und Tore (Taste F)
+import { BulletHoles } from './bullet-holes.js?v=20261121041936'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
+import { TreeFall } from './treefall.js?v=20261121041936'; // Bäume brechen unter Beschuss und fallen
+import * as Feedback from '../shared/feedback.js?v=20261121041936'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261119182451', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261119182451', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261119182451', ['ViewModel']],
-  world: ['./world/index.js?v=20261119182451', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261119182451', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261119182451', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261119182451', ['Effects']],
-  bots: ['./bots/manager.js?v=20261119182451', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261119182451', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261121041936', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261121041936', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261121041936', ['ViewModel']],
+  world: ['./world/index.js?v=20261121041936', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261121041936', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261121041936', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261121041936', ['Effects']],
+  bots: ['./bots/manager.js?v=20261121041936', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261121041936', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261119182451', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261119182451', []],
-  modes: ['./modes/index.js?v=20261119182451', ['createMode']],
-  hud: ['./ui/hud.js?v=20261119182451', ['HUD']],
-  menus: ['./ui/menus.js?v=20261119182451', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261121041936', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261121041936', []],
+  modes: ['./modes/index.js?v=20261121041936', ['createMode']],
+  hud: ['./ui/hud.js?v=20261121041936', ['HUD']],
+  menus: ['./ui/menus.js?v=20261121041936', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261119182451', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261119182451', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261121041936', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261121041936', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261119182451', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261119182451', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261119182451', ['ClientSync']],
+  net: ['./net/index.js?v=20261121041936', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261121041936', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261121041936', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261119182451', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261121041936', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
@@ -424,7 +427,8 @@ function normalizeConfig(cfg = {}) {
   const W = G.data.WEAPONS || {};
   const EQ = G.data.EQUIPMENT || {};
   const modeId = MODES[cfg.modeId] ? cfg.modeId : MODES[settings.get('lastMode')] ? settings.get('lastMode') : 'tdm';
-  const maps = mapsForMode(modeId);
+  // riesen: App-exklusive Karten (MAPS[id].appOnly) außerhalb der App nicht startbar – auch nicht per URL (?map=…)
+  const maps = mapsForMode(modeId).filter((id) => !mapLockedHere((G.data.MAPS || {})[id]));
   const rec = (MODES[modeId] && MODES[modeId].recommendedMaps) || [];
   // Kampagne: die Mission bestimmt die Karte (MODES.kampagne.missionMaps)
   const missionMap = modeId === 'kampagne' && cfg.campaign && MODES.kampagne && MODES.kampagne.missionMaps ? MODES.kampagne.missionMaps[cfg.campaign.mission] : null;
@@ -549,6 +553,8 @@ function spawnActor(actor, fixed = null) {
   if (actor === G.player) G.match.respawnHold = false;
   // Mehrspieler (Host): gemeldete Ausrüstung eines entfernten Menschen gilt ab diesem Spawn
   if (G.match.netRole === 'host' && G.net && G.net.sync && typeof G.net.sync.beforeSpawn === 'function') safe('net.beforeSpawn', () => G.net.sync.beforeSpawn(actor));
+  // Trupp (modes/trupp.js): Ausrüstung der Rolle des gesteuerten Soldaten bzw. der Trupp-Bots
+  if (mode && typeof mode.beforeSpawn === 'function') safe('mode.beforeSpawn', () => mode.beforeSpawn(actor));
   safe('equipActor', () => equipActor(actor));
   actor.respawn(spawn);
   actor.respawnAt = null;
@@ -581,10 +587,14 @@ const SPAWN_GRACE = 5; // s nach dem Spawn, in denen eine neue Ausrüstung sofor
 
 /** Spielstil + Panzerung des Matches aus der normalisierten Konfiguration. */
 function applyStyle(cfg) {
-  const style = cfg.style === 'realistisch' ? 'realistisch' : 'arcade';
-  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: cfg.crosshair })) : null;
+  // Infanteriesimulation (isim/): baut auf „Realistisch“ auf – G.match.style bleibt 'realistisch' (alle Realismus-Regeln),
+  // G.match.sim schaltet die Simulation zu; nur in SIM_MODES (sonst gilt Realistisch)
+  const sim = cfg.style === 'simulation' && (classesData.SIM_MODES || []).includes(cfg.modeId);
+  const style = cfg.style === 'realistisch' || cfg.style === 'simulation' ? 'realistisch' : 'arcade';
+  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: sim ? false : cfg.crosshair })) : null;
   G.match.style = style;
-  G.match.styleFlags = classesData.styleFlags(style, { realisticCrosshair: settings.get('realisticCrosshair'), rules });
+  G.match.sim = sim;
+  G.match.styleFlags = classesData.styleFlags(sim ? 'simulation' : style, { realisticCrosshair: settings.get('realisticCrosshair'), rules });
   G.match.armor = cfg.armor;
   G.match.respawnHold = false;
   G.match.pendingLoadout = null;
@@ -598,7 +608,7 @@ function armorFor(cfg, mapId, modeId) {
   const mode = (G.data.MODES || {})[modeId];
   if (mode && typeof mode.armor === 'boolean') return mode.armor;
   const map = (G.data.MAPS || {})[mapId];
-  return !!(map && map.scale === 'gross') || modeId === 'cq';
+  return !!(map && map.scale === 'gross') || modeId === 'cq' || modeId === 'trupp';
 }
 
 /** Ausrüstung bereinigen: Klasse, Waffen (freigeschaltet), Weste/Helm; fehlende Waffen aus der Klassen-Standardausrüstung. */
@@ -1136,6 +1146,11 @@ async function runStart(config, gen) {
       cfg.enemies = Math.max(0, netCfg.botsB | 0);
       cfg.net = netCfg;
     }
+    // kamp3: Kampagne – Tageszeit/Wetter der Mission auch bei Debug-URL/Checkpoint/Revanche (nicht nur aus dem Menü)
+    if (cfg.modeId === 'kampagne' && cfg.campaign && cfg.timeOfDay == null && cfg.weather == null) {
+      const mc = safe('kampagne-wetter', () => G.modules.modes?.campaignConditions?.(cfg.campaign.mission)) || null;
+      if (mc) { cfg.timeOfDay = mc.time; cfg.weather = mc.weather; }
+    }
     // atmosphere-weather: Wetter/Zeit hier auflösen – „Zufall“ würfelt bei jedem Start (auch Revanche) neu, der
     // Ladebildschirm zeigt das Ergebnis; anderes Wetter/Zeit → Welt neu aufbauen
     const cond = safe('weather', () => G.modules.world?.resolveConditions?.(G.data.MAPS?.[cfg.mapId], { weather: cfg.weather, time: cfg.timeOfDay })) || null;
@@ -1262,6 +1277,7 @@ async function runStart(config, gen) {
     safe('points', () => { G.points = new MapPoints(G, cfg.mapId); });
     safe('building', () => { G.building = new Building(G); });
     safe('injuries', () => { G.injuries = new Injuries(G); });
+    if (G.match.sim) safe('isim', () => { G.isim = new InfantrySim(G); });
     safe('gore', () => { G.gore = new Gore(G); });
     safe('destruction', () => { G.destruction = new Destruction(G); });
     safe('deform', () => { G.deform = new CarDeform(G); });
@@ -1635,6 +1651,7 @@ async function teardownMatch({ keepWorld = false } = {}) {
   if (G.trees) { safe('trees', () => G.trees.dispose()); G.trees = null; }
   if (G.building) { safe('building', () => G.building.dispose()); G.building = null; }
   if (G.injuries) { safe('injuries', () => G.injuries.dispose()); G.injuries = null; }
+  if (G.isim) { safe('isim', () => G.isim.dispose()); G.isim = null; }
   if (G.gore) { safe('gore', () => G.gore.dispose()); G.gore = null; }
   if (G.destruction) { safe('destruction', () => G.destruction.dispose()); G.destruction = null; }
   if (G.deform) { safe('deform', () => G.deform.dispose()); G.deform = null; }
@@ -1719,7 +1736,7 @@ function pause() {
 }
 
 /** Desktop braucht den Pointer-Lock zum Zielen: erst mit Sperre wird weitergespielt. */
-const lockRequired = () => G.input.mode === 'desktop' && !G.input.allowUnlockedMouse && typeof G.canvas.requestPointerLock === 'function' &&
+const lockRequired = () => G.input.mode === 'desktop' && !G.input.allowUnlockedMouse && !G.input.lockUnsupported && typeof G.canvas.requestPointerLock === 'function' &&
   !(G.xr && G.xr.presenting); // VR: Blick über das Headset, keine Zeiger-Sperre
 
 /**
@@ -2029,6 +2046,7 @@ function frame(now, bg = false, xrFrame = null) {
     const net = G.match.netRole && G.net ? G.net : null;
     if (net) step('net:pre', () => net.preUpdate(dt)); // Host: Zustände der Clients → Puppen; Client: Schnappschüsse → Puppen
     if (G.mode && G.mode.preUpdate) step('mode:pre', () => G.mode.preUpdate(dt)); // Cheat-Menü (cheats.js) – Blick/Bewegung/Schuss/Nahkampf vor dem Spieler
+    if (G.isim) step('isim:pre', () => G.isim.preUpdate(dt)); // Simulation: Tasten im Ausrüstungsmenü abfangen
     step('player', () => (G.player.vehicle ? G.vehicles.updateOccupant(G.player, dt) : G.player.update(dt))); // vehicles: Sitz statt Laufen
     step('bots', () => G.bots.update(dt));
     const live = G.match.state === 'playing' || G.match.netLive;
@@ -2038,6 +2056,7 @@ function frame(now, bg = false, xrFrame = null) {
     if (G.building) step('building', () => G.building.update(dt));
     if (G.doors) step('doors', () => G.doors.update(dt));
     if (G.injuries) step('injuries', () => G.injuries.update(dt));
+    if (G.isim) step('isim', () => G.isim.update(dt)); // Infanteriesimulation: Handgriffe, Körper, Bild
     if (G.gore) step('gore', () => G.gore.update(dt));
     if (G.destruction) step('destruction', () => G.destruction.update(dt));
     if (G.deform) step('deform', () => G.deform.update(dt));
@@ -2153,7 +2172,7 @@ function updateLockHint() {
   const el = $('lock-hint');
   if (!el || !G.input) return;
   const st = G.match.state;
-  const lost = G.input.mode === 'desktop' && (st === 'playing' || st === 'countdown') && !G.input.locked && G.input.everLocked && !G.input.allowUnlockedMouse && !G.match.uiHold;
+  const lost = G.input.mode === 'desktop' && (st === 'playing' || st === 'countdown') && !G.input.locked && G.input.everLocked && !G.input.allowUnlockedMouse && !G.input.lockUnsupported && !G.match.uiHold;
   el.hidden = !(lost || (G.match.awaitingLock && st === 'paused'));
 }
 
@@ -2384,6 +2403,7 @@ async function bootstrap() {
     if (G.renderer.onStyleChange) G.renderer.onStyleChange(applyQualityClasses); // Bildstil (core-render)
     if (DEBUG && G.renderer.exposure) G.renderer.exposure.track = true;
     applyQualityClasses();
+    safe('tvMode', () => initTvMode(G));
     G.perf = dynres = new DynamicResolution({ touch: window.matchMedia ? window.matchMedia('(pointer: coarse)').matches : false });
 
     setBoot(0.06, 'Lade Module …');

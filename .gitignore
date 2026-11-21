@@ -9,3 +9,6 @@ desktop/dist/
 # Android-App (mobile/): Abhängigkeiten und das erzeugte Android-Projekt nicht ins Repo
 mobile/node_modules/
 mobile/android/
+
+# Python-Werkzeuge (tools/assets/**)
+__pycache__/

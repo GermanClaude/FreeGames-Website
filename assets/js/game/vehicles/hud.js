@@ -4,13 +4,14 @@
 // das Rohr wirklich zeigt), Treffer-/Schadensblitz, Warnungen, Aussteige-Ring (Pad/VR halten) und die Touch-Knöpfe.
 // Eigene Styles (kein game.css-Eingriff). DOM-Schreibzugriffe nur bei Änderung (zwischengespeicherte Werte).
 import * as THREE from 'three';
-import { DriveHUD } from './hud-drive.js?v=20261119182451';
-import { ViewOverlay, VIEW_CSS } from './views.js?v=20261119182451';
-import { SHORT, loaderSeat } from './crew.js?v=20261119182451';
+import { DriveHUD } from './hud-drive.js?v=20261121041936';
+import { ViewOverlay, VIEW_CSS } from './views.js?v=20261121041936';
+import { SHORT, loaderSeat } from './crew.js?v=20261121041936';
 
 const CSS = `
 .vh-root{position:absolute;inset:0;pointer-events:none;font-family:var(--font-hud,system-ui,sans-serif);color:var(--np-ink,#e9e6df);z-index:4}
 .vh-root[hidden]{display:none}
+body[data-ride-fire] .vh-panel{display:none}
 .vh-prompt{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);padding:6px 14px;border-radius:4px;background:rgba(10,11,13,.62);font-size:16px;font-weight:600;letter-spacing:.04em;white-space:nowrap;text-shadow:0 1px 2px #000}
 .vh-prompt kbd{display:inline-block;min-width:20px;padding:0 6px;margin-right:8px;border:1.5px solid currentColor;border-radius:3px;font:inherit;text-align:center}
 .vh-panel{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:300px;padding:10px 12px 9px;border-radius:6px;background:linear-gradient(180deg,rgba(10,11,13,.66),rgba(10,11,13,.48));box-shadow:0 2px 14px rgba(0,0,0,.35);text-shadow:0 1px 2px rgba(0,0,0,.8)}
@@ -48,7 +49,7 @@ const CSS = `
 .vh-dmg.is-on{box-shadow:inset 0 0 90px rgba(226,73,47,.55);transition:none}
 .vh-scope{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 34%,rgba(0,0,0,.55) 46%,rgba(0,0,0,.92) 60%)}
 .vh-scope[hidden]{display:none}
-body[data-vehicle] .h-cross,body[data-vehicle] .h-weapon,body[data-vehicle] .h-equip,body[data-vehicle] .h-streaks,body[data-vehicle] .h-scope,body[data-vehicle] .h-cook,body[data-vehicle] .h-gunlead,body[data-vehicle] .h-aim,body[data-vehicle] .h-acog,body[data-vehicle] .h-breath,body[data-vehicle] .h-magbar,body[data-vehicle] .h-ammo-hint{display:none!important}
+body[data-vehicle]:not([data-ride-fire]) .h-cross,body[data-vehicle]:not([data-ride-fire]) .h-weapon,body[data-vehicle]:not([data-ride-fire]) .h-equip,body[data-vehicle]:not([data-ride-fire]) .h-streaks,body[data-vehicle]:not([data-ride-fire]) .h-scope,body[data-vehicle]:not([data-ride-fire]) .h-cook,body[data-vehicle]:not([data-ride-fire]) .h-gunlead,body[data-vehicle]:not([data-ride-fire]) .h-aim,body[data-vehicle]:not([data-ride-fire]) .h-acog,body[data-vehicle]:not([data-ride-fire]) .h-breath,body[data-vehicle]:not([data-ride-fire]) .h-magbar,body[data-vehicle]:not([data-ride-fire]) .h-ammo-hint{display:none!important}
 body[data-input-mode="touch"] .vh-panel{width:224px;padding:6px 9px;right:auto;left:calc(50% - 112px);bottom:calc(3% + max(44px, calc(var(--tc-u,1px) * 44)) + 8px + env(safe-area-inset-bottom))}
 body[data-input-mode="touch"] .vh-hint,body[data-input-mode="touch"] .vh-prompt kbd,body[data-input-mode="touch"] .vh-zones,body[data-input-mode="touch"] .vh-wep:not(.is-sel){display:none}
 body[data-input-mode="touch"] .vh-name{font-size:14px}body[data-input-mode="touch"] .vh-speed{font-size:17px}
@@ -65,7 +66,7 @@ body[data-vehicle-near]:not([data-vehicle]) .vc-enter{display:grid}
 .vc-light{--s:44;right:calc(6.5% + var(--tc-u) * 178 + env(safe-area-inset-right));bottom:calc(9% + env(safe-area-inset-bottom))}
 .vc-gas{--s:62;left:calc(3% + env(safe-area-inset-left));bottom:calc(58% + env(safe-area-inset-bottom));border-radius:14px}
 .vc-brake{--s:56;left:calc(3% + env(safe-area-inset-left) + var(--tc-u) * 70);bottom:calc(60% + env(safe-area-inset-bottom));border-radius:14px}
-body[data-vehicle] .tc-jump,body[data-vehicle] .tc-crouch,body[data-vehicle] .tc-grenade,body[data-vehicle] .tc-tactical,body[data-vehicle] .tc-melee,body[data-vehicle] .tc-reload,body[data-vehicle] .tc-lean-l,body[data-vehicle] .tc-lean-r,body[data-vehicle] .tc-light,body[data-vehicle] .tc-streaks,body[data-vehicle] .tc-adsfire,body[data-vehicle] .tc-fire-l{display:none!important}
+body[data-vehicle] .tc-jump,body[data-vehicle] .tc-crouch,body[data-vehicle] .tc-grenade,body[data-vehicle] .tc-tactical,body[data-vehicle] .tc-melee,body[data-vehicle] .tc-reload,body[data-vehicle] .tc-lean-l,body[data-vehicle] .tc-lean-r,body[data-vehicle] .tc-light,body[data-vehicle] .tc-streaks,body[data-vehicle] .tc-adsfire,body[data-vehicle] .tc-fire-l,body[data-vehicle] .tc-feuermodus,body[data-vehicle] .tc-plate,body[data-vehicle] .tc-gadget,body[data-vehicle] .tc-sim-mag,body[data-vehicle] .tc-sim-laden,body[data-vehicle] .tc-sim-inv,body[data-vehicle] .tc-bauen,body[data-vehicle] .tc-faehigkeit,body[data-vehicle] .tc-prone{display:none!important}
 body[data-vehicle][data-vehicle-arms="0"] .tc-fire-r,body[data-vehicle][data-vehicle-arms="0"] .tc-ads,body[data-vehicle][data-vehicle-arms="0"] .tc-swap{display:none!important}
 .vh-gunst{position:relative;display:flex;justify-content:space-between;gap:6px;margin-top:5px;padding:3px 6px;border-radius:3px;font-size:13px;font-weight:600;background:rgba(233,230,223,.08);overflow:hidden}
 .vh-gunst.is-ok{color:#bfe8a8}.vh-gunst.is-empty{color:#ffc23d}
@@ -364,7 +365,8 @@ export class VehicleHUD {
     if (this._swapEl && this._c.swapL !== swapLabel) { this._c.swapL = swapLabel; this._swapEl.dataset.vehWeapon = swapLabel; }
     const ov = s.sight && view ? view.overlay : null;
     this._body('vehicleSight', ov && ov !== 'loader' ? '1' : null); // Touch: Tafel in Optiken verkleinern
-    const ownRet = ov === 'optic' || ov === 'peri' || ov === 'wide' || ov === 'slit' || (ov === 'binocular' && s.zoom >= 1.5);
+    // Innensicht: kein Waffen-Fadenkreuz (die Waffe folgt dem Kopf dort nicht); Winkelspiegel: eigenes Bild
+    const ownRet = ov === 'optic' || ov === 'peri' || ov === 'wide' || ov === 'slit' || ov === 'prism' || (ov === 'binocular' && s.zoom >= 1.5) || !!(view && view.interior);
     const ret = !mount || ownRet ? '' : s.sight ? (w.def.kind === 'shell' ? TANK_RET : MG_RET) : TP_RET;
     this._set('ret', el.ret, 'html', ret);
     this._set('retH', el.ret, 'hidden', !ret);

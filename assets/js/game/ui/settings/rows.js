@@ -3,13 +3,13 @@
 // (syncRows). Bedienbar per Touch, Maus, Tastatur (Pfeile links/rechts am Wähler) und Gamepad (menus.js schickt
 // links/rechts als „np-step“ an fokussierte Wähler und Schieberegler).
 
-import { esc, num } from '../dom.js?v=20261119182451';
+import { esc, num } from '../dom.js?v=20261121041936';
 
 export const COLORS = ['#ffffff', '#ff5b1f', '#5fe08a', '#38b6ff', '#ffc23d', '#ff4fd8'];
 
 /** Regler 0–1 bzw. Faktoren, die als Prozent lesbarer sind. */
 const PCT = new Set(['cameraMotion', 'weaponSway', 'lensStrength', 'grain', 'lensArtifacts', 'sharpness', 'touchOpacity',
-  'touchButtonScale', 'reticleSize', 'aimAssistStrength', 'aimAssistLevel', 'autoFireLevel', 'padDeadzone', 'padOuterDeadzone', 'masterVolume', 'sfxVolume', 'musicVolume', 'uiVolume']);
+  'touchButtonScale', 'reticleSize', 'aimAssistStrength', 'aimAssistLevel', 'autoFireLevel', 'padDeadzone', 'padOuterDeadzone', 'masterVolume', 'sfxVolume', 'musicVolume', 'uiVolume', 'ambienceVolume', 'vehicleVolume']);
 /** Faktoren mit „ד. */
 const MULT = new Set(['sensitivityY', 'adsSensitivity', 'adsSensitivityMid', 'adsSensitivityHigh', 'gyroSensitivityX', 'gyroSensitivityY',
   'padSensitivity', 'touchSensitivity']);

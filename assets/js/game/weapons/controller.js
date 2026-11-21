@@ -10,12 +10,12 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261119182451';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261119182451';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261119182451';
-import { getWeaponModelMeta } from './models.js?v=20261119182451';
-import { ladderPrebuild } from './hintergrundbau.js?v=20261119182451';
-import { classDef } from '../../shared/classes.data.js?v=20261119182451';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261121041936';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261121041936';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261121041936';
+import { getWeaponModelMeta } from './models.js?v=20261121041936';
+import { ladderPrebuild } from './hintergrundbau.js?v=20261121041936';
+import { classDef } from '../../shared/classes.data.js?v=20261121041936';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -76,7 +76,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261119182451').WeaponSystem} system
+   * @param {import('./index.js?v=20261121041936').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -498,7 +498,7 @@ export class WeaponController {
     if (actor.isPlayer && this.viewModel) {
       const insp = this.viewModel.actionName === 'inspect';
       if (insp && (it.fire || it.firePressed || it.ads || it.reload || it.sprinting || it.grenade || it.tactical || it.melee || it.swap)) this._vm('cancelAction');
-      else if (!it.frozen && !insp && (it.inspect || (G.input && G.input.mode !== 'touch' && typeof G.input.pressed === 'function' && G.input.pressed('inspect')))) this.inspect();
+      else if (!this.sim && !it.frozen && !insp && (it.inspect || (G.input && G.input.mode !== 'touch' && typeof G.input.pressed === 'function' && G.input.pressed('inspect')))) this.inspect();
       this.isInspecting = this.viewModel.actionName === 'inspect';
     }
     if (!it.frozen) {
@@ -657,7 +657,9 @@ export class WeaponController {
     const modes = fireModesOf(def);
     const fmKey = this.actor.isPlayer && this.G.input && typeof this.G.input.pressed === 'function' && this.G.input.pressed('feuermodus');
     if (!fmKey) this._fmLatch = false;   // ein Druck = ein Schritt, auch wenn das Bild in mehreren Teilschritten rechnet
-    if (fmKey && !this._fmLatch && modes.length > 1 && !this._switch) {
+    // Infanteriesimulation (isim/gun.js): Wahlhebel mit „Sicher“ – die Simulation schaltet selbst
+    if (fmKey && !this._fmLatch && this.sim && !this._switch) { this._fmLatch = true; this.sim.cycleMode(this, st, modes); }
+    else if (fmKey && !this._fmLatch && modes.length > 1 && !this._switch) {
       this._fmLatch = true;
       st.mode = modes[(modes.indexOf(this._modeOf(st)) + 1) % modes.length];
       this._burstLeft = 0; this._fireBuffer = 0;
@@ -669,7 +671,7 @@ export class WeaponController {
     const trigger = mode === 'auto' ? (it.fire || this._fireBuffer > 0) : (this._fireBuffer > 0 || this._burstLeft > 0);
     // Automatisch nachladen, wenn leer (nach dem letzten Schuss)
     if (!trigger) {
-      if (st.mag <= 0 && !this._reload && !this._switch && !this._melee && !this._throw && this.G.time.elapsed >= this._autoReloadAt) {
+      if (st.mag <= 0 && !this.sim && !this._reload && !this._switch && !this._melee && !this._throw && this.G.time.elapsed >= this._autoReloadAt) {
         this._autoReloadAt = Infinity;
         this.reload();
       }
@@ -683,7 +685,7 @@ export class WeaponController {
       if (this._reload.shells && st.mag > 0) this._finishReload(true);
       else return;
     }
-    if (st.mag <= 0) {
+    if (st.mag <= 0 || (this.manualReload && st.vrNeedsRack)) { // VR: nach dem Magazinwechsel erst durchladen (engine/xr/hands.js)
       const now = this.G.time.elapsed;
       if ((it.firePressed || this._fireBuffer > 0) && now - this._dryAt > 0.3) {
         this._dryAt = now;
@@ -691,9 +693,11 @@ export class WeaponController {
       }
       this._fireBuffer = 0;
       this._burstLeft = 0;
-      if (st.reserve > 0 || this.infiniteAmmo) this.reload();
+      if (!this.sim && (st.reserve > 0 || this.infiniteAmmo)) this.reload();
       return;
     }
+    // Infanteriesimulation: Sicherung, leeres Patronenlager, Ladehemmung, Handgriffe – sonst kein Schuss
+    if (this.sim && !this.sim.canFire(this, st, it)) { this._fireBuffer = 0; this._burstLeft = 0; return; }
     // Gatling: erst ab voller Drehzahl (Abzug gehalten → dreht in update() hoch)
     if (def.spinUp > 0 && this.spin < 1) return;
     if (mode === 'burst' && this._burstLeft <= 0) {
@@ -701,7 +705,7 @@ export class WeaponController {
       this._burstLeft = Math.max(1, burstCountOf(def));
     }
     let shots = 0;
-    while (this._cooldown <= 0 && st.mag > 0 && shots < 3) {
+    while (this._cooldown <= 0 && st.mag > 0 && shots < 3 && (!this.sim || this.sim.ready(st))) {
       this._fire(it, def, st, mode);
       shots++;
       if (mode === 'auto') {
@@ -751,6 +755,7 @@ export class WeaponController {
     const now = G.time.elapsed;
     const infinite = this.infiniteAmmo;
     st.mag -= 1;
+    if (this.sim) this.sim.onShot(this, st, def, mode); // Infanteriesimulation: Patronenlager/Magazin, Ladehemmung, Schmutz
     // burstRpm (26.10., Zwilling-Doppelschuss): eigene Kadenz innerhalb eines Feuerstoßes
     const interval = 60 / Math.max(1, (mode === 'burst' && def.burstRpm) || def.rpm || 600);
     if (now - this.lastShotTime > interval * 1.6) this._cooldown = Math.max(this._cooldown, 0);
@@ -792,6 +797,8 @@ export class WeaponController {
     for (let i = 0; i < (def.projectile ? 0 : pellets); i++) {
       if (pellets > 1) samplePellet(_aim, spread, i, pellets, rot, _dir);
       else sampleCone(_aim, spread, _dir);
+      // Infanteriesimulation: Geschossfall nach Visiereinstellung und Flugzeit (isim/gun.js) – meldet Leuchtspur selbst
+      if (this.sim && this.sim.fireBullet(this, { shooter: actor, origin: _eye, dir: _dir, range, weapon: def, pelletIndex: i, damageScale: scale, pellets, muzzle: _muz, tracer: semi || this.shotIndex % 3 === 0 })) continue;
       const res = combat ? combat.fireHitscan({ shooter: actor, origin: _eye, dir: _dir, range, weapon: def, pelletIndex: i, damageScale: scale }) : null;
       if (!res) continue;
       // Leuchtspur: Spieler jede 3. Kugel (Einzelfeuer jede), Bots jede 2., Schrot 2 Kugeln
@@ -810,7 +817,7 @@ export class WeaponController {
     if (it.crouching && !it.moving) k *= def.bipod || 0.85; // Zweibein (Aufsatz): geduckt/liegend aufgestützt
     if (it.airborne) k *= 1.2;
     if (actor.isPlayer && G.input && G.input.mode === 'touch') k *= 0.72; // Touch: wie COD Mobile deutlich ruhiger
-    k *= this._rush('rushRecoil') * (actor.mounted ? 0.35 : 1) * (armHit ? 1.45 : 1); // MG-Stellung (mappoints.js): Waffe liegt auf der Lafette
+    k *= this._rush('rushRecoil') * (actor.mounted ? 0.35 : 1) * (armHit ? 1.45 : 1) * (this.sim ? this.sim.recoilMult : 1); // MG-Stellung (mappoints.js): Waffe liegt auf der Lafette
     const pitch = r.vertical * e[1] * first * k * (0.94 + Math.random() * 0.12);
     const yaw = r.horizontal * (e[0] + (Math.random() * 0.7 - 0.35)) * k;
     // Freies Zielen (core, nur an der Hüfte): ein Teil des Stoßes bewegt den Lauf innerhalb der Totzone statt der
@@ -890,14 +897,21 @@ export class WeaponController {
   /** Nachladen starten (falls sinnvoll). → bool */
   reload() {
     const st = this.current;
+    // VR, Nachladen per Hand (engine/xr/hands.js): Magazinwechsel macht die Hand, nicht die Taste/Automatik
+    if (this.manualReload) return false;
     if (!st || this._reload || this._switch || this._melee || this._throw || this._plate) return false;
     const def = st.def;
-    if (def.cls === 'melee' || !def.mag || st.mag >= def.mag) return false;
-    if (st.reserve <= 0 && !this.infiniteAmmo) return false;
-    const empty = st.mag === 0;
+    if (def.cls === 'melee' || !def.mag || (st.mag >= def.mag && !(this.sim && this.sim.handles(st)))) return false;
+    // Infanteriesimulation (isim/gun.js): einzelne Magazine – taktisch (zurück in die Tasche) bzw. Notfall (fallen lassen)
+    const simR = this.sim ? this.sim.beginReload(this, st) : undefined;
+    if (simR === null) return false;
+    if (!simR && st.reserve <= 0 && !this.infiniteAmmo) return false;
+    const empty = simR ? false : st.mag === 0;
     this._burstLeft = 0;
     this._fireBuffer = 0;
-    if (def.perShellReload) {
+    if (simR) {
+      this._reload = { shells: false, empty: false, t: 0, dur: simR.dur, insertAt: simR.dur * 0.76, inserted: false, sim: simR };
+    } else if (def.perShellReload) {
       const tm = def.shellTiming || { start: 0.3, insert: 0.48, end: 0.42 };
       const need = Math.min(def.mag - st.mag, this.infiniteAmmo ? def.mag : st.reserve);
       this._reload = {
@@ -947,7 +961,8 @@ export class WeaponController {
       this.reloadProgress = clamp(r.t / r.dur, 0, 1);
       if (!r.inserted && r.t >= r.insertAt) {
         r.inserted = true;
-        this._addAmmo(st, def.mag - st.mag);
+        if (r.sim && this.sim) this.sim.insertMag(this, st, r.sim);
+        else this._addAmmo(st, def.mag - st.mag);
         this.reloadPhase = 'insert';
         this.G.events.emit('weapon:reload', { actor: this.actor, weaponId: def.id, phase: 'insert', empty: r.empty });
       }
@@ -1252,7 +1267,7 @@ export class WeaponController {
       // Tödlich (Taste Granate) hat Vorrang vor taktisch (Taste Taktisch)
       const slot = it.grenade ? 'lethal' : it.tactical ? 'tactical' : null;
       const eqs = slot ? this.equipment[slot] : null;
-      if (eqs && eqs.id && eqs.count > 0) {
+      if (eqs && eqs.id && eqs.count > 0 && (!this.sim || this.sim.canThrow(slot))) {
         const eq = this._equipmentDefs()[eqs.id];
         if (this._reload) this._finishReload(true);
         this._burstLeft = 0;
@@ -1447,7 +1462,7 @@ export class WeaponController {
     let amp = 0;
     if (active) {
       const sp = clamp((it.speed || 0) / MOVE_REF, 0, 1);
-      amp = amp0 * a * this._steady * (1 + 0.9 * sp) * (it.crouching ? 0.72 : 1);
+      amp = amp0 * a * this._steady * (1 + 0.9 * sp) * (it.crouching ? 0.72 : 1) * (this.sim ? this.sim.swayMult : 1);
     }
     this._swayAmp = (this._swayAmp || 0) + (amp - (this._swayAmp || 0)) * damp(5, dt);
     this._swayT += dt * (this._exhausted > 0 ? 1.5 : 1);
@@ -1464,7 +1479,7 @@ export class WeaponController {
     if (drift0 > 0 && !amp0 && a > 0.3 && !it.frozen && actor.alive !== false) {
       const sp = clamp((it.speed || 0) / MOVE_REF, 0, 1);
       dAmp = drift0 * smooth01((a - 0.3) / 0.7) * (1 + 2 * this.winded + (this._exhausted > 0 ? 1.5 : 0)) *
-        (it.crouching ? 0.6 : 1) * (1 + 0.6 * sp) * (input && input.mode === 'touch' ? 0.35 : 1);
+        (it.crouching ? 0.6 : 1) * (1 + 0.6 * sp) * (input && input.mode === 'touch' ? 0.35 : 1) * (this.sim ? this.sim.swayMult : 1);
     }
     this._driftAmp = (this._driftAmp || 0) + (dAmp - (this._driftAmp || 0)) * damp(3, dt);
     if (this._driftAmp > 1e-7) {

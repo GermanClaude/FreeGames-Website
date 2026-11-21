@@ -8,15 +8,15 @@
 // bis sie anliegen; der Zeigefinger sucht den Abzug; die Daumenausrichtung wird gesucht, bis die Kuppe ihr
 // Ziel auf der Gegenseite erreicht. Ergebnisse werden je Griffart + Maßen gecacht.
 import * as THREE from 'three';
-import { chamferBoxGeometry } from './builder.js?v=20261119182451';
-import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js?v=20261119182451';
-import { takeMaterials, parkMaterials } from './materials.js?v=20261119182451';
-import { vmLight } from './vmlight.js?v=20261119182451';
-import { contactHit, MultiCollider } from './contact.js?v=20261119182451';
+import { chamferBoxGeometry } from './builder.js?v=20261121041936';
+import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js?v=20261121041936';
+import { takeMaterials, parkMaterials } from './materials.js?v=20261121041936';
+import { vmLight } from './vmlight.js?v=20261121041936';
+import { contactHit, MultiCollider } from './contact.js?v=20261121041936';
 
-// Fingermaße + Bindehaltung des Handschuhnetzes (hands-v3): gemeinsam mit tools/assets/hands/build-hand.mjs
-import { FINGERS, THUMB, THUMB_REST, BIND_SPLAY, BIND_CURL, BIND_THUMB_FLEX, handDimsKey } from './handdims.js?v=20261119182451';
-import { GLOVE_MESH } from './glove-mesh.js?v=20261119182451';
+// Fingermaße + Bindehaltung des Handschuhnetzes (hands-v4): gemeinsam mit tools/assets/hands/build_hand.py (MakeHuman-Hand)
+import { FINGERS, THUMB, THUMB_REST, BIND_SPLAY, BIND_CURL, BIND_THUMB_FLEX, handDimsKey } from './handdims.js?v=20261121041936';
+import { GLOVE_MESH } from './glove-mesh.js?v=20261121041936';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const _v1 = V3(), _v2 = V3(), _v3 = V3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler();
@@ -367,9 +367,10 @@ export function gripTransform(style, data = {}, side = 1, outPos = V3(), outQuat
 
 // ---------------------------------------------------------------- Geometrie
 
-// ---------------------------------------------------------------- Handschuhnetz (hands-v3)
-// Ein geglättetes, gehäutetes Netz je Hand aus glove-mesh.js (erzeugt von tools/assets/hands/build-hand.mjs aus einem
-// Distanzfeld anatomischer Grundkörper, ≈ 3,5k Dreiecke high / 1,5k low): weiche Hautgewichte über die Gelenke
+// ---------------------------------------------------------------- Handschuhnetz (hands-v4, 15.11.)
+// Ein gehäutetes Netz je Hand aus glove-mesh.js (erzeugt von tools/assets/hands/build_hand.py aus der Hand des
+// MakeHuman-Grundnetzes hm08, CC0: echte Knöchel, Sehnen, Ballen, Nagelbetten; auf dieses Rig umgezielt, Handschuh mit
+// Polstern/Bündchen, ≈ 14k Dreiecke high / 1,5k low; vorher ein Distanzfeld aus Grundkörpern – „wie Knochen“): weiche Hautgewichte über die Gelenke
 // (≤ 4 Knochen je Ecke), Bündchen auf dem Unterarm-Knochen 16 (folgt dem Ärmel, steckt immer darin); Masken (Leder-
 // Innenhand, Polster, Bündchen, Abrieb) + Umgebungsverdeckung als Attribute für den Handschuh-Shader. Die Kapseln
 // (FINGERS/THUMB) bleiben unsichtbar die Messkörper für Kontaktlöser und Prüfwerkzeuge.
@@ -377,11 +378,11 @@ const DEC = {};
 function unb64(s, T) { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new T(u.buffer); }
 function decodeGlove(lod) {
   if (DEC[lod]) return DEC[lod];
-  if (GLOVE_MESH.key !== handDimsKey()) console.warn('[arms] glove-mesh.js passt nicht zu handdims.js – node tools/assets/hands/build-hand.mjs ausführen');
+  if (GLOVE_MESH.key !== handDimsKey()) console.warn('[arms] glove-mesh.js passt nicht zu handdims.js – tools/assets/hands/build_hand.py ausführen');
   const M = GLOVE_MESH[lod], n = M.n, q = unb64(M.pos, Uint16Array), nq = unb64(M.nrm, Int8Array);
   const pos = new Float32Array(n * 3), nrm = new Float32Array(n * 3);
   for (let i = 0; i < n * 3; i++) { const k = i % 3; pos[i] = M.lo[k] + q[i] * M.sc[k]; nrm[i] = nq[i] / 127; }
-  return (DEC[lod] = { n, pos, nrm, idx: unb64(M.idx, Uint16Array), ski: unb64(M.ski, Uint8Array), skw: unb64(M.skw, Uint8Array), msk: unb64(M.msk, Uint8Array), ao: unb64(M.ao, Uint8Array) });
+  return (DEC[lod] = { n, pos, nrm, idx: unb64(M.idx, Uint16Array), ski: unb64(M.ski, Uint8Array), skw: unb64(M.skw, Uint8Array), msk: unb64(M.msk, Uint8Array), skn: M.skn ? unb64(M.skn, Uint8Array) : new Uint8Array(n * 4), ao: unb64(M.ao, Uint8Array) });
 }
 function gloveGeometry(mirror, lod = 'high') {
   const D = decodeGlove(lod === 'low' ? 'low' : 'high');
@@ -397,6 +398,7 @@ function gloveGeometry(mirror, lod = 'high') {
   g.setAttribute('skinWeight', new THREE.Uint8BufferAttribute(D.skw, 4, true));
   g.setAttribute('gloveMask', new THREE.Uint8BufferAttribute(D.msk, 4, true));
   g.setAttribute('gloveAO', new THREE.Uint8BufferAttribute(D.ao, 1, true));
+  g.setAttribute('gloveSkin', new THREE.Uint8BufferAttribute(D.skn, 4, true));   // Haut offener Kuppen, Nagel, Nagelmond, Saum innen
   g.setIndex(new THREE.BufferAttribute(idx, 1));
   g.computeBoundingSphere();
   return g;
@@ -1160,22 +1162,32 @@ export function gloveTone(hex, out = new THREE.Color()) {
 // Bündchen), Nähte als scharfe Linien auf den Zonengrenzen (Ableitungs-geglättet), Abrieb an Kuppen/Handballen,
 // Feld-AO; Rauheit je Zone; Mikrorelief (Strick/Narbung/Nahtrillen) über Höhen-Ableitungen (ohne Tangenten/UVs, ab
 // medium); weicher Stoff-Glanzsaum (Sheen) aus der diffusen Beleuchtung → Kontur bleibt auch im Schatten lesbar.
+// hands-v4: offene Fingerkuppen (Klassen-Look openTips) zeigen Haut wie der Kopf-Hautshader (face.js): Grundton mit
+// Fleckung/Poren aus der Detailkarte, Durchblutung (Kuppen rötlicher), Nagel mit Nagelmond und hellem freien Rand,
+// Streulicht über die Schattengrenze (rötlich) – und eine ausgefranste Schnittkante am Handschuh.
+const GLOVE_SSS = /* glsl */`vec3 irradiance = dotNL * directLight.color;
+	if ( gSk > 0.0 ) {
+		float gWrap = saturate( ( dot( geometryNormal, directLight.direction ) + 0.5 ) / 1.5 );
+		reflectedLight.directDiffuse += max( gWrap * gWrap - dotNL, 0.0 ) * directLight.color * vec3( 0.55, 0.16, 0.08 ) * gSk * BRDF_Lambert( material.diffuseColor );
+	}`;
 function makeGloveMaterial(S) {
   const m = new THREE.MeshStandardMaterial({ color: GLOVE_DEFAULT, roughness: 0.85, metalness: 0.0 });
-  const U = { gloveDetail: { value: gloveDetail(S) }, gloveTile: { value: 1 / 0.035 }, gloveBump: { value: 0.00032 }, gloveSheen: { value: 0.32 } };
+  const U = { gloveDetail: { value: gloveDetail(S) }, gloveTile: { value: 1 / 0.035 }, gloveBump: { value: 0.00032 }, gloveSheen: { value: 0.32 },
+    gloveOpen: { value: 0 }, gloveSkinTone: { value: new THREE.Color('#9c7560') } };
   m.userData.gloveU = U;
   m.defines = { GLOVE_BUMP: '' };
-  m.customProgramCacheKey = () => 'glove-v3';
+  m.customProgramCacheKey = () => 'glove-v4';
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 gloveMask;\nattribute float gloveAO;\nvarying vec4 vGM;\nvarying float vGAO;\nvarying vec3 vBP;\nvarying vec3 vBN;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGM = gloveMask; vGAO = gloveAO; vBP = position; vBN = normal;');
+      .replace('#include <common>', '#include <common>\nattribute vec4 gloveMask;\nattribute float gloveAO;\nattribute vec4 gloveSkin;\nvarying vec4 vGM;\nvarying vec4 vGS;\nvarying float vGAO;\nvarying vec3 vBP;\nvarying vec3 vBN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGM = gloveMask; vGS = gloveSkin; vGAO = gloveAO; vBP = position; vBN = normal;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-uniform sampler2D gloveDetail; uniform float gloveTile; uniform float gloveBump; uniform float gloveSheen;
-varying vec4 vGM; varying float vGAO; varying vec3 vBP; varying vec3 vBN;
-float gL, gPad, gCuf, gWear, gH;`)
+uniform sampler2D gloveDetail; uniform float gloveTile; uniform float gloveBump; uniform float gloveSheen; uniform float gloveOpen; uniform vec3 gloveSkinTone;
+varying vec4 vGM; varying vec4 vGS; varying float vGAO; varying vec3 vBP; varying vec3 vBN;
+float gL, gPad, gCuf, gWear, gH, gSk, gNail, gTxG;`)
+      .replace('#include <lights_physical_pars_fragment>', THREE.ShaderChunk.lights_physical_pars_fragment.replace('vec3 irradiance = dotNL * directLight.color;', GLOVE_SSS))
       .replace('#include <color_fragment>', `#include <color_fragment>
 {
   vec3 bw = abs(normalize(vBN)); bw *= bw; bw *= bw; bw /= (bw.x + bw.y + bw.z);
@@ -1199,13 +1211,34 @@ float gL, gPad, gCuf, gWear, gH;`)
   gWear = vGM.w * smoothstep(0.3, 0.7, tx.b + vGM.w * 0.3);
   col = mix(col, col * 1.55 + 0.018, gWear * 0.55);
   col *= 0.88 + 0.24 * tx.b * (1.0 - gWear);
-  col *= mix(1.0, vGAO, 0.85);
+  // Polster (TPR): Querrillen je Segment, matter Gummi
+  float rib = smoothstep(0.35, 0.5, abs(fract(vBP.z * 160.0) - 0.5)) * gPad;
+  col *= 1.0 - 0.18 * rib;
+  // offene Kuppen: Schnittkante (dunkler, leicht ausgefranst) und Haut
+  gSk = 0.0; gNail = 0.0; gTxG = tx.g;
+  if (gloveOpen > 0.5) {
+    float edgeN = (tx.a - 0.5) * 0.12;
+    gSk = smoothstep(0.47, 0.53, vGS.x + edgeN);
+    float edge = (1.0 - smoothstep(0.0, 0.07, abs(vGS.x + edgeN - 0.44))) * (1.0 - gSk);
+    col *= 1.0 - 0.45 * edge;
+    vec3 sk = gloveSkinTone * (0.9 + 0.22 * (tx.a - 0.5)) * (0.96 + 0.08 * tx.g);
+    // Durchblutung: Kuppen und Fingerballen rötlicher, Knöchelfalten dunkler
+    sk = mix(sk, sk * vec3(1.06, 0.88, 0.86), 0.35 * smoothstep(0.3, 1.0, vGM.w));
+    sk *= 1.0 - 0.12 * smoothstep(0.62, 0.8, tx.g) * (1.0 - smoothstep(0.3, 0.7, vGS.y));
+    gNail = smoothstep(0.3, 0.7, vGS.y);
+    vec3 nailC = mix(sk * vec3(1.05, 0.95, 0.95) + vec3(0.03, 0.022, 0.022), sk * 1.12 + vec3(0.05), smoothstep(0.3, 0.7, vGS.z));
+    sk = mix(sk, nailC, gNail);
+    sk *= mix(1.0, vGAO, 0.7);
+    col = mix(col, sk, gSk);
+  }
   diffuseColor.rgb = col;
-  gH = mix(tx.r * 0.75, tx.g * 0.55, gL) * (1.0 - gPad) + gPad * (0.5 + tx.g * 0.15) - seam * 0.9 + gCuf * tx.r * 0.2;
+  gH = mix(tx.r * 0.75, tx.g * 0.55, gL) * (1.0 - gPad) + gPad * (0.5 + tx.g * 0.15 - rib * 0.4) - seam * 0.9 + gCuf * tx.r * 0.2;
+  gH = mix(gH, tx.g * 0.35 * (1.0 - gNail), gSk);
 }`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 roughnessFactor = mix(mix(0.86, 0.6, gL), 0.5, gPad);
-roughnessFactor = mix(roughnessFactor, 0.92, gCuf) - gWear * 0.18 + 0.06 * (vGAO - 0.7);`)
+roughnessFactor = mix(roughnessFactor, 0.92, gCuf) - gWear * 0.18 + 0.06 * (vGAO - 0.7);
+roughnessFactor = mix(roughnessFactor, mix(0.52 - 0.1 * gTxG, 0.24, gNail), gSk);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 #ifdef GLOVE_BUMP
 {
@@ -1220,7 +1253,7 @@ roughnessFactor = mix(roughnessFactor, 0.92, gCuf) - gWear * 0.18 + 0.06 * (vGAO
   float fr = 1.0 - saturate(dot(normal, normalize(vViewPosition)));
   fr = fr * fr * fr;
   vec3 irr = (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse) / max(diffuseColor.rgb, vec3(0.03));
-  outgoingLight += irr * fr * gloveSheen * mix(1.0, 0.4, gL) * (1.0 - 0.6 * gPad) * vec3(0.92, 0.95, 1.0);
+  outgoingLight += irr * fr * gloveSheen * mix(1.0, 0.4, gL) * (1.0 - 0.6 * gPad) * (1.0 - gSk) * vec3(0.92, 0.95, 1.0);
 }
 #include <opaque_fragment>`);
   };
@@ -1285,6 +1318,14 @@ export class Arms {
 
   /** Handschuhfarbe (Klassen-Look, sRGB-Hex); Töne werden auf taktische Werte gebracht (gloveTone). */
   setGlove(hex) { gloveTone(hex, this.mats.glove.color); }
+
+  /** hands-v4: offene Fingerkuppen (Schießhandschuh, Klassen-Look openTips) + Hautton der Kuppen (sRGB-Hex). */
+  setOpenTips(open, skinHex = null) {
+    const U = this.mats.glove.userData.gloveU;
+    if (!U) return;
+    U.gloveOpen.value = open ? 1 : 0;
+    if (skinHex) U.gloveSkinTone.value.set(skinHex);
+  }
 
   update(dt) {
     // Uhr regelmäßig neu zeichnen (Minutenanzeige)

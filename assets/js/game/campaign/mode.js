@@ -10,11 +10,11 @@
 //
 // Konsole (Tests): __game.campaign → { director, skip(), win(), stage(id), teleport(zoneOderPunkt), state() }
 
-import { BaseMode } from '../modes/base.js?v=20261119182451';
-import { Director } from './director.js?v=20261119182451';
-import { CampaignUI } from './ui.js?v=20261119182451';
-import { CampaignProgress } from './progress.js?v=20261119182451';
-import { MISSIONS, MISSION_ORDER, STORY_ORDER, missionById } from './missions/index.js?v=20261119182451';
+import { BaseMode } from '../modes/base.js?v=20261121041936';
+import { Director } from './director.js?v=20261121041936';
+import { CampaignUI } from './ui.js?v=20261121041936';
+import { CampaignProgress } from './progress.js?v=20261121041936';
+import { MISSIONS, MISSION_ORDER, STORY_ORDER, missionById } from './missions/index.js?v=20261121041936';
 
 export class CampaignMode extends BaseMode {
   constructor(G, modeId, opts = {}) {
@@ -75,7 +75,7 @@ export class CampaignMode extends BaseMode {
   onStart() {
     const G = this.G;
     this._pre = G.actors.filter((a) => a.isBot);
-    try { this.store.startMission(this.mission.id, G.match.difficulty); } catch { /* */ }
+    try { this.store.startMission(this.mission.id, G.match.sim ? 'simulation' : G.match.difficulty); } catch { /* */ }
     this.director = new Director(this, this.mission, { checkpoint: this.checkpointId, ui: this.ui, store: this.store, cps: this.store.cps() });
     this.director.start();
     // Spieler an den Start-/Checkpoint
@@ -177,7 +177,7 @@ export class CampaignMode extends BaseMode {
     const secs = this.elapsed;
     let next = null;
     if (success) {
-      try { this.store.completeMission(this.mission.id, G.match.difficulty, secs); } catch { /* */ }
+      try { this.store.completeMission(this.mission.id, G.match.sim ? 'simulation' : G.match.difficulty, secs); } catch { /* */ }
       const i = MISSION_ORDER.indexOf(this.mission.id);
       next = MISSION_ORDER[i + 1] || null;
     }
@@ -185,7 +185,7 @@ export class CampaignMode extends BaseMode {
     if (G.lastConfig && G.lastConfig.campaign) G.lastConfig.campaign = { ...G.lastConfig.campaign, checkpoint: null };
     this.end(success ? 'mission' : 'failed');
     if (this.result) {
-      this.result.campaign = { mission: this.mission.id, title: this.mission.title, number: this.mission.number, success: !!success, next, seconds: Math.round(secs), deaths: this.director ? this.director.deaths : 0, difficulty: G.match.difficulty };
+      this.result.campaign = { mission: this.mission.id, title: this.mission.title, number: this.mission.number, success: !!success, next, seconds: Math.round(secs), deaths: this.director ? this.director.deaths : 0, difficulty: G.match.sim ? 'simulation' : G.match.difficulty };
       this.result.modeName = this.mission.tutorial ? `Kampagne · ${this.mission.title}` : `Kampagne · Mission ${this.mission.number}: ${this.mission.title}`;
       this.result.campaign.tutorial = !!this.mission.tutorial;
     }
@@ -288,7 +288,7 @@ export function decorateCampaignEnd(G, screen, result) {
     </style>
     <small>Kampagne · ${c.tutorial ? 'Ausbildung' : `Mission ${c.number}`}</small>
     <h3>${c.success ? (c.tutorial ? 'Ausbildung abgeschlossen' : 'Mission erfüllt') : 'Mission gescheitert'} – ${esc(c.title)}</h3>
-    <p>Dauer ${Math.floor(c.seconds / 60)}:${String(c.seconds % 60).padStart(2, '0')} · Ausfälle ${c.deaths} · ${esc(({ rekrut: 'Rekrut', regulaer: 'Regulär', veteran: 'Veteran', elite: 'Elite' })[c.difficulty] || '')}${next ? ` · Als Nächstes: Mission ${next.number} „${esc(next.title)}“` : c.success && !next ? ' · Weitere Missionen folgen.' : ''}</p>
+    <p>Dauer ${Math.floor(c.seconds / 60)}:${String(c.seconds % 60).padStart(2, '0')} · Ausfälle ${c.deaths} · ${esc(({ rekrut: 'Rekrut', regulaer: 'Regulär', veteran: 'Veteran', elite: 'Elite', simulation: 'Simulation' })[c.difficulty] || '')}${next ? ` · Als Nächstes: Mission ${next.number} „${esc(next.title)}“` : c.success && !next ? ' · Weitere Missionen folgen.' : ''}</p>
     <div class="kc-end-btns">
       ${next && c.success ? '<button type="button" class="m-btn m-primary" data-kc-end="next">Nächste Mission</button>' : ''}
       ${!c.success ? '<button type="button" class="m-btn m-primary" data-kc-end="retry">Erneut versuchen</button>' : ''}
@@ -314,6 +314,16 @@ export function decorateCampaignEnd(G, screen, result) {
   });
 }
 
+/**
+ * Tageszeit/Wetter einer Mission (kamp3, 15.11.): gilt für jeden Start – Lobby, Debug-URL, Checkpoint, Revanche –, solange
+ * die Konfiguration nichts anderes verlangt (main.js startMatch → G.modules.modes.campaignConditions). → { time, weather } | null
+ */
+export function campaignConditions(missionId) {
+  const m = missionById(missionId);
+  if (!m) return null;
+  return { time: m.time || null, weather: m.weather || null };
+}
+
 /** Startkonfiguration einer Mission (Lobby/Endbildschirm). */
 export function missionConfig(mission, base = {}, { checkpoint = null, difficulty = null, maps = null } = {}) {
   // Karte fehlt im Build (z. B. neue Karte eines anderen Strangs noch nicht da) → Rückfallkarte der Mission
@@ -322,9 +332,10 @@ export function missionConfig(mission, base = {}, { checkpoint = null, difficult
   return {
     ...base,
     modeId: 'kampagne', mapId, allies: 1, enemies: 1, mass: false,
-    difficulty: difficulty || base.difficulty || 'regulaer',
+    // „Simulation“ (Infanteriesimulation): Gegner wie Veteran, Spielstil Simulation (main.applyStyle → G.match.sim)
+    difficulty: difficulty === 'simulation' ? 'veteran' : difficulty || base.difficulty || 'regulaer',
     timeOfDay: mission.time || null, weather: mission.weather || null,
-    timeLimit: null, scoreLimit: null, style: base.style || 'arcade',
+    timeLimit: null, scoreLimit: null, style: difficulty === 'simulation' ? 'simulation' : base.style === 'simulation' ? 'realistisch' : base.style || 'arcade',
     campaign: { mission: mission.id, checkpoint },
   };
 }

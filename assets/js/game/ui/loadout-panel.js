@@ -3,13 +3,13 @@
 // Ausführung des Outfits. Touch-first (große Kacheln), per Pfeiltasten/Gamepad über die räumliche Navigation bedienbar.
 // API: new LoadoutPanel(G); mount(host, loadout?) ; value() → loadout ; save() (Klassenausrüstung merken) ; unmount().
 
-import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261119182451';
-import { openCamoEditor } from './camo-editor.js?v=20261119182451';
-import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261119182451';
-import { esc } from './dom.js?v=20261119182451';
-import { ICON } from './icons.js?v=20261119182451';
-import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261119182451';
-import { getWeaponModelMeta } from '../weapons/models.js?v=20261119182451';
+import { CLASSES, SOLDIER_CLASS_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261121041936';
+import { openCamoEditor } from './camo-editor.js?v=20261121041936';
+import { OPERATOR_TIERS } from '../../shared/modes.data.js?v=20261121041936';
+import { esc } from './dom.js?v=20261121041936';
+import { ICON } from './icons.js?v=20261121041936';
+import { ATT_SLOTS, ATTACHMENTS, attachmentsFor, loadAttachments, saveAttachment, applyAttachments } from '../../shared/attachments.data.js?v=20261121041936';
+import { getWeaponModelMeta } from '../weapons/models.js?v=20261121041936';
 
 const SLOTS = [['primary', 'Primär'], ['secondary', 'Sekundär'], ['melee', 'Messer'], ['lethal', 'Granate'], ['tactical', 'Taktisch']];
 
@@ -93,7 +93,11 @@ export class LoadoutPanel {
     const d = this._d();
     const lo = this.lo;
     const prof = classProfile(lo.cls);
-    const classes = SOLDIER_CLASS_ORDER.map((id) => {
+    // Pilot nur, wenn es in diesem Match Luftfahrzeuge gibt (vehicles/air/deploy.js) – oder er schon gewählt ist
+    const A = this.G && this.G.vehicles && this.G.vehicles.air && this.G.vehicles.air.deploy;
+    const inMatch = !!(this.G && this.G.vehicles && this.G.vehicles.attached); // Raum/Lobby vor dem Match: immer zeigen
+    const airOk = !inMatch || !!(A && typeof A.enabled === 'function' && A.enabled());
+    const classes = SOLDIER_CLASS_ORDER.filter((id) => id !== 'pilot' || airOk || lo.cls === 'pilot').map((id) => {
       const c = CLASSES[id];
       return `<button type="button" class="lp-cls" data-cls="${id}" aria-pressed="${id === lo.cls}"><i>${ICON[id] || ICON.user}</i><b>${esc(c.name)}</b></button>`;
     }).join('');

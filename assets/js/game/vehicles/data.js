@@ -5,7 +5,9 @@
 // Räder: `mountY` = Aufhängungspunkt; Ruhelage so gewählt, dass die Radunterkante bei statischer Last auf y = 0 steht
 // (mountY = rest + radius − statische Einfederung).
 
-import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261119182451';
+import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261121041936';
+import { TROOP_VEHICLES, ROLE_TYPES, ROLE_KINDS } from './data-troop.js?v=20261121041936';
+import { addCrewViews } from './periscopes.js?v=20261121041936';
 
 const deg = (d) => (d * Math.PI) / 180;
 
@@ -834,6 +836,353 @@ for (const D of Object.values(VEHICLES)) {
 // Luftfahrzeuge (air/data.js): am Ende angehängt – Typ-/Waffen-Indizes der Bodenfahrzeuge bleiben gleich
 Object.assign(VEHICLES, AIR_VEHICLES);
 Object.assign(VEHICLE_WEAPONS, AIR_WEAPONS);
+
+// Weitere Panzer (Strang panzermod, 15.11.; models-tanks.js): hinter den Luftfahrzeugen angehängt, damit die Typ-Indizes
+// der bisherigen Fahrzeuge im Netz gleich bleiben (NET_VERSION 18 deckt die neuen Typen mit ab; Typ-Index im Netz 4 Bit → höchstens 16 Bodentypen+Luft). Frei erfundene Namen.
+// Zusatzfelder für die Durchschlagsrechnung (Strang panzersim): armor = { hull: { front, side, rear, top, bottom },
+// turret: { front, side, rear, top, mantlet } }, je Zone [Plattendicke mm, Neigung ° gegenüber der Grundlage der Fläche
+// (Front/Heck/Seite: gegen die Senkrechte, Dach/Boden: gegen die Waagrechte)] – Format wie psim/ammo.js ARMOR, D.armor hat Vorrang;
+// drive = { powerKW, pwr (kW/t), gears (Vorwärts/Rückwärts), vmax (km/h) } als Kennwerte (Lobby/HUD, Prüfung).
+// (Feld drivetrain, nicht drive: drive bleibt 'tracked'). roadZ = sichtbare Laufrollen (das Federmodell rechnet mit wheels.z).
+const TANK_DRIVE = {
+  rollRes: { concrete: 0.03, tile: 0.03, wood: 0.035, metal: 0.03, dirt: 0.045, grass: 0.05, sand: 0.08, default: 0.04 },
+  traction: { concrete: 0.75, tile: 0.7, wood: 0.6, metal: 0.55, dirt: 0.85, grass: 0.7, sand: 0.6, default: 0.8 },
+};
+const tq = (pts, k) => pts.map(([r, t]) => [r, Math.round(t * k)]);
+const MBT_TQ = [[600, 2200], [700, 2700], [1000, 3800], [1400, 4550], [1700, 4700], [2000, 4600], [2300, 4350], [2600, 4040], [2750, 0]];
+const ex = (x, z) => [[-(Math.abs(x) + 1.2), 0, z], [Math.abs(x) + 1.2, 0, z], [0, 0, 4.7]];
+const NEW_TANKS = {
+  // Moderner Schützenpanzer (~33 t): Motor vorn rechts, Fahrer vorn links, Zwei-Mann-Turm (30-mm-Maschinenkanone,
+  // Lenkflugkörper), Kampfraum hinten für drei Schützen (Netz: 6 Sitze) mit Heckrampe. PG = 30-mm-Pfeilgeschoss (Feuerstoß aus dem
+  // Gurt, je Schuss 0,35 s), SG = Panzerabwehr-Lenkflugkörper (Flugbahn flach, langsam, angenähert ungelenkt).
+  spz: {
+    id: 'spz', name: 'SZ-8 Igel', cls: 'Schützenpanzer', era: 'modern', drive: 'tracked', model: 'spz', sound: 'tank',
+    health: 680, armored: true, respawn: 70, wreckTime: 20,
+    smallArmsMult: 0, explosiveMult: 0.45, ramMult: 0.3,
+    mass: 33000, com: [0, 0.85, -0.1],
+    hullBox: [0, 1.1, 0, 1.62, 0.6, 3.42],
+    turretBox: [0, 0.3, 0.05, 1.05, 0.3, 1.12],
+    turretPivot: [0, 1.7, -0.45],
+    gunPivot: [0, 0.36, -1.05],
+    muzzle: [0, 0, -2.95],
+    coax: [0.3, 0.02, -0.4],
+    cmgPivot: [-0.55, 0.98, 0.1], cmgMuzzle: [0, 0, -0.3],
+    gunLimits: { min: deg(-10), max: deg(45) },
+    traverse: deg(60), elevate: deg(40),
+    wheels: { radius: 0.33, rest: 0.42, stiffness: 290000, damping: 31000, x: 1.27, z: [-2.45, -1.22, 0, 1.22, 2.45] },
+    roadZ: [-2.45, -1.47, -0.49, 0.49, 1.47, 2.45],
+    engine: {
+      idleRpm: 700, ratedRpm: 2600, cutRpm: 2750, cruiseRpm: 2300, torque: tq(MBT_TQ, 0.44),
+      gears: { '-2': 2.55, '-1': 5.9, 1: 6.4, 2: 4.1, 3: 2.6, 4: 1.65, 5: 1.05 },
+      finalDrive: 4.0, sprocketR: 0.3, efficiency: 0.76, rotInertia: 1.1,
+      converter: { stallRpm: 1450, mult: 1.8, coupleRpm: 1400 }, torqueLag: 0.2, shiftTime: 0.45, autoUp: 2450, autoDown: 1250,
+      engineBrake: [200, 0.3], ...TANK_DRIVE, airRes: 3.2, neutralDrag: 12000,
+      brake: 210000, turnRate: 0.9, turnRateMoving: 0.7, latAccMax: 4.6, maxSpeed: 19.4, reverseSpeed: 8.2,
+    },
+    drivetrain: { powerKW: 440, pwr: 13.3, gears: '5/2 (Wandler)', vmax: 70 },
+    grip: { long: 1.0, lat: 0.95, latTurning: 0.55, rollInfluence: 0.25 },
+    drag: 0.9, angularDamp: 2.2,
+    zones: { hull: { label: 'Wanne', hp: 680 }, engine: { label: 'Motor', hp: 200 }, tracks: { label: 'Ketten', hp: 190 }, turret: { label: 'Turm', hp: 220 } },
+    armor: { hull: { front: [45, 70], side: [30, 0], rear: [25, 15], top: [15, 0], bottom: [12, 0] }, turret: { front: [60, 50], side: [30, 10], rear: [20, 10], top: [15, 0], mantlet: [40, 0] } },
+    seats: [
+      { id: 'driver', label: 'Fahrer', drive: true, weapons: [], pos: [-0.62, 0.62, -2.1], exit: [[-2.6, 0, -1.6], [2.6, 0, -1.6], [0, 0, -4.6], [0, 0, 4.6]],
+        views: [
+          { id: 'spiegel', label: 'Winkelspiegel', space: 'hull', pos: [-0.62, 1.62, -2.3], look: 'rel', yaw: [-0.55, 0.55], pitch: [-0.2, 0.25], zoom: [1.25], overlay: 'slit' },
+          { id: 'luke', label: 'Luke offen', space: 'hull', pos: [-0.62, 2.18, -2.0], look: 'rel', yaw: [-2.6, 2.6], pitch: [-0.6, 0.8], zoom: [1, 1.8], exposed: true, hatch: 'driver', pin: [-0.62, 0.95, -2.05] },
+          { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.4, pivot: 2.4 } },
+        ] },
+      { id: 'gunner', label: 'Richtschütze', weapons: ['mbt_ap', 'mbt_he', 'mbt_coax'], mount: 'gun', pos: [0.42, 0.75, -0.4], exit: [[2.6, 0, -0.4], [-2.6, 0, -0.4], [0, 0, 4.6]],
+        views: [
+          { id: 'optik', label: 'Zieloptik', space: 'gun', pos: [0.5, 0.4, 0.32], look: 'mount', zoom: [3, 8], overlay: 'optic' },
+          { id: 'weit', label: 'Weitwinkel', space: 'gun', pos: [0.5, 0.4, 0.32], look: 'mount', zoom: [1.2, 2.5], overlay: 'wide' },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.42, 0.45, -0.3], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'luke', label: 'Luke offen', space: 'turret', pos: [0.45, 1.2, 0.2], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 2], exposed: true, hatch: 'loader', pin: [0.45, 0.08, 0.2] },
+          { id: 'aussen', label: 'Außenansicht', look: 'mount', zoom: [1], tp: { dist: 10, height: 4.4, pivot: 2.4 } },
+        ] },
+      { id: 'commander', label: 'Kommandant', weapons: [], mount: 'cmg', pos: [-0.45, 0.8, 0.0], exit: [[-2.6, 0, 0.2], [2.6, 0, 0.2], [0, 0, 4.6]],
+        views: [
+          { id: 'periskop', label: 'Rundblickoptik', space: 'cupola', pos: [0, 0.02, -0.05], look: 'mount', zoom: [2, 6], overlay: 'peri' },
+          { id: 'luke', label: 'Luke offen', space: 'turret', pos: [-0.5, 1.22, 0.3], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 4, 7], overlay: 'binocular', exposed: true, hatch: 'commander', pin: [-0.5, 0.1, 0.25] },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [-0.45, 0.48, 0.05], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.5, pivot: 2.5 } },
+        ] },
+      // drei Schützen (Netz: höchstens 6 Sitze je Fahrzeug, protocol.js seats/seats2)
+      ...[[-0.55, 1.45], [0.55, 1.95], [-0.55, 2.45]].map(([x, z], i) => ({
+        id: `schuetze${i + 1}`, label: `Schütze ${i + 1}`, weapons: [], pos: [x, 0.62, z], exit: [[x * 1.6, 0, 4.4], [x < 0 ? -2.6 : 2.6, 0, z], [0, 0, 4.6]],
+        views: [
+          { id: 'innen', label: 'Kampfraum', space: 'hull', pos: [x * 0.75, 1.36, z], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.6], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.4, pivot: 2.4 } },
+        ],
+      })),
+    ],
+    hatches: {
+      driver: { space: 'hull', pos: [-0.62, 1.69, -2.05], r: 0.3 },
+      commander: { space: 'turret', pos: [-0.5, 0.62, 0.25], r: 0.3 },
+      loader: { space: 'turret', pos: [0.45, 0.62, 0.2], r: 0.28 },
+    },
+    interior: { scale: 0.85, shift: [0, -0.05, 0.05], breech: [0, 0.42, -0.55], breechScale: 0.45, loaderEye: [0.5, 0.62, 0.35], rack: [0, 0.4, 1.0], rackGrid: [6, 3] },
+    troop: { z0: 0.94, z1: 3.05, floor: 0.6, roof: 1.62, halfW: 1.0 },
+    crew: { switchTime: 1.1, faceTol: 0.6 },
+    ammo: { mbt_ap: 240, mbt_he: 5 },
+    lights: [[-1.3, 1.25, -3.3], [1.3, 1.25, -3.3]],
+    weaponMods: {
+      mbt_ap: { name: '30 mm Pfeilgeschoss (Maschinenkanone)', speed: 1400, life: 1.3, vehicleDamage: 48, actorDamage: 75, reload: 0.35, reloadNoLoader: 0.35, splash: { radius: 0.9, maxDamage: 28 }, shake: 0.08 },
+      mbt_he: { name: 'Panzerabwehr-Lenkflugkörper', speed: 260, gravity: 0.6, life: 8, vehicleDamage: 360, actorDamage: 210, reload: 12, reloadNoLoader: 12, splash: { radius: 3.6, maxDamage: 150, innerRadius: 1.2, minDamage: 20 }, penetrating: true, shake: 0.3, guided: true },
+    },
+  },
+
+  // Kalter Krieg: Kampfpanzer der 1960er/70er (~40 t): geschweißte Wanne, großer Gussturm, 105-mm-Kanone mit
+  // Wärmeschutzhülle, Infrarot-Suchscheinwerfer und (nachgerüstet) Laser-Entfernungsmesser, Kommandantenkuppel mit MG, 4 Mann
+  kk: {
+    id: 'kk', name: 'KP-68 Auerochs', cls: 'Kampfpanzer (Kalter Krieg)', era: 'kk', drive: 'tracked', model: 'kk', sound: 'tank',
+    health: 860, armored: true, respawn: 85, wreckTime: 22, noThermal: true,
+    smallArmsMult: 0, explosiveMult: 0.35, ramMult: 0.2,
+    mass: 40000, com: [0, 0.85, 0.1],
+    hullBox: [0, 1.04, 0, 1.75, 0.55, 3.48],
+    turretBox: [0, 0.4, 0.05, 1.16, 0.4, 1.5],
+    turretPivot: [0, 1.58, 0.1],
+    gunPivot: [0, 0.4, -1.3],
+    muzzle: [0, 0, -5.1],
+    coax: [0.38, 0.02, -0.55],
+    cmgPivot: [-0.55, 0.97, 0.45], cmgMuzzle: [0.12, 0.22, -1.2],
+    gunLimits: { min: deg(-9), max: deg(20) },
+    traverse: deg(30), elevate: deg(16),
+    wheels: { radius: 0.33, rest: 0.42, stiffness: 350000, damping: 38000, x: 1.32, z: [-2.4, -1.2, 0, 1.2, 2.4] },
+    roadZ: [-2.4, -1.44, -0.48, 0.48, 1.44, 2.4],
+    engine: {
+      idleRpm: 650, ratedRpm: 2600, cutRpm: 2750, cruiseRpm: 2250, torque: tq(MBT_TQ, 0.58),
+      gears: { '-2': 2.55, '-1': 5.9, 1: 6.4, 2: 4.1, 3: 2.6, 4: 1.65, 5: 1.05 },
+      finalDrive: 4.35, sprocketR: 0.3, efficiency: 0.74, rotInertia: 1.15,
+      converter: { stallRpm: 1450, mult: 1.7, coupleRpm: 1400 }, torqueLag: 0.3, shiftTime: 0.6, autoUp: 2450, autoDown: 1250,
+      engineBrake: [250, 0.35], ...TANK_DRIVE, airRes: 3.8, neutralDrag: 16000,
+      brake: 260000, turnRate: 0.75, turnRateMoving: 0.58, latAccMax: 4.2, maxSpeed: 17.9, reverseSpeed: 7.0,
+    },
+    drivetrain: { powerKW: 610, pwr: 15.3, gears: '5/2 (Wandler)', vmax: 64 },
+    grip: { long: 1.0, lat: 0.95, latTurning: 0.55, rollInfluence: 0.25 },
+    drag: 0.9, angularDamp: 2.2,
+    zones: { hull: { label: 'Wanne', hp: 860 }, engine: { label: 'Motor', hp: 230 }, tracks: { label: 'Ketten', hp: 210 }, turret: { label: 'Turm', hp: 280 } },
+    armor: { hull: { front: [90, 60], side: [40, 0], rear: [25, 10], top: [20, 0], bottom: [15, 0] }, turret: { front: [150, 30], side: [70, 25], rear: [40, 15], top: [25, 0], mantlet: [120, 10] } },
+    seats: [
+      { id: 'driver', label: 'Fahrer', drive: true, weapons: [], pos: [-0.55, 0.55, -2.3], exit: [[-2.8, 0, -1.6], [2.8, 0, -1.6], [0, 0, -4.7], [0, 0, 4.7]],
+        views: [
+          { id: 'spiegel', label: 'Winkelspiegel', space: 'hull', pos: [-0.55, 1.5, -2.52], look: 'rel', yaw: [-0.55, 0.55], pitch: [-0.2, 0.25], zoom: [1.2], overlay: 'slit' },
+          { id: 'luke', label: 'Luke offen', space: 'hull', pos: [-0.55, 2.1, -2.25], look: 'rel', yaw: [-2.6, 2.6], pitch: [-0.6, 0.8], zoom: [1, 1.8], exposed: true, hatch: 'driver', pin: [-0.55, 0.9, -2.3] },
+          { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 11, height: 4.7, pivot: 2.6 } },
+        ] },
+      { id: 'gunner', label: 'Richtschütze', weapons: ['mbt_ap', 'mbt_he', 'mbt_coax'], mount: 'gun', pos: [0.5, 0.78, -0.4], exit: [[2.8, 0, -0.4], [-2.8, 0, -0.4], [0, 0, 4.7]],
+        views: [
+          { id: 'optik', label: 'Zielfernrohr', space: 'gun', pos: [0.6, 0.42, 0.55], look: 'mount', zoom: [4, 8], overlay: 'optic' },
+          { id: 'weit', label: 'Weitwinkel', space: 'gun', pos: [0.6, 0.42, 0.55], look: 'mount', zoom: [1.2, 2.5], overlay: 'wide' },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.55, 0.6, -0.5], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'mount', zoom: [1], tp: { dist: 11, height: 4.7, pivot: 2.6 } },
+        ] },
+      { id: 'commander', label: 'Kommandant', weapons: ['mbt_cmg'], mount: 'cmg', pos: [-0.55, 0.95, 0.45], exit: [[-2.8, 0, 0.5], [2.8, 0, 0.5], [0, 0, 4.7]],
+        views: [
+          { id: 'periskop', label: 'Kuppel-Winkelspiegel', space: 'cupola', pos: [0, 0.06, 0.05], look: 'mount', zoom: [1.5, 4], overlay: 'peri' },
+          { id: 'luke', label: 'Luke offen', space: 'turret', pos: [-0.55, 1.5, 0.6], look: 'mount', zoom: [1, 4, 7], overlay: 'binocular', exposed: true, hatch: 'commander', pin: [-0.55, 0.3, 0.45] },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [-0.55, 0.62, 0.45], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'mount', zoom: [1], tp: { dist: 10, height: 4.8, pivot: 2.8 } },
+        ] },
+      { id: 'loader', label: 'Ladeschütze', loader: true, weapons: [], pos: [0.55, 0.8, 0.4], exit: [[2.8, 0, 0.5], [-2.8, 0, 0.5], [0, 0, 4.7]],
+        views: [
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.55, 0.62, 0.35], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
+          { id: 'luke', label: 'Luke offen', space: 'turret', pos: [0.55, 1.35, 0.4], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 2], exposed: true, hatch: 'loader', pin: [0.55, 0.1, 0.4] },
+          { id: 'aussen', label: 'Außenansicht', look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.8, pivot: 2.8 } },
+        ] },
+    ],
+    hatches: {
+      driver: { space: 'hull', pos: [-0.55, 1.57, -2.3], r: 0.3 },
+      commander: { space: 'turret', pos: [-0.55, 1.14, 0.45], r: 0.3 },
+      loader: { space: 'turret', pos: [0.55, 0.8, 0.4], r: 0.29 },
+    },
+    // Munition im Turmheck (Staufach) und neben dem Fahrer; Innenraum wie KP-1, Instrumente analog (cabin.js Stil 2. WK/Kalter Krieg)
+    interior: { breech: [0, 0.42, -0.55], rack: [0, 0.45, 1.45], loaderEye: [0.55, 0.62, 0.35] },
+    crew: { switchTime: 1.2, faceTol: 0.6 },
+    ammo: { mbt_ap: 26, mbt_he: 30 },
+    lights: [[-1.35, 1.32, -3.4], [1.35, 1.32, -3.4]],
+    weaponMods: {
+      mbt_ap: { name: '105 mm Treibspiegelgeschoss (PG)', speed: 1470, vehicleDamage: 270, actorDamage: 210, reload: 5.5, reloadNoLoader: 9.0, splash: { radius: 2.4, maxDamage: 90 }, shake: 0.5 },
+      mbt_he: { name: '105 mm Hohlladungsgranate (SG)', speed: 1170, vehicleDamage: 190, actorDamage: 195, reload: 5.5, reloadNoLoader: 9.0, splash: { radius: 6.8, maxDamage: 160, innerRadius: 1.5, minDamage: 22 }, shake: 0.48 },
+    },
+  },
+
+  // 2. Weltkrieg, Team A (zweiter Stellplatz): mittlerer Panzer mit stark geneigten Platten (~31 t), Federlaufwerk mit fünf
+  // großen Laufrollen, gegossener Rundturm mit 85-mm-Kanone, Bug-MG; Munition im Wannenboden; 5 Mann
+  wk2m: {
+    id: 'wk2m', name: 'MP-43 Elch', cls: 'Mittlerer Panzer', era: 'wk2', drive: 'tracked', model: 'wk2m', sound: 'tank',
+    health: 800, armored: true, respawn: 75, wreckTime: 20, noThermal: true,
+    smallArmsMult: 0, explosiveMult: 0.42, ramMult: 0.25,
+    mass: 31000, com: [0, 0.8, 0.2],
+    hullBox: [0, 0.96, 0, 1.5, 0.55, 3.05],
+    turretBox: [0, 0.36, 0.0, 1.0, 0.36, 1.2],
+    turretPivot: [0, 1.5, -0.55],
+    gunPivot: [0, 0.36, -1.0],
+    muzzle: [0, 0, -4.65],
+    coax: [0.26, 0.02, -0.4],
+    cmgHull: true, cmgPivot: [0.5, 1.06, -2.7], cmgMuzzle: [0, 0, -0.6],
+    cmgLimits: { yaw: [-0.4, 0.4], pitch: [-0.17, 0.3] },
+    gunLimits: { min: deg(-5), max: deg(22) },
+    traverse: deg(22), elevate: deg(10),
+    wheels: { radius: 0.41, rest: 0.42, stiffness: 270000, damping: 29000, x: 1.15, z: [-2.15, -1.07, 0, 1.07, 2.15] },
+    roadZ: [-2.15, -1.07, 0, 1.07, 2.15],
+    engine: {
+      idleRpm: 550, ratedRpm: 1800, cutRpm: 1900, cruiseRpm: 1600,
+      torque: [[450, 1300], [550, 1600], [900, 1950], [1200, 2050], [1500, 2000], [1800, 1850], [1900, 0]],
+      gears: { '-1': 5.6, 1: 6.3, 2: 3.7, 3: 2.3, 4: 1.5, 5: 1.05 },
+      finalDrive: 4.15, sprocketR: 0.32, efficiency: 0.72, rotInertia: 1.2,
+      converter: { stallRpm: 1000, mult: 1.4, coupleRpm: 950 }, torqueLag: 0.2, shiftTime: 0.9, autoUp: 1700, autoDown: 900,
+      engineBrake: [180, 0.3], ...TANK_DRIVE, airRes: 3.2, neutralDrag: 11000,
+      brake: 190000, turnRate: 0.72, turnRateMoving: 0.56, latAccMax: 4.0, maxSpeed: 13.9, reverseSpeed: 3.6,
+    },
+    drivetrain: { powerKW: 370, pwr: 11.9, gears: '5/1 (Schaltgetriebe)', vmax: 50 },
+    grip: { long: 1.0, lat: 0.95, latTurning: 0.55, rollInfluence: 0.25 },
+    drag: 0.9, angularDamp: 2.2,
+    zones: { hull: { label: 'Wanne', hp: 800 }, engine: { label: 'Motor', hp: 210 }, tracks: { label: 'Ketten', hp: 190 }, turret: { label: 'Turm', hp: 250 } },
+    armor: { hull: { front: [45, 60], side: [45, 40], rear: [45, 47], top: [20, 0], bottom: [15, 0] }, turret: { front: [90, 0], side: [75, 20], rear: [52, 10], top: [20, 0], mantlet: [90, 0] } },
+    seats: [
+      { id: 'driver', label: 'Fahrer', drive: true, weapons: [], pos: [-0.5, 0.5, -2.1], exit: [[-2.4, 0, -1.4], [2.4, 0, -1.4], [0, 0, -3.9], [0, 0, 3.9]],
+        views: [
+          { id: 'sehklappe', label: 'Winkelspiegel der Fahrerluke', space: 'hull', pos: [-0.5, 1.25, -2.22], look: 'rel', yaw: [-0.45, 0.45], pitch: [-0.2, 0.2], zoom: [1.2], overlay: 'slit' },
+          { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.1, pivot: 2.3 } },
+        ] },
+      { id: 'gunner', label: 'Richtschütze', weapons: ['mbt_ap', 'mbt_he', 'wk2_mg'], mount: 'gun', pos: [-0.4, 0.7, -0.7], exit: [[-2.4, 0, -0.6], [2.4, 0, -0.6], [0, 0, 3.9]],
+        views: [
+          { id: 'optik', label: 'Zielfernrohr', space: 'gun', pos: [-0.3, 0.3, 0.25], look: 'mount', zoom: [2.5, 4], overlay: 'optic' },
+          { id: 'weit', label: 'Weitwinkel', space: 'gun', pos: [-0.3, 0.3, 0.25], look: 'mount', zoom: [1.2], overlay: 'wide' },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [-0.4, 0.5, -0.6], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'mount', zoom: [1], tp: { dist: 9.5, height: 4.1, pivot: 2.3 } },
+        ] },
+      { id: 'funker', label: 'Funker (Bug-MG)', weapons: ['wk2_mg'], mount: 'cmg', pos: [0.5, 0.5, -2.1], exit: [[2.4, 0, -1.4], [-2.4, 0, -1.4], [0, 0, -3.9]],
+        views: [
+          { id: 'kugel', label: 'Kugelblende', space: 'cupola', pos: [0, 0.13, 0.42], look: 'mount', zoom: [1.4, 2.2], overlay: 'wide' },
+          { id: 'aussen', label: 'Außenansicht', look: 'mount', zoom: [1], tp: { dist: 9, height: 3.8, pivot: 2.0 } },
+        ] },
+      { id: 'commander', label: 'Kommandant', weapons: [], pos: [-0.4, 0.85, 0.4], exit: [[-2.4, 0, 0.3], [2.4, 0, 0.3], [0, 0, 3.9]],
+        views: [
+          { id: 'kuppel', label: 'Kommandantenkuppel', space: 'turret', pos: [-0.4, 0.9, 0.5], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.35, 0.4], zoom: [1, 2], overlay: 'peri' },
+          { id: 'luke', label: 'Luke offen', space: 'turret', pos: [-0.4, 1.4, 0.55], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 4, 7], overlay: 'binocular', exposed: true, hatch: 'commander', pin: [-0.4, 0.3, 0.5] },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [-0.4, 0.56, 0.4], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.2, pivot: 2.4 } },
+        ] },
+      { id: 'loader', label: 'Ladeschütze', loader: true, weapons: [], pos: [0.45, 0.72, 0.3], exit: [[2.4, 0, 0.3], [-2.4, 0, 0.3], [0, 0, 3.9]],
+        views: [
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.5, 0.58, 0.5], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
+          { id: 'luke', label: 'Luke offen', space: 'turret', pos: [0.42, 1.25, 0.4], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 2], exposed: true, hatch: 'loader', pin: [0.42, 0.1, 0.4] },
+          { id: 'aussen', label: 'Außenansicht', look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.2, pivot: 2.4 } },
+        ] },
+    ],
+    hatches: {
+      commander: { space: 'turret', pos: [-0.4, 0.94, 0.5], r: 0.27 },
+      loader: { space: 'turret', pos: [0.42, 0.76, 0.4], r: 0.25 },
+    },
+    // Munition in Kästen im Wannenboden (unter dem Turmkorb, Spitzen nach oben)
+    interior: { shift: [0, -0.04, 0.15], breech: [0, 0.42, -0.55], loaderEye: [0.5, 0.62, 0.35], rack: [0.15, -0.3, 0.75], rackRot: [Math.PI / 2, 0] },
+    crew: { switchTime: 1.3, faceTol: 0.6 },
+    ammo: { mbt_ap: 24, mbt_he: 32 },
+    lights: [[-0.62, 1.12, -2.9], [0.75, 1.0, -2.98]],
+    weaponMods: {
+      mbt_ap: { name: '85 mm Panzergranate (PG)', speed: 790, vehicleDamage: 235, actorDamage: 195, reload: 4.4, reloadNoLoader: 7.5, splash: { radius: 2.1, maxDamage: 85 }, shake: 0.45 },
+      mbt_he: { name: '85 mm Sprenggranate (SG)', speed: 550, vehicleDamage: 130, actorDamage: 190, reload: 4.4, reloadNoLoader: 7.5, splash: { radius: 7.0, maxDamage: 165, innerRadius: 1.5, minDamage: 20 }, shake: 0.44 },
+    },
+  },
+
+  // 2. Weltkrieg, Team B (zweiter Stellplatz): Jagdpanzer ohne Turm (~26 t) – niedrige, rundum geneigte Kasematte, 75-mm-
+  // Kanone in einer Topfblende rechts der Mitte, Seitenrichtbereich ±11° (gerichtet wird über den Rumpf), ferngerichtetes
+  // Dach-MG des Kommandanten, Scherenfernrohr; 4 Mann. Niedrige Silhouette, starke Front, schwache Seiten.
+  wk2j: {
+    id: 'wk2j', name: 'JP-44 Stier', cls: 'Jagdpanzer', era: 'wk2', drive: 'tracked', model: 'wk2j', sound: 'tank',
+    health: 720, armored: true, respawn: 70, wreckTime: 20, noThermal: true,
+    smallArmsMult: 0, explosiveMult: 0.45, ramMult: 0.25,
+    mass: 26000, com: [0, 0.8, -0.1],
+    hullBox: [0, 1.06, 0, 1.36, 0.62, 3.1],
+    turretBox: [0, 0, -0.1, 0.42, 0.36, 0.3],
+    turretPivot: [0.22, 1.31, -2.25],
+    turretLimits: [-0.19, 0.19],
+    gunPivot: [0, 0, -0.12],
+    muzzle: [0, 0, -3.75],
+    coax: [0, 0, -0.6],
+    cmgHull: true, cmgPivot: [-0.45, 2.0, 0.25], cmgMuzzle: [0, 0.05, -0.95],
+    cmgLimits: { yaw: [-2.6, 2.6], pitch: [-0.15, 0.45] },
+    gunLimits: { min: deg(-6), max: deg(12) },
+    traverse: deg(10), elevate: deg(8),
+    wheels: { radius: 0.39, rest: 0.42, stiffness: 225000, damping: 25000, x: 1.05, z: [-1.95, -0.98, 0, 0.98, 1.95] },
+    roadZ: [-1.95, -0.65, 0.65, 1.95],
+    engine: {
+      idleRpm: 600, ratedRpm: 2800, cutRpm: 2950, cruiseRpm: 2400,
+      torque: [[500, 520], [600, 600], [1000, 720], [1600, 800], [2200, 790], [2600, 760], [2800, 720], [2950, 0]],
+      gears: { '-1': 6.5, 1: 6.9, 2: 4.0, 3: 2.5, 4: 1.6, 5: 1.05 },
+      finalDrive: 7.55, sprocketR: 0.3, efficiency: 0.72, rotInertia: 1.1,
+      converter: { stallRpm: 1300, mult: 1.4, coupleRpm: 1250 }, torqueLag: 0.2, shiftTime: 0.8, autoUp: 2600, autoDown: 1300,
+      engineBrake: [120, 0.2], ...TANK_DRIVE, airRes: 2.6, neutralDrag: 9000,
+      brake: 160000, turnRate: 0.7, turnRateMoving: 0.55, latAccMax: 3.9, maxSpeed: 11.1, reverseSpeed: 3.2,
+    },
+    drivetrain: { powerKW: 220, pwr: 8.5, gears: '5/1 (Schaltgetriebe)', vmax: 40 },
+    grip: { long: 1.0, lat: 0.95, latTurning: 0.55, rollInfluence: 0.25 },
+    drag: 0.9, angularDamp: 2.3,
+    zones: { hull: { label: 'Wanne', hp: 720 }, engine: { label: 'Motor', hp: 190 }, tracks: { label: 'Ketten', hp: 180 }, turret: { label: 'Kanonenblende', hp: 220 } },
+    armor: { hull: { front: [60, 60], side: [20, 40], rear: [20, 15], top: [10, 0], bottom: [10, 0] }, turret: { front: [80, 0], side: [60, 0], rear: [60, 0], top: [60, 0], mantlet: [100, 0] } },
+    seats: [
+      { id: 'driver', label: 'Fahrer', drive: true, weapons: [], pos: [-0.55, 0.55, -1.65], exit: [[-2.3, 0, -1.4], [2.3, 0, -1.4], [0, 0, -3.9], [0, 0, 3.9]],
+        views: [
+          { id: 'sehschlitz', label: 'Fahrer-Winkelspiegel', space: 'hull', pos: [-0.6, 1.48, -1.78], look: 'rel', yaw: [-0.45, 0.45], pitch: [-0.22, 0.2], zoom: [1.2], overlay: 'slit' },
+          { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.0, pivot: 2.2 } },
+        ] },
+      { id: 'gunner', label: 'Richtschütze', weapons: ['mbt_ap', 'mbt_he'], mount: 'gun', pos: [-0.2, 0.7, -1.3], exit: [[-2.3, 0, -1.0], [2.3, 0, -1.0], [0, 0, 3.9]],
+        views: [
+          { id: 'optik', label: 'Selbstfahrlafetten-Zielfernrohr', space: 'gun', pos: [-0.02, 0.55, 1.2], look: 'mount', zoom: [2.5, 5], overlay: 'optic' },
+          { id: 'weit', label: 'Weitwinkel', space: 'gun', pos: [-0.02, 0.55, 1.2], look: 'mount', zoom: [1.2], overlay: 'wide' },
+          { id: 'innen', label: 'Kampfraum', space: 'turret', pos: [-0.63, 0.13, 0.8], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'mount', zoom: [1], tp: { dist: 9.5, height: 4.0, pivot: 2.2 } },
+        ] },
+      { id: 'loader', label: 'Ladeschütze', loader: true, weapons: [], pos: [0.55, 0.7, -0.9], exit: [[2.3, 0, -0.8], [-2.3, 0, -0.8], [0, 0, 3.9]],
+        views: [
+          { id: 'innen', label: 'Kampfraum', space: 'turret', pos: [-0.06, 0.15, 1.21], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
+          { id: 'luke', label: 'Luke offen', space: 'hull', pos: [-0.45, 2.42, 0.3], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 2], exposed: true, hatch: 'loader', pin: [-0.45, 1.25, 0.3] },
+          { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.0, pivot: 2.2 } },
+        ] },
+      { id: 'commander', label: 'Kommandant (Dach-MG)', weapons: ['wk2_mg'], mount: 'cmg', pos: [0.55, 0.75, -0.3], exit: [[2.3, 0, -0.2], [-2.3, 0, -0.2], [0, 0, 3.9]],
+        views: [
+          { id: 'mg', label: 'Dach-MG (Winkelspiegel)', space: 'cupola', pos: [0, 0.18, 0.35], look: 'mount', zoom: [1.2, 2.5], overlay: 'wide' },
+          { id: 'luke', label: 'Luke offen (Scherenfernrohr)', space: 'hull', pos: [0.45, 2.4, -0.35], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 4, 8], overlay: 'binocular', exposed: true, hatch: 'commander', pin: [0.45, 1.25, -0.35] },
+          { id: 'innen', label: 'Kampfraum', space: 'turret', pos: [0.27, 0.13, 1.54], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.0, pivot: 2.2 } },
+        ] },
+    ],
+    hatches: {
+      commander: { space: 'hull', pos: [0.45, 1.88, -0.35], r: 0.26 },
+      loader: { space: 'hull', pos: [-0.45, 1.9, 0.3], r: 0.25 },
+    },
+    // Kasematte: Aufbau des KP-1 hinter die Blende verschoben (wie SK-18); Granaten an der rechten Wand hinter dem Ladeschützen
+    interior: { scale: 0.82, shift: [-0.22, -0.36, 1.05], breech: [0, 0.42, -0.55], breechScale: 0.75, loaderEye: [0.2, 0.62, 0.2], rack: [0.98, 0.45, 0.75], rackRot: [0, Math.PI / 2] },
+    crew: { switchTime: 1.3, faceTol: 0.6 },
+    ammo: { mbt_ap: 22, mbt_he: 19 },
+    lights: [[-0.95, 1.05, -2.92]],
+    weaponMods: {
+      mbt_ap: { name: '75 mm Panzergranate (PG)', speed: 750, vehicleDamage: 230, actorDamage: 190, reload: 4.6, reloadNoLoader: 7.8, splash: { radius: 2.0, maxDamage: 80 }, shake: 0.42 },
+      mbt_he: { name: '75 mm Sprenggranate (SG)', speed: 550, vehicleDamage: 120, actorDamage: 185, reload: 4.6, reloadNoLoader: 7.8, splash: { radius: 7.0, maxDamage: 160, innerRadius: 1.5, minDamage: 20 }, shake: 0.4 },
+    },
+  },
+};
+Object.assign(VEHICLES, NEW_TANKS);
+// Weitere Panzer + Truppentransporter (data-troop.js, 20.11.): hinten angehängt – Typindex 16 ff. (Netz: 6 Bit)
+Object.assign(VEHICLES, TROOP_VEHICLES);
+// dieselben Nacharbeiten wie oben (Fahrerraum-Innensicht, Turm-Innensichten) für die angehängten Panzer
+for (const D of [...Object.values(NEW_TANKS), ...Object.values(TROOP_VEHICLES)]) {
+  const R = driverCabin(D);
+  const s = R && D.seats.find((x) => x.drive);
+  if (s && s.views && !s.views.some((v) => v.id === 'innen')) s.views.push({ id: 'innen', label: 'Fahrerraum', space: 'hull', pos: R.eye, look: 'rel', yaw: [-2.0, 2.0], pitch: [-0.9, 0.5], zoom: [1], interior: true });
+  const sc = (D.interior && D.interior.scale) || 1;
+  for (const st of D.seats) {
+    if (st.loader) continue;
+    const v = (st.views || []).find((x) => x.interior && x.space === 'turret');
+    if (!v || v.station) continue;
+    const off = st.mount === 'gun' ? [Math.sign(v.pos[0] || 1) * 0.1, 0.05, 0.28] : [0, 0.03, 0.22];
+    v.station = v.pos.slice();
+    v.pos = [v.pos[0] + off[0] * sc, v.pos[1] + off[1] * sc, v.pos[2] + off[2] * sc];
+  }
+}
+// Winkelspiegel/Periskope je Platz, Funkerplatz, Hilfszielfernrohr (periscopes.js, 20.11.) – hinten an die Sichtlisten
+addCrewViews(VEHICLES, driverCabin);
 /** Luftfahrzeug (Hubschrauber/Jet)? */
 export const isAirType = (type) => !!(VEHICLES[type] && VEHICLES[type].air);
 
@@ -881,12 +1230,28 @@ export function vehicleWeapon(type, id) {
  *  Je Team ein eigenes Vorbild (Nutzer 11.10.): 2. WK Team A mittlerer, Team B schwerer Panzer; 1. WK Team A leichter
  *  Drehturm-Panzer, Team B schwerer Sturmpanzerwagen. Ohne Team (Jeder gegen jeden) gilt Team A. */
 export const TANK_ERAS = { modern: { A: 'mbt', B: 'mbt' }, wk2: { A: 'wk2', B: 'wk2h' }, wk1: { A: 'wk1l', B: 'wk1' } };
+// Weitere Panzer (panzermod 15.11.): zweiter Kampfpanzer-Stellplatz je Team bekommt das zweite Fahrzeug der Epoche
+// (A2/B2; Karten mit einem Stellplatz je Team behalten den ersten) – beide Seiten gleich viele, je Epoche passend.
+// „Kalter Krieg“ (kk) als eigene Epoche: beide Teams KP-68 Auerochs.
+Object.assign(TANK_ERAS.modern, { A2: 'spz', B2: 'spz' });
+Object.assign(TANK_ERAS.wk2, { A2: 'wk2m', B2: 'wk2j' });
+TANK_ERAS.kk = { A: 'kk', B: 'kk', A2: 'kks', B2: 'kks' }; // zweiter Stellplatz: SP-58 Mastodon (schwer, 20.11.)
 export const MAP_TANK_ERA = { niemandsland: 'wk1' };
 export function tankEraOf(era, mapId) {
   const e = era && era !== 'karte' ? era : (MAP_TANK_ERA[mapId] || 'modern');
   return TANK_ERAS[e] ? e : 'modern';
 }
-export function tankTypeFor(era, mapId, team = 'A') {
-  const E = TANK_ERAS[tankEraOf(era, mapId)];
-  return E[team === 'B' ? 'B' : 'A'];
+export function tankTypeFor(era, mapId, team = 'A', slot = 0) {
+  const E = TANK_ERAS[tankEraOf(era, mapId)], k = team === 'B' ? 'B' : 'A';
+  return (slot > 0 && E[k + '2']) || E[k];
 }
+
+/** Rollen-Stellplatz der Karte (kind 'truck' | 'utility' | 'apc' | 'apc2' | 'gwmg' | 'light' | 'heavy') → Fahrzeugtyp der
+ *  Panzergeneration (Raum/Lobby „Panzer-Generation“); unbekannte Rolle → null. Beide Teams bekommen dieselbe Art. */
+export const isRoleKind = (k) => ROLE_KINDS.has(k);
+export function transportTypeFor(era, mapId, kind) {
+  const R = ROLE_TYPES[tankEraOf(era, mapId)] || ROLE_TYPES.modern;
+  const t = R[kind];
+  return t && VEHICLES[t] ? t : null;
+}
+export { ROLE_TYPES };

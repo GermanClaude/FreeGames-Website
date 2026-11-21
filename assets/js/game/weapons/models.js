@@ -14,42 +14,46 @@
 //   adsOffset = Position der Gruppe im Kameraraum (Kamera im Ursprung, Blick −Z), bei der das Visier exakt
 //   auf der optischen Achse liegt (inkl. Augenabstand der Visierung).
 import * as THREE from 'three';
-import { Builder, DETAIL, clearPartCache, setWeaponDetail as setDetail } from './gunsmith/builder.js?v=20261119182451';
-import { sk14 } from './gunsmith/guns-sk14.js?v=20261119182451';   // SK-14 nach Vorbild Mk 14 EBR (13.11.)
-import { kv47 } from './gunsmith/guns-kv47.js?v=20261119182451';
-import { m17 } from './gunsmith/guns-m17.js?v=20261119182451';
-import { hm60 } from './gunsmith/guns-hm60.js?v=20261119182451';   // HM-60 Hammer nach Vorbild (M60, 13.11.)
-import { vp9 } from './gunsmith/guns-vp9.js?v=20261119182451';   // VP-9 nach Foto (24.10.)
-import { qx90 } from './gunsmith/guns-qx90.js?v=20261119182451';   // QX-90 nach Foto (25.10.)
-import { brecher, titan } from './gunsmith/guns-praezision.js?v=20261119182451';   // Brecher (AWM), Titan (M82A1) nach Vorbild (13.11.)
-import { bulldog, hagel } from './gunsmith/guns-flinten.js?v=20261119182451';   // Bulldog (870), Hagel (Saiga-12) nach Vorbild (13.11.)
-import { kobra } from './gunsmith/guns-kobra.js?v=20261119182451';   // Kobra (Python) nach Vorbild (13.11.)
-import { zwilling } from './gunsmith/guns-zwilling.js?v=20261119182451';   // ZW-12 Zwilling (Doppelflinte mit Kipplauf, 26.10.)
-import { p9 } from './gunsmith/guns-pistol.js?v=20261119182451';
-import { adler } from './gunsmith/guns-adler.js?v=20261119182451';   // Adler nach Foto (25.10.)
-import { p9a } from './gunsmith/guns-p9a.js?v=20261119182451';   // P-9A (Glock 18C) als Ableitung der P-9 (26.10.)
-import { wirbel } from './gunsmith/guns-wirbel.js?v=20261119182451';   // PS-41 Wirbel (PPSch-41) nach Foto (26.10.)
-import { orkan } from './gunsmith/guns-orkan.js?v=20261119182451';   // RG-6 Orkan (Gatling, 13.11.)
-import { knife, frag, semtex } from './gunsmith/gear.js?v=20261119182451';
-import { bx20 } from './gunsmith/guns-bx20.js?v=20261119182451';   // BX-20 nach Vorbild Steyr AUG (13.11.)
-import { g7 } from './gunsmith/guns-g7.js?v=20261119182451';   // G-7 nach Vorbild G3A3 (13.11.)
-import { lm8 } from './gunsmith/guns-lm8.js?v=20261119182451';   // LM-8 Bär nach Vorbild (RPK, 13.11.)
-import { wespe } from './gunsmith/guns-wespe.js?v=20261119182451';   // KM-7 Wespe nach Vorbild (Vector, 13.11.)
-import { k36 } from './gunsmith/guns-k36.js?v=20261119182451';   // K-36 nach Vorbild G36C (13.11.)
-import { keiler } from './gunsmith/guns-keiler.js?v=20261119182451';   // SM-45 Keiler nach Vorbild (UMP45, 13.11.)
-import { donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261119182451';
-import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate, trophy, trophyDeployed } from './gunsmith/gear2.js?v=20261119182451';
-import { applyCamo, disposeCamos, disposeCamosFor } from './gunsmith/camos.js?v=20261119182451';
-export { setMagRounds } from './gunsmith/magfill.js?v=20261119182451';
-import { disposeMaterials, freeAtlasMaterials } from './gunsmith/materials.js?v=20261119182451';
-import { disposeTextures } from './gunsmith/textures.js?v=20261119182451';
-import { setKitTier, disposeKits } from './gunsmith/finish-kit.js?v=20261119182451';   // Oberflächen-Baukasten (14.11.)
-import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261119182451';
-import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261119182451';
-import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261119182451';
-import { attKey } from '../../shared/attachments.data.js?v=20261119182451';
-import { funke, erstlicht } from './gunsmith/guns-og.js?v=20261119182451';
-import { ursprung } from './gunsmith/guns-ursprung.js?v=20261119182451';   // UR-1 auf dem M4-Fotomodell (13.11.)
+import { Builder, DETAIL, clearPartCache, setWeaponDetail as setDetail } from './gunsmith/builder.js?v=20261121041936';
+import { sk14 } from './gunsmith/guns-sk14.js?v=20261121041936';   // SK-14 nach Vorbild Mk 14 EBR (13.11.)
+import { kv47 } from './gunsmith/guns-kv47.js?v=20261121041936';
+import { m17 } from './gunsmith/guns-m17.js?v=20261121041936';
+import { hm60 } from './gunsmith/guns-hm60.js?v=20261121041936';   // HM-60 Hammer nach Vorbild (M60, 13.11.)
+import { vp9 } from './gunsmith/guns-vp9.js?v=20261121041936';   // VP-9 nach Foto (24.10.)
+import { qx90 } from './gunsmith/guns-qx90.js?v=20261121041936';   // QX-90 nach Foto (25.10.)
+import { brecher, titan } from './gunsmith/guns-praezision.js?v=20261121041936';   // Brecher (AWM), Titan (M82A1) nach Vorbild (13.11.)
+import { bulldog, hagel } from './gunsmith/guns-flinten.js?v=20261121041936';   // Bulldog (870), Hagel (Saiga-12) nach Vorbild (13.11.)
+import { kobra } from './gunsmith/guns-kobra.js?v=20261121041936';   // Kobra (Python) nach Vorbild (13.11.)
+import { zwilling } from './gunsmith/guns-zwilling.js?v=20261121041936';   // ZW-12 Zwilling (Doppelflinte mit Kipplauf, 26.10.)
+import { p9 } from './gunsmith/guns-pistol.js?v=20261121041936';
+import { adler } from './gunsmith/guns-adler.js?v=20261121041936';   // Adler nach Foto (25.10.)
+import { p9a } from './gunsmith/guns-p9a.js?v=20261121041936';   // P-9A (Glock 18C) als Ableitung der P-9 (26.10.)
+import { wirbel } from './gunsmith/guns-wirbel.js?v=20261121041936';   // PS-41 Wirbel (PPSch-41) nach Foto (26.10.)
+import { orkan } from './gunsmith/guns-orkan.js?v=20261121041936';   // RG-6 Orkan (Gatling, 13.11.)
+import { knife, frag, semtex } from './gunsmith/gear.js?v=20261121041936';
+import { bx20 } from './gunsmith/guns-bx20.js?v=20261121041936';   // BX-20 nach Vorbild Steyr AUG (13.11.)
+import { g7 } from './gunsmith/guns-g7.js?v=20261121041936';   // G-7 nach Vorbild G3A3 (13.11.)
+import { lm8 } from './gunsmith/guns-lm8.js?v=20261121041936';   // LM-8 Bär nach Vorbild (RPK, 13.11.)
+import { wespe } from './gunsmith/guns-wespe.js?v=20261121041936';   // KM-7 Wespe nach Vorbild (Vector, 13.11.)
+import { k36 } from './gunsmith/guns-k36.js?v=20261121041936';   // K-36 nach Vorbild G36C (13.11.)
+import { keiler } from './gunsmith/guns-keiler.js?v=20261121041936';   // SM-45 Keiler nach Vorbild (UMP45, 13.11.)
+import { donner, rocket, hammer, trommel } from './gunsmith/guns-heavy.js?v=20261121041936';
+import { karambit, machete, tomahawk, kampfaxt, schlagstock, kampfstock, spaten, flash, smoke, impact, molotov, plate, trophy, trophyDeployed } from './gunsmith/gear2.js?v=20261121041936';
+import { applyCamo, disposeCamos, disposeCamosFor } from './gunsmith/camos.js?v=20261121041936';
+export { setMagRounds } from './gunsmith/magfill.js?v=20261121041936';
+import { disposeMaterials, freeAtlasMaterials } from './gunsmith/materials.js?v=20261121041936';
+import { disposeTextures } from './gunsmith/textures.js?v=20261121041936';
+import { setKitTier, disposeKits } from './gunsmith/finish-kit.js?v=20261121041936';   // Oberflächen-Baukasten (14.11.)
+import { magFillFor, attachMagFill, disposeMagFill } from './gunsmith/magfill.js?v=20261121041936';
+import { attachToBuilder, attachToRoot } from './gunsmith/attach.js?v=20261121041936';
+import { OPTIC_TYPE } from './gunsmith/parts.js?v=20261121041936';
+import { attKey } from '../../shared/attachments.data.js?v=20261121041936';
+import { funke, erstlicht } from './gunsmith/guns-og.js?v=20261121041936';
+import { ursprung } from './gunsmith/guns-ursprung.js?v=20261121041936';   // UR-1 auf dem M4-Fotomodell (13.11.)
+import { setWeaponLodEnabled } from './lodbake.js?v=20261121041936';   // gebackene Drittpersonen-Stufen (20.11.)
+export { setWeaponLod, prefetchWeaponLods, weaponLodEnabled, disposeWeaponLods } from './lodbake.js?v=20261121041936';
+import { uhu, luchs, dachs, elster } from './gunsmith/guns-neu-a.js?v=20261121041936';   // Waffen-Welle 3 (20.11.)
+import { habicht, kranich, hornisse, lindwurm, stier } from './gunsmith/guns-neu-b.js?v=20261121041936';   // Waffen-Welle 3 (20.11.)
 
 const BUILDERS = {
   zwilling, // neue Waffe (26.10.): ZW-12 Zwilling
@@ -60,12 +64,14 @@ const BUILDERS = {
   ursprung, funke, erstlicht, // Waffen der ersten Stunde (guns-og.js)
   p9a, wirbel, // neue Waffen (26.10.)
   orkan, // RG-6 Orkan (13.11.)
+  uhu, luchs, dachs, elster, habicht, kranich, hornisse, lindwurm, stier, // Waffen-Welle 3 (20.11.)
 };
 
 export const MODEL_KEYS = Object.keys(BUILDERS);
 export const GUN_KEYS = ['kv47', 'm17', 'vp9', 'qx90', 'hm60', 'sk14', 'brecher', 'bulldog', 'p9', 'adler',
   'k36', 'bx20', 'g7', 'wespe', 'keiler', 'lm8', 'titan', 'hagel', 'kobra', 'donner', 'hammer', 'trommel', 'ursprung', 'funke',
-  'zwilling', 'p9a', 'wirbel', 'orkan'];   // neue Waffen (26.10.), RG-6 Orkan (13.11.)
+  'zwilling', 'p9a', 'wirbel', 'orkan',   // neue Waffen (26.10.), RG-6 Orkan (13.11.)
+  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier'];   // Waffen-Welle 3 (20.11.)
 export const MELEE_KEYS = ['knife', 'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten', 'erstlicht'];
 export const THROWABLE_KEYS = ['frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke', 'trophy'];
 export { applyCamo };
@@ -93,6 +99,7 @@ export function setWeaponDetail(quality) {
   const was = weaponDetailTier();
   setDetail(quality);
   setKitTier(weaponDetailTier());   // Oberflächen-Baukasten: Kartengröße nach Stufe (finish-kit.js)
+  setWeaponLodEnabled(quality === 'medium' || quality === 'high' || quality === 'ultra');   // Bot-Waffen nah/mitte (lodbake.js; nicht Handy/niedrig)
   return weaponDetailTier() !== was;
 }
 
@@ -287,7 +294,8 @@ export function getWeaponModelMeta(key) {
 // vorliegt: Aufheben zeigt dann einen Platzhalter statt im Bild zu bauen. Alle übrigen Waffen (alte Bauweise, 2–90 ms) baut das
 // Aufheben ohne Messung sofort. NEUE FOTO-WAFFEN HIER EINTRAGEN (Integrationsschritt je Etappe, Bauanleitung §8.2).
 const PHOTO_MODELS = new Set(['m17', 'p9', 'kv47', 'vp9', 'qx90', 'adler',   // Etappe 1 (25.10.): KV-47, VP-9, QX-90, Adler
-  'zwilling', 'p9a', 'wirbel']);   // neue Waffen 26.10.: ZW-12 Zwilling, P-9A, PS-41 Wirbel
+  'zwilling', 'p9a', 'wirbel',   // neue Waffen 26.10.: ZW-12 Zwilling, P-9A, PS-41 Wirbel
+  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier']);   // Welle 3 (20.11.): Distanzfeld-Bauteile, 0,4–1 s Bau
 export function isPhotoWeapon(key) { return PHOTO_MODELS.has(key); }
 
 /**

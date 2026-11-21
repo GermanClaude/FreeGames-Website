@@ -10,14 +10,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NULLPUNKT – Ego-Shooter im Browser</title>
-<meta name="description" content="Taktischer Ego-Shooter im Browser: acht Modi, fünf Karten mit Panzern und Jeeps, 20 Waffen, bis zu 32 gegen 32 Bots. Kein Download, kein Konto, kein Tracking.">
+<meta name="description" content="Realistischer Ego-Shooter im Browser: zwei Kampagnen, Panzersimulation mit vier Besatzungsplätzen, Infanterie-Simulation ohne HUD, zwölf Modi, zehn Karten, Mehrspieler bis 32 Spieler, VR und Controller. Kostenlos, kein Download, kein Konto, kein Tracking.">
 <meta name="theme-color" content="#0A0B0D">
 <meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
 <meta property="og:site_name" content="NULLPUNKT">
 <meta property="og:title" content="NULLPUNKT – Ego-Shooter im Browser">
-<meta property="og:description" content="Ein Schriftmusterbuch, das zurückschießt. Acht Modi, fünf Karten, 20 Waffen, bis zu 32 gegen 32. Kein Download, kein Konto.">
+<meta property="og:description" content="Ein Schriftmusterbuch, das zurückschießt. Zwei Kampagnen, Panzer- und Infanterie-Simulation, zwölf Modi, zehn Karten, Mehrspieler, VR. Kein Download, kein Konto.">
 <!-- Vorschauen (Messenger, soziale Netze) brauchen absolute Adressen: bei anderem Repository/Domain anpassen (README) -->
 <link rel="canonical" href="https://germanclaude.github.io/FreeGames-Website/">
 <meta property="og:url" content="https://germanclaude.github.io/FreeGames-Website/">
@@ -27,6 +27,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="NULLPUNKT. in schwerer Schrift auf Schwarz, der Punkt in Signalorange.">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NULLPUNKT – Ego-Shooter im Browser">
+<meta name="twitter:description" content="Zwei Kampagnen, Panzer- und Infanterie-Simulation, Mehrspieler, VR. Kostenlos im Browser.">
 <meta name="twitter:image" content="https://germanclaude.github.io/FreeGames-Website/assets/img/og.png">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/img/favicon-32.png" type="image/png" sizes="32x32">
@@ -36,6 +38,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NULLPUNKT">
 <link rel="manifest" href="manifest.webmanifest">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"NULLPUNKT","url":"https://germanclaude.github.io/FreeGames-Website/","image":"https://germanclaude.github.io/FreeGames-Website/assets/img/og.png","description":"Realistischer Ego-Shooter im Browser mit zwei Kampagnen, Panzersimulation, Infanterie-Simulation, Mehrspieler, VR und Controller-Unterstützung.","inLanguage":"de","genre":["Ego-Shooter","Taktik-Shooter","Militärsimulation"],"gamePlatform":["Webbrowser","Windows","Linux","Android","iOS (Web-App)","Meta Quest (WebXR)"],"applicationCategory":"Game","operatingSystem":"Windows, Linux, macOS, Android, iOS","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":32},"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"author":{"@type":"Person","name":"German Legend"}}</script>
 <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/fonts.css">
@@ -46,13 +49,13 @@
 // app: Desktop-App (Electron) bzw. Android-App früh kennzeichnen (Download-Bereich aus, „Spielen“ immer sichtbar)
 if (window.nullpunktDesktop) document.documentElement.classList.add('is-app', 'is-desktop-app');
 try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) document.documentElement.classList.add('is-app', 'is-android-app'); } catch (e) {}</script>
-<link rel="modulepreload" href="assets/js/site/main.js?v=20261119182451">
-<link rel="modulepreload" href="assets/js/shared/weapons.data.js?v=20261119182451">
-<link rel="modulepreload" href="assets/js/shared/modes.data.js?v=20261119182451">
-<link rel="modulepreload" href="assets/js/shared/maps.data.js?v=20261119182451">
-<link rel="modulepreload" href="assets/js/shared/settings.js?v=20261119182451">
-<script type="module" src="assets/js/site/main.js?v=20261119182451"></script>
-<script type="module" src="assets/js/shared/pwa.js?v=20261119182451"></script>
+<link rel="modulepreload" href="assets/js/site/main.js?v=20261121041936">
+<link rel="modulepreload" href="assets/js/shared/weapons.data.js?v=20261121041936">
+<link rel="modulepreload" href="assets/js/shared/modes.data.js?v=20261121041936">
+<link rel="modulepreload" href="assets/js/shared/maps.data.js?v=20261121041936">
+<link rel="modulepreload" href="assets/js/shared/settings.js?v=20261121041936">
+<script type="module" src="assets/js/site/main.js?v=20261121041936"></script>
+<script type="module" src="assets/js/shared/pwa.js?v=20261121041936"></script>
 </head>
 <body>
 <a class="skip" href="#einsatz">Zum Inhalt</a>
@@ -65,11 +68,13 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
   <nav class="index" aria-label="Abschnitte">
     <ol>
       <li><a href="#einsatz" data-t="Einsatz"><span>Einsatz</span></a></li>
+      <li><a href="#neu" data-t="Neu"><span>Neu</span></a></li>
+      <li><a href="#kampagne" data-t="Kampagne"><span>Kampagne</span></a></li>
       <li><a href="#modi" data-t="Modi"><span>Modi</span></a></li>
       <li><a href="#karten" data-t="Karten"><span>Karten</span></a></li>
       <li><a href="#arsenal" data-t="Arsenal"><span>Arsenal</span></a></li>
-      <li><a href="#profil" data-t="Profil"><span>Profil</span></a></li>
-      <li><a href="#einstellungen" data-t="Einstellungen"><span>Einstellungen</span></a></li>
+      <li class="ix-opt"><a href="#profil" data-t="Profil"><span>Profil</span></a></li>
+      <li class="ix-opt"><a href="#einstellungen" data-t="Einstellungen"><span>Einstellungen</span></a></li>
       <li><a href="#steuerung" data-t="Steuerung"><span>Steuerung</span></a></li>
       <li><a href="#app" data-t="App"><span>App</span></a></li>
       <li><a href="#ueber" data-t="Über"><span>Über</span></a></li>
@@ -77,7 +82,7 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
   </nav>
   <p class="who" hidden><span class="callsign" id="st-callsign">OPERATOR</span><span class="lvl"><span id="st-level">STUFE 1</span><span class="rank-ic" id="st-rank"></span></span></p>
   <div class="st-actions">
-    <button class="st-index js-only" type="button" aria-haspopup="dialog" data-open-index>Index</button>
+    <button class="st-index ix-more js-only" type="button" aria-haspopup="dialog" data-open-index>Index</button>
     <button class="st-sound js-only" type="button" aria-pressed="false" id="sound-toggle">Ton: aus</button>
     <a class="st-play" href="spielen.html?mode=tdm&amp;map=hafen&amp;diff=regulaer&amp;allies=5&amp;enemies=6" data-play data-kill hidden>Spielen<span class="o">.</span></a>
   </div>
@@ -100,13 +105,14 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       <div class="holes" id="holes" aria-hidden="true"></div>
     </div>
     <div class="zero-line js-only"><p class="zero-msg" id="zero-msg"></p><button class="txt-btn" type="button" id="zero-reset" hidden>Neu einschießen</button></div>
-    <p class="data-line" id="data-line"><span class="nw">5 MODI</span> · <span class="nw">4 KARTEN</span> · <span class="nw">10 WAFFEN</span> · <span class="nw">BIS ZU 15 BOTS</span></p>
+    <p class="data-line" id="data-line"><span class="nw">12 MODI</span> · <span class="nw">10 KARTEN</span> · <span class="nw">28 WAFFEN</span> · <span class="nw">BIS ZU 63 BOTS</span></p>
     <div class="hero-body">
-      <p class="lead">Ego-Shooter im Browser. Du gegen Bots. Kein Download, kein Konto.</p>
+      <p class="lead">Ego-Shooter im Browser. Gegen Bots oder online mit Freunden. Kein Download, kein Konto.</p>
       <div class="hero-cta">
         <a class="cta-fill" href="spielen.html?mode=tdm&amp;map=hafen&amp;diff=regulaer&amp;allies=5&amp;enemies=6" data-play data-kill>Sofort spielen<span class="o">.</span></a>
         <p class="cta-cfg" id="cta-cfg">TDM · IM HAFEN · REGULÄR</p>
         <a class="cta-down" href="#einsatz">Einsatz zusammenstellen<span class="arrow" aria-hidden="true"> ↓</span></a>
+        <a class="hero-new" href="#neu"><span class="hero-new-tag">Neu</span> Panzersimulation, Kampagne „Eisenwind“, Infanterie-Simulation<span class="arrow" aria-hidden="true"> ↓</span></a>
       </div>
       <p class="touch-play js-only" id="touch-play" hidden><span class="tp-phone" aria-hidden="true"></span><span>Quer halten. Links laufen, rechts zielen und feuern. <a href="#steuerung" id="touch-play-link">Touch-Steuerung</a></span></p>
     </div>
@@ -147,13 +153,202 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
   </section>
 
   <!-- §02 ─────────────────────────────────────────────── -->
+  <section id="neu" class="sec" aria-labelledby="h-neu" data-view="news">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">§02</span> / NEU / Stand 20. November 2026</p>
+      <p class="kicker">Was seit Oktober dazugekommen ist. Alle Bilder stammen direkt aus dem Spiel.</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-neu" data-fit data-fit-slots>NEU.</h2>
+      <p class="tagline">Panzer mit echten Handgriffen, zwei Kampagnen, eine Simulation ohne HUD.</p>
+      <div class="news-filter js-only" role="group" aria-label="Neuheiten filtern" id="news-filter" hidden>
+        <button type="button" class="chip" aria-pressed="true" data-f="alle">Alles</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="sim">Simulation</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="kampagne">Kampagnen</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="welt">Welt &amp; Technik</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="geraet">Geräte</button>
+      </div>
+      <p class="sr-only" id="news-count" aria-live="polite"></p>
+      <ul class="news" id="news-list">
+        <li class="news-card is-wide" data-tags="sim">
+          <figure class="news-pic"><img src="assets/img/neu/panzer-innen-s.webp" srcset="assets/img/neu/panzer-innen-s.webp 640w, assets/img/neu/panzer-innen.webp 1280w" sizes="(min-width: 1024px) 48vw, 100vw" width="640" height="428" loading="lazy" decoding="async" alt="Richtschützenplatz im Kampfpanzer: Feuerleitrechner, Schalter für Hauptwaffe, Turmantrieb und Laser-Entfernungsmesser."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Modus Panzer · Simulation</p>
+            <h3>Panzersimulation.</h3>
+            <p>Du übernimmst einen von vier Plätzen: Fahrer, Richtschütze, Ladeschütze oder Kommandant. Den Rest macht die KI-Besatzung. Motor anlassen, Gang einlegen, Waffe scharf schalten, laden, entsichern, Ziel ansprechen: Jeder Handgriff passiert an einem echten Bedienelement im Innenraum. Wucht, Hohlladung, Spreng und Kanister wirken nach Panzerung und Auftreffwinkel.</p>
+            <p class="news-how">Führung wählbar: <strong>Tutorial</strong> zeigt den nächsten Handgriff, <strong>Hilfe</strong> nur auf Taste I, <strong>Aus</strong> lässt dich frei machen. Wer nur fahren und schießen will, nimmt Arcade.</p>
+            <p class="news-go"><a class="play-link" href="spielen.html?mode=panzer&amp;map=grenzland">Panzer-Modus öffnen<span class="o">.</span></a> <a class="txt-link" href="#simulation">Rollen ansehen</a></p>
+          </div>
+        </li>
+        <li class="news-card" data-tags="kampagne sim">
+          <figure class="news-pic"><img src="assets/img/neu/eisenwind-s.webp" srcset="assets/img/neu/eisenwind-s.webp 640w, assets/img/neu/eisenwind.webp 1024w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="274" loading="lazy" decoding="async" alt="Zwischensequenz der Panzer-Kampagne: Blick über ein Dorf im Tal der Miren am frühen Morgen."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Panzer-Kampagne · 6 Einsätze</p>
+            <h3>Eisenwind.</h3>
+            <p>Herbst im Tal der Miren. Mit „Falke 2“ und deiner Besatzung brichst du durch Sperrlinien, hältst eine Höhe, sicherst Nachschub und kämpfst bei Nacht mit Wärmebild. Eine Mission spielt achtzig Jahre früher in einem alten Panzer.</p>
+            <p class="news-go"><a class="txt-link" href="#kampagne" data-camp="eisenwind">Alle sechs Einsätze</a></p>
+          </div>
+        </li>
+        <li class="news-card" data-tags="kampagne">
+          <figure class="news-pic"><img src="assets/img/neu/stille-grenze-s.webp" srcset="assets/img/neu/stille-grenze-s.webp 640w, assets/img/neu/stille-grenze.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="256" loading="lazy" decoding="async" alt="Zwischensequenz der Kampagne Stille Grenze: Soldaten im Südgraben des Niemandslands."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Infanterie-Kampagne · <span data-count="sg-missions">16</span> Missionen · 3 Akte</p>
+            <h3>Stille Grenze.</h3>
+            <p>Drei Wochen Waffenruhe, und jemand will sie brechen. Zwischensequenzen mit deutscher Lippensynchronisation, Checkpoints, gespeicherter Fortschritt. Akt III endet offen, weitere Kapitel folgen.</p>
+            <p class="news-go"><a class="txt-link" href="#kampagne" data-camp="stille-grenze">Alle Missionen</a></p>
+          </div>
+        </li>
+        <li class="news-card is-wide" data-tags="sim">
+          <figure class="news-pic"><img src="assets/img/neu/isim-s.webp" srcset="assets/img/neu/isim-s.webp 640w, assets/img/neu/isim.webp 1280w" sizes="(min-width: 1024px) 48vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Spielstil Simulation im Hafen: kein Fadenkreuz, keine Munitionsanzeige, nur die Liste der Handgriffe."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Spielstil Simulation</p>
+            <h3>Infanterie-Simulation.</h3>
+            <p>Kein HUD, kein Fadenkreuz. Magazine zählen einzeln, halbleere bleiben halbleer. Du lädst durch, sicherst, behebst Ladehemmungen und stellst das Visier auf die Entfernung ein. Treffer verwunden einzelne Körperteile, Blutungen stillst du mit Verband oder Abbinden, und wer zu viel Blut verliert, wird bewusstlos.</p>
+            <p class="news-how">Zu finden in der Lobby unter <strong>Spielstil → Simulation</strong> (in Team-Deathmatch, Herrschaft, Jeder gegen jeden, Stellung, Eroberung, Abschuss bestätigt und der Kampagne).</p>
+            <p class="news-go"><a class="txt-link" href="#simulation">Arcade, Realistisch, Simulation vergleichen</a></p>
+          </div>
+        </li>
+        <li class="news-card" data-tags="welt">
+          <figure class="news-pic"><img src="assets/img/neu/zerstoerung-s.webp" srcset="assets/img/neu/zerstoerung-s.webp 640w, assets/img/neu/zerstoerung.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="320" loading="lazy" decoding="async" alt="Altstadt: Bresche in einer Hauswand nach Dauerfeuer und einer Rakete, mit Staub und Trümmern."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Zerstörung</p>
+            <h3>Wände geben nach.</h3>
+            <p>Einschusslöcher je Kaliber, Querschläger und Durchschüsse. Dauerfeuer frisst sich durch Wände, Sprengungen reißen begehbare Breschen mit gebrochenen Rändern, Ruß und Staub. Türen fallen aus zerschossenen Scharnieren, Bäume kippen, Panzer schieben Gebäude ein.</p>
+          </div>
+        </li>
+        <li class="news-card" data-tags="welt">
+          <figure class="news-pic"><img src="assets/img/neu/gesichter-s.webp" srcset="assets/img/neu/gesichter-s.webp 640w, assets/img/neu/gesichter.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="303" loading="lazy" decoding="async" alt="Nahaufnahme eines Soldaten mit Helm und Headset in einer Zwischensequenz."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Menschen</p>
+            <h3>Gesichter, Körper, Hände.</h3>
+            <p>Ein anatomischer Kopf auf Basis des freien MakeHuman-Grundnetzes mit Mimik, Lidern und Kiefer. Dazu Plattenträger mit Taschen, Helme über der gemessenen Kopfform, zivile Kleidung für die Kampagne und neue Handschuh-Hände in der Ich-Sicht.</p>
+          </div>
+        </li>
+        <li class="news-card" data-tags="welt">
+          <figure class="news-pic"><img src="assets/img/maps/flugplatz-s.webp" srcset="assets/img/maps/flugplatz-s.webp 800w, assets/img/maps/flugplatz.webp 1600w" sizes="(min-width: 1024px) 32vw, 100vw" width="800" height="300" loading="lazy" decoding="async" alt="Karte Flugplatz: Startbahn mit Hangars."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Karten · Fotoscan-Texturen</p>
+            <h3>Mehr Welt.</h3>
+            <p>Zwei neue Großkarten, Flugplatz und Stadtkern, Relief auf allen großen Karten und viel Kleinkram auf den Straßen. 82 Materialien sind echte Fotoscans von Poly Haven (frei, CC0), auf Ultra in doppelter Auflösung.</p>
+            <p class="news-go"><a class="txt-link" href="#vergleich">Vorher und nachher</a></p>
+          </div>
+        </li>
+        <li class="news-card" data-tags="geraet">
+          <figure class="news-pic"><img src="assets/img/neu/tv-modus-s.webp" srcset="assets/img/neu/tv-modus-s.webp 640w, assets/img/neu/tv-modus.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Lobby im TV-Modus mit großer Schrift und Controller-Fokus."></figure>
+          <div class="news-txt">
+            <p class="mono-s">Controller · TV</p>
+            <h3>Vom Sofa aus.</h3>
+            <p>Der Controller, mit dem du gerade spielst, wird erkannt, die Symbole passen sich an (Xbox, PlayStation, Nintendo). Der TV-Modus vergrößert Schrift und Bedienflächen für den Abstand zum Fernseher.</p>
+            <p class="news-go"><a class="txt-link" href="#steuerung" data-ctl="pad">Controller-Belegung</a></p>
+          </div>
+        </li>
+        <li class="news-card" data-tags="geraet">
+          <figure class="news-pic"><img src="assets/img/neu/vr-fernrohr-s.webp" srcset="assets/img/neu/vr-fernrohr-s.webp 640w, assets/img/neu/vr-fernrohr.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="VR-Ansicht: Scharfschützengewehr mit echtem Bild im Zielfernrohr."></figure>
+          <div class="news-txt">
+            <p class="mono-s">VR (Beta)</p>
+            <h3>Nachladen mit der Hand.</h3>
+            <p>Magazin auswerfen, ein neues aus der Gürteltasche holen, einsetzen, durchladen. Das Zielfernrohr zeigt ein echtes vergrößertes Bild, Granaten greifst du an der Brust, die Waffen stecken im Holster an Rücken und Hüfte. Fortbewegung per Stick oder Teleport.</p>
+            <p class="news-go"><a class="txt-link" href="#steuerung" data-ctl="vr">VR-Steuerung</a></p>
+          </div>
+        </li>
+        <li class="news-card is-text" data-tags="geraet">
+          <div class="news-txt">
+            <p class="mono-s">Apps · Mehrspieler</p>
+            <h3>Überall dasselbe Spiel.</h3>
+            <p>PC-App für Windows und Linux, Android-App, und auf dem iPhone als Web-App über den Home-Bildschirm. Im Mehrspieler treffen sich bis zu 32 Spieler mit einem Raumcode, egal ob Browser, Handy, VR-Brille oder PC-App. Einzige Bedingung: alle haben dieselbe Spielfassung.</p>
+            <p class="news-go"><a class="txt-link" href="#app">Herunterladen</a></p>
+          </div>
+        </li>
+      </ul>
+
+      <div class="vgl" id="vergleich">
+        <h3 class="sub-h" id="h-vgl">VORHER. NACHHER.</h3>
+        <p class="sub-copy">Gleiche Stelle, gleiche Kamera, einmal vor und einmal nach einer Überarbeitungsrunde im November. Schieb den Regler.</p>
+        <div class="vgl-pick js-only" role="group" aria-label="Vergleich wählen" id="vgl-pick" hidden>
+          <button type="button" class="chip" aria-pressed="true" data-v="wald">Waldrand</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="hafen">Hafenkai</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="auto">Auto</button>
+        </div>
+        <figure class="vgl-stage" id="vgl-stage">
+          <img class="vgl-a" src="assets/img/neu/vgl-wald-vorher-s.webp" srcset="assets/img/neu/vgl-wald-vorher-s.webp 640w, assets/img/neu/vgl-wald-vorher.webp 1280w" sizes="(min-width: 1024px) 70vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Vorher: Waldrand im Grenzland mit lichten, flachen Bäumen.">
+          <div class="vgl-clip"><img class="vgl-b" src="assets/img/neu/vgl-wald-nachher-s.webp" srcset="assets/img/neu/vgl-wald-nachher-s.webp 640w, assets/img/neu/vgl-wald-nachher.webp 1280w" sizes="(min-width: 1024px) 70vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Nachher: derselbe Waldrand mit dichteren Bäumen und Sträuchern."></div>
+          <span class="vgl-lab vgl-lab-a" aria-hidden="true">Vorher</span><span class="vgl-lab vgl-lab-b" aria-hidden="true">Nachher</span>
+          <span class="vgl-line" aria-hidden="true"></span>
+          <input class="vgl-range js-only" type="range" min="0" max="100" value="50" step="1" aria-label="Vergleich: links vorher, rechts nachher" aria-valuetext="Hälfte vorher, Hälfte nachher">
+          <figcaption class="vgl-cap" id="vgl-cap">Waldrand im Grenzland, Grafikstufe Hoch: vor und nach der Überarbeitung der Bäume (14. November).</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- §03 ─────────────────────────────────────────────── -->
+  <section id="kampagne" class="sec" aria-labelledby="h-kampagne" data-view="campaign">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">§03</span> / KAMPAGNE / Zwei Geschichten</p>
+      <p class="kicker">Alle Namen, Länder und Einheiten sind frei erfunden. Ernst, ohne Verherrlichung.</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-kampagne" data-fit data-fit-slots>KAMPAGNE.</h2>
+      <p class="tagline">Eine zu Fuß. Eine im Turm.</p>
+      <div class="camp-root" id="camp-root">
+        <div class="camp-static static">
+          <article class="camp-intro">
+            <h3 class="mono-h">Stille Grenze · Infanterie · 16 Missionen</h3>
+            <p>Im Grenztal von Sant Aurel hält die Waffenruhe zwischen Nordkorps und Ostbund seit drei Wochen. Dann verstummt das Funkrelais, und Feldwebel Lenz und sein Trupp stoßen auf einen Plan, der beide Seiten zurück in den Krieg treiben soll. Akt I „Waffenruhe“, Akt II „Feuer im Tal“, Akt III „Phase zwei“.</p>
+          </article>
+          <article class="camp-intro">
+            <h3 class="mono-h">Eisenwind · Panzer · 6 Einsätze</h3>
+            <p>Herbst im Tal der Miren: Korvanische Panzer überschreiten die Grenze. Mit „Falke 2“ und deiner Besatzung brichst du durch Sperrlinien, hältst eine Höhe, geleitest Nachschub und schlägst bei Nacht zu.</p>
+          </article>
+        </div>
+      </div>
+      <p class="camp-go"><a class="cta-fill camp-cta" href="spielen.html?tab=kampagne" id="camp-cta">Kampagne öffnen<span class="o">.</span></a></p>
+    </div>
+  </section>
+
+  <!-- §04 ─────────────────────────────────────────────── -->
+  <section id="simulation" class="sec" aria-labelledby="h-sim" data-view="sim">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">§04</span> / SIMULATION / Spielstil</p>
+      <p class="kicker">Die Werte kommen direkt aus dem Spiel. Umstellen kannst du jederzeit in der Lobby.</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-sim" data-fit data-fit-slots>SIMULATION.</h2>
+      <p class="tagline">Wie viel nimmt dir das Spiel ab?</p>
+      <div class="sim-root" id="sim-root">
+        <table class="sim-table static">
+          <caption class="sr-only">Spielstile im Vergleich</caption>
+          <thead><tr><th scope="col"></th><th scope="col">Arcade</th><th scope="col">Realistisch</th><th scope="col">Simulation</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Anzeige</th><td>volles HUD</td><td>reduziert</td><td>kein HUD</td></tr>
+            <tr><th scope="row">Fadenkreuz</th><td>an</td><td>nach Einstellung</td><td>nie</td></tr>
+            <tr><th scope="row">Gegner auf der Minikarte</th><td>ja</td><td>nein</td><td>nein</td></tr>
+            <tr><th scope="row">Schaden durch Kugeln</th><td>×1</td><td>×1,5</td><td>×1,5</td></tr>
+            <tr><th scope="row">Magazine, Durchladen, Ladehemmung</th><td>nein</td><td>nein</td><td>ja</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="crew" id="crew">
+        <h3 class="sub-h" id="h-crew">BESATZUNG.</h3>
+        <p class="sub-copy">Im Panzer-Modus sitzt du auf einem Platz. Wähle ihn und sieh, was du dort selbst tust.</p>
+        <div class="crew-roles" id="crew-roles">
+          <article class="crew-role" id="crew-fahrer"><h4>Fahrer</h4><ul><li>Hauptschalter (Batterie, Innenlicht) ein</li><li>Anlasser: Motor startet nach rund zwei Sekunden</li><li>Feststellbremse lösen</li><li>Wahlhebel bzw. Gang einlegen, im Weltkriegspanzer per Mausrad</li><li>fährt auf Befehl: vor, halt, links, rechts, zurück, Deckung</li></ul></article>
+          <article class="crew-role" id="crew-richtschuetze"><h4>Richtschütze</h4><ul><li>Hauptschalter Waffe: scharf</li><li>Turmantrieb an (sonst Handräder, 6° pro Sekunde)</li><li>Munition am Rechner wählen</li><li>Entfernung mit dem Laser messen</li><li>schießt auf „Feuer!“ des Kommandanten</li></ul></article>
+          <article class="crew-role" id="crew-ladeschuetze"><h4>Ladeschütze</h4><ul><li>Granate aus Gestell oder Bunker greifen</li><li>einschieben, Verschluss schließen</li><li>entsichern und „geladen!“ melden</li><li>die befohlene Munitionsart laden</li></ul></article>
+          <article class="crew-role" id="crew-kommandant"><h4>Kommandant</h4><ul><li>Luke auf und zu</li><li>Ziel ansprechen: „Richtschütze – Panzer – halbrechts – 800 – Wucht – Feuer!“</li><li>Fahrbefehle und Munitionsbefehle</li><li>Lagemeldung über das Funkgerät</li></ul></article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §05 ─────────────────────────────────────────────── -->
   <section id="modi" class="sec" aria-labelledby="h-modi" data-view="modes">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§02</span> / MODI / Regelwerk</p>
+      <p class="rail-label"><span class="sec-no">§05</span> / MODI / Regelwerk</p>
     </div>
     <div class="content">
       <h2 class="hl" id="h-modi" data-fit data-fit-slots>MODI.</h2>
-      <p class="tagline">Fünf Modi. Ein Fadenkreuz.</p>
+      <p class="tagline"><span data-count="modes">12</span> Modi. Ein Fadenkreuz.</p>
       <ol class="modes static" id="modes-list">
         <li><h3>Team-Deathmatch</h3><p class="mono-s">TDM · 6 GEGEN 6 · 40 ABSCHÜSSE · 10 MIN</p><p>Sechs gegen sechs. Wer zuerst 40 erreicht, gewinnt.</p></li>
         <li><h3>Herrschaft</h3><p class="mono-s">DOM · 6 GEGEN 6 · 150 PUNKTE · 10 MIN</p><p>Drei Flaggen. Halte zwei, und die Uhr arbeitet für dich.</p></li>
@@ -181,10 +376,10 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
     </div>
   </section>
 
-  <!-- §03 ─────────────────────────────────────────────── -->
+  <!-- §06 ─────────────────────────────────────────────── -->
   <section id="karten" class="sec" aria-labelledby="h-karten" data-view="maps">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§03</span> / KARTEN / Sichtlinien-Satz</p>
+      <p class="rail-label"><span class="sec-no">§06</span> / KARTEN / Sichtlinien-Satz</p>
       <p class="kicker js-only">Bewege dich durch den Plan. Was du siehst, steht fett.</p>
     </div>
     <div class="content">
@@ -201,10 +396,10 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
     </div>
   </section>
 
-  <!-- §04 ─────────────────────────────────────────────── -->
+  <!-- §07 ─────────────────────────────────────────────── -->
   <section id="arsenal" class="sec" aria-labelledby="h-arsenal" data-view="arsenal">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§04</span> / ARSENAL / Schriftmusterbuch</p>
+      <p class="rail-label"><span class="sec-no">§07</span> / ARSENAL / Schriftmusterbuch</p>
       <p class="kicker">Breite ist Reichweite. Stärke ist Schaden.</p>
       <div class="w-index-slot" id="w-index-rail"></div>
     </div>
@@ -219,10 +414,10 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
     </div>
   </section>
 
-  <!-- §05 ─────────────────────────────────────────────── -->
+  <!-- §08 ─────────────────────────────────────────────── -->
   <section id="profil" class="sec" aria-labelledby="h-profil" data-view="profile">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§05</span> / PROFIL / Dein Schnitt</p>
+      <p class="rail-label"><span class="sec-no">§08</span> / PROFIL / Dein Schnitt</p>
     </div>
     <div class="content">
       <h2 class="hl" id="h-profil" data-fit data-fit-slots data-act="cut">PROFIL.</h2>
@@ -233,10 +428,10 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
     </div>
   </section>
 
-  <!-- §06 ─────────────────────────────────────────────── -->
+  <!-- §09 ─────────────────────────────────────────────── -->
   <section id="einstellungen" class="sec" aria-labelledby="h-einst" data-view="settings">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§06</span> / EINSTELLUNGEN / Setzkasten</p>
+      <p class="rail-label"><span class="sec-no">§09</span> / EINSTELLUNGEN / Setzkasten</p>
     </div>
     <div class="content">
       <h2 class="hl" id="h-einst" data-fit data-fit-slots data-act="lens">EINSTELLUNGEN.</h2>
@@ -247,10 +442,10 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
     </div>
   </section>
 
-  <!-- §07 ─────────────────────────────────────────────── -->
+  <!-- §10 ─────────────────────────────────────────────── -->
   <section id="steuerung" class="sec" aria-labelledby="h-steuer" data-view="controls">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§07</span> / STEUERUNG / Belegung</p>
+      <p class="rail-label"><span class="sec-no">§10</span> / STEUERUNG / Belegung</p>
     </div>
     <div class="content">
       <h2 class="hl" id="h-steuer" data-fit data-fit-slots data-act="keys">STEUERUNG.</h2>
@@ -264,14 +459,20 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
             <tr><th scope="row">LMT</th><td>Feuern</td></tr>
             <tr><th scope="row">RMT</th><td>Zielen (halten)</td></tr>
             <tr><th scope="row">R</th><td>Nachladen</td></tr>
-            <tr><th scope="row">Leertaste</th><td>Springen</td></tr>
+            <tr><th scope="row">Leertaste</th><td>Springen, Überklettern</td></tr>
             <tr><th scope="row">C</th><td>Ducken, im Sprint rutschen</td></tr>
+            <tr><th scope="row">Y</th><td>Hinlegen</td></tr>
             <tr><th scope="row">Umschalt</th><td>Sprinten, im Zielfernrohr Atem anhalten</td></tr>
-            <tr><th scope="row">V / Maus&nbsp;4</th><td>Messer</td></tr>
-            <tr><th scope="row">G / Q</th><td>Granate (halten: vorkochen)</td></tr>
+            <tr><th scope="row">Q / E</th><td>Nach links / rechts lehnen</td></tr>
+            <tr><th scope="row">V / Maus&nbsp;4</th><td>Nahkampf</td></tr>
+            <tr><th scope="row">G</th><td>Granate (halten: vorkochen)</td></tr>
+            <tr><th scope="row">X</th><td>Taktische Granate</td></tr>
             <tr><th scope="row">1 / 2 / Mausrad / Maus&nbsp;5</th><td>Waffe wechseln</td></tr>
-            <tr><th scope="row">3 / 4 / 5 / 6</th><td>Serienprämien (6: FPV-Drohne)</td></tr>
-            <tr><th scope="row">F / E</th><td>Interagieren (Parcours im Schießstand)</td></tr>
+            <tr><th scope="row">M</th><td>Feuermodus</td></tr>
+            <tr><th scope="row">T</th><td>Lampe / Laser</td></tr>
+            <tr><th scope="row">N</th><td>Verband</td></tr>
+            <tr><th scope="row">3 / 4 / 5 / 6</th><td>Serienprämien</td></tr>
+            <tr><th scope="row">F</th><td>Interagieren, einsteigen</td></tr>
             <tr><th scope="row">Tab</th><td>Punktetabelle</td></tr>
             <tr><th scope="row">Esc</th><td>Pause</td></tr>
           </tbody>
@@ -280,10 +481,10 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
     </div>
   </section>
 
-  <!-- §08 ─────────────────────────────────────────────── -->
+  <!-- §11 ─────────────────────────────────────────────── -->
   <section id="app" class="sec" aria-labelledby="h-app" data-view="app">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§08</span> / APP / Herunterladen</p>
+      <p class="rail-label"><span class="sec-no">§11</span> / APP / Herunterladen</p>
       <p class="kicker">Kostenlos. Kein Konto. Alle spielen zusammen.</p>
     </div>
     <div class="content">
@@ -296,6 +497,7 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
             <article class="dl-card dl-pc" aria-labelledby="dl-h-pc">
               <h3 class="mono-h" id="dl-h-pc">PC-App · Windows &amp; Linux</h3>
               <p>Das volle Spiel als Programm: Grafikstufe <strong>Extrem</strong>, größere Massenschlachten, alle Texturen und Modelle lokal (kein Nachladen), eigener Speicher nur fürs Spiel, Host läuft im Hintergrund weiter.</p>
+              <p class="dl-excl"><strong>Nur in der App: Riesenkarte „Weitmark“.</strong> 1600 × 1600 m – viermal so groß wie die bisher größte Karte, mit Kleinstadt am Fluss, zwei Dörfern, Industrie, Hügelkette und Flugfeld. Spielbar in der PC-App und in der Android-App; im Browser, im Handy-Browser und im VR-Browser ist sie gesperrt. VR auf der Riesenkarte: PC-App mit PC-VR (SteamVR, Quest Link).</p>
               <ul class="dl-links">
                 <li><a class="dl-btn is-main" href="https://github.com/GermanClaude/FreeGames-Website/releases/latest/download/NULLPUNKT-Setup.exe" data-dl="win-setup">Windows-Installer<span class="dl-meta">.exe · ca. 280 MB</span></a></li>
                 <li><a class="dl-btn" href="https://github.com/GermanClaude/FreeGames-Website/releases/latest/download/NULLPUNKT-portable.exe" data-dl="win-portable">Windows portabel<span class="dl-meta">ohne Installation</span></a></li>
@@ -327,19 +529,62 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
               <tr><th scope="row">Kosten, Konto</th><td>kostenlos, keins</td><td>kostenlos, keins</td></tr>
               <tr><th scope="row">Download</th><td>nichts vorab, Grafik lädt beim Spielen</td><td>einmal ca. 280 MB, danach alles lokal</td></tr>
               <tr><th scope="row">Grafik</th><td>Niedrig bis Ultra</td><td>zusätzlich Extrem, Massenschlacht bis 400 je Seite</td></tr>
+              <tr><th scope="row">Riesenkarte „Weitmark“</th><td>gesperrt (auch Handy- und VR-Browser)</td><td>spielbar – ebenso in der Android-App</td></tr>
               <tr><th scope="row">Updates</th><td>automatisch</td><td>neue Version installieren (die App sagt Bescheid)</td></tr>
               <tr><th scope="row">Mehrspieler</th><td colspan="2">zusammen in denselben Räumen – Browser, Handy, VR und PC-App, sofern alle dieselbe Spielfassung haben</td></tr>
             </tbody>
           </table>
+          <table class="dl-compare runs-on" id="laeuft-auf">
+            <caption class="mono-h">Läuft auf …</caption>
+            <thead><tr><th scope="col">Gerät</th><th scope="col">So spielst du</th><th scope="col">Ehrlich gesagt</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Windows- &amp; Linux-PC</th><td>Browser (Chrome, Edge, Firefox) oder PC-App</td><td>Läuft am besten mit eigener Grafikkarte. Mit einfacher Onboard-Grafik startet das Spiel auf „Niedrig“.</td></tr>
+              <tr><th scope="row">Mac</th><td>Browser, in Safari auch als Web-App (Ablage → Zum Dock hinzufügen)</td><td>Keine eigene Mac-App.</td></tr>
+              <tr><th scope="row">Android</th><td>Browser, Web-App oder Android-App (APK)</td><td>Quer halten, Touch-Steuerung oder Controller. Ältere Handys bleiben auf „Niedrig“.</td></tr>
+              <tr><th scope="row">iPhone &amp; iPad</th><td>Safari, als Web-App über den Home-Bildschirm</td><td>Keine App-Store-Fassung.</td></tr>
+              <tr><th scope="row">Meta Quest</th><td>Quest-Browser, VR-Modus in den Einstellungen</td><td>VR ist Beta. Auf der Brille startet eine eigene, leichtere Grafikvorgabe.</td></tr>
+              <tr><th scope="row">Konsole, Steam Deck, Fernseher</th><td>Browser des Geräts mit Controller, TV-Modus schaltet sich ein</td><td>Wird erkannt, ist aber keine offizielle Plattform. Ob es flüssig läuft, entscheidet der Browser des Geräts.</td></tr>
+            </tbody>
+          </table>
+          <div class="sysreq">
+            <h3 class="mono-h">Mindestens nötig</h3>
+            <ul class="app-feat">
+              <li>Ein aktueller Browser mit <strong>WebGL&nbsp;2</strong> und eingeschalteter Hardwarebeschleunigung.</li>
+              <li>Die <strong>Grafikstufe</strong> wählt das Spiel beim ersten Start selbst (kurzer Grafiktest) und lernt aus den ersten Runden. Ändern kannst du sie jederzeit.</li>
+              <li>Für den Mehrspieler eine normale Internetverbindung. Offline läuft alles, was du schon einmal geladen hast.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- §09 ─────────────────────────────────────────────── -->
+  <!-- §12 ─────────────────────────────────────────────── -->
+  <section id="fragen" class="sec" aria-labelledby="h-fragen">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">§12</span> / FRAGEN / Kurz beantwortet</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-fragen" data-fit data-fit-slots>FRAGEN.</h2>
+      <p class="tagline">Was oft gefragt wird.</p>
+      <div class="faq">
+        <details><summary>Kostet NULLPUNKT etwas?</summary><p>Nein. Kein Kauf, kein Abo, keine Werbung, kein Konto. Freischalten geht nur durch Spielen.</p></details>
+        <details><summary>Muss ich etwas herunterladen?</summary><p>Nein, der Browser reicht. Wer möchte, installiert die Seite als Web-App oder nimmt die PC-App bzw. die Android-App aus dem Bereich <a href="#app">App</a>.</p></details>
+        <details><summary>Läuft das auf meinem Handy?</summary><p>Auf den meisten aktuellen Handys ja, auf der Grafikstufe „Niedrig“ oder „Mittel“. Das Handy quer halten. Nötig ist ein Browser mit WebGL&nbsp;2. Die Übersicht steht unter <a href="#laeuft-auf">Läuft auf …</a>.</p></details>
+        <details><summary>Wie spiele ich mit Freunden?</summary><p>Im Spiel auf „Mehrspieler“, einen Raum öffnen und den Raumcode oder den Einladungslink teilen. Bis zu 32 Spieler, Bots füllen freie Plätze auf. Die Geräte verbinden sich direkt miteinander, einen eigenen Spielserver gibt es nicht. Alle brauchen dieselbe Spielfassung.</p></details>
+        <details><summary>Wo fange ich an?</summary><p>Mit der Grundausbildung, Mission 0 der Kampagne „Stille Grenze“. Sie erklärt Bewegung, Waffen und Fahrzeuge auf dem Schießstand. Danach Team-Deathmatch gegen Bots oder direkt die Kampagne.</p></details>
+        <details><summary>Was ist der Unterschied zwischen Arcade, Realistisch und Simulation?</summary><p>Arcade zeigt dir alles und heilt schnell. Realistisch blendet Gegner und fast das ganze HUD aus und macht Treffer tödlicher. Simulation geht noch weiter: Magazine, Durchladen, Ladehemmungen, Verwundungen, kein HUD. Der Vergleich steht unter <a href="#simulation">Simulation</a>.</p></details>
+        <details><summary>Es ruckelt. Was kann ich tun?</summary><p>Grafikstufe in den Einstellungen eine Stufe senken, im Browser die Hardwarebeschleunigung einschalten und andere Tabs schließen. Auf schwachen Rechnern hilft „Niedrig“ am meisten. Die PC-App lädt nichts nach und ist auf dem Rechner meist am flüssigsten.</p></details>
+        <details><summary>Wo wird mein Fortschritt gespeichert?</summary><p>Nur in deinem Browser auf diesem Gerät. Ein anderes Gerät oder gelöschte Browserdaten bedeuten einen neuen Spielstand. Details unter <a href="#datenschutz">Datenschutz</a>.</p></details>
+        <details><summary>Ich habe einen Fehler gefunden.</summary><p>Ab 20 Minuten Spielzeit gibt es im Spiel und unten auf dieser Seite ein Feedback-Formular. Sonst über die Kontaktangaben bei <a href="#rechte">Kontakt &amp; Rechte</a>.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- §13 ─────────────────────────────────────────────── -->
   <section id="ueber" class="sec" aria-labelledby="h-ueber" data-view="about">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§09</span> / ÜBER / Kontakt, Rechte, Nutzung &amp; Datenschutz</p>
+      <p class="rail-label"><span class="sec-no">§13</span> / ÜBER / Kontakt, Rechte, Nutzung &amp; Datenschutz</p>
     </div>
     <div class="content">
       <h2 class="hl" id="h-ueber" data-fit data-fit-slots>ÜBER.</h2>
@@ -421,6 +666,9 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
   <ol class="dlg-list">
     <li><a href="#nullpunkt">Nullpunkt</a></li>
     <li><a href="#einsatz">Einsatz</a></li>
+    <li><a href="#neu">Neu</a></li>
+    <li><a href="#kampagne">Kampagne</a></li>
+    <li><a href="#simulation">Simulation</a></li>
     <li><a href="#modi">Modi</a></li>
     <li><a href="#karten">Karten</a></li>
     <li><a href="#arsenal">Arsenal</a></li>
@@ -428,6 +676,7 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
     <li><a href="#einstellungen">Einstellungen</a></li>
     <li><a href="#steuerung">Steuerung</a></li>
     <li><a href="#app">App</a></li>
+    <li><a href="#fragen">Fragen</a></li>
     <li><a href="#ueber">Über</a></li>
   </ol>
 </dialog>

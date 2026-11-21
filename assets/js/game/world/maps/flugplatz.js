@@ -6,14 +6,15 @@
 // kein Luftstart, vehicles/air/aircraft.js), Hubschrauber stehen auf Landeplätzen in den Gefechtsständen.
 // Koordinaten: x Osten, z Süden (Norden = −z). Team A (West) / Team B (Ost). Geladen von world/terrain/bigworld.js.
 import * as THREE from 'three';
-import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw, schlepper, bodenstrom, munitionswagen, tankwagen } from './flugplatz-bau.js?v=20261119182451';
-import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261119182451';
-import { mgNest } from './grenzland-stellungen.js?v=20261119182451';
-import { burntWreck } from './brandwald-bau.js?v=20261119182451';
-import { KEIN, VG } from './neu-bau.js?v=20261119182451';
-import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261119182451'; // gelaende (Runde 3)
-import { reliefAvoid } from '../terrain/relief.js?v=20261119182451';
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261119182451';
+import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw, schlepper, bodenstrom, munitionswagen, tankwagen } from './flugplatz-bau.js?v=20261121041936';
+import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261121041936';
+import { mgNest } from './grenzland-stellungen.js?v=20261121041936';
+import { burntWreck } from './brandwald-bau.js?v=20261121041936';
+import { KEIN, VG } from './neu-bau.js?v=20261121041936';
+import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261121041936'; // gelaende (Runde 3)
+import { vorfeldFuellen } from './fuell-karten.js?v=20261121041936'; // fuell (20.11.): Spuren auf dem Vorfeld
+import { reliefAvoid } from '../terrain/relief.js?v=20261121041936';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261121041936';
 
 const PI = Math.PI, Q = PI / 2;
 const R_Y = 13;                                   // Plateau der Radarstellung
@@ -85,6 +86,7 @@ function vorfeld(b) {
   // Vorfeldbeleuchtung
   for (const x of [-165, -85, 0, 85, 165]) floodMast(b, x, -128, { h: 16, ry: PI });
   for (const x of [-120, 0, 120]) floodMast(b, x, -47, { h: 12 });
+  vorfeldFuellen(b);
   return {};
 }
 
@@ -209,7 +211,7 @@ function flakstellungen(b, ctx) {
   }
   // Kriegsspuren: abgestürztes Schulflugzeug neben der Bahn, ausgebrannte Lkw am Rollweg
   { const x = 215, z = 76, y = hf.heightAt(x, z); schulflugzeug(b, x, z, 2.2, { y: y - 0.35, tint: '#2e2a26', akzent: '#3a3430', open: true }); b.decal(x, y + 0.03, z, 16, 14, 'soot', { opacity: 0.85 }); b.decal(x - 3, y + 0.04, z + 2, 10, 8, 'cracks', { opacity: 0.6 }); }
-  for (const [x, z, ry, k] of [[-262, -8, 0.4, 'lkw'], [258, -60, 2.6, 'lkw'], [-120, 70, 1.2, 'pkw']]) burntWreck(b, x, hf.heightAt(x, z), z, ry, k, 7);
+  for (const [x, z, ry, k] of [[-262, -8, 0.4, 'lkw'], [258, -60, 2.6, 'lkw'], [-120, 70, 1.2, 'pkw']]) burntWreck(b, x, hf.heightAt(x, z), z, ry, k, 7, (px, pz) => hf.heightAt(px, pz));
   return {};
 }
 
@@ -229,7 +231,11 @@ const veh = (side, L) => {
     { id: t + '-heli-2', team: t, kind: 'heli', x: L.helis[1][0], z: L.helis[1][1], yaw: yawIn },
     { id: t + '-panzer-2', team: t, kind: 'tank', x: L.tanks[1][0], z: L.tanks[1][1], yaw: PI },
     { id: t + '-jeep-2', team: t, kind: 'jeep', x: L.jeeps[1][0], z: L.jeeps[1][1], yaw: PI },
+    // Truppentransporter (20.11., Rolle → Typ je Panzergeneration, vehicles/data-troop.js): vor dem dritten Geländewagen
+    // (Obergrenze medium: 5 je Team), Lkw zuletzt
+    { id: t + '-apc-1', team: t, kind: 'apc', x: L.jeeps[2][0] + (L.jeeps[2][0] - L.jeeps[1][0]) * 1.2, z: L.jeeps[2][1], yaw: PI },
     { id: t + '-jeep-3', team: t, kind: 'jeep', x: L.jeeps[2][0], z: L.jeeps[2][1], yaw: PI },
+    { id: t + '-truck-1', team: t, kind: 'truck', x: L.jeeps[2][0] + (L.jeeps[2][0] - L.jeeps[1][0]) * 2.4, z: L.jeeps[2][1], yaw: PI },
   ];
 };
 
@@ -325,7 +331,7 @@ const FLUGPLATZ = {
       { x: 220, z: 345, r: 60, density: 0.55, spruce: 0.4 }, { x: -360, z: 340, r: 55, density: 0.6, spruce: 0.5 },
     ],
     ring: { density: 0.32, spruce: 0.75, inset: -6, step: 9 },
-    scatter: { count: 22 },
+    scatter: { count: 22, buesche: 36 }, // fuell (20.11.): + Buschgruppen ohne Kollision (nicht in den Schneisen)
     hedges: [
       { pts: [[-280, 262], [-120, 266]], trees: 0.25 }, { pts: [[-10, 268], [100, 266]], trees: 0.2 }, { pts: [[300, 262], [420, 250]], trees: 0.3 },
     ],

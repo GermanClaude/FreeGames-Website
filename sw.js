@@ -17,6 +17,10 @@
 // Nachrichten: {t:'precache'} lädt alle Seiten und den ganzen Code (aus HTML/JS/CSS gesammelt, ohne assets/lib) für
 // den Offline-Betrieb vor und meldet {t:'precache:progress', done, total} bzw. {t:'precache:done', ok, failed, bytes}.
 // {t:'status'} → {t:'status', build, code, lib} (Anzahl Einträge).
+// riesen (20.11.): Dateien App-exklusiver Karten (APP_ONLY, Riesenkarte „Weitmark“) kommen NIE in np-code/np-lib und
+// nicht ins Offline-Paket der Web-Version (Speicher; im Browser ist die Karte ohnehin gesperrt). Die Android-App legt sie
+// beim ersten Laden der Karte selbst in np-app ab (world/terrain/bigworld.js); von dort liefert sie dieser Service
+// Worker auch offline. Die Desktop-App hat alle Dateien lokal (kein Service Worker).
 'use strict';
 
 const BUILD = new URL(self.location.href).searchParams.get('v') || 'dev';
@@ -29,6 +33,9 @@ const NET_TIMEOUT_MS = 4000;
 const inScope = (url) => url.origin === SCOPE.origin && url.pathname.startsWith(SCOPE.pathname);
 const relPath = (url) => url.pathname.slice(SCOPE.pathname.length);
 const isLib = (url) => relPath(url).startsWith('assets/lib/');
+const APP = 'np-app';
+const APP_ONLY = ['assets/js/game/world/maps/weitmark'];
+const isAppOnly = (url) => APP_ONLY.some((p) => relPath(url).startsWith(p));
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
@@ -117,6 +124,8 @@ self.addEventListener('fetch', (e) => {
   if (!inScope(url)) return;
   const rel = relPath(url);
   if (rel === 'sw.js' || rel.startsWith('sw.js')) return;
+  // riesen: App-exklusiv – nur aus np-app (von der App befüllt), sonst Netz ohne Zwischenspeichern
+  if (isAppOnly(url)) { e.respondWith(caches.open(APP).then((c) => c.match(req)).then((hit) => hit || fetch(req)).catch(() => fetch(req))); return; }
   // Ausdrücklich am Cache vorbei (Update-Knopf): Netz, Ergebnis merken
   if (req.cache === 'reload' || req.cache === 'no-store') {
     e.respondWith(fetch(req).then((res) => {
@@ -154,7 +163,7 @@ function collect(text, base, kind) {
       else if (spec.startsWith('three/addons/')) spec = new URL('assets/vendor/three/addons/' + spec.slice(13), SCOPE).href;
       else return;
     }
-    try { const u = new URL(spec, base); if (inScope(u) && !isLib(u)) out.push(u.href); } catch { /* */ }
+    try { const u = new URL(spec, base); if (inScope(u) && !isLib(u) && !isAppOnly(u)) out.push(u.href); } catch { /* */ }
   };
   const res = kind === 'html' ? [HTML_RE, IMPORTMAP_RE, IMPORT_RE] : kind === 'css' ? [CSS_RE] : [IMPORT_RE, URL_RE];
   for (const re of res) { re.lastIndex = 0; let m; while ((m = re.exec(text))) add(m[2] || m[1]); }

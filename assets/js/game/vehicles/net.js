@@ -12,10 +12,11 @@
 //   (placeInSeat/clearSeat), Schnappschüsse puffern und mit der Abspieluhr der Puppen interpolieren (tickReplica), eigene
 //   Sitz-Absicht als VEH_INPUT im 30-Hz-Zustand (inputState), Anfragen über enter/exit/seat/load.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261119182451';
-import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261119182451';
-import { SUPPLY, supplyOf, supplyStateIndex, supplyStateOf, ammoNeed } from './resupply.js?v=20261119182451';
-import { falloff } from '../combat.js?v=20261119182451';
+import { VEHICLES, VEHICLE_IDS, VEHICLE_WEAPONS, staticComp, vehicleWeapon } from './data.js?v=20261121041936';
+import { WHY_TEXT, LOAD_TIMES, autoReload } from './crew.js?v=20261121041936';
+import { SUPPLY, supplyOf, supplyStateIndex, supplyStateOf, ammoNeed } from './resupply.js?v=20261121041936';
+import { falloff } from '../combat.js?v=20261121041936';
+import { packVehKind } from '../net/protocol.js?v=20261121041936';
 
 const HOST_ID = 1; // net/index.js HOST_ID (hier ohne Import: Fahrzeuge laden auch ohne Netzmodul)
 const NEAR = 160; // m (xz): eigenes Fahrzeug und nähere bekommen jeden Takt einen Block
@@ -67,7 +68,7 @@ const mgShots = (seat) => { let n = 0; for (const w of seat.weapons) if (w.def.k
 
 export class VehicleNet {
   /**
-   * @param {import('./index.js?v=20261119182451').VehicleSystem} sys
+   * @param {import('./index.js?v=20261121041936').VehicleSystem} sys
    * @param {{replica?: boolean}} opts replica: Client-Abbild (sonst Host)
    */
   constructor(sys, { replica = false } = {}) {
@@ -232,7 +233,7 @@ export class VehicleNet {
   _block(v, o) {
     const G = this.G, b = v.body, m = v.mount, def = v.def, now = G.time.elapsed;
     o.vid = v.netId;
-    o.kind = (Math.max(0, VEHICLE_IDS.indexOf(v.type)) & 15) | (teamCode(v.spawnTeam) << 4);
+    o.kind = packVehKind(Math.max(0, VEHICLE_IDS.indexOf(v.type)), teamCode(v.spawnTeam)); // 6 Bit Typ (protocol.js)
     const Z = v.zones;
     const zdead = (k) => !!(Z[k] && Z[k].hp <= 0);
     o.bits = (v.alive ? 1 : 0) | (v.wreck ? 2 : 0) | (v.disabled ? 4 : 0) | (v.lights ? 8 : 0) | (b.sleeping ? 16 : 0)
@@ -379,13 +380,15 @@ export class VehicleNet {
         if (!p.alive || p.vehicle) return;
         const v = Number.isInteger(m.v) ? this.byNetId(m.v) : null;
         if (!v || !v.alive) return this._reject(from, 'tot');
-        if (sys._boxDistance(v, p.position, 0.9) > REACH + ENTER_SLACK) return this._reject(from, 'weit');
+        // dep: Einsatz im Cockpit (Klasse Pilot, gerade erschienen, freies Luftfahrzeug des eigenen Teams – air/deploy.js)
+        const dep = m.dep === 1 && sys.air && sys.air.deploy && sys.air.deploy.mayDeploy(p, v);
+        if (!dep && sys._boxDistance(v, p.position, 0.9) > REACH + ENTER_SLACK) return this._reject(from, 'weit');
         if (v.isOccupied && v.team != null && p.team != null && v.team !== p.team) return this._reject(from, 'feind');
         let s = Number.isInteger(m.s) && m.s >= 0 && m.s < v.seats.length ? m.s : null;
         if (s != null && v.seats[s].actor) s = null; // gewünschter Sitz belegt → erster freier
         if (!v.freeSeats().length) return this._reject(from, 'besetzt');
         const idx = sys.enter(p, v, s);
-        if (idx < 0) this._reject(from, 'besetzt');
+        if (idx < 0) this._reject(from, sys.enterWhy || 'besetzt');
         return;
       }
       case 'exit': {
@@ -641,9 +644,11 @@ export class VehicleNet {
   }
 
   /** Anfragen des eigenen Spielers (sys.remote). */
-  enter(v, seatIdx = null) {
+  enter(v, seatIdx = null, { deploy = false } = {}) {
     if (!v || !Number.isInteger(v.netId)) return -1;
-    this._send(HOST_ID, { t: 'veh', a: 'enter', v: v.netId, s: Number.isInteger(seatIdx) ? seatIdx : -1 });
+    const m = { t: 'veh', a: 'enter', v: v.netId, s: Number.isInteger(seatIdx) ? seatIdx : -1 };
+    if (deploy) m.dep = 1; // Einsatz im Cockpit (optionales Feld; ältere Hosts ignorieren es)
+    this._send(HOST_ID, m);
     return -1;
   }
   exit() { this._send(HOST_ID, { t: 'veh', a: 'exit' }); return undefined; }
@@ -688,8 +693,7 @@ export class VehicleNet {
         G.effects?.muzzleLight?.(o, 34, 3, 0.09, 20);
         G.effects?.smoke?.(_a.copy(o).addScaledVector(d, 1.2), { count: 7, size: 2.6, life: 2.4, rise: 0.35, alpha: 0.42 });
         const own = !!(v && G.player && G.player.vehicle === v);
-        sys.audio.play('explosion', { position: own ? null : o, volume: own ? 0.8 : 1, pitch: 1.55, priority: 3 });
-        sys.audio.play('boom_sub', { position: own ? null : o, volume: 1, priority: 3 });
+        sys.audio.cannon(v, o, own); // Kanone: außen/innen (audio 20.11.)
         if (v) v.recoil = 1;
         if (own) { G.player.shake?.(def.shake || 0.5); G.input?.rumble?.(0.9, 0.6, 200); }
         G.events.emit('vehicle:fire', { vehicle: v || null, seat: m.s | 0, actor: shooter, weaponId: def.id, origin: o, dir: d, net: true });

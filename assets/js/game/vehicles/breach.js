@@ -14,7 +14,7 @@
 // • Der Host bzw. das Einzelspiel entscheidet; die fertige Bresche geht vollständig an alle (bullet-holes.js breach →
 //   'ev' br) – Durchgang, Kugeln, Sicht sind auf jedem Gerät gleich. MG: Kaliber-Lochsystem wie Infanterie (data.js).
 import * as THREE from 'three';
-import { collisionRay } from '../engine/physics.js?v=20261119182451';
+import { collisionRay } from '../engine/physics.js?v=20261121041936';
 
 const TAU = Math.PI * 2;
 // Stile (bullet-holes.js): 0 Holz, 1 Beton, 2 Putz, 3 Metall, 4 Glas, 5 Erde, 6 Stoff, 7 Ziegel
@@ -38,7 +38,7 @@ const MASONRY = [false, true, true, false, false, false, false, true];
 const OUT = [true, false, false, true, false, false, true, false];
 const DOWN = new THREE.Vector3(0, -1, 0);
 // Aufweitung zur Rückseite je Art (Shader: Radius × kb hinten): Rammen gerade, Sprengung/Durchschuss bricht aus
-const KB = { he: 1.12, ap: 1.22, ram: 1.0 };
+const KB = { he: 1.12, ap: 1.22, ram: 1.0, heat: 1.4 };
 const _t = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _c = new THREE.Vector3(), _u = new THREE.Vector3();
 // eigene Hilfsvektoren von fits() (läuft innerhalb von hullRay/ram, die ihre eigenen weiter brauchen)
 const _fa = new THREE.Vector3(), _fb = new THREE.Vector3(), _fc = new THREE.Vector3(), _fd = new THREE.Vector3();
@@ -46,6 +46,22 @@ const UP = new THREE.Vector3(0, 1, 0);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 /** Beweglicher Festkörper ist ein Tür- oder Fensterflügel (doors.js: Ids door…/win…, nimmt Treffer an)? */
 const leaf = (sol) => !!sol && typeof sol.onHit === 'function' && /^(door|win)\d/.test(String(sol.id || ''));
+
+// Hohlladung (HEAT; zerstoerung 15.11.): der Stachel stanzt einen engen Kanal tief durch Mauerwerk (≈ 1,5 m Beton je 100 mm
+// Kaliber), vorn nur ein kleines Loch, hinten platzt die Wand weit ab (kb) – keine mannshohe Bresche wie die Sprenggranate
+const HEAT_PEN = 0.014, HEAT_R = 0.0024;
+/** Hohlladungsgranate? (eigene Kennung def.heat, Panzersimulation psim.art 'mz'/'hl', oder Art 'heat') */
+export function isHeat(def) {
+  if (!def) return false;
+  if (def.heat || def.ammo === 'heat' || def.kind === 'heat') return true;
+  const a = def.psim && (def.psim.art || def.psim.kind);
+  return a === 'mz' || a === 'hl' || (def.psim && def.psim.role === 'ce');
+}
+/** Durchschlag einer Wuchtgranate in m Beton: Panzersimulation pen0 (mm Panzerstahl, Beton ≈ 2,6 × so dick), sonst Kaliber. */
+function apPen(def, cal) {
+  const p0 = def && def.psim && Number(def.psim.pen0);
+  return Number.isFinite(p0) && p0 > 0 ? p0 * 0.0026 : cal * AP_PEN;
+}
 
 /** Kaliber (mm) einer Fahrzeuggranate aus ihrem Namen („120 mm …“, „75 mm …“); weaponMods ändern den Namen mit. */
 export function shellCal(def) {
@@ -110,7 +126,7 @@ export class Breaching {
     // rings um die Öffnung auf (den Flügel selbst zerlegt die Explosion, doors.js)
     if (hit.solid) {
       if (!leaf(hit.solid)) return null;
-      if (!def.penetrating) { this._window(hit, n, cal); return null; }
+      if (!def.penetrating) { if (!isHeat(def)) this._window(hit, n, cal); return null; }
       try { hit.solid.onHit(999, s.shooter || null, def, hit); } catch { /* Beiwerk */ }
       return { pass: true, keep: 0.97, exit: hit.point.clone().addScaledVector(dir, 0.12) };
     }
@@ -119,7 +135,7 @@ export class Breaching {
     const w = H.wallAt(hit.point, n, 0.95);
     this.stats.shells++;
     if (!w) {
-      if (!def.penetrating) {
+      if (!def.penetrating && !isHeat(def)) {
         if (hit.surface === 'glass') this._window(hit, n, cal);
         else this._nearWall(s, hit, n, cal);
       }
@@ -128,13 +144,20 @@ export class Breaching {
     const cosI = Math.max(0.25, -dir.dot(w.n));
     const eq = (w.thick * EQ[w.style]) / cosI; // schräg: längerer Weg durch die Wand
     const rnd = Math.random;
+    if (isHeat(def)) {
+      // Stachel: durch → schmales Loch mit weitem Ausbruch hinten; zu dick → nur Krater (bullet-holes.js blast)
+      if (eq > cal * HEAT_PEN) return null;
+      const R = clamp(cal * HEAT_R * MAT_R[w.style] * clamp(1.3 - w.thick, 0.6, 1.1), 0.1, 0.55);
+      H.breach(w, hit.point, blob(rnd, R, 0.38), { fx: 2, e: hit.point, sz: R * 2.6, kb: KB.heat });
+      return null;
+    }
     if (def.penetrating) {
-      if (s.pen == null) s.pen = cal * AP_PEN;
+      if (s.pen == null) s.pen = apPen(def, cal);
       const pass = s.pen >= eq && (s.walls | 0) < 3;
       const R = clamp(cal * AP_R * MAT_R[w.style], 0.09, 0.5) * (pass ? 1 : 0.75);
       H.breach(w, hit.point, blob(rnd, R, 0.35), { fx: 2, e: hit.point, sz: R * 2.2, kb: KB.ap });
       if (!pass) return null;
-      const keep = clamp(1 - (eq / (cal * AP_PEN)) * 0.6, 0.35, 0.97);
+      const keep = clamp(1 - (eq / apPen(def, cal)) * 0.6, 0.35, 0.97);
       s.pen -= eq;
       s.walls = (s.walls | 0) + 1;
       this.stats.apPass++;
@@ -150,7 +173,7 @@ export class Breaching {
   /** Abbild (Client): fliegt diese Darstellungs-PG durch die Wand? Gleiche Prüfung wie der Host, keine Bresche. */
   passes(s, hit, dir) {
     const H = this.G.holes;
-    if (!H || !s.def.penetrating || !hit || !hit.point || hit.vehicle || hit.actor) return null;
+    if (!H || !s.def.penetrating || isHeat(s.def) || !hit || !hit.point || hit.vehicle || hit.actor) return null;
     if (hit.solid) return leaf(hit.solid) ? { pass: true, keep: 0.97, exit: hit.point.clone().addScaledVector(dir, 0.12) } : null;
     if (hit.surface === 'glass') return { pass: true, keep: 0.98, exit: hit.point.clone().addScaledVector(dir, 0.08) };
     const n = (hit.normal ? _c.copy(hit.normal) : _c.copy(dir).negate()).clone();
@@ -158,11 +181,11 @@ export class Breaching {
     const w = H.wallAt(hit.point, n, 0.95);
     if (!w) return null;
     const cal = shellCal(s.def), cosI = Math.max(0.25, -dir.dot(w.n)), eq = (w.thick * EQ[w.style]) / cosI;
-    if (s.pen == null) s.pen = cal * AP_PEN;
+    if (s.pen == null) s.pen = apPen(s.def, cal);
     if (s.pen < eq || (s.walls | 0) >= 3) return null;
     s.pen -= eq;
     s.walls = (s.walls | 0) + 1;
-    return { pass: true, keep: clamp(1 - (eq / (cal * AP_PEN)) * 0.6, 0.35, 0.97), exit: hit.point.clone().addScaledVector(dir, w.thick / cosI + 0.06) };
+    return { pass: true, keep: clamp(1 - (eq / apPen(s.def, cal)) * 0.6, 0.35, 0.97), exit: hit.point.clone().addScaledVector(dir, w.thick / cosI + 0.06) };
   }
 
   /** SG schlägt knapp vor einer Wand ein (Boden, Straße): nächste Wand im Umkreis bekommt eine kleinere Bresche. */

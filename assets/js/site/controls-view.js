@@ -1,8 +1,10 @@
-// §07 Steuerung: Belegung. Reiter Touch · Tastatur & Maus · Gamepad. Tastenprobe nur bei Fokus,
+// §10 Steuerung: Belegung. Reiter Touch · Tastatur & Maus · Gamepad · VR. Tastenprobe nur bei Fokus,
 // Gamepad-Abfrage nur, solange der Reiter sichtbar und das Dokument im Vordergrund ist.
-import { h, $, tabs } from './dom.js?v=20261119182451';
-import { loop } from './loop.js?v=20261119182451';
-import { pointerCoarse, reduced } from './motion.js?v=20261119182451';
+// Seit 20.11.: Tastatur, Gamepad und VR lesen die Belegung aus shared/bindings.data.js (Standard + eigene Änderungen aus
+// den Einstellungen) – die Tabellen stimmen so immer mit dem Spiel überein. KEYS/PAD unten bleiben als Rückfall.
+import { h, $, tabs } from './dom.js?v=20261121041936';
+import { loop } from './loop.js?v=20261121041936';
+import { pointerCoarse, reduced } from './motion.js?v=20261121041936';
 
 /*
  * Touch-Belegung wie im Spiel: Mitte jedes Knopfs in Prozent der Bildfläche im Querformat (915 × 412), gemessen an
@@ -70,13 +72,57 @@ export const PAD = [
   [[12, 14, 15], 'Steuerkreuz ▲\u00a0◀\u00a0▶', 'Serienprämien (LT + ▼: FPV-Drohne)'], [8, 'Ansicht', 'Punktetabelle'], [9, 'Menü', 'Pause'],
 ];
 
+/* Belegung aus shared/bindings.data.js. [Aktionen, Beschriftung, Echo] – mehrere Aktionen = eine Zeile. */
+const KB_ROWS = [
+  [['move_forward', 'move_left', 'move_back', 'move_right'], 'Bewegen', 'BEWEGEN'],
+  [[], 'Umsehen', 'UMSEHEN', 'Maus'],
+  [['fire'], 'Feuern', 'FEUERN'], [['ads'], 'Zielen', 'ZIELEN'], [['reload'], 'Nachladen', 'NACHLADEN'],
+  [['jump'], 'Springen, Überklettern', 'SPRINGEN'], [['crouch'], 'Ducken, im Sprint rutschen', 'DUCKEN'], [['prone'], 'Hinlegen', 'HINLEGEN'],
+  [['sprint'], 'Sprinten, im Zielfernrohr Atem anhalten', 'SPRINTEN'], [['lean_left', 'lean_right'], 'Lehnen links / rechts', 'LEHNEN'],
+  [['melee'], 'Nahkampf', 'NAHKAMPF'], [['grenade'], 'Granate (halten: vorkochen)', 'GRANATE'], [['tactical'], 'Taktische Granate', 'TAKTISCH'],
+  [['swap', 'slot1', 'slot2'], 'Waffe wechseln', 'WAFFE WECHSELN'], [['feuermodus'], 'Feuermodus', 'FEUERMODUS'], [['light'], 'Lampe / Laser', 'LAMPE'],
+  [['verband'], 'Verband anlegen', 'VERBAND'], [['plate'], 'Panzerplatte einsetzen', 'PLATTE'], [['gadget'], 'Klassen-Ausrüstung', 'AUSRÜSTUNG'],
+  [['bauen'], 'Bauen', 'BAUEN'], [['streak1', 'streak2', 'streak3', 'streak4'], 'Serienprämien', 'SERIENPRÄMIEN'],
+  [['befehl'], 'Befehlsrad für den Trupp', 'BEFEHLSRAD'], [['interact'], 'Interagieren, einsteigen', 'INTERAGIEREN'],
+  [['scoreboard'], 'Punktetabelle', 'PUNKTETABELLE'], [['pause'], 'Pause', 'PAUSE'],
+];
+const SIM_ROWS = [
+  [['sim_durchladen'], 'Durchladen', 'DURCHLADEN'], [['sim_magcheck'], 'Magazin prüfen', 'MAGAZIN PRÜFEN'], [['sim_abbinden'], 'Abbinden', 'ABBINDEN'],
+  [['sim_visier_auf', 'sim_visier_ab'], 'Visier weiter / näher', 'VISIER'], [['sim_kompass'], 'Kompass (halten)', 'KOMPASS'],
+  [['sim_karte'], 'Karte (halten)', 'KARTE'], [['sim_inventar'], 'Ausrüstung, umpacken', 'AUSRÜSTUNG'], [['sim_hilfe'], 'Hilfe zu den Handgriffen', 'HILFE'],
+];
+const PAD_ROWS = [
+  [[], 'Bewegen · drücken: Sprinten', 'L-Stick', [10]], [[], 'Umsehen', 'R-Stick', [11]],
+  [['fire'], 'Feuern'], [['ads'], 'Zielen'], [['jump'], 'Springen'], [['crouch'], 'Ducken (halten: hinlegen)'], [['reload', 'interact'], 'Nachladen, interagieren'],
+  [['swap'], 'Waffe wechseln'], [['grenade'], 'Granate'], [['tactical'], 'Taktische Granate'], [['melee'], 'Nahkampf'],
+  [['lean_left', 'lean_right'], 'Lehnen links / rechts'], [['feuermodus'], 'Feuermodus'], [['light'], 'Lampe, Panzerplatte'],
+  [['streak1', 'streak2', 'streak3', 'streak4'], 'Serienprämien'], [['befehl'], 'Befehlsrad'], [['scoreboard'], 'Punktetabelle'], [['pause'], 'Pause'],
+  [['sim_durchladen', 'sim_magcheck'], 'Simulation: durchladen, Magazin prüfen'],
+];
+const XR_ROWS = [
+  [[], 'Laufen (Teleport: Stick nach vorn halten)', 'Stick der Nebenhand'], [[], 'Drehen in Schritten oder flüssig', 'Stick der Haupthand ◀ ▶'],
+  [['fire'], 'Feuern'], [['reload'], 'Nachladen bzw. Magazin auswerfen, interagieren'], [['jump'], 'Springen'], [['crouch'], 'Ducken (halten: hinlegen)'],
+  [['sprint'], 'Sprinten'], [['melee'], 'Nahkampf'], [['grenade'], 'Granate'], [['swap'], 'Waffe wechseln'], [['plate'], 'Panzerplatte'], [['pause'], 'VR-Menü'],
+];
+const XR_GRIPS = [
+  ['Griff-Taste der Haupthand', 'Waffe halten. Über der Schulter greifst du die Hauptwaffe, an der Hüfte die Pistole. Loslassen steckt sie weg.'],
+  ['Griff-Taste der Nebenhand', 'Am Vorderschaft: Gewehr beidhändig führen (einhändig streut es stark). An der Brust: Granate nehmen, Abzug zieht den Splint, Loslassen wirft.'],
+  ['Nachladen per Hand', 'Magazin auswerfen, mit der Nebenhand an der Gürteltasche ein neues greifen, von unten einsetzen. War das Lager leer, am Verschluss nach hinten ziehen.'],
+  ['Zielen', 'Waffe ans Auge heben. Zielfernrohre zeigen in der Brille ein echtes vergrößertes Bild.'],
+  ['Echter Körper', 'Gehen, Ducken und Lehnen im Raum werden übernommen.'],
+];
+
+function bindData() { return import('../shared/bindings.data.js?v=20261121041936').catch(() => null); }
+
 export async function init(sec, D, ctx = {}) {
   const root = $('#controls-root', sec);
   if (!root) return;
   const S = D.settings;
   const snd = ctx.sound;
 
-  const T = [['touch', 'Touch'], ['keys', 'Tastatur & Maus'], ['pad', 'Gamepad']];
+  const B = await bindData();
+  const resolved = () => { try { return B.resolveBindings(S.get('bindings')); } catch { return null; } };
+  const T = [['touch', 'Touch'], ['keys', 'Tastatur & Maus'], ['pad', 'Gamepad'], ...(B ? [['vr', 'VR']] : [])];
   const list = h('div.tabs.ctl-tabs');
   const panels = {};
   const tabEls = {};
@@ -204,17 +250,47 @@ export async function init(sec, D, ctx = {}) {
   /* ------------------------------------------------------------ Tastatur & Maus */
   const rows = [];
   const tbody = h('tbody');
-  for (const r of KEYS) {
-    const tr = h('tr', {}, h('th', { scope: 'row' }, r[0]), h('td', {}, r[1]));
-    rows.push({ tr, r });
-    tbody.append(tr);
-  }
+  const simBody = h('tbody');
+  /** Zeile [Taste, Aktion, Echo, Codes[], Maustasten[], Mausrad] aus der aktuellen Belegung. */
+  const kbRow = (R, [acts, label, echo, fixed]) => {
+    if (fixed) return [fixed, label, echo, [], []];
+    const codes = [...new Set(acts.flatMap((a) => (R && R.kb[a]) || []))];
+    if (!codes.length) return null;
+    const keys = codes.filter((c) => !/^Mouse|^Wheel/.test(c));
+    const mouse = codes.filter((c) => /^Mouse\d$/.test(c)).map((c) => Number(c.slice(5)));
+    const wheel = codes.some((c) => /^Wheel/.test(c));
+    const names = acts[0] === 'move_forward' ? ['W\u00a0A\u00a0S\u00a0D'] : codes.slice(0, 4).map((c) => B.codeLabel(c));
+    return [names.join(' / '), label, echo, keys, mouse, wheel];
+  };
+  const fillKeys = () => {
+    const R = B ? resolved() : null;
+    rows.length = 0;
+    tbody.replaceChildren();
+    simBody.replaceChildren();
+    const list = R ? KB_ROWS.map((x) => kbRow(R, x)).filter(Boolean) : KEYS;
+    for (const r of list) {
+      const tr = h('tr', {}, h('th', { scope: 'row' }, r[0]), h('td', {}, r[1]));
+      rows.push({ tr, r });
+      tbody.append(tr);
+    }
+    if (R) {
+      for (const r of SIM_ROWS.map((x) => kbRow(R, x)).filter(Boolean)) {
+        const tr = h('tr', {}, h('th', { scope: 'row' }, r[0]), h('td', {}, r[1]));
+        rows.push({ tr, r });
+        simBody.append(tr);
+      }
+    }
+  };
+  fillKeys();
   const table = h('table.keymap', {}, h('caption.sr-only', {}, 'Tastatur und Maus'), tbody);
+  const simTable = B ? h('table.keymap.simmap', {}, h('caption.mono-h', {}, 'Nur im Spielstil Simulation'), simBody) : null;
   const echo = h('p.probe-echo', { 'aria-live': 'polite' });
   const area = h('div.keyprobe-area', { tabindex: '0', role: 'group', 'aria-label': 'Tastenprobe. Drück eine Taste. Esc beendet den Test.' }, table);
   const testBtn = h('button.txt-btn', { type: 'button' }, 'Tasten testen');
   const hint = h('p.mono-s.probe-hint', { hidden: true }, 'Esc beendet den Test.');
   panels.keys.append(h('div.keyprobe', {}, h('div.probe-tools', {}, testBtn, hint), echo, area));
+  if (simTable) panels.keys.append(simTable);
+  if (B) panels.keys.append(h('p.touch-hint', {}, 'Eigene Belegung? Im Spiel unter Einstellungen → Steuerung. Was du dort änderst, steht hier.'));
   testBtn.addEventListener('click', () => area.focus());
   let litT = 0;
   // STEUERUNG. antwortet: Steht der gedrückte Buchstabe im Wort, leuchtet er kurz auf.
@@ -257,19 +333,52 @@ export async function init(sec, D, ctx = {}) {
   area.addEventListener('contextmenu', (e) => e.preventDefault());
   area.addEventListener('wheel', (e) => {
     if (document.activeElement !== area) return;
-    light(rows.find((x) => x.r[0].includes('Mausrad')), 'MAUSRAD');
+    light(rows.find((x) => x.r[5] || x.r[0].includes('Mausrad')), 'MAUSRAD');
   }, { passive: true });
 
   /* ------------------------------------------------------------ Gamepad */
   const padStatus = h('p.pad-status', { 'aria-live': 'polite' }, 'Kein Gamepad erkannt. Drück eine Taste am Controller.');
   const padRows = [];
   const padBody = h('tbody');
-  for (const [idx, key, action] of PAD) {
-    const tr = h('tr', {}, h('th', { scope: 'row' }, key), h('td', {}, action));
-    padRows.push({ tr, idx: Array.isArray(idx) ? idx : [idx] });
-    padBody.append(tr);
-  }
-  panels.pad.append(padStatus, h('table.keymap.padmap', {}, h('caption.sr-only', {}, 'Gamepad'), padBody));
+  let glyphs = ['xbox', 'ps', 'nintendo'].includes(S.get('padIcons')) ? S.get('padIcons') : 'xbox';
+  const fillPad = () => {
+    padRows.length = 0;
+    padBody.replaceChildren();
+    const R = B ? resolved() : null;
+    if (!R) {
+      for (const [idx, key, action] of PAD) {
+        const tr = h('tr', {}, h('th', { scope: 'row' }, key), h('td', {}, action));
+        padRows.push({ tr, sets: (Array.isArray(idx) ? idx : [idx]).map((i) => [i]) });
+        padBody.append(tr);
+      }
+      return;
+    }
+    for (const [acts, label, fixed, idx] of PAD_ROWS) {
+      let name = fixed, sets = idx ? idx.map((i) => [i]) : [];
+      if (!fixed) {
+        const codes = [...new Set(acts.flatMap((a) => R.pad[a] || []))];
+        if (!codes.length) continue;
+        name = codes.slice(0, 4).map((c) => B.codeLabel(c, { pad: glyphs })).join(' / ');
+        sets = codes.map((c) => c.split('+').map((p) => Number(p.slice(3))));
+      }
+      const tr = h('tr', {}, h('th', { scope: 'row' }, name), h('td', {}, label));
+      padRows.push({ tr, sets, stick: idx ? idx[0] : null });
+      padBody.append(tr);
+    }
+  };
+  fillPad();
+  const glyphPick = B ? h('div.sim-pick.pad-glyphs', { role: 'group', 'aria-label': 'Tastensymbole' },
+    [['xbox', 'Xbox'], ['ps', 'PlayStation'], ['nintendo', 'Nintendo']].map(([id, lab]) => h('button.chip', { type: 'button', 'data-g': id, 'aria-pressed': String(id === glyphs) }, lab))) : null;
+  glyphPick?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-g]');
+    if (!b) return;
+    glyphs = b.dataset.g;
+    for (const x of glyphPick.querySelectorAll('[data-g]')) x.setAttribute('aria-pressed', String(x === b));
+    fillPad();
+    snd?.ui('click');
+  });
+  panels.pad.append(padStatus, glyphPick, h('table.keymap.padmap', {}, h('caption.sr-only', {}, 'Gamepad'), padBody),
+    B ? h('p.touch-hint', {}, 'Mit „+“ verbundene Tasten: die erste halten, dann die zweite drücken. Am Fernseher schaltet das Spiel den TV-Modus mit großer Schrift ein.') : null);
   let padTask = null;
   const padVisible = () => !panels.pad.hidden && !document.hidden;
   const poll = () => {
@@ -282,9 +391,9 @@ export async function init(sec, D, ctx = {}) {
     if (padStatus.textContent !== txt) padStatus.textContent = txt;
     const ax = pad.axes || [];
     for (const r of padRows) {
-      let on = r.idx.some((i) => pad.buttons[i]?.pressed);
-      if (r.idx[0] === 10 && Math.hypot(ax[0] || 0, ax[1] || 0) > 0.3) on = true;
-      if (r.idx[0] === 11 && Math.hypot(ax[2] || 0, ax[3] || 0) > 0.3) on = true;
+      let on = r.sets.some((set) => set.every((i) => pad.buttons[i]?.pressed));
+      if ((r.stick ?? r.sets[0]?.[0]) === 10 && Math.hypot(ax[0] || 0, ax[1] || 0) > 0.3) on = true;
+      if ((r.stick ?? r.sets[0]?.[0]) === 11 && Math.hypot(ax[2] || 0, ax[3] || 0) > 0.3) on = true;
       r.tr.classList.toggle('lit', on);
     }
     return true;
@@ -296,8 +405,35 @@ export async function init(sec, D, ctx = {}) {
   document.addEventListener('visibilitychange', startPoll);
   if ([...(navigator.getGamepads?.() || [])].some(Boolean)) padSeen = true;
 
+  /* ------------------------------------------------------------ VR */
+  if (panels.vr) {
+    const vrBody = h('tbody');
+    const fillVr = () => {
+      const R = resolved();
+      vrBody.replaceChildren();
+      for (const [acts, label, fixed] of XR_ROWS) {
+        let name = fixed;
+        if (!fixed) {
+          const codes = [...new Set(acts.flatMap((a) => (R && R.xr[a]) || []))];
+          if (!codes.length) continue;
+          name = codes.map((c) => B.codeLabel(c, { long: true })).join(' / ');
+        }
+        vrBody.append(h('tr', {}, h('th', { scope: 'row' }, name), h('td', {}, label)));
+      }
+    };
+    fillVr();
+    panels.vr.append(
+      h('p.pad-status', {}, 'Meta Quest: Seite im Quest-Browser öffnen, im Spiel unter Einstellungen → Steuerung → VR einschalten. PC-VR über Link, Air Link oder SteamVR in Chrome oder Edge.'),
+      h('table.keymap.padmap', {}, h('caption.sr-only', {}, 'VR-Controller, Haupthand rechts'), vrBody),
+      h('h3.mono-h.vr-h', {}, 'Mit den Händen'),
+      h('dl.vr-grips', {}, XR_GRIPS.map(([t, d]) => h('div', {}, h('dt', {}, t), h('dd', {}, d)))),
+      h('p.touch-hint', {}, 'Haupthand rechts (umstellbar). Nachladen per Hand, Teleport und Sitzen stellst du im VR-Menü um. VR ist Beta.'));
+    S.onChange?.((k) => { if (k === 'bindings') fillVr(); });
+  }
+  if (B) S.onChange?.((k) => { if (k === 'bindings') { fillKeys(); fillPad(); } });
+
   /* ------------------------------------------------------------ Einhängen */
-  root.replaceChildren(list, panels.touch, panels.keys, panels.pad);
+  root.replaceChildren(list, panels.touch, panels.keys, panels.pad, ...(panels.vr ? [panels.vr] : []));
   const tb = tabs(list, {
     label: 'Steuerung',
     onSelect: (tab, user) => {
@@ -310,4 +446,6 @@ export async function init(sec, D, ctx = {}) {
     },
   });
   tb.select(tabEls[pointerCoarse() ? 'touch' : 'keys'], false);
+  // Sprung von §02 Neu („Controller-Belegung“, „VR-Steuerung“)
+  window.addEventListener('np:controls', (e) => { if (tabEls[e.detail]) tb.select(tabEls[e.detail], false); });
 }

@@ -7,7 +7,7 @@
 //     (2 s), Sanitäter-Bots in der Nähe des gefallenen Spielers von selbst. Wiederbelebte stehen mit halbem Leben auf.
 // Entscheidet offline bzw. der Host (Schaden läuft nur dort); Clients sehen das Ergebnis über Leben/Spawn.
 import * as THREE from 'three';
-import { issueCommand } from './bots/ai/orders.js?v=20261119182451';
+import { issueCommand } from './bots/ai/orders.js?v=20261121041936';
 
 const BLEED_RATE = { arcade: 1.6, realistisch: 2.6 };   // Leben je Sekunde
 const BLEED_CHANCE = { arcade: 0.35, realistisch: 0.7 };
@@ -67,6 +67,7 @@ export class Injuries {
   _hit(e) {
     const a = e.target;
     if (!this._host || !a || e.killed || !(e.amount > 0) || e.weaponId === 'fall' || e.weaponId === 'world') return;
+    if (a === this.G.player && this.G.isim) return; // Infanteriesimulation: Wunden je Körperteil in isim/body.js
     const j = this.of(a);
     const G = this.G;
     let news = null;
@@ -91,7 +92,8 @@ export class Injuries {
     if (!this._host || !v || !v.team) return;
     if (e.weaponId === 'world') return;
     const now = this.G.time.elapsed;
-    this.down.set(v, { until: now + REVIVE_WINDOW, pos: v.position.clone(), yaw: v.yaw || 0, at: now });
+    const win = (this.G.mode && this.G.mode.reviveWindow) || REVIVE_WINDOW; // Trupp: länger bewusstlos
+    this.down.set(v, { until: now + win, pos: v.position.clone(), yaw: v.yaw || 0, at: now });
     // Spieler-Sanitäter in der Nähe: gefallener Bot wartet mit dem Respawn auf die Wiederbelebung
     const P = this.G.player;
     if (v.isBot && isMedic(P) && P.alive && P.team === v.team && P.position.distanceTo(v.position) < 20 && v.respawnAt != null) {
@@ -165,7 +167,8 @@ export class Injuries {
     if (!d || v.alive) return false;
     this.down.delete(v);
     const old = v.isBot ? v.soldier : null;
-    if (typeof this.G.spawnActor === 'function') this.G.spawnActor(v, { position: d.pos.clone(), yaw: d.yaw });
+    v._reviving = true; // Modus: Wiederbelebung kostet kein Ticket (Trupp)
+    try { if (typeof this.G.spawnActor === 'function') this.G.spawnActor(v, { position: d.pos.clone(), yaw: d.yaw }); } finally { v._reviving = false; }
     if (!v.alive) return false;
     v.health = Math.round(v.maxHealth * 0.5);
     v.lastDamageTime = this.G.time.elapsed; // Regeneration erst nach der üblichen Pause
@@ -218,7 +221,7 @@ export class Injuries {
     const inp = G.input;
     if (inp && P && !P.alive && typeof inp.pressed === 'function' && this.medicInfo() && inp.pressed('interact')) this.giveUp();
     if (inp && P && P.alive && typeof inp.pressed === 'function') {
-      if (inp.pressed('verband')) this.bandage();
+      if (inp.pressed('verband') && !G.isim) this.bandage(); // Simulation: Verband in isim/body.js
       if (this.near && inp.pressed('interact')) this.revive();
     }
     this.near = null;

@@ -4,17 +4,17 @@
 // Flaggen (Eroberung): A Gehöft · B Dorf · C Brücke · D Kieswerk · E Funkhügel; HQ A im Süden, HQ B im Norden.
 // Geladen von world/terrain/bigworld.js (Ortschaften je eigener MapBuilder, Boden y = 0 bzw. Plateauhöhe).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261119182451';
-import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261119182451';
-import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261119182451';
-import * as Innen from './grenzland-innen.js?v=20261119182451';
-import { mgNest } from './grenzland-stellungen.js?v=20261119182451';
-import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261119182451';
+import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261121041936';
+import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261121041936';
+import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261121041936';
+import * as Innen from './grenzland-innen.js?v=20261121041936';
+import { mgNest } from './grenzland-stellungen.js?v=20261121041936';
+import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261121041936';
 // karten-voll (14.11.): Kleinkram an Häusern/Höfen, Freileitungen, Fahrspuren, Hochsitze, Feldstellungen
-import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261119182451';
-import { landschaft } from './grenzland-land.js?v=20261119182451';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261119182451'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261119182451';
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261121041936';
+import { landschaft } from './grenzland-land.js?v=20261121041936';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261121041936'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261121041936';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 // Grafik-Vorlage (Video-Dorfplatz bild-7_8s): hellgrau-weißer Putz, Tonziegel rot-orange (Farbe aus der Textur v_roof,
@@ -201,7 +201,7 @@ function dorf(b) {
   // Traktor im Schuppen (rot, Blick zum Tor im Osten; auf dem Hallenboden y 0,12; ohne b.rand → Dorf-Zufall unverändert)
   traktor(b, -48.6, 72.2, { ry: Math.PI / 2, y: 0.12, color: '#a8322a', rim: '#d8d4c8' });
   // Kapelle mit Turm (Wahrzeichen)
-  const kapelle = building(b, { x: -8, z: 100, w: 7, d: 13, floors: 1, fh: 5.2, mat: 'plaster_white', tint: '#f3eee4', openings: [{ side: 's', at: 0, w: 1.6, h: 2.8, kind: 'door', leaf: 'open' }, { side: 'e', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'e', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }], roof: { edge: false, mat: 'concrete', tint: '#b9ab94' }, floorMat: 'paving', interiorFactor: 0.5 });
+  const kapelle = building(b, { x: -8, z: 100, w: 7, d: 13, floors: 1, fh: 5.2, mat: 'plaster_white', nutzung: 'kapelle', tint: '#f3eee4', openings: [{ side: 's', at: 0, w: 1.6, h: 2.8, kind: 'door', leaf: 'open' }, { side: 'e', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'e', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: -3, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }, { side: 'w', at: 2, w: 0.9, h: 2.2, sill: 1.8, kind: 'window', glass: true }], roof: { edge: false, mat: 'concrete', tint: '#b9ab94' }, floorMat: 'paving', interiorFactor: 0.5 });
   pitchedRoof(b, { chimney: false, x: -8, z: 100, w: 7.02, d: 13.02, y: 5.18, ridge: 'z', pitch: 1.0, over: 0.45, gableMat: 'plaster_white', gableTint: '#f3eee4', tint: '#5f5e5a' });
   b.box(-8, 0, 91.6, 4.2, 15, 4.2, 'plaster_white', { tint: '#f3eee4', minimap: 'building' });
   b.box(-8, 15, 91.6, 4.4, 0.25, 4.4, 'stone_wall', { tint: '#cfc6b6', collide: false, minimap: false });
@@ -216,7 +216,7 @@ function dorf(b) {
   woodFence(b, 30, 30, 42, 30); woodFence(b, 42, 30, 42, 48);
   for (const [x, z] of [[-36, 92], [-24, 104], [28, 104], [-14, 32], [40, 46], [-42, 60], [12, 72]]) b.plant('bush', x, 0, z, { s: 1.1 });
   // Straßenraum: Autos, Laternen, Sandsäcke (Flaggenkampf)
-  car(b, 8, 79, { ry: 1.25, color: '#6b7a52' }); car(b, -21, 67, { ry: 0.25 }); car(b, 28, 54, { ry: -0.3, color: '#c7c7c2' });
+  car(b, 8, 79, { ry: 1.25, color: '#6b7a52' }); car(b, -21, 68.2, { ry: 0.25 }); /* platz: 1,2 m weiter weg – Heck stand 25 cm vor der Gasthausbank */ car(b, 28, 54, { ry: -0.3, color: '#c7c7c2' });
   lampPost(b, 5, 86); lampPost(b, -15, 62); lampPost(b, 12, 50);
   sandbags(b, -2, 86, 5, 88, { rows: 3 }); sandbags(b, -20, 84, -14, 87, { rows: 3 });
   sandbags(b, 2, 58, 8, 60, { rows: 3 });
@@ -320,7 +320,7 @@ function gehoeft(b) {
   b.sign(sx + 1.5, 3.2, z0 + 0.34, 2.0, 0.5, 'gertrud', { ry: 0 });
   crateStack(b, x0 + 3.5, z1 - 1.4, { ry: 0.1 }); tires(b, x1 - 1.4, z1 - 1.6, { n: 3 });
   // Stall, Silo, Strohrollen, Zäune
-  const stall = building(b, { x: -178, z: 92, w: 6, d: 12, floors: 1, fh: 3.0, mat: 'brick', tint: '#c2a08a', openings: [{ side: 'e', at: -2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'e', at: 2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'w', at: 0, w: 1.0, h: 0.8, sill: 1.5, kind: 'window' }], roof: { edge: false, mat: 'concrete', tint: '#9a8c78' }, floorMat: 'concrete' });
+  const stall = building(b, { x: -178, z: 92, w: 6, d: 12, floors: 1, fh: 3.0, mat: 'brick', nutzung: 'stall', tint: '#c2a08a', openings: [{ side: 'e', at: -2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'e', at: 2.5, w: 1.3, h: 2.1, kind: 'door', leaf: 'open' }, { side: 'w', at: 0, w: 1.0, h: 0.8, sill: 1.5, kind: 'window' }], roof: { edge: false, mat: 'concrete', tint: '#9a8c78' }, floorMat: 'concrete' });
   pitchedRoof(b, { x: -178, z: 92, w: 6.02, d: 12.02, y: 2.98, ridge: 'z', pitch: 0.6, over: 0.4, gableMat: 'brick', gableTint: '#c2a08a', tint: '#6f6a5e' });
   b.noNav(-182, 85, -174, 99, 2.4, 40);
   b.cyl(-124, 0, 90, 2.3, 9.5, 'metal_galvanized', { seg: 18, minimap: 'pillar' });
@@ -540,7 +540,9 @@ const H_Y = 15; // Plateauhöhe Funkhügel
 // ---------------------------------------------------------------------------
 /** karten-voll: Ortschaft aufbauen, dann Leben an Fassaden/Fenstern (nur Optik; Starts, Flaggen, Kampagne frei). */
 function leben(b, res, stil) {
-  belebe(b, { stil, einrichten: stil === 'dorf', sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...KAMPAGNE_PUNKTE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
+  // platz (19.11.): keine automatische Einrichtung mehr – alle Dorfhäuser sind von Hand eingerichtet (grenzland-innen.js);
+  // einrichten() erkannte diese Möbel nicht (keine Minikarten-Grundrisse) und stellte Regale/Kommoden in Schränke hinein
+  belebe(b, { stil, einrichten: false, sperr: sperrpunkte(GRENZLAND, [...KAMPAGNE.grenzland, ...KAMPAGNE_PUNKTE.grenzland, ...GRENZLAND.flags.cq.map((f) => [f.x, f.z, 4])]) });
   return res;
 }
 
@@ -635,7 +637,7 @@ const GRENZLAND = {
       { x: 10, z: -110, r: 30, density: 0.5, spruce: 0.3 },
     ],
     ring: { density: 0.6, spruce: 0.8, inset: -8, step: 6.5 },
-    scatter: { count: 70 },
+    scatter: { count: 70, buesche: 70 }, // fuell (20.11.): + Buschgruppen ohne Kollision (Wiesen, Feldränder)
     hedges: [
       { pts: [[-190, 74], [-112, 70]], trees: 0.2 }, { pts: [[-112, 70], [-110, 144]], trees: 0.15 },
       { pts: [[16, 116], [74, 110]], trees: 0.3 }, { pts: [[-118, 26], [-40, 30]], trees: 0.25 },
@@ -719,10 +721,16 @@ const GRENZLAND = {
   },
   // Fahrzeug-Stellplätze (Fahrzeug-Agent): Panzer/Geländewagen je HQ; Traktor „Gertrud“ in der Scheune (Geheimnis)
   vehicles: [
+    // Reihenfolge je Team = Vorrang unter der Fahrzeug-Obergrenze (low 3, medium 5, high 8 je Team): Panzer, Geländewagen,
+    // Truppentransporter (20.11., Rolle → Typ je Panzergeneration, Stellplatz wird auf freien Boden gerückt), Lkw, leichter Panzer
     { id: 'A-panzer-1', team: 'A', kind: 'tank', x: 78, z: 228, yaw: 0 }, { id: 'A-panzer-2', team: 'A', kind: 'tank', x: 78, z: 212, yaw: 0 },
-    { id: 'A-jeep-1', team: 'A', kind: 'jeep', x: 40, z: 230, yaw: 0 }, { id: 'A-jeep-2', team: 'A', kind: 'jeep', x: 40, z: 220, yaw: 0 }, { id: 'A-jeep-3', team: 'A', kind: 'jeep', x: 40, z: 210, yaw: 0 },
+    { id: 'A-jeep-1', team: 'A', kind: 'jeep', x: 40, z: 230, yaw: 0 }, { id: 'A-apc-1', team: 'A', kind: 'apc', x: 59, z: 226, yaw: 0 },
+    { id: 'A-jeep-2', team: 'A', kind: 'jeep', x: 40, z: 220, yaw: 0 }, { id: 'A-truck-1', team: 'A', kind: 'truck', x: 59, z: 210, yaw: 0 },
+    { id: 'A-jeep-3', team: 'A', kind: 'jeep', x: 40, z: 210, yaw: 0 }, { id: 'A-light-1', team: 'A', kind: 'light', x: 96, z: 220, yaw: 0 },
     { id: 'B-panzer-1', team: 'B', kind: 'tank', x: -38, z: -213, yaw: Math.PI }, { id: 'B-panzer-2', team: 'B', kind: 'tank', x: -38, z: -229, yaw: Math.PI },
-    { id: 'B-jeep-1', team: 'B', kind: 'jeep', x: 2, z: -212, yaw: Math.PI }, { id: 'B-jeep-2', team: 'B', kind: 'jeep', x: 2, z: -222, yaw: Math.PI }, { id: 'B-jeep-3', team: 'B', kind: 'jeep', x: 2, z: -232, yaw: Math.PI },
+    { id: 'B-jeep-1', team: 'B', kind: 'jeep', x: 2, z: -212, yaw: Math.PI }, { id: 'B-apc-1', team: 'B', kind: 'apc', x: -18, z: -213, yaw: Math.PI },
+    { id: 'B-jeep-2', team: 'B', kind: 'jeep', x: 2, z: -222, yaw: Math.PI }, { id: 'B-truck-1', team: 'B', kind: 'truck', x: -18, z: -229, yaw: Math.PI },
+    { id: 'B-jeep-3', team: 'B', kind: 'jeep', x: 2, z: -232, yaw: Math.PI }, { id: 'B-light-1', team: 'B', kind: 'light', x: -56, z: -221, yaw: Math.PI },
     { id: 'gertrud', team: null, kind: 'tractor', name: 'Gertrud', secret: true, x: -134.5, z: 119.5, yaw: Math.PI },
   ],
   secrets: [

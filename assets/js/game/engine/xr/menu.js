@@ -1,5 +1,5 @@
-// NULLPUNKT — kleines Menü in der Brille (engine/xr): Weiter · Vignette an/aus · Drehen Schritt/flüssig ·
-// Höhe kalibrieren · Steuerung · VR beenden. Außerdem die Ergebnistafel am Matchende („Sieg … VR wird beendet“) und die
+// NULLPUNKT — kleines Menü in der Brille (engine/xr): Weiter · Fortbewegung Stick/Teleport · Drehen Schritt/flüssig ·
+// Vignette an/aus · Nachladen per Hand/vereinfacht · sitzend/stehend · Höhe kalibrieren · Steuerung · VR beenden. Außerdem die Ergebnistafel am Matchende („Sieg … VR wird beendet“) und die
 // Steuerungs-Seite (27.10.: Belegung der VR-Controller in der Brille ändern; mehr Zeilen → niedrigere Zeilen, Hinweiszeile unten).
 //
 // Eine Tafel (CanvasTexture 1024 × 640 auf 0,9 × 0,56 m) steht beim Öffnen 1,1 m vor dem Kopf und bleibt in der

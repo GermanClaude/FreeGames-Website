@@ -25,20 +25,21 @@
 // (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu). Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der
 // Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host vermerkt es und verteilt das Roster; bei jedem
 // Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261119182451';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261119182451';
-import { hex, randomBytes } from './crypto.js?v=20261119182451';
-import { BUILD } from '../../shared/build.js?v=20261119182451';
-import { MAPS, MAP_ORDER, militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261119182451';
-import { MODES, DIFFICULTY_ORDER, ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, modeOptionDiff, modeOptionValues } from '../../shared/modes.data.js?v=20261119182451';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261119182451';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261119182451';
-import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261119182451';
-import { exportLoadoutCamos, importCC } from '../../shared/customcamo.js?v=20261119182451';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261121041936';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261121041936';
+import { hex, randomBytes } from './crypto.js?v=20261121041936';
+import { BUILD } from '../../shared/build.js?v=20261121041936';
+import { MAPS, MAP_ORDER, militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261121041936';
+import { MODES, DIFFICULTY_ORDER, ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, modeOptionDiff, modeOptionValues } from '../../shared/modes.data.js?v=20261121041936';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261121041936';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261121041936';
+import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261121041936';
+import { exportLoadoutCamos, importCC } from '../../shared/customcamo.js?v=20261121041936';
 const WEAPONS_ALL = { ...WEAPONS, ...UNDER_WEAPONS }; // Trefferprüfung: Waffen + Unterlauf-Aufsätze
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261119182451';
-import { recommend, UploadMeter } from './recommend.js?v=20261119182451';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261119182451';
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261121041936';
+import { recommend, UploadMeter } from './recommend.js?v=20261121041936';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261121041936';
+import { isAppClient } from '../../shared/appgate.js?v=20261121041936'; // riesen: App-exklusive Karten (MAPS[id].appOnly)
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD).
  *  2: Fahrzeuge online (Snapshot-Anhang, Fahrzeug-Absicht, 'veh'/'vhit'/'vehicles' – panzer-mp.md §C).
@@ -52,7 +53,7 @@ import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261119182451';
  *  10: Waffen der ersten Stunde (Waffen-Indizes verschoben), Aufsätze/Tarnung in Ausrüstungen.
  *  11: Versorgung/MG-Gurte im Fahrzeugblock (Byte 63), Militärfahrzeuge nur auf großen Karten.
  *  12: neue Waffen ZW-12 Zwilling, P-9A, PS-41 Wirbel (Waffenindizes verschoben, 26.10.). */
-export const NET_VERSION = 17; // 17: Luftfahrzeuge (Hubschrauber/Jet: Fahrzeugtypen 10/11, Pilot-Eingaben, Täuschkörper 'vf') – 14.11.; 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
+export const NET_VERSION = 20; // 20: Modus Trupp online (Nachricht 'trupp' Client → Host, Modus-Zustand s.tr – 20.11.; ein gemeinsamer Sprung mit dem Fahrzeug-Strang) + elf neue Fahrzeugtypen 16–26 (lp21 … spw, data-troop.js), Fahrzeugblock-Typ 6 Bit (protocol.js packVehKind), bis 11 Sitze; 19: Waffen-Welle 3 (20.11.: neun neue Waffen) verschiebt den Waffen-Index; 18: zerbrechliche Requisiten 'ev' pb, Zaun-Kollision je Feld (zerstoerung 15.11.), neue Panzertypen 12–15 spz/kk/wk2m/wk2j + Epoche 'kk' (panzermod 15.11.); 17: Luftfahrzeuge (Hubschrauber/Jet: Fahrzeugtypen 10/11, Pilot-Eingaben, Täuschkörper 'vf') – 14.11.; 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). 26.10.: aus den Modus-Daten
  *  (MODES[id].online, shared/modes.data.js ONLINE_MODE_IDS) – eine Quelle auch für ui/net-menus.js. */
 export const ONLINE_MODES = ONLINE_MODE_IDS;
@@ -74,6 +75,7 @@ export const NET_ERROR_TEXT = Object.freeze({
   'abgelehnt:version': 'Anderer Spielstand – bitte beide die Seite neu laden.',
   'abgelehnt:gekickt': 'Du wurdest aus diesem Raum entfernt.',
   'abgelehnt:fehler': 'Der Host konnte die Anfrage nicht annehmen.',
+  'abgelehnt:app': 'Dieser Raum spielt eine Riesenkarte, die es nur in der App gibt (PC-App oder Android-App) – im Browser nicht beitretbar.',
   'verbindung-fehlgeschlagen': 'Direkte Verbindung fehlgeschlagen (Netzwerk, Firewall oder Mobilfunk).',
   'host-weg': 'Verbindung zum Host verloren.',
   'host-beendet': 'Der Host hat den Raum geschlossen.',
@@ -118,6 +120,7 @@ const LOCAL_RELAY = /^wss?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/;
  *  'ability'/'point': Klassen-Fähigkeit bzw. Heilung an einem Kartenpunkt eines Clients – nur der Host wertet sie aus). */
 const RESERVED = new Set([
   'join', 'ready', 'loadout', 'hit', 'melee', 'throw', 'leave', 'hold', 'plate', 'dev', 'order', 'veh', 'vhit', 'streak', 'drone', 'cheat', 'ability', 'point', 'loot', 'build', 'door', 'dig',
+  'trupp', // Modus Trupp: Anfrage eines Clients (Trupp-Typ, Soldat wechseln, Markierung, Funk, Bauauftrag …) – nur der Host wertet sie aus
   'welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject', 'actors', 'vehicles',
 ]);
 /** Nur der Host darf sie senden (der Host verwirft sie von Clients). */
@@ -186,7 +189,7 @@ export function normalizeSettings(partial = {}, base = DEFAULT_ROOM, hostName = 
     vehicles: pick('vehicles') === true,
     thirdPerson: pick('thirdPerson') !== false,
     vehReload: pick('vehReload') === 'automatisch' ? 'automatisch' : 'manuell',
-    tankEra: ['karte', 'modern', 'wk2', 'wk1'].includes(pick('tankEra')) ? pick('tankEra') : 'karte',
+    tankEra: ['karte', 'modern', 'kk', 'wk2', 'wk1'].includes(pick('tankEra')) ? pick('tankEra') : 'karte',
     killAmmo: pick('killAmmo') !== false,
     cheatMenu: pick('cheatMenu') !== false,
     // Modus-Einstellungen (MODES[id].options, B6): nur Abweichungen vom Standard; Moduswechsel ohne neue → Standard.
@@ -543,6 +546,7 @@ export class NetSystem {
     const me = this._identity();
     const code = newRoomCode();
     const s = normalizeSettings(settings, DEFAULT_ROOM, me.name);
+    if (MAPS[s.map]?.appOnly && !isAppClient()) s.map = mapsForMode(s.mode).find((id) => !MAPS[id]?.appOnly) || 'hafen'; // riesen: Riesenkarte nur als App-Host
     const lo = this._localLoadout();
     this.role = 'host';
     this.selfId = HOST_ID;
@@ -553,7 +557,7 @@ export class NetSystem {
     this.room = { code, public: s.public, state: 'lobby', settings: s, hostName: me.name };
     this.roster = [{
       id: HOST_ID, name: me.name, team: 'A', isHost: true, isBot: false, level: me.level, ping: 0, ready: false,
-      cls: (lo && lo.cls) || null, loadout: sanitizeLoadout(lo), kd: me.kd, device: (this._device = this.localDevice()),
+      cls: (lo && lo.cls) || null, loadout: sanitizeLoadout(lo), kd: me.kd, device: (this._device = this.localDevice()), app: isAppClient(),
     }];
     this.anticheat = new AntiCheat({ onKick: (id, reason, text) => this.kick(id, `Anti-Cheat: ${text}`) });
     this.history = new PositionHistory(2.5); // ≥ AntiCheat maxRewind (2 s)
@@ -586,7 +590,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261119182451').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261121041936').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {
@@ -613,6 +617,8 @@ export class NetSystem {
     const pid = typeof h.pid === 'string' ? h.pid.slice(0, 32) : null;
     if (this._kicked.has(pk) || (pid && this._kicked.has('pid:' + pid))) return { reject: 'gekickt' };
     if (h.build !== this.build || h.pv !== NET_VERSION) return { reject: 'version' };
+    // riesen: Raum mit App-exklusiver Karte – nur App-Clients (Kennung aus der Begrüßung; fälschbar, siehe shared/appgate.js)
+    if (MAPS[this.room.settings.map]?.appOnly && h.app !== true) return { reject: 'app' };
     // Derselbe Tab verbindet sich neu (alte Verbindung hängt noch): alte Sitzung ersetzen
     if (pid) for (const peer of [...this._peers.values(), ...this._pending]) if (peer.pid === pid) this._dropPeer(peer, 'ersetzt');
     if (this.roster.length + this._pending.size >= this.room.settings.maxPlayers) return { reject: 'voll' };
@@ -695,6 +701,7 @@ export class NetSystem {
     };
     if (this._kicked.has(peer.pk) || (peer.pid && this._kicked.has('pid:' + peer.pid))) return reject('gekickt');
     if (m.build !== this.build || m.ver !== NET_VERSION) return reject('version');
+    if (MAPS[this.room.settings.map]?.appOnly && m.app !== true) return reject('app');
     if (this.roster.length >= this.room.settings.maxPlayers) return reject('voll');
     const id = this._allocId();
     const lo = sanitizeLoadout(m.loadout);
@@ -703,7 +710,7 @@ export class NetSystem {
       isHost: false, isBot: false, level: clampInt(m.level, 1, 99, 1), ping: Math.round(peer.link.rtt || 0), ready: false,
       cls: (typeof m.cls === 'string' && CLASSES[m.cls] ? m.cls : lo && lo.cls) || null, loadout: lo,
       kd: Number.isFinite(Number(m.kd)) ? Math.round(Math.min(99, Math.max(0, Number(m.kd))) * 100) / 100 : 0,
-      device: normDevice(m.dev),
+      device: normDevice(m.dev), app: m.app === true,
     };
     peer.id = id;
     peer.joined = true;
@@ -813,6 +820,8 @@ export class NetSystem {
     if (this.role !== 'host' || !this.room) return null;
     const prev = this.room.settings;
     const next = normalizeSettings({ ...prev, ...partial }, prev, this.room.hostName);
+    // riesen: App-exklusive Karte nur, wenn Host und alle Mitspieler die App nutzen (sonst bleibt die bisherige Karte)
+    if (MAPS[next.map]?.appOnly && !this.appMapAllowed()) next.map = MAPS[prev.map]?.appOnly ? (mapsForMode(next.mode).find((id) => !MAPS[id]?.appOnly) || 'hafen') : prev.map;
     this.room.settings = next;
     if (next.public !== this.room.public) {
       this.room.public = next.public;
@@ -826,6 +835,12 @@ export class NetSystem {
     }
     this._roomChanged();
     return next;
+  }
+
+  /** riesen: Darf dieser Raum eine App-exklusive Karte spielen? (Host und alle Menschen im Raum mit App-Kennung) */
+  appMapAllowed() {
+    if (!isAppClient()) return false;
+    return (this.roster || []).every((r) => r.isBot || r.isHost || r.app === true);
   }
 
   _roomChanged() {
@@ -1011,7 +1026,7 @@ export class NetSystem {
     try {
       res = await joinRoom({
         relays: this.relays, code: c, timeout: this.joinTimeout,
-        hello: { name: nm, pid: this._pid, build: this.build, pv: NET_VERSION },
+        hello: { name: nm, pid: this._pid, build: this.build, pv: NET_VERSION, app: isAppClient() },
         makeOffer: () => PeerLink.offer(this.ice),
         onStatus: (o, n) => { if (this._joining === token) this._relayStatus(o, n); },
       });
@@ -1048,7 +1063,7 @@ export class NetSystem {
         this._device = this.localDevice();
         link.sendRel({
           t: 'join', name: nm, level: me.level, kd: me.kd, ver: NET_VERSION, build: this.build,
-          cls: (lo && lo.cls) || null, loadout: sanitizeLoadout(lo), dev: this._device,
+          cls: (lo && lo.cls) || null, loadout: sanitizeLoadout(lo), dev: this._device, app: isAppClient(),
         });
       });
     } catch (err) {
@@ -1483,7 +1498,7 @@ export class NetSystem {
     const st = this.room && this.room.settings ? this.room.settings : DEFAULT_ROOM;
     const actors = st.botFill !== false ? Math.min(MAX_PLAYERS, 2 * (st.teamSize || DEFAULT_ROOM.teamSize)) : 0;
     // Fahrzeuge der Karte (Grenzland: je Team 2 Panzer + 3 Geländewagen, sonst je Team 1 + 1)
-    const vehicles = st.vehicles && militaryVehiclesAllowed(st.map) ? (st.map === 'grenzland' ? 10 : st.map === 'flugplatz' ? 18 : st.map === 'brandwald' ? 2 : 4) : 0;
+    const vehicles = st.vehicles && militaryVehiclesAllowed(st.map) ? (st.map === 'grenzland' ? 10 : st.map === 'flugplatz' ? 18 : st.map === 'weitmark' ? 24 : st.map === 'brandwald' ? 2 : 4) : 0;
     return recommend({
       actors, vehicles,
       cores: Number.isFinite(nav.hardwareConcurrency) ? nav.hardwareConcurrency : null,

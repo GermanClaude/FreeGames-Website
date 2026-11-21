@@ -6,28 +6,30 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor } from './data.js?v=20261119182451';
-import { Vehicle, newIntent } from './vehicle.js?v=20261119182451';
-import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261119182451';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261119182451';
-import { Breaching } from './breach.js?v=20261119182451';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261119182451';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261119182451';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261119182451';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261119182451';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261119182451';
-import { VehicleAudio } from './audio.js?v=20261119182451';
-import * as MATS from './materials.js?v=20261119182451';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261119182451';
-import { VehicleNet } from './net.js?v=20261119182451';
-import { groundRay } from './sim.js?v=20261119182451';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261119182451';
-import { falloff, raycastHumanoid } from '../combat.js?v=20261119182451';
-import { Thermal } from './thermal.js?v=20261119182451';
-import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261119182451';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261119182451';
-import { Aircraft } from './air/aircraft.js?v=20261119182451';
-import { AirSupport, AIR_CAP } from './air/index.js?v=20261119182451';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor, isRoleKind, transportTypeFor } from './data.js?v=20261121041936';
+import { Vehicle, newIntent } from './vehicle.js?v=20261121041936';
+import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261121041936';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261121041936';
+import { Breaching } from './breach.js?v=20261121041936';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261121041936';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261121041936';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261121041936';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261121041936';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261121041936';
+import { VehicleAudio } from './audio.js?v=20261121041936';
+import * as MATS from './materials.js?v=20261121041936';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261121041936';
+import { VehicleNet } from './net.js?v=20261121041936';
+import { groundRay } from './sim.js?v=20261121041936';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261121041936';
+import { falloff, raycastHumanoid } from '../combat.js?v=20261121041936';
+import { Thermal } from './thermal.js?v=20261121041936';
+import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261121041936';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261121041936';
+import { Aircraft } from './air/aircraft.js?v=20261121041936';
+import { AirSupport, AIR_CAP } from './air/index.js?v=20261121041936';
+import { TransportRides } from './ride.js?v=20261121041936';
+import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261121041936';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -70,6 +72,7 @@ export class VehicleSystem {
     this._noVeh = false; // world.raycast-Hülle: Fahrzeuge auslassen (feste Messungen, bullet-holes.js)
     this.hud = null;
     this.audio = new VehicleAudio(G);
+    this.rides = new TransportRides(this); // Bot-Fahrten mit Truppentransportern (ride.js)
     this.air = new AirSupport(this); // Luftfahrzeuge (air/index.js): Stellplätze, Flugsteuerung, HUD, Flugabwehr, Skript-API
     this._own = 0;
     this._vehHits = [];
@@ -221,6 +224,7 @@ export class VehicleSystem {
     const G = this.G;
     if (this.thermal) { this.thermal.dispose(); this.thermal = null; }
     this.air.detach();
+    this.rides.state.clear();
     if (this.net) { this.net.dispose(); this.net = null; }
     this.remote = null;
     if (this._warmModels) { for (const md of this._warmModels) { md.root.removeFromParent(); md.dispose(); } this._warmModels = null; }
@@ -329,16 +333,24 @@ export class VehicleSystem {
   }
 
   /** Panzer dieser Runde je Team: Einstellung „Panzer-Generation“ (online Raum, offline Lobby; ?panzer=… für Tests). */
-  tankTypeFor(team = 'A') {
+  tankTypeFor(team = 'A', slot = 0) {
     const G = this.G, M = G.match || {};
     let era = null;
     try { era = G.params && typeof G.params.get === 'function' ? G.params.get('panzer') : null; } catch { era = null; }
     if (!era) era = (M.net && M.net.tankEra) || M.tankEra || 'karte';
-    return tankTypeFor(era, M.mapId || (this.world && this.world.id), team);
+    return tankTypeFor(era, M.mapId || (this.world && this.world.id), team, slot);
   }
   get tankType() { return this.tankTypeFor('A'); }
+  /** Typ eines Rollen-Stellplatzes ('truck', 'apc', 'light', …) in der Panzergeneration dieser Runde (data.js). */
+  roleTypeFor(kind) {
+    const G = this.G, M = G.match || {};
+    let era = null;
+    try { era = G.params && typeof G.params.get === 'function' ? G.params.get('panzer') : null; } catch { era = null; }
+    if (!era || VEHICLES[era]) era = (M.net && M.net.tankEra) || M.tankEra || 'karte';
+    return transportTypeFor(era, M.mapId || (this.world && this.world.id), kind);
+  }
   /** Beide Panzer der Runde (Team A, Team B; ohne Doppelte). */
-  get tankTypes() { return [...new Set([this.tankTypeFor('A'), this.tankTypeFor('B')])]; }
+  get tankTypes() { return [...new Set([this.tankTypeFor('A'), this.tankTypeFor('B'), this.tankTypeFor('A', 1), this.tankTypeFor('B', 1)])]; }
 
   /**
    * Zivile Stellplätze der Karte (world.civilVehicles; ?vehicles=0 schaltet auch sie ab) – reihum je Typ geordnet, damit
@@ -377,9 +389,25 @@ export class VehicleSystem {
     if (civil.length) { this._prepareCivil(civil.slice(0, CIV_CAP[this.quality] || 16)); for (const e of civil) this.registerSpawn(e); }
     if (!entries || !entries.length) return;
     // Panzergeneration (Raum/Lobby „Panzer“): Kampfpanzer-Plätze der Karte bekommen den Panzer der gewählten Epoche
-    entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret).map((e) => {
+    const slots = new Map(); // je Team: n-ter Kampfpanzer-Stellplatz (zweiter → zweites Fahrzeug der Epoche)
+    // Rollen-Stellplätze (Transporter, leichte/schwere Panzer, data-troop.js): Typ je Panzergeneration der Runde
+    // (Stellplatz auf freien, ebenen Boden in ≤ 24 m rücken – die Fahrzeuge sind verschieden groß)
+    const fixed = entries.filter((e) => e && !isRoleKind(e.type) && e.position).map((e) => e.position);
+    entries = entries.map((e) => {
+      if (!e || !isRoleKind(e.type)) return e;
+      const type = this.roleTypeFor(e.type);
+      if (!type) return null;
+      let spot = null;
+      try { spot = e.position ? this.findSpot(e.position.clone ? e.position.clone() : new THREE.Vector3(e.position.x, e.position.y, e.position.z), type, { maxR: 24, avoid: fixed }) : null; } catch { spot = null; }
+      if (spot) fixed.push(spot.position);
+      return { ...e, type, position: spot ? spot.position : e.position, yaw: e.yaw ?? (spot ? spot.yaw : 0) };
+    });
+    // Luftfahrzeuge nur für Teams mit Menschen (Bots fliegen nicht – air/policy.js, air.wantsTeam)
+    entries = entries.filter((e) => e && VEHICLES[e.type] && !e.secret && (!VEHICLES[e.type].air || this.air.wantsTeam(e.team ?? null))).map((e) => {
       if (e.type !== 'mbt') return e;
-      const tank = this.tankTypeFor(e.team);
+      const k = e.team ?? null, n = slots.get(k) || 0;
+      slots.set(k, n + 1);
+      const tank = this.tankTypeFor(e.team, n);
       return tank !== 'mbt' ? { ...e, type: tank } : e;
     });
     // Reihum je Team anmelden: bei der Stufen-Obergrenze (Handy) bekommen beide Seiten gleich viele Fahrzeuge
@@ -517,7 +545,7 @@ export class VehicleSystem {
     let idx = viewIndex | 0;
     if (!allowed.includes(idx)) idx = allowed[0];
     this._applyView(seat, idx);
-    if (actor.isPlayer) this.viewPref.set(`${v.type}:${seat.index}`, viewsOf(seat.def)[idx].id);
+    if (actor.isPlayer && !viewsOf(seat.def)[idx].peek) this.viewPref.set(`${v.type}:${seat.index}`, viewsOf(seat.def)[idx].id); // Durchsehen (Winkelspiegel) nicht merken
     this.G.events.emit('vehicle:view', { vehicle: v, seat: seat.index, actor, view: idx });
     return true;
   }
@@ -566,13 +594,26 @@ export class VehicleSystem {
     }
   }
 
-  /** Einsteigen (Regeln: lebt, frei, Team). → Sitzindex | −1 */
+  /** Regelkontext für Luftfahrzeuge (air/policy.js) aus dem laufenden Modus. */
+  airContext() { return airContext(this.G.match && this.G.match.modeId); }
+
+  /** Einsteigen (Regeln: lebt, frei, Team). → Sitzindex | −1 (Grund einer Regel-Ablehnung: this.enterWhy) */
   enter(actor, v, seatIdx = null) {
+    this.enterWhy = null;
     if (!actor || !actor.alive || !v || !v.alive || actor.vehicle || !this.attached) return -1;
     if (v.isOccupied && v.team != null && actor.team != null && v.team !== actor.team) return -1;
     let idx = seatIdx;
     if (idx == null || idx < 0 || idx >= v.seats.length || v.seats[idx].actor) idx = v.seats.findIndex((s) => !s.actor);
     if (idx < 0) return -1;
+    // Modus-Regel (Trupp: Fahrer-/Waffensitze gepanzerter Fahrzeuge nur für die Besatzung) → anderer Sitz bzw. −1
+    const M = this.G.mode;
+    if (M && typeof M.vehicleSeatFor === 'function') { idx = M.vehicleSeatFor(actor, v, seatIdx, idx); if (idx < 0) return -1; }
+    // Luftfahrzeuge (air/policy.js): keine Bots (außer Kampagnen-Skript), Pilotensitz nur für die Klasse Pilot
+    if (isAirVehicle(v)) {
+      const r = airSeatFor(actor, v, seatIdx, idx, this.airContext());
+      if (r.idx < 0) { this.enterWhy = r.why; return -1; }
+      idx = r.idx;
+    }
     this._seat(actor, v, idx);
     // Infanteriewaffe ruht im Sitz (kein weapon.update): laufendes Nachladen abbrechen, sonst klingt es weiter
     if (actor.weapon && typeof actor.weapon.cancelReload === 'function') actor.weapon.cancelReload();
@@ -668,6 +709,9 @@ export class VehicleSystem {
   switchSeat(actor, idx) {
     const v = actor && actor.vehicle;
     if (!v || idx < 0 || idx >= v.seats.length || v.seats[idx].actor) return false;
+    const M = this.G.mode;
+    if (M && typeof M.vehicleSeatFor === 'function' && M.vehicleSeatFor(actor, v, idx, idx) !== idx) return false;
+    if (isAirVehicle(v)) { const r = airSeatFor(actor, v, idx, idx, this.airContext()); if (r.idx !== idx) { this.enterWhy = r.why; if (actor.isPlayer && r.why) this._flash(AIR_WHY[r.why]); return false; } }
     const from = v.seatOf(actor);
     if (from === idx) return false;
     this._clearSeatState(v.seats[from]);
@@ -775,6 +819,8 @@ export class VehicleSystem {
   _playerEnter(player, v) {
     const G = this.G;
     if (G.viewmodel && G.viewmodel.scene) G.viewmodel.scene.visible = false;
+    player._rideFire = false;
+    try { if (typeof document !== 'undefined' && document.body) delete document.body.dataset.rideFire; } catch { /* */ }
     const input = G.input;
     if (input) {
       input.cancelAds && input.cancelAds();
@@ -794,6 +840,8 @@ export class VehicleSystem {
   _playerExit(player, v) {
     const G = this.G;
     if (G.viewmodel && G.viewmodel.scene) G.viewmodel.scene.visible = !!player.alive;
+    player._rideFire = false;
+    try { if (typeof document !== 'undefined' && document.body) delete document.body.dataset.rideFire; } catch { /* */ }
     const d = this.camera.dir;
     if (player.alive && d) {
       player.yaw = Math.atan2(-d.x, -d.z);
@@ -843,13 +891,15 @@ export class VehicleSystem {
       seat.zoomIndex = seat._zoomHi && (eff.zoom || []).length > 1 ? 1 : 0;
     }
     this._eff = { seat, view: eff };
+    this._rideFire(player, v, seat, eff, dt, frozen);
     // Wärmebild (G) in Hauptzieloptik, Weitwinkel und Rundblickperiskop
     const thermalOk = !!(eff && !eff.tp && THERMAL_VIEWS.has(eff.overlay) && !v.def.noThermal); // Wärmebild nur moderne Panzer
     if (!this.thermal) this.thermal = new Thermal(G);
     if (act.thermal && thermalOk) { this.thermal.toggle(); this._viewLabel = { text: this.thermal.on ? 'Wärmebild an' : 'Wärmebild aus', until: now + 1.2 }; }
     this.thermal.update(dt, thermalOk);
     // Zielen: 1P/Optik → Blickrichtung (Strichplatte); Außenansicht → Bildmitte-Strahl (Rohr konvergiert, Ballistik)
-    if (seat.def.mount && seat.def.mount !== 'fixed') {
+    // Innensicht (Turm/Wanne von innen): Kopf schaut frei herum, die Waffe hält ihre Richtung (sonst dreht der Turm mit dem Blick)
+    if (seat.def.mount && seat.def.mount !== 'fixed' && !(eff && eff.interior)) {
       const dir = viewLookDir(v, seat, eff, _d);
       if (!eff.tp || !this.camera.ready) {
         seat.intent.aimDir = (seat.intent.aimDir || new THREE.Vector3()).copy(dir);
@@ -876,7 +926,9 @@ export class VehicleSystem {
       return;
     }
     if (act.camera && !xr) {
-      const allowed = this.allowedViews(seat);
+      // Sichten zum Durchsehen (peek: Winkelspiegel, Hilfszielfernrohr – periscopes.js) gehören nicht in den Umlauf der Taste
+      const vl = viewsOf(seat.def), all = this.allowedViews(seat), cyc = all.filter((i) => !vl[i].peek);
+      const allowed = cyc.length ? cyc : all;
       const next = allowed[(allowed.indexOf(seat.view) + 1) % allowed.length];
       this.setSeatView(player, next);
       this.camMode = isTp(viewOf(seat)) ? 'tp' : 'fp';
@@ -914,6 +966,43 @@ export class VehicleSystem {
     }
   }
 
+  /**
+   * Mitfahrer feuert aus dem Fahrzeug (Sicht fireOut – offene Ladefläche, Dachluke, Bordwand; data-troop.js): Blick
+   * kommt aus der Fahrzeugsicht (Kamera), die eigene Infanteriewaffe läuft wie zu Fuß (Feuern, Zielen, Nachladen,
+   * Waffenwechsel), Körper bleibt am Standplatz geheftet. Taste Ducken/Sicht setzt sich wieder.
+   */
+  _rideFire(player, v, seat, view, dt, frozen) {
+    const G = this.G, w = player.weapon, input = G.input;
+    const on = !!(view && view.fireOut && !view.tp && player.alive && v.alive && seat.hatchT >= 0.5 && w && !(G.xr && G.xr.presenting));
+    const vm = G.viewmodel && G.viewmodel.scene;
+    if (on !== !!player._rideFire) {
+      player._rideFire = on;
+      if (vm) vm.visible = on;
+      try { if (typeof document !== 'undefined' && document.body) { if (on) document.body.dataset.rideFire = '1'; else delete document.body.dataset.rideFire; } } catch { /* */ } // Infanterie-HUD (vehicles/hud.js)
+      if (!on && w && 'adsProgress' in w) { try { w.adsProgress = 0; } catch { /* nur Getter */ } }
+    }
+    if (!on || !input) return;
+    const it = player._intent;
+    if (!it) return;
+    const busy = typeof player._busy === 'function' ? player._busy(G.time.elapsed) : null;
+    const blocked = frozen || !!busy;
+    const sp = Math.abs(v.body.speed || 0);
+    it.fire = !blocked && input.down('fire');
+    it.firePressed = !blocked && input.pressed('fire');
+    it.ads = !blocked && (input.active ? input.active('ads') : input.down('ads'));
+    it.reload = !frozen && !busy && input.pressed('reload');
+    it.swap = !blocked && input.pressed('swap');
+    it.slot = blocked ? null : input.pressed('slot1') ? 1 : input.pressed('slot2') ? 2 : null;
+    it.grenade = it.grenadeHeld = it.tactical = it.tacticalHeld = it.melee = it.inspect = false; // kein Werfen aus dem Sitz
+    it.light = false; it.interact = false;
+    it.sprinting = false; it.moving = sp > 0.5; it.airborne = false; it.onGround = true;
+    it.crouching = false; it.prone = false; it.crawling = false; it.sliding = false; it.plating = false; it.mantling = false;
+    it.stance = 'stand'; it.busy = busy; it.speed = Math.min(6, sp); it.frozen = frozen; it.leaning = 0;
+    it.lookDX = input.look ? input.look.dx : 0; it.lookDY = input.look ? input.look.dy : 0;
+    it.aimOffsetX = 0; it.aimOffsetY = 0; it.exertion = player.exertion || 0;
+    try { w.update(dt, it); } catch (err) { if (!this._rideErr) { this._rideErr = true; console.warn('[vehicles] Feuern aus dem Fahrzeug:', err); } }
+  }
+
   _flash(text) { this._msg = { text, until: this.G.time.elapsed + 1.6 }; }
 
   /* =============================================================== Takt */
@@ -942,6 +1031,7 @@ export class VehicleSystem {
       this._spawnAt(sp);
     }
     for (const v of this.list) v.update(dt, world);
+    this.rides.update(dt); // Bots fahren mit Transportern zur Front und sitzen ab
     updateResupply(this, dt); // Aufmunitionieren an Versorgungspunkten (Host/offline)
     this._collideVehicles();
     this._collideActors(dt);
@@ -1008,10 +1098,11 @@ export class VehicleSystem {
       if (!a.isPlayer) {
         // Blickrichtung der Bots/Puppen: Lafette bzw. Fahrtrichtung
         const yaw = s.def.mount ? v.yaw + (s.def.mount === 'gun' ? v.mount.turretYaw : s.def.mount === 'cmg' ? (v.def.cmgHull ? 0 : v.mount.turretYaw) + v.mount.cmgYaw : v.mount.mgYaw) : v.yaw;
-        a.yaw = wrap(yaw);
-        if (fv.hatch) a.crouching = open; // aus der Luke: nur Oberkörper draußen
-        // Kabine (Zivilfahrzeuge): statt des stehenden Soldaten zeigt das Fahrzeugmodell eine sitzende Figur
-        const show = open && !s.def.cabin;
+        if (!(s.def.passenger && open)) a.yaw = wrap(yaw); // Mitfahrer auf offener Bank/Luke: Bot blickt und zielt selbst
+        if (fv.hatch || fv.crouch) a.crouching = open && !fv.fireOut; // aus der Luke: nur Oberkörper draußen; offene Bank: geduckt
+        // Kabine (Zivilfahrzeuge): statt des stehenden Soldaten zeigt das Fahrzeugmodell eine sitzende Figur – außer der
+        // Mitfahrer steht zum Feuern auf (Sicht fireOut, Truppentransporter)
+        const show = open && (!s.def.cabin || !!fv.fireOut);
         const sol = a.soldier;
         if (sol && sol.root && sol.state !== 'hidden') {
           if (sol.root.visible !== show) sol.root.visible = show;
@@ -1106,13 +1197,16 @@ export class VehicleSystem {
       this._near = p.alive && !p.piloting ? this._nearestEnterable(p) : null;
       if (this._near) {
         const v = this._near;
-        const idx = v.seats.findIndex((s) => !s.actor);
-        state.near = { vehicle: v, seatLabel: v.seats[idx].def.label };
+        let idx = v.seats.findIndex((s) => !s.actor);
+        let seatLabel = v.seats[idx].def.label;
+        if (isAirVehicle(v)) { const r = airSeatFor(p, v, null, idx, this.airContext()); if (r.idx >= 0) seatLabel = v.seats[(idx = r.idx)].def.label; else seatLabel = 'nur Pilot'; }
+        state.near = { vehicle: v, seatLabel };
         const input = G.input;
         // nicht im selben Tastendruck wieder einsteigen, mit dem gerade ausgestiegen wurde
         if (this.live && input && now - this._exitT > 0.4 && now - (this._reqT || -1e9) > 0.3 && (input.pressed('interact') || input.pressed('v_enter'))) {
           this._reqT = now;
-          this.requestEnter(p, v);
+          const got = this.requestEnter(p, v);
+          if (got < 0 && !this.remote && this.enterWhy && AIR_WHY[this.enterWhy]) this._flash(AIR_WHY[this.enterWhy]);
         }
       }
     }
@@ -1273,8 +1367,7 @@ export class VehicleSystem {
       G.effects?.muzzleFlash?.(origin, dir, { cls: 'sniper', scale: 3.4 });
       G.effects?.muzzleLight?.(origin, 34, 3, 0.09, 20);
       G.effects?.smoke?.(_a.copy(origin).addScaledVector(dir, 1.2), { count: 7, size: 2.6, life: 2.4, rise: 0.35, alpha: 0.42 });
-      this.audio.play('explosion', { position: isPlayer ? null : origin, volume: isPlayer ? 0.8 : 1, pitch: 1.55, priority: 3 });
-      this.audio.play('boom_sub', { position: isPlayer ? null : origin, volume: 1, priority: 3 });
+      this.audio.cannon(v, origin, !!(v && G.player && G.player.vehicle === v)); // Kanone: außen/innen (audio 20.11.)
       if (isPlayer) { actor.shake?.(def.shake || 0.5); G.input?.rumble?.(0.9, 0.6, 200); }
     } else {
       // Streuung (Normalverteilung, Kegel def.spread)

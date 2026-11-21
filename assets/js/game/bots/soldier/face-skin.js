@@ -56,7 +56,7 @@ function worley(x, y, z, jitter = 0.6) {
 /* ------------------------------------------------------------------ Aussehen */
 
 export function normLook(l = {}) {
-  const o = { age: 30, stubble: 0.5, beard: 'stoppel', hair: 1, recede: 0.2, brows: 1, freckles: 0.2, moles: 0.5, dark: 0, seed: 1 };
+  const o = { age: 30, stubble: 0.5, beard: 'stoppel', hair: 1, recede: 0.2, crown: 0, brows: 1, freckles: 0.2, moles: 0.5, dark: 0, seed: 1 };
   for (const k of Object.keys(o)) if (l[k] !== undefined && l[k] !== null) o[k] = typeof o[k] === 'number' ? +l[k] : l[k];
   return o;
 }
@@ -300,7 +300,9 @@ export function bakeFaceMaps(A, look = {}, w = 512, h = 1024) {
       hy = mix(hy, backY, sstep(0.0, 0.07, z));
       // Schläfe: Haaransatz vor dem Ohr senkt sich zu den Koteletten
       hy = Math.min(hy, mix(9, ey - 0.024, sstep(0.06, 0.068, ax) * sstep(tmjZ - 0.03, tmjZ - 0.016, z) * sstep(tmjZ + 0.016, tmjZ + 0.004, z)));
-      const hm = sstep(-0.0015, 0.003, y - hy + nB) * L.hair;
+      const hm0 = sstep(-0.0015, 0.003, y - hy + nB) * L.hair;
+      // mensch3: Haarkranz – Oberkopf kahl (über Schläfenhöhe, vor dem Hinterkopf), Seiten/Nacken behalten das Haar
+      const hm = L.crown > 0 ? hm0 * (1 - L.crown * sstep(ey + 0.035, ey + 0.05, y + 0.25 * Math.max(0, z - 0.02)) * sstep(0.085, 0.05, z)) : hm0;
       if (hm > 0.001) {
         const fs = 1 / 0.0006;
         const f = worley(x * fs, y * fs, z * fs, 0.95);

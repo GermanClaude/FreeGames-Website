@@ -45,8 +45,12 @@ function splitOnce(node, level, perLeaf, maxLevel, out) {
 function makeRoot(pos, perLeaf, maxLevel) {
   const root = new Octree();
   root.trianglesPerLeaf = perLeaf; root.maxLevel = maxLevel;
+  // alle Dreiecke in Eingabereihenfolge (zerbrechliche Requisiten schalten ihre ab: game/breakables.js, world/bruch.js)
+  const all = root.allTris = [];
   for (let i = 0; i + 8 < pos.length; i += 9) {
-    root.addTriangle(new Triangle(new Vector3(pos[i], pos[i + 1], pos[i + 2]), new Vector3(pos[i + 3], pos[i + 4], pos[i + 5]), new Vector3(pos[i + 6], pos[i + 7], pos[i + 8])));
+    const t = new Triangle(new Vector3(pos[i], pos[i + 1], pos[i + 2]), new Vector3(pos[i + 3], pos[i + 4], pos[i + 5]), new Vector3(pos[i + 6], pos[i + 7], pos[i + 8]));
+    all.push(t);
+    root.addTriangle(t);
   }
   root.calcBox();
   return root;

@@ -2,11 +2,12 @@
 // Controller (Kurve mit Live-Vorschau, Totzonen, Stick-Anzeige), Touch und Gyro (Erlaubnis, Kalibrierung des
 // Nullpunkts, Live-Anzeige). Sprungmarken oben; Reihenfolge nach dem gerade benutzten Gerät.
 
-import { esc, num } from '../dom.js?v=20261119182451';
-import { ICON } from '../icons.js?v=20261119182451';
-import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled } from './rows.js?v=20261119182451';
-import { HINTS } from './schema-page.js?v=20261119182451';
-import { VR_KEYS, vrSectionHtml, vrSectionSync } from './vr-section.js?v=20261119182451';
+import { esc, num } from '../dom.js?v=20261121041936';
+import { ICON } from '../icons.js?v=20261121041936';
+import { activePad } from '../../../shared/gamepad.js?v=20261121041936';
+import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled } from './rows.js?v=20261121041936';
+import { HINTS } from './schema-page.js?v=20261121041936';
+import { VR_KEYS, vrSectionHtml, vrSectionSync } from './vr-section.js?v=20261121041936';
 
 const SECTIONS = {
   touch: { label: 'Touch', keys: ['touchSensitivity', 'touchOpacity', 'touchButtonScale'] },
@@ -232,8 +233,7 @@ export function controlsPage(P) {
     raf = requestAnimationFrame(frame);
     if (!host) return;
     // Controller
-    let pad = null;
-    if (typeof navigator.getGamepads === 'function') for (const p of navigator.getGamepads() || []) if (p && p.connected) { pad = p; break; }
+    const pad = activePad();
     const none = host.querySelector('[data-pad-none]');
     if (none) none.hidden = !!pad;
     const sticks = host.querySelectorAll('.pc-stick');

@@ -3,11 +3,11 @@
 // alles beim Laden, synchronisiert sich zwischen Tabs. Freischaltungen über
 // WEAPONS[id].unlockLevel aus weapons.data.js, XP-Regeln aus modes.data.js (beide statisch importiert).
 
-import { settings } from './settings.js?v=20261119182451';
-import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261119182451';
-import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261119182451';
-import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261119182451';
-import { pendingTrophies } from './trophies.data.js?v=20261119182451';
+import { settings } from './settings.js?v=20261121041936';
+import { OG_CUTOFF, ogStored as ogIn, ogKeep as ogPut } from './og.js?v=20261121041936';
+import { WEAPONS, EQUIPMENT } from './weapons.data.js?v=20261121041936';
+import { matchBonusXp, medalXp, DIFFICULTIES, XP_RULES, applyChallenges, blankChallenges } from './modes.data.js?v=20261121041936';
+import { pendingTrophies } from './trophies.data.js?v=20261121041936';
 
 const STORAGE_KEY = 'nullpunkt:profile';
 /**
@@ -224,7 +224,7 @@ function blankCampaign() {
 function cleanCampaign(c) {
   const out = blankCampaign();
   if (!c || typeof c !== 'object') return out;
-  const DIFF = ['rekrut', 'regulaer', 'veteran', 'elite'];
+  const DIFF = ['rekrut', 'regulaer', 'veteran', 'elite', 'simulation']; // simulation: Infanteriesimulation (Kampagne)
   if (c.missions && typeof c.missions === 'object') {
     for (const [id, m] of Object.entries(c.missions).slice(0, 32)) {
       if (!ID_RE.test(id) || !m || typeof m !== 'object') continue;

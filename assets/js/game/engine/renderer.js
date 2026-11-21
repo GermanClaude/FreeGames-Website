@@ -14,12 +14,12 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261119182451';
-import { estimateMemory } from './post/memory.js?v=20261119182451';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261119182451';
-import { resetFormatCache } from './post/common.js?v=20261119182451';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261119182451'; // Erweitert-Grafik (S9, ui-controls)
-import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261119182451';
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261121041936';
+import { estimateMemory } from './post/memory.js?v=20261121041936';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261121041936';
+import { resetFormatCache } from './post/common.js?v=20261121041936';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261121041936'; // Erweitert-Grafik (S9, ui-controls)
+import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261121041936';
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 
@@ -485,6 +485,8 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
       } else sm.autoUpdate = true;
       const exp = renderer.toneMappingExposure;
       renderer.toneMappingExposure = postState.exposure * 1.05;
+      // Vorab-Bilder für die Brille (engine/xr/scope.js: echtes Zielfernrohrbild) – eigene Zielgröße, XR kurz aus
+      if (typeof this.xrPrePass === 'function') { try { this.xrPrePass(renderer, scene); } catch (err) { this.xrPrePass = null; console.warn('[NULLPUNKT] VR-Vorabbild:', err); } }
       renderer.autoClear = true;
       renderer.render(scene, camera);
       if (vmScene && vmScene.visible !== false) {

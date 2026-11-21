@@ -2,17 +2,18 @@
 // (oder Finger) ist ein Operator – was er sieht, steht fett, alles hinter Deckung fällt zur Haarlinie.
 // Darüber der „Durchblick“: ein Standbild aus dem Spiel, sichtbar nur durch die Buchstaben des Kartennamens.
 // Ohne vermessenen Plan zeichnet die Seite die Karte aus Maßen und Wegen (dimensions, lanes, features).
-import { h, $, signalLost, tabs } from './dom.js?v=20261119182451';
-import { fit } from './fit.js?v=20261119182451';
-import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261119182451';
-import { makeBallistics } from './ballistics.js?v=20261119182451';
-import { ui } from './state.js?v=20261119182451';
-import { announce } from './live.js?v=20261119182451';
-import { loop } from './loop.js?v=20261119182451';
-import { reduced, pointerFine } from './motion.js?v=20261119182451';
-import { num, NNBSP } from './fmt.js?v=20261119182451';
-import { jumpTo } from './jump.js?v=20261119182451';
-import { segmentsFrom, castVisibility, boundsOf, wordFor, corners, blocked, defaultPoint, planText, polyPath, isSoft, labelBlocks } from './plan.js?v=20261119182451';
+import { h, $, signalLost, tabs } from './dom.js?v=20261121041936';
+import { fit } from './fit.js?v=20261121041936';
+import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261121041936';
+import { makeBallistics } from './ballistics.js?v=20261121041936';
+import { ui } from './state.js?v=20261121041936';
+import { announce } from './live.js?v=20261121041936';
+import { loop } from './loop.js?v=20261121041936';
+import { reduced, pointerFine } from './motion.js?v=20261121041936';
+import { num, NNBSP } from './fmt.js?v=20261121041936';
+import { jumpTo } from './jump.js?v=20261121041936';
+import { mapLockedHere } from '../shared/appgate.js?v=20261121041936'; // riesen: Riesenkarte nur in der App
+import { segmentsFrom, castVisibility, boundsOf, wordFor, corners, blocked, defaultPoint, planText, polyPath, isSoft, labelBlocks } from './plan.js?v=20261121041936';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
@@ -23,7 +24,7 @@ const svg = (tag, attrs = {}) => {
 };
 const idle = (fn) => (window.requestIdleCallback ? window.requestIdleCallback(fn, { timeout: 600 }) : setTimeout(fn, 60));
 const MIN_PX = 9; // kleiner gesetzt wird kein Wort
-const STILLS = new Set(['hafen', 'altstadt', 'werk', 'range', 'flugplatz']);
+const STILLS = new Set(['hafen', 'altstadt', 'werk', 'bibliothek', 'range', 'grenzland', 'niemandsland', 'brandwald', 'flugplatz', 'stadtkern']);
 let uid = 0;
 
 /** Baut den SVG-Plan einer Karte (einmal pro Karte, danach wiederverwendet). */
@@ -333,8 +334,8 @@ export async function init(sec, D, ctx = {}) {
     const dims = dx && dz ? `${num(dx)} × ${num(dz)}${NNBSP}m` : '';
     if (map.size || dims) parts.push([map.size ? `GRÖSSE ${up(map.size)}` : 'GRÖSSE', dims]);
     const modeShorts = (map.modes || []).map((m) => D.M.MODES[m]?.short || up(m)).join(', ');
-    if (modeShorts) parts.push([`MODI ${modeShorts}`]);
-    return parts.flatMap(([t, d], i) => [i ? ' · ' : null, h('span.nw', {}, t, d ? [h('span', {}, ', '), h('span.lc', {}, d)] : null)]).filter(Boolean);
+    if (modeShorts) parts.push([`MODI ${modeShorts}`, null, true]); // qa: lange Modusliste darf umbrechen (sonst ragt die Spalte in den Plan)
+    return parts.flatMap(([t, d, wrap], i) => [i ? ' · ' : null, h(wrap ? 'span' : 'span.nw', {}, t, d ? [h('span', {}, ', '), h('span.lc', {}, d)] : null)]).filter(Boolean);
   }
 
   function setDurch(id, map) {
@@ -425,6 +426,10 @@ export async function init(sec, D, ctx = {}) {
       const mode = (map.modes || []).includes(ui.get('mode')) ? ui.get('mode') : (map.modes?.[0] || 'tdm');
       href = buildPlayUrl({ mode, map: id });
     }
+    // riesen: App-exklusive Riesenkarte im Browser → Link zur App-Seite statt „Hier spielen“
+    const locked = mapLockedHere(map);
+    if (locked) href = '#app';
+    if (playLink.firstChild) playLink.firstChild.textContent = locked ? 'Nur in der App – hier herunterladen' : 'Hier spielen';
     playLink.setAttribute('href', href);
   }
 

@@ -6,8 +6,8 @@
 // stimmig an Kaikante/Fahrspur ausgerichtet. Spiegelgleich in z (Team A Süden, Team B Norden). Jede Stelle wird vorab
 // gegen Start-, Flaggen-, Stellungs- und Kampagnenpunkte sowie vorhandene Deckung geprüft (gelaende.platzFrei); fällt
 // eine Seite weg, entfällt auch die gespiegelte (Fairness). Zufall nur über hash01 (Kartenzufall bleibt unberührt).
-import { frame, hash01, pallet } from '../props.js?v=20261119182451';
-import { freiPruefer, kartenSperre, platzFrei } from '../gelaende.js?v=20261119182451';
+import { frame, hash01, pallet } from '../props.js?v=20261121041936';
+import { freiPruefer, kartenSperre, platzFrei } from '../gelaende.js?v=20261121041936';
 
 const P = { collide: false, minimap: false };
 const PG = { ...P, grad: false };

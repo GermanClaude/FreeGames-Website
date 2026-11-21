@@ -26,16 +26,22 @@
 // 28.10. (Nutzer): Waffe nur in der Hand, solange die Griff-Taste der Haupthand gehalten wird (vrGripHold) – loslassen →
 //   nach 0,25 s ins Holster (Hand leer, Feuern gesperrt), Griff an Rücken/Hüfte zieht die jeweilige, sonst die zuletzt
 //   benutzte Waffe. Langwaffen einhändig (vrTwoHand): Lauf hängt durch und wackelt, Streuung ×4, Anlegen nur beidhändig.
+// 19.11. (plattform, „mehr wie ein echtes VR-Spiel“): Nachladen per Hand + Granate an der Weste + Munition an der Waffe
+//   (hands.js), Teleport-Fortbewegung (teleport.js), echtes Zielfernrohrbild (scope.js), Bildrate/Foveation einstellbar,
+//   VR-Menü mit Fortbewegung/Nachladen/Sitzen.
 // Bild: renderer.js zeichnet in VR ohne Nachbearbeitung (Welt + Waffe mit Welttiefe), main.js taktet per
 //   renderer.setAnimationLoop. Eigene VR-Grafikvorgabe: Quest-Browser Stufe „Niedrig“ + 80 % Auflösung, PC wie am
 //   Bildschirm + 100 %, Foveated Rendering 1, MSAA über den Kontext (renderer.js, Einstellung vrEnabled).
 
 import * as THREE from 'three';
-import { collisionRay, keepClear } from '../physics.js?v=20261119182451';
-import { VrOverlay } from './overlay.js?v=20261119182451';
-import { WristHud } from './wrist.js?v=20261119182451';
-import { VrMenu } from './menu.js?v=20261119182451';
-import { ACTION_BY_ID, XR_CODES, codeLabel, resolveBindings, setBinding, resetBindings } from '../../../shared/bindings.data.js?v=20261119182451';
+import { collisionRay, keepClear } from '../physics.js?v=20261121041936';
+import { VrOverlay } from './overlay.js?v=20261121041936';
+import { WristHud } from './wrist.js?v=20261121041936';
+import { VrMenu } from './menu.js?v=20261121041936';
+import { VrHands } from './hands.js?v=20261121041936';
+import { VrTeleport } from './teleport.js?v=20261121041936';
+import { VrScope } from './scope.js?v=20261121041936';
+import { ACTION_BY_ID, XR_CODES, codeLabel, resolveBindings, setBinding, resetBindings } from '../../../shared/bindings.data.js?v=20261121041936';
 
 // Augenhöhen wie player.js (STAND_EYE, CROUCH_EYE, PRONE_EYE) und Lehnweiten (LEAN_SIDE, …_CROUCH, PRONE_LEAN_SIDE)
 const EYE = { stand: 1.65, crouch: 1.0, prone: 0.38 };
@@ -62,7 +68,9 @@ const _eu = new THREE.Euler();
 const _qw = new THREE.Quaternion();
 // Steuerungs-Seite im VR-Menü: belegbare Aktionen (Reihenfolge = Wichtigkeit), 6 je Seite, Tastenerfassung 6 s
 const CTL_ACTIONS = ['fire', 'reload', 'swap', 'melee', 'grenade', 'tactical', 'jump', 'crouch', 'prone', 'sprint', 'interact', 'plate',
-  'feuermodus', 'light', 'inspect', 'verband', 'gadget', 'faehigkeit', 'bauen', 'streak1', 'streak2', 'streak3', 'scoreboard'];
+  'feuermodus', 'light', 'inspect', 'verband', 'gadget', 'faehigkeit', 'bauen', 'streak1', 'streak2', 'streak3', 'scoreboard',
+  // Simulation (isim): in VR lädt die Hand durch (Nachlade-Taste bei leerem Lager ebenso); Kompass/Karte/Ausrüstung frei belegbar
+  'sim_magcheck', 'sim_kompass', 'sim_karte', 'sim_inventar', 'sim_abbinden', 'sim_durchladen'];
 const CTL_PAGE = 6;
 const CTL_CAPTURE = 6;
 const CTL_NOTE = 'Fest: Abzug der Haupthand im Menü wählt · Griff-Taste Haupthand an Rücken/Hüfte zieht Hauptwaffe/Pistole · Griff-Taste Nebenhand am Vorderschaft hält beidhändig · Sticks: laufen/drehen';
@@ -225,6 +233,11 @@ export class XRSystem {
     this.dot.renderOrder = 1e5;
     this.dot.visible = false;
     this.group.add(this.dot);
+    this.handsX = new VrHands(this);
+    this.teleport = new VrTeleport(this);
+    this.scope = new VrScope(this);
+    const R = this.G.renderer;
+    if (R) R.xrPrePass = (renderer, scene) => { if (this.presenting && this.scope) this.scope.prePass(renderer, scene); };
   }
 
   /**
@@ -257,7 +270,7 @@ export class XRSystem {
       r.xr.enabled = true;
       r.xr.setReferenceSpaceType(type);
       r.xr.setFramebufferScaleFactor(scale);
-      r.xr.setFoveation(1);
+      r.xr.setFoveation(this._foveation());
       session.addEventListener('end', this._onEnd);
       session.addEventListener('visibilitychange', this._onVis);
       this.session = session;
@@ -276,6 +289,7 @@ export class XRSystem {
     this.starting = false;
     this.presenting = true;
     this.ready = false;
+    this._frameRate(session);
     this._calibT = 0;
     this._resultAt = null;
     this._wasAlive = !!(G.player && G.player.alive);
@@ -323,6 +337,10 @@ export class XRSystem {
     this._resultAt = null;
     for (const h of [this.hands.main, this.hands.off]) { h.src = null; h.gamepad = null; h.grip.ok = h.ray.ok = h.gripW.ok = h.rayW.ok = false; }
     this.head.ok = false;
+    if (this.handsX) this.handsX.reset(false);
+    if (this.teleport) this.teleport.reset();
+    if (this.scope) this.scope.reset();
+    if (this.handsX) { for (const d of this.handsX._drops) d.mesh.removeFromParent(); this.handsX._drops.length = 0; this.handsX._hideAmmo(); }
     this._preset(false);
     if (G.player) { G.player.xrLean = 0; G.player.xrSpreadMul = 1; }
     this.armed = true;
@@ -356,6 +374,26 @@ export class XRSystem {
     if (this._prevQuality != null && R) { R.setQuality(this._prevQuality); }
     this._prevQuality = null;
     return 1;
+  }
+
+  /** Foveated Rendering (vrFoveation): auto = Brille stark (1), PC aus (0). */
+  _foveation() {
+    const v = this.G.settings.get('vrFoveation');
+    if (v === 'auto' || v == null) return typeof navigator !== 'undefined' && STANDALONE_UA.test(navigator.userAgent || '') ? 1 : 0;
+    return clamp(Number(v) || 0, 0, 1);
+  }
+
+  /** Bildrate der Brille (vrFrameRate): nächste unterstützte Rate anfordern; auto = Brille entscheidet. */
+  _frameRate(session = this.session) {
+    const want = Number(this.G.settings.get('vrFrameRate'));
+    if (!session || !want || typeof session.updateTargetFrameRate !== 'function') return null;
+    const rates = session.supportedFrameRates ? [...session.supportedFrameRates] : [];
+    if (!rates.length) return null;
+    let best = rates[0];
+    for (const r of rates) if (Math.abs(r - want) < Math.abs(best - want)) best = r;
+    try { const pr = session.updateTargetFrameRate(best); if (pr && pr.catch) pr.catch(() => {}); } catch { /* */ }
+    this.targetRate = best;
+    return best;
   }
 
   /* ================================================================ Bild (main.js) */
@@ -464,10 +502,29 @@ export class XRSystem {
         input.move.y = mx * s + my * c;
       }
     }
+    // Teleport (vrLocomotion): Stick der Nebenhand nach vorn zielt den Bogen, Loslassen springt; vorwärts kein Gleiten
+    if (this.teleport) {
+      const ogp = O.gamepad;
+      const sx = ogp && ogp.axes ? ogp.axes[2] || 0 : 0, sy = ogp && ogp.axes ? ogp.axes[3] || 0 : 0;
+      this.teleport.update(dt, input.enabled ? sx : 0, input.enabled ? sy : 0);
+      if (this.teleport.enabled && input.move.y > 0) input.move.y = 0;
+    }
     // Zielen: Waffe am Auge (zusätzlich zur Griff-Taste)
     if (typeof input.setXrPose === 'function') input.setXrPose('ads', p.alive && this._adsNear());
     // Holster: Haupthand an Rücken/Hüfte + Griff-Taste → Waffe ziehen; Griff halten = Waffe halten
     this._holsters(p, dt);
+    // Handgriffe der Nebenhand: Magazin, Durchladen, Granate an der Weste (hands.js) – gesperrte Aktionen dazunehmen
+    if (this.handsX) {
+      this.handsX.update(dt);
+      const hb = this.handsX.block;
+      if (hb) {
+        const u = this._blockU || (this._blockU = new Set());
+        u.clear();
+        if (input.xrBlock) for (const a of input.xrBlock) u.add(a);
+        for (const a of hb) u.add(a);
+        input.xrBlock = u;
+      }
+    }
     // Countdown/Menü: echtes Gehen verschiebt den Körper nicht (die Welt gleitet mit), sonst wie Laufen
     this._body(dt, p, G.match.state !== 'playing');
   }
@@ -806,7 +863,7 @@ export class XRSystem {
     const gv = gp && gp.buttons && gp.buttons[1] ? gp.buttons[1].value || (gp.buttons[1].pressed ? 1 : 0) : 0;
     const was = g.two;
     g.long = !!(sup && sup.steer);
-    if (!sup || !O.gripW.ok || !(p && p.alive) || !this.armed || (this.menu && this.menu.open)) g.two = false;
+    if (!sup || !O.gripW.ok || !(p && p.alive) || !this.armed || (this.menu && this.menu.open) || (this.handsX && this.handsX.busy)) g.two = false;
     else if (g.two) { if (gv < 0.3 || O.gripW.pos.distanceTo(g.pos) > sup.len + GRAB_HOLD) g.two = false; }
     else if (gv > 0.6) {
       _v.copy(sup.off).applyQuaternion(g.quat).add(g.pos); // Vorderschaft bei einhändiger Haltung
@@ -868,6 +925,9 @@ export class XRSystem {
     this.wrist.update(dt);
     // Zielpunkt der Waffe
     this._updateDot(dt, alive);
+    // Hände (gehaltenes Magazin/Granate, Munition an der Waffe), Zielfernrohr
+    if (this.handsX) this.handsX.frame(dt);
+    if (this.scope) this.scope.frame();
     // Menü / Ergebnis
     this._updateMenu(dt);
     if (this._resultAt != null && G.time.real >= this._resultAt) { this._resultAt = null; this.end(); }
@@ -897,14 +957,17 @@ export class XRSystem {
     const S = this.G.settings;
     const items = [
       { id: 'weiter', label: 'Weiter' },
-      { id: 'vignette', label: () => `Vignette: ${S.get('vrVignette') ? 'an' : 'aus'}` },
+      { id: 'bewegung', label: () => `Fortbewegung: ${S.get('vrLocomotion') === 'teleport' ? 'Teleport' : 'Stick'}` },
       { id: 'drehen', label: () => `Drehen: ${S.get('vrTurn') === 'fluessig' ? 'flüssig' : `in Schritten (${S.get('vrTurnStep')}°)`}` },
+      { id: 'vignette', label: () => `Vignette: ${S.get('vrVignette') ? 'an' : 'aus'}` },
+      { id: 'nachladen', label: () => `Nachladen: ${S.get('vrReload') === 'einfach' ? 'vereinfacht (Taste)' : 'per Hand'}` },
+      { id: 'sitzen', label: () => `Spielhaltung: ${S.get('vrSeated') ? 'sitzend' : 'stehend'}` },
       { id: 'hoehe', label: () => `Höhe kalibrieren${S.get('vrSeated') ? ' (sitzend)' : ' (gerade hinstellen)'}` },
       { id: 'steuerung', label: 'Steuerung (Tastenbelegung)' },
       { id: 'beenden', label: 'VR beenden' },
     ];
     this._capture = null;
-    if (this.menu.open && this.menu.kind === 'steuerung') this.menu.setPage({ items, title: 'Menü', sub: this._matchLine() }, 'menu', 4);
+    if (this.menu.open && this.menu.kind === 'steuerung') this.menu.setPage({ items, title: 'Menü', sub: this._matchLine() }, 'menu', 7);
     else this.menu.show('menu', this.eye, this.headQuat, { items, title: 'Menü', sub: this._matchLine() });
     this._menuPrev.trig = this._menuPrev.a = true; // gehaltener Abzug klickt nicht sofort
   }
@@ -1010,6 +1073,9 @@ export class XRSystem {
     if (id === 'weiter') { this.menu.hide(); if (G.menus && typeof G.menus.onResume === 'function') G.menus.onResume(); }
     else if (id === 'vignette') S.set('vrVignette', !S.get('vrVignette'));
     else if (id === 'drehen') S.set('vrTurn', S.get('vrTurn') === 'fluessig' ? 'schritt' : 'fluessig');
+    else if (id === 'bewegung') S.set('vrLocomotion', S.get('vrLocomotion') === 'teleport' ? 'stick' : 'teleport');
+    else if (id === 'nachladen') S.set('vrReload', S.get('vrReload') === 'einfach' ? 'hand' : 'einfach');
+    else if (id === 'sitzen') S.set('vrSeated', !S.get('vrSeated')); // settings:change kalibriert neu
     else if (id === 'hoehe') this.calibrate();
     else if (id === 'steuerung') { this._ctlPage = 0; this._openControls(0); }
     else if (id === 'ctl:zurueck') this.openMenu();
@@ -1081,6 +1147,8 @@ export class XRSystem {
     ev.on('settings:change', ({ key, value } = {}) => {
       if (key === 'vrEnabled') { if (!value && this.presenting) this.end(); this._syncButton(); }
       if (key === 'vrSeated' && this.presenting && this.head.ok) this.calibrate();
+      if (key === 'vrFrameRate' && this.presenting) this._frameRate();
+      if (key === 'vrFoveation' && this.presenting) { try { this.G.renderer.renderer.xr.setFoveation(this._foveation()); } catch { /* */ } }
     });
     ev.on('input:lock', () => this._syncButton());
   }
@@ -1145,6 +1213,10 @@ export class XRSystem {
       hands: { main: this.hands.main.rayW.ok, off: this.hands.off.gripW.ok }, twoHand: this.gun.two, holster: this._zone, armed: this.armed,
       menu: this.menu && this.menu.open ? this.menu.kind : null, wristDraws: this.wrist ? this.wrist.draws : 0, wristAmmo: this.wrist ? this.wrist.lastAmmo : '',
       vignette: this.overlay.uniforms.uVig.value, fade: this.overlay.fade,
+      hold: this.handsX ? this.handsX.holding : null, handStats: this.handsX ? { ...this.handsX.stats } : null,
+      teleport: this.teleport ? { aiming: this.teleport.aiming, valid: this.teleport.valid, jumps: this.teleport.jumps } : null,
+      scope: this.scope ? { active: this.scope.active, fov: this.scope.fov, renders: this.scope.renders } : null,
+      targetRate: this.targetRate || null,
     };
   }
 }

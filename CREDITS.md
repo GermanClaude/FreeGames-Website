@@ -9,7 +9,7 @@ und ebenfalls CC0. Quellenliste mit Download-IDs: `tools/assets/sources.json`, P
 Vielen Dank an [Poly Haven](https://polyhaven.com) und [ambientCG](https://ambientcg.com) sowie alle
 Künstler:innen, die ihre Arbeit der Allgemeinheit schenken.
 
-## Texturen (91)
+## Texturen (130)
 
 45 Sätze nutzen seit 13.11.2026 die echten Fotoscans (Albedo, Normalen, AO/Rauheit/Metall; einfärbbare Sätze nur Normalen/ORM),
 verkleinert auf 512/1024/2048 und als KTX2 (ETC1S) kodiert; Farb- und Rauheitsmittel an die bisherigen Sätze angeglichen.
@@ -126,6 +126,30 @@ Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert). Außerdem haben
 | Rocks Ground 01 | `ground_stones` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/rocks_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Rock Face 03 | `rock_face` | Dario Barresi, Rico Cilliers | [Poly Haven](https://polyhaven.com/a/rock_face_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
+### Brandwald- und Containersätze (tex4, 15.11.2026)
+
+Fotoscans (2K-Quellen, KTX2 512/1024/2048, im Spiel kalibriert).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Excavated Soil Wall | `soil_wall` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/excavated_soil_wall) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Burned Ground 01 | `burned_ground` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/burned_ground_01) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Brown Mud 03 | `mud_wet` | Rob Tuytel | [Poly Haven](https://polyhaven.com/a/brown_mud_03) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| White Stucco | `plaster_stucco` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/white_stucco) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Rusty Painted Metal (Wellung herausgerechnet, Albedo als einfärbbare Verschleißkarte) | `ctr_lack` | Amal Kumar | [Poly Haven](https://polyhaven.com/a/rusty_painted_metal) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
+### Panzer-Innenraum: Gebrauchsspuren und Riffelblech (innen2, 20.11.2026)
+
+Masken und Riffelblech für die Panzer-Innenräume (2K-Quellen, KTX2 512/1024; Masken als UASTC-RGBA).
+
+| Name | Satz | Autor:innen | Quelle | Lizenz |
+|---|---|---|---|---|
+| Scratches 005 (Kratzermaske, Kanal R) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Scratches005) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Surface Imperfections 003 (Schlieren/Läufer, Kanal G) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=SurfaceImperfections003) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Painted Metal 004 (Abplatzer aus der Metallkarte, Kanal B) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=PaintedMetal004) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Fingerprints 002 (Fingerabdrücke/Fettfilm, Kanal A) | `cab_wear` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=Fingerprints002) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+| Diamond Plate 008 A | `cab_riffel` | Lennart Demes (ambientCG) | [ambientCG](https://ambientcg.com/view?id=DiamondPlate008A) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
+
 ### Laub- und Bodenatlanten (14.11.2026)
 
 `assets/lib/foliage/`: Foto-Laubatlanten (Busch, Gras, Palmwedel, Blüten, Laubbaum-Büschel) und der Atlas der
@@ -165,7 +189,14 @@ aufgehellt und mit gezeichneten Korkporen versehen.
 | Pine Bark | `bark_kiefer` | Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/pine_bark) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 | Bark Willow | `bark_fichte` | Dario Barresi, Dimitrios Savva | [Poly Haven](https://polyhaven.com/a/bark_willow) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.de) |
 
+Dazu kommen 22 Sätze mit der Kennung `v_*`, `vh_*`, `vp_*` und `vw_*` (Hafen-Wellblech, Container, Kaimauer, Pflaster,
+Ziegel, Putz, Dach, Verkleidung, Betonplatten), die NULLPUNKT selbst aus einer eigenen Video-Vorlage des Projekts erzeugt hat – keine Fremdquelle, CC0.
+
 ## HDRIs (8)
+
+Die ausgelieferten Himmel (`assets/lib/hdri/np_sky_*`, 20 Sätze: fünf Tageszeiten × vier Wetterlagen) erzeugt NULLPUNKT
+selbst mit einem eigenen Himmelsgenerator (keine Fremdquelle). Die folgenden CC0-HDRIs von
+Poly Haven dienten früheren Fassungen bzw. als Vorlage für Licht und Stimmung:
 
 | Asset | ID | Urheber:in | Quelle | Lizenz |
 |---|---|---|---|---|
@@ -265,10 +296,24 @@ Data Collection AB, Joel Palmius, Jonas Hauquier). Von uns auf Kopf + Hals zuges
 Mimik-Ziele ergänzt (`assets/lib/models/kopf/`, ebenfalls CC0). Hauttexturen, Bart, Brauen, Augen und Zähne sind
 prozedural erzeugt (keine Bilddateien).
 
+Ebenfalls aus dem MakeHuman-Grundnetz hm08 (CC0) stammen seit 15.11. die **Soldaten- und Zivilkörper**
+(`assets/js/game/bots/soldier/body-mesh.js`, Werkzeug `tools/assets/soldier/build_body.py`: auf unser Skelett umgezielt,
+Kleidungshülle, Detailstufen) und die **Ego-Hände** (`assets/js/game/weapons/gunsmith/glove-mesh.js`, Werkzeug
+`tools/assets/hands/build_hand.py`: Hand auf das Griff-Rig umgezielt, Handschuh mit Polstern und Bündchen).
+Seit 20.11. zusätzlich der **weibliche Zivilkörper** und das Kopf-Form-Ziel „female“ aus den MakeHuman-Zielen
+`macrodetails/caucasian-female-young`, `macrodetails/universal-female-young-averagemuscle-minweight` und
+`breast/female-young-averagemuscle-averageweight-maxcup-averagefirmness` (CC0 1.0, gleiche Quelle; Werkzeuge
+`tools/assets/soldier/build_body.py` und `tools/assets/kopf/build_head.py`). Kleidung, Stiefel, Frisuren und
+Ausrüstung sind eigene Modelle nach allgemeinen Bau-Beschreibungen realer Kleidung (keine fremden Modelle oder Bilder).
+
 ## Klänge
 
 Die aufgenommenen Klänge unter `assets/lib/audio/` (ebenfalls CC0: The Free Firearm Sound Library, Freesound,
 Kenney) sind mit Quelle, Urheber:in und Lizenz je Datei in [docs/AUDIO_SOURCES.md](docs/AUDIO_SOURCES.md) aufgeführt.
+
+Fahrzeugklänge (Motoren mit Zündimpulsen je Zylinder, Ketten, Turmantrieb, Rotor, Strahltriebwerk), Kanonenschüsse
+(außen, fern, im Turm) und die Druckfront naher Explosionen sind eigene Klangsynthese ohne fremde Aufnahmen
+(`assets/js/game/vehicles/engine-sound.js`, `assets/js/game/engine/audio/sfx-weapons.js`).
 
 ## Software
 
@@ -276,6 +321,7 @@ Kenney) sind mit Quelle, Urheber:in und Lizenz je Datei in [docs/AUDIO_SOURCES.m
 |---|---|---|
 | [three.js](https://threejs.org) r186 (inkl. GLTFLoader, KTX2Loader, HDRLoader) | Rendering, Laden | MIT |
 | [Basis Universal](https://github.com/BinomialLLC/basis_universal) (Transcoder, `assets/vendor/three/addons/libs/basis/`) | KTX2-Transkodierung im Browser | Apache-2.0 |
+| [noble-secp256k1](https://github.com/paulmillr/noble-secp256k1) v3.2.0 (`assets/vendor/noble/`) | Signaturen im Mehrspieler-Netz | MIT |
 | [meshoptimizer](https://github.com/zeux/meshoptimizer) (Decoder) | Geometrie-Dekompression | MIT |
 | [zstddec](https://github.com/donmccurdy/zstddec) / [ktx-parse](https://github.com/donmccurdy/ktx-parse) | KTX2-Superkompression / Container | MIT |
 | [glTF Transform](https://gltf-transform.dev), [ktx2-encoder](https://github.com/gz65555/ktx2-encoder), [sharp](https://sharp.pixelplumbing.com) | nur Build-Pipeline (nicht ausgeliefert) | MIT / Apache-2.0 |

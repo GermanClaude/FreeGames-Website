@@ -8,7 +8,7 @@
 // zerbricht die Scheibe (Splitter, Klirren) – danach offen zum Durchsteigen/-schießen. Gezeichnet gebündelt (zwei
 // InstancedMesh für alle Scheiben und Rahmen), Reihenfolge der Einträge: Türen, Fenster, Tore (gleich auf allen Geräten).
 import * as THREE from 'three';
-import { worldPartsFrom, worldPartsMatrix } from './building.js?v=20261119182451';
+import { worldPartsFrom, worldPartsMatrix } from './building.js?v=20261121041936';
 
 const DOOR_HP = 420;   // Kugeln: die Tür wird erst durchlöchert, zerfällt spät (Explosionen reißen sie sofort heraus)
 const HINGE_HP = 70;   // je Scharnier (Treffer im Umkreis); beide hin → Tür lose, kippt bei Berührung
@@ -18,6 +18,109 @@ const OPEN_TIME = 0.55, KICK_TIME = 0.14, GATE_TIME = 3.2;
 const USE_REACH = 1.6, PANEL_REACH = 1.4;
 const WIN_T = 0.05, WIN_BAR = 0.055;
 const _wm = new THREE.Matrix4(), _wz = new THREE.Matrix4().makeScale(0, 0, 0);
+
+/**
+ * tex4 (15.11.): Fensterglas mit Fresnel – frontal durchsichtig (≈ 22 % Deckung), zum flachen Blick hin spiegelnd
+ * (bis 88 %), dazu leichte Schlieren/Staub in Weltkoordinaten (Rauheit/Deckung schwanken). Vorher: überall gleiche 32 %
+ * Deckung und hellblaue Eigenfarbe – wirkte wie eine getönte Folie ohne Spiegelung, dunkle Räume als schwarze Flächen.
+ * interior (ab high): „Interior Mapping“ – hinter Scheiben, deren Raum nicht begehbar ist (kein Wegenetz-Knoten dahinter,
+ * Doors._winInterior), zeichnet der Shader einen Raum per Strahlschnitt (Rückwand, Seitenwände, Dielenboden, Decke,
+ * Möbelband, Gardinen; Farben je Fenster gewürfelt, Helligkeit aus dem Umgebungslicht der Scheibe). Nah (< 4 m), offen
+ * oder von innen gesehen: normales Glas (begehbare Räume zeigen immer den echten Raum – keine versteckten Gegner).
+ */
+function fresnelGlass(m, interior) {
+  m.onBeforeCompile = (sh) => {
+    let vs = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vNpGw;' + (interior ? '\nattribute vec4 npWin;\nvarying vec3 vNpRay;\nvarying vec2 vNpUv;\nvarying vec4 vNpWin;\nvarying vec2 vNpSize;' : ''))
+      .replace('#include <project_vertex>', `#include <project_vertex>
+      {
+        vec4 npW = vec4( transformed, 1.0 );
+        #ifdef USE_INSTANCING
+        npW = instanceMatrix * npW;
+        #endif
+        vNpGw = ( modelMatrix * npW ).xyz;
+        ${interior ? `#ifdef USE_INSTANCING
+        mat4 npIM = modelMatrix * instanceMatrix;
+        vec3 npAx = npIM[ 0 ].xyz, npAy = npIM[ 1 ].xyz;
+        float npWd = length( npAx ), npHt = length( npAy );
+        vec3 npNx = npAx / npWd, npNy = npAy / npHt, npNz = normalize( npIM[ 2 ].xyz ) * npWin.x;
+        vec3 npRd = vNpGw - cameraPosition;
+        vNpRay = vec3( dot( npRd, npNx ), dot( npRd, npNy ), dot( npRd, npNz ) );
+        vNpUv = ( position.xy + 0.5 ) * vec2( npWd, npHt );
+        vNpSize = vec2( npWd, npHt );
+        vNpWin = npWin;
+        #endif` : ''}
+      }`);
+    sh.vertexShader = vs;
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      varying vec3 vNpGw;
+      float npGh( vec2 p ) { return fract( sin( dot( floor( p ), vec2( 127.1, 311.7 ) ) ) * 43758.5453 ); }
+      float npGn( vec2 p ) { vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3.0 - 2.0 * f ); return mix( mix( npGh( i ), npGh( i + vec2( 1, 0 ) ), f.x ), mix( npGh( i + vec2( 0, 1 ) ), npGh( i + vec2( 1, 1 ) ), f.x ), f.y ); }
+      ${interior ? `varying vec3 vNpRay; varying vec2 vNpUv; varying vec4 vNpWin; varying vec2 vNpSize;
+      vec3 npPal( float s ) {
+        float k = fract( s * 4.13 );
+        return k < 0.3 ? vec3( 0.62, 0.58, 0.5 ) : k < 0.55 ? vec3( 0.55, 0.6, 0.6 ) : k < 0.75 ? vec3( 0.66, 0.55, 0.42 ) : k < 0.9 ? vec3( 0.7, 0.7, 0.66 ) : vec3( 0.45, 0.5, 0.42 );
+      }
+      // Raum hinter der Scheibe: p = Punkt auf der Scheibe (m, Ursprung unten links), d = Blickrichtung (lokal, z < 0 = hinein)
+      vec3 npRoom( vec2 p, vec3 d, vec2 S, float seed ) {
+        float RW = max( S.x * 2.4, 3.2 ), D = 3.0 + fract( seed * 7.1 ) * 2.0;
+        float fl = -0.9, ce = S.y + 0.5;
+        float xl = S.x * 0.5 - RW * 0.5, xr = S.x * 0.5 + RW * 0.5;
+        float tz = -D / d.z;
+        float tx = d.x > 0.0 ? ( xr - p.x ) / d.x : ( xl - p.x ) / min( d.x, -1e-4 );
+        float ty = d.y > 0.0 ? ( ce - p.y ) / d.y : ( fl - p.y ) / min( d.y, -1e-4 );
+        float t = min( tz, min( tx, ty ) );
+        vec3 h = vec3( p, 0.0 ) + d * t;
+        vec3 wall = npPal( seed ), c;
+        if ( t == tz ) {
+          c = wall * 0.95;
+          float fx = S.x * 0.5 + ( fract( seed * 3.3 ) - 0.5 ) * RW * 0.6, fw = 0.5 + fract( seed * 5.7 ) * 0.8;
+          float furn = step( h.y, fl + 0.55 + fract( seed * 2.9 ) * 0.5 ) * step( abs( h.x - fx ), fw );
+          c = mix( c, vec3( 0.16, 0.12, 0.1 ) * ( 0.8 + 0.4 * fract( seed * 8.1 ) ), furn );
+          float pic = step( abs( h.x - ( S.x * 0.5 - fx * 0.3 ) ), 0.35 ) * step( abs( h.y - ( S.y * 0.7 ) ), 0.25 ) * step( 0.5, fract( seed * 6.7 ) );
+          c = mix( c, vec3( 0.2, 0.18, 0.15 ), pic * 0.8 );
+        } else if ( t == tx ) {
+          c = wall * 0.78;
+          float shelf = step( 0.6, fract( seed * 11.3 ) ) * step( h.y, fl + 1.9 ) * step( -h.z, D * 0.7 ) * step( D * 0.25, -h.z );
+          c = mix( c, vec3( 0.22, 0.17, 0.12 ), shelf * 0.85 );
+        } else if ( d.y < 0.0 ) {
+          c = vec3( 0.34, 0.25, 0.17 ) * ( 0.82 + 0.18 * step( 0.5, fract( h.x * 4.5 + floor( -h.z * 0.7 ) * 0.37 ) ) );
+        } else c = vec3( 0.8, 0.79, 0.76 );
+        c *= 0.55 * exp( h.z * 0.2 ) + 0.12; // tiefer im Raum dunkler (Licht kommt durchs Fenster)
+        // Gardinen 10 cm hinter der Scheibe (70 % der Fenster)
+        if ( fract( seed * 13.3 ) < 0.7 ) {
+          float tc = -0.1 / d.z; vec2 q = p + d.xy * tc;
+          float cw = S.x * ( 0.16 + 0.14 * fract( seed * 9.7 ) );
+          if ( q.y > -0.1 && q.y < S.y + 0.2 && ( q.x < cw || q.x > S.x - cw ) ) {
+            vec3 cc = fract( seed * 17.1 ) < 0.5 ? vec3( 0.78, 0.74, 0.64 ) : vec3( 0.55, 0.5, 0.42 );
+            c = cc * ( 0.72 + 0.28 * sin( q.x * 60.0 ) ) * 0.7;
+          }
+        }
+        return c;
+      }` : ''}`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+      vec2 npGp = vNpGw.xy * vec2( 1.0, 0.6 ) + vNpGw.zz * vec2( 1.0, 0.0 );
+      float npDirt = npGn( npGp * 3.1 ) * 0.6 + npGn( npGp * 11.0 ) * 0.4;
+      npDirt = smoothstep( 0.45, 0.95, npDirt );
+      roughnessFactor = clamp( roughnessFactor + npDirt * 0.22, 0.0, 1.0 );`)
+      .replace('#include <opaque_fragment>', `#include <opaque_fragment>
+      {
+        float npFr = pow( 1.0 - clamp( abs( dot( normal, normalize( vViewPosition ) ) ), 0.0, 1.0 ), 4.0 );
+        float npA = clamp( mix( 0.22, 0.88, npFr ) + npDirt * 0.12, 0.0, 0.95 );
+        ${interior ? `if ( vNpWin.y > 0.5 && vNpRay.z < 0.0 ) {
+          float npK = smoothstep( 3.0, 5.0, length( vNpRay ) );
+          vec3 npIrr = reflectedLight.indirectDiffuse / max( diffuseColor.rgb, vec3( 1e-3 ) );
+          vec3 npRm = npRoom( vNpUv, normalize( vNpRay ), vNpSize, vNpWin.z ) * npIrr * ( 1.0 - npFr ) * ( 1.0 - npDirt * 0.25 );
+          vec3 npOpaque = gl_FragColor.rgb + npRm;
+          float npA2 = mix( npA, 1.0, npK );
+          gl_FragColor.rgb = mix( gl_FragColor.rgb * npA, npOpaque, npK ) / npA2;
+          npA = npA2;
+        }` : ''}
+        gl_FragColor.a = npA;
+      }`);
+  };
+  m.customProgramCacheKey = () => 'np-fresnel-glass-2' + (interior ? 'i' : '');
+  return m;
+}
 
 let MATS = null;
 function mats() {
@@ -29,7 +132,7 @@ function mats() {
     green: new THREE.MeshStandardMaterial({ color: 0x2fae4a, emissive: 0x2fae4a, emissiveIntensity: 0.8 }),
     red: new THREE.MeshStandardMaterial({ color: 0xc8352a, emissive: 0xc8352a, emissiveIntensity: 0.8 }),
     box: new THREE.BoxGeometry(1, 1, 1),
-    glass: new THREE.MeshStandardMaterial({ color: 0xa9c3cf, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.32, depthWrite: false }),
+    glass: fresnelGlass(new THREE.MeshStandardMaterial({ color: 0x1e2428, roughness: 0.05, metalness: 0, envMapIntensity: 2.2, transparent: true, opacity: 0.32, depthWrite: false }), false),
     frame: new THREE.MeshStandardMaterial({ color: 0x5a4430, roughness: 0.7 }),
     tints: new Map(),
   };
@@ -89,7 +192,15 @@ export class Doors {
     const wins = (W && W.windows) || [];
     if (wins.length) {
       const bars = wins.reduce((n, w) => n + (w.transom ? 6 : 5), 0);
-      this.winGlass = new THREE.InstancedMesh(M.box, M.glass, wins.length);
+      // tex4: ab high Innenraum-Darstellung hinter Scheiben nicht begehbarer Räume (eigene Geometrie: Instanz-Attribut npWin)
+      const hiQ = G.renderer?.quality === 'high' || G.renderer?.quality === 'ultra';
+      if (hiQ) {
+        const gg = new THREE.BoxGeometry(1, 1, 1);
+        this._winAttr = new THREE.InstancedBufferAttribute(new Float32Array(wins.length * 4), 4);
+        gg.setAttribute('npWin', this._winAttr);
+        if (!MATS.glassIn) MATS.glassIn = fresnelGlass(M.glass.clone(), true);
+        this.winGlass = new THREE.InstancedMesh(gg, MATS.glassIn, wins.length);
+      } else this.winGlass = new THREE.InstancedMesh(M.box, M.glass, wins.length);
       this.winFrame = new THREE.InstancedMesh(M.box, M.frame, bars);
       this.winGlass.name = 'fenster:scheiben'; this.winFrame.name = 'fenster:rahmen';
       this.winFrame.castShadow = true;
@@ -108,6 +219,11 @@ export class Doors {
         glass: k, glassM: L(d.w / 2, d.h / 2, d.w - B, d.h - B, 0.012), bars: parts.map((m, j) => ({ i: bar + j, m })) };
       bar += parts.length;
       it.solid = { id: `win${k}`, def: { surface: 'glass' }, mesh: pivot, parts: [], onHit: (dmg, by) => this._hit(it, dmg, by) };
+      if (this._winAttr) {
+        const a0 = ang(d.dc), lz = [Math.sin(a0), Math.cos(a0)];
+        it.inner = this._winInterior(W, d);
+        this._winAttr.setXYZW(k, lz[0] * d.dopen[0] + lz[1] * d.dopen[1] > 0 ? -1 : 1, it.inner ? 1 : 0, (Math.sin(d.hx * 12.9898 + d.hz * 78.233 + d.y * 3.1) * 43758.5453) % 1 + 1, 0);
+      }
       this.items.push(it);
     });
     for (const g of (W && W.gates) || []) {
@@ -165,6 +281,7 @@ export class Doors {
       it.mesh.rotation.y = a;
       it.mesh.updateMatrix();
       this.winGlass.setMatrixAt(it.glass, it.broken ? _wz : _wm.multiplyMatrices(it.mesh.matrix, it.glassM));
+      if (this._winAttr && it.inner) { const on = !it.broken && it.t < 0.01 ? 1 : 0; if (this._winAttr.getY(it.glass) !== on) { this._winAttr.setY(it.glass, on); this._winAttr.needsUpdate = true; } }
       for (const b of it.bars) this.winFrame.setMatrixAt(b.i, it.broken ? _wz : _wm.multiplyMatrices(it.mesh.matrix, b.m));
       this.winGlass.instanceMatrix.needsUpdate = this.winFrame.instanceMatrix.needsUpdate = true;
       it.solid.parts = it.broken ? [] : worldPartsFrom([[d.w / 2, d.h / 2, 0, d.w / 2, d.h / 2, WIN_T / 2, 0]], d.hx, d.y, d.hz, a);
@@ -180,9 +297,27 @@ export class Doors {
     }
   }
 
+  /** tex4: Raum hinter einem Fenster nicht begehbar? (kein Wegenetz-Knoten in ≈ 1–3 m dahinter auf Bodenhöhe) */
+  _winInterior(W, d) {
+    const nav = W?.nav;
+    if (!nav?.nodesInRadius) return false;
+    const cx = d.hx + d.dc[0] * d.w / 2 + d.dopen[0] * 1.8, cz = d.hz + d.dc[1] * d.w / 2 + d.dopen[1] * 1.8;
+    const fy = d.y - 0.9;
+    const near = nav.nodesInRadius(new THREE.Vector3(cx, fy, cz), 2.4);
+    return !near.some(n => Math.abs(n.position.y - fy) < 1.3);
+  }
+
   update(dt) {
     const G = this.G;
     const P = G.player;
+    // weit2: Großkarten – Türblätter (je 4 Draw Calls + Tiefen-/Normalpass) jenseits ≈ 150 m ausblenden (Weitmark aus der
+    // Luft: ≈ 1700 von ≈ 2200 Draw Calls); zerstörte Türen bleiben unsichtbar
+    if (this._cullR === undefined) this._cullR = G.world && G.world.scale === 'gross' ? 150 : 0;
+    if (this._cullR && G.camera && (this._cullT = (this._cullT || 0) - dt) <= 0) {
+      this._cullT = 0.35;
+      const c = G.camera.getWorldPosition ? G.camera.getWorldPosition(this._cv || (this._cv = new THREE.Vector3())) : G.camera.position, R2 = this._cullR * this._cullR;
+      for (const it of this.items) if (it.type === 'door' && !it.broken) { const dx = it.d.hx - c.x, dz = it.d.hz - c.z; it.mesh.visible = dx * dx + dz * dz < R2; }
+    }
     for (const it of this.items) {
       if (it.type === 'door' && it.fall && it.th < Math.PI / 2) {
         // Blatt kippt um die Unterkante (Stab: ω̇ = 3g/(2h)·sin θ), schlägt flach auf

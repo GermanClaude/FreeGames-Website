@@ -3,8 +3,8 @@
 // (u vorwärts, v hoch, Meter, Ursprung = Griffpunkt der rechten Hand) um. slab() baut daraus ein Distanzfeld-Bauteil mit
 // eigener Breite und gerundeten Kanten (am PC fein vernetzt, mit Kanten-/Muldenfarbe); die Bot-Stufe bekommt eine
 // einfache Profil-Extrusion (wenige Dutzend Dreiecke statt eines Volumennetzes).
-import { extrudeRound, simplifyRing } from './sdf.js?v=20261119182451';
-import { field2, sdfMesh, box2, POLY, STEEL } from './sdfkit.js?v=20261119182451';
+import { extrudeRound, simplifyRing } from './sdf.js?v=20261121041936';
+import { field2, sdfMesh, box2, POLY, STEEL } from './sdfkit.js?v=20261121041936';
 
 export { POLY, STEEL };
 

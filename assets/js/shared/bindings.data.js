@@ -66,10 +66,25 @@ export const ACTION_DEFS = Object.freeze([
   { id: 'gear_down', label: 'Herunterschalten (Panzer)', short: 'Gang runter', group: 'fahrzeug' },
   { id: 'seat_next', label: 'Nächster Sitz (Fahrzeug)', short: 'Sitz vor', group: 'fahrzeug' },
   { id: 'seat_prev', label: 'Vorheriger Sitz (Fahrzeug)', short: 'Sitz zurück', group: 'fahrzeug' },
+  { id: 'sitzrad', label: 'Sitzrad im Panzer (halten: Platz der Besatzung wählen, loslassen wechselt)', short: 'Sitzrad', group: 'fahrzeug' },
+  // Infanteriesimulation (Spielstil „Simulation“, game/isim/): nur dort wirksam, sonst ohne Funktion
+  { id: 'sim_durchladen', label: 'Durchladen / Ladehemmung beheben (Simulation)', short: 'Durchladen', group: 'simulation' },
+  { id: 'sim_magcheck', label: 'Magazin prüfen, zweimal: Patronenlager prüfen (Simulation)', short: 'Magazin-Check', group: 'simulation' },
+  { id: 'sim_kompass', label: 'Kompass halten (Simulation)', short: 'Kompass', group: 'simulation' },
+  { id: 'sim_karte', label: 'Karte halten (Simulation)', short: 'Karte', group: 'simulation' },
+  { id: 'sim_inventar', label: 'Ausrüstung: Weste und Rucksack (Simulation)', short: 'Ausrüstung', group: 'simulation' },
+  { id: 'sim_abbinden', label: 'Abbinden (Arterienblutung an Arm/Bein, Simulation)', short: 'Abbinden', group: 'simulation' },
+  { id: 'sim_visier_auf', label: 'Visier weiter stellen (Entfernung +, Simulation)', short: 'Visier +', group: 'simulation' },
+  { id: 'sim_visier_ab', label: 'Visier näher stellen (Entfernung −, Simulation)', short: 'Visier −', group: 'simulation' },
+  { id: 'sim_hilfe', label: 'Hilfe zu den Handgriffen (Simulation)', short: 'Sim-Hilfe', group: 'simulation' },
+  // Modus Trupp (game/modes/trupp.js, ui/trupp-hud.js): nur dort wirksam
+  { id: 'trupp_wechsel', label: 'Soldat wechseln (nächster lebender Kamerad des eigenen Trupps)', short: 'Soldat wechseln', group: 'trupp' },
+  { id: 'trupp_funk', label: 'Trupp-Funkrad (halten): Pionier-Bauaufträge, Sammelpunkt, Markierungen, Funksprüche', short: 'Funkrad', group: 'trupp' },
+  { id: 'trupp_menu', label: 'Truppmenü: Trupp-Typ, Soldaten, Kommandant', short: 'Truppmenü', group: 'trupp' },
 ]);
 export const ACTION_IDS = Object.freeze(ACTION_DEFS.map((a) => a.id));
 export const ACTION_BY_ID = Object.freeze(Object.fromEntries(ACTION_DEFS.map((a) => [a.id, a])));
-export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges', fahrzeug: 'Fahrzeug' });
+export const ACTION_GROUPS = Object.freeze({ bewegung: 'Bewegung', kampf: 'Kampf', serien: 'Serienprämien', sonstiges: 'Sonstiges', fahrzeug: 'Fahrzeug', simulation: 'Simulation', trupp: 'Trupp' });
 export const MOVE_ACTIONS = Object.freeze(['move_forward', 'move_back', 'move_left', 'move_right']);
 
 /**
@@ -89,7 +104,10 @@ export const DEFAULT_BINDINGS = deepFreeze({
     streak1: ['Digit3'], streak2: ['Digit4'], streak3: ['Digit5'], streak4: ['Digit6'], interact: ['KeyF'], scoreboard: ['Tab'], pause: ['Escape'], fullscreen: ['F11'],
     prone: ['KeyZ'], plate: ['Digit4'], gadget: ['KeyB'], faehigkeit: ['KeyJ'], bauen: ['KeyK'], verband: ['KeyN'], inspect: ['KeyI'], loadout: ['KeyL'], squad_order: ['Mouse1', 'KeyH'],
     befehl: ['KeyY'], unterlauf: ['KeyU'], feuermodus: ['KeyM'],
-    gear_up: [], gear_down: [], seat_next: [], seat_prev: [],
+    gear_up: [], gear_down: [], seat_next: [], seat_prev: [], sitzrad: ['KeyK'], // K teilt sich das Bauen (nur zu Fuß)
+    sim_durchladen: ['KeyO'], sim_magcheck: ['KeyI'], sim_kompass: ['Comma'], sim_karte: ['Period'], sim_inventar: ['KeyP'],
+    sim_abbinden: ['Digit7'], sim_visier_auf: ['PageUp'], sim_visier_ab: ['PageDown'], sim_hilfe: ['F2'],
+    trupp_wechsel: ['KeyO'], trupp_funk: ['CapsLock'], trupp_menu: ['KeyP'], // O/P teilen sich die Simulation (Modus Trupp läuft nie im Spielstil Simulation)
   },
   pad: {
     move_forward: [], move_back: [], move_left: [], move_right: [],
@@ -97,8 +115,13 @@ export const DEFAULT_BINDINGS = deepFreeze({
     fire: ['Pad7'], ads: ['Pad6'], reload: ['Pad2'], melee: ['Pad11'], grenade: ['Pad4'], tactical: ['Pad5'],
     swap: ['Pad3'], slot1: [], slot2: [], light: ['Pad13'],
     streak1: ['Pad12'], streak2: ['Pad14'], streak3: ['Pad15'], streak4: ['Pad6+Pad13'], interact: ['Pad2'], scoreboard: ['Pad8'], pause: ['Pad9'], fullscreen: [],
-    prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], faehigkeit: ['Pad6+Pad14'], bauen: ['Pad6+Pad15'], verband: [], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'], unterlauf: ['Pad6+Pad2'], feuermodus: ['Pad6+Pad11'],
-    gear_up: ['Pad5'], gear_down: ['Pad4'], seat_next: ['Pad15'], seat_prev: ['Pad14'],
+    prone: [], plate: ['Pad13'], gadget: ['Pad6+Pad3'], faehigkeit: ['Pad6+Pad14'], bauen: ['Pad6+Pad15'], verband: [], inspect: [], loadout: ['Pad3'], squad_order: [], befehl: ['Pad6+Pad12'], unterlauf: ['Pad6+Pad2'], feuermodus: ['Pad6+Pad1'], // LT + B (LT + R3 = rechts lehnen; plattform 19.11.: war doppelt)
+    gear_up: ['Pad5'], gear_down: ['Pad4'], seat_next: ['Pad15'], seat_prev: ['Pad14'], sitzrad: [],
+    // Simulation (isim) am Controller (plattform, 19.11.): Ansicht/Create halten + Taste – alle Einzeltasten sind belegt
+    sim_durchladen: ['Pad8+Pad2'], sim_magcheck: ['Pad8+Pad3'], sim_kompass: ['Pad8+Pad14'], sim_karte: ['Pad8+Pad15'], sim_inventar: ['Pad8+Pad0'],
+    sim_abbinden: ['Pad8+Pad1'], sim_visier_auf: ['Pad8+Pad12'], sim_visier_ab: ['Pad8+Pad13'], sim_hilfe: ['Pad8+Pad11'],
+    // Trupp: Ansicht/Create halten + RB (wechseln), + LB (Funkrad), + L3 (Truppmenü)
+    trupp_wechsel: ['Pad8+Pad5'], trupp_funk: ['Pad8+Pad4'], trupp_menu: ['Pad8+Pad10'],
   },
   // VR-Controller (wie gängige VR-Shooter, Haupthand rechts): Abzug feuern, Griff anlegen (zusätzlich: Waffe ans Auge),
   // A springen, B ducken (halten: hinlegen), Stick drücken Nahkampf, Stick hoch Waffe wechseln, Stick runter Platte;
@@ -113,7 +136,9 @@ export const DEFAULT_BINDINGS = deepFreeze({
     swap: ['XrHUp'], slot1: [], slot2: [], light: [],
     streak1: [], streak2: [], streak3: [], streak4: [], interact: ['XrN4'], scoreboard: [], pause: ['XrN5'], fullscreen: [],
     prone: [], plate: ['XrHDown'], gadget: [], faehigkeit: [], bauen: [], verband: [], inspect: [], loadout: [], squad_order: [], befehl: [], unterlauf: [], feuermodus: [],
-    gear_up: [], gear_down: [], seat_next: ['XrH3'], seat_prev: [],
+    gear_up: [], gear_down: [], seat_next: ['XrH3'], seat_prev: [], sitzrad: [],
+    sim_durchladen: [], sim_magcheck: [], sim_kompass: [], sim_karte: [], sim_inventar: [], sim_abbinden: [], sim_visier_auf: [], sim_visier_ab: [], sim_hilfe: [],
+    trupp_wechsel: [], trupp_funk: [], trupp_menu: [],
   },
 });
 
@@ -128,7 +153,8 @@ export function isFixed(action, device) {
 // Ausrüsten teilt Y mit dem Waffenwechsel (nur nach dem Tod/in Menüs wirksam).
 // Fahrzeugaktionen teilen sich Tasten mit Infanterie-Aktionen, die im Fahrzeug ruhen (RB/LB, Steuerkreuz ◀/▶, VR-Stick).
 export const ALLOWED_SHARES = Object.freeze([['reload', 'interact'], ['plate', 'streak2'], ['plate', 'light'], ['loadout', 'swap'],
-  ['gear_up', 'tactical'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2']]);
+  ['gear_up', 'tactical'], ['sim_magcheck', 'inspect'], ['gear_down', 'grenade'], ['seat_next', 'streak3'], ['seat_next', 'melee'], ['seat_prev', 'streak2'],
+  ['trupp_wechsel', 'sim_durchladen'], ['trupp_menu', 'sim_inventar'], ['sitzrad', 'bauen']]); // Trupp/Simulation schließen sich aus
 const shareOk = (a, b) => ALLOWED_SHARES.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 
 /** Nicht belegbar: Esc (verlässt den Pointer-Lock), Browser-/Systemtasten, Home-Taste des Gamepads. */
@@ -208,24 +234,33 @@ const MOUSE_NAMES = {
   Mouse3: ['Maus 4', 'Maustaste 4 (zurück)'], Mouse4: ['Maus 5', 'Maustaste 5 (vor)'],
   Wheel: ['Mausrad', 'Mausrad'], WheelUp: ['Rad ↑', 'Mausrad hoch'], WheelDown: ['Rad ↓', 'Mausrad runter'],
 };
-/** Gamepad-Tasten im Standard-Mapping: [Xbox-Stil, PlayStation-Stil]. */
+/**
+ * Gamepad-Tasten im Standard-Mapping: [Xbox-Stil, PlayStation-Stil, Nintendo-Stil]. Das Standard-Mapping zählt nach Lage
+ * (0 = unten, 1 = rechts, 2 = links, 3 = oben) – beim Nintendo-Pro-Controller liegt unten „B“, rechts „A“ (plattform, 19.11.).
+ */
 export const PAD_BUTTON_NAMES = Object.freeze([
-  ['A', '✕'], ['B', '○'], ['X', '□'], ['Y', '△'], ['LB', 'L1'], ['RB', 'R1'], ['LT', 'L2'], ['RT', 'R2'],
-  ['Ansicht', 'Create'], ['Menü', 'Options'], ['L3', 'L3'], ['R3', 'R3'], ['▲', '▲'], ['▼', '▼'], ['◀', '◀'], ['▶', '▶'], ['Home', 'PS'],
+  ['A', '✕', 'B'], ['B', '○', 'A'], ['X', '□', 'Y'], ['Y', '△', 'X'], ['LB', 'L1', 'L'], ['RB', 'R1', 'R'], ['LT', 'L2', 'ZL'], ['RT', 'R2', 'ZR'],
+  ['Ansicht', 'Create', '−'], ['Menü', 'Options', '+'], ['L3', 'L3', 'L-Stick'], ['R3', 'R3', 'R-Stick'], ['▲', '▲', '▲'], ['▼', '▼', '▼'], ['◀', '◀', '◀'], ['▶', '▶', '▶'], ['Home', 'PS', 'Home'],
 ]);
+/** Sticks (Laufen/Umsehen sind nicht belegbar) – Beschriftung für Hinweise: [kurz, lang]. */
+export const PAD_STICK_LABELS = Object.freeze({
+  move_forward: ['L-Stick ↑', 'Linker Stick nach vorn'], move_back: ['L-Stick ↓', 'Linker Stick zurück'],
+  move_left: ['L-Stick ←', 'Linker Stick nach links'], move_right: ['L-Stick →', 'Linker Stick nach rechts'],
+  look: ['R-Stick', 'Rechter Stick'], move: ['L-Stick', 'Linker Stick'],
+});
 
 /**
  * Beschriftung eines Codes. opts: { long: false, pad: 'xbox'|'ps', layout: Map|null (navigator.keyboard.getLayoutMap()) }
  * „KeyZ“ heißt auf QWERTZ „Y“ – mit Layout-Karte stimmt jede Tastatur.
  */
-export function codeLabel(code, { long = false, pad = 'xbox', layout = null } = {}) {
+export function codeLabel(code, { long = false, pad = 'xbox', layout = null } = {}) { // pad: 'xbox' | 'ps' | 'nintendo'
   if (!code) return '—';
   if (code.includes('+')) return code.split('+').map((c) => codeLabel(c, { long, pad, layout })).join(' + ');
   if (code.startsWith('Xr')) return xrLabel(code, long);
   const m = /^Pad(\d{1,2})$/.exec(code);
   if (m) {
     const n = PAD_BUTTON_NAMES[Number(m[1])];
-    return n ? n[pad === 'ps' ? 1 : 0] : `Taste ${m[1]}`;
+    return n ? n[pad === 'ps' ? 1 : pad === 'nintendo' ? 2 : 0] : `Taste ${m[1]}`;
   }
   if (MOUSE_NAMES[code]) return MOUSE_NAMES[code][long ? 1 : 0];
   if (layout && typeof layout.get === 'function') {
@@ -436,6 +471,17 @@ export const TOUCH_BUTTONS = Object.freeze([
   { id: 'faehigkeit', sel: '.tc-faehigkeit', label: 'Klassen-Fähigkeit', auto: 'faehigkeit', def: { x: 58, y: 42, s: 46 } },
   // Befehlsrad: nur mit verbündeten Bots; oben rechts in der Reihe von Punktetabelle/Pause (frei auf 4:3 bis 20:9)
   { id: 'befehl', sel: '.tc-befehl', label: 'Befehlsrad', auto: 'allies', def: { x: 80, y: 8, s: 42 } },
+  // Modus Trupp (nur dort sichtbar): Soldat wechseln, Funkrad, Truppmenü – Spalte unter dem Feuermodus (72 % frei bis Granate)
+  { id: 'truppWechsel', sel: '.tc-trupp-wechsel', label: 'Soldat wechseln (Trupp)', auto: 'trupp', def: { x: 72, y: 42, s: 40 } },
+  { id: 'truppFunk', sel: '.tc-trupp-funk', label: 'Funkrad (Trupp)', auto: 'trupp', def: { x: 72, y: 56, s: 40 } },
+  { id: 'truppMenu', sel: '.tc-trupp-menu', label: 'Truppmenü', auto: 'trupp', def: { x: 72, y: 70, s: 40 } },
+  // Infanteriesimulation (isim, nur im Spielstil „Simulation“ sichtbar; plattform 19.11.)
+  { id: 'simLaden', sel: '.tc-sim-laden', label: 'Durchladen (Simulation)', auto: 'sim', def: { x: 51, y: 42, s: 44 } },
+  { id: 'simMag', sel: '.tc-sim-mag', label: 'Magazin prüfen (Simulation)', auto: 'sim', def: { x: 51, y: 56, s: 44 } },
+  { id: 'simAbb', sel: '.tc-sim-abb', label: 'Abbinden (Simulation)', auto: 'sim', def: { x: 51, y: 28, s: 42 } },
+  { id: 'simKompass', sel: '.tc-sim-kompass', label: 'Kompass (Simulation)', auto: 'sim', def: { x: 52, y: 8, s: 40 } },
+  { id: 'simKarte', sel: '.tc-sim-karte', label: 'Karte (Simulation)', auto: 'sim', def: { x: 59, y: 8, s: 40 } },
+  { id: 'simInv', sel: '.tc-sim-inv', label: 'Ausrüstung (Simulation)', auto: 'sim', def: { x: 66, y: 8, s: 40 } },
   { id: 'streaks', sel: '.tc-streaks', label: 'Serienprämien', kind: 'group' },
   { id: 'score', sel: '.tc-score', label: 'Punktetabelle' },
   { id: 'pause', sel: '.tc-pause', label: 'Pause' },

@@ -5,8 +5,8 @@
 // klemmt), Lenz wird verwundet. Zu Fuß bringt Falk Daren zum Kommissionsposten am Nordhang.
 // Checkpoints: start, fahrt, hinterhalt, panzer, nordhang.
 
-import { actor } from './cast.js?v=20261119182451';
-import { convoy, allyTank, toughen, giveLauncher, escort, purgeDead, prop, clearAir, ostbund } from './hilfen-b.js?v=20261119182451';
+import { actor } from './cast.js?v=20261121041936';
+import { convoy, allyTank, toughen, giveLauncher, escort, purgeDead, prop, clearAir, ostbund } from './hilfen-b.js?v=20261121041936';
 
 const YAW = 2.78; // Blick die Landstraße hinauf (Brücke → Dorf)
 const ROUTE = [[25, 13], [14, 36], [6, 52]];

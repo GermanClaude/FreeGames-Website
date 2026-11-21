@@ -5,8 +5,8 @@
 // Regeln wie die übrigen Karten: deterministisch (Zufall nur über hash01 der Position), Kollision unabhängig von der
 // Grafikstufe; Optik darf nach b.lookQuality sparen.
 import * as THREE from 'three';
-import { frame, hash01 } from '../props.js?v=20261119182451';
-import { railing } from '../arch.js?v=20261119182451';
+import { frame, hash01 } from '../props.js?v=20261121041936';
+import { railing } from '../arch.js?v=20261121041936';
 
 export const KEIN = { collide: false, minimap: false };
 export const VG = { ...KEIN, grad: false };
@@ -185,8 +185,9 @@ export function rubble(b, x, z, r = 1.6, o = {}) {
   for (let i = 0; i < n; i++) {
     const a = hash01(x + i, z, 31) * Math.PI * 2, d = Math.sqrt(hash01(x, z + i, 32)) * r;
     const s = 0.15 + hash01(x - i, z + i, 33) * 0.45 * (1 - d / (r + 0.01)) + 0.08;
-    const m = hash01(x + i * 3, z - i, 34) < 0.35 ? (o.brick ? 'brick' : 'concrete') : mat;
-    b.box(x + Math.cos(a) * d, y - 0.05, z + Math.sin(a) * d, s * 1.4, s * 0.8, s, m, { ry: a * 2, rx: (hash01(i, x, 35) - 0.5) * 0.6, rz: (hash01(i, z, 36) - 0.5) * 0.6, tint: m === 'brick' ? undefined : tint, ...VG });
+    // platz (19.11.): Brocken optional aus anderem Material (o.chunkMat/chunkTint, z. B. Asphaltschollen auf Erdaushub)
+    const m = hash01(x + i * 3, z - i, 34) < 0.35 ? (o.brick ? 'brick' : 'concrete') : (o.chunkMat || mat);
+    b.box(x + Math.cos(a) * d, y - 0.05, z + Math.sin(a) * d, s * 1.4, s * 0.8, s, m, { ry: a * 2, rx: (hash01(i, x, 35) - 0.5) * 0.6, rz: (hash01(i, z, 36) - 0.5) * 0.6, tint: m === 'brick' ? undefined : m === o.chunkMat ? (o.chunkTint || tint) : tint, ...VG });
   }
   // flacher Schutthügel (begehbar, Kugeln stoppen)
   b.cyl(x, y - 0.05, z, r * 0.95, Math.min(0.75, r * 0.35), mat, { r1: r * 0.35, seg: 10, tint, minimap: o.minimap ?? 'cover' });
@@ -216,10 +217,81 @@ export function bauzaun(b, x0, z0, x1, z1, o = {}) {
   b.box((x0 + x1) / 2, y, (z0 + z1) / 2, L, 2.0, 0.1, 'black', { ry, visual: false, minimap: 'wall', bullet: false });
 }
 
-/** Panzersperre („Tschechenigel“) aus drei Stahlträgern. */
+/**
+ * Panzersperre („Tschechenigel“): drei gleich lange Doppel-T-Träger (≈ IPB 140, 2,1 m), in der Mitte rechtwinklig
+ * gekreuzt und verschweißt (Knotenbleche), so gekippt, dass die Raumdiagonale senkrecht steht → drei Enden auf dem
+ * Boden, drei ragen schräg nach oben (≈ 1,2 m). Rostverlauf je Ecke (Vertexfarben: heller Flugrost, dunkle Rostnarben,
+ * Reste der grauen Grundierung). Nutzer 20.11.: vorher nur zwei Balken in V-Form. Eine Geometrie je Variante (3),
+ * landet im Material-Eimer metal_rust (kein zusätzlicher Draw Call). Kollision wie bisher (Deckungsquader).
+ */
+const IGEL = new Map();
+function igelGeom(v) {
+  if (IGEL.has(v)) return IGEL.get(v);
+  const L = 2.1, Hh = 0.14, Bf = 0.14, tf = 0.012, tw = 0.008;
+  // Achsen: Würfelkanten so gedreht, dass (1,1,1) nach oben zeigt; danach um die Hochachse je Variante
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 1, 1).normalize(), new THREE.Vector3(0, 1, 0));
+  const yc = (L / 2) / Math.sqrt(3); // Knotenhöhe: Trägerenden (Achse) auf dem Boden
+  const parts = [];
+  const axes = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  axes.forEach((a, i) => {
+    const A = new THREE.Vector3(...a), U = new THREE.Vector3(...axes[(i + 1) % 3]), W = new THREE.Vector3(...axes[(i + 2) % 3]);
+    // Profil in lokalen Koordinaten (x = Länge, y = Steg-Richtung, z = Flansch-Richtung): Steg + zwei Flansche
+    const seg = 6, prof = [
+      new THREE.BoxGeometry(L, Hh - 2 * tf, tw, seg, 1, 1),
+      new THREE.BoxGeometry(L, tf, Bf, seg, 1, 1).translate(0, (Hh - tf) / 2, 0),
+      new THREE.BoxGeometry(L, tf, Bf, seg, 1, 1).translate(0, -(Hh - tf) / 2, 0),
+    ];
+    // Träger leicht gegeneinander versetzt (an der Kreuzung ausgeklinkt und überlappend verschweißt)
+    const m = new THREE.Matrix4().makeBasis(A, U, W).premultiply(new THREE.Matrix4().makeRotationFromQuaternion(q));
+    for (const g of prof) parts.push(g.applyMatrix4(m));
+  });
+  // Knotenbleche (Dreieckbleche in den drei Winkeln) + Schweißnähte als kleine Wülste
+  for (let i = 0; i < 3; i++) {
+    const a = new THREE.Vector3(...axes[i]), c = new THREE.Vector3(...axes[(i + 1) % 3]);
+    const sh = new THREE.Shape([new THREE.Vector2(0.07, 0.07), new THREE.Vector2(0.3, 0.07), new THREE.Vector2(0.07, 0.3)]);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 0.01, bevelEnabled: false }).translate(0, 0, -0.005);
+    const n = a.clone().cross(c);
+    g.applyMatrix4(new THREE.Matrix4().makeBasis(a, c, n)).applyQuaternion(q);
+    parts.push(g);
+  }
+  parts.push(new THREE.IcosahedronGeometry(0.11, 0).applyQuaternion(q));
+  // Bodenplatten an den drei unteren Enden (angeschweißte Fußbleche, auf dem Boden aufliegend)
+  for (const a of axes) {
+    const e = new THREE.Vector3(...a).multiplyScalar(-L / 2).applyQuaternion(q);
+    parts.push(new THREE.BoxGeometry(0.2, 0.012, 0.2).translate(e.x, e.y + 0.006, e.z));
+  }
+  const flat = parts.map((g) => { const n = g.index ? g.toNonIndexed() : g; for (const k of Object.keys(n.attributes)) if (k !== 'position') n.deleteAttribute(k); return n; });
+  let geo = mergeVerts(flat);
+  geo.translate(0, yc, 0).rotateY(v * 2.1);
+  geo.computeVertexNormals();
+  // Rost je Ecke: helle Flugrost-Flächen, dunkle Narben, Grundierungsreste; unten (Spritzwasser) dunkler
+  const P = geo.attributes.position, col = new Float32Array(P.count * 3), c = new THREE.Color();
+  const DARK = new THREE.Color(0.2, 0.1, 0.05), LIGHT = new THREE.Color(0.62, 0.32, 0.13), PRIMER = new THREE.Color(0.36, 0.36, 0.34);
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+    const n1 = hash01(Math.round(x * 6), Math.round(z * 6) + Math.round(y * 6) * 7, 31 + v), n2 = hash01(Math.round(x * 2.5), Math.round(y * 2.5) + Math.round(z * 2.5) * 5, 37 + v);
+    c.copy(DARK).lerp(LIGHT, 0.25 + n1 * 0.6);
+    if (n2 > 0.78) c.lerp(PRIMER, 0.4);
+    c.multiplyScalar(0.55 + 0.45 * Math.min(1, y / 0.5));
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  IGEL.set(v, geo);
+  return geo;
+}
+function mergeVerts(list) {
+  let n = 0;
+  for (const g of list) n += g.attributes.position.count;
+  const pos = new Float32Array(n * 3);
+  let o = 0;
+  for (const g of list) { pos.set(g.attributes.position.array, o); o += g.attributes.position.array.length; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  return g;
+}
 export function igel(b, x, z, o = {}) {
   const y = o.y ?? 0, ry = o.ry ?? hash01(x, z, 7) * Math.PI;
-  for (const [rx, rz] of [[0.62, 0], [-0.62, 0], [0, 0.62]]) b.box(x, y + 0.05, z, 0.16, 1.9, 0.16, 'metal_rust', { ry: ry + (rz ? Math.PI / 2 : 0), rx: rz ? rz : 0, rz: rx, ...VG, tint: '#6a5446' });
+  b.geom(igelGeom(Math.floor(hash01(x, z, 8) * 3)), x, y, z, 'metal_rust', { ry, ...VG, tint: '#c4b2a2' });
   b.box(x, y, z, 1.4, 1.1, 1.4, 'black', { ry, visual: false, minimap: 'cover' });
 }
 

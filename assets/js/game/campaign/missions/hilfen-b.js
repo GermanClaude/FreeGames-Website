@@ -16,10 +16,10 @@
 //   prop(m, def)                    – Figur ohne KI im Spiel (Verwundeter, Gefangener), Rollen-Aussehen, echte Bodenhöhe
 
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261119182451';
-import { issueCommand } from '../../bots/ai/orders.js?v=20261119182451';
-import { schemeForTeam } from '../../bots/character.js?v=20261119182451';
-import { StageActor } from '../stage.js?v=20261119182451';
+import { MAPS } from '../../../shared/maps.data.js?v=20261121041936';
+import { issueCommand } from '../../bots/ai/orders.js?v=20261121041936';
+import { schemeForTeam } from '../../bots/character.js?v=20261121041936';
+import { StageActor } from '../stage.js?v=20261121041936';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -435,6 +435,15 @@ export function prop(m, def) {
     m.every(() => { tick(); return false; });
   }
   a.remove = () => { const i = m._kbProps.indexOf(a); if (i >= 0) m._kbProps.splice(i, 1); try { a.dispose(); } catch { /* */ } };
+  // kamp3: geschützte Figur (Einwohner, Geisel, Kessar): Treffer durch den Spieler → Fehlschlag (director._shotAtExtras)
+  if (def.protect) {
+    a.protect = true;
+    a.hit = (by) => {
+      if (by !== m.G.player || m.state !== 'run') return;
+      try { a.crouch = true; } catch { /* */ }
+      m.fail(def.failText || 'Ein Zivilist wurde getroffen. Wir schießen nur, wenn wir sicher sind.');
+    };
+  }
   return a;
 }
 

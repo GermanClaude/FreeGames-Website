@@ -3,20 +3,21 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261119182451';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261121041936';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, acUnit, cable,
   cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js?v=20261119182451';
-import { createBell } from './altstadt-glocke.js?v=20261119182451';
+} from '../props.js?v=20261121041936';
+import { createBell } from './altstadt-glocke.js?v=20261121041936';
 import {
   setupLook, isNight, lampGlass, lampLight, parkBench, flowerBed, fountainWater, hrng,
   table, tableChairs, bed, wardrobe, dresser, nightstand, shelf, kitchen, armchair, pendant, ceilingLamp, rug, picture, barrelRack, sacks,
-} from './altstadt-ausstattung.js?v=20261119182451';
+} from './altstadt-ausstattung.js?v=20261121041936';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
-import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261119182451';
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261119182451';
-import { terrassen } from './altstadt-terrassen.js?v=20261119182451'; // gelaende (Runde 3)
+import { belebe, sperrpunkte, KAMPAGNE, merkeFensterdeko } from '../kleinkram.js?v=20261121041936';
+import { altstadtFuellen } from './fuell-karten.js?v=20261121041936'; // fuell (20.11.): Bodenspuren auf dem Pflaster
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261121041936';
+import { terrassen } from './altstadt-terrassen.js?v=20261121041936'; // gelaende (Runde 3)
 
 const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe
@@ -144,6 +145,7 @@ export default {
     b.gelaende = terrassen(b, spawns);
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
     belebe(b, { stil: 'stadt', einrichten: true, boden: true, bereich: { minX: -46, maxX: 69, minZ: -52, maxZ: 52}, sperr: sperrpunkte({ spawns }, [...KAMPAGNE.altstadt, ...KAMPAGNE_PUNKTE.altstadt]) });
+    altstadtFuellen(b);
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -5, z: 29, radius: 5 }, { id: 'B', x: -7.5, z: 0, radius: 5.5 }, { id: 'C', x: -5, z: -29, radius: 5 }] },
@@ -344,7 +346,8 @@ function dressFacade(b, M, h, o) {
       // Balkontür: Blumenkasten außen am Balkongeländer statt an der Fensterbank (gleicher Zufallsverbrauch)
       const bl = op.fd ? (o.balconies || []).find(q => q.side === op.side && q.at === op.at && (q.floor ?? 1) === fl) : null;
       const [px, pz, ry] = onWall(M, h, op.side, op.at, bl ? (bl.d ?? 0.85) + 0.15 : 0.14);
-      const y = bl ? fl * h.fh + 0.7 : fl * h.fh + (op.sill ?? 0.95) - 0.3;
+      const y = bl ? fl * h.fh + 0.7 : fl * h.fh + (op.sill ?? 0.95) - 0.24; // platz: Oberkante knapp unter der Fensterbank (vorher 8 cm tiefer)
+      merkeFensterdeko(b, px, fl * h.fh + (op.sill ?? 0.95), pz); // platz: fensterleben setzt hier keinen zweiten Kasten
       const f = frame(b, px, y, pz, ry);
       f.box(0, 0, 0, op.w + 0.1, 0.22, 0.24, 'tiles_terracotta', { tint: '#c47a52', collide: false, minimap: false, grad: false, ao: false });
       const n = Math.max(2, Math.round(op.w / 0.32));
@@ -1440,7 +1443,11 @@ function palletStackSmall(b, x, z) {
 /** Dekoration einer Dachterrasse (Südkoordinaten). */
 function terraceDeco(b, M, h, o) {
   const y = h.roofY + 0.025;
-  for (const [x, z] of o.pots || []) pot(b, x, y, M.z(z), { r: 0.3, h: 0.5, plant: b.rand() < 0.4 ? 'flowers' : 'bush' });
+  // platz2 (20.11.): Töpfe ≥ 1 m von der Brüstung (Busch ragte durch die Brüstung) – und nicht auf dem Antennenfuß
+  // (Nord-EP3: Topf und Antenne standen auf demselben Punkt 35,8/−41,2; die Prüfung meldete den Topf „ohne Untergrund“)
+  const zlo = Math.min(h.z0, h.z1) + 1.0, zhi = Math.max(h.z0, h.z1) - 1.0, xlo = h.x0 + 1.0, xhi = h.x1 - 1.0;
+  const potsW = (o.pots || []).map(([x, z]) => [Math.min(xhi, Math.max(xlo, x)), Math.min(zhi, Math.max(zlo, M.z(z)))]);
+  for (const [x, z] of potsW) pot(b, x, y, z, { r: 0.3, h: 0.5, plant: b.rand() < 0.4 ? 'flowers' : 'bush' });
   if (o.tank) waterTank(b, o.tank[0], y, M.z(o.tank[1]));
   if (o.parasol) parasol(b, o.parasol[0], M.z(o.parasol[1]), { y, r: 1.3, tint: b.pick(['#ffffff', '#f2e6d0']) });
   for (const [x, z] of o.chairs || []) chair(b, x, M.z(z), { y, ry: b.rand() * Math.PI * 2, tint: b.pick(['#2f6f9a', '#3c7a5a', '#c8402f']), model: true });
@@ -1450,7 +1457,11 @@ function terraceDeco(b, M, h, o) {
     laundry(b, ax, y + 1.85, M.z(az), bx, y + 1.85, M.z(bz), { n: 4 });
   }
   // Antennen + Satellitenschüssel
-  const ax = h.x0 + 0.8, az = h.z0 + 0.8;
+  // Antenne in die Ecke, die von Töpfen/Tank am weitesten entfernt ist
+  const besetzt = [...potsW, ...(o.tank ? [[o.tank[0], M.z(o.tank[1])]] : [])];
+  const ecken = [[h.x0 + 0.8, h.z0 + 0.8], [h.x1 - 0.8, h.z0 + 0.8], [h.x0 + 0.8, h.z1 - 0.8], [h.x1 - 0.8, h.z1 - 0.8]];
+  const frei = (e) => Math.min(9, ...besetzt.map(([px, pz]) => Math.hypot(px - e[0], pz - e[1])));
+  const [ax, az] = ecken.reduce((best, e) => (frei(e) > frei(best) + 1e-6 ? e : best), ecken[0]);
   b.cyl(ax, y, az, 0.025, 2.2, 'metal_galvanized', { seg: 5, collide: false, minimap: false, ao: false });
   b.box(ax, y + 1.9, az, 1.0, 0.03, 0.03, 'metal_galvanized', { collide: false, minimap: false, ao: false, ry: 0.4 });
 }

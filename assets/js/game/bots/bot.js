@@ -17,21 +17,21 @@
 // Schüsse (Zählerwechsel) → Schussgeste + manager.puppetFired (nur Darstellung, kein Schaden). Leben/Tod nicht aus der
 // Pose, sondern über respawn()/onDeath() (Ereignisse vom Host).
 import * as THREE from 'three';
-import { CapsuleBody } from '../engine/physics.js?v=20261119182451';
-import { raycastHumanoid } from '../combat.js?v=20261119182451';
-import { Soldier } from './character.js?v=20261119182451';
-import { Memory } from './ai/memory.js?v=20261119182451';
-import { sense } from './ai/perception.js?v=20261119182451';
-import { Navigator } from './ai/navigator.js?v=20261119182451';
-import { Gunner } from './ai/combat.js?v=20261119182451';
-import { think, newGoal, useStreaks } from './ai/brain.js?v=20261119182451';
-import { targetPoints } from './ai/perception.js?v=20261119182451';
-import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261119182451';
-import { BONE } from './soldier/rig.js?v=20261119182451';
-import { importCC } from '../../shared/customcamo.js?v=20261119182451';
-import { applyAttachments } from '../../shared/attachments.data.js?v=20261119182451';
-import { getWeaponModelMeta } from '../weapons/models.js?v=20261119182451';
-import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261119182451';
+import { CapsuleBody } from '../engine/physics.js?v=20261121041936';
+import { raycastHumanoid } from '../combat.js?v=20261121041936';
+import { Soldier } from './character.js?v=20261121041936';
+import { Memory } from './ai/memory.js?v=20261121041936';
+import { sense } from './ai/perception.js?v=20261121041936';
+import { Navigator } from './ai/navigator.js?v=20261121041936';
+import { Gunner } from './ai/combat.js?v=20261121041936';
+import { think, newGoal, useStreaks } from './ai/brain.js?v=20261121041936';
+import { targetPoints } from './ai/perception.js?v=20261121041936';
+import { GADGETS, CLASSES } from '../../shared/classes.data.js?v=20261121041936';
+import { BONE } from './soldier/rig.js?v=20261121041936';
+import { importCC } from '../../shared/customcamo.js?v=20261121041936';
+import { applyAttachments } from '../../shared/attachments.data.js?v=20261121041936';
+import { getWeaponModelMeta } from '../weapons/models.js?v=20261121041936';
+import { Stamina, STAMINA_COST, RECOVER } from '../stamina.js?v=20261121041936';
 
 const STAND_H = 1.8, CROUCH_H = 1.15, PRONE_H = 0.75;
 const SPEED = { walk: 3.1, run: 5.4, sprint: 8.2, crouch: 2.6, crawl: 1.05 };
@@ -158,7 +158,7 @@ let serial = 0;
 
 export class Bot {
   /**
-   * @param {import('./manager.js?v=20261119182451').BotManager} manager
+   * @param {import('./manager.js?v=20261121041936').BotManager} manager
    * opts: { team, name, diff (Profil), loadout, variant, scheme, modeId, lane, puppet (Mehrspieler-Puppe) }
    */
   constructor(manager, { team, name, diff, loadout, variant = 0, scheme = null, modeId = 'tdm', lane = 1, puppet = false }) {
@@ -532,6 +532,9 @@ export class Bot {
     const G = this.G;
     if (this.puppet) { this._updatePuppet(dt); return; }
     if (!this.alive) { this._updateCorpses(dt); return; }
+    // Mitfahrer im geschlossenen Kampfraum eines Transporters (vehicles/data-troop.js): ruht bis zum Absitzen
+    const vs = this.vehicle && this.vehicleSeat;
+    if (vs && vs.def && vs.def.passenger && !(vs.hatchT >= 0.5)) return;
     const now = G.time.elapsed;
     const frozen = G.match.state !== 'playing' && !G.match.netLive; // online läuft das Match im Pausenmenü des Hosts weiter
     const D = this.diff;
@@ -1254,6 +1257,7 @@ export class Bot {
       bd = d; best = v;
     }
     if (best && this.atTarget !== best && this.tsquad) this.manager.tactics.emit(this.tsquad, 'at', { d: Math.round(bd) });
+    if (best !== this.atTarget) { this._atSince = now; this._atOff = null; } // Zielauffassung beginnt (_fireArmor)
     this.atTarget = best;
   }
 
@@ -1262,9 +1266,17 @@ export class Bot {
     const eye = this.getEyePosition(_eye);
     const p = v.position;
     const d = p.distanceTo(eye);
-    const t = d / 120; // Flugzeit grob (70 → 150 m/s)
+    const D = this.diff;
+    // Vorhalt nur teilweise (Schwierigkeit) und ein Zielfehler je Schuss (Nutzer 20.11.: kein sicherer Treffer,
+    // Luftfahrzeuge schwerer zu treffen) – der Versatz wird nach jedem Schuss neu gewürfelt (_fireArmor)
+    const t = (d / 120) * (0.4 + 0.6 * (D.prediction || 0)); // Flugzeit grob (70 → 150 m/s)
     const vel = v.body && v.body.vel; // Fahrzeugkörper (sim.js): Geschwindigkeit heißt vel
-    _v.set(p.x + (vel ? vel.x * t : 0), p.y + 1.1 + d * 0.004, p.z + (vel ? vel.z * t : 0)).sub(eye);
+    if (!this._atOff) {
+      const sig = (D.aimError || 0.04) * (v.isAircraft ? 2.4 : 1.2) * d;
+      this._atOff = { x: (Math.random() - 0.5) * 2 * sig, y: (Math.random() - 0.5) * sig, z: (Math.random() - 0.5) * 2 * sig };
+    }
+    const o = this._atOff;
+    _v.set(p.x + (vel ? vel.x * t : 0) + o.x, p.y + 1.1 + d * 0.004 + (vel && v.isAircraft ? vel.y * t : 0) + o.y, p.z + (vel ? vel.z * t : 0) + o.z).sub(eye);
     const yaw = Math.atan2(-_v.x, -_v.z);
     const pitch = Math.atan2(_v.y, Math.hypot(_v.x, _v.z));
     this.gunner.look(dt, yaw, pitch, 1.1);
@@ -1278,9 +1290,13 @@ export class Bot {
     if (!def || def.cls !== 'launcher' || w.isSwitching || w.isReloading) return;
     it.ads = true;
     if (!w.current || w.current.mag <= 0) { it.reload = true; return; }
+    // Zielauffassung: erst nach Reaktionszeit + 1,2 s (Luftfahrzeuge + 1,5 s) feuern
+    const acquire = 1.2 + (this.diff.reaction || 0.5) * 2 + (this.atTarget && this.atTarget.isAircraft ? 1.5 : 0);
+    if (now - (this._atSince ?? now) < acquire) return;
     if (angErr < 0.03 && (w.adsProgress || 0) > 0.7 && now - (this._atShotAt || 0) > 1.5) {
       it.firePressed = true;
       this._atShotAt = now;
+      this._atOff = null; // nächster Schuss: neuer Zielfehler
       if (this.tsquad) this.manager.tactics.emit(this.tsquad, 'at_fire', {});
     }
   }

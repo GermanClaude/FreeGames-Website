@@ -35,3 +35,14 @@ Object.assign(SPEAKERS, {
   libelle: { name: 'Libelle 1', color: '#a9d4ff', radioOnly: true }, // Hubschrauberfunk, falls Sander nicht im Bild
 });
 if (!SPEAKERS.sander) SPEAKERS.sander = { name: 'Oberleutnant Kai Sander', color: '#a9d4ff', team: 'A', variant: 'kundschafter', weapon: 'pi_p9' };
+
+// --- kamp3: Figuren für Akt III „Phase zwei“ (M12–M15, frei erfunden) ---
+Object.assign(SPEAKERS, {
+  vahl: { name: 'Jaro Vahl', color: '#b8a48c', team: 'B', variant: 'grenadier', weapon: null }, // Söldnerführer der „Grauen Kompanie“ (M12, M14)
+  pell: { name: 'Dr. Ansgar Pell', color: '#c8bfd8', team: 'A', variant: 'zivil-hemd', weapon: null }, // Stellvertreter der Kommission (M13–M15)
+  seyfried: { name: 'Konrad Seyfried', color: '#d9b36c', team: 'B', variant: 'zivil', weapon: null }, // Geldgeber, einer der „Kranich“ (M15)
+  grau: { name: 'Funk der Grauen', color: '#9aa0a8', radioOnly: true }, // Söldnerfunk
+  kranich: { name: 'Unbekannte Stimme', color: '#9aa3b5', radioOnly: true },
+});
+// Kommissarin Haas: Zivilistin (Strickjacke) statt der männlichen Jacken-Ausführung (gilt auch für M8)
+if (SPEAKERS.haas) SPEAKERS.haas.variant = 'zivil-strick';

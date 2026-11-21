@@ -15,10 +15,14 @@ export function tessellate(geo, maxEdge = EDGE) {
   const sizes = names.map((n) => g.attributes[n].itemSize);
   const S = sizes.reduce((a, b) => a + b, 0);
   const pos = g.attributes.position, n = pos.count;
+  // ges2 (21.11.): normierte Ganzzahl-Attribute (Riesenkarte: terrain/bigworld.js packSiteGeometry legt Vertexfarben als
+  // Uint8, Normalen als Int8 ab) in Gleitkomma zurückrechnen – vorher landeten die Rohwerte (Farbe bis 255) im Float32-
+  // Ergebnis: die geparkten Autos der Weitmark leuchteten grell weiß
+  const scale = names.map((nm) => { const a = g.attributes[nm]; if (!a.normalized) return 1; const A = a.array; return A instanceof Uint8Array || A instanceof Uint8ClampedArray ? 1 / 255 : A instanceof Int8Array ? 1 / 127 : A instanceof Uint16Array ? 1 / 65535 : A instanceof Int16Array ? 1 / 32767 : 1; });
   const vert = (i) => {
     const v = new Float32Array(S);
     let o = 0;
-    names.forEach((nm, k) => { const a = g.attributes[nm]; for (let c = 0; c < sizes[k]; c++) v[o++] = a.array[i * sizes[k] + c]; });
+    names.forEach((nm, k) => { const a = g.attributes[nm], f = scale[k]; for (let c = 0; c < sizes[k]; c++) v[o++] = f === 1 ? a.array[i * sizes[k] + c] : Math.max(-1, a.array[i * sizes[k] + c] * f); });
     return v;
   };
   const mid = (a, b) => { const m = new Float32Array(S); for (let i = 0; i < S; i++) m[i] = (a[i] + b[i]) / 2; return m; };

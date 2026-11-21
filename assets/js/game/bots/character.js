@@ -12,13 +12,13 @@
 // Ein Soldat = 1 SkinnedMesh je Detailstufe (alles in einer Geometrie + einem Material zusammengeführt)
 // + Waffe (2–4 Draw Calls). Detailstufen: 0 nah, 1 mittel, 2 fern (Schwellen je Qualität).
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261119182451';
-import { Animator } from './soldier/animator.js?v=20261119182451';
-import { Ragdoll } from './soldier/ragdoll.js?v=20261119182451';
-import { soldierGeometry, VARIANTS, VARIANT_IDS, CIVIL_IDS, variantDef } from './soldier/gear.js?v=20261119182451';
-import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261119182451';
-import { raySphere, rayCapsule } from '../combat.js?v=20261119182451';
-import { SoldierFace } from './soldier/face.js?v=20261119182451';
+import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261121041936';
+import { Animator } from './soldier/animator.js?v=20261121041936';
+import { Ragdoll } from './soldier/ragdoll.js?v=20261121041936';
+import { soldierGeometry, VARIANTS, VARIANT_IDS, CIVIL_IDS, variantDef } from './soldier/gear.js?v=20261121041936';
+import { soldierMaterial, releaseSoldierMaterial, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes } from './soldier/materials.js?v=20261121041936';
+import { raySphere, rayCapsule } from '../combat.js?v=20261121041936';
+import { SoldierFace, soldierSkin } from './soldier/face.js?v=20261121041936';
 
 export { VARIANTS, VARIANT_IDS, CIVIL_IDS, SCHEMES, FFA_SCHEMES, schemeForTeam, ffaSchemes };
 
@@ -146,6 +146,8 @@ export class Soldier {
     // Detailstufen (eigenes Material je Soldat aus dem Pool: gleiches Programm, eigene Uniforms für das Auflösen)
     const mat = soldierMaterial(this.scheme, { quality: this.quality });
     this.material = mat;
+    // Hautton des Körpers (Hände, Hals, Kopf der fernen Stufen) = Hautton des Gesichts (auch wenn es erst später kommt)
+    try { if (mat.userData.npU && mat.userData.npU.uPal.value[9]) mat.userData.npU.uPal.value[9].set(soldierSkin(this, typeof face === 'object' && face ? face : {})); } catch (e) { /* Standardton */ }
     this.cinematic = !!cinematic;
     // Telefone (low): keine volle Stufe – LOD1 (≈ 3 k Dreiecke) auch aus der Nähe; spart ≈ 0,95 MB je Variante
     const minLod = this.tier === 'low' && !this.cinematic ? 1 : 0;
@@ -279,6 +281,12 @@ export class Soldier {
     if (lod !== this.lod) {
       this.lod = lod;
       for (let i = 0; i < 3; i++) this.meshes[i].visible = i === lod;
+    }
+    // Waffe in der Hand (bzw. fallengelassen, solange der Soldat sie führt): gebackene Nah-/Mittelstufe (weapons/lodbake.js, 20.11.)
+    const gun = this._drop ? this._drop.gun : this.gun;
+    if (gun && this.models && this.models.setWeaponLod && (gun.userData.lodLevel !== lod || gun.userData.lodWant !== lod)) {
+      gun.userData.lodWant = lod;
+      if (this.models.setWeaponLod(gun, lod) !== lod) gun.userData.lodWant = -1;   // Daten laden noch: später erneut
     }
     if (this.face) this.face.syncVisible(lod);
     return lod;

@@ -7,40 +7,59 @@
 // y = 0 bzw. Plateauhöhe) → Gelände-Material/-Kacheln, Kulissenring, Wasser, Straßen, Vegetation → Worker: BVHs +
 // Startpunkte + Navigation ‖ Licht/HDRI → Welt-Objekt.
 import * as THREE from 'three';
-import { MAPS } from '../../../shared/maps.data.js?v=20261119182451';
-import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261119182451';
-import { createWorldAssets } from '../library.js?v=20261119182451';
-import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261119182451';
-import { createLighting } from '../lighting.js?v=20261119182451';
-import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261119182451';
-import { createAtmosphere } from '../atmos.js?v=20261119182451';
-import { resolveConditions, applyConditions } from '../weather.js?v=20261119182451';
-import { createWater } from '../water.js?v=20261119182451';
-import { TriangleBVH } from '../bvh.js?v=20261119182451';
-import { makeTests } from '../navbuild.js?v=20261119182451';
-import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261119182451';
-import { Heightfield } from './heightfield.js?v=20261119182451';
-import { makeCoarse } from './generate.js?v=20261119182451';
-import { CompositeBVH } from './composite.js?v=20261119182451';
-import { TerrainCollider } from './collide.js?v=20261119182451';
-import { TerrainChunks, createFarRing } from './chunks.js?v=20261119182451';
-import { createTerrainMaterial } from './splat.js?v=20261119182451';
-import { Vegetation } from './vegetation.js?v=20261119182451';
-import { loadTreeAtlas, TREE_BARKS } from './trees.js?v=20261119182451';
-import { Deadwood } from './deadwood.js?v=20261119182451';
-import { Litter } from './litter.js?v=20261119182451';
-import { RoadNetwork } from './roads.js?v=20261119182451';
-import { bigNavFromData } from './bignav.js?v=20261119182451';
-import { createBigMinimap } from './bigminimap.js?v=20261119182451';
-import { terrainJob, worldJob } from './bigjob.js?v=20261119182451';
+import { MAPS } from '../../../shared/maps.data.js?v=20261121041936';
+import { configureTextures, getMaterial, beginTextureEpoch, releaseUnusedTextures, deferTextureGeneration, planLibraryMaterials, resolveLibraryMaterials, libraryInUse, libraryStats } from '../../engine/textures.js?v=20261121041936';
+import { createWorldAssets } from '../library.js?v=20261121041936';
+import { MapBuilder, SURFACES, civilList } from '../builder.js?v=20261121041936';
+import { createLighting } from '../lighting.js?v=20261121041936';
+import { applyWorldShading, applyCuts, bindShadingScene, watchScene, initShading, resetShading, setShadingMode } from '../shading.js?v=20261121041936';
+import { createAtmosphere } from '../atmos.js?v=20261121041936';
+import { resolveConditions, applyConditions } from '../weather.js?v=20261121041936';
+import { createWater } from '../water.js?v=20261121041936';
+import { TriangleBVH } from '../bvh.js?v=20261121041936';
+import { breakableAccess, mergeAccess } from '../bruch.js?v=20261121041936'; // zerbrechliche Requisiten (game/breakables.js)
+import { makeTests } from '../navbuild.js?v=20261121041936';
+import { foliageUniforms, attachFoliageClock } from '../atlas.js?v=20261121041936';
+import { Heightfield } from './heightfield.js?v=20261121041936';
+import { makeCoarse } from './generate.js?v=20261121041936';
+import { CompositeBVH } from './composite.js?v=20261121041936';
+import { TerrainCollider } from './collide.js?v=20261121041936';
+import { TerrainChunks, createFarRing } from './chunks.js?v=20261121041936';
+import { createTerrainMaterial } from './splat.js?v=20261121041936';
+import { Vegetation } from './vegetation.js?v=20261121041936';
+import { loadTreeAtlas, TREE_BARKS } from './trees.js?v=20261121041936';
+import { Deadwood } from './deadwood.js?v=20261121041936';
+import { Litter } from './litter.js?v=20261121041936';
+import { RoadNetwork } from './roads.js?v=20261121041936';
+import { bigNavFromData } from './bignav.js?v=20261121041936';
+import { createBigMinimap } from './bigminimap.js?v=20261121041936';
+import { terrainJob, worldJob } from './bigjob.js?v=20261121041936';
+import { appClient } from '../../../shared/appgate.js?v=20261121041936';
 
 const BIG_MAPS = {
-  grenzland: () => import('../maps/grenzland.js?v=20261119182451'),
-  niemandsland: () => import('../maps/niemandsland.js?v=20261119182451'),
-  brandwald: () => import('../maps/brandwald.js?v=20261119182451'),
-  flugplatz: () => import('../maps/flugplatz.js?v=20261119182451'), // karten-neu: Fliegerhorst mit Startbahn
+  grenzland: () => import('../maps/grenzland.js?v=20261121041936'),
+  niemandsland: () => import('../maps/niemandsland.js?v=20261121041936'),
+  brandwald: () => import('../maps/brandwald.js?v=20261121041936'),
+  flugplatz: () => import('../maps/flugplatz.js?v=20261121041936'), // karten-neu: Fliegerhorst mit Startbahn
+  weitmark: () => import('../maps/weitmark.js?v=20261121041936'), // riesen: Riesenkarte 1600 × 1600 m (nur App, shared/appgate.js)
 };
 export const BIG_MAP_IDS = Object.keys(BIG_MAPS);
+
+/**
+ * riesen: Dateien App-exklusiver Karten. Der Service Worker der Web-Version nimmt sie nie auf (sw.js APP_ONLY); die
+ * Android-App (lädt die Website) legt sie beim ersten Laden der Karte in den eigenen Speicher np-app – danach offline
+ * spielbar. Die Desktop-App hat sie ohnehin lokal (extraResources, desktop/package.json).
+ */
+const APP_FILES = { weitmark: ['../maps/weitmark.js?v=20261121041936', '../maps/weitmark-bau.js?v=20261121041936'] };
+function keepAppFiles(id) {
+  if (appClient().kind !== 'android-app' || typeof caches === 'undefined' || !APP_FILES[id]) return;
+  const urls = APP_FILES[id].map((p) => new URL(p, import.meta.url).href);
+  caches.open('np-app').then(async (c) => {
+    const base = urls.map((u) => u.split('?')[0]);
+    for (const k of await c.keys()) if (base.includes(k.url.split('?')[0]) && !urls.includes(k.url)) await c.delete(k); // ältere Fassungen
+    await c.addAll(urls.filter(Boolean));
+  }).catch(() => { /* Speicher voll / offline */ });
+}
 
 /** Budgets je Qualitätsstufe (GROSSKAMPF_PLAN §3.4; Handy = low). density: Anteil der kollisionslosen Büsche/Schilf –
  * Bäume und Felsen (Kollision) stehen auf jeder Stufe vollständig (Mehrspieler, terrain/vegetation.js). */
@@ -60,7 +79,7 @@ function createRunner() {
   let broken = false;
   try {
     if (typeof Worker === 'undefined') throw new Error('keine Worker');
-    worker = new Worker(new URL('./bigjob.worker.js?v=20261119182451', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./bigjob.worker.js?v=20261121041936', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
       const d = e.data || {}, p = pending.get(d.id);
       if (!p) return;
@@ -119,6 +138,83 @@ function concatF32(list) {
   return out;
 }
 
+/**
+ * riesen: Fernkulisse einer Ortschaft – Gebäude-Grundrisse (MapBuilder.footprints, kind 'building') als Quader mit
+ * Dachkeil-Ersatz (oben 1,5 m höher, dunkler), Vertexfarben, ohne Texturen (kein zusätzlicher Sampler, keine Kollision).
+ */
+function siteImpostor(footprints, y0 = 0) {
+  const list = (footprints || []).filter((f) => f.kind === 'building' && f.hw > 1.5 && f.hd > 1.5);
+  if (!list.length) return null;
+  const P = [], C = [], wall = new THREE.Color('#c9c1b2').convertSRGBToLinear(), roof = new THREE.Color('#8e6f62').convertSRGBToLinear();
+  const quad = (a, b, c, d, col) => { for (const v of [a, b, c, a, c, d]) { P.push(v[0], v[1], v[2]); C.push(col.r, col.g, col.b); } };
+  // weit2: Satteldach entlang der langen Seite (Giebel als Wandfarbe), Wand-/Dachtöne je Gebäude aus der Lage gehasht
+  const wv = ['#d9d2c2', '#cfc6b2', '#e2dccd', '#c9b99c', '#d4cbb8', '#bfb8a8'].map((h) => new THREE.Color(h).convertSRGBToLinear());
+  const rv = ['#8e6352', '#9c6a56', '#7a5a4e', '#6a625c', '#a3725c', '#5c5a58'].map((h) => new THREE.Color(h).convertSRGBToLinear());
+  const tri = (a, b, c, col) => { for (const v of [a, b, c]) { P.push(v[0], v[1], v[2]); C.push(col.r, col.g, col.b); } };
+  for (const f of list) {
+    const x0 = f.x - f.hw, x1 = f.x + f.hw, z0 = f.z - f.hd, z1 = f.z + f.hd;
+    const hsh = Math.abs(Math.sin(f.x * 12.9898 + f.z * 78.233) * 43758.5453) % 1;
+    const wcol = wv[Math.floor(hsh * wv.length)] || wall, rcol = rv[Math.floor(((hsh * 7.31) % 1) * rv.length)] || roof;
+    const ya = Math.min(f.y0 ?? y0, y0) - 0.5, yb = Math.max(f.y1 ?? y0 + 6, ya + 2), yr = yb + Math.min(4, Math.min(f.hw, f.hd) * 0.8);
+    quad([x0, ya, z1], [x1, ya, z1], [x1, yb, z1], [x0, yb, z1], wcol);
+    quad([x1, ya, z0], [x0, ya, z0], [x0, yb, z0], [x1, yb, z0], wcol);
+    quad([x1, ya, z1], [x1, ya, z0], [x1, yb, z0], [x1, yb, z1], wcol);
+    quad([x0, ya, z0], [x0, ya, z1], [x0, yb, z1], [x0, yb, z0], wcol);
+    if (f.hw >= f.hd) { // First entlang x
+      const zm = (z0 + z1) / 2;
+      quad([x0, yb, z1], [x1, yb, z1], [x1, yr, zm], [x0, yr, zm], rcol);
+      quad([x1, yb, z0], [x0, yb, z0], [x0, yr, zm], [x1, yr, zm], rcol);
+      tri([x1, yb, z1], [x1, yb, z0], [x1, yr, zm], wcol); tri([x0, yb, z0], [x0, yb, z1], [x0, yr, zm], wcol);
+    } else {
+      const xm = (x0 + x1) / 2;
+      quad([x1, yb, z1], [x1, yb, z0], [xm, yr, z0], [xm, yr, z1], rcol);
+      quad([x0, yb, z0], [x0, yb, z1], [xm, yr, z1], [xm, yr, z0], rcol);
+      tri([x0, yb, z1], [x1, yb, z1], [xm, yr, z1], wcol); tri([x1, yb, z0], [x0, yb, z0], [xm, yr, z0], wcol);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(C, 3));
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 });
+  m.name = 'fernkulisse';
+  const mesh = new THREE.Mesh(g, m);
+  mesh.castShadow = false; mesh.receiveShadow = false; mesh.matrixAutoUpdate = false;
+  return mesh;
+}
+
+/**
+ * weit2: Ortschafts-Geometrie der Riesenkarte schlanker halten (JS-Speicher; GPU-Inhalt gleich): Vertexfarben als
+ * Uint8 (normiert) statt Float32, Normalen als Int8 (normiert) – 44 → 27 Byte je Eckpunkt. Nur statische Meshes ohne
+ * Sonderrolle (zerstörbare Paneele, geteilte Geometrie, Farben > 1 bleiben unverändert); Positionen bleiben Float32
+ * (bruch.js/deform.js verändern sie zur Laufzeit).
+ */
+function packSiteGeometry(meshes) {
+  let saved = 0;
+  for (const o of meshes || []) {
+    if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || o.userData.shared || o.userData.destructible != null) continue;
+    const g = o.geometry, c = g?.attributes?.color, n = g?.attributes?.normal;
+    if (c && c.array instanceof Float32Array && c.itemSize === 3 && !c.isInterleavedBufferAttribute) {
+      const a = c.array;
+      let max = 0; for (let i = 0; i < a.length; i++) if (a[i] > max) max = a[i];
+      if (max <= 1.001) {
+        const u = new Uint8Array(a.length);
+        for (let i = 0; i < a.length; i++) u[i] = Math.max(0, Math.min(255, Math.round(a[i] * 255)));
+        g.setAttribute('color', new THREE.BufferAttribute(u, 3, true));
+        saved += a.byteLength - u.byteLength;
+      }
+    }
+    if (n && n.array instanceof Float32Array && n.itemSize === 3 && !n.isInterleavedBufferAttribute) {
+      const a = n.array, u = new Int8Array(a.length);
+      for (let i = 0; i < a.length; i++) u[i] = Math.max(-127, Math.min(127, Math.round(a[i] * 127)));
+      g.setAttribute('normal', new THREE.BufferAttribute(u, 3, true));
+      saved += a.byteLength - u.byteLength;
+    }
+  }
+  return saved;
+}
+
 /** Unsichtbare Randwände (Kollision) um ein Rechteck. */
 function boundaryWalls(r, yMin, yMax) {
   const out = [];
@@ -136,13 +232,16 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const t0 = performance.now();
   const id = BIG_MAPS[mapId] ? mapId : BIG_MAP_IDS[0];
   const meta = MAPS[id] || { name: id };
+  // riesen: App-exklusive Riesenkarte außerhalb der App nicht laden (Plattform-Vorgabe, shared/appgate.js; kein Kopierschutz)
+  if (meta.appOnly && !appClient().kind) throw new Error(`Karte „${meta.name || id}“ gibt es nur in der App (PC-App oder Android-App).`);
   const progress = (p, label) => { try { onProgress?.(Math.min(1, Math.max(0, p)), label || ''); } catch { /* UI */ } };
   progress(0, 'Karte wird vorbereitet');
   const renderer = G.renderer?.renderer || G.renderer;
   attachFoliageClock(G); // Wind (Gras/Laub) an der gemeinsamen Uhr (online Host-Zeit)
   const quality = ['low', 'medium', 'high', 'ultra'].includes(G.renderer?.quality) ? G.renderer.quality : (['low', 'medium', 'high', 'ultra'].includes(G.settings?.get?.('quality')) ? G.settings.get('quality') : 'high');
   // desktop „Extrem“ (nur Desktop-App, renderer.js EXTREME_PRESET): Ultra mit weiterer Sicht, Bäumen/Gras weiter draußen
-  const tier = G.renderer?.preset?.extreme && quality === 'ultra' ? { ...BIG_TIERS.ultra, ...BIG_EXTREME } : BIG_TIERS[quality];
+  const extreme = !!(G.renderer?.preset?.extreme && quality === 'ultra');
+  let tier = extreme ? { ...BIG_TIERS.ultra, ...BIG_EXTREME } : BIG_TIERS[quality];
   const debug = !!(G.debug || G.params?.get?.('debug') === '1');
   const lowTex = quality === 'low';
   const maxAniso = renderer?.capabilities?.getMaxAnisotropy?.() || 4;
@@ -150,9 +249,18 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   beginTextureEpoch();
 
   const { default: def0 } = await BIG_MAPS[id]();
+  if (meta.appOnly) keepAppFiles(id);
   // atmosphere-weather: Wetter/Tageszeit → abgeleitete Definition (Standard = def0)
   const conditions = resolveConditions(meta, { weather, time });
   const def = applyConditions(def0, conditions, id);
+  // riesen (20.11.): Riesenkarte (def.giant) – Sichtweite/Fernkulisse/Budgets je Stufe aus der Kartenbeschreibung; in der
+  // Android-App (Handy, Tablet, Quest als 2D-App) zusätzlich gedeckelt (Speicher-Budget je Plattform)
+  if (def.giant) {
+    const gt = def.giant.tiers?.[quality] || {};
+    tier = { ...tier, ...gt };
+    if (extreme) for (const k of ['view', 'far', 'treeFar', 'siteCull', 'mapPx']) tier[k] = Math.max(tier[k] ?? 0, BIG_EXTREME[k] ?? 0, gt[k] ?? 0);
+    if (appClient().kind === 'android-app' && def.giant.android) for (const [k, v] of Object.entries(def.giant.android)) tier[k] = Math.min(tier[k] ?? v, v);
+  }
   const runner = createRunner();
   const ms = {};
   // 1) Gelände im Worker (parallel zu den Ortschaften)
@@ -174,7 +282,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     for (let k = 0; k < def.sites.length; k++) {
       const s = def.sites[k];
       const vb = { minX: s.bounds.minX - 12, maxX: s.bounds.maxX + 12, minZ: s.bounds.minZ - 12, maxZ: s.bounds.maxZ + 12 };
-      const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + k * 101, chunkSize: s.chunkSize || (quality === 'low' ? 64 : 48), groundNoise: s.groundNoise ?? 0.12, interiorTint: s.interiorTint });
+      const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + k * 101, chunkSize: s.chunkSize || (quality === 'low' ? 64 : 48), groundNoise: s.groundNoise ?? 0.12, interiorTint: s.interiorTint, ...(s.splitTris || def.giant?.splitTris ? { splitTris: s.splitTris || def.giant.splitTris } : {}) }); // weit2: Riesenkarte – Materialien erst ab mehr Dreiecken je Chunk teilen (weniger Draw Calls)
       b.lookQuality = quality; // env-look: Detailformen ab medium
       b.timeOfDay = conditions.time || meta.timeDefault || null; // props.js lampsOn (Laternen nur abends)
       if (libOk) {
@@ -184,6 +292,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       const res = s.build(b, ctx) || {};
       const p0 = 0.06 + (k / def.sites.length) * 0.44, p1 = 0.06 + ((k + 1) / def.sites.length) * 0.44;
       const built = await b.build({ quality, anisotropy: Math.min(G.renderer?.preset?.anisotropy || 4, maxAniso), onProgress: (p, l) => progress(p0 + (p1 - p0) * p, `${s.name}: ${l}`) });
+      if (def.giant) packSiteGeometry(built.meshes);
       sites.push({ def: s, b, res, built });
     }
   } finally {
@@ -204,7 +313,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     const s = def.lateSites[k];
     progress(0.52, s.name);
     const vb = { minX: s.bounds.minX - 12, maxX: s.bounds.maxX + 12, minZ: s.bounds.minZ - 12, maxZ: s.bounds.maxZ + 12 };
-    const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + 7919 + k * 101, chunkSize: s.chunkSize || 64, groundNoise: 0, interiorTint: s.interiorTint });
+    const b = new MapBuilder({ bounds: vb, seed: (def.seed || 1) + 7919 + k * 101, chunkSize: s.chunkSize || 64, groundNoise: 0, interiorTint: s.interiorTint, ...(s.splitTris || def.giant?.splitTris ? { splitTris: s.splitTris || def.giant.splitTris } : {}) });
     b.lookQuality = quality;
     b.timeOfDay = conditions.time || meta.timeDefault || null;
     if (libOk) {
@@ -213,6 +322,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     }
     const res = s.build(b, { ...ctx, hf, roads: terr.roads }) || {};
     const built = await b.build({ quality, anisotropy: Math.min(G.renderer?.preset?.anisotropy || 4, maxAniso), onProgress: (p, l) => progress(0.52, `${s.name}: ${l}`) });
+    if (def.giant) packSiteGeometry(built.meshes);
     sites.push({ def: { ...s, nav: false }, b, res, built });
   }
   const pb = def.bounds;
@@ -222,12 +332,13 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const tLib = performance.now();
   const tmat = await createTerrainMaterial({ hf, quality, lib, libOk, getMaterial, maxTex: renderer?.capabilities?.maxTextures, tier: lib.stats?.tier?.texture, look: def.terrainLook || null });
   ms.terrainLib = Math.round(performance.now() - tLib);
-  const chunks = new TerrainChunks(hf, tmat.material, { steps: tier.steps, dists: tier.dists, chunk: 128 });
+  // riesen: auf Riesenkarten feine Kachel-Stufen in der Ferne wieder freigeben (Speicher bleibt beim Flug über die Karte begrenzt)
+  const chunks = new TerrainChunks(hf, tmat.material, { steps: tier.steps, dists: tier.dists, chunk: 128, evict: !!def.giant });
   await chunks.build((p) => progress(0.55 + p * 0.05, 'Gelände-Kacheln'));
   const firstSpawn = def.spawns?.A?.[0] || [0, 0];
   chunks.prewarm(firstSpawn[0], firstSpawn[1], 200);
   group.add(chunks.group);
-  const farRing = createFarRing(hf, makeCoarse(def.terrain), tmat.material, { radius: tier.far, step: quality === 'low' ? 32 : 20 });
+  const farRing = createFarRing(hf, makeCoarse(def.terrain), tmat.material, { radius: tier.far, step: quality === 'low' ? 32 : def.giant ? 24 : 20 });
   group.add(farRing);
   // 26.10. (K0): Wasser nur in 4-m-Zellen, in denen das Gelände unter den Wasserspiegel reicht (water.js)
   const wetCell = (x0, z0, x1, z1) => {
@@ -319,6 +430,9 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   for (const s of sites) {
     const off = objects.length;
     for (const o of s.built.objects) objects.push(o);
+    // Ursprungsindizes der Ortsdreiecke in den gemeinsamen BVHs (Kisten/Zaunfelder zerbrechen: world.breakables)
+    s.colStart = colList.reduce((n, a) => n + a.length / 9, 0);
+    s.bulStart = bulList.reduce((n, a) => n + a.length / 9, 0);
     colList.push(s.built.colTris);
     bulList.push(s.built.bulletTris);
     albList.push(s.built.bulletAlbedo || albFill(s.built.bulletTris.length / 9, 90, 90, 90));
@@ -349,6 +463,9 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   { let o = 0; for (const d of datList) { bulletData.set(d, o); o += d.length; } }
   const bulletAlbedo = new Uint8Array(bulletData.length * 3);
   { let o = 0; for (const a of albList) { bulletAlbedo.set(a.subarray(0, Math.min(a.length, bulletAlbedo.length - o)), o); o += a.length; } }
+  // weit2: Teil-Puffer der Ortschaften sind jetzt zusammengefügt – nicht über `sites` (dispose-Closure) festhalten
+  for (const s of sites) s.built.colTris = s.built.bulletTris = s.built.bulletData = s.built.bulletAlbedo = null;
+  colList.length = bulList.length = datList.length = albList.length = 0;
 
   // Punkte (Startpunkte, Flaggen, Fahrzeuge, Geheimnisse) auf den Boden setzen
   const pts = [];
@@ -360,6 +477,8 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   for (const team of ['A', 'B']) for (const s of sp.hq?.[team] || []) hqSrc.push({ team, s, i: addPt(s[0], s[1], s[3]) });
   const cqSrc = (def.flags?.cq || []).map(f => ({ f, i: addPt(f.x, f.z, f.y), sp: (f.spawns || []).map(s => addPt(s[0], s[1], s[3])) }));
   const domSrc = (def.flags?.dom || []).map(f => ({ f, i: addPt(f.x, f.z, f.y) }));
+  // weit2: eigene Front-Punkte für den Trupp-Modus (def.flags.trupp → world.objectives.trupp, modes/trupp.js)
+  const trSrc = (def.flags?.trupp || []).map(f => ({ f, i: addPt(f.x, f.z, f.y) }));
   const vehSrc = (def.vehicles || []).map(v => ({ v, i: addPt(v.x, v.z, v.y) }));
   const secSrc = (def.secrets || []).map(s => ({ s, i: addPt(s.x, s.z, s.y) }));
   const navSites = sites.filter(s => s.def.nav !== false).map(s => {
@@ -420,6 +539,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const collider = new TerrainCollider(hf, colBVH, compCol);
   progress(0.9, 'Navigation');
   const nav = bigNavFromData(job.nav, makeTests(compCol), { hf, col: colBVH });
+  job.nav = null; job.col = job.bullet = null; // weit2: `job` hängt am Closure-Kontext der Welt (V) – Rohdaten nicht festhalten
 
   const V = (i, yOff = 0) => new THREE.Vector3(pts[i].x, job.snapped[i] + yOff, pts[i].z);
   const cx = (pb.minX + pb.maxX) / 2, cz = (pb.minZ + pb.maxZ) / 2;
@@ -453,6 +573,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       spawns: e.sp.length ? e.sp.map((i, k) => ({ position: onNav(V(i)), yaw: e.f.spawns[k][2] ?? yawTo(pts[i].x, pts[i].z) })) : pickSpawns(V(e.i), 8, 12, e.f.radius ? e.f.radius + 14 : 34),
     })),
   };
+  if (trSrc.length) objectives.trupp = trSrc.map(e => ({ id: e.f.id, name: e.f.name, position: V(e.i), radius: e.f.radius ?? 18, heightBand: e.f.heightBand || [-3, 8], spawns: pickSpawns(V(e.i), 8, 10, (e.f.radius ?? 18) + 14) }));
   // Fahrzeug-Stellplätze: `type` = VEHICLES-Schlüssel des Fahrzeug-Agenten (tank → mbt); geheime Plätze (Traktor
   // „Gertrud“) nur in vehicleSpots, damit kein unbekannter Typ automatisch erscheint
   const VTYPE = { tank: 'mbt', jeep: 'jeep' };
@@ -468,8 +589,21 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
   const sitesVis = sites.map(s => {
     const r = s.def.bounds;
-    return { group: s.built.group, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, rad: Math.hypot(r.maxX - r.minX, r.maxZ - r.minZ) / 2 + 20, props: s.built.props, objects: s.b.objects, res: s.res };
+    return { group: s.built.group, x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2, rad: Math.hypot(r.maxX - r.minX, r.maxZ - r.minZ) / 2 + 20, props: s.built.props, objects: s.b.objects, res: s.res, imp: null, always: s.def.cull === false };
   });
+  // riesen: Fernkulisse – je Ortschaft ein Klötzchen-Modell der Gebäude (ein Draw Call), sichtbar, sobald die volle
+  // Ortschaft jenseits siteCull ausgeblendet ist (statt Leere am Horizont der Riesenkarte)
+  if (def.giant) {
+    for (let k = 0; k < sites.length; k++) {
+      if (sites[k].def.cull === false) continue;
+      const imp = siteImpostor(sites[k].b.footprints, sites[k].def.y ?? 0);
+      if (!imp) continue;
+      imp.name = 'fernkulisse:' + sites[k].def.id;
+      imp.visible = false;
+      group.add(imp);
+      sitesVis[k].imp = imp;
+    }
+  }
   const found = new Set();
   const nOut = { x: 0, y: 1, z: 0 };
   const prevFar = G.camera?.far;
@@ -493,6 +627,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     emplacements: sites.flatMap((st) => st.b.emplacements || []), // benutzbare MG-Stellungen (game/mappoints.js)
     doors: sites.flatMap((st) => st.b.doors || []), gates: sites.flatMap((st) => st.b.gates || []), windows: sites.flatMap((st) => st.b.windows || []), // game/doors.js
     destructibles: sites.flatMap((st) => (st.b.destructibles || []).filter((d) => d.mesh)), // game/destruction.js
+    breakables: mergeAccess(sites.map((st) => breakableAccess(st.b.breakables, { cbvh: colBVH, bvh: bulBVH, colOff: st.colStart || 0, bulOff: st.bulStart || 0 }))), // game/breakables.js
     viewDistance: tier.view,
     mapImage: minimap.canvas,
     stats: {
@@ -502,6 +637,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
       meshes: sites.reduce((n, s) => n + s.built.stats.meshes, 0), triangles: sites.reduce((n, s) => n + s.built.stats.triangles, 0),
       sites: sites.map(s => ({ id: s.def.id, meshes: s.built.stats.meshes, triangles: s.built.stats.triangles })),
       assets: lib.stats,
+      giant: def.giant ? { view: tier.view, far: tier.far, siteCull: tier.siteCull, treeFar: tier.treeFar, platform: appClient().kind || 'web' } : null,
     },
     debugData: { colliderBVH: colBVH, bulletBVH: bulBVH, compositeCollider: compCol, compositeBullet: compBul, heightfield: hf, footprints, navPoints: sites.flatMap(s => s.b.navPoints), zones: [] },
 
@@ -611,8 +747,8 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
         }
       }
       for (const s of sitesVis) {
-        const vis = Math.hypot(camera.position.x - s.x, camera.position.z - s.z) - s.rad < tier.siteCull;
-        if (s.group.visible !== vis) s.group.visible = vis;
+        const vis = s.always || Math.hypot(camera.position.x - s.x, camera.position.z - s.z) - s.rad < tier.siteCull; // weit2: cull:false (Brücken) immer sichtbar
+        if (s.group.visible !== vis) { s.group.visible = vis; if (s.imp) s.imp.visible = !vis; }
         if (!vis) continue;
         s.props?.update(camera);
         for (const ob of s.objects) ob.update?.(dt, camera);
@@ -647,6 +783,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
         s.res.dispose?.();
       }
       chunks.dispose(); farRing.geometry.dispose(); tmat.dispose();
+      for (const s of sitesVis) if (s.imp) { s.imp.geometry.dispose(); s.imp.material.dispose(); }
       veg.dispose(); dead?.dispose(); litter?.dispose(); water.dispose();
       group.traverse(o => { if (o.name === 'roads-asphalt') { o.geometry.dispose(); o.material.dispose(); } });
       atmos?.dispose();
@@ -664,6 +801,10 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   world.stats.assets.libMaterials = libraryStats.materials;
   world.stats.assets.fallbackMaterials = libraryStats.fallback;
   for (const s of sites) s.built.props?.showAll();
+  // fuell (20.11.): Wand-Decals, Bodenauflage und Kleinmüll auch in den Ortschaften der Großkarten (medium+, nur Optik)
+  if (quality !== 'low' && !def.giant && id !== 'weitmark') {
+    try { const { fuelleGrosskarte } = await import('../fuellung.js?v=20261121041936'); world.stats.fuell = await fuelleGrosskarte(world, group, { quality, def: { ...def, id }, sites: (def.sites || []).map((s) => s.bounds) }); } catch (err) { console.warn('[world] Füllung', err); }
+  }
   // erste Kamera-Stellung: Gelände-LOD + Vegetation am ersten Startpunkt vorbereiten
   const cam0 = new THREE.PerspectiveCamera(70, 1.7, 0.1, 900);
   const s0 = spawns.A[0] || spawns.ffa[0];

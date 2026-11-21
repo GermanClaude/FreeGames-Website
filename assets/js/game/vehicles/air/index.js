@@ -18,18 +18,22 @@
 //   air.flares(aircraft)                        → Täuschkörper-Salve
 // Ereignisse (G.events): vehicle:airstart {vehicle, phase: 'bereit'|'start'}, vehicle:flare {vehicle}, dazu alle
 // vehicle:*-Ereignisse der Bodenfahrzeuge (enter/exit/seat/fire/hit/damaged/destroyed …).
-// URL: ?air=0 (keine Luftfahrzeuge) | ?air=1 (auch ohne Fahrzeug-Stellplätze) · ?airbots=0|1|2 (KI-Piloten: aus |
-// nur Gegnerteam, Standard | beide Teams).
+// URL: ?air=0 (keine Luftfahrzeuge) | ?air=1 (auch ohne Fahrzeug-Stellplätze) · ?airbots=0|1|2 (KI-Piloten: aus, Standard |
+// nur Gegnerteam | beide Teams – nur zum Testen; Nutzer 20.11.: im Spiel fliegen keine Bots, air/policy.js).
+// Klasse Pilot (shared/classes.data.js): Einsatz direkt im Cockpit eines freien Luftfahrzeugs des eigenen Teams (air/deploy.js,
+// Auswahl im Einsatz-/Ausrüstungsbildschirm ui/deploy.js). Einzelspieler: Stellplätze nur fürs eigene Team (keine
+// unbemannten Feind-Luftfahrzeuge als Zielscheibe), online für beide Teams.
 import * as THREE from 'three';
-import { VEHICLES } from '../data.js?v=20261119182451';
-import { collisionRay } from '../../engine/physics.js?v=20261119182451';
-import { groundBelow } from './flight.js?v=20261119182451';
-import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261119182451';
-import { readAirControls } from './controls.js?v=20261119182451';
-import { updateAirCamera } from './camera.js?v=20261119182451';
-import { AirHUD } from './hud.js?v=20261119182451';
-import { AirVoice, AIR_RANGE } from './audio.js?v=20261119182451';
-import { HeliPilotAI } from './pilot-ai.js?v=20261119182451';
+import { VEHICLES } from '../data.js?v=20261121041936';
+import { collisionRay } from '../../engine/physics.js?v=20261121041936';
+import { groundBelow } from './flight.js?v=20261121041936';
+import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261121041936';
+import { readAirControls } from './controls.js?v=20261121041936';
+import { updateAirCamera } from './camera.js?v=20261121041936';
+import { AirHUD } from './hud.js?v=20261121041936';
+import { AirVoice, AIR_RANGE } from './audio.js?v=20261121041936';
+import { HeliPilotAI } from './pilot-ai.js?v=20261121041936';
+import { AirDeploy } from './deploy.js?v=20261121041936';
 
 export { AirVoice, AIR_RANGE, airWarmMaterials };
 
@@ -51,6 +55,7 @@ export class AirSupport {
     this.pilots = new Map();   // aircraft → HeliPilotAI
     this._botT = 0;
     this._pools = new Map();   // look → [Group] (Körper im Flug)
+    this.deploy = new AirDeploy(this); // Klasse Pilot: Einsatz im Cockpit
   }
 
   get G() { return this.sys.G; }
@@ -72,9 +77,11 @@ export class AirSupport {
     if (sys.replica && !sys.civilOnly && this.enabled()) {
       try { prepareAirModels(AIR_TYPES, ['A', 'B'], sys.quality); } catch (err) { console.warn('[luft] Modelle', err); }
     }
+    this.deploy.attach();
   }
 
   detach() {
+    this.deploy.detach();
     for (const off of this._offs) try { off(); } catch { /* gelöst */ }
     this._offs = [];
     for (const [a, c] of this.chutes) { c.mesh.removeFromParent(); a._chute = null; }
@@ -96,6 +103,20 @@ export class AirSupport {
     return !!sys.military && !sys.civilOnly;
   }
 
+  /**
+   * Bekommt dieses Team Luftfahrzeug-Stellplätze? Bots fliegen nicht (policy.js) – im Einzelspieler stünden die
+   * Luftfahrzeuge des Gegnerteams nur unbemannt als Zielscheibe herum, also nur das Team des Spielers (FFA: alle).
+   * Online (Menschen in beiden Teams) und in der Kampagne (Skripte) bleiben alle Plätze.
+   */
+  wantsTeam(team) {
+    const G = this.G;
+    if (team == null || (G.match && (G.match.netRole || G.match.modeId === 'kampagne'))) return true;
+    const p = this.G.params && typeof this.G.params.get === 'function' ? this.G.params.get('airteams') : null;
+    if (p === 'beide') return true;
+    const me = G.player ? G.player.team : null;
+    return me !== 'A' && me !== 'B' ? true : team === me;
+  }
+
   /** Vorlagen für Luftfahrzeuge, die die Karte selbst aufstellt (world.vehicleSpawns mit heli/jet, VehicleSystem._setupSpawns). */
   prepareModels(types, teams = ['A', 'B']) {
     try { prepareAirModels(types, teams.length ? teams : [null], this.sys.quality); } catch (err) { console.warn('[luft] Modelle', err); }
@@ -111,9 +132,9 @@ export class AirSupport {
     // zusätzlichen automatischen Plätze (die Karteneinträge meldet VehicleSystem._setupSpawns an)
     if (!force && Array.isArray(w.vehicleSpawns) && w.vehicleSpawns.some((e) => e && VEHICLES[e.type] && VEHICLES[e.type].air)) return;
     const ffa = !!(G.match && G.match.ffa);
-    const teams = ffa ? [null] : ['A', 'B'];
+    const teams = ffa ? [null] : ['A', 'B'].filter((t) => this.wantsTeam(t));
     const center = w.bounds ? w.bounds.getCenter(new THREE.Vector3()) : new THREE.Vector3();
-    try { prepareAirModels(AIR_TYPES, ffa ? [null] : ['A', 'B'], sys.quality); } catch (err) { console.warn('[luft] Modelle', err); }
+    try { prepareAirModels(AIR_TYPES, teams, sys.quality); } catch (err) { console.warn('[luft] Modelle', err); }
     const placed = sys.spawns.map((s) => s.position);
     // Reihenfolge Typ vor Team: bei der Stufen-Obergrenze (Handy: 2) bekommt jedes Team zuerst einen Hubschrauber
     const anchors = teams.map((team) => {
@@ -316,7 +337,10 @@ export class AirSupport {
     if (!r || !r.dir) return;
     const shooter = r.actor;
     if (shooter && shooter.vehicle && shooter.vehicle.isAircraft) return;
-    let best = null, bc = Math.cos(0.14);
+    // Bots: engerer Erfassungskegel (≈ 4,5°) und nicht jede Rakete erfasst (Nutzer 20.11.: KI darf nicht jeden Treffer landen)
+    const bot = !!(shooter && !shooter.isPlayer && !shooter.isRemoteHuman);
+    if (bot && Math.random() > 0.55) return;
+    let best = null, bc = Math.cos(bot ? 0.08 : 0.14);
     for (const v of this.sys.list) {
       if (!v.isAircraft || !v.alive || v.body.onGround) continue;
       if (shooter && typeof v.hostileTo === 'function' && !v.hostileTo(shooter)) continue;
@@ -420,7 +444,7 @@ export class AirSupport {
     if (this._botT > 0) return;
     this._botT = 4;
     if (sys.replica || !G.bots || !sys.live || (G.net && G.net.online && !(G.params && G.params.get && G.params.get('airbots') === '2'))) return;
-    const mode = (G.params && typeof G.params.get === 'function' && G.params.get('airbots')) || '1';
+    const mode = (G.params && typeof G.params.get === 'function' && G.params.get('airbots')) || '0'; // Standard: keine KI-Piloten
     if (mode === '0') return;
     if ((G.match && G.match.elapsed != null ? G.match.elapsed : G.time.elapsed) < 15) return;
     const me = G.player ? G.player.team ?? null : null;
@@ -468,6 +492,7 @@ export class AirSupport {
       this._assignBots(dt);
       this._updatePilots(dt);
     }
+    this.deploy.update(dt);
     // Täuschkörper: Bestand im Modell (Bomben am Jet)
     for (const v of this.sys.list) {
       if (v.air !== 'jet' || !v.model.setStores) continue;
@@ -494,6 +519,7 @@ export class AirSupport {
 
   pilotBot(bot, v) {
     if (!bot || !v || v.air !== 'heli') return null;
+    bot._airScript = true; // ausdrücklich freigegebener KI-Pilot (Kampagne/Test, policy.js)
     if (bot.vehicle !== v || v.seatOf(bot) !== 0) {
       if (bot.vehicle) this.sys.removeFromSeat(bot, { teleport: false });
       if (this.sys.enter(bot, v, 0) !== 0) return null;

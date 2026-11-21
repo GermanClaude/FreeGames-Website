@@ -9,9 +9,9 @@
 //   Trifft die Wanne eine Wand, darf body.onWall (vehicles/breach.js, Host/Einzelspiel) sie einreißen – dann kein Rückstoß.
 // • Schlafzustand für stehende, unbesetzte Fahrzeuge (kostet dann nichts).
 import * as THREE from 'three';
-import { collisionRay } from '../engine/physics.js?v=20261119182451';
-import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261119182451';
-import { Drivetrain } from './drivetrain.js?v=20261119182451';
+import { collisionRay } from '../engine/physics.js?v=20261121041936';
+import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261121041936';
+import { Drivetrain } from './drivetrain.js?v=20261121041936';
 
 export const STEP = 1 / 60;
 export const GRAVITY = VEHICLE_GRAVITY;
@@ -109,7 +109,7 @@ export class VehicleBody {
         this.wheels.push({
           local: new THREE.Vector3(w.x * side, my, z), side, axle: i,
           steer: !tracked && !!(w.steer && w.steer[i]), drive: tracked || !!(w.drive ? w.drive[i] : true),
-          rear: !tracked && z > 0,
+          rear: !tracked && z > 0, steerK: def.steerK && Number.isFinite(def.steerK[i]) ? def.steerK[i] : 1, // 8×8: zweite Lenkachse schwächer
           comp: 0, prevComp: 0, contact: false, point: new THREE.Vector3(), normal: new THREE.Vector3(0, 1, 0),
           spin: 0, steerAngle: 0, load: 0, surface: null,
         });
@@ -277,7 +277,7 @@ export class VehicleBody {
     let slip = 0, tSlip = 0;
 
     for (const w of this.wheels) {
-      w.steerAngle = w.steer ? (w.rear ? -steerA : steerA) : 0; // Hinterradlenkung (Stapler): Gegenvorzeichen
+      w.steerAngle = w.steer ? (w.rear ? -steerA : steerA) * w.steerK : 0; // Hinterradlenkung (Stapler): Gegenvorzeichen
       if (!w.contact) continue;
       const N = w.load;
       _tmp.copy(w.normal).multiplyScalar(w.Fs);

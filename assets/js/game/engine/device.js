@@ -17,6 +17,7 @@
 //     Stufe, höchstens auf der Obergrenze.
 // Alles bleibt lokal im Browser (kein Versand); „Lokale Daten löschen“ auf der Website entfernt es mit.
 import * as THREE from 'three';
+import { consoleKind } from '../../shared/gamepad.js?v=20261121041936';
 
 const KEY = 'nullpunkt:geraet';
 const VERSION = 1;
@@ -313,6 +314,11 @@ export function decideAuto(renderer, { bench = true } = {}) {
   if (d.mem && d.mem <= 2) ceiling = 'low';
   else if (!d.touch && ((d.mem && d.mem <= 4) || (d.cores && d.cores <= 2))) ceiling = minTier(ceiling, 'medium');
   if (ceiling === 'ultra') ceiling = 'high'; // ultra nie automatisch
+  // Konsolen-/TV-Browser (plattform, 19.11.): Edge auf der Xbox und der PS-Browser haben enge Speichergrenzen je Tab,
+  // Fernseher schwache GPUs – höchstens „mittel“ (Fernseher „niedrig“), lernen nach unten wie überall
+  const ck = consoleKind();
+  if (ck === 'xbox' || ck === 'playstation' || ck === 'steamdeck') { ceiling = minTier(ceiling, 'medium'); reasons.push(`Konsole (${ck})`); }
+  else if (ck === 'tv' || ck === 'nintendo') { ceiling = 'low'; reasons.push('Fernseher-Browser'); }
   // Startstufe: Desktop = Obergrenze. Telefone/Tablets zusätzlich nach Speicher/Kernen wie bisher – eine neuere GPU-
   // Generation allein hebt ein 4-GB-Telefon nicht auf „mittel“, erst ein Match mit Reserve
   let tier = d.touch ? minTier(ceiling, heur) : ceiling;

@@ -2,11 +2,11 @@
 // Gelände erzeugen, Kollisions-/Kugel-BVH, Startpunkte einrasten, Navigation (feine Graphen in Ortschaften über
 // navbuild.js + implizites 4-m-Gitter im freien Gelände, an den Rändern verknüpft). Ohne three – läuft im Welt-Worker
 // (bigjob.worker.js) parallel zum Hauptthread, als Rückfall direkt im Hauptthread.
-import { TriangleBVH } from '../bvh.js?v=20261119182451';
-import { buildNavData, makeTests, AGENT_R, KNEE, DIRS8 } from '../navbuild.js?v=20261119182451';
-import { Heightfield } from './heightfield.js?v=20261119182451';
-import { CompositeBVH } from './composite.js?v=20261119182451';
-import { generateTerrain } from './generate.js?v=20261119182451';
+import { TriangleBVH } from '../bvh.js?v=20261121041936';
+import { buildNavData, makeTests, AGENT_R, KNEE, DIRS8 } from '../navbuild.js?v=20261121041936';
+import { Heightfield } from './heightfield.js?v=20261121041936';
+import { CompositeBVH } from './composite.js?v=20261121041936';
+import { generateTerrain } from './generate.js?v=20261121041936';
 
 /** Gelände erzeugen → { hf (Heightfield), data (toData), roads } */
 export async function terrainJob(spec, onStage) {
@@ -214,11 +214,37 @@ function buildBigNav(job, hf, col, comp) {
   for (const n of out) { n.links = n.links.map(k => remap[k]).filter(k => k >= 0); n.drop = n.drop.map(k => remap[k]).filter(k => k >= 0); }
   let links = 0, cover = 0, fine = 0;
   for (const n of out) { links += n.links.length; if (n.cover) cover++; if (n.kind === 0) fine++; }
-  return { nodes: out, stats: { nodes: out.length, fine, coarse: out.length - fine, links, coarseLinks, stitched, lineNodes: N - lineFrom, lineLinks, cover, removed: N - out.length, sites: fineStats } };
+  return packNav(out, { nodes: out.length, fine, coarse: out.length - fine, links, coarseLinks, stitched, lineNodes: N - lineFrom, lineLinks, cover, removed: N - out.length, sites: fineStats });
+}
+
+/**
+ * weit2: Navigationsdaten als typisierte Arrays (übertragbar statt 130 000 geklonter Objekte; Hauptthread baut daraus
+ * schlanke Knoten mit Sichten auf die Verbindungsliste, terrain/bignav.js). CSR-Listen: start[N + 1] + Indizes.
+ */
+function packNav(nodes, stats) {
+  const N = nodes.length;
+  let L = 0, D = 0, C = 0;
+  for (const n of nodes) { L += n.links.length; D += n.drop.length; C += n.coverDirs.length; }
+  const pos = new Float32Array(N * 3), linkStart = new Int32Array(N + 1), links = new Int32Array(L), dropStart = new Int32Array(N + 1), drops = new Int32Array(D);
+  const coverStart = new Int32Array(N + 1), coverDirs = new Float32Array(C), coverDir = new Float32Array(N * 2), flags = new Uint8Array(N), cost = new Float32Array(N);
+  let l = 0, d = 0, c = 0;
+  for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    pos[i * 3] = n.x; pos[i * 3 + 1] = n.y; pos[i * 3 + 2] = n.z;
+    linkStart[i] = l; for (const k of n.links) links[l++] = k;
+    dropStart[i] = d; for (const k of n.drop) drops[d++] = k;
+    coverStart[i] = c; for (const v of n.coverDirs) coverDirs[c++] = v;
+    if (n.coverDir) { coverDir[i * 2] = n.coverDir[0]; coverDir[i * 2 + 1] = n.coverDir[2]; }
+    flags[i] = (n.cover ? 1 : 0) | (n.coverHigh ? 2 : 0) | (n.kind === 1 ? 4 : 0) | (n.coverDir ? 8 : 0);
+    cost[i] = n.cost || 0;
+  }
+  linkStart[N] = l; dropStart[N] = d; coverStart[N] = c;
+  return { packed: true, count: N, pos, linkStart, links, dropStart, drops, coverStart, coverDirs, coverDir, flags, cost, stats };
 }
 
 export function worldTransferables(r) {
-  return [...TriangleBVH.transferables(r.col), ...TriangleBVH.transferables(r.bullet)];
+  const nv = r.nav && r.nav.packed ? ['pos', 'linkStart', 'links', 'dropStart', 'drops', 'coverStart', 'coverDirs', 'coverDir', 'flags', 'cost'].map((k) => r.nav[k].buffer) : [];
+  return [...TriangleBVH.transferables(r.col), ...TriangleBVH.transferables(r.bullet), ...nv];
 }
 
 export { Heightfield };

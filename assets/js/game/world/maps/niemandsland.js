@@ -4,14 +4,14 @@
 // Dazwischen das Niemandsland: Hunderte Granattrichter (die tiefsten voll Wasser), Stacheldrahtgürtel vor beiden
 // Fronten, zersplitterte Baumstümpfe, eine Dorfruine (West) und eine Kapellenruine (Ost) mit zerstörbaren Mauern, in
 // der Mitte ein liegengebliebener Panzer. Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { wall } from '../arch.js?v=20261119182451';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261119182451';
-import { sampleSpline } from '../terrain/generate.js?v=20261119182451';
-import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261119182451';
+import { wall } from '../arch.js?v=20261121041936';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261121041936';
+import { sampleSpline } from '../terrain/generate.js?v=20261121041936';
+import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261121041936';
 // karten-voll (14.11.): Grabenleben, Trümmerfeld, ausgebrannte Lastwagen, Ruinen-Schutt
-import { kriegsspuren, ruinenLeben } from './niemandsland-leben.js?v=20261119182451';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261119182451'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261119182451';
+import { kriegsspuren, ruinenLeben } from './niemandsland-leben.js?v=20261121041936';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261121041936'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261121041936';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -197,7 +197,9 @@ const NIEMANDSLAND = {
   climbMax: 2.8, // Gräben ≈ 2–2,7 m bis zur Brustwehr: Ausstieg per Klettern (27.10.)
   defaultSurface: 'dirt',
   wallMargin: 40,
-  assets: { hdri: 'np_sky_vormittag_bewoelkt' }, // 16.10.: eigener Himmel (Kartenstandard Vormittag, bewölkt)
+  assets: { hdri: 'np_sky_vormittag_bewoelkt', // 16.10.: eigener Himmel (Kartenstandard Vormittag, bewölkt)
+    // tex4 (15.11.): Grabenverschalung/Laufroste aus verwittertem Bretterscan statt lackiertem Dielenboden (wirkte wie Parkett)
+    materials: { wood_planks: { id: 'wood_planks_weathered', color: [4.8, 4.6, 4.5], roughness: 1.1 } } },
   lighting: {
     // bedeckt: Sonne hoch und schwach, kein Hof um die Sonne (blendete tief im Gegenlicht – Nutzer 11.10.)
     sun: { elevation: 42, azimuth: 200, color: '#ddd6ca', intensity: 1.25 },
@@ -237,6 +239,18 @@ const NIEMANDSLAND = {
     seed: 19, forests: [], scatter: { count: 0 }, hedges: [],
     rocks: { count: 30, clusters: [] },
   },
+  // fuell (20.11.): Bodenstreu im Ring um die Kamera (terrain/litter.js) – Steine, Granatsplitter-Brocken, zerfetzte
+  // Äste und Rindenstücke aus den zerschossenen Baumreihen; vorher war das Ödland eine glatte braune Fläche
+  // fuell (20.11.): zerschossene Baumgruppen im Niemandsland (Stümpfe, gebrochene Stämme; Kollision wie im Brandwald,
+  // terrain/deadwood.js) – nur in Hainen zwischen den Fronten (Grunddichte 0), punktsymmetrisch, fern von Gräben/Flaggen
+  deadwood: {
+    seed: 1916, density: 0, step: 3.4, clearNoise: 0.5, logs: 0,
+    mix: { hoch: 0.12, gebrochen: 0.42, stumpf: 0.46, grau: 0 },
+    groves: [[-60, 42, 20, 1.5], [60, -42, 20, 1.5], [-205, -52, 22, 1.4], [205, 52, 22, 1.4], [-28, -72, 16, 1.2], [28, 72, 16, 1.2],
+      [118, 68, 18, 1.3], [-118, -68, 18, 1.3], [-238, 66, 16, 1.1], [238, -66, 16, 1.1]],
+    clearings: [[0, 0, 26], [-62, 46, 7.5], [88, -58, 7.5], [-188, -30, 6], [196, 34, 6]], // Mitte, Wracks (niemandsland-leben.js)
+  },
+  litter: { seed: 1917, twigs: 0.12, sticks: 0.12, branches: 0.012, bark: 0.05, stones: 0.05 }, // ohne Holzkohle (wirkte als schwarze Klumpen)
   clearings: [[0, 0, 40]],
 
   sites: [
@@ -289,6 +303,8 @@ const NIEMANDSLAND = {
   vehicles: [
     { id: 'A-panzer-1', team: 'A', kind: 'tank', x: 70, z: HQZ - 4, yaw: 0 }, { id: 'A-panzer-2', team: 'A', kind: 'tank', x: -70, z: HQZ - 4, yaw: 0 },
     { id: 'B-panzer-1', team: 'B', kind: 'tank', x: -70, z: -HQZ + 4, yaw: Math.PI }, { id: 'B-panzer-2', team: 'B', kind: 'tank', x: 70, z: -HQZ + 4, yaw: Math.PI },
+    // Halbkette für den Nachschub je Team (20.11., Rolle 'truck' → je Generation; 1. WK: ZK-8 Packesel)
+    { id: 'A-truck-1', team: 'A', kind: 'truck', x: 38, z: HQZ - 6, yaw: 0 }, { id: 'B-truck-1', team: 'B', kind: 'truck', x: -38, z: -HQZ + 6, yaw: Math.PI },
   ],
   secrets: [],
 };

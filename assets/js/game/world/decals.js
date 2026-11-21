@@ -11,12 +11,13 @@
 //
 // placeLookDecals(world, group, { quality, seed, def }) → { count, meshes, ms }
 import * as THREE from 'three';
+import { streuRaster, bodenY } from './bodenauflage.js?v=20261121041936'; // fuell: Bereiche (Großkarten) + Bodenhöhe
 
 export const LOOK_DECAL = { rust: 0, water: 1, grime: 2, cracks: 3, leak: 4, poster: 5, tag: 6, soot: 7,
   // karten-voll (14.11.): Kriegsspuren und mehr Stadtleben (zweite Atlashälfte, 1024×1024)
   einschuss: 8, splitter: 9, brand: 10, plakat: 11, graffiti: 12, garbe: 13, kreide: 14, algen: 15 };
 const ROWS = 4;
-const CAP = { medium: 180, high: 300, ultra: 420 }; // karten-voll: vorher 140/220/300
+const CAP = { medium: 300, high: 540, ultra: 760 }; // karten-voll: vorher 140/220/300; fuell (20.11.): vorher 180/300/420
 /** Zellgröße der Instanz-Gruppen (m): größer = weniger Draw Calls, kleiner = besseres Frustum-Culling. */
 const CELL = { medium: 64, high: 44, ultra: 32 };
 
@@ -47,7 +48,8 @@ function drawAtlas(ctx) {
   // 0 Rostlauf (von oben, orange-braun, Tropfnasen)
   cell(0, () => { streaks(20, '108,62,32', 0.4, 250, 8, true); streaks(12, '66,40,22', 0.36, 200, 4, true); });
   // 1 Wasser-/Kalkfahne (grau-dunkel, breit, weich)
-  cell(1, () => { streaks(10, '28,28,26', 0.32, 256, 34, false); streaks(6, '205,200,188', 0.18, 200, 20, false); });
+  // tex4: helle Kalkfahnen deutlich schwächer (× 2,1 im Shader → wirkten auf dunklem Putz wie glänzende Folienstreifen)
+  cell(1, () => { streaks(10, '28,28,26', 0.3, 256, 34, false); streaks(6, '190,186,176', 0.07, 200, 26, false); });
   // 2 Schmutzsockel (unten dunkel, Spritzer, nach oben auslaufend)
   cell(2, () => {
     const g = ctx.createLinearGradient(0, 256, 0, 40);
@@ -63,12 +65,19 @@ function drawAtlas(ctx) {
   // 3 Wandrisse (verästelt, mit hellem Kantenausbruch)
   cell(3, () => {
     ctx.lineCap = 'round';
+    // tex4 (15.11.): feiner (vorher 2,2 px tiefschwarz = 1–2 cm breite „Filzstift“-Linien); Haarriss mit weichem
+    // Schmutzsaum und hellem Kantenausbruch daneben, Breite schwankt entlang des Risses
+    const pts = [];
     const crack = (x, y, a, len, w) => {
-      ctx.strokeStyle = 'rgba(18,16,14,0.85)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y);
-      for (let i = 0; i < len; i++) { a += (r() - 0.5) * 0.9; x += Math.cos(a) * 5; y += Math.sin(a) * 5; ctx.lineTo(x, y); if (r() < 0.07 && w > 0.7) { ctx.stroke(); crack(x, y, a + (r() - 0.5) * 2.2, len * 0.45, w * 0.6); ctx.strokeStyle = 'rgba(18,16,14,0.85)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y); } }
-      ctx.stroke();
+      const path = [[x, y, w]];
+      for (let i = 0; i < len; i++) { a += (r() - 0.5) * 0.9; x += Math.cos(a) * 4; y += Math.sin(a) * 4; path.push([x, y, w * (0.6 + r() * 0.5)]); if (r() < 0.07 && w > 0.5) crack(x, y, a + (r() - 0.5) * 2.2, len * 0.45, w * 0.6); }
+      pts.push(path);
     };
-    crack(128, 20, Math.PI / 2 + 0.2, 34, 2.2); crack(128, 128, 0.3, 18, 1.6);
+    crack(128, 18, Math.PI / 2 + 0.2, 44, 1.25); crack(128, 128, 0.3, 22, 0.9);
+    const draw = (col, k, dx, dy) => { for (const path of pts) for (let i = 1; i < path.length; i++) { ctx.strokeStyle = col; ctx.lineWidth = path[i][2] * k; ctx.beginPath(); ctx.moveTo(path[i - 1][0] + dx, path[i - 1][1] + dy); ctx.lineTo(path[i][0] + dx, path[i][1] + dy); ctx.stroke(); } };
+    draw('rgba(40,34,28,0.16)', 4.5, 0, 1.5);   // Schmutzsaum (Wasser zieht in den Riss)
+    draw('rgba(236,230,218,0.35)', 1.2, -0.9, -0.9); // Kantenausbruch hell
+    draw('rgba(22,19,16,0.72)', 1, 0, 0);
   });
   // 4 Leckfleck (dunkler Fleck mit Läufen nach unten)
   cell(4, () => {
@@ -140,15 +149,28 @@ function drawAtlas(ctx) {
   });
   // Graffiti: freihändige Schriftzüge (Kringel, keine echten Zeichen/Marken)
   cell(12, () => {
+    // tex4 (15.11.): Sprühdose statt Comic-Zickzack – erfundene, schnell gesprühte Buchstabenzüge (keine echten Zeichen)
+    // mit weichem Sprühnebel (Unschärfe), Laufnasen, verblasst und teils übergestrichen
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    for (const [col, w] of [['rgba(30,30,34,0.9)', 11], ['rgba(200,60,50,0.85)', 6]]) {
-      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath();
-      let x = 30, y = 140; ctx.moveTo(x, y);
-      for (let i = 0; i < 26; i++) { x += 7; y = 140 + Math.sin(i * 1.3) * 34 + (r() - 0.5) * 12; ctx.quadraticCurveTo(x - 4, y - 30 * Math.sign(Math.sin(i)), x, y); }
-      ctx.stroke();
+    // ein durchgehender, schnell gesprühter Schriftzug (Schleifen/Haken, keine echten Buchstaben), dünn, ohne Kontur
+    const pts = [];
+    let x = 26, y = 130;
+    for (let g = 0; g < 7; g++) {
+      const up = 40 + r() * 40, loop = r() < 0.5;
+      pts.push([x + 6, y - up], [x + 12 + (loop ? 10 : 0), y - up * (loop ? 0.6 : 0.2)], [x + 18, y + 6 + r() * 10]);
+      x += 26 + r() * 6;
     }
+    const hue = r() < 0.5 ? '44,46,54' : (r() < 0.5 ? '150,58,48' : '52,78,110');
+    ctx.strokeStyle = `rgba(${hue},0.75)`; ctx.lineWidth = 4.5; ctx.shadowColor = `rgba(${hue},0.6)`; ctx.shadowBlur = 3;
+    ctx.beginPath(); ctx.moveTo(26, 130);
+    for (let i = 0; i + 1 < pts.length; i += 2) ctx.quadraticCurveTo(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]);
+    ctx.stroke(); ctx.shadowBlur = 0;
+    // Unterstrich + Laufnasen
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(30, 150); ctx.quadraticCurveTo(120, 160, x, 146); ctx.stroke();
+    for (let k = 0; k < 5; k++) { const qx = 30 + r() * (x - 30), qy = 120 + r() * 30, len = 8 + r() * 26; const g2 = ctx.createLinearGradient(0, qy, 0, qy + len); g2.addColorStop(0, `rgba(${hue},0.5)`); g2.addColorStop(1, `rgba(${hue},0)`); ctx.fillStyle = g2; ctx.fillRect(qx - 0.8, qy, 1.6, len); }
     ctx.globalCompositeOperation = 'destination-out';
-    for (let i = 0; i < 400; i++) { ctx.globalAlpha = r() * 0.5; ctx.fillRect(r() * 256, r() * 256, 1 + r() * 2, 1 + r() * 2); }
+    for (let i = 0; i < 900; i++) { ctx.globalAlpha = r() * 0.55; ctx.fillRect(r() * 256, r() * 256, 1 + r() * 2.5, 1 + r() * 2.5); } // abgewittert
+    ctx.globalAlpha = 0.35; ctx.fillRect(0, 150 + r() * 40, 256, 60); // teils überstrichen/verblasst
   });
   // MG-Garbe: Einschussreihe schräg über die Wand
   cell(13, () => { for (let i = 0; i < 12; i++) hole(20 + i * 19 + (r() - 0.5) * 8, 170 - i * 9 + (r() - 0.5) * 18, 3 + r() * 2.5); });
@@ -205,8 +227,12 @@ const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vect
 const _col = new THREE.Color();
 
 /** Welches Decal passt zu einer Wand? → [Zelle, Breite, Höhe, Mittenhöhe über Boden] | null */
+/** fuell (20.11.): Anteil Kriegsspuren je Karte (ohne def.lookDecals.krieg). */
+const KRIEG = { stadtkern: 0.34, niemandsland: 0.5, brandwald: 0.42, grenzland: 0.2, flugplatz: 0.18, werk: 0.13, hafen: 0.1, altstadt: 0.12, range: 0.04, bibliothek: 0.02 };
 function pick(name, r, krieg = 0.12) {
   const n = name || '';
+  // gesamt 20.11.: nie auf Scheiben (Schaufenster Stadtkern: Einschuss/Kreide schwebte als heller Fleck auf dem Glas)
+  if (/glass|glas|fenster|window/i.test(n)) return null;
   // karten-voll: Kriegsspuren (Einschüsse, Garben, Splitter, Brand) an festen Wänden – Anteil je Karte (def.lookDecals.krieg)
   if (!/container/.test(n) && r() < krieg) {
     const w = r();
@@ -227,29 +253,29 @@ function pick(name, r, krieg = 0.12) {
 
 export function placeLookDecals(world, group, { quality = 'high', seed = 1, def = {} } = {}) {
   const t0 = performance.now();
-  const cap = CAP[quality] || 0;
+  let cap = CAP[quality] || 0;
   if (!cap || !world?.raycast || !world.bounds) return { count: 0, meshes: 0, ms: 0 };
   const opt = def.lookDecals || {};
   const density = opt.density ?? 1;
   const r = rng(seed);
-  const b = world.bounds, step = (opt.step ?? 2.6) / Math.sqrt(density);
+  const step = (opt.step ?? 1.9) / Math.sqrt(density); // fuell (20.11.): vorher 2,6 m – auf dem Hafen kamen nur 59 Decals zustande
   const items = [];
   const taken = new Map(); // grobe Belegung (0,8 m) gegen Häufungen
   const key = (x, y, z) => `${Math.round(x / 0.8)}|${Math.round(y / 0.8)}|${Math.round(z / 0.8)}`;
-  const cells = [];
-  for (let z = b.min.z + step / 2; z < b.max.z; z += step) for (let x = b.min.x + step / 2; x < b.max.x; x += step) cells.push([x + (r() - 0.5) * step, z + (r() - 0.5) * step]);
-  // gemischte Reihenfolge → bei Kappung gleichmäßig über die Karte verteilt
-  for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+  // gemischte Reihenfolge → bei Kappung gleichmäßig über die Karte verteilt; fuell: Großkarten nur in opt.bereiche
+  const { cells, flaeche } = streuRaster(world, opt.bereiche, step, r);
+  cap = Math.round(cap * flaeche * (opt.cap ?? 1));
   for (const [x, z] of cells) {
     if (items.length >= cap) break;
-    const gy = world.groundHeight ? world.groundHeight(x, z, 3.2) : 0;
-    if (gy == null || gy > 3) continue;
+    const gy = bodenY(world, x, z);
+    if (gy == null) continue;
     const a = r() * Math.PI * 2;
     _o.set(x, gy + 1.1, z); _d.set(Math.cos(a), 0, Math.sin(a));
-    const h = world.raycast(_o, _d, 3.2);
+    const h = world.raycast(_o, _d, 5.5); // fuell: vorher 3,2 m
     if (!h || Math.abs(h.normal.y) > 0.12 || h.distance < 0.25) continue;
+    if (h.surface === 'glass') continue; // gesamt 20.11.: keine Decals auf Scheiben
     const name = h.object?.name || h.object?.material?.name || h.surface || '';
-    const sel = pick(name, r, opt.krieg ?? 0.12);
+    const sel = pick(name, r, opt.krieg ?? KRIEG[def.id] ?? 0.12);
     if (!sel) continue;
     let [cell, w, hh, cy] = sel;
     // Normale zur Strahlquelle drehen (die BVH liefert die Dreiecksnormale ohne Ausrichtung)
@@ -270,7 +296,7 @@ export function placeLookDecals(world, group, { quality = 'high', seed = 1, def 
       _o.copy(_p).addScaledVector(_t, u * w).addScaledVector(_n, 0.15); _o.y += v * hh;
       _d.copy(_n).negate();
       const c = world.raycast(_o, _d, 0.4);
-      if (!c || Math.abs(c.distance - 0.15) > 0.06 || Math.abs(c.normal.dot(_n)) < 0.95) { ok = false; break; }
+      if (!c || c.surface === 'glass' || Math.abs(c.distance - 0.15) > 0.06 || Math.abs(c.normal.dot(_n)) < 0.95) { ok = false; break; }
     }
     if (!ok) continue;
     taken.set(k, 1);

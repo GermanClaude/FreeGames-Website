@@ -16,16 +16,16 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261119182451';
-import { ICON, medalBadge } from './icons.js?v=20261119182451';
-import { Minimap } from './minimap.js?v=20261119182451';
-import { Killfeed } from './killfeed.js?v=20261119182451';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261119182451';
-import { StrikeTargeting } from './strike-target.js?v=20261119182451';
-import { actionKey } from './settings/keys.js?v=20261119182451';
-import { DeployScreen } from './deploy.js?v=20261119182451';
-import { CommandWheel } from './command-wheel.js?v=20261119182451';
-import { DroneHud } from './drone-hud.js?v=20261119182451';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261121041936';
+import { ICON, medalBadge } from './icons.js?v=20261121041936';
+import { Minimap } from './minimap.js?v=20261121041936';
+import { Killfeed } from './killfeed.js?v=20261121041936';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261121041936';
+import { StrikeTargeting } from './strike-target.js?v=20261121041936';
+import { actionKey } from './settings/keys.js?v=20261121041936';
+import { DeployScreen } from './deploy.js?v=20261121041936';
+import { CommandWheel } from './command-wheel.js?v=20261121041936';
+import { DroneHud } from './drone-hud.js?v=20261121041936';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -640,7 +640,7 @@ export class HUD {
   _updateReadout(dt, w, def, show) {
     const el = this.el.readout;
     if (!el) return;
-    const ro = this._realAmmo && w && w.viewModel ? w.viewModel.readout : null;
+    const ro = this._realAmmo && !this.G.isim && w && w.viewModel ? w.viewModel.readout : null; // Simulation: eigene Schätzung (isim)
     if (ro && ro.seq !== this._roSeq) {
       this._roSeq = ro.seq;
       if (def && ro.weaponId === def.id) {
@@ -664,6 +664,7 @@ export class HUD {
     // Spielstil „Realistisch“: mindestens reduziertes HUD, Fadenkreuz nach Stil/Einstellung
     const fl = this._flags || {};
     if (fl.hudMin === 'reduziert' && st === 'voll') st = 'reduziert';
+    if (fl.hudMin === 'aus') st = 'aus'; // Infanteriesimulation: kein HUD (Gegenstände/Zustand zeigt isim/hud.js)
     if (this.root.dataset.xhair !== (fl.crosshair === false ? '0' : '1')) this.root.dataset.xhair = fl.crosshair === false ? '0' : '1';
     const changed = this.style !== st;
     this.style = st;
@@ -1232,6 +1233,7 @@ export class HUD {
     this._updateArmor(p, now);
     if (this.deploy) this.deploy.update(dt);
     if (this.wheel) this.wheel.update(dt);
+    if (G.trupp && G.trupp.hud && typeof G.trupp.hud.update === 'function') G.trupp.hud.update(dt); // Modus Trupp (ui/trupp-hud.js)
     if (G.mode && G.mode.squads && p && p.alive && input && typeof input.pressed === 'function' && input.pressed('squad_order')) this._squadPing();
     if (this._zoneT > 0) { this._zoneT -= dt; if (this._zoneT <= 0) this.el.zone.hidden = true; }
 
@@ -1276,7 +1278,7 @@ export class HUD {
 
     /* ---------- Punktetabelle */
     const showBoard = !!(input && input.down('scoreboard')) && G.mode;
-    const tablet = this.style === 'aus' && !!showBoard;
+    const tablet = this.style === 'aus' && !!showBoard && !G.isim; // Simulation: Karte nur als Gegenstand (isim/hud.js)
     if (tablet !== this._tablet) {
       this._tablet = tablet;
       toggle(this.root, 'is-tablet', tablet);
@@ -1543,7 +1545,7 @@ export class HUD {
     } else if (G.points && G.points.near) {
       const { point, left, text } = G.points.near;
       pr = { text: text || `${point.def.name} · ${left > 0 ? `noch ${left} s` : point.def.act}`, key: this._keyFor('interact'), action: () => G.points.use() };
-    } else if (G.injuries && G.player && G.player.alive && G.player.injury) {
+    } else if (G.injuries && !G.isim && G.player && G.player.alive && G.player.injury) { // Simulation: Wunden über isim
       // Verwundet: Hinweis mit Verband-Taste (auf Touch antippbar)
       const j = G.player.injury, w = [j.bleed > 0 ? 'Blutung' : '', j.arm ? 'Arm verletzt' : '', j.leg ? 'Bein verletzt' : ''].filter(Boolean);
       if (w.length) pr = { text: `${w.join(' · ')} – Verband (${j.bandages})`, key: this._keyFor('verband'), action: () => G.injuries.bandage() };

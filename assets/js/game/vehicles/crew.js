@@ -7,7 +7,7 @@
 // Ladefolge (Ladeschütze, Sicht 'innen', Blick nur über die Gier im Turmraum geprüft):
 //   'munition' (Sorte wählen) → Blick aufs Gestell → 'greifen' 1,0 s → Blick zum Verschluss → 'einschieben' 0,8 s
 //   → 'schliessen' 0,4 s → geladen. Automatik: 5,0 s mit besetztem Ladeschützensitz, sonst 8,0 s.
-import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261119182451';
+import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261121041936';
 
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 export const LOAD_TIMES = { tuer: 0.55, greifen: 1.0, einschieben: 0.8, schliessen: 0.4 }; // tuer: Schiebetür des Munitionsbunkers (modern)
@@ -243,8 +243,10 @@ export function loaderHint(v, seat, keyFor, touch = false) {
     out.progress = g.autoMax > 0 ? 1 - g.autoT / g.autoMax : 0;
     return out;
   }
+  // Schrittzählung: mit Munitionsbunker 4 Handgriffe (Tür, greifen, einschieben, schließen), sonst 3
+  const bk = !!(v.def.interior && v.def.interior.blastDoor), nS = bk ? 4 : 3, o0 = bk ? 1 : 0;
   if (g.busy > 0) {
-    out.stepText = { tuer: 'Schritt 1/5', greifen: 'Schritt 2/4', einschieben: 'Schritt 3/4', schliessen: 'Schritt 4/4' }[g.busyKind] || '';
+    out.stepText = { tuer: `Schritt 1/${nS}`, greifen: `Schritt ${1 + o0}/${nS}`, einschieben: `Schritt ${2 + o0}/${nS}`, schliessen: `Schritt ${3 + o0}/${nS}` }[g.busyKind] || '';
     out.doHtml = { tuer: 'Schiebetür öffnen …', greifen: 'Granate greifen …', einschieben: 'Einschieben …', schliessen: 'Verschluss schließen …' }[g.busyKind] || '';
     out.progress = g._busyMax > 0 ? 1 - g.busy / g._busyMax : 0;
     return out;
@@ -261,24 +263,24 @@ export function loaderHint(v, seat, keyFor, touch = false) {
       const bunker = !!(v.def.interior && v.def.interior.blastDoor);
       out.turn = turnTo('rack');
       if (bunker && g.step === 'leer') {
-        out.stepText = 'Schritt 1/5 · Munitionsbunker';
+        out.stepText = `Schritt 1/${nS} · Munitionsbunker`;
         out.doHtml = out.turn ? 'Zum Munitionsbunker drehen' : `${key('reload', 'R')} Schiebetür öffnen`;
         out.next = out.turn ? null : 'greifen';
         break;
       }
-      out.stepText = bunker ? 'Schritt 2/5 · Bunker offen' : 'Schritt 1/4 · Gestell';
+      out.stepText = bunker ? `Schritt 2/${nS} · Bunker offen` : `Schritt 1/${nS} · Gestell`;
       out.doHtml = out.turn ? 'Zum Munitionsgestell drehen' : `${key('reload', 'R')} Granate greifen (${SHORT[g.select]})`;
       out.next = out.turn ? null : 'greifen';
       break;
     }
     case 'gegriffen':
       out.turn = turnTo('breech');
-      out.stepText = `Schritt 3/4 · ${SHORT[g.held] || ''} in der Hand`;
+      out.stepText = `Schritt ${2 + o0}/${nS} · ${SHORT[g.held] || ''} in der Hand`;
       out.doHtml = out.turn ? 'Zum Verschluss drehen' : `${key('fire', 'LMT')} Einschieben`;
       out.next = out.turn ? null : 'einschieben';
       break;
     case 'eingeschoben':
-      out.stepText = 'Schritt 4/4 · Verschluss';
+      out.stepText = `Schritt ${3 + o0}/${nS} · Verschluss`;
       out.doHtml = `${key('reload', 'R')} Verschluss schließen`;
       out.next = 'schliessen';
       break;
@@ -290,4 +292,5 @@ export function loaderHint(v, seat, keyFor, touch = false) {
 export const WHY_TEXT = {
   schritt: 'Falscher Schritt', blick: 'Erst hinsehen (Gestell/Verschluss)', leer: 'Keine Granate dieser Sorte', busy: 'Noch beschäftigt', sitz: 'Nur als Ladeschütze (Sitz 4)',
   besetzt: 'Sitz besetzt', weit: 'Zu weit weg', feind: 'Feindliches Fahrzeug', blockiert: 'Ausstieg blockiert', tot: 'Fahrzeug zerstört', sperre: 'Bitte warten',
+  pilot: 'Nur die Klasse Pilot fliegt Luftfahrzeuge', bot: 'Luftfahrzeuge fliegen nur Spieler',
 };

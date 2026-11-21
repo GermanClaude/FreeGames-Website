@@ -5,8 +5,8 @@
 // Serienprämien ein. Befehle des Spielers (Befehlsrad, ai/orders.js) haben Vorrang vor Truppbefehlen, Flaggen und
 // Suchen; Ausweichen, Zurückschießen und Deckung bleiben dem Hirn.
 import * as THREE from 'three';
-import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js?v=20261119182451';
-import { commandFor, commandStep, isAnchored } from './orders.js?v=20261119182451';
+import { analyze, pickRoamGoal, flankPoint, findCover, retreatPoint, isPerch, perchNear } from './tactics.js?v=20261121041936';
+import { commandFor, commandStep, isAnchored } from './orders.js?v=20261121041936';
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -55,6 +55,13 @@ export function think(bot, now) {
   }
   if (goal.kind === 'evade' && now < goal.until) return;
   if (goal.kind === 'grenade' && bot.throwPlan) return;
+  // ges2 (21.11.): zum Truppentransporter gerufen (vehicles/ride.js) – hinlaufen, solange kein Gegner sichtbar ist
+  const rc = bot._rideCall;
+  if (rc && now < rc.until && !bot.vehicle && !(gunner.rec && gunner.rec.visible)) {
+    _v.set(rc.x, rc.y, rc.z);
+    set(goal, 'ride', now, { move: _v, speed: 'run', tolerance: 3 });
+    return;
+  }
   // Befehl des Spielers (Befehlsrad): verdrängt Truppbefehle (bot.order bleibt dann leer)
   const cmd = commandFor(bot, now);
   // Truppbefehl (bots-scale): gilt bis order.until

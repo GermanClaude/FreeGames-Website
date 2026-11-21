@@ -334,6 +334,9 @@ export class Building {
     const d = BUILDS[k];
     const M = this.G.match;
     if (!d || !actor || (M && (M.modeId === 'training' || M.modeId === 'messer'))) return false;
+    // Modus-Regel (Trupp: Bauwerke je Rolle) – null = Klassenregel
+    const Md = this.G.mode;
+    if (Md && typeof Md.buildAllowed === 'function') { const r = Md.buildAllowed(actor, k); if (r === true || r === false) return r; }
     const cls = actor.cls || (actor.loadout && actor.loadout.cls);
     return !d.cls || d.cls === cls;
   }

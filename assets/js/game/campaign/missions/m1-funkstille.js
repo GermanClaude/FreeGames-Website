@@ -1,9 +1,15 @@
 // NULLPUNKT — Kampagne, Mission 1 „Funkstille“ (Altstadt): Infiltration und Häuserkampf.
 // Trupp Lenz dringt im Morgengrauen über die Marktgasse und das Torhaus zum Glockenturm vor, wo Kessars Leute das
 // Funkrelais des Tals abgeschaltet haben. Ziele: Marktgasse → Wachposten → Torhaus (Funkunterlagen) → Brunnenplatz →
-// Glockenturm (Relais neu starten, Gegenstoß abwehren). Checkpoints: start, torhaus, turm.
+// Glockenturm (Relais neu starten, Gegenstoß abwehren). Checkpoints: start, torhaus, familie, turm.
+// kamp3: + Familie in den Keller bringen (Begleitschutz, geschützte Figuren), Scharfschütze im Rathaus.
 
-import { actor } from './cast.js?v=20261119182451';
+import { actor } from './cast.js?v=20261121041936';
+import { arm } from './hilfen-c.js?v=20261121041936';
+
+// kamp3 (15.11.): vertieft – Familie aus der Gasse in den Keller bringen (Begleitschutz) und Scharfschütze im Rathaus.
+const FAMILY = [-12.6, 17.6];
+const CELLAR = [-21, 26.5];
 
 const CUT_INTRO = {
   location: ['Sant Aurel · Altstadt', '05:52 Uhr · Tag 21 der Waffenruhe'],
@@ -113,6 +119,30 @@ export const MISSION_1 = {
       },
     },
     {
+      id: 'familie',
+      checkpoint: { at: [-18, 4], yaw: 0.4 },
+      setup(m) { m.order('follow'); },
+      *run(m) {
+        m.clearObjectives();
+        m.say('lenz', 'Hörst du das? Ein Kind weint, im Hausflur an der Gasse. Die Leute haben es nicht mehr in den Keller geschafft.', { expr: 'ernst' });
+        const fam = [
+          m.extra('vater', { pos: FAMILY, yaw: 2.4, variant: 'zivil-hemd', name: 'Einwohner', crouch: true, protect: true, aim: -1.1 }),
+          m.extra('mutter', { pos: [FAMILY[0] + 0.9, FAMILY[1] + 0.6], yaw: 2.0, variant: 'zivil-strick', name: 'Einwohnerin', crouch: true, protect: true, aim: -1.1 }),
+        ];
+        yield m.holdZone('ansprechen', 'Sprich die Familie im Hausflur an', { at: FAMILY, r: 2.6, secs: 2.5, label: 'Familie', action: 'Ruhig zureden' });
+        m.say('weber', 'Ganz ruhig. Wir bringen Sie in den Keller beim Bäcker. Immer hinter uns bleiben.', { expr: 'erleichtert' });
+        for (const f of fam) { f.crouch = false; f.follow(m.G.player, { crouch: true }); }
+        m.wave('w2b', { count: 2, at: [[-33, 30], [-31, 16]], attack: 'player', radius: 6 });
+        m.say('lenz', 'Zwei kommen die Marktgasse herunter! Familie runter, Falke vorn!', { expr: 'angespannt' });
+        yield m.reach('keller', 'Bring die Familie in den Keller', { at: CELLAR, r: 3.5, label: 'Keller' });
+        for (const f of fam) { f.follow(null); f.walk([[CELLAR[0] - 1.2, CELLAR[1] + 1]], 1.2); }
+        m.say('zivil', 'Gott vergelt’s Ihnen. Wir bleiben hier unten, bis es still ist.', { radio: false });
+        yield m.killObjective('w2bk', 'Halte die Gasse frei', 'w2b');
+        for (const f of fam) f.remove();
+        yield 1;
+      },
+    },
+    {
       id: 'turm',
       checkpoint: { at: [-18, 4], yaw: -1.57 },
       setup(m) { m.order('follow'); },
@@ -123,6 +153,11 @@ export const MISSION_1 = {
         m.wave('w3', { count: 5, at: [[12, -6], [22, 9], [8, -20], [26, -16], [10, 14]], attack: [3, 0], radius: 8 });
         m.say('lenz', 'Sie halten den Platz! Bleib an den Säulen, nicht über die offene Fläche!', { expr: 'angespannt' });
         yield m.killObjective('w3', 'Säubere den Brunnenplatz', 'w3');
+        m.wave('scharf', { count: 1, scale: false, at: [[33, -27]], hold: true });
+        for (const b of m.waves.get('scharf').bots) arm(b, 'sr_brecher');
+        m.say('weber', 'Scharfschütze! Im Fenster über dem Rathausportal, Nordostecke des Platzes!', { expr: 'angespannt' });
+        m.tip('Aus der Deckung an den Säulen anvisieren – nicht über den offenen Platz laufen.', 5);
+        yield m.killObjective('scharfk', 'Schalte den Scharfschützen im Rathaus aus', 'scharf', { pos: [33, -27], label: 'Scharfschütze' });
         m.say('weber', 'Platz ist frei. Der Turmeingang ist auf der Westseite.');
         yield m.reach('turm', 'Erreiche den Glockenturm', { at: [14.5, -8.5], r: 3.5, label: 'Glockenturm' });
         m.wave('w4', { count: 3, at: [[40, -12], [42, 6], [36, -24]], attack: 'player' });

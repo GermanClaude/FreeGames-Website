@@ -13,24 +13,24 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261119182451';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261119182451'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261119182451';
-import { pickNames } from './names.js?v=20261119182451';
-import { Nameplate } from './nameplates.js?v=20261119182451';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261119182451';
-import { upgradeSoldierMaterials, soldierDetailInfo, setSoldierWorld } from './soldier/materials.js?v=20261119182451';
-import { analyze } from './ai/tactics.js?v=20261119182451';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261119182451';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261119182451';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261119182451';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261119182451';
-import { BotAdapt } from './ai/spielstil.js?v=20261119182451';
-import { CorpseStore } from './corpses.js?v=20261119182451';
-import { ActorGrid, CrowdImpostors, crowdScale, spreadSpawn } from './crowd.js?v=20261119182451';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261119182451';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261119182451';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261119182451';
+import { Bot } from './bot.js?v=20261121041936';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261121041936'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261121041936';
+import { pickNames } from './names.js?v=20261121041936';
+import { Nameplate } from './nameplates.js?v=20261121041936';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261121041936';
+import { upgradeSoldierMaterials, soldierDetailInfo, setSoldierWorld } from './soldier/materials.js?v=20261121041936';
+import { analyze } from './ai/tactics.js?v=20261121041936';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261121041936';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261121041936';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261121041936';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261121041936';
+import { BotAdapt } from './ai/spielstil.js?v=20261121041936';
+import { CorpseStore } from './corpses.js?v=20261121041936';
+import { ActorGrid, CrowdImpostors, crowdScale, spreadSpawn } from './crowd.js?v=20261121041936';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261121041936';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261121041936';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261121041936';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -62,7 +62,7 @@ const SIM_LOD = [
   { every: 6, sense: 0.1, think: 6 }, // masse: Massenschlacht (> 120 Bots), weit weg und nicht im Bild
 ];
 // Aussehen je Klasse (Varianten aus soldier/gear.js); Truppführer tragen das Funkgerät
-const CLASS_LOOKS = { sturm: ['sturm', 'grenadier', 'schatten'], sanitaeter: ['sanitaeter'], pionier: ['pionier', 'bastion'], besatzung: ['pionier'], aufklaerer: ['spaeher', 'kundschafter'] };
+const CLASS_LOOKS = { sturm: ['sturm', 'grenadier', 'schatten'], sanitaeter: ['sanitaeter'], pionier: ['pionier', 'bastion'], besatzung: ['pionier'], aufklaerer: ['spaeher', 'kundschafter'], pilot: ['schatten'] };
 const pick = (a) => a[(Math.random() * a.length) | 0];
 
 /** Reihenfolge der Namensschilder: höheres Ziel zuerst, dann näher. */
@@ -1208,7 +1208,7 @@ export class BotManager {
 
   _plateKind(bot) {
     const pl = this.G.player;
-    if (pl && pl.team && bot.team && pl.team === bot.team) return 'ally';
+    if (pl && pl.team && bot.team && pl.team === bot.team) return pl.squad && bot.squad === pl.squad && this.G.mode && this.G.mode.trupp ? 'squad' : 'ally'; // Trupp: eigener Trupp grün
     return bot.team ? 'enemy' : 'ffa';
   }
 
@@ -1242,14 +1242,14 @@ export class BotManager {
       let fade = 6;
       const d = bot.camDist;
       // masse: unsichtbares Schild, das es auch bleibt (außer Sicht, zu weit, Gegner nicht im Visier) → ohne Kopfposition
-      if (p.alpha < 0.02 && (!bot.alive || !bot.inView || (p.kind === 'ally' ? d >= 60 : d >= 7 && aimT !== bot))) { p._target = 0; p._fade = fade; continue; }
+      if (p.alpha < 0.02 && (!bot.alive || !bot.inView || (p.kind === 'ally' || p.kind === 'squad' ? d >= 60 : d >= 7 && aimT !== bot))) { p._target = 0; p._fade = fade; continue; }
       const s = bot.soldier;
       const pos = p._pos || (p._pos = new THREE.Vector3());
       if (s && bot.alive) s.getHeadPosition(pos); else pos.copy(bot.position).setY(bot.position.y + 1.7);
       if (!bot.alive) fade = 16;
-      else if (plates === 'aus' || (plates === 'team' && p.kind !== 'ally')) fade = 16; // Stil verbietet das Schild
+      else if (plates === 'aus' || (plates === 'team' && p.kind !== 'ally' && p.kind !== 'squad')) fade = 16; // Stil verbietet das Schild
       else if (bot.inView) {
-        if (p.kind === 'ally') target = d < 40 ? 1 : d < 60 ? (60 - d) / 20 : 0;
+        if (p.kind === 'ally' || p.kind === 'squad') target = d < 40 ? 1 : d < 60 ? (60 - d) / 20 : 0;
         else {
           // Gegner: unter dem Fadenkreuz oder sehr nah – und nur bei freier Sicht auf den Kopf. Schilder ohne
           // Tiefentest: ein (gedrosselter) Strahl je Schild entscheidet, solange es gewünscht oder noch sichtbar ist.
@@ -1363,6 +1363,7 @@ export class BotManager {
   issueOrder({ leader, order, point = null, target = null, formation = null, radius = ORDER_RADIUS } = {}) {
     const G = this.G;
     if (!leader || !leader.team || !ORDER_DEFS[order] || !leader.alive) return 0;
+    if (G.mode && Number.isFinite(G.mode.orderRadius)) radius = Math.max(radius, G.mode.orderRadius); // Trupp: ganzer eigener Trupp
     const now = G.time.elapsed;
     const near = this.orderableNear(leader, radius);
     const mine = this.commandedBy(leader);
@@ -1380,8 +1381,11 @@ export class BotManager {
     const out = [];
     if (!leader || !leader.team) return out;
     const r2 = radius * radius;
+    const M = this.G.mode;
+    const only = M && typeof M.orderFilter === 'function' ? M.orderFilter(leader) : null; // Trupp: nur Bots des eigenen Trupps
     for (const b of this.bots) {
       if (b.puppet || !b.alive || b.team !== leader.team || b === leader) continue;
+      if (only && !only(b)) continue;
       if (b.position.distanceToSquared(leader.position) <= r2) out.push(b);
     }
     out.sort((a, b) => a.position.distanceToSquared(leader.position) - b.position.distanceToSquared(leader.position));

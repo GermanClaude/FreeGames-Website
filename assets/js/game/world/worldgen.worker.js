@@ -1,5 +1,5 @@
 // NULLPUNKT — Welt-Worker (Owner: world): BVHs + Navigationsgraph abseits des Hauptthreads (siehe worldgen.js).
-import { buildWorldData, resultTransferables } from './worldgen.js?v=20261119182451';
+import { buildWorldData, resultTransferables } from './worldgen.js?v=20261121041936';
 
 self.onmessage = (e) => {
   const job = e.data || {};

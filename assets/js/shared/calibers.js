@@ -34,6 +34,9 @@ const WEAPON_CALIBER = {
   sr_brecher: '338', sr_titan: '50bmg',
   sg_bulldog: '12g', sg_hagel: '12g', ub_schrot: '12g',
   pi_p9: '9mm', pi_adler: '50ae', pi_kobra: '357', pi_p9a: '9mm',
+  // Waffen-Welle 3 (20.11.)
+  smg_uhu: '9mm', smg_hornisse: '9mm', ar_luchs: '556', ar_dachs: '762x39', mr_elster: '762x51', sr_habicht: '762x51', sr_kranich: '762x51',
+  lmg_lindwurm: '762x51', sg_stier: '12g',
 };
 const PROFILE_CALIBER = { pistol: '9mm', pistol_heavy: '357', smg: '9mm', ar: '556', ar_heavy: '762x39', lmg: '762x51', sniper: '338', shotgun: '12g' };
 

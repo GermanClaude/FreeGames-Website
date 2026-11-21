@@ -15,10 +15,10 @@
 // (und zu Satzbeginn), hält Blickziel und Mimik je Satz.
 
 import * as THREE from 'three';
-import { BONE, BIND } from '../bots/soldier/rig.js?v=20261119182451';
-import { variantDef } from '../bots/soldier/gear.js?v=20261119182451';
-import { SKIN_TONES } from '../bots/soldier/materials.js?v=20261119182451';
-import { sampleMouth, expressionFor, VISEME_SHAPES } from './lipsync.js?v=20261119182451';
+import { BONE, BIND } from '../bots/soldier/rig.js?v=20261121041936';
+import { variantDef } from '../bots/soldier/gear.js?v=20261121041936';
+import { SKIN_TONES } from '../bots/soldier/materials.js?v=20261121041936';
+import { sampleMouth, expressionFor, VISEME_SHAPES } from './lipsync.js?v=20261121041936';
 
 // Gesichtsmaße im Modellraum (body-mesh.js face: eyeZ −0,0804, mouthZ −0,1031; Augen auf 1,692 m)
 const EYE_Y = 1.692, EYE_X = 0.033, EYE_Z = -0.0804;

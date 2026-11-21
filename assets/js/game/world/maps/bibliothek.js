@@ -1,15 +1,15 @@
-// NULLPUNKT — Karte „Bibliothek“: alte Zauberbibliothek im Stil einer Schloss-Internatsbibliothek (x −38..38, z −27..27,
+// NULLPUNKT — Karte „Bibliothek“: alte Gelehrtenbibliothek in einem Bergkloster (x −38..38, z −27..27,
 // 13 m hoch). Mittelgang mit langen Lesetischen und einer Rotunde (schwebender Himmelsglobus); links und rechts hohe,
 // dunkle Regale: Reihen quer zum Gang bilden halb geschlossene Lesenischen, außen schräge Fischgrät-Gassen und
 // Querriegel – verwinkelt, kurze Sichtlinien, Leitern an den Regalen. Galerien an den Längswänden (4,4 m) mit Treppen in
 // allen vier Ecken, zwei Holzbrücken quer über die Halle. Norden: Eingangshalle mit Ausleihtheken (Team A), Süden:
-// Verbotene Abteilung hinter Eisengittern mit drei Durchgängen (Team B). Beide Hälften punktsymmetrisch (fair).
+// Versiegeltes Archiv hinter Eisengittern mit drei Durchgängen (Team B). Beide Hälften punktsymmetrisch (fair).
 // Magie: fliegende Bücher, schwebende Kerzen, schwebende Armillarsphäre (ohne Kollision, über Kopfhöhe). (Owner: world)
 import * as THREE from 'three';
-import { wall, slab, stairs, railing } from '../arch.js?v=20261119182451';
-import { chair, hash01 } from '../props.js?v=20261119182451';
+import { wall, slab, stairs, railing } from '../arch.js?v=20261121041936';
+import { chair, hash01 } from '../props.js?v=20261121041936';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { atlasTexture, atlasScale } from '../atlas.js?v=20261119182451';
+import { atlasTexture, atlasScale } from '../atlas.js?v=20261121041936';
 
 const X = 38, Z = 27, H = 13, GY = 4.4; // Halle, Höhe, Galerie-/Brückenhöhe
 const GAL = X - 4.5, GZ = 22.5; // Innenkante und Länge (±) der Galerien
@@ -157,7 +157,7 @@ export default {
     }
     b.box(0, 0, Z - 0.5, 6, 6, 0.4, 'wood_dark', { tint: '#4a2e1a', minimap: false }); // Portal (geschlossen)
     zones.push({ x0: -GAL, z0: 20, x1: GAL, z1: Z, kind: 'plaza' });
-    // ------------------------------------------------------------------ Verbotene Abteilung (Süden, Team B)
+    // ------------------------------------------------------------------ Versiegeltes Archiv (Süden, Team B)
     for (const [xa, xb] of [[-X + 0.4, -19], [-14, -4], [4, 14], [19, X - 0.4]]) bars(b, xa, -20, xb, -20, 3.4);
     for (let x = -30; x <= 30; x += 7.5) shelf(b, x, -Z + 0.85, 6.5, 4.6, 500 + x, { ry: 0, face: 1, tint: WOOD_D });
     for (const s of [-1, 1]) shelf(b, s * 9, -23.6, 5, 2.2, 700 + s, { ry: 0, tint: WOOD_D });
@@ -229,8 +229,16 @@ function shelf(b, x, z, len, h, seed, o = {}) {
 
 function table(b, x, z, ry) {
   const c = Math.cos(ry), s = Math.sin(ry);
-  b.box(x, 0, z, 3.2, 0.78, 1.1, 'wood_dark', { ry, tint: WOOD_L, minimap: 'cover' });
-  for (const t of [-1.0, 0, 1.0]) for (const side of [-1, 1]) chair(b, x + t * c + side * 0.85 * s, z - t * s + side * 0.85 * c, { ry: ry + (side > 0 ? 0 : Math.PI), tint: '#4a2e1a' });
+  // platz2 (20.11.): sichtbar als echter Lesetisch (Platte, Zarge, vier Beine, Fußsteg) statt eines massiven Klotzes bis
+  // zum Boden; Kollision/Deckung unverändert als Quader (Spielbalance, Mehrspieler)
+  b.box(x, 0, z, 3.2, 0.78, 1.1, 'black', { ry, visual: false, minimap: 'cover' });
+  const V = { ry, collide: false, minimap: false };
+  b.box(x, 0.71, z, 3.3, 0.07, 1.16, 'wood_dark', { ...V, tint: WOOD_L });
+  b.box(x, 0.58, z, 3.0, 0.13, 0.96, 'wood_dark', { ...V, tint: WOOD, grad: false });
+  for (const lx of [-1.42, 1.42]) for (const lz of [-0.42, 0.42]) b.box(x + lx * c + lz * s, 0, z - lx * s + lz * c, 0.1, 0.58, 0.1, 'wood_dark', { ...V, tint: WOOD });
+  for (const lx of [-1.42, 1.42]) b.box(x + lx * c, 0.12, z - lx * s, 0.06, 0.06, 0.8, 'wood_dark', { ...V, tint: WOOD, ao: false });
+  b.box(x, 0.12, z, 2.84, 0.06, 0.06, 'wood_dark', { ...V, tint: WOOD, ao: false });
+  for (const t of [-1.0, 0, 1.0]) for (const side of [-1, 1]) chair(b, x + t * c + side * 0.85 * s, z - t * s + side * 0.85 * c, { ry: ry + (side > 0 ? Math.PI : 0), tint: '#4a2e1a' }); // Sitzfläche zum Tisch (vorher Lehne am Tisch)
   b.cyl(x, 0.78, z, 0.06, 0.25, 'white', { collide: false, minimap: false, seg: 8 }); // Kerze
   b.glow(x, 1.1, z, { size: 0.8, color: '#ffb060', intensity: 0.8 });
 }

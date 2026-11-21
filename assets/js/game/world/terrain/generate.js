@@ -10,9 +10,9 @@
 //   forests [{ x, z, r }], trenches [{ pts, width, depth, ramps }], craters { list: [[x, z, r, depth]], count, seed, area, r, depth, avoid },
 //   wasteland { dirt, mud } (Ödland statt Wiese), relief { knolls, ridges, sunken, scatter, avoid, avoidRects } (relief.js)
 // Reihenfolge: Grundform → Details → Fluss → Bauflächen → Dämme → Straßen (planieren) → Felder → Splat/Maske.
-import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261119182451';
-import { Heightfield } from './heightfield.js?v=20261119182451';
-import { applyRelief } from './relief.js?v=20261119182451'; // gelaende (Runde 3): Kuppen, Senken, Wälle, Hohlwege
+import { createSimplex, fbm, ridged, smoothstep, lerp } from './noise.js?v=20261121041936';
+import { Heightfield } from './heightfield.js?v=20261121041936';
+import { applyRelief } from './relief.js?v=20261121041936'; // gelaende (Runde 3): Kuppen, Senken, Wälle, Hohlwege
 
 /** Catmull-Rom-Kurve durch pts ([[x, z], …]), Abtastung ~step m. → [[x, z], …] */
 export function sampleSpline(pts, step = 2) {
@@ -77,7 +77,10 @@ export function makeCoarse(spec) {
     if (edge) {
       const e = Math.max(Math.abs(x), Math.abs(z));
       const k = smoothstep(edge.start, edge.end, e + fbm(noise2, x / 90, z / 90, 2) * 18);
-      if (k > 0) h += k * edge.height * (0.55 + 0.45 * ridged(noise, x / 160, z / 160, 4) * 1.6) * (1 + Math.max(0, e - edge.end) / 700);
+      // edge.soft (Weitmark): runde, bewaldbare Mittelgebirgsrücken statt Grat-Rauschen – großskaliges fBm mit 3 Oktaven
+      // (kürzeste Welle ≈ scale/4 ≫ 24-m-Raster des Kulissenrings: kein Sägezahn-Aliasing), sanfter Anstieg nach außen
+      if (k > 0 && edge.soft) { const sc = edge.scale ?? 380, f = 0.5 + 0.5 * fbm(noise, x / sc + 17.3, z / sc - 4.1, 3); h += k * edge.height * (0.45 + 0.75 * f * f) * (1 + Math.max(0, e - edge.end) / (edge.grow ?? 1400)); }
+      else if (k > 0) h += k * edge.height * (0.55 + 0.45 * ridged(noise, x / 160, z / 160, 4) * 1.6) * (1 + Math.max(0, e - edge.end) / 700);
     }
     // weiches Minimum: kein zufälliger See außerhalb des Flusses
     if (h < floor + 1.5) h = floor + 1.5 * smoothstep(-2.5, 1.5, h - floor);
@@ -289,7 +292,22 @@ export async function generateTerrain(spec, { onProgress } = {}) {
       if (ex > 1.5) continue;
       const o = j * n + i;
       const w = 1 - smoothstep(-1.5, 1.5, ex + noise(x / 4, z / 4) * 0.8);
-      if (f.kind === 'acker') {
+      if (f.furrows) {
+        // weit2 (f.furrows): Furchen-/Drillreihen als Streifen in der Bodenart (Periode 3,2 m ≫ 1-m-Raster, sichtbar aus der
+        // Luft und vom Feldrand), Fahrgassen alle 18 m, Vorgewende (5 m Rand) quer – statt einer gleichmäßig dunklen Fläche
+        const head = Math.max(Math.abs(lx) - hw + 5, 0) > 0;
+        const u = head ? lz : lx, st = 0.5 + 0.5 * Math.sin((u / 3.2) * Math.PI * 2 + noise(x / 9, z / 9) * 0.6);
+        const lane = Math.abs(((lz + 9) % 18 + 18) % 18 - 9) < 0.45 && !head ? 0.35 : 0;
+        if (f.kind === 'acker') {
+          splat[o * 4 + 3] = Math.max(splat[o * 4 + 3], Math.round(255 * w * (0.45 + 0.4 * st) * (1 - lane * 0.5)));
+          splat[o * 4] = Math.max(splat[o * 4], Math.round(255 * w * (0.25 + 0.35 * (1 - st))));
+          H[o] += 0.07 * (st - 0.5) * w;
+        } else if (f.kind === 'stoppel') {
+          splat[o * 4] = Math.max(splat[o * 4], Math.round(w * (70 + 100 * st + lane * 80)));
+        } else if (f.kind === 'wiese') {
+          splat[o * 4] = Math.max(splat[o * 4], Math.round(w * 38 * st));
+        }
+      } else if (f.kind === 'acker') {
         splat[o * 4 + 3] = Math.max(splat[o * 4 + 3], Math.round(255 * w));
         H[o] += 0.06 * Math.sin((lx / 2.8) * Math.PI * 2) * w;
       } else if (f.kind === 'stoppel') {
@@ -365,7 +383,7 @@ export async function generateTerrain(spec, { onProgress } = {}) {
       const steep = 1 - nrm[1];
       const h = H[o];
       let rock = smoothstep(0.16, 0.34, steep + noise(x / 14, z / 14) * 0.05);
-      if (edge) rock = Math.max(rock, smoothstep(edge.height * 0.45, edge.height * 0.9, h + noise2(x / 30, z / 30) * 6) * 0.85);
+      if (edge) rock = Math.max(rock, smoothstep(edge.height * 0.45, edge.height * 0.9, h + noise2(x / 30, z / 30) * 6) * (edge.rock ?? 0.85));
       let dirt = smoothstep(0.42, 0.75, fbm(noise2, x / 38, z / 38, 3)) * 0.55;
       for (const f of forests) {
         const fd = Math.hypot(x - f.x, z - f.z) / f.r;

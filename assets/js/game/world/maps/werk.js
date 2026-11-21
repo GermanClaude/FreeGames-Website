@@ -3,22 +3,23 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261119182451';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261121041936';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261119182451';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261119182451';
-import { createFire } from '../feuer.js?v=20261119182451';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261119182451';
+} from '../props.js?v=20261121041936';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261121041936';
+import { createFire } from '../feuer.js?v=20261121041936';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261121041936';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261119182451';
+} from './werk-ausstattung.js?v=20261121041936';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
-import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261119182451';
-import { hofAusbau } from './werk-hof.js?v=20261119182451'; // gelaende (Runde 3)
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261121041936';
+import { werkFuellen, bodenspuren } from './fuell-karten.js?v=20261121041936'; // fuell (20.11.): Fugen, Fahrspuren
+import { hofAusbau } from './werk-hof.js?v=20261121041936'; // gelaende (Runde 3)
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle
@@ -132,6 +133,9 @@ export default {
     b.gelaende = hofAusbau(b, spawns);
     // karten-voll: Leben an Fassaden/Fenstern/Dächern (nur Optik; Starts, Flaggen und Kampagnenpunkte bleiben frei)
     belebe(b, { stil: 'industrie', huellen: ['building', 'container'], boden: { asphalt: true }, bereich: { minX: -78, maxX: 52, minZ: -48, maxZ: 48}, sperr: sperrpunkte({ spawns }, KAMPAGNE.werk) });
+    werkFuellen(b, [[-HX, -HZ, HX, HZ, 6], [HX, -48, 52, 48, 6.5]]);
+    bodenspuren(b, -78, -48, -HX, 48, 46, { mix: ['tire', 'tire', 'oil', 'cracks', 'stain', 'puddle', 'moss', 'leaves'] });
+    bodenspuren(b, HX, -48, 52, 48, 26, { mix: ['oil', 'cracks', 'stain', 'puddle', 'moss', 'drip'] });
     return {
       spawns,
       objectives: { dom: [{ id: 'A', x: -36, z: 27, radius: 5 }, { id: 'B', x: 0, z: 0, radius: 5.5 }, { id: 'C', x: -36, z: -27, radius: 5 }] },

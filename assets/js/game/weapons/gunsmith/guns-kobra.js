@@ -5,11 +5,14 @@
 // (Daumenstück links hinter der Trommel), Trommel mit 6 Kammern und Rastkerben, Hahn mit gerieftem Sporn, glatter Abzug,
 // Holzgriffschalen (Walnuss) mit Fingermulden, Fischhaut und Medaillon. Edelstahl hochglanz (wie die „Stainless“-Ausführung).
 // Teile/Anker wie das Vormodell (crane, cylinder, ejector, loader, hammer, Griffpunkte) – Nachladen und Haltung bleiben.
-import { triggerGuard } from './parts.js?v=20261119182451';
-import { notchSight } from './pistol-parts.js?v=20261119182451';   // Kimme mit echter Kerbe (visier, 14.11.)
-import { magRounds } from './magfill.js?v=20261119182451';
-import { checkering } from './guns-flinten.js?v=20261119182451';
-import { schrift } from './schrift.js?v=20261119182451';   // Gravuren (14.11., gfx-waffen)
+import { triggerGuard } from './parts.js?v=20261121041936';
+import { notchSight } from './pistol-parts.js?v=20261121041936';   // Kimme mit echter Kerbe (visier, 14.11.)
+import { magRounds } from './magfill.js?v=20261121041936';
+import { checkering } from './guns-flinten.js?v=20261121041936';
+import { schrift } from './schrift.js?v=20261121041936';   // Gravuren (14.11., gfx-waffen)
+import { slab, STEEL, POLY } from './gbkit.js?v=20261121041936';   // 20.11. (Waffen-Welle 3): Rahmen, Lauf, Trommel, Griff als Distanzfelder
+import { sdfMesh, sdRoundRect } from './sdfkit.js?v=20261121041936';
+import { smin } from './sdf.js?v=20261121041936';
 const MARK_KOBRA = schrift('kobra').mark;
 
 export function kobra(b) {
@@ -18,10 +21,15 @@ export function kobra(b) {
   const axis = 0.074;
   const cu = 0.062, cr = 0.0205, cl = 0.058;           // Trommel: Mitte (u), Radius, Länge
   // Rahmen: Brücke über der Trommel (oben gerundet), Rahmenfenster, Bügelansatz, Griffrahmen
-  b.side('stainless', [
-    [-0.032, 0.094], [-0.02, 0.099], [0.096, 0.099], [0.1, 0.094], [0.1, 0.05], [0.094, 0.044], [0.03, 0.044], [0.03, 0.05], [0.025, 0.05], [0.02, 0.02],
-    [-0.02, 0.016], [-0.04, 0.04], [-0.046, 0.074],
-  ], 0.027, 0, { bevel: 0.0026, bevelSeg: 2, holes: [[[0.03, 0.05], [0.093, 0.05], [0.093, 0.0935], [0.03, 0.0935]]] });
+  const FRAME = [[-0.032, 0.094], [-0.02, 0.099], [0.096, 0.099], [0.1, 0.094], [0.1, 0.05], [0.094, 0.044], [0.03, 0.044], [0.03, 0.05], [0.025, 0.05], [0.02, 0.02],
+    [-0.02, 0.016], [-0.04, 0.04], [-0.046, 0.074]];
+  const WIN = [[0.03, 0.05], [0.093, 0.05], [0.093, 0.0935], [0.03, 0.0935]];
+  // 20.11.: Rahmen als Distanzfeld (gerundete Kanten, Brücke oben gewölbt, Fuge der Seitenplatte eingeschnitten) statt Profilkiste
+  if (b.hi) slab(b, FRAME, (u, v) => (v > 0.094 ? 0.0118 - (v - 0.094) * 0.9 : 0.0135), 0.0026, 'stainless', { hwMax: 0.0135, holes: [WIN], id: 'kbFrame', cav: STEEL, step: 0.0016, cut: (x, v, u, d) => {
+    if (x < 0 && u > -0.034 && u < 0.03 && v > 0.03 && v < 0.07) d = Math.max(d, -Math.max(Math.abs(Math.abs(u + 0.012) - 0.02) - 0.0004, x + 0.0131));   // Seitenplatten-Fuge
+    return d;
+  } });
+  else b.side('stainless', FRAME, 0.027, 0, { bevel: 0.0026, bevelSeg: 2, holes: [WIN] });
   if (b.hi) {
     // Seitenplatte links (Trennfuge + 3 Schrauben), Trommelriegel (Daumenstück, gerieft)
     b.box('cavity', 0.0006, 0.032, 0.0008, -0.0136, 0.052, -0.012, { c: 0 });
@@ -33,14 +41,24 @@ export function kobra(b) {
     b.box('steelDark', 0.008, 0.0006, 0.11, 0, 0.0993, 0.04, { c: 0 });
   }
   // Lauf: Rohr mit vollem Unterlauf-Schutz (Front-Extrusion), belüftete Rippe oben (Stege + Fenster)
-  b.cyl('stainless', 0.0118, 0.0118, 0.13, 0, axis, 0.165, { seg: b.seg(32, 8) });
-  b.lathe('stainless', [[0, 0.0135], [0.008, 0.0128], [0.012, 0.0118]], 0, axis, 0.1, { seg: b.seg(32, 8) });   // Laufschulter am Rahmen
-  // voller Unterlauf-Schutz: flache Seiten, unten gerundet
-  b.front('stainless', [[-0.0085, axis - 0.004], [0.0085, axis - 0.004], [0.0085, 0.047], [0.0055, 0.0415], [0, 0.0405], [-0.0055, 0.0415], [-0.0085, 0.047]], 0.13, 0.1, { bevel: 0.0012 });
-  // belüftete Rippe: Steg auf dem Lauf, Fenster, flache geriefte Oberseite
-  b.front('stainless', [[-0.0042, axis + 0.01], [0.0042, axis + 0.01], [0.0042, 0.1015], [0.0052, 0.1035], [-0.0052, 0.1035], [-0.0042, 0.1015]], 0.124, 0.102, { bevel: 0.0006 });
   if (b.hi) {
-    for (let i = 0; i < 7; i++) b.box('cavity', 0.0088, 0.009, 0.0115, 0, axis + 0.0168, 0.111 + i * 0.0168, { c: 0 });
+    // 20.11.: Lauf, voller Unterlauf-Schutz und belüftete Rippe als EIN gegossener Körper (weich verschmolzen, echte Rippenfenster)
+    const f = (x, v, u) => {
+      const zu = Math.abs(u - 0.165) - 0.065;
+      const tube = Math.max(Math.hypot(x, v - axis) - 0.0118, zu);
+      const lug = Math.max(sdRoundRect(x, v - (axis + 0.0405 - 0.004) / 2 + 0.002, 0.0085, (axis - 0.0405) / 2 + 0.002, 0.0055), zu + 0.001);
+      let rib = Math.max(sdRoundRect(x, v - (axis + 0.1035) / 2, 0.0048, (0.1035 - axis) / 2, 0.0008), Math.abs(u - 0.164) - 0.062);
+      for (let i = 0; i < 7; i++) rib = Math.max(rib, -Math.max(Math.abs(v - axis - 0.0168) - 0.0045, Math.abs(u - (0.111 + i * 0.0168)) - 0.0058));
+      const shoulder = Math.max(Math.hypot(x, v - axis) - (0.0135 - Math.max(0, u - 0.1) * 0.14), Math.max(0.1 - u, u - 0.112));
+      return Math.min(smin(smin(tube, lug, 0.0025), rib, 0.0012), shoulder);
+    };
+    sdfMesh(b, f, [-0.016, 0.034, 0.096], [0.016, 0.108, 0.234], 0.0014, 'stainless', { id: 'kbBarrel', cav: STEEL });
+  } else {
+    b.cyl('stainless', 0.0118, 0.0118, 0.13, 0, axis, 0.165, { seg: b.seg(32, 8) });
+    b.front('stainless', [[-0.0085, axis - 0.004], [0.0085, axis - 0.004], [0.0085, 0.047], [0.0055, 0.0415], [0, 0.0405], [-0.0055, 0.0415], [-0.0085, 0.047]], 0.13, 0.1, { bevel: 0.0012 });
+    b.front('stainless', [[-0.0042, axis + 0.01], [0.0042, axis + 0.01], [0.0042, 0.1015], [0.0052, 0.1035], [-0.0052, 0.1035], [-0.0042, 0.1015]], 0.124, 0.102, { bevel: 0.0006 });
+  }
+  if (b.hi) {
     b.box('steelDark', 0.006, 0.0005, 0.12, 0, 0.1038, 0.162, { c: 0 });                                  // geriefte Oberseite
     // Unterlauf: Ausstoßerstangen-Mündung vorn, Querstift für den Riegel
     b.circle('cavity', 0.0042, 0, axis - 0.0225, 0.2302, { seg: 12 });
@@ -66,17 +84,28 @@ export function kobra(b) {
   b.cyl('stainless', 0.0045, 0.0045, 0.12, 0, axis - 0.0225, cu + cl / 2 + 0.06, { part: 'crane', seg: b.seg(12, 5) });
   b.cyl('knurl', 0.0048, 0.0048, 0.008, 0, axis - 0.0225, cu + cl / 2 + 0.116, { part: 'crane', seg: b.seg(12, 5) });
   b.part('cylinder', 0, axis - 0.003, cu, 'crane');
-  b.lathe('stainless', [[-cl / 2, 0], [-cl / 2, cr - 0.0012], [-cl / 2 + 0.0012, cr], [cl / 2 - 0.0016, cr], [cl / 2, cr - 0.0018], [cl / 2, 0]], 0, axis - 0.003, cu, { part: 'cylinder', seg: b.seg(36, 8) });
   if (b.hi) {
-    for (let i = 0; i < 6; i++) {
-      const a = i * Math.PI / 3 + Math.PI / 6, k = a + Math.PI / 6;
-      // Längsnuten (Flutes), Rastkerben hinten (Riegel), Kammern vorn mit Fase
-      b.box('cavity', 0.0045, 0.0038, cl * 0.6, Math.cos(a) * cr * 0.97, axis - 0.003 + Math.sin(a) * cr * 0.97, cu + 0.005, { part: 'cylinder', rz: a, c: 0 });
-      b.box('cavity', 0.0024, 0.002, 0.005, Math.cos(k) * cr * 0.99, axis - 0.003 + Math.sin(k) * cr * 0.99, cu - cl / 2 + 0.006, { part: 'cylinder', rz: k, c: 0 });
-      b.circle('cavity', 0.0048, Math.cos(k) * 0.0122, axis - 0.003 + Math.sin(k) * 0.0122, cu + cl / 2 + 0.0006, { part: 'cylinder', seg: 14 });
-      b.lathe('crown', [[0, 0.0048], [0.0008, 0.0056]], Math.cos(k) * 0.0122, axis - 0.003 + Math.sin(k) * 0.0122, cu + cl / 2 + 0.0002, { part: 'cylinder', seg: 14 });
-    }
-  }
+    // 20.11.: Trommel als Distanzfeld – gerundete Längsnuten (Flutes), Rastkerben, Kammern mit Fase statt schwarzer Kästchen
+    const cv = axis - 0.003;
+    const f = (x, v, u) => {
+      const dy = v - cv, rr = Math.hypot(x, dy), du = u - cu;
+      let d = Math.max(rr - cr, Math.abs(du) - cl / 2);
+      d = Math.max(d, (rr - cr + 0.0012) + (Math.abs(du) - cl / 2 + 0.0012));   // Kantenbruch vorn/hinten
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3 + Math.PI / 6, k = a + Math.PI / 6;
+        const fx = Math.cos(a) * (cr + 0.0018), fy = Math.sin(a) * (cr + 0.0018);
+        const fu = Math.max(-0.011, Math.min(0.02, du - 0.004));
+        d = Math.max(d, -(Math.hypot(x - fx, dy - fy, du - 0.004 - fu) - 0.0043));                        // Nut (Kapsel)
+        const cx = Math.cos(k) * 0.0122, cy = Math.sin(k) * 0.0122;
+        d = Math.max(d, -Math.max(Math.hypot(x - cx, dy - cy) - 0.0049, cl / 2 - 0.006 - du));           // Kammer vorn
+        const nx = Math.cos(k) * cr, ny = Math.sin(k) * cr;
+        d = Math.max(d, -(Math.max(Math.hypot(x - nx, dy - ny) - 0.0016, Math.abs(du + cl / 2 - 0.007) - 0.0022)));   // Rastkerbe
+      }
+      return d;
+    };
+    sdfMesh(b, f, [-cr - 0.002, cv - cr - 0.002, cu - cl / 2 - 0.002], [cr + 0.002, cv + cr + 0.002, cu + cl / 2 + 0.002], 0.0012, 'stainless', { id: 'kbCyl', cav: STEEL, part: 'cylinder' });
+    for (let i = 0; i < 6; i++) { const k = i * Math.PI / 3 + Math.PI / 3; b.lathe('crown', [[0, 0.0049], [0.0008, 0.0057]], Math.cos(k) * 0.0122, cv + Math.sin(k) * 0.0122, cu + cl / 2 - 0.0002, { part: 'cylinder', seg: 14 }); }
+  } else b.lathe('stainless', [[-cl / 2, 0], [-cl / 2, cr - 0.0012], [-cl / 2 + 0.0012, cr], [cl / 2 - 0.0016, cr], [cl / 2, cr - 0.0018], [cl / 2, 0]], 0, axis - 0.003, cu, { part: 'cylinder', seg: b.seg(36, 8) });
   // Ausstoßerstern hinten an der Trommel
   b.part('ejector', 0, axis - 0.003, cu - cl / 2, 'cylinder');
   b.cyl('steelBright', 0.0138, 0.0138, 0.003, 0, axis - 0.003, cu - cl / 2 - 0.0012, { part: 'ejector', seg: b.seg(18, 6) });
@@ -88,8 +117,11 @@ export function kobra(b) {
   // Bügel + Abzug (glatt, breit)
   triggerGuard(b, 'stainless', 0.012, 0.05, 0.044, 0.03, { t: 0.0045, w: 0.01, trigPos: 0.4 });
   // Holzgriff (Walnuss) mit Fingermulden, Fischhaut-Feldern und Medaillon, Griffschraube
-  b.side('woodWalnut', [[0.0, 0.046], [-0.003, 0.03], [0.002, 0.016], [-0.004, 0.0], [0.002, -0.016], [-0.004, -0.032], [0.002, -0.05], [0.002, -0.062], [-0.012, -0.078],
-    [-0.046, -0.076], [-0.052, -0.062], [-0.05, -0.02], [-0.047, 0.03], [-0.04, 0.046]], 0.037, 0, { bevel: 0.0095, bevelSeg: 3 });
+  const GRIP = [[0.0, 0.046], [-0.003, 0.03], [0.002, 0.016], [-0.004, 0.0], [0.002, -0.016], [-0.004, -0.032], [0.002, -0.05], [0.002, -0.062], [-0.012, -0.078],
+    [-0.046, -0.076], [-0.052, -0.062], [-0.05, -0.02], [-0.047, 0.03], [-0.04, 0.046]];
+  // 20.11.: Griffschalen als gewölbter Körper (in der Mitte dicker, Fingermulden weich) statt Profilkiste mit Fase
+  if (b.hi) slab(b, GRIP, (u, v) => 0.0168 + 0.0022 * Math.sin(Math.max(0, Math.min(1, (0.046 - v) / 0.124)) * Math.PI), 0.0085, 'woodWalnut', { hwMax: 0.019, id: 'kbGrip', cav: POLY, step: 0.0016 });
+  else b.side('woodWalnut', GRIP, 0.037, 0, { bevel: 0.0095, bevelSeg: 3 });
   if (b.hi) {
     for (const s of [-1, 1]) {
       b.cyl('goldTrim', 0.0055, 0.0055, 0.0015, s * 0.0186, 0.03, -0.024, { axis: 'x', seg: 18 });

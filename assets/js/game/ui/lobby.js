@@ -3,26 +3,30 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261119182451';
-import { modeOptionsHtml } from './mode-options.js?v=20261119182451'; // Modus-Einstellungen (B6, 26.10.)
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261119182451';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261119182451'; // atmosphere-weather; Fahrzeuge je Kartengröße
-import { realTimePreset } from '../world/weather.js?v=20261119182451'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261119182451';
-import { esc, num, secs, meters } from './dom.js?v=20261119182451';
-import { ICON } from './icons.js?v=20261119182451';
-import { drawMapArt } from './mapart.js?v=20261119182451';
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261119182451';
-import { openCamoEditor } from './camo-editor.js?v=20261119182451';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261119182451';
-import { ProgressView } from './progress.js?v=20261119182451';
-import { CampaignPane } from '../campaign/menu.js?v=20261119182451'; // Reiter „Kampagne“ (game/campaign)
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261119182451';
+import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261121041936';
+import { modeOptionsHtml } from './mode-options.js?v=20261121041936'; // Modus-Einstellungen (B6, 26.10.)
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261121041936';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261121041936'; // atmosphere-weather; Fahrzeuge je Kartengröße
+import { realTimePreset } from '../world/weather.js?v=20261121041936'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261121041936';
+import { esc, num, secs, meters } from './dom.js?v=20261121041936';
+import { ICON } from './icons.js?v=20261121041936';
+import { drawMapArt } from './mapart.js?v=20261121041936';
+import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261121041936'; // riesen: Riesenkarte nur in der App
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261121041936';
+import { openCamoEditor } from './camo-editor.js?v=20261121041936';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261121041936';
+import { ProgressView } from './progress.js?v=20261121041936';
+import { CampaignPane } from '../campaign/menu.js?v=20261121041936'; // Reiter „Kampagne“ (game/campaign)
+import { PanzerPane } from './panzer-pane.js?v=20261121041936'; // Reiter „Panzer“ (Panzersimulation, 20.11.)
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261121041936';
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
-const MAP_PREP = { hafen: 'im', altstadt: 'in der', werk: 'im', range: 'am', grenzland: 'im', brandwald: 'im', flugplatz: 'auf dem', stadtkern: 'im' };
+const MAP_PREP = { hafen: 'im', altstadt: 'in der', werk: 'im', range: 'am', grenzland: 'im', brandwald: 'im', flugplatz: 'auf dem', stadtkern: 'im', weitmark: 'in der' };
 const LENGTHS = [['kurz', 'Kurz'], ['standard', 'Standard'], ['lang', 'Lang']];
+
+const PZ_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5h18l-1.6 3.2H4.6z"/><path d="M5 15.5l1-3.5h9.5l1.2 3.5"/><path d="M9 12V9.5h5V12"/><path d="M14 10.6h7"/></svg>';
 
 export class Lobby {
   constructor(menus) {
@@ -37,6 +41,7 @@ export class Lobby {
     this._offs = [];
     this.progress = new ProgressView(this.G);
     this.campaign = new CampaignPane(this); // Kampagne
+    this.panzer = new PanzerPane(this); // Panzer
   }
 
   /* ------------------------------------------------------------ Daten */
@@ -84,10 +89,14 @@ export class Lobby {
       timeOfDay: S.get('lastTime') && S.get('lastTime') !== 'standard' ? S.get('lastTime') : null,
       weather: S.get('lastWeather') || 'standard',
       vehicles: S.get('lastVehicles') === 'aus' ? 'aus' : 'an', // Panzer/Fahrzeuge offline an/aus (Raum: net-menus „Fahrzeuge“)
-      tankEra: ['karte', 'modern', 'wk2', 'wk1'].includes(S.get('lastTankEra')) ? S.get('lastTankEra') : 'karte', // Panzer-Generation
+      tankEra: ['karte', 'modern', 'kk', 'wk2', 'wk1'].includes(S.get('lastTankEra')) ? S.get('lastTankEra') : 'karte', // Panzer-Generation
       mass: S.get('lastMass') === 'an', // masse: Massenschlacht (Großkarten, Teammodi)
     };
     if (prm) {
+      // Startseite (§03 Kampagne): spielen.html?tab=kampagne bzw. ?tab=eisenwind öffnet die Lobby im Reiter Kampagne
+      const tb = prm.get('tab');
+      if (tb === 'panzer') this.tab = 'panzer'; // Startseite: spielen.html?tab=panzer
+      if (tb === 'kampagne' || tb === 'eisenwind') { this.tab = 'kampagne'; if (tb === 'eisenwind' && this.campaign) this.campaign.which = 'panzer'; }
       if (d.MODES[prm.get('mode')]) base.modeId = prm.get('mode');
       if (d.MAPS[prm.get('map')]) base.mapId = prm.get('map');
       if (DIFF_ORDER.includes(prm.get('diff'))) base.difficulty = prm.get('diff');
@@ -117,6 +126,8 @@ export class Lobby {
     if (!base.lethal || !d.EQ[base.lethal] || !this.unlocked(base.lethal)) base.lethal = def.lethal;
     if (!okW(base.melee, 'melee')) base.melee = 'knife';
     if (!base.tactical || !d.EQ[base.tactical] || d.EQ[base.tactical].kind !== 'tactical' || !this.unlocked(base.tactical)) base.tactical = 'smoke';
+    // Panzermodus hat einen eigenen Reiter: als gemerkter Einsatz-Modus zurück auf den ersten Modus der Liste
+    if (base.modeId === 'panzer' && !(prm && prm.get('mode') === 'panzer')) base.modeId = d.ORDER.find((x) => x !== 'panzer') || 'tdm';
     this.cfg = base;
     this._fixMode();
   }
@@ -136,7 +147,8 @@ export class Lobby {
     const d = this._data();
     const c = this.cfg;
     const m = d.MODES[c.modeId] || {};
-    const maps = this.mapsFor(c.modeId);
+    // riesen: gesperrte (App-exklusive) Karten stehen in der Liste, sind hier aber nicht wählbar
+    const maps = this.mapsFor(c.modeId).filter((id) => !mapLockedHere(d.MAPS[id]));
     if (!maps.includes(c.mapId)) c.mapId = (m.recommendedMaps || []).find((x) => maps.includes(x)) || maps[0] || c.mapId;
     const L = this._lim();
     const lim = { allies: L.allies, enemies: L.enemies };
@@ -229,6 +241,7 @@ export class Lobby {
             <button type="button" class="m-tab" role="tab" data-tab="deploy" aria-selected="${this.tab === 'deploy'}">${ICON.map}<span>Einsatz</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="loadout" aria-selected="${this.tab === 'loadout'}">${ICON.target}<span>Ausrüstung</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="progress" aria-selected="${this.tab === 'progress'}">${ICON.trophy}<span>Fortschritt</span></button>
+            <button type="button" class="m-tab" role="tab" data-tab="panzer" aria-selected="${this.tab === 'panzer'}">${ICON.panzer || PZ_ICON}<span>Panzer</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="kampagne" aria-selected="${this.tab === 'kampagne'}">${ICON.flag}<span>Kampagne</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="online" aria-selected="${this.tab === 'online'}">${ICON.globe}<span>Mehrspieler</span><i class="m-tab-beta" title="Erste Fassung – Fehler gerne melden">Beta</i></button>
           </div>
@@ -246,6 +259,7 @@ export class Lobby {
           <div class="lb-pane m-scroll" data-scrollable data-pane="progress"${this.tab === 'progress' ? '' : ' hidden'}></div>
           <div class="lb-pane m-scroll" data-scrollable data-pane="online"${this.tab === 'online' ? '' : ' hidden'}></div>
           <div class="lb-pane m-scroll" data-scrollable data-pane="kampagne"${this.tab === 'kampagne' ? '' : ' hidden'}></div>
+          <div class="lb-pane m-scroll" data-scrollable data-pane="panzer"${this.tab === 'panzer' ? '' : ' hidden'}></div>
           <aside class="lb-side">
             <div class="lb-stage" aria-label="Waffenvorschau – ziehen zum Drehen"><div class="lb-stage-name"></div><div class="lb-stage-hint">Ziehen zum Drehen</div></div>
             <div class="lb-kit"></div>
@@ -258,7 +272,7 @@ export class Lobby {
         </footer>
       </div>`;
     this.el = {
-      screen, deploy: screen.querySelector('[data-pane="deploy"]'), loadout: screen.querySelector('[data-pane="loadout"]'), progress: screen.querySelector('[data-pane="progress"]'), online: screen.querySelector('[data-pane="online"]'), kampagne: screen.querySelector('[data-pane="kampagne"]'),
+      screen, deploy: screen.querySelector('[data-pane="deploy"]'), loadout: screen.querySelector('[data-pane="loadout"]'), progress: screen.querySelector('[data-pane="progress"]'), online: screen.querySelector('[data-pane="online"]'), kampagne: screen.querySelector('[data-pane="kampagne"]'), panzer: screen.querySelector('[data-pane="panzer"]'),
       start: screen.querySelector('.lb-start'),
       stage: screen.querySelector('.lb-stage'), stageName: screen.querySelector('.lb-stage-name'), kit: screen.querySelector('.lb-kit'),
       summary: screen.querySelector('.lb-summary'), side: screen.querySelector('.lb-side'), profile: screen.querySelector('.lb-profile'),
@@ -275,6 +289,17 @@ export class Lobby {
     screen.addEventListener('pointerover', (e) => this._camoHover(e, true));
     screen.addEventListener('pointerout', (e) => this._camoHover(e, false));
     screen.addEventListener('focusin', (e) => this._camoHover(e, true));
+    // ges2 (21.11.): sechs Reiter – die Leiste scrollt waagerecht, wenn sie nicht passt (game.css .lb-tabs); fokussierter bzw.
+    // gewählter Reiter wird hineingeschoben, Kanten blenden aus, solange es dort weitergeht
+    const tabs = screen.querySelector('.lb-tabs');
+    if (tabs) {
+      const edge = () => { const m = tabs.scrollWidth - tabs.clientWidth; tabs.classList.toggle('is-more-l', m > 2 && tabs.scrollLeft > 2); tabs.classList.toggle('is-more-r', m > 2 && tabs.scrollLeft < m - 2); };
+      tabs.addEventListener('focusin', (e) => { const t = e.target.closest('.m-tab'); if (t) t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+      tabs.addEventListener('scroll', edge, { passive: true });
+      if (typeof ResizeObserver === 'function') { const ro = new ResizeObserver(edge); ro.observe(tabs); this._offs.push(() => ro.disconnect()); }
+      this._tabEdge = edge;
+      requestAnimationFrame(() => { const t = tabs.querySelector('[aria-selected="true"]'); if (t && tabs.scrollWidth > tabs.clientWidth) tabs.scrollLeft = Math.max(0, t.offsetLeft - (tabs.clientWidth - t.offsetWidth) / 2); edge(); });
+    }
     this._renderProfile();
     // Rufzeichen/Stufe live (Einstellungen hier, auf der Website oder in einem anderen Tab)
     this._offs.push(
@@ -307,13 +332,22 @@ export class Lobby {
     const c = this.cfg;
     const ds = b.dataset;
     if (ds.tab) { this.tab = ds.tab; this._syncTab(); return; }
+    if (this.tab === 'panzer' && this.panzer.click(b)) return;
     if (ds.mode) { c.modeId = ds.mode; this._fixMode(); this._renderDeploy(); this._renderSummary(); this._renderKit(); this.menus.sound('click'); return; }
+    if (ds.map && mapLockedHere(this._data().MAPS[ds.map])) {
+      // riesen: Riesenkarte im Browser – Hinweis mit Link zur App-Seite hervorheben statt wählen
+      const n = this.el.deploy && this.el.deploy.querySelector('.lb-app-only');
+      if (n) { n.classList.remove('is-flash'); void n.offsetWidth; n.classList.add('is-flash'); try { n.querySelector('a')?.focus({ preventScroll: false }); } catch { /* */ } }
+      this.menus.sound('error');
+      return;
+    }
     if (ds.map) { c.mapId = ds.map; this._fixMode(); this._renderDeploy(); this._renderSummary(); this.menus.sound('click'); return; }
     if (ds.style) {
       c.style = GAME_STYLES[ds.style] ? ds.style : 'arcade';
       try { this.G.settings.set('gameStyle', c.style); } catch { /* */ }
       this._renderDeploy(); this._renderSummary(); this.menus.sound('click'); return;
     }
+    if (ds.simguide) { try { this.G.settings.set('simGuide', ds.simguide); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.xhair != null) { try { this.G.settings.set('realisticCrosshair', !this.G.settings.get('realisticCrosshair')); } catch { /* */ } this._renderDeploy(); this.menus.sound('toggle'); return; }
     if (ds.len) { c.matchLength = ds.len; this._renderDeploy(); this.menus.sound('click'); return; }
     if (ds.tod != null) { c.timeOfDay = ds.tod || null; try { this.G.settings.set('lastTime', ds.tod || 'standard'); } catch { /* */ } this._renderDeploy(); this.menus.sound('click'); return; }
@@ -337,12 +371,15 @@ export class Lobby {
   _syncTab() {
     const s = this.el.screen;
     s.querySelectorAll('[data-tab]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === this.tab)));
+    { const t = s.querySelector('.lb-tabs [aria-selected="true"]'), L = t && t.parentElement; if (L && L.scrollWidth > L.clientWidth) { const x = t.offsetLeft; if (x < L.scrollLeft || x + t.offsetWidth > L.scrollLeft + L.clientWidth) L.scrollTo({ left: Math.max(0, x - (L.clientWidth - t.offsetWidth) / 2) }); } }
     this.el.deploy.hidden = this.tab !== 'deploy';
     this.el.loadout.hidden = this.tab !== 'loadout';
     this.el.progress.hidden = this.tab !== 'progress';
     this.el.online.hidden = this.tab !== 'online';
     if (this.el.kampagne) this.el.kampagne.hidden = this.tab !== 'kampagne';
     if (this.tab === 'kampagne' && this.el.kampagne) this.campaign.mount(this.el.kampagne); else this.campaign.unmount(); // Kampagne
+    if (this.el.panzer) this.el.panzer.hidden = this.tab !== 'panzer';
+    if (this.tab === 'panzer' && this.el.panzer) this.panzer.mount(this.el.panzer); else this.panzer.unmount(); // Panzer
     if (this.tab === 'progress') this.progress.mount(this.el.progress); else this.progress.unmount();
     // Mehrspieler (ui/net-menus.js): Reiter nur beobachten (öffentliche Spiele), solange er sichtbar ist
     const nm = this.menus.net;
@@ -380,22 +417,38 @@ export class Lobby {
     const m = d.MODES[c.modeId] || {};
     const maps = this.mapsFor(c.modeId);
     const diff = d.DIFF[c.difficulty] || {};
-    const modes = d.ORDER.map((id) => {
+    // Panzer: eigener Reiter – in der Modusliste nur ein Verweis dorthin
+    const modes = d.ORDER.filter((id) => id !== 'panzer').map((id) => {
       const x = d.MODES[id];
       return `<button type="button" class="lb-mode" data-mode="${id}" aria-pressed="${id === c.modeId}">
         <span class="lb-mode-ico">${x.icon || ''}</span><span class="lb-mode-short">${esc(x.short || id.toUpperCase())}</span>
         <b>${esc(x.name)}</b><small>${esc(x.tagline || '')}</small></button>`;
-    }).join('');
+    }).join('') + (d.MODES.panzer ? `<button type="button" class="lb-mode lb-mode-link" data-tab="panzer" aria-pressed="false">
+        <span class="lb-mode-ico">${d.MODES.panzer.icon || ''}</span><span class="lb-mode-short">PZR</span>
+        <b>Panzer →</b><small>Eigener Reiter „Panzer“: Panzer, Rolle, Simulation</small></button>` : '');
+    let lockedAny = false;
     const mapCards = maps.map((id) => {
       const x = d.MAPS[id];
-      return `<button type="button" class="lb-map" data-map="${id}" aria-pressed="${id === c.mapId}">
+      // riesen: App-exklusive Riesenkarte – sichtbar mit Schloss, hier nicht wählbar (shared/appgate.js)
+      const locked = mapLockedHere(x);
+      if (locked) lockedAny = true;
+      return `<button type="button" class="lb-map${locked ? ' is-locked' : ''}" data-map="${id}" aria-pressed="${id === c.mapId && !locked}"${locked ? ` aria-disabled="true" title="${esc(lockReason())}"` : ''}>
         <canvas class="lb-map-art" data-art="${id}"></canvas>
-        <span class="lb-map-txt"><b>${esc(x.name)}</b><small>${x.scale === 'gross' ? 'Großkarte · ' : ''}${esc(x.timeOfDay || x.subtitle || '')}</small></span></button>`;
+        ${locked ? `<span class="lb-map-lock">${ICON.lock}<span>Nur in der App</span></span>` : ''}
+        <span class="lb-map-txt"><b>${esc(x.name)}</b><small>${x.appOnly ? 'Riesenkarte · ' : x.scale === 'gross' ? 'Großkarte · ' : ''}${esc(x.timeOfDay || x.subtitle || '')}</small></span></button>`;
     }).join('');
+    const appNote = lockedAny ? `<p class="lb-note lb-app-only">${ICON.lock}<span><b>Nur in der App</b> – ${esc(lockReason().replace(/^Nur in der App: /, ''))} Die Riesenkarte ist viermal so groß wie alle anderen und braucht den Speicher der App.&nbsp;<a href="${APP_PAGE_URL}" target="_blank" rel="noopener">Hier herunterladen</a></span></p>` : '';
     const diffs = DIFF_ORDER.filter((id) => d.DIFF[id] || true).map((id) => `<button type="button" role="radio" data-diff="${id}" aria-checked="${id === c.difficulty}">${esc((d.DIFF[id] && d.DIFF[id].name) || id)}</button>`).join('');
     const xpm = diff.xpMult && diff.xpMult !== 1 ? `EP ×${num(diff.xpMult, 2).replace(/,?0+$/, '')}` : 'EP ×1';
     const st = GAME_STYLES[c.style] || GAME_STYLES.arcade;
-    const styles = STYLE_ORDER.map((id) => `<button type="button" role="radio" data-style="${id}" aria-checked="${id === c.style}">${esc(GAME_STYLES[id].label)}</button>`).join('');
+    // Infanteriesimulation nur in passenden Modi (SIM_MODES); sonst spielt „Simulation“ als „Realistisch“
+    const simOk = (SIM_MODES || []).includes(c.modeId);
+    const styles = STYLE_ORDER.filter((id) => id !== 'simulation' || simOk || c.style === id).map((id) => `<button type="button" role="radio" data-style="${id}" aria-checked="${id === c.style}">${esc(GAME_STYLES[id].label)}</button>`).join('');
+    const sg = this.G.settings.get('simGuide') || 'tutorial';
+    const simBox = c.style !== 'simulation' ? '' : simOk
+      ? `<div class="m-seg" role="radiogroup" aria-label="Führung" style="margin-top:8px">${[['tutorial', 'Tutorial'], ['hilfe', 'Hilfe auf Anfrage'], ['aus', 'Aus']].map(([id, l]) => `<button type="button" role="radio" data-simguide="${id}" aria-checked="${id === sg}">${l}</button>`).join('')}</div>
+        <p class="lb-note">Führung: ${sg === 'tutorial' ? 'Handgriffe als Liste mit Erklärung.' : sg === 'hilfe' ? 'Liste nur auf Anfrage (F2).' : 'Ganz ohne Hilfe.'} Tasten: Durchladen O · Magazin prüfen I · Feuerwahl/Sicherung M · Visier Bild ↑/↓ · Verband N · Abbinden 7 · Kompass , · Karte . · Ausrüstung P</p>`
+      : '<p class="lb-note">In diesem Modus nicht verfügbar – es gilt „Realistisch“.</p>';
     const xh = !!this.G.settings.get('realisticCrosshair');
     const map = d.MAPS[c.mapId] || {};
     const times = Array.isArray(map.times) ? map.times : [];
@@ -417,13 +470,13 @@ export class Lobby {
       ${times.length ? `<div><h2 class="m-h2">Tageszeit</h2><div class="m-seg" role="radiogroup" aria-label="Tageszeit"><button type="button" role="radio" data-tod="" aria-checked="${!todSel}">${esc(map.timeOfDay || 'Standard')}</button>${times.map((t) => `<button type="button" role="radio" data-tod="${esc(t.id)}" aria-checked="${t.id === todSel}">${esc(t.name || t.label || t.id)}</button>`).join('')}<button type="button" role="radio" data-tod="echtzeit" aria-checked="${todSel === 'echtzeit'}" title="Passend zur echten Uhrzeit">Echtzeit</button><button type="button" role="radio" data-tod="zufall" aria-checked="${todSel === 'zufall'}">Zufall</button></div>${rtNote}</div>` : ''}
       ${c.modeId !== 'training' && vehMap ? `<div><h2 class="m-h2">Panzer &amp; Fahrzeuge</h2><div class="m-seg" role="radiogroup" aria-label="Panzer und Fahrzeuge">${[['an', 'An', 'Panzer und Geländewagen der Karte'], ['aus', 'Aus', 'Nur Infanterie']].map(([id, l, t]) => `<button type="button" role="radio" data-veh="${id}" aria-checked="${id === c.vehicles}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
       ${c.modeId !== 'training' && !vehMap ? `<div><h2 class="m-h2">Panzer &amp; Fahrzeuge</h2><p class="lb-note lb-veh-off">Panzer und Geländewagen gibt es nur auf großen Karten (${esc(LARGE_MAP_NAMES.join(', '))}). Hier fahren nur die zivilen Fahrzeuge der Karte.</p></div>` : ''}
-      ${c.modeId !== 'training' && vehOn ? `<div><h2 class="m-h2">Panzer-Generation</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Generation">${[['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild und Munitionsbunker, 4 Mann'], ['wk2', '2. WK', 'Team A: MP-4 Bison (mittel, 75 mm, schnell) – Team B: SP-6 Moloch (schwer, 88 mm)'], ['wk1', '1. WK', 'Team A: LK-17 Libelle (leicht, Drehturm, 2 Mann) – Team B: SK-18 Koloss (Sturmpanzer, 6 Mann)']].map(([id, l, t]) => `<button type="button" role="radio" data-era="${id}" aria-checked="${id === (c.tankEra || 'karte')}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
+      ${c.modeId !== 'training' && vehOn ? `<div><h2 class="m-h2">Panzer-Generation</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Generation">${[['karte', 'Karte', 'Je nach Karte (Niemandsland: 1. Weltkrieg, sonst modern)'], ['modern', 'Modern', 'KP-1 Mammut: Kampfpanzer mit Wärmebild und Munitionsbunker, 4 Mann; zweiter Stellplatz: SZ-8 Igel (Schützenpanzer, 30 mm + Lenkflugkörper); dazu LP-21 Gämse (leicht, 105 mm) und Transporter RS-8 Waran (8×8, 30 mm), LKW-5, GMW-6, GW-7 (MG-Ring)'], ['kk', 'Kalter Krieg', 'KP-68 Auerochs: Gussturm, 105 mm, Infrarot-Scheinwerfer, 4 Mann; zweiter Stellplatz SP-58 Mastodon (schwer, 120 mm); Transporter MTW-13 Kröte (Ketten, MG), LKW-5, GMW-6'], ['wk2', '2. WK', 'Team A: MP-4 Bison (mittel, 75 mm, schnell), zweiter Stellplatz MP-43 Elch (85 mm) – Team B: SP-6 Moloch (schwer, 88 mm), zweiter Stellplatz JP-44 Stier (Jagdpanzer); dazu LP-39 Frettchen (leicht), SP-45 Walross (schwer) und Halbketten SPW-41 Hamster (MG-Schild) / ZK-8 Packesel'], ['wk1', '1. WK', 'Team A: LK-17 Libelle (leicht, Drehturm, 2 Mann) – Team B: SK-18 Koloss (Sturmpanzer, 6 Mann)']].map(([id, l, t]) => `<button type="button" role="radio" data-era="${id}" aria-checked="${id === (c.tankEra || 'karte')}" title="${t}">${l}</button>`).join('')}</div></div>` : ''}
       ${c.modeId !== 'training' && vehOn ? (() => { const P = loadTankProgress(), nx = TANK_SKINS.find((k) => k.xp > P.xp); return `<div><h2 class="m-h2">Panzer-Tarnung</h2><div class="m-seg" role="radiogroup" aria-label="Panzer-Tarnung">${TANK_SKINS.map((k) => `<button type="button" role="radio" data-tskin="${k.id}" aria-checked="${k.id === P.skin}"${skinUnlocked(P, k) ? '' : ' aria-disabled="true"'} title="${skinUnlocked(P, k) ? 'Freigeschaltet' : `Ab ${k.xp} Panzer-Erfahrung`}">${skinUnlocked(P, k) ? '' : '🔒 '}${k.name}</button>`).join('')}</div><p class="lb-note">Panzer-Erfahrung ${Math.floor(P.xp)}${nx ? ` · nächste Tarnung „${nx.name}“ bei ${nx.xp}` : ' · alle Tarnungen frei'} – im Panzer sitzen, mit Fahrzeugwaffen Gegner und Fahrzeuge ausschalten.</p></div>`; })() : ''}
       ${wxs.length ? `<div><h2 class="m-h2">Wetter</h2><div class="m-seg" role="radiogroup" aria-label="Wetter">${[['standard', 'Standard', map.weather || ''], ...wxs.map((w) => [w, WEATHERS[w].name, WEATHERS[w].short || '']), ['zufall', 'Zufall', 'Zufälliges Wetter beim Start']].map(([id, l, t]) => `<button type="button" role="radio" data-wx="${id}" aria-checked="${id === wxSel}"${t ? ` title="${esc(t)}"` : ''}>${esc(l)}</button>`).join('')}</div></div>` : ''}`;
     this.el.deploy.innerHTML = `
       <section class="lb-sec"><h2 class="m-h2">Modus</h2><div class="lb-modes" role="group" aria-label="Modus">${modes}</div>
         <div class="lb-modeinfo"><p>${esc(m.description || '')}</p><ul class="lb-rules"></ul></div></section>
-      <section class="lb-sec"><h2 class="m-h2">Karte</h2><div class="lb-maps" role="group" aria-label="Karte">${mapCards}</div></section>
+      <section class="lb-sec"><h2 class="m-h2">Karte</h2><div class="lb-maps" role="group" aria-label="Karte">${mapCards}</div>${appNote}</section>
       <section class="lb-sec lb-row2">
         <div><h2 class="m-h2">Gegnerstärke</h2><div class="m-seg lb-diff" role="radiogroup" aria-label="Gegnerstärke">${diffs}</div>
           <p class="lb-note">${esc(diff.description || '')} <b>${xpm}</b></p></div>
@@ -431,7 +484,7 @@ export class Lobby {
       </section>
       ${c.modeId === 'training' ? '' : `<section class="lb-sec lb-row2">
         <div><h2 class="m-h2">Spielstil</h2><div class="m-seg lb-style" role="radiogroup" aria-label="Spielstil">${styles}</div>
-          <p class="lb-note">${esc(st.desc || '')}</p>
+          <p class="lb-note">${esc(st.desc || '')}</p>${simBox}
           ${c.style === 'realistisch' ? `<button type="button" class="lb-bal" data-xhair aria-pressed="${xh}"><i class="m-check">${ICON.check}</i>Fadenkreuz anzeigen</button>` : ''}</div>
         ${extra.trim() ? `<div class="lb-extra">${extra}</div>` : ''}
       </section>`}`;
@@ -494,6 +547,13 @@ export class Lobby {
     const b = this.el && this.el.start;
     if (!b) return;
     const online = this.tab === 'online';
+    if (this.tab === 'panzer') { // Panzer: „Panzer starten“ (menus.js: data-act pz-start)
+      b.disabled = false;
+      b.dataset.act = 'pz-start';
+      b.classList.remove('is-go');
+      b.innerHTML = `${ICON.play}<span>${esc(this.panzer.footLabel())}<em>.</em></span>`;
+      return;
+    }
     if (this.tab === 'kampagne') { // Kampagne: „Mission n starten“ (menus.js: data-act camp-start)
       b.disabled = false;
       b.dataset.act = 'camp-start';
@@ -511,7 +571,8 @@ export class Lobby {
 
   _renderSummary() {
     if (this.tab === 'online' && this.menus.net) { this.el.summary.innerHTML = this.menus.net.summaryHtml(); return; }
-    if (this.tab === 'kampagne') { this.el.summary.innerHTML = '<small>Kampagne</small><b>Stille Grenze</b><span>Ausrüstung aus dem Reiter „Ausrüstung“</span>'; return; }
+    if (this.tab === 'panzer') { this.el.summary.innerHTML = this.panzer.summaryHtml(); return; }
+    if (this.tab === 'kampagne') { this.el.summary.innerHTML = this.campaign && this.campaign.which === 'panzer' ? '<small>Panzer-Kampagne</small><b>Eisenwind</b><span>Rolle und Spielart im Missionsfeld</span>' : '<small>Kampagne</small><b>Stille Grenze</b><span>Ausrüstung aus dem Reiter „Ausrüstung“</span>'; return; }
     const d = this._data();
     const c = this.cfg;
     const m = d.MODES[c.modeId] || {};
@@ -522,7 +583,7 @@ export class Lobby {
     if (c.modeId === 'training') who = 'Allein am Stand';
     else if (m.teams !== false) who = `${c.allies + 1} gegen ${c.enemies}`;
     else who = `${c.enemies + 1} Spieler`;
-    const sty = c.style === 'realistisch' && c.modeId !== 'training' ? ' · Realistisch' : '';
+    const sty = c.modeId === 'training' ? '' : c.style === 'realistisch' ? ' · Realistisch' : c.style === 'simulation' ? ((SIM_MODES || []).includes(c.modeId) ? ' · Simulation' : ' · Realistisch') : '';
     const cl = CLASSES[c.cls] ? ` · ${CLASSES[c.cls].name}` : '';
     this.el.summary.innerHTML = `<small>${esc(m.short || '')} · ${esc(prep)} ${esc(map.name || c.mapId)}</small><b>${esc(m.name || c.modeId)}</b><span>${esc(who)}${c.modeId === 'training' ? '' : ` · ${esc(diff.name || c.difficulty)}${esc(sty)}`}${esc(cl)}</span>`;
   }

@@ -15,13 +15,14 @@
 // Nur wenn im Match Militärfahrzeuge unterwegs sind (nicht bei „Panzer & Fahrzeuge: Aus“, ?vehicles=0, Raum „Fahrzeuge
 // aus“ – Host und Clients haben dieselbe Einstellung); Halteplätze und Depots halten Abstand zu allen Spawnpunkten.
 import * as THREE from 'three';
-import { MAPS, militaryVehiclesAllowed } from '../shared/maps.data.js?v=20261119182451';
-import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261119182451';
-import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261119182451';
-import { stepDrop } from './bots/character.js?v=20261119182451';
-import { collisionRay } from './engine/physics.js?v=20261119182451';
-import { createStation, hasStationModel, STATION_SOLIDS } from './mappoints-models.js?v=20261119182451';
-import { worldPartsFrom } from './building.js?v=20261119182451';
+import { MAPS, militaryVehiclesAllowed } from '../shared/maps.data.js?v=20261121041936';
+import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261121041936';
+const _lootCam = new THREE.Vector3(), _lootPos = new THREE.Vector3();   // Beute-LOD (20.11.)
+import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261121041936';
+import { stepDrop } from './bots/character.js?v=20261121041936';
+import { collisionRay } from './engine/physics.js?v=20261121041936';
+import { createStation, hasStationModel, STATION_SOLIDS } from './mappoints-models.js?v=20261121041936';
+import { worldPartsFrom } from './building.js?v=20261121041936';
 
 // vehicle: Punktart kann Fahrzeuge versorgen (wenn sie auf offenem Feld liegt, s. vehicleStand); reach: Griffweite (m)
 export const POINT_KINDS = Object.freeze({
@@ -257,8 +258,18 @@ export class MapPoints {
       if (l.until <= now) { this._dropGone(l); this.loot.splice(i, 1); continue; }
       if (!l.weapon) continue;
       if (!l.drop && l.soldier && typeof l.soldier.releaseDrop === 'function') { l.drop = l.soldier.releaseDrop(); if (l.drop) l.soldier = null; }
-      if (l.drop) { stepDrop(l.drop, dt, G.world); if (!l.ammo) l.position.copy(l.drop.gun.position); }
+      if (l.drop) { stepDrop(l.drop, dt, G.world); if (!l.ammo) l.position.copy(l.drop.gun.position); this._lootLod(l); }
     }
+  }
+
+  /** Liegende Waffe: gebackene Nah-/Mittelstufe nach Kameraabstand (weapons/lodbake.js, 20.11.), wie in der Hand eines Soldaten. */
+  _lootLod(l) {
+    const M = this.G.modules && this.G.modules.models, cam = this.G.camera, gun = l.drop && l.drop.gun;
+    if (!M || !M.setWeaponLod || !cam || !gun) return;
+    if ((l._lodT = (l._lodT || 0) + 1) % 8) return;   // jedes 8. Bild reicht
+    cam.getWorldPosition(_lootCam);
+    const d = gun.getWorldPosition(_lootPos).distanceTo(_lootCam) * (cam.fov ? cam.fov / 60 : 1);
+    M.setWeaponLod(gun, d < 13 ? 0 : d < 36 ? 1 : 2);
   }
 
   /**

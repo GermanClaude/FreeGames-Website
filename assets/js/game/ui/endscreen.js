@@ -3,9 +3,9 @@
 // animierter EP-Balken mit Stufen-/Dienstgrad-Aufstieg (rankIcon), neue Freischaltungen.
 // Knöpfe: Revanche · Lobby · Zur Website.
 
-import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261119182451';
-import { ICON, medalBadge } from './icons.js?v=20261119182451';
-import { scoreboardHtml, netRows } from './scoreboard.js?v=20261119182451';
+import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261121041936';
+import { ICON, medalBadge } from './icons.js?v=20261121041936';
+import { scoreboardHtml, netRows } from './scoreboard.js?v=20261121041936';
 
 const REASON = {
   score: 'Punktelimit erreicht', time: 'Zeit abgelaufen', overtime: 'In der Verlängerung entschieden', forced: 'Match beendet',
@@ -63,8 +63,8 @@ export class EndScreen {
         ['Schaden', num(ps.damage || 0)],
       ];
       const ct = ps.counters || {};
-      if (r.modeId === 'dom' || r.modeId === 'cq') cells[8] = ['Erobe\u00adrungen', String(ps.captures ?? 0)];
-      if (r.modeId === 'cq' && ct.vehicles) cells[7] = ['Fahrzeuge zerstört', String(ct.vehicles)];
+      if (r.modeId === 'dom' || r.modeId === 'cq' || r.modeId === 'trupp') cells[8] = ['Erobe\u00adrungen', String(ps.captures ?? 0)];
+      if ((r.modeId === 'cq' || r.modeId === 'trupp') && ct.vehicles) cells[7] = ['Fahrzeuge zerstört', String(ct.vehicles)];
       if (r.modeId === 'kc') cells[8] = ['Marken', String(ct.confirms ?? 0), ct.denies ? `${ct.denies} verweigert` : ''];
       if (r.modeId === 'inf') cells[8] = ['Infiziert', String(ct.infects ?? 0), ct.survivals ? 'Überlebt' : ''];
       if (r.modeId === 'hp') cells[8] = ['Halte\u00adzeit', clock(Math.floor(ct.hpTime || 0)), ct.hpCaptures ? `${ct.hpCaptures}× eingenommen` : '']; // Stellung (26.10.)

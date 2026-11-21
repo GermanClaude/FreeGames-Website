@@ -11,7 +11,7 @@
 // die Schemafarbe kommt als Uniform aus dem Material → eine Geometrie je Variante × LOD für alle Schemata.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { BONE } from './rig.js?v=20261119182451';
+import { BONE } from './rig.js?v=20261121041936';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -22,7 +22,7 @@ const _c = new THREE.Color();
 const TAU = Math.PI * 2;
 
 /** Palettenplätze (Schemafarben im Material, Index 0 = Vertexfarbe direkt). */
-export const PALETTE = ['', 'gear', 'gear2', 'strap', 'helmet', 'glove', 'boot', 'metal', 'accent'];
+export const PALETTE = ['', 'gear', 'gear2', 'strap', 'helmet', 'glove', 'boot', 'metal', 'accent', 'skin']; // skin: Hautton je Soldat (20.11.)
 export const PAL = Object.fromEntries(PALETTE.map((n, i) => [n, i]));
 /** Materialklassen (Detailtextur-Maßstab, Normalenstärke, Kavität, Rauheit – siehe materials.js CLASS_PARAMS). */
 export const CLASSES = ['cloth', 'gear', 'skin', 'hard', 'leather', 'glass'];
@@ -210,18 +210,23 @@ export function bakeVertexAO(pos, nor, idx, nIdx, { cell = 0.02, dirs = 8, steps
 export class SkinBuilder {
   /** opts.ao: Einstellungen für bakeVertexAO (null = keine Verdeckung, z. B. ferne Stufe). */
   /** opts.bulk: je Knochenindex { cx, cz, sx, sz, tx } – Teile dieses Knochens um die Achse (cx, cz) quer auf
-   *  sx/sz skalieren und um tx verschieben (Statur breiter, ohne alle Maße neu zu schreiben). */
+   *  sx/sz skalieren und um tx/tz verschieben (Statur breiter, ohne alle Maße neu zu schreiben). */
   constructor({ ao = null, bulk = null } = {}) {
     this.parts = [];
     this.triangles = 0;
     this.ao = ao;
     this.bulk = bulk;
+    // mensch4: Teil-Kennung (gear.js setzt B.tag vor Gruppen von Teilen) → userData.parts [[erste Ecke, Ende, Kennung]] für
+    // Prüfwerkzeuge (Durchstich-Prüfung je Pose); kostet nur eine kleine Liste je Geometrie
+    this.tag = '';
+    this.shrink = []; // mensch4: [{ inner, regs, outer, depth, max }] – verdeckte Innen-Lage einziehen (siehe build)
   }
 
   /**
    * Teil hinzufügen. o: { bone, color (Hex, direkt) | pal (Palettenplatz) + shade (sRGB-Faktor, Standard 1),
    *   camo = 0, detail = 0, emis = 0, shine = 0, cls ('cloth'|'gear'|'skin'|'hard'|'leather'|'glass'), wear = 0,
-   *   mirrorBone, tail } – mirrorBone: zusätzlich an x gespiegelt an diesen Knochen; tail: Dreiecke ans Ende (siehe addMesh).
+   *   mirrorBone, tail, noBulk } – mirrorBone: zusätzlich an x gespiegelt an diesen Knochen; tail: Dreiecke ans Ende (siehe addMesh);
+   *   noBulk: keine Querskalierung (Teil ist am Körpernetz body-mesh.js in Endmaßen gemessen).
    */
   add(geo, o) {
     if (!geo) return;
@@ -242,14 +247,14 @@ export class SkinBuilder {
     const np = [o.camo || 0, o.detail ?? (o.camo ? 1 : 0), o.emis || 0, o.shine || 0];
     const seed = hash01(this.parts.length * 7 + bone * 131 + 17);
     const nq = [pal, cls, Math.round(Math.min(1, Math.max(0, o.wear || 0)) * 255), Math.floor(seed * 255)];
-    this.parts.push({ geo, bone, r, g, b, np, nq, seed, tail: !!o.tail });
+    this.parts.push({ geo, bone, r, g, b, np, nq, seed, tail: !!o.tail, noBulk: !!o.noBulk, tag: this.tag });
     if (o.mirrorBone) {
       const m = geo.clone();
       m.userData = { ...geo.userData, npUv: geo.userData.npUv ? [...geo.userData.npUv] : undefined };
       m.scale(-1, 1, 1);
       flipWinding(m);
       const mb = BONE[o.mirrorBone];
-      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3), tail: !!o.tail });
+      this.parts.push({ geo: m, bone: mb, r, g, b, np, nq: [nq[0], nq[1], nq[2], (nq[3] + 97) & 255], seed: hash01(seed * 1e6 + 3), tail: !!o.tail, noBulk: !!o.noBulk, tag: this.tag });
     }
   }
 
@@ -275,7 +280,7 @@ export class SkinBuilder {
       }
       return m;
     };
-    this.parts.push({ mesh: D, spec, tail });
+    this.parts.push({ mesh: D, spec, tail, tag: this.tag });
   }
 
   build() {
@@ -299,7 +304,11 @@ export class SkinBuilder {
     let vo = 0, io = 0;
     const fieldAo = []; // [Startecke, Uint8Array] der fertigen Netze (Feld-Verdeckung)
     const tailV = new Uint8Array(nv); // Ecken, deren Dreiecke ans Ende sollen (Kopf)
+    const ranges = [];
     for (const p of this.parts) {
+      const n_ = p.mesh ? p.mesh.n : p.geo.attributes.position.count;
+      const last = ranges[ranges.length - 1];
+      if (last && !p.mesh && !last[3] && last[2] === p.tag && last[1] === vo) last[1] = vo + n_; else ranges.push([vo, vo + n_, p.tag, p.mesh ? p.mesh.reg : null]);
       if (p.mesh) {
         const D = p.mesh, n = D.n;
         for (let i = 0; i < n; i++) {
@@ -311,7 +320,7 @@ export class SkinBuilder {
           for (let c = 0; c < 4; c++) { np[k * 4 + c] = u8(m.np[c]); nq[k * 4 + c] = m.nq[c]; si[k * 4 + c] = D.ski[i * 4 + c]; sw[k * 4 + c] = D.skw[i * 4 + c]; }
         }
         for (let i = 0; i < D.idx.length; i++) idx[io + i] = D.idx[i] + vo;
-        if (p.tail) for (let i = 0; i < n; i++) if (p.tail.has(D.reg[i])) tailV[vo + i] = 1;
+        if (p.tail) for (let i = 0; i < n; i++) if (p.tail.has ? p.tail.has(D.reg[i]) : p.tail[i]) tailV[vo + i] = 1; // Set von Bereichen oder Maske je Ecke
         fieldAo.push([vo, D.ao]);
         io += D.idx.length;
         vo += n;
@@ -328,14 +337,14 @@ export class SkinBuilder {
       const n = g.attributes.position.count;
       const cr = u8(p.r), cg = u8(p.g), cb = u8(p.b);
       const n0 = u8(p.np[0]), n1 = u8(p.np[1]), n2 = u8(p.np[2]), n3 = u8(p.np[3]);
-      const bk = this.bulk ? this.bulk[p.bone] : null;
+      const bk = this.bulk && !p.noBulk ? this.bulk[p.bone] : null; // noBulk: Teil schon in Endmaßen (am Körpernetz gemessen)
       if (p.tail) tailV.fill(1, vo, vo + n);
       for (let i = 0; i < n; i++) {
         let x = P[i * 3], z = P[i * 3 + 2];
         const y = P[i * 3 + 1];
         let nx = N[i * 3], ny = N[i * 3 + 1], nz = N[i * 3 + 2];
         if (bk) {
-          x = bk.cx + bk.tx + (x - bk.cx) * bk.sx; z = bk.cz + (z - bk.cz) * bk.sz;
+          x = bk.cx + bk.tx + (x - bk.cx) * bk.sx; z = bk.cz + (bk.tz || 0) + (z - bk.cz) * bk.sz;
           nx /= bk.sx; nz /= bk.sz; // Normalen: inverse Transponierte der Querskalierung
         }
         const nl = Math.hypot(nx, ny, nz) || 1;
@@ -369,6 +378,10 @@ export class SkinBuilder {
       vo += n;
       g.dispose();
     }
+    // mensch4: verdeckte Innen-Lage einziehen (Durchstich-Schutz): Ecken der Innen-Lage (Kennung + Bereiche), über denen in der
+    // Bindehaltung die Außen-Lage liegt (Strahl entlang der Normalen trifft sie ≤ max), um `depth` nach innen – bei starker
+    // Verformung (Laufen, Liegen, Ragdoll) sticht so das Hemd nicht durch die Weste.
+    for (const sh of this.shrink || []) shrinkCovered(pos, nor, idx, io, ranges, sh);
     // Umgebungsverdeckung je Vertex (Kontaktschatten unter Taschen, zwischen den Beinen, unter Helm/Kragen …)
     const tAo = performance.now();
     const ao = this.ao ? bakeVertexAO(pos, nor, idx, io, this.ao) : new Uint8Array(nv).fill(255);
@@ -401,11 +414,59 @@ export class SkinBuilder {
     out.computeBoundingBox();
     out.userData.triangles = io / 3;
     out.userData.tailStart = tailStart;
+    out.userData.parts = ranges;
     out.userData.aoMs = +aoMs.toFixed(1);
     out.userData.bytes = pos.byteLength + nor.byteLength + uv.byteLength + col.byteLength + np.byteLength + nq.byteLength + si.byteLength + sw.byteLength + idx.byteLength + ao.byteLength;
     this.triangles = io / 3;
     this.parts = [];
     return out;
+  }
+}
+
+/** Innen-Lage unter der Außen-Lage einziehen (siehe build): sh = { inner, regs (Set|null), outer, depth, max }. */
+function shrinkCovered(pos, nor, idx, ni, ranges, { inner, regs = null, outer, depth = 0.006, max = 0.04 }) {
+  const inR = ranges.filter((r) => r[2] === inner), outR = ranges.filter((r) => r[2] === outer);
+  if (!inR.length || !outR.length) return;
+  const isOut = (v) => outR.some((r) => v >= r[0] && v < r[1]);
+  const cell = 0.03, G = new Map(), T = [];
+  for (let t = 0; t < ni; t += 3) {
+    const a = idx[t], b = idx[t + 1], c = idx[t + 2];
+    if (!isOut(a)) continue;
+    const ti = T.length; T.push(a, b, c);
+    let x0 = 1e9, y0 = 1e9, z0 = 1e9, x1 = -1e9, y1 = -1e9, z1 = -1e9;
+    for (const v of [a, b, c]) { x0 = Math.min(x0, pos[v * 3]); x1 = Math.max(x1, pos[v * 3]); y0 = Math.min(y0, pos[v * 3 + 1]); y1 = Math.max(y1, pos[v * 3 + 1]); z0 = Math.min(z0, pos[v * 3 + 2]); z1 = Math.max(z1, pos[v * 3 + 2]); }
+    for (let i = Math.floor(x0 / cell); i <= Math.floor(x1 / cell); i++) for (let j = Math.floor(y0 / cell); j <= Math.floor(y1 / cell); j++) for (let k = Math.floor(z0 / cell); k <= Math.floor(z1 / cell); k++) {
+      const key = (i * 73856093) ^ (j * 19349663) ^ (k * 83492791); let L = G.get(key); if (!L) G.set(key, (L = [])); L.push(ti);
+    }
+  }
+  const hit = (ox, oy, oz, dx, dy, dz) => {
+    const seen = new Set();
+    for (let s = 0; s <= max + 1e-6; s += cell * 0.5) {
+      const ci = Math.floor((ox + dx * s) / cell), cj = Math.floor((oy + dy * s) / cell), ck = Math.floor((oz + dz * s) / cell);
+      const L = G.get((ci * 73856093) ^ (cj * 19349663) ^ (ck * 83492791));
+      if (!L) continue;
+      for (const t of L) {
+        if (seen.has(t)) continue; seen.add(t);
+        const A = T[t] * 3, B = T[t + 1] * 3, C = T[t + 2] * 3;
+        const e1x = pos[B] - pos[A], e1y = pos[B + 1] - pos[A + 1], e1z = pos[B + 2] - pos[A + 2];
+        const e2x = pos[C] - pos[A], e2y = pos[C + 1] - pos[A + 1], e2z = pos[C + 2] - pos[A + 2];
+        const hx = dy * e2z - dz * e2y, hy = dz * e2x - dx * e2z, hz = dx * e2y - dy * e2x;
+        const det = e1x * hx + e1y * hy + e1z * hz; if (Math.abs(det) < 1e-12) continue;
+        const f = 1 / det, sx = ox - pos[A], sy = oy - pos[A + 1], sz = oz - pos[A + 2];
+        const u = f * (sx * hx + sy * hy + sz * hz); if (u < 0 || u > 1) continue;
+        const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+        const w = f * (dx * qx + dy * qy + dz * qz); if (w < 0 || u + w > 1) continue;
+        const tt = f * (e2x * qx + e2y * qy + e2z * qz);
+        if (tt >= 0 && tt <= max) return true;
+      }
+    }
+    return false;
+  };
+  for (const r of inR) for (let v = r[0]; v < r[1]; v++) {
+    if (regs && !(r[3] && regs.has(r[3][v - r[0]]))) continue;
+    const nx = nor[v * 3] / 127, ny = nor[v * 3 + 1] / 127, nz = nor[v * 3 + 2] / 127;
+    if (!hit(pos[v * 3], pos[v * 3 + 1], pos[v * 3 + 2], nx, ny, nz)) continue;
+    pos[v * 3] -= nx * depth; pos[v * 3 + 1] -= ny * depth; pos[v * 3 + 2] -= nz * depth;
   }
 }
 

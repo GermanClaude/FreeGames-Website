@@ -1,7 +1,7 @@
 // NULLPUNKT — Requisiten aus Primitiven: Container, Fahrzeuge, Kisten, Fässer, Paletten, Sandsäcke,
 // Betonbarrieren, Lampen, Zäune, Bäume, Marktstände … (Owner: world)
 import * as THREE from 'three';
-import { autoWrack } from './autowrack.js?v=20261119182451';
+import { autoWrack } from './autowrack.js?v=20261121041936';
 
 /** Lokales Koordinatensystem (x, y, z, ry) für Unterteile eines Props. */
 export function frame(b, x, y, z, ry = 0) {
@@ -264,6 +264,16 @@ function ctrDoorHardware(f, sx, len, H, W, color, det) {
 // Kisten, Fässer, Paletten
 // ---------------------------------------------------------------------------
 export function crate(b, x, y, z, s = 1, o = {}) {
+  // zerstoerung 15.11.: jede Kiste ist ein zerbrechliches Stück (game/breakables.js) – Holz splittert, Blechkisten nur unter Sprengwirkung
+  const own = o.breakable !== false && typeof b.beginBreak === 'function' && !b._brk;
+  if (own) {
+    const w = o.w ?? s, h = o.h ?? s, d = o.d ?? s, metal = !!(o.mat && /metal|steel|ctr/.test(o.mat));
+    b.beginBreak({ kind: metal ? 'blechkiste' : 'kiste', x, y, z, w, h, d, ry: o.ry || 0, surface: metal ? 'metal' : 'wood', hp: metal ? 900 : 70 + 90 * w * h * d });
+  }
+  try { crateParts(b, x, y, z, s, o); } finally { if (own) b.endBreak(); }
+}
+
+function crateParts(b, x, y, z, s, o) {
   const w = o.w ?? s, h = o.h ?? s, d = o.d ?? s;
   b.box(x, y, z, w, h, d, o.mat || 'wood_crate', { ry: o.ry || 0, uv: 'fit', tint: o.tint, minimap: o.minimap ?? 'cover', aoFloor: o.aoFloor, grad: o.grad });
   if (o.frame === false || (o.mat && o.mat !== 'wood_crate')) return;
@@ -343,6 +353,13 @@ export function barrelGroup(b, x, z, o = {}) {
  *  5 Deckbretter; Holzton je Palette (frisch/hell bis vergraut), je Brett leicht variiert.
  *  Kartons: Fotoscan cardboard_box_01 (falls geladen), sonst prozedurale Kartons mit Klebeband. Kollision unverändert. */
 export function pallet(b, x, y, z, o = {}) {
+  // zerstoerung 15.11.: leere/foliierte Paletten zerbrechen (game/breakables.js); mit Kartons (Bibliotheksmodelle) nicht
+  const own = o.load !== 'boxes' && typeof b.beginBreak === 'function' && !b._brk;
+  if (own) b.beginBreak({ kind: 'palette', x, y, z, w: 1.2, h: o.load ? 0.9 : 0.144, d: 0.8, ry: o.ry || 0, surface: 'wood', hp: o.load ? 140 : 60 });
+  try { return palletParts(b, x, y, z, o); } finally { if (own) b.endBreak(); }
+}
+
+function palletParts(b, x, y, z, o) {
   const f = frame(b, x, y, z, o.ry || 0);
   const m = 'wood_crate', grad = Math.abs(y) < 0.05, P = { collide: false, minimap: false };
   const h0 = hash01(x, z, 11);
@@ -614,7 +631,7 @@ export function car(b, x, z, o = {}) {
   const L = 4.3, W = 1.8, hatch = o.style === 'hatch';
   const wreck = o.style === 'wreck';
   // Nutzer 14.11.: ausgebranntes Wrack als echte Karosserie (autowrack.js) ab medium; low behält das Requisit
-  if (wreck && b.quality && b.quality !== 'low') {
+  if (wreck && (b.lookQuality || b.quality) && (b.lookQuality || b.quality) !== 'low') {
     autoWrack(b, x, o.y ?? 0, z, o.ry || 0, { seed: Math.abs(x * 0.37 + z * 0.11) + 0.5, color: col });
     f.solid(0, 0, 0, W, 1.42, L, { minimap: 'vehicle', mat: 'hull' });
     b.decal(x, (o.y ?? 0) + 0.01, z, 2.6, 4.6, 'oil', { ry: o.ry || 0, opacity: 0.6 });
@@ -847,31 +864,36 @@ export function floodMast(b, x, z, o = {}) {
   }
 }
 
-/** Zaun von A nach B. style: 'chain' (Maschendraht, durchschießbar) | 'palisade' | 'mesh' */
+/** Zaun von A nach B. style: 'chain' (Maschendraht, durchschießbar) | 'palisade' | 'mesh'
+ *  zerstoerung 15.11.: je Feld (Pfosten bis Pfosten) ein zerbrechliches Stück – Sprengwirkung reißt Felder heraus
+ *  (game/breakables.js); Kollision deshalb je Feld statt über die ganze Länge (gleiche Maße auf allen Stufen). */
 export function fence(b, x0, z0, x1, z1, o = {}) {
   const h = o.h ?? 2.4, y = o.y ?? 0, L = Math.hypot(x1 - x0, z1 - z0), ry = Math.atan2(-(z1 - z0), x1 - x0);
   const ux = (x1 - x0) / L, uz = (z1 - z0) / L;
   const n = Math.max(1, Math.round(L / (o.spacing ?? 2.6)));
-  for (let i = 0; i <= n; i++) {
-    const s = (L * i) / n;
-    b.cyl(x0 + ux * s, y, z0 + uz * s, 0.045, h + 0.05, 'metal_galvanized', { seg: 6, collide: false, minimap: false, ao: o.ao });
-  }
-  b.cyl((x0 + x1) / 2, y + h, (z0 + z1) / 2, 0.03, L, 'metal_galvanized', { axis: 'x', ry, seg: 6, collide: false, minimap: false, ao: false });
-  const style = o.style || 'chain';
-  if (style === 'chain' || style === 'mesh') {
-    // Maschendraht: Fotoscan-Satz „chainlink“ (dünn → geblendet, bleibt auch in kleinen Mip-Stufen durchsichtig);
-    // Gitterzaun („mesh“): dichtes Gitter mit Alphatest
-    const chain = style === 'chain';
-    b.box((x0 + x1) / 2, y + 0.05, (z0 + z1) / 2, L, h - 0.08, 0.02, chain ? 'chainlink' : 'metal_grate', { ry, collide: false, minimap: false, bullet: false, grad: false, uvScale: chain ? 1 : 0.8, ao: false, matOpts: null, cast: !chain });
-    if (o.barbed) b.cyl((x0 + x1) / 2, y + h + 0.25, (z0 + z1) / 2, 0.012, L, 'metal_galvanized', { axis: 'x', ry, seg: 4, collide: false, minimap: false, ao: false });
-  } else {
-    const m = Math.round(L / 0.12);
-    for (let i = 0; i < m; i++) {
-      const s = (i + 0.5) * (L / m);
-      b.box(x0 + ux * s, y, z0 + uz * s, 0.05, h - 0.05 + (i % 2) * 0.12, 0.03, 'metal_painted', { ry, tint: o.tint || '#2f4a3a', collide: false, minimap: false, grad: false });
+  const style = o.style || 'chain', chain = style === 'chain', seg = L / n;
+  const brk = o.breakable !== false && typeof b.beginBreak === 'function' && !b._brk;
+  const bars = style === 'chain' || style === 'mesh' ? 0 : Math.round(L / 0.12);
+  for (let i = 0; i < n; i++) {
+    const s0 = seg * i, sm = s0 + seg / 2, mx = x0 + ux * sm, mz = z0 + uz * sm;
+    if (brk) b.beginBreak({ kind: chain || style === 'mesh' ? 'zaun' : 'gitterzaun', x: mx, y, z: mz, w: seg, h, d: 0.12, ry, surface: 'metal', hp: 260 });
+    b.cyl(x0 + ux * s0, y, z0 + uz * s0, 0.045, h + 0.05, 'metal_galvanized', { seg: 6, collide: false, minimap: false, ao: o.ao });
+    b.cyl(mx, y + h, mz, 0.03, seg, 'metal_galvanized', { axis: 'x', ry, seg: 6, collide: false, minimap: false, ao: false });
+    if (!bars) {
+      // Maschendraht: Fotoscan-Satz „chainlink“ (dünn → geblendet, bleibt auch in kleinen Mip-Stufen durchsichtig);
+      // Gitterzaun („mesh“): dichtes Gitter mit Alphatest
+      b.box(mx, y + 0.05, mz, seg, h - 0.08, 0.02, chain ? 'chainlink' : 'metal_grate', { ry, collide: false, minimap: false, bullet: false, grad: false, uvScale: chain ? 1 : 0.8, ao: false, matOpts: null, cast: !chain });
+      if (o.barbed) b.cyl(mx, y + h + 0.25, mz, 0.012, seg, 'metal_galvanized', { axis: 'x', ry, seg: 4, collide: false, minimap: false, ao: false });
+    } else {
+      for (let k = Math.round((s0 / L) * bars); k < Math.round(((s0 + seg) / L) * bars); k++) {
+        const ss = (k + 0.5) * (L / bars);
+        b.box(x0 + ux * ss, y, z0 + uz * ss, 0.05, h - 0.05 + (k % 2) * 0.12, 0.03, 'metal_painted', { ry, tint: o.tint || '#2f4a3a', collide: false, minimap: false, grad: false });
+      }
     }
+    b.box(mx, y, mz, seg, Math.max(h, o.colliderH ?? 4), 0.12, 'black', { ry, visual: false, minimap: o.minimap ?? 'wall', bullet: !bars ? false : true });
+    if (brk) b.endBreak();
   }
-  b.box((x0 + x1) / 2, y, (z0 + z1) / 2, L, Math.max(h, o.colliderH ?? 4), 0.12, 'black', { ry, visual: false, minimap: o.minimap ?? 'wall', bullet: style !== 'chain' && style !== 'mesh' });
+  b.cyl(x1, y, z1, 0.045, h + 0.05, 'metal_galvanized', { seg: 6, collide: false, minimap: false, ao: o.ao });
 }
 
 /** Müllcontainer */

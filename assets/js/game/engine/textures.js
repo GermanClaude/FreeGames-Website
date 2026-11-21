@@ -7,9 +7,9 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261119182451';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261119182451';
-import { applySurface } from './surface.js?v=20261119182451';
+import { generateTexture } from '../world/texgen.js?v=20261121041936';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261121041936';
+import { applySurface } from './surface.js?v=20261121041936';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -358,7 +358,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261119182451', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261121041936', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });
@@ -593,8 +593,33 @@ function fillLibMaterial(mat) {
   if (spec.look) applyLook(mat, spec.look, rx, ry);
   // texturen 14.11.: XY-Normalen, Hex-Kachelauflösung (high/ultra), Sockelschmutz – engine/surface.js
   applySurface(mat, { nxy: !!set.normalXY, nflip: flipV && !set.normalXY, hex: spec.look?.hex || 0, hexScale: spec.look?.hexScale, rot: spec.look?.hexRot || 0, hexEq: spec.look?.hexEq || 0, eq: spec.look?.eq || 0, weather: spec.look?.weather || null, grime: opts.grime ? (spec.grime ?? 0.85) : 0, joint: spec.look?.joint || null }, macroTexture());
+  // tex4 (15.11.): Mikroschatten (medium+) – die AO-Karte des Scans dunkelt auch das direkte Sonnenlicht in Fugen,
+  // Poren und Rillen ab (three wendet aoMap nur auf indirektes Licht an → Mauerwerk/Putz wirkten im Sonnenlicht flach
+  // „wie bedruckt“). Auf den Mittelwert des Satzes normiert (Helligkeit der Fläche bleibt kalibriert); 0 Zusatz-Abfragen.
+  if (spec.cavity > 0) applyCavity(mat, spec.cavity, set.meta?.stats?.avgAO || 1);
   libraryStats.materials++;
   mat.needsUpdate = true;
+}
+
+const _cavPatches = new Map();
+function applyCavity(mat, k, avgAO) {
+  const key = `${k.toFixed(2)}:${Math.max(0.5, avgAO).toFixed(2)}`;
+  let fn = _cavPatches.get(key);
+  if (!fn) {
+    const inv = (1 / Math.max(0.5, avgAO)).toFixed(4), kk = k.toFixed(3);
+    fn = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace('#include <aomap_fragment>', `#include <aomap_fragment>
+        #ifdef USE_AOMAP
+        {
+          float npCv = clamp( ( ( ambientOcclusion - 1.0 ) / max( aoMapIntensity, 0.01 ) + 1.0 ) * ${inv}, 0.0, 1.15 );
+          reflectedLight.directDiffuse *= mix( 1.0, npCv, ${kk} );
+          reflectedLight.directSpecular *= mix( 1.0, npCv * npCv, ${kk} );
+        }
+        #endif`);
+    };
+    _cavPatches.set(key, fn);
+  }
+  addShaderPatch(mat, 'cavity', fn);
 }
 
 /** Bibliotheks-Materialien/-Klone früherer Karten freigeben (vor releaseUnusedTextures). → Anzahl */

@@ -330,6 +330,9 @@ else {
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
+    // riesen (20.11.): App-Kennung im Nutzeragenten (zusätzlich zu window.nullpunktDesktop) – das Spiel schaltet damit
+    // App-exklusive Inhalte frei (Riesenkarte, shared/appgate.js) und meldet sie dem Host im Mehrspieler
+    try { session.defaultSession.setUserAgent(`${session.defaultSession.getUserAgent()} NullpunktApp/${app.getVersion()} (desktop)`); } catch { /* */ }
     protocol.handle(SCHEME, serve);
     // Mikrofon (Sprachchat), Vollbild, Zeigersperre, Gamepad: erlauben; alles andere ablehnen
     const ALLOW = new Set(['media', 'fullscreen', 'pointerLock', 'keyboardLock', 'clipboard-sanitized-write', 'clipboard-read', 'speaker-selection', 'window-management']);

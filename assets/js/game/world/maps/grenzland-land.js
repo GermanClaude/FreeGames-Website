@@ -11,10 +11,10 @@
 // Kollision nur für Masten (dünn), Ballen, Polter und Sandsäcke – unabhängig von der Grafikstufe; Navigation tastet
 // sie mit ab (Geländeraster). Frei bleiben Straßen (Breite/2 + 1,5 m), Ortschaften, Wasser, Startpunkte, Flaggen,
 // Fahrzeugstellplätze und Kampagnenpunkte (m3). Optik (Spuren, Pfosten, Zaun) je Stufe gedünnt.
-import { frame, hash01, sandbags } from '../props.js?v=20261119182451';
-import { wireFence } from '../barbed-wire.js?v=20261119182451';
-import { burntWreck } from './brandwald-bau.js?v=20261119182451';
-import { freileitung, sperrpunkte, KAMPAGNE, stufe } from '../kleinkram.js?v=20261119182451';
+import { frame, hash01, sandbags } from '../props.js?v=20261121041936';
+import { wireFence } from '../barbed-wire.js?v=20261121041936';
+import { burntWreck } from './brandwald-bau.js?v=20261121041936';
+import { freileitung, sperrpunkte, KAMPAGNE, stufe } from '../kleinkram.js?v=20261121041936';
 
 const D = { collide: false, minimap: false, grad: false };
 
@@ -176,7 +176,7 @@ export function landschaft(b, ctx, def) {
       if (!free(x, z, 3) || roadDist(x, z) < 1.2) continue;
       hf.normalAt(x, z, n);
       if (n.y < 0.96) continue;
-      burntWreck(b, x, gy(x, z) - 0.08, z, Math.atan2(ux, uz) + (hash01(x, z, 611) - 0.5) * 0.8, 'pkw', Math.round(x * 3 + z));
+      burntWreck(b, x, gy(x, z) - 0.08, z, Math.atan2(ux, uz) + (hash01(x, z, 611) - 0.5) * 0.8, 'pkw', Math.round(x * 3 + z), gy);
       stats.wracks++;
     }
   }
