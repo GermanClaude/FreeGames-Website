@@ -1299,8 +1299,13 @@ export class BotManager {
       if (hide && p._target < 1.01 && aimPlate !== p) p._target = 0;
       else placed.push(p);
     }
+    // Spieler im Fahrzeug in einer Ego-/Innensicht (Nutzer 21.11.: Schilder schienen durch Fahrzeugwände): Schilder mit
+    // Tiefentest – Wände, Kabine und Innenraum verdecken sie; sonst wie bisher ohne Tiefentest (Verdeckung per Sichtstrahl)
+    const pv = G.player && G.player.vehicle, vcam = G.vehicles && G.vehicles.camera, vw = pv && vcam ? vcam.view : null;
+    const deep = !!(vw && !vw.tp);
     for (let i = 0; i < bots.length; i++) {
       const p = this._plates.get(bots[i]);
+      if (p && p.material.depthTest !== deep) p.material.depthTest = deep;
       if (p && (p._target > 0 || p.alpha >= 0.02 || p.sprite.visible)) p.update(p._pos, cam, viewH, p._target || 0, dt, p._fade || 6, p._size || 1);
     }
   }

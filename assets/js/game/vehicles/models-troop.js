@@ -81,6 +81,90 @@ function milWheels(K, S, lod, spec, paint) {
  * Scheiben (GB), Armaturenbrett mit Instrumenten, Sitze. c = { x (Halbbreite), zF (vorn), zB (hinten), yF (Boden),
  * yB (Gürtel), yT (Dach), rake (Neigung Frontscheibe in m), seats: [[x, z]], door: true }.
  */
+/**
+ * Fahrerhaus-Ausstattung (Nutzer 21.11.: „hkw- und lkw-Fahrerhaus sehr einfach“), nur Nahstufe: Instrumententräger vor dem
+ * Fahrer (zwei große, drei kleine Rundinstrumente mit Chromring und Zeiger, Kontrollleuchten), Mittelkonsole mit Funkgerät
+ * und Kippschaltern, Handschuhfach, Haltegriff, Schalthebel mit Faltenbalg und Knauf, Verteilergetriebe-Hebel,
+ * Handbremse, drei Pedale, Sitze mit Wangen und Kopfstütze, Türverkleidung (Armlehne, Griff, Fensterkurbel), Sonnen-
+ * blenden, Innenspiegel. c: { x (halbe Breite), zF, yF, yB (Brüstung), yT, rake, seats [[x, z]], dash (z der Tafel-
+ * vorderkante), drv (x Fahrer), doors (false: offen), visors (false: ohne) }
+ */
+function cabFit(K, B, S, c) {
+  const { box, cyl } = K, PI2 = Math.PI * 2;
+  const { x: hx, zF, yF, yB } = c, dz = c.dash != null ? c.dash : zF + 0.42, dx = c.drv != null ? c.drv : -hx * 0.5;
+  const sph = (r) => new THREE.SphereGeometry(r, 10, 7);
+  // Instrumententräger (Hutze) hinter dem Lenkrad (vom Fahrer aus), schräg zum Fahrer
+  const wh = c.wheel || [dx, yB + 0.25, dz - 0.1];
+  const tilt = -0.42, iy = Math.min(yB + 0.02, wh[1] - 0.17), iz = wh[2] - 0.09;
+  B.add(box(0.5, 0.17, 0.12), S.plastic, [dx, iy, iz - 0.04], [tilt, 0, 0]);
+  B.add(box(0.52, 0.03, 0.2), S.plastic, [dx, iy + 0.1, iz - 0.06], [tilt * 0.4, 0, 0]);
+  const gface = (x, y, r) => {
+    const p = [dx + x, iy + y, iz + 0.02 - y * 0.4];
+    B.add(cyl(r, r, 0.012, 18), S.dial, p, [HP + tilt, 0, 0]);
+    B.add(new THREE.TorusGeometry(r, r * 0.12, 5, 20), S.chrome, [p[0], p[1], p[2] + 0.006], [tilt, 0, 0]);
+    B.add(box(r * 0.08, r * 0.85, 0.004), S.amber, [p[0] + r * 0.2, p[1] + r * 0.18, p[2] + 0.009], [tilt, 0, -0.9 - x * 3]);
+  };
+  gface(-0.11, 0.01, 0.058); gface(0.11, 0.01, 0.058);
+  for (let i = 0; i < 3; i++) gface(-0.12 + i * 0.12, -0.075, 0.026);
+  for (let i = 0; i < 5; i++) B.add(box(0.016, 0.012, 0.01), i === 1 ? S.amber : S.dark, [dx - 0.08 + i * 0.04, iy + 0.055, iz + 0.0]);
+  // Mittelkonsole: Funkgerät mit Knöpfen und Anzeige, Kippschalterreihe, Lüftungsdüsen
+  const mx = (dx + (c.seats && c.seats[1] ? c.seats[1][0] : -dx)) / 2;
+  B.add(box(0.3, 0.16, 0.2), S.dark, [mx, yB - 0.15, dz + 0.02]);
+  B.add(box(0.12, 0.035, 0.005), S.dial, [mx - 0.05, yB - 0.12, dz + 0.122]);
+  for (let i = 0; i < 3; i++) B.add(cyl(0.014, 0.014, 0.025, 10), S.plastic, [mx + 0.03 + i * 0.04, yB - 0.17, dz + 0.13], [HP, 0, 0]);
+  for (let i = 0; i < 6; i++) { B.add(box(0.022, 0.03, 0.012), S.dark, [mx - 0.12 + i * 0.048, yB - 0.03, dz + 0.13]); B.add(cyl(0.004, 0.004, 0.025, 6), S.chrome, [mx - 0.12 + i * 0.048, yB - 0.03, dz + 0.145], [HP + (i % 2 ? 0.5 : -0.5), 0, 0]); }
+  for (const sx of [-1, 1]) { B.add(cyl(0.035, 0.035, 0.03, 14), S.dark, [mx + sx * 0.3, yB - 0.02, dz + 0.12], [HP, 0, 0]); B.add(box(0.05, 0.004, 0.02), S.plastic, [mx + sx * 0.3, yB - 0.02, dz + 0.137]); }
+  // Beifahrerseite: Handschuhfach, Haltegriff
+  const px = -dx;
+  B.add(box(0.36, 0.13, 0.012), S.plastic, [px, yB - 0.09, dz + 0.105]);
+  B.add(box(0.1, 0.018, 0.012), S.chrome, [px, yB - 0.04, dz + 0.113]);
+  bar(K, B, S.dark, [px - 0.2, yB + 0.05, dz + 0.08], [px + 0.2, yB + 0.05, dz + 0.08], 0.02, 0.03);
+  // Schalthebel (Faltenbalg, Stange, Knauf), Verteilergetriebe, Handbremse – zwischen den Sitzen
+  const gz = (c.seats && c.seats[0] ? c.seats[0][1] : dz + 0.6) - 0.32;
+  B.add(cyl(0.05, 0.07, 0.1, 10), S.rubber, [mx, yF + 0.07, gz]);
+  tubeAB(K, B, S.steel, [mx, yF + 0.1, gz], [mx - 0.02, yF + 0.5, gz + 0.06], 0.011);
+  B.add(sph(0.032), S.plastic, [mx - 0.02, yF + 0.52, gz + 0.065]);
+  B.add(cyl(0.035, 0.05, 0.07, 10), S.rubber, [mx + 0.1, yF + 0.05, gz + 0.06]);
+  tubeAB(K, B, S.steel, [mx + 0.1, yF + 0.08, gz + 0.06], [mx + 0.1, yF + 0.36, gz + 0.12], 0.009);
+  B.add(cyl(0.016, 0.016, 0.05, 8), S.red || S.plastic, [mx + 0.1, yF + 0.38, gz + 0.125]);
+  tubeAB(K, B, S.dark, [mx - 0.1, yF + 0.08, gz + 0.25], [mx - 0.1, yF + 0.3, gz + 0.12], 0.014);
+  B.add(cyl(0.02, 0.02, 0.09, 8), S.rubber, [mx - 0.1, yF + 0.32, gz + 0.1], [0.9, 0, 0]);
+  // Pedale (Kupplung, Bremse, Gas) mit Gummibelag
+  const pz = Math.max((c.seats && c.seats[0] ? c.seats[0][1] : dz + 0.6) - 0.62, zF + 0.12);
+  for (const [ox, w, h] of [[-0.14, 0.07, 0.07], [0.0, 0.08, 0.07], [0.15, 0.05, 0.11]]) {
+    tubeAB(K, B, S.dark, [dx + ox, yF + 0.32, pz - 0.05], [dx + ox, yF + 0.1, pz + 0.05], 0.01);
+    B.add(box(w, h, 0.015), S.rubber, [dx + ox, yF + 0.1, pz + 0.06], [-0.6, 0, 0]);
+  }
+  // Sitze: Unterbau, Sitzkissen mit Wangen, Lehne mit Wangen, Kopfstütze an Stangen
+  for (const [sx, sz] of c.seats || []) {
+    B.add(box(0.38, 0.28, 0.36), S.dark, [sx, yF + 0.16, sz]);
+    B.add(box(0.44, 0.1, 0.46), S.seat, [sx, yF + 0.36, sz - 0.01]);
+    for (const k of [-1, 1]) B.add(box(0.06, 0.06, 0.42), S.seat, [sx + k * 0.21, yF + 0.42, sz - 0.01], [0, 0, k * 0.2]);
+    B.add(box(0.44, 0.52, 0.1), S.seat, [sx, yF + 0.7, sz + 0.25], [-0.12, 0, 0]);
+    for (const k of [-1, 1]) B.add(box(0.06, 0.46, 0.1), S.seat, [sx + k * 0.21, yF + 0.7, sz + 0.21], [-0.12, k * 0.3, 0]);
+    for (const k of [-1, 1]) tubeAB(K, B, S.chrome, [sx + k * 0.07, yF + 0.94, sz + 0.29], [sx + k * 0.07, yF + 1.04, sz + 0.3], 0.006);
+    B.add(box(0.26, 0.14, 0.09), S.seat, [sx, yF + 1.1, sz + 0.3], [-0.1, 0, 0]);
+  }
+  // Türverkleidung: Armlehne, Griff, Fensterkurbel, Ablagefach
+  if (c.doors !== false) for (const sx of [-1, 1]) {
+    const x = sx * (hx - 0.045), z = (c.seats && c.seats[0] ? c.seats[0][1] : dz + 0.6) - 0.08;
+    B.add(box(0.06, 0.05, 0.36), S.plastic, [x - sx * 0.02, yF + 0.62, z]);
+    B.add(box(0.03, 0.03, 0.12), S.chrome, [x - sx * 0.02, yF + 0.74, z - 0.22]);
+    B.add(cyl(0.035, 0.035, 0.012, 12), S.dark, [x - sx * 0.01, yF + 0.5, z + 0.12], [0, 0, HP]);
+    B.add(box(0.012, 0.012, 0.06), S.dark, [x - sx * 0.022, yF + 0.5, z + 0.15]);
+    B.add(box(0.04, 0.12, 0.3), S.plastic, [x - sx * 0.01, yF + 0.22, z + 0.02]);
+  }
+  // Sonnenblenden, Innenspiegel
+  if (c.visors !== false) {
+    const vz = zF + (c.rake || 0.1) + 0.08, vy = c.yT - 0.045;
+    for (const sx of [-1, 1]) { B.add(box(0.38, 0.016, 0.17), S.trim, [sx * hx * 0.48, vy, vz], [0.15, 0, 0]); tubeAB(K, B, S.dark, [sx * hx * 0.48 - 0.2, vy + 0.01, vz - 0.08], [sx * hx * 0.48 + 0.2, vy + 0.01, vz - 0.08], 0.006); }
+    B.add(box(0.22, 0.06, 0.02), S.dark, [0, vy - 0.06, vz - 0.04]);
+    B.add(box(0.2, 0.045, 0.004), S.optic, [0, vy - 0.06, vz - 0.028]);
+    tubeAB(K, B, S.dark, [0, vy + 0.01, vz - 0.06], [0, vy - 0.04, vz - 0.04], 0.006);
+  }
+  void PI2;
+}
+
 function hollowCab(K, B, GB, S, paint, c, lod) {
   const { box } = K, { x: hx, zF, zB, yF, yB, yT } = c, rake = c.rake || 0.12;
   const L = zB - zF, zm = (zF + zB) / 2;
@@ -103,21 +187,16 @@ function hollowCab(K, B, GB, S, paint, c, lod) {
   const hgt = Math.hypot(rake, yT - yB);
   for (const sx of [-1, 1]) GB.add(box(hx - 0.06, hgt - 0.06, 0.012), S.glass, [sx * hx / 2, (yB + yT) / 2, zF + rake / 2], [_e.x, 0, 0]);
   bar(K, B, paint, [0, yB, zF], [0, yT, zF + rake], 0.05, 0.05);
-  // Armaturenbrett, Instrumente, Schalter, Funkgerät
+  // Armaturenbrett (Grundkörper); Nahstufe: Instrumente, Konsole, Hebel, Pedale, Sitze, Türverkleidung, Blenden (cabFit)
   B.add(box(hx * 2 - 0.1, 0.18, 0.4), S.plastic, [0, yB - 0.1, zF + 0.24]);
-  if (lod < 2) {
-    const dx = c.seats && c.seats[0] ? c.seats[0][0] : -hx * 0.5;
-    for (let i = 0; i < 3; i++) B.add(K.cyl(0.045, 0.045, 0.012, 16), S.dial, [dx - 0.12 + i * 0.12, yB - 0.02, zF + 0.43], [1.2, 0, 0]);
-    if (lod === 0) {
-      for (let i = 0; i < 6; i++) B.add(box(0.02, 0.03, 0.02), i % 2 ? S.amber : S.dark, [0.05 + i * 0.05, yB - 0.03, zF + 0.43]);
-      B.add(box(0.3, 0.16, 0.22), S.dark, [hx * 0.5, yB - 0.32, zF + 0.3]);
-      B.add(box(0.04, 0.4, 0.04), S.dark, [0.05, yF + 0.25, zF + 0.5], [0.3, 0, 0]);                 // Schalthebel
+  if (lod === 0) cabFit(K, B, S, { x: hx, zF, yF, yB, yT, rake, seats: c.seats, dash: zF + 0.44, drv: c.seats && c.seats[0] ? c.seats[0][0] : -hx * 0.5, wheel: c.wheel });
+  else {
+    if (lod < 2) { const dx = c.seats && c.seats[0] ? c.seats[0][0] : -hx * 0.5; for (let i = 0; i < 3; i++) B.add(K.cyl(0.045, 0.045, 0.012, 16), S.dial, [dx - 0.12 + i * 0.12, yB - 0.02, zF + 0.43], [1.2, 0, 0]); }
+    for (const [sx, sz] of c.seats || []) {
+      B.add(box(0.48, 0.12, 0.48), S.seat, [sx, yF + 0.42, sz]);
+      B.add(box(0.48, 0.55, 0.1), S.seat, [sx, yF + 0.75, sz + 0.27], [-0.1, 0, 0]);
+      B.add(box(0.36, 0.3, 0.36), S.dark, [sx, yF + 0.2, sz]);
     }
-  }
-  for (const [sx, sz] of c.seats || []) {
-    B.add(box(0.48, 0.12, 0.48), S.seat, [sx, yF + 0.42, sz]);
-    B.add(box(0.48, 0.55, 0.1), S.seat, [sx, yF + 0.75, sz + 0.27], [-0.1, 0, 0]);
-    B.add(box(0.36, 0.3, 0.36), S.dark, [sx, yF + 0.2, sz]);
   }
 }
 
@@ -163,11 +242,17 @@ function canvasCover(K, B, S, x0, y0, y1, z0, z1, lod, rollUp = true) {
   B.add(g, S.canvas);
   // Stirnplane vorn (geschlossen), Spriegel innen
   B.add(K.box(x0 * 2, y1 - y0 - 0.05, 0.02), S.canvas, [0, (y0 + y1) / 2 - 0.02, z0 + 0.01]);
+  // Spriegel (Nutzer 21.11.: Plane mit Abstand): gebogene Rundrohr-Bügel mit Eckbögen, in Rungentaschen; Längslatten
   if (lod < 2) for (let k = 0; k <= 5; k++) {
-    const z = z0 + 0.1 + (k / 5) * (z1 - z0 - 0.2);
-    for (const sx of [-1, 1]) B.add(K.box(0.03, y1 - y0 - 0.28, 0.04), S.dark, [sx * (x0 - 0.04), (y0 + y1) / 2 - 0.12, z]);
-    B.add(K.box(x0 * 2 - 0.4, 0.03, 0.04), S.dark, [0, y1 - 0.05, z]);
+    const z = z0 + 0.1 + (k / 5) * (z1 - z0 - 0.2), xi = x0 - 0.06, rr = 0.24;
+    for (const sx of [-1, 1]) {
+      B.add(K.cyl(0.018, 0.018, y1 - y0 - 0.06 - rr, 8), S.dark, [sx * xi, y0 + (y1 - y0 - 0.06 - rr) / 2, z]);
+      if (lod === 0) B.add(new THREE.TorusGeometry(rr, 0.018, 6, 8, HP), S.dark, [sx * (xi - rr), y1 - 0.06 - rr, z], [0, sx < 0 ? PI : 0, 0]);
+      if (lod === 0) B.add(K.box(0.05, 0.16, 0.07), S.dark, [sx * (xi + 0.005), y0 + 0.08, z]);
+    }
+    B.add(K.cyl(0.018, 0.018, (xi - rr) * 2, 8), S.dark, [0, y1 - 0.06, z], [0, 0, HP]);
   }
+  if (lod === 0) for (const sx of [-1, 1]) for (const y of [y0 + 0.38, y0 + 0.78]) B.add(K.box(0.025, 0.07, z1 - z0 - 0.1), S.wood, [sx * (x0 - 0.035), y, (z0 + z1) / 2]);
   if (rollUp && lod < 2) B.add(K.cyl(0.09, 0.09, x0 * 2 - 0.1, 10), S.canvas, [0, y1 - 0.12, z1 - 0.02], [0, 0, HP]); // hochgerollte Heckplane
 }
 
@@ -184,12 +269,23 @@ function cargoBed(K, B, S, paint, x0, yF, h, z0, z1, lod) {
   B.add(box(x0 * 2, h, 0.05), paint, [0, yF + h / 2, z0]);
 }
 
-/** Längsbank (Holzsitz auf Stahlgestell, Klapplehne) entlang z. */
+/** Längsbank entlang z: Sitz aus drei Bohlen auf Stahlwinkeln, Klappbeine mit Fußplatte, Lehne aus zwei Latten an Haltern
+ * der Bordwand (Nutzer 21.11.: „Bank richtig“). */
 function bench(K, B, S, x, yF, z0, z1, lod, back = true) {
   const { box } = K, L = z1 - z0, zm = (z0 + z1) / 2, sx = Math.sign(x) || 1;
-  B.add(box(0.36, 0.05, L), S.wood, [x, yF + 0.42, zm]);
-  if (back) B.add(box(0.04, 0.32, L), S.wood, [x + sx * 0.17, yF + 0.72, zm], [0, 0, sx * 0.08]);
-  if (lod < 2) for (let i = 0; i <= 3; i++) B.add(box(0.04, 0.4, 0.04), S.dark, [x, yF + 0.2, z0 + 0.1 + i * (L - 0.2) / 3]);
+  if (lod === 0) for (let i = 0; i < 3; i++) B.add(box(0.105, 0.04, L), S.wood, [x - sx * 0.12 + sx * i * 0.115, yF + 0.43, zm]);
+  else B.add(box(0.36, 0.05, L), S.wood, [x, yF + 0.42, zm]);
+  if (lod === 0) for (const dx of [-0.16, 0.16]) B.add(box(0.03, 0.03, L), S.dark, [x + dx, yF + 0.395, zm]);
+  if (back) {
+    if (lod === 0) for (const dy of [0.6, 0.82]) B.add(box(0.03, 0.1, L), S.wood, [x + sx * 0.18, yF + dy, zm], [0, 0, sx * 0.06]);
+    else B.add(box(0.04, 0.32, L), S.wood, [x + sx * 0.17, yF + 0.72, zm], [0, 0, sx * 0.08]);
+    if (lod === 0) for (let i = 0; i <= 3; i++) B.add(box(0.03, 0.5, 0.04), S.dark, [x + sx * 0.205, yF + 0.66, z0 + 0.1 + i * (L - 0.2) / 3]);
+  }
+  if (lod < 2) for (let i = 0; i <= 3; i++) {
+    const z = z0 + 0.1 + i * (L - 0.2) / 3;
+    B.add(box(0.035, 0.4, 0.035), S.dark, [x - sx * 0.14, yF + 0.2, z]);
+    if (lod === 0) { B.add(box(0.07, 0.008, 0.07), S.dark, [x - sx * 0.14, yF + 0.004, z]); B.add(box(0.3, 0.025, 0.025), S.dark, [x + sx * 0.01, yF + 0.37, z]); }
+  }
 }
 
 /** Halbketten-Laufwerk einer Seite: Triebrad vorn, Leitrad hinten, Schachtel-Laufrollen, Kette (beide Seiten). */
@@ -326,7 +422,7 @@ function buildLKW(lod, S, K, team) {
   }
   // Kabine (Frontlenker): Unterbau über der Vorderachse, hohle Kabine oben, Kühlergrill, Stoßfänger
   B.add(box(2.4, 0.62, 1.6), paint, [0, 1.48, -2.8]);
-  hollowCab(K, B, GB, S, paint, { x: 1.18, zF: -3.62, zB: -2.15, yF: 1.6, yB: 2.0, yT: 2.92, rake: 0.1, seats: [[-0.55, -2.9], [0.55, -2.9]] }, lod);
+  hollowCab(K, B, GB, S, paint, { x: 1.18, zF: -3.62, zB: -2.15, yF: 1.6, yB: 2.0, yT: 2.92, rake: 0.1, seats: [[-0.55, -2.9], [0.55, -2.9]], wheel: [-0.55, 2.2, -3.3] }, lod);
   B.add(box(1.6, 0.48, 0.04), S.dark, [0, 1.52, -3.62]);
   if (lod === 0) for (let i = 0; i < 7; i++) B.add(box(1.55, 0.03, 0.03), paint, [0, 1.32 + i * 0.065, -3.645]);
   B.add(box(2.5, 0.24, 0.26), S.dark, [0, 0.98, -3.7]);
@@ -348,7 +444,7 @@ function buildLKW(lod, S, K, team) {
   B.add(box(1.5, 0.22, 6.0), S.dark, [0, 1.23, 1.37]);                                               // Hilfsrahmen unter der Pritsche
   if (lod < 2) for (let i = 0; i < 9; i++) B.add(box(2.36, 0.1, 0.1), S.dark, [0, 1.29, -1.5 + i * 0.73]);   // Querträger
   canvasCover(K, B, S, 1.23, 1.98, 3.25, -1.7, 4.42, lod);
-  for (const sx of [-1, 1]) bench(K, B, S, sx * 0.95, 1.38, -1.5, 2.25, lod);
+  for (const sx of [-1, 1]) bench(K, B, S, sx * 0.88, 1.38, -1.5, 2.25, lod); // Bank etwas nach innen (Plane mit Abstand)
   if (lod < 2) {
     for (const sx of [-1, 1]) { B.add(box(0.5, 0.04, 2.2), S.dark, [sx * 1.0, 1.25, 1.85]); B.add(box(0.12, 0.08, 0.04), S.rearLamp, [sx * 1.05, 1.1, 4.45]); B.add(box(0.5, 0.35, 0.02), S.rubber, [sx * 1.0, 0.95, 3.2]); }
     for (let i = 0; i < 3; i++) B.add(box(0.5, 0.04, 0.08), S.dark, [0, 0.72 + i * 0.22, 4.48]);                        // Aufstiegsleiter
@@ -366,7 +462,7 @@ function buildLKW(lod, S, K, team) {
     out.extra.push(...figures(K, S, [
       { idx: 0, pos: [-0.55, 1.6, -2.95], hands: { c: [0, 0.6, -0.35], r: 0.22, tilt: -0.95 } },
       { idx: 1, pos: [0.55, 1.6, -2.95] },
-      ...[-1.15, -0.15, 0.85, 1.85].flatMap((z, k) => [-1, 1].map((sx, j) => ({ idx: 2 + k * 2 + j, pos: [sx * 0.86, 1.38, z], face: sx < 0 ? -HP : HP, hip: 0.47 }))),
+      ...[-1.15, -0.15, 0.85, 1.85].flatMap((z, k) => [-1, 1].map((sx, j) => ({ idx: 2 + k * 2 + j, pos: [sx * 0.8, 1.38, z], face: sx < 0 ? -HP : HP, hip: 0.47 }))),
     ]));
   }
   return out;
@@ -411,9 +507,10 @@ function buildGMW(lod, S, K, team) {
     B.add(cyl(0.11, 0.11, 0.08, seg), S.dark, [sx * 0.72, 1.12, -2.74], [HP, 0, 0]);
     B.add(new THREE.TorusGeometry(0.05, 0.018, 4, 8), S.dark, [sx * 0.55, 0.8, -2.93], [0, HP, 0]);
     B.add(box(0.05, 0.3, 0.18), S.dark, [sx * 1.08, 1.85, -1.55]);
+    if (lod === 0) { B.add(box(0.035, 0.26, 0.012), S.optic, [sx * 1.08, 1.85, -1.455]); B.add(box(0.025, 0.025, 0.12), S.dark, [sx * 1.03, 1.85, -1.55]); } // Spiegelglas (dunkel), Halter
   }
   // Doppelkabine (hohl) – 2 vorn, dahinter Ladefläche
-  hollowCab(K, B, GB, S, paint, { x: 0.98, zF: -1.75, zB: -0.42, yF: 1.0, yB: 1.55, yT: 2.25, rake: 0.18, seats: [[-0.45, -1.1], [0.45, -1.1]] }, lod);
+  hollowCab(K, B, GB, S, paint, { x: 0.98, zF: -1.75, zB: -0.42, yF: 1.0, yB: 1.55, yT: 2.25, rake: 0.18, seats: [[-0.45, -1.1], [0.45, -1.1]], wheel: [-0.45, 1.6, -1.42] }, lod);
   // Ladefläche mit Klappbänken, Überrollbügel, Heckklappe, Ersatzrad, Kanister
   cargoBed(K, B, S, paint, 0.98, 1.08, 0.42, -0.38, 2.75, lod);
   for (const sx of [-1, 1]) bench(K, B, S, sx * 0.76, 1.08, -0.2, 2.55, lod, false);
@@ -426,7 +523,8 @@ function buildGMW(lod, S, K, team) {
     B.add(cyl(0.43, 0.43, 0.26, seg), S.rubber, [-0.4, 1.3, 2.95], [HP, 0, 0]);
     antenna(K, B, S, [-0.9, 2.25, -0.6], lod === 0 ? 1.9 : 1.2, lod);
   }
-  for (const sx of [-1, 1]) B.add(box(0.02, 0.3, 0.5), mark, [sx * 0.995, 1.82, -1.05]);
+  // Kennung auf dem Türblech unter der Scheibe (Nutzer 21.11.: saß mitten im Fenster → von innen hellblaue Fläche)
+  for (const sx of [-1, 1]) B.add(box(0.015, 0.24, 0.46), mark, [sx * 1.012, 1.3, -1.05]);
   B.build(hull, { shadow: true });
   GB.build(hull, { shadow: false });
   LB.build(hull, { shadow: false });
@@ -545,8 +643,12 @@ function buildHKW(lod, S, K, team) {
   B.add(box(2.2, 0.04, 0.04), S.dark, [0, 2.18, -0.95]);
   GB.add(box(2.1, 0.5, 0.012), S.glass, [0, 1.9, -1.0], [-0.18, 0, 0]);
   B.add(box(2.2, 0.2, 0.35), S.plastic, [0, 1.5, -0.88]);
-  for (let i = 0; i < 3; i++) B.add(cyl(0.04, 0.04, 0.012, 14), S.dial, [-0.65 + i * 0.12, 1.57, -0.72], [1.2, 0, 0]);
-  for (const z of [-0.62, 0.35, 1.3]) {
+  if (lod === 0) {
+    // Fahrerplatz (Nutzer 21.11.): Instrumente, Konsole, Hebel, Pedale (cabFit); vorn Einzelsitze statt Bank
+    cabFit(K, B, S, { x: 1.15, zF: -1.05, yF: 1.02, yB: 1.62, yT: 2.18, rake: 0.1, seats: [[-0.5, -0.6], [0.5, -0.6]], dash: -0.705, drv: -0.5, wheel: [-0.5, 1.82, -0.95], doors: false, visors: false });
+    for (const sx of [-1, 1]) B.add(box(0.05, 0.42, 0.6), S.trim, [sx * 1.13, 1.35, -0.6]);                 // Seitenverkleidung
+  } else for (let i = 0; i < 3; i++) B.add(cyl(0.04, 0.04, 0.012, 14), S.dial, [-0.65 + i * 0.12, 1.57, -0.72], [1.2, 0, 0]);
+  for (const z of lod === 0 ? [0.35, 1.3] : [-0.62, 0.35, 1.3]) {
     B.add(box(2.1, 0.1, 0.48), S.seat, [0, 1.47, z]);
     B.add(box(2.1, 0.5, 0.1), S.seat, [0, 1.78, z + 0.28], [-0.12, 0, 0]);
     B.add(box(2.0, 0.42, 0.4), S.dark, [0, 1.22, z]);
@@ -604,7 +706,21 @@ function buildSPW(lod, S, K, team) {
     B.add(box(0.22, 0.02, 0.02), S.optic, [sx * 0.42, 1.99, -1.5], [-0.35, 0, 0]);
     if (lod < 2) { B.add(box(0.3, 0.12, 0.03), paint, [sx * 0.95, 1.6, -1.2], [0, 0, -sx * 0.22]); B.add(box(0.32, 0.03, 0.58), S.dark, [sx * 0.42, 1.55 + 0.02, -2.2], [-0.2, 0, 0]); }
   }
-  B.add(box(1.9, 0.04, 4.3), S.dark, [0, 1.0, 1.0]);                                                          // Boden Kampfraum
+  B.add(box(1.9, 0.04, 4.3), lod === 0 ? paint : S.dark, [0, 1.0, 1.0]);                                      // Boden Kampfraum
+  if (lod === 0) {
+    // Nutzer 21.11. („Himmel durch Lücken zwischen Bank und Seitenwand, schwarze Flächen unten, Fahrerplatz ohne Lenkrad“):
+    // Bodenbretter, Innenverkleidung der unteren Wannenwände bis an die Oberplatten, Fußraum und Spritzwand vorn,
+    // Armaturen (cabFit), Lenkrad (extra), Fahrer-/Kommandantensitz
+    for (let i = 0; i < 9; i++) B.add(box(1.86, 0.012, 0.42), S.wood, [0, 1.026, -0.95 + i * 0.47]);
+    for (const sx of [-1, 1]) {
+      B.add(box(0.03, 0.34, 4.75), paint, [sx * 0.975, 1.15, 0.78]);
+      B.add(box(0.06, 0.04, 4.75), S.dark, [sx * 0.95, 1.31, 0.78]);
+    }
+    B.add(box(1.9, 0.04, 0.45), paint, [0, 1.0, -1.3]);                                                   // Fußraum
+    B.add(box(1.9, 0.56, 0.04), paint, [0, 1.3, -1.52]);                                                  // Spritzwand
+    B.add(box(1.86, 0.12, 0.22), S.dark, [0, 1.55, -1.42]);                                               // Armaturenträger
+    cabFit(K, B, S, { x: 0.95, zF: -1.52, yF: 1.02, yB: 1.62, yT: 2.1, rake: 0.1, seats: [[-0.42, -0.98], [0.42, -0.98]], dash: -1.31, drv: -0.42, wheel: [-0.42, 1.74, -1.3], doors: false, visors: false });
+  }
   // Bänke längs, Gewehrhalter, Munitionskästen, Funkgerät
   for (const sx of [-1, 1]) {
     bench(K, B, S, sx * 0.72, 0.98, 0.0, 2.75, lod, false);
@@ -646,7 +762,7 @@ function buildSPW(lod, S, K, team) {
   const mg = new THREE.Group();
   M.build(mg, { shadow: lod < 2, off: D.mgPivot });
   const out = { hull, wheels, mg };
-  if (lod === 0) out.ramp = rearDoors(K, S, paint, D);
+  if (lod === 0) { out.ramp = rearDoors(K, S, paint, D); out.extra = [steeringWheel(K, S, [-0.42, 1.74, -1.28], -0.95, 0.2)]; }
   return out;
 }
 

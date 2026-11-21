@@ -238,7 +238,7 @@ export function hatchInner(B, C, det, c, r, y, hingeAxis = 'x', hingeSide = 1) {
  * Wiege mit Schildzapfen und Schraubenreihen, Abfeuerungsmagnet mit Kabel, Rücklaufschutz (gestreifter Rohrrahmen mit
  * Seitenblechen) und Hülsenabweiser. keil: Keilblock mit Schlagbolzengehäuse, Nuten, Auswerferkrallen und Griff.
  */
-export function breechParts(MB, C, det, era) {
+export function breechParts(MB, C, det, era, { guard = true } = {}) {
   const modern = era === 'modern', wk1 = era === 'wk1';
   const W = C.wall[era];
   const B = new MB();
@@ -305,6 +305,9 @@ export function breechParts(MB, C, det, era) {
   const yR = -0.12, z0 = 0.15, z1 = 0.9;
   // modern gelb/schwarz gestreift, Weltkriegs-/Kalter-Krieg-Panzer schlichter Stahlrahmen
   const GA = modern ? C.yellow : C.metal, GB2 = modern ? C.black : C.steel;
+  // Kasematte (Jagdpanzer ohne Drehturm, Nutzer 21.11.): kein Rohrrahmen um den Rücklaufbereich – der Ladeschütze steht
+  // seitlich am Verschluss, der Rahmen wirkte wie ein Turmkorb-Geländer; nur der Hülsenabweiser bleibt
+  if (!guard) { B.add(box(0.62, 0.28, 0.012), W, [0, -0.29, z1 - 0.02], [0.15, 0, 0]); return { B }; }
   for (const sx of [-1, 1]) {
     const n = det > 1 ? 9 : 3;
     for (let i = 0; i < n; i++) {

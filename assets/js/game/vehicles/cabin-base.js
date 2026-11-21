@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import * as SH from './cabin-shape.js?v=20261121041936';
 import { LF, worn, bolt, boltRow, rivet, weld } from './cabin-detail.js?v=20261121041936';
 import { driverCabin } from './data.js?v=20261121041936';
+import { funkerCabin, funkerDoor } from './periscopes.js?v=20261121041936';
 
 const PI = Math.PI, HP = PI / 2;
 const Q = (x = 0, y = 0, z = 0, o = 'XYZ') => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, o));
@@ -385,7 +386,18 @@ export function hullDims(D, A) {
 export function hullBase(B, C, det, era, D, A, K) {
   const { yF, yR, wx, zF, zB, DC, ring } = hullDims(D, A);
   const W = C.wall[era];
-  B.add(SH.prism([[-wx, zF], [wx, zF], [wx, zB], [-wx, zB]], yF, yR, { rc: 0.1, r0: 0.04, r1: 0.06, cap0: true, cap1: true, bulge: 0.008, steps: det ? 4 : 2, arcSteps: det ? 3 : 1, axes: 'xzy' }), W);
+  // Funkerplatz (2. WK): Durchgang in der Stirnwand (Nutzer 21.11.) – Prisma vorn offen, Stirnwand mit Öffnung
+  const FK = det ? funkerCabin(D, driverCabin) : null, fdoor = FK ? funkerDoor(FK) : null;
+  const fd = fdoor && fdoor[0] > -wx + 0.08 && fdoor[1] < wx - 0.08 ? fdoor : null;
+  B.add(SH.prism([[-wx, zF], [wx, zF], [wx, zB], [-wx, zB]], yF, yR, { rc: 0.1, r0: 0.04, r1: 0.06, cap0: true, cap1: true, bulge: 0.008, steps: det ? 4 : 2, arcSteps: det ? 3 : 1, axes: 'xzy', open: fd ? [0] : null }), W);
+  if (fd) {
+    B.add(SH.holeWall(-wx, wx, yF, yR, [[fd[0], fd[1], fd[2], fd[3]]]), W, [0, 0, zF + 0.002]);
+    for (const y of [yF + 0.006, yR - 0.006]) B.add(cb(wx * 2, 0.012, 0.08, 0.003), W, [0, y, zF + 0.04]); // Hohlkehlen fehlen → Streifen
+    for (const x of [-wx + 0.006, wx - 0.006]) B.add(cb(0.012, yR - yF, 0.08, 0.003), W, [x, (yF + yR) / 2, zF + 0.04]);
+    const F = new LF(B, [(fd[0] + fd[1]) / 2, (fd[2] + fd[3]) / 2, zF + 0.016], null), dw = fd[1] - fd[0], dh = fd[3] - fd[2];
+    for (const sx of [-1, 1]) F.add(cb(0.045, dh + 0.06, 0.03, 0.006), C.metal, [sx * (dw / 2 + 0.02), 0, 0]);
+    for (const sy of [-1, 1]) F.add(cb(dw + 0.08, 0.045, 0.03, 0.006), C.metal, [0, sy * (dh / 2 + 0.02), 0]);
+  }
   B.add(cb(wx * 2 - 0.1, 0.02, zB - zF - 0.1, 0.006), C.floor, [0, yF + 0.01, (zF + zB) / 2]);
   // Durchstieg zum Fahrer
   const dr = D.seats.find((s) => s.drive), dx = dr ? Math.max(-wx + 0.45, Math.min(wx - 0.45, dr.pos[0])) : -0.5;
@@ -399,7 +411,9 @@ export function hullBase(B, C, det, era, D, A, K) {
   if (!DC) B.add(SH.rbox(0.46, 0.5, 0.08, 0.03, det ? 2 : 1), C.pad, [dx, yF + 0.45, zF + 0.06], [0.12, 0, 0]);
   // Munitionsstand neben dem Fahrer (Hülsenböden mit Rand und Zündhütchen, Haltegurte)
   const mx = dx > 0 ? -wx + 0.35 : wx - 0.35;
-  { const F = new LF(B, [mx, yF + 0.45, zF + 0.04], null);
+  // vor dem Funker-Durchgang: an die Seitenwand neben der Stirnwand
+  const mxDoor = fd && mx + 0.33 > fd[0] && mx - 0.33 < fd[1];
+  { const F = mxDoor ? new LF(B, [Math.sign(mx) * (wx - 0.04), yF + 0.45, zF + 0.55], Q(0, -Math.sign(mx) * HP, 0)) : new LF(B, [mx, yF + 0.45, zF + 0.04], null);
     F.add(cb(0.66, 0.74, 0.04, 0.01), C.metal, [0, 0, 0]);
     for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {
       const p = [-0.18 + c * 0.18, -0.25 + r * 0.16, 0.03];
