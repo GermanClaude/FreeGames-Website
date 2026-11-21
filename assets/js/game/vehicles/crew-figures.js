@@ -69,7 +69,8 @@ class Figure {
     const G = sys.G, low = sys.low;
     const era = (v.def.era || 'modern');
     this.soldier = createSoldier({
-      team: v.team || actor.team || 'A', variant: era === 'modern' || era === 'kk' ? 'panzerbesatzung' : 'panzerbesatzung-wk',
+      // Mitfahrer (Schützenpanzer/Transporter): eigene Infanterie-Ausrüstung des Bots, Besatzung: Panzerkombi mit Kopfhörer
+      team: v.team || actor.team || 'A', variant: seat.def.passenger ? (actor.soldier && actor.soldier.variant) || actor.variant || 0 : era === 'modern' || era === 'kk' ? 'panzerbesatzung' : 'panzerbesatzung-wk',
       camo: actor.soldier && actor.soldier.scheme ? actor.soldier.scheme : null, quality: low ? 'low' : 'high',
       models: G.bots && G.bots.models ? G.bots.models : null, name: actor.name || '', face: low ? false : undefined,
     });
@@ -113,6 +114,8 @@ class Figure {
     const I = D.interior || {}, sc = I.scale || 1, sh = I.shift || [0, 0, 0];
     const ip = (p) => [p[0] * sc + sh[0], p[1] * sc + sh[1], p[2] * sc + sh[2]];
     const role = s.def.drive ? 'fahrer' : s.def.loader ? 'lader' : s.def.id === 'commander' ? 'kommandant' : s.def.mount === 'gun' ? 'richtschuetze' : s.def.id === 'funker' ? 'funker' : s.def.mount ? 'mg' : 'mitfahrer';
+    // Mitfahrer steht in der Dachluke und feuert: draußen sichtbar (Soldatenmodell, index.js) – keine zweite, sitzende Figur
+    if (s.hatchT >= 0.5 && (s.def.views || [])[s.view] && s.def.views[s.view].fireOut) return null;
     const o = { role, l: null, r: null, lookAt: null, steady: false, stand: a.posture === 'stehend', yawTo: null, shell: false };
     if (role === 'richtschuetze') {
       const inner = (s.def.views || []).find((x) => x.interior);
