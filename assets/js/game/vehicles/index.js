@@ -6,31 +6,31 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor, isRoleKind, transportTypeFor } from './data.js?v=20261121041936';
-import { Vehicle, newIntent } from './vehicle.js?v=20261121041936';
-import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261121041936';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261121041936';
-import { Breaching } from './breach.js?v=20261121041936';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261121041936';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261121041936';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261121041936';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261121041936';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261121041936';
-import { VehicleAudio } from './audio.js?v=20261121041936';
-import * as MATS from './materials.js?v=20261121041936';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261121041936';
-import { VehicleNet } from './net.js?v=20261121041936';
-import { groundRay } from './sim.js?v=20261121041936';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261121041936';
-import { falloff, raycastHumanoid } from '../combat.js?v=20261121041936';
-import { Thermal } from './thermal.js?v=20261121041936';
-import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261121041936';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261121041936';
-import { Aircraft } from './air/aircraft.js?v=20261121041936';
-import { AirSupport, AIR_CAP } from './air/index.js?v=20261121041936';
-import { TransportRides } from './ride.js?v=20261121041936';
-import { CrewFigures } from './crew-figures.js?v=20261121041936';
-import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261121041936';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor, isRoleKind, transportTypeFor } from './data.js?v=20261122020853';
+import { Vehicle, newIntent } from './vehicle.js?v=20261122020853';
+import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261122020853';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261122020853';
+import { Breaching } from './breach.js?v=20261122020853';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261122020853';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261122020853';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261122020853';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261122020853';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261122020853';
+import { VehicleAudio } from './audio.js?v=20261122020853';
+import * as MATS from './materials.js?v=20261122020853';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261122020853';
+import { VehicleNet } from './net.js?v=20261122020853';
+import { groundRay } from './sim.js?v=20261122020853';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261122020853';
+import { falloff, raycastHumanoid } from '../combat.js?v=20261122020853';
+import { Thermal } from './thermal.js?v=20261122020853';
+import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261122020853';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261122020853';
+import { Aircraft } from './air/aircraft.js?v=20261122020853';
+import { AirSupport, AIR_CAP } from './air/index.js?v=20261122020853';
+import { TransportRides } from './ride.js?v=20261122020853';
+import { CrewFigures } from './crew-figures.js?v=20261122020853';
+import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261122020853';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);

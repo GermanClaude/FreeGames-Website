@@ -17,10 +17,10 @@
 //   Restbesatzung (ammo.js crewOf) – fällt der Fahrer/Richtschütze virtuell aus, steht bzw. schweigt der Panzer. Können nach
 //   Stufe (skill.js: Erkennungszeit, Richtzeit, Fehler des ersten Schusses, Korrektur, Ladezeit).
 import * as THREE from 'three';
-import { VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
-import { gunSeat, loaderSeat } from '../crew.js?v=20261121041936';
-import { KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from './ammo.js?v=20261121041936';
-import { OWN, FRIEND, skillAt, foeLevel, detectTime, sigmaFor, SETTLE, DISP, randn } from './skill.js?v=20261121041936';
+import { VEHICLE_WEAPONS } from '../data.js?v=20261122020853';
+import { gunSeat, loaderSeat } from '../crew.js?v=20261122020853';
+import { KINDS, kindOf, idFor, modsOf, crewOf, eraOf } from './ammo.js?v=20261122020853';
+import { OWN, FRIEND, skillAt, foeLevel, detectTime, sigmaFor, SETTLE, DISP, randn } from './skill.js?v=20261122020853';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3(), _e = new THREE.Vector3(), _o = new THREE.Vector3(), _m = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

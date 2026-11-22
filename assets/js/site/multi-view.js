@@ -2,8 +2,8 @@
 // Spielmenü (21.11.): Mehrspieler – Raumcode eingeben und beitreten (spielen.html?raum=CODE, wie ein Einladungslink).
 // Ohne JavaScript schickt das Formular denselben Code per GET. Hier: Eingabe normalisieren (wie net/signal.js normCode:
 // Großbuchstaben, ohne I/O/0/1, höchstens 6 Zeichen) und mit Übergangs-Ladeschirm starten.
-import { $ } from './dom.js?v=20261121041936';
-import { warpTo } from './menu.js?v=20261121041936';
+import { $ } from './dom.js?v=20261122020853';
+import { warpTo } from './menu.js?v=20261122020853';
 
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const norm = (s) => [...String(s || '').toUpperCase()].filter((c) => ALPHA.includes(c)).join('').slice(0, 6);

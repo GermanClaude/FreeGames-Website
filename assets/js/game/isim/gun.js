@@ -18,9 +18,9 @@
 // Geschossfall (flache Bahn, g/2v² · (d² − d·Visier)) und der Treffer wird um die Flugzeit d/v verzögert ausgewertet –
 // bewegte Ziele muss man vorhalten, auf 400 m liegt der Treffer ohne passende Visiereinstellung deutlich tief.
 import * as THREE from 'three';
-import { fireModesOf, fireModeLabel, weaponHandling } from '../../shared/weapons.data.js?v=20261121041936';
-import { ID_TO_MODEL, handlingFor } from '../weapons/gunsmith/handling.js?v=20261121041936';
-import { INSPECTS, inspectMech } from '../weapons/anim/inspects.js?v=20261121041936';
+import { fireModesOf, fireModeLabel, weaponHandling } from '../../shared/weapons.data.js?v=20261122020853';
+import { ID_TO_MODEL, handlingFor } from '../weapons/gunsmith/handling.js?v=20261122020853';
+import { INSPECTS, inspectMech } from '../weapons/anim/inspects.js?v=20261122020853';
 
 const G_ACC = 9.81;
 /** Mündungsgeschwindigkeit je Klasse (m/s). */

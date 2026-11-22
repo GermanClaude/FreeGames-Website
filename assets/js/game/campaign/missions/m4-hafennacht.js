@@ -7,7 +7,7 @@
 // Waffe (mission.loadout.att), Begleitschutz (director.extra, protect). Entdeckt vor der Befreiung → Fehlschlag
 // (auf „Rekrut“ nur Gefecht). Checkpoints: start, c2, c3, buero, ausbruch.
 
-import { actor } from './cast.js?v=20261121041936';
+import { actor } from './cast.js?v=20261122020853';
 
 const START = [10.5, 46];
 const BOAT = [-40.6, 45.4];

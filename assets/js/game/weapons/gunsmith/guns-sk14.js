@@ -4,12 +4,12 @@
 // Handschutz mit Langlöchern, dunkle Seitenabdeckungen, Mittelteil mit Bohrungsreihe, Pistolengriff, M14-Abzugsbügel;
 // Schiebeschaft auf zwei Stangen mit Wangenauflage und durchbrochener Kappe; Lauf mit Gaszylinder darunter, Korn mit
 // Schutzohren, langer geschlitzter Mündungsfeuerdämpfer; gerades 20er-Stahlmagazin; Kompaktzielfernrohr auf der Schiene.
-import * as R from './sk14-ref.js?v=20261121041936';
-import { calib, slab, pocket, rib, barrel, pins, slottedHider, STEEL, POLY, ALU } from './photo-kit.js?v=20261121041936';
-import { sdRoundRect } from './sdfkit.js?v=20261121041936';
-import { acog } from './parts.js?v=20261121041936';
-import { magRounds } from './magfill.js?v=20261121041936';
-import { schrift } from './schrift.js?v=20261121041936';
+import * as R from './sk14-ref.js?v=20261122020853';
+import { calib, slab, pocket, rib, barrel, pins, slottedHider, STEEL, POLY, ALU } from './photo-kit.js?v=20261122020853';
+import { sdRoundRect } from './sdfkit.js?v=20261122020853';
+import { acog } from './parts.js?v=20261122020853';
+import { magRounds } from './magfill.js?v=20261122020853';
+import { schrift } from './schrift.js?v=20261122020853';
 
 const C = calib(R.PPM, R.XG, R.YG, R.YA);
 const { U, V, M, AXIS: AX } = C;

@@ -7,9 +7,9 @@
 // Checkpoints: start, bauen, welle, moerser, gegenstoss, vahl. Fehlschlag: Ruine fällt (Feinde ohne Verteidiger), die
 // Delegierten werden getroffen, Vahl fällt.
 
-import { actor } from './cast.js?v=20261121041936';
-import { guardZone, stopGuard, purgeDead, prop, allyTank, giveLauncher, clearAir } from './hilfen-b.js?v=20261121041936';
-import { buildCount, digCount, giveMelee } from './hilfen-c.js?v=20261121041936';
+import { actor } from './cast.js?v=20261122020853';
+import { guardZone, stopGuard, purgeDead, prop, allyTank, giveLauncher, clearAir } from './hilfen-b.js?v=20261122020853';
+import { buildCount, digCount, giveMelee } from './hilfen-c.js?v=20261122020853';
 
 const CHAPEL = [125, -6];
 const INSIDE = [124, 8];                 // Delegierte (Sanitätsposten in der Ruine, M7)

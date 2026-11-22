@@ -12,9 +12,9 @@
 // buildTroopRoom(B, C, det, D, K, cab, { era, frontDoor }) – K: Helfer aus cabin.js (Frame, part, label, stencil,
 // harness, extinguisher, box, rbox, cyl, tor). frontDoor: [x0, x1, y0, y1] Öffnung in der Stirnwand (Fahrerkabine).
 import * as THREE from 'three';
-import * as SH from './cabin-shape.js?v=20261121041936';
-import * as DT from './cabin-detail.js?v=20261121041936';
-import * as BASE from './cabin-base.js?v=20261121041936';
+import * as SH from './cabin-shape.js?v=20261122020853';
+import * as DT from './cabin-detail.js?v=20261122020853';
+import * as BASE from './cabin-base.js?v=20261122020853';
 
 const PI = Math.PI, HP = PI / 2;
 const Q = (x = 0, y = 0, z = 0) => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z));

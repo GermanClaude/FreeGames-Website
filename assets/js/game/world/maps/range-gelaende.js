@@ -18,10 +18,10 @@
 // Ziele (Schienen, Ballons, Drohnen, Pappkameraden) liegen nicht im Kugel-BVH – sie trifft der Strahl über die
 // Raycast-Hülle (installTargetRaycast, auch für die Klappziele des Schießstands auf der Großkarte).
 import * as THREE from 'three';
-import { jersey, cone, floodMast, sandbags, crateStack, barrelGroup, container, tires, hash01 } from '../props.js?v=20261121041936';
-import { startbahn, papi, windsack } from './flugplatz-bau.js?v=20261121041936';
-import { burntWreck } from './brandwald-bau.js?v=20261121041936';
-import { KEIN, VG } from './neu-bau.js?v=20261121041936';
+import { jersey, cone, floodMast, sandbags, crateStack, barrelGroup, container, tires, hash01 } from '../props.js?v=20261122020853';
+import { startbahn, papi, windsack } from './flugplatz-bau.js?v=20261122020853';
+import { burntWreck } from './brandwald-bau.js?v=20261122020853';
+import { KEIN, VG } from './neu-bau.js?v=20261122020853';
 
 const PI = Math.PI, Q = PI / 2;
 

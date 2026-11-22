@@ -15,10 +15,10 @@
 // (mit „Sicher“), Nachladen R (2×: Notfall), Verband N, Sprint im Anschlag = Atem anhalten, Interagieren halten = aufgeben.
 // Debug: spielen.html?debug=1&autostart=1&mode=tdm&map=hafen&style=simulation[&fuehrung=tutorial|hilfe|aus][&stimme=0]
 // Konsole: __game.isim → { gun, kit, body, state(), jam(), wound(part, sev) }
-import { SimGun } from './gun.js?v=20261121041936';
-import { SimKit, LIMIT_KG } from './kit.js?v=20261121041936';
-import { SimBody, PARTS } from './body.js?v=20261121041936';
-import { SimHUD, esc } from './hud.js?v=20261121041936';
+import { SimGun } from './gun.js?v=20261122020853';
+import { SimKit, LIMIT_KG } from './kit.js?v=20261122020853';
+import { SimBody, PARTS } from './body.js?v=20261122020853';
+import { SimHUD, esc } from './hud.js?v=20261122020853';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const ORDER_TEXT = {

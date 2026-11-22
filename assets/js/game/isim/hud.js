@@ -5,7 +5,7 @@
 //   Gegenstände nur auf Tastendruck: Marschkompass (halten), Karte (halten, Papier, ohne eigene Position),
 //   Ausrüstung (Weste/Rucksack mit Gewicht, Umpacken), Ablesung beim Magazin-/Lager-Check (Schätzung in Worten).
 //   Führung wie im Panzer-Modus (vehicles/psim/hud.js): Handgriffe als Prüfliste aus dem echten Zustand.
-import { compass } from '../../shared/i18n.js?v=20261121041936';
+import { compass } from '../../shared/i18n.js?v=20261122020853';
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `

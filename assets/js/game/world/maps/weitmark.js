@@ -13,15 +13,15 @@
 // Eroberung (7 Flaggen A–G), Herrschaft (3), Teamkampf/Jeder gegen jeden in der Stadt, Panzermodus.
 // Team A (Westen, Gefechtsstand West) gegen Team B (Osten, Gefechtsstand Ost).
 // Koordinaten: x Osten, z Süden (Norden = −z). Geladen von world/terrain/bigworld.js (Riesenkarte: def.giant).
-import { altbau } from './stadtkern-bau.js?v=20261121041936';
-import { hangar, startbahn, windsack, hauptquartier, schulflugzeug, armeeLkw } from './flugplatz-bau.js?v=20261121041936';
-import { mgNest } from './grenzland-stellungen.js?v=20261121041936';
-import { burntWreck } from './brandwald-bau.js?v=20261121041936';
-import { haus, scheune, kirche, rathaus, bruecke, halle, schornstein, holzpolter, gleis, gueterwagen, funkstation, flugleitung, strom, ortsstrasse, hofstelle, anbau, gartenzaun } from './weitmark-bau.js?v=20261121041936';
-import { sandbags, crateStack, barrelGroup, palletStack, container, lampPost, car, jersey, bench, marketStall, cafeTable } from '../props.js?v=20261121041936';
-import { strommast, leitungen, freileitung } from '../kleinkram.js?v=20261121041936';
-import { belebe, sperrpunkte } from '../kleinkram.js?v=20261121041936';
-import { reliefAvoid } from '../terrain/relief.js?v=20261121041936';
+import { altbau } from './stadtkern-bau.js?v=20261122020853';
+import { hangar, startbahn, windsack, hauptquartier, schulflugzeug, armeeLkw } from './flugplatz-bau.js?v=20261122020853';
+import { mgNest } from './grenzland-stellungen.js?v=20261122020853';
+import { burntWreck } from './brandwald-bau.js?v=20261122020853';
+import { haus, scheune, kirche, rathaus, bruecke, halle, schornstein, holzpolter, gleis, gueterwagen, funkstation, flugleitung, strom, ortsstrasse, hofstelle, anbau, gartenzaun } from './weitmark-bau.js?v=20261122020853';
+import { sandbags, crateStack, barrelGroup, palletStack, container, lampPost, car, jersey, bench, marketStall, cafeTable } from '../props.js?v=20261122020853';
+import { strommast, leitungen, freileitung } from '../kleinkram.js?v=20261122020853';
+import { belebe, sperrpunkte } from '../kleinkram.js?v=20261122020853';
+import { reliefAvoid } from '../terrain/relief.js?v=20261122020853';
 
 const PI = Math.PI, Q = PI / 2;
 const BRIDGE_Y = 0.8;

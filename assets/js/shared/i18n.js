@@ -34,10 +34,10 @@
 //
 // MEHRSPIELER: Netzmeldungen tragen weiterhin Ids/Parameter bzw. den deutschen Quelltext; jeder Empfänger übersetzt selbst.
 
-import { settings } from './settings.js?v=20261121041936';
-import { BUILD } from './build.js?v=20261121041936';
-import { setKeyLabelLanguage, loadKeyboardLayout } from './bindings.data.js?v=20261121041936';
-import DE from './i18n/de.js?v=20261121041936';
+import { settings } from './settings.js?v=20261122020853';
+import { BUILD } from './build.js?v=20261122020853';
+import { setKeyLabelLanguage, loadKeyboardLayout } from './bindings.data.js?v=20261122020853';
+import DE from './i18n/de.js?v=20261122020853';
 
 export const LANGUAGES = Object.freeze([
   Object.freeze({ id: 'de', name: 'Deutsch', english: 'German', locale: 'de-DE' }),
@@ -91,11 +91,11 @@ export function onChange(fn) { listeners.add(fn); return () => listeners.delete(
 
 // Kataloge als feste import()-Literale: so findet auch das Offline-Paket (sw.js) sie, und ?v= bleibt die Fassung
 const CATALOGS = {
-  en: () => import('./i18n/en.js?v=20261121041936'),
-  es: () => import('./i18n/es.js?v=20261121041936'),
-  fr: () => import('./i18n/fr.js?v=20261121041936'),
-  ru: () => import('./i18n/ru.js?v=20261121041936'),
-  zh: () => import('./i18n/zh.js?v=20261121041936'),
+  en: () => import('./i18n/en.js?v=20261122020853'),
+  es: () => import('./i18n/es.js?v=20261122020853'),
+  fr: () => import('./i18n/fr.js?v=20261122020853'),
+  ru: () => import('./i18n/ru.js?v=20261122020853'),
+  zh: () => import('./i18n/zh.js?v=20261122020853'),
 };
 void BUILD;
 

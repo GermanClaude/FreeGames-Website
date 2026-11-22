@@ -3,8 +3,8 @@
 // drei Angriffswellen (Süden durch die Halle, Westhof, beides), bis der letzte Lkw draußen ist. Die Stellung fällt,
 // wenn Angreifer das Tor 15 s lang ohne Verteidiger halten. Checkpoints: start, welle1, welle2, welle3, pumpe.
 
-import { actor } from './cast.js?v=20261121041936';
-import { buildCount } from './hilfen-c.js?v=20261121041936';
+import { actor } from './cast.js?v=20261122020853';
+import { buildCount } from './hilfen-c.js?v=20261122020853';
 
 // kamp3 (15.11.): vertieft – Nachzügler aus dem Pförtnerhaus zum Werkshof bringen, Sandsäcke am Tor (Bauen), am Ende
 // Sprengladung an der Pumpstation entschärfen (Kessars Leute wollten die Pumpen für das Tal mitnehmen).

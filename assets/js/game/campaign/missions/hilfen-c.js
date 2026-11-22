@@ -13,7 +13,7 @@
 //   circuit(m, v, pts, o)       – Luftfahrzeug fliegt eine Runde durch Wegpunkte (Autopilot), immer wieder
 
 import * as THREE from 'three';
-import { tx } from '../../../shared/i18n.js?v=20261121041936';
+import { tx } from '../../../shared/i18n.js?v=20261122020853';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
