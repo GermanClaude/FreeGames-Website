@@ -86,6 +86,17 @@ export const MOODS = Object.freeze({
     bloom: { threshold: 2.5, strength: 0.28, dirt: 0.5 },
     shafts: 0.45, // atmosphere-weather: Sonne durch Baumkronen (0,35 → 0,45)
   },
+  // grafik (22.11.): Bibliothek (Innenraum bei Nacht, nur Lampen/Kerzen) lief über „neutral“ – gemessen L̄ ≈ 0,0017 am
+  // Spawn, die Automatik hing an evMax 1,8 (×3,5) → Boden und Regale fast schwarz. Wie eine Körperkamera mit hoher
+  // Verstärkung: bis ≈ +3,2 Blenden (×9), Lampen bleiben hell; gedeckte Farben (bunte Buchrücken nicht grell).
+  bibliothek: {
+    label: 'Bibliothek – Lampenlicht',
+    lut: { ...NATURAL_LUT, temperature: 0.03, saturation: 0.78, shadowSat: 0.8, keepWarm: 0.45, contrast: 1.06, blackLevel: 0.018 },
+    lutVideo: { ...VIDEO_LUT, keepWarm: 0.3, blackLevel: 0.024 },
+    exposure: { ...BASE_EXPOSURE, ref: 0.06, strength: 0.85, dead: 0.3, evMin: -1.2, evMax: 3.2, up: 2.2, down: 1.1 },
+    bloom: { threshold: 1.9, strength: 0.32, dirt: 0.7 },
+    shafts: 0.35,
+  },
   nacht: { // Nacht/Innenräume mit Leuchtstoffröhren: grünstichig, angehobene Videoschwärzen
     label: 'Nacht – Leuchtstoff',
     lut: { temperature: -0.08, tint: -0.14, contrast: 1.16, pivot: 0.33, saturation: 0.74, shadowSat: 0.6, highSat: 0.9,
@@ -97,7 +108,7 @@ export const MOODS = Object.freeze({
 });
 
 /** Karten-ID → Stimmung (Karten ohne eigenen Eintrag nehmen `neutral`; „nachtschicht“/„innenraum“ → `nacht`). */
-export const MOOD_FOR_MAP = Object.freeze({ hafen: 'hafen', altstadt: 'altstadt', werk: 'werk', range: 'range', grenzland: 'grenzland', niemandsland: 'grenzland', brandwald: 'grenzland', flugplatz: 'grenzland', weitmark: 'grenzland', stadtkern: 'werk', nachtschicht: 'nacht', innenraum: 'nacht' });
+export const MOOD_FOR_MAP = Object.freeze({ hafen: 'hafen', altstadt: 'altstadt', werk: 'werk', range: 'range', grenzland: 'grenzland', niemandsland: 'grenzland', brandwald: 'grenzland', flugplatz: 'grenzland', weitmark: 'grenzland', stadtkern: 'werk', bibliothek: 'bibliothek', nachtschicht: 'nacht', innenraum: 'nacht' });
 
 /**
  * Stimmung auflösen: id | { mood, lut, exposure, bloom } → vollständiges Objekt (Kopie). look: Farbstimmung

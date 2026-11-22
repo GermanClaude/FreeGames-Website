@@ -235,8 +235,15 @@ const CONTACT_FRAG = /* glsl */ `
   uniform float uSeed;
   uniform float uStrength;
   uniform float uLength;
+  // grafik (22.11.): Verdecker nur aus der deckenden Tiefe des Normalen-Vorpasses (ohne Gras/Laub/Alpha-Karten, eigene
+  // AO-Kamera mit kürzerer Sichtweite → eigene Rückprojektion). Mit der vollen Szenentiefe warfen Grasbüschel als
+  // „massive“ Körper schwarze Mulden auf den Boden.
+  uniform highp sampler2D tOpaque;
+  uniform float uHasOpaque;
+  uniform mat4 uInvProjO;
   varying vec2 vUv;
   vec3 viewPos(vec2 uv, float d) { vec4 p = uInvProj * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
+  vec3 viewPosO(vec2 uv, float d) { vec4 p = uInvProjO * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
   vec2 proj(vec3 p) { vec4 c = uProj * vec4(p, 1.0); return (c.xy / c.w) * 0.5 + 0.5; }
   float ign(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
   void main() {
@@ -265,8 +272,9 @@ const CONTACT_FRAG = /* glsl */ `
       vec3 Q = O + uSunView * t;
       vec2 suv = proj(Q);
       if (suv.x < 0.0 || suv.x > 1.0 || suv.y < 0.0 || suv.y > 1.0) break;
-      float sd = texture2D(tDepth, suv).x;
-      float dz = viewPos(suv, sd).z - Q.z;
+      float dz;
+      if (uHasOpaque > 0.5) { float so = texture2D(tOpaque, suv).x; dz = so >= 0.99999 ? -1.0 : viewPosO(suv, so).z - Q.z; }
+      else { float sd = texture2D(tDepth, suv).x; dz = viewPos(suv, sd).z - Q.z; }
       // dünne Verdecker zählen (Dicke ~ 0,3 m + Tiefenauflösung): kein Schatten hinter ganzen Wänden
       float thick = 0.3 + 0.004 * -Q.z;
       if (dz > 0.015 && dz < thick) { occ = 1.0 - float(i) / float(STEPS) * 0.5; break; }
@@ -294,6 +302,7 @@ export class ContactShadows {
         uProj: { value: new THREE.Matrix4() }, uInvProj: { value: new THREE.Matrix4() },
         uSunView: { value: this.sunView }, uSize: { value: new THREE.Vector4(1, 1, 1, 1) },
         uSeed: { value: 0 }, uStrength: { value: 0.55 }, uLength: { value: 0.45 },
+        tOpaque: { value: null }, uHasOpaque: { value: 0 }, uInvProjO: { value: new THREE.Matrix4() },
       },
       vertexShader: FULLSCREEN_VERT, fragmentShader: CONTACT_FRAG, depthTest: false, depthWrite: false, blending: THREE.NoBlending,
     });
@@ -316,9 +325,15 @@ export class ContactShadows {
     } else this.target.setSize(w, h);
   }
 
-  /** sunDir = Richtung zur Sonne (Welt); strength 0..1 (Sonnenanteil der Karte). */
-  render(renderer, fs, hdr, normalTex, camera, sunDir, seed, strength) {
+  /**
+   * sunDir = Richtung zur Sonne (Welt); strength 0..1 (Sonnenanteil der Karte). opaqueDepth/opaqueCam (optional): Tiefe des
+   * Normalen-Vorpasses (nur deckende Geometrie) und die Kamera, mit der er gezeichnet wurde – dann zählen nur diese als Verdecker.
+   */
+  render(renderer, fs, hdr, normalTex, camera, sunDir, seed, strength, opaqueDepth = null, opaqueCam = null) {
     const u = this.mat.uniforms;
+    u.tOpaque.value = opaqueDepth && opaqueCam ? opaqueDepth : null;
+    u.uHasOpaque.value = opaqueDepth && opaqueCam ? 1 : 0;
+    if (opaqueDepth && opaqueCam) u.uInvProjO.value.copy(opaqueCam.projectionMatrixInverse);
     u.tDepth.value = hdr.depthTexture;
     u.tNormal.value = normalTex;
     u.uHasNormal.value = normalTex ? 1 : 0;

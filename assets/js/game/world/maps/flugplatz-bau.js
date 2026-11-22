@@ -877,6 +877,15 @@ export function wache(b, x, z) {
 
 /** Wachturm (Stahlbeine, Plattform 6 m mit Brüstung, Dach, Suchscheinwerfer), Leiter-Treppe. */
 export function wachturm(b, x, y, z, ry = 0) {
+  // karten (22.11.): stairs() kennt nur die vier Himmelsrichtungen – schräg gestellte Ecktürme (±45°/±135°) bekamen eine
+  // achsparallele Treppe neben den Turm (oben ins Leere, unten teils außerhalb des Zauns). Drehung auf die nächste
+  // Vierteldrehung, deren Treppe zur Kartenmitte zeigt.
+  const QR = PI / 2;
+  if (Math.abs(ry / QR - Math.round(ry / QR)) > 1e-6) {
+    const foot = (r) => { const fx = x - Math.sin(r) * 6.75, fz = z - Math.cos(r) * 6.75; return Math.hypot(fx, fz); };
+    const lo = Math.floor(ry / QR) * QR, hi = lo + QR;
+    ry = foot(lo) <= foot(hi) ? lo : hi;
+  }
   const f = frame(b, x, y, z, ry), H = 6;
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) f.box(sx * 1.4, 0, sz * 1.4, 0.2, H + 2.6, 0.2, 'metal_painted', { tint: OLIV_D, minimap: sx < 0 && sz < 0 ? 'pillar' : false });
   for (const yy of [1.8, 3.9]) for (const s of [-1, 1]) { f.box(0, yy, s * 1.4, 2.8, 0.08, 0.08, 'metal_painted', { tint: OLIV_D, ...VG }); f.box(s * 1.4, yy, 0, 0.08, 0.08, 2.8, 'metal_painted', { tint: OLIV_D, ...VG }); }
@@ -884,8 +893,9 @@ export function wachturm(b, x, y, z, ry = 0) {
   // Brüstung; hinten (lokal −z) Durchstieg über der Treppe (lokal x 0,4 ± 0,5)
   f.box(0, H, 1.65, 3.4, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
   for (const s of [-1, 1]) f.box(s * 1.65, H, 0, 0.1, 1.05, 3.4, 'wood_planks', { tint: '#6a5a44', minimap: false });
-  f.box(-0.65, H, -1.65, 2.1, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
-  f.box(1.35, H, -1.65, 0.7, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
+  // karten (22.11.): Durchstieg wirklich über der Treppe (x −0,1 … 0,9) – vorher deckte das linke Brett die halbe Treppe ab
+  f.box(-0.9, H, -1.65, 1.6, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
+  f.box(1.3, H, -1.65, 0.8, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
   f.box(0, H + 2.6, 0, 3.9, 0.12, 3.9, 'metal_corrugated', { tint: '#5a6450', minimap: 'roof', grad: false });
   f.box(1.2, H + 1.1, 1.2, 0.35, 0.3, 0.45, 'metal_painted', { tint: '#2b2d30', ...VG });
   f.box(1.2, H + 1.15, 1.43, 0.3, 0.22, 0.02, 'lamp_lens', { ...VG, ao: false });

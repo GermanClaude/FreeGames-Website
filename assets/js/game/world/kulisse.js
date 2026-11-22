@@ -45,13 +45,27 @@ export function farShoreGeometry(o) {
   };
   // Baumkronen: geduckte Ikosaeder-Büschel in Gruppen (Waldstücke) + einzelne Pappeln
   const ico0 = new THREE.IcosahedronGeometry(1, 1), ico = ico0.index ? ico0.toNonIndexed() : ico0, ip = ico.attributes.position;
+  // grafik (22.11.): Kronen aus 1–3 überlappenden, unregelmäßig verbeulten Ballen statt je einer glatten Kugel – im Dunst
+  // lasen sich die runden Einzelkugeln als Lutscher-Silhouetten. Verbeulung je Eckpunkt aus seiner Lage (gleiche Ecke in
+  // allen Dreiecken gleich → keine Risse).
+  const lump = (vx, vy, vz, s) => { const h = Math.sin(vx * 12.9898 + vy * 78.233 + vz * 37.719 + s * 3.17) * 43758.5453; return 0.78 + (h - Math.floor(h)) * 0.38; };
+  const blob = (x, y, z, rad, hgt, base, s) => {
+    for (let i = 0; i < ip.count; i += 3) {
+      const pts = [0, 1, 2].map((k) => {
+        const vx = ip.getX(i + k), vy = ip.getY(i + k), vz = ip.getZ(i + k), L = lump(vx, vy, vz, s);
+        return [x + vx * rad * L, y + vy * hgt * 0.5 * L, z + vz * rad * L];
+      });
+      const up = (ip.getY(i) + ip.getY(i + 1) + ip.getY(i + 2)) / 3; // oben heller, unten dunkler
+      const k = 0.66 + up * 0.32;
+      tri(pts[0], pts[1], pts[2], base.map((c) => c * k));
+    }
+  };
   const tree = (x, y, z, rad, hgt, hex) => {
     const base = SRGB(hex, 0.8 + r() * 0.35);
-    for (let i = 0; i < ip.count; i += 3) {
-      const pts = [0, 1, 2].map((k) => [x + ip.getX(i + k) * rad, y + hgt * 0.55 + ip.getY(i + k) * hgt * 0.5, z + ip.getZ(i + k) * rad]);
-      const up = (ip.getY(i) + ip.getY(i + 1) + ip.getY(i + 2)) / 3; // oben heller, unten dunkler
-      const k = 0.7 + up * 0.3;
-      tri(pts[0], pts[1], pts[2], base.map((c) => c * k));
+    const n = rad > 2.4 ? 2 + (r() < 0.5 ? 1 : 0) : 1;
+    for (let b = 0; b < n; b++) {
+      const a = r() * Math.PI * 2, off = b ? rad * (0.35 + r() * 0.3) : 0, sc = b ? 0.62 + r() * 0.22 : 1;
+      blob(x + Math.cos(a) * off, y + hgt * (b ? 0.4 + r() * 0.16 : 0.47), z + Math.sin(a) * off, rad * sc, hgt * sc, base, r() * 100);
     }
   };
   const greens = ['#3f5233', '#465a35', '#394b30', '#506038', '#3b4a35'];

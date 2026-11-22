@@ -412,7 +412,11 @@ export class PostPipeline {
       r.autoClear = false;
       if (this.contact && this.relief < 1 && this.sunDir && this.hdr.depthTexture && !style.classic) {
         const k = this._contactStrength();
-        if (k > 0.01) this.contact.render(r, this.fs, this.hdr, gbuf ? this.gtao.normalRenderTarget.texture : null, camera, this.sunDir, seed, k);
+        if (k > 0.01) {
+          const gt = gbuf ? this.gtao : null;
+          this.contact.render(r, this.fs, this.hdr, gt ? gt.normalRenderTarget.texture : null, camera, this.sunDir, seed, k,
+            gt && gt.normalRenderTarget.depthTexture ? gt.normalRenderTarget.depthTexture : null, gt ? gt.camera : null);
+        }
       }
       if (this.ssr && gbuf && this.hdr.depthTexture) this.ssr.render(r, this.fs, this.hdr, this.gtao.normalRenderTarget.texture, camera, seed);
       // Lichtstrahlen: Himmelsmaske braucht die Tiefe der Welt (vor dem Viewmodel), Sonne im überscannten Bild
