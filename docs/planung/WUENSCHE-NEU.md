@@ -15,3 +15,6 @@ Reihenfolge laut Nathanael: 1) Mehrspieler, 2) Rest der Liste, 3) neue Wunschlis
 | N8 | Flugzeuge (Hubschrauber + Jet) | fertig (14.11.), Zweig; online ungetestet | 3–5 Sitzungen, große Karten nötig |
 | N9 | Story-/Kampagnenmodus mit Cutscenes, Text-Dialogen und Lip-Sync | 3 von 8 Missionen fertig (14.11.), Zweig; Gesichter in Nahaufnahme noch schwach | größter Brocken; Technik 4–6 Sitzungen bis zur ersten Mission, dann Inhalte |
 | N10 | Grafik deutlich realistischer (Texturen, Licht, Waffen) | Texturen, Waffenmodelle, Waffen-Oberflächen, Welt (Fotoscan-Laub, Modelle, Bodenauflage), Soldaten-Gesichter, Licht (TAA, SSR, Kontaktschatten, Tiefenschärfe) fertig (14.11.), Zweig – weiter höchste Priorität | CoD-Niveau im Browser nicht erreichbar; realistisch: 2K-„Ultra“, AO/SSR/TAA, detailliertere Waffen – 5–8 Sitzungen |
+| N11 | Ultra-Realismus-Modus wie Bodycam (gefühlt kein HUD, Trägheit, Waffengewicht, tödlicher Schaden) | in Arbeit (22.11.) | baut auf vorhandenem Realismus-HUD und Bodycam-Linse auf |
+| N12 | Zombie-Modus (Wellen-Überleben) | in Arbeit (22.11.) | offline zuerst, Koop online falls machbar |
+| N13 | Battle-Royale-Modus mit zusätzlichen Sonderwaffen | in Arbeit (22.11.) | offline gegen 30–60 Bots zuerst; online mit P2P fraglich |
