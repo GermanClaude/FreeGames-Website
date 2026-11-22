@@ -292,7 +292,9 @@ const NIEMANDSLAND = {
   // Startpunkte [x, z, yaw]: Teamkampf in der Unterstützungslinie (in den Gräben), Eroberung an der Basis
   spawns: {
     A: [-150, -100, -50, 0, 50, 100, 150, 200].map((x) => [x, lineZ(SUP_A, x), 0]),
-    B: [-150, -100, -50, 0, 50, 100, 150, 200].map((x) => [-x, lineZ(SUP_B, -x), Math.PI]),
+    // karten (22.11.): B-Startpunkte bei x 150 und −200 lagen auf der Grabenböschung (Neigung 35–45°, Prüfskript „Start
+    // schwebt/blockiert“) – je ein paar Meter seitlich auf ebenen Boden
+    B: [-150, -100, -50, 0, 50, 100, 150, 200].map((x) => -x + ({ 150: -4, [-200]: -6 }[-x] || 0)).map((x) => [x, lineZ(SUP_B, x), Math.PI]),
     ffa: [[-120, 0], [125, -6], [0, 30], [-60, -40], [60, 40], [-200, 20], [200, -20], [0, -60], [-30, 70], [40, -80]],
     hq: {
       A: [[-30, HQZ - 6, 0], [-20, HQZ - 8, 0], [-8, HQZ - 6, 0], [4, HQZ - 8, 0], [12, HQZ - 6, 0], [26, HQZ - 8, 0], [34, HQZ - 6, 0], [0, HQZ + 8, 0]],

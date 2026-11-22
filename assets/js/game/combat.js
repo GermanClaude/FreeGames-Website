@@ -23,7 +23,7 @@ const _dir = new THREE.Vector3();
 
 /** Maße der Standard-Hitboxen (Meter, bezogen auf 1,8 m Stehhöhe). */
 export const HUMANOID = Object.freeze({
-  headRadius: 0.15, headFromTop: 0.17,
+  headRadius: 0.125, headFromTop: 0.105, // = sichtbarer Kopf der Figur (Mitte 1,695 m)
   torsoBottom: 0.95, torsoTop: 1.38, torsoRadius: 0.26,
   legBottom: 0.12, legTop: 0.8, legRadius: 0.2,
   standHeight: 1.8,
