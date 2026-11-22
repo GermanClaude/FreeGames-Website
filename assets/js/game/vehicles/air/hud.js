@@ -5,7 +5,7 @@
 // Dazu die Touch-Knöpfe der Flugsteuerung (input.js verarbeitet .tc-btn[data-action] selbst). Weapons/Sitze/Zustand
 // zeigt weiter die Fahrzeugtafel (vehicles/hud.js).
 import * as THREE from 'three';
-import { compass } from '../../../shared/i18n.js?v=20261121041936';
+import { compass, tx } from '../../../shared/i18n.js?v=20261121041936';
 
 const CSS = `
 .ah-cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
@@ -61,8 +61,10 @@ export class AirHUD {
         b.className = `tc-btn vc-btn va-btn ${cls} ${extra}`;
         b.dataset.action = action;
         b.setAttribute('role', 'button');
-        b.setAttribute('aria-label', label.replace(/-?<br>/g, ' '));
-        b.innerHTML = `<span>${label}</span>`;
+        // Getrennte Wörter („Stei-<br>gen“) erreicht die Seitenübersetzung nicht (zwei Textknoten) → hier übersetzen
+        const plain = label.replace(/-<br>/g, '').replace(/<br>/g, ' '), tr = tx(plain, 'touch');
+        b.setAttribute('aria-label', tr);
+        b.innerHTML = `<span>${tr !== plain ? String(tr).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) : label}</span>`;
         tui.appendChild(b);
         this.touch.push(b);
       }

@@ -26,7 +26,7 @@ import { actionKey } from './settings/keys.js?v=20261121041936';
 import { DeployScreen } from './deploy.js?v=20261121041936';
 import { CommandWheel } from './command-wheel.js?v=20261121041936';
 import { DroneHud } from './drone-hud.js?v=20261121041936';
-import { compass, onChange as onLangChange } from '../../shared/i18n.js?v=20261121041936';
+import { compass, tx, onChange as onLangChange } from '../../shared/i18n.js?v=20261121041936';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -890,7 +890,7 @@ export class HUD {
     const G = this.G;
     if (v === 3) {
       const def = G.mode ? G.mode.def : {};
-      const map = G.world ? G.world.name : '';
+      const map = G.world ? tx(G.world.name) : ''; // einzeln übersetzen: „Hafen · 10 min“ fasst sonst die Schablone „{0} min“ als Ganzes
       setText(this.el.bannerK, `${map}${G.mode && G.mode.timeLimit ? ` · ${Math.round(G.mode.timeLimit / 60)} min` : ''}`);
       setHtml(this.el.bannerT, `${esc(def.name || '')}<em>.</em>`);
       this.el.bannerT.hidden = !!(G.mode && G.mode.id === 'training');

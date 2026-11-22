@@ -574,6 +574,8 @@ let warping = false;
 export function warpTo(href) {
   let url;
   try { url = new URL(href, location.href); } catch { location.href = href; return; }
+  // Sprache aus der Adresse (?lang=xx, wird nicht gespeichert) ins Spiel mitnehmen
+  try { const ql = new URLSearchParams(location.search).get('lang'); if (ql && isGameUrl(url) && !url.searchParams.has('lang')) url.searchParams.set('lang', ql); } catch { /* */ }
   if (warping) return;
   warping = true;
   const box = $('#warp');

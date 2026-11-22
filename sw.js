@@ -152,6 +152,7 @@ const URL_RE = /new\s+URL\(\s*(['"])([^'"\n]+?)\1\s*,\s*import\.meta\.url\s*\)/g
 const HTML_RE = /\b(?:src|href)\s*=\s*(['"])([^'"#\n]+?)\1/g;
 const CSS_RE = /url\(\s*(['"]?)([^'")\n]+?)\1\s*\)/g;
 const IMPORTMAP_RE = /"(\.\/assets\/vendor\/[^"]+?\.js)"/g;
+const SRCSET_RE = /\bsrcset\s*=\s*(['"])([^'"]+?)\1/g;
 
 function collect(text, base, kind) {
   const out = [];
@@ -167,6 +168,8 @@ function collect(text, base, kind) {
   };
   const res = kind === 'html' ? [HTML_RE, IMPORTMAP_RE, IMPORT_RE] : kind === 'css' ? [CSS_RE] : [IMPORT_RE, URL_RE];
   for (const re of res) { re.lastIndex = 0; let m; while ((m = re.exec(text))) add(m[2] || m[1]); }
+  // srcset (Bildvarianten, z. B. Hochformat-Titelbild der Startseite): „url 720w, url 1024w“
+  if (kind === 'html') { SRCSET_RE.lastIndex = 0; let m; while ((m = SRCSET_RE.exec(text))) for (const part of m[2].split(',')) add(part.trim().split(/\s+/)[0]); }
   return out;
 }
 

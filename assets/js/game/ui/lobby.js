@@ -236,7 +236,7 @@ export class Lobby {
     screen.innerHTML = `
       <div class="lb">
         <header class="lb-head">
-          <div class="lb-brand">NULL<em>PUNKT</em><i>.</i></div>
+          <div class="lb-brand" translate="no">NULL<em>PUNKT</em><i>.</i></div>
           <div class="lb-tabs m-tabs" role="tablist">
             <button type="button" class="m-tab" role="tab" data-tab="deploy" aria-selected="${this.tab === 'deploy'}">${ICON.map}<span>Einsatz</span></button>
             <button type="button" class="m-tab" role="tab" data-tab="loadout" aria-selected="${this.tab === 'loadout'}">${ICON.target}<span>Ausrüstung</span></button>
