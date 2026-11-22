@@ -876,7 +876,7 @@ export function wache(b, x, z) {
 }
 
 /** Wachturm (Stahlbeine, Plattform 6 m mit Brüstung, Dach, Suchscheinwerfer), Leiter-Treppe. */
-export function wachturm(b, x, y, z, ry = 0) {
+export function wachturm(b, x, y, z, ry = 0, o = {}) {
   // karten (22.11.): stairs() kennt nur die vier Himmelsrichtungen – schräg gestellte Ecktürme (±45°/±135°) bekamen eine
   // achsparallele Treppe neben den Turm (oben ins Leere, unten teils außerhalb des Zauns). Drehung auf die nächste
   // Vierteldrehung, deren Treppe zur Kartenmitte zeigt.
@@ -902,7 +902,9 @@ export function wachturm(b, x, y, z, ry = 0) {
   // Treppe (steil) an der Rückseite (lokal −z)
   const [tx, tz] = f.P(0.4, -1.75 - 5.0);
   const d = Math.abs(Math.cos(ry)) > 0.5 ? (Math.cos(ry) > 0 ? 's' : 'n') : (Math.sin(ry) > 0 ? 'e' : 'w');
-  stairs(b, { x: tx, z: tz, dir: d, y0: y, y1: y + H - 0.15, w: 0.8, run: 5.0, style: 'steel', rail: true, railTint: '#3d4247' });
+  // karten (22.11.): Treppenfuß auf dem Gelände am Antritt (o.groundAt) – am Hang begann die Treppe sonst im Boden
+  const fy = o.groundAt ? o.groundAt(tx, tz) : y;
+  stairs(b, { x: tx, z: tz, dir: d, y0: fy, y1: y + H - 0.15, w: 0.8, run: 5.0, style: 'steel', rail: true, railTint: '#3d4247' });
   const [nx, nz] = f.P(0, 0);
   b.navPoint(nx, y + H + 0.2, nz);
 }

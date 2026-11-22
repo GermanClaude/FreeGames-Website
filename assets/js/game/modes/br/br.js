@@ -119,7 +119,6 @@ export class BattleRoyaleMode extends BaseMode {
     this._wall = this._wallMesh();
     if (G.scene) G.scene.add(this._wall);
     this.hud.attach();
-    if (G.debug) G.debug.br = this;
   }
 
   onMatchStart() {

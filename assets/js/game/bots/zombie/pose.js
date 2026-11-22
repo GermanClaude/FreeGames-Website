@@ -52,7 +52,7 @@ export function applyZombiePose(soldier, st) {
   post(lq, BONE.head, -0.05 - 0.05 * hunch, 0, (L.tilt || 0) * 0.18 - jerk);
 
   // Arme (Schulter = Brust-Raum): vorgestreckt (+x hebt den Arm nach vorn), schlaff, oder tief/breit
-  const reach = 1.05 + 0.12 * sp + 0.55 * wind - 0.35 * strike;
+  const reach = 1.5 + 0.1 * sp + 0.5 * wind - 0.45 * strike;
   const bob = Math.sin(ph) * 0.08;
   const limpArm = (side) => {
     setLocal(lq, side < 0 ? BONE.upperArmL : BONE.upperArmR, 0.12 + bob * side * 0.5 + 0.25 * wind, 0, side * 0.08);

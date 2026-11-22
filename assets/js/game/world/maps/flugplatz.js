@@ -188,7 +188,7 @@ function zaun(b, ctx) {
   zaunLinie(b, hf, X, -Z, -X, -Z, [[X - 6, X + 6], [X - 330, X - 322], [X + 290, X + 297]]);
   zaunLinie(b, hf, -X, -Z, -X, Z, [[180, 190], [330, 338]]);
   zaunLinie(b, hf, X, Z, X, -Z, [[150, 158], [300, 312]]);
-  for (const [x, z, ry] of [[-X + 4, -Z + 4, PI * 0.75], [X - 4, -Z + 4, -PI * 0.75], [X - 4, Z - 4, -PI * 0.25], [-X + 4, Z - 4, PI * 0.25], [-230, Z - 4, 0], [230, Z - 4, 0], [-200, -Z + 4, PI], [200, -Z + 4, PI]]) wachturm(b, x, hf.heightAt(x, z), z, ry);
+  for (const [x, z, ry] of [[-X + 4, -Z + 4, PI * 0.75], [X - 4, -Z + 4, -PI * 0.75], [X - 4, Z - 4, -PI * 0.25], [-X + 4, Z - 4, PI * 0.25], [-230, Z - 4, 0], [230, Z - 4, 0], [-200, -Z + 4, PI], [200, -Z + 4, PI]]) wachturm(b, x, hf.heightAt(x, z), z, ry, { groundAt: (px, pz) => hf.heightAt(px, pz) });
   return { clearLines: [{ pts: [[-X, -Z], [X, -Z], [X, Z], [-X, Z], [-X, -Z]], r: 4 }] };
 }
 

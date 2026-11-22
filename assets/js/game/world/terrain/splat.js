@@ -378,7 +378,12 @@ export async function createTerrainMaterial(o) {
         // projizieren – die Draufsicht zog die Textur dort zu senkrechten Streifen. Umschalten je Pixel (unregelmäßige Kante
         // über das Rauschen), Ableitungen aus denselben Achsen (keine Mip-Naht); ohne zusätzliche Texturen/Abfragen.
         vec3 tPd3x = dFdx(vTW), tPd3y = dFdy(vTW);
-        bool tSide = steepS + (n2.x - 0.5) * 0.14 > 0.5 && inside > 0.5;
+        // Steilheit für Bewuchs/Projektion: geglättete Normale (1-m-Raster mittelt schmale Wände weg) und Flächennormale
+        // gemischt – Grabenwände (Fläche ≈ 65°) lagen mit der geglätteten Normale allein unter jeder Schwelle
+        vec3 tFN = cross(tPd3x, tPd3y);
+        float steepF = dot(tFN, tFN) > 1e-12 ? 1.0 - abs(normalize(tFN).y) : steepS;
+        float steepB = mix(steepS, max(steepS, steepF), 0.65);
+        bool tSide = steepB + (n2.x - 0.5) * 0.14 > 0.46 && inside > 0.5;
         bool tSideX = abs(wN.x) > abs(wN.z);
         vec2 tP = tSide ? (tSideX ? vTW.zy : vTW.xy) : vTW.xz;
         vec2 tPdx = tSide ? (tSideX ? tPd3x.zy : tPd3x.xy) : tPd3x.xz;
@@ -390,8 +395,8 @@ export async function createTerrainMaterial(o) {
         float scree = smoothstep(0.1, 0.24, steepS + (n2.x - 0.5) * 0.08) * smoothstep(0.35, 0.7, n2.y) * (1.0 - wv.z) * 0.6 * inside;
         wv.y = max(wv.y, scree);
         // grafik (22.11.): auf Steilflächen wächst kein Rasen – die Kontrollkarte (1 m) trifft die schmalen Grabenwände nicht
-        // und ließ dort leuchtend grüne Wiese stehen; ab ≈ 55° Neigung offener Boden (Erde-Schicht bzw. Kartenlook-Aushub)
-        float bare = smoothstep(0.38, 0.56, steepS + (n2.x - 0.5) * 0.12) * inside;
+        // und ließ dort leuchtend grüne Wiese stehen; ab ≈ 50° Neigung offener Boden (Erde-Schicht bzw. Kartenlook-Aushub)
+        float bare = smoothstep(0.34, 0.5, steepB + (n2.x - 0.5) * 0.12) * inside;
         wv.x = max(wv.x, bare * clamp(1.0 - wv.y - wv.z - wv.w, 0.0, 1.0));
         float wG = clamp(1.0 - wv.x - wv.y - wv.z - wv.w, 0.0, 1.0);
         #if TERR_HEX
