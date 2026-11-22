@@ -825,7 +825,7 @@ export function timberYard(b, cx, cz, y0) {
   b.box(cx - 2, y0, cz + 2, 3.2, 0.8, 0.9, 'metal_rust', { tint: '#5b4a3e', minimap: 'cover' });
   b.cyl(cx - 2, y0 + 1.15, cz + 2, 0.45, 0.04, 'metal_rust', { axis: 'z', tint: '#6b5a4c', collide: false, minimap: false, seg: 18 });
   for (let i = 0; i < 12; i++) b.box(cx + (r() - 0.5) * 18, y0 + 0.05 + r() * 0.1, cz + (r() - 0.5) * 14, 2.5 + r() * 1.5, 0.05, 0.22, 'wood_planks', { ry: r() * TAU, rz: (r() - 0.5) * 0.15, tint: r() < 0.5 ? '#3d342c' : '#5a4c3e', minimap: false, collide: false });
-  barrelGroup(b, cx + 12, cz + 8, { n: 3 });
+  barrelGroup(b, cx + 12, cz + 8, { n: 3, y: y0 }); // karten (22.11.): auf dem Platz (y0) statt 0,5 m im Boden
 }
 
 // ---------------------------------------------------------------------------
@@ -906,7 +906,8 @@ export function burntWreck(b, x, y, z, ry, kind = 'lkw', seed = 1, ground = null
 export function fieldPost(b, cx, cz, s, y0) {
   // Sandsackriegel vor der Basis (Richtung Feind = −s·z), Munitionskisten, Fässer
   for (const x of [-28, -16, 16, 28]) sandbags(b, cx + x - 3, cz - s * 9, cx + x + 3, cz - s * 9, { rows: 3, y: y0 });
-  crateStack(b, cx - 6, cz + s * 6, { n: 3 });
-  crateStack(b, cx + 7, cz + s * 5, { n: 2 });
-  barrelGroup(b, cx + 22, cz + s * 6, { n: 3 });
+  // karten (22.11.): Kisten/Fässer auf Plateauhöhe y0 (vorher 0,4 m im Boden)
+  crateStack(b, cx - 6, cz + s * 6, { n: 3, y: y0 });
+  crateStack(b, cx + 7, cz + s * 5, { n: 2, y: y0 });
+  barrelGroup(b, cx + 22, cz + s * 6, { n: 3, y: y0 });
 }

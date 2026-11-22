@@ -96,14 +96,16 @@ function tankWreck(b, x, z, ry) {
 }
 
 /** Unterstand/Gefechtsstand an der Basis: Balkendecke auf Sandsäcken, Kisten, Fässer. */
-function dugout(b, x, z, s) {
-  sandbags(b, x - 4, z + s * 3, x + 4, z + s * 3, { rows: 5 });
-  sandbags(b, x - 4, z - s * 3, x - 4, z + s * 3, { rows: 5 });
-  sandbags(b, x + 4, z - s * 3, x + 4, z + s * 3, { rows: 5 });
-  b.box(x, 1.75, z, 8.6, 0.3, 6.6, 'wood_planks', { tint: WOOD, minimap: 'roof' });
-  for (let k = -3; k <= 3; k++) b.box(x + k * 1.25, 2.05, z, 0.25, 0.25, 6.8, 'wood_dark', { tint: WOOD_D, collide: false, minimap: false });
-  crateStack(b, x - 2.6, z, { n: 3 });
-  barrelGroup(b, x + 2.4, z - s * 1.4, { n: 3 });
+// karten (22.11.): y = Plateauhöhe der Basis (0,5) – vorher auf y 0 gebaut: Sandsäcke, Kisten und Fässer steckten 0,5 m im
+// Boden, unter dem Dach blieben nur 1,25 m Kopfhöhe
+function dugout(b, x, z, s, y = 0) {
+  sandbags(b, x - 4, z + s * 3, x + 4, z + s * 3, { rows: 5, y });
+  sandbags(b, x - 4, z - s * 3, x - 4, z + s * 3, { rows: 5, y });
+  sandbags(b, x + 4, z - s * 3, x + 4, z + s * 3, { rows: 5, y });
+  b.box(x, y + 1.75, z, 8.6, 0.3, 6.6, 'wood_planks', { tint: WOOD, minimap: 'roof' });
+  for (let k = -3; k <= 3; k++) b.box(x + k * 1.25, y + 2.05, z, 0.25, 0.25, 6.8, 'wood_dark', { tint: WOOD_D, collide: false, minimap: false });
+  crateStack(b, x - 2.6, z, { n: 3, y });
+  barrelGroup(b, x + 2.4, z - s * 1.4, { n: 3, y });
 }
 
 // ---------------------------------------------------------------------------
@@ -267,8 +269,8 @@ const NIEMANDSLAND = {
       ruinenLeben(b, [[125, -6, 12, 20]], 0.6);
     }, seeds: [[125, -6, 0.6]], height: 10 },
     { id: 'mitte', name: 'Panzerwrack', bounds: { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, build: (b) => tankWreck(b, 8, 12, 0.6), seeds: [[0, 18]], height: 6 },
-    { id: 'basis_a', name: 'Basis A', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: HQZ - 18, maxZ: HQZ + 18 }, build: (b) => { dugout(b, -18, HQZ, 1); dugout(b, 18, HQZ + 2, 1); }, seeds: [[0, HQZ, 0.5]], nav: true },
-    { id: 'basis_b', name: 'Basis B', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: -HQZ - 18, maxZ: -HQZ + 18 }, build: (b) => { dugout(b, -18, -HQZ, -1); dugout(b, 18, -HQZ - 2, -1); }, seeds: [[0, -HQZ, 0.5]], nav: true },
+    { id: 'basis_a', name: 'Basis A', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: HQZ - 18, maxZ: HQZ + 18 }, build: (b) => { dugout(b, -18, HQZ, 1, 0.5); dugout(b, 18, HQZ + 2, 1, 0.5); }, seeds: [[0, HQZ, 0.5]], nav: true },
+    { id: 'basis_b', name: 'Basis B', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: -HQZ - 18, maxZ: -HQZ + 18 }, build: (b) => { dugout(b, -18, -HQZ, -1, 0.5); dugout(b, 18, -HQZ - 2, -1, 0.5); }, seeds: [[0, -HQZ, 0.5]], nav: true },
   ],
   lateSites: [
     { id: 'front', name: 'Gräben und Draht', bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, chunkSize: 80, build: (b, ctx) => frontWorks(b, ctx) },
