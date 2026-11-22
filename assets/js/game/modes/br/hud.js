@@ -25,7 +25,7 @@ const CSS = `
 .br-warn i { display: inline-block; font-style: normal; margin-left: 8px; transform-origin: 50% 55%; }
 .br-veil { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(120,30,16,.42) 100%); opacity: 0; transition: opacity .6s; }
 .br-veil.is-on { opacity: 1; }
-.br-hint { position: absolute; left: 50%; bottom: 24%; transform: translateX(-50%); padding: 4px 14px; background: var(--hud-bg, rgba(10,11,13,.58)); border-radius: 2px; font-size: 16px; letter-spacing: .06em; white-space: nowrap; }
+.br-hint { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); padding: 4px 14px; background: var(--hud-bg, rgba(10,11,13,.58)); border-radius: 2px; font-size: 16px; letter-spacing: .06em; white-space: nowrap; }
 .br-hint kbd { font: inherit; font-weight: 700; padding: 0 5px; margin-right: 6px; border: 1px solid rgba(233,230,223,.5); border-radius: 2px; }
 .br-map { position: absolute; left: 50%; top: 50%; width: min(62vmin, 560px); height: min(62vmin, 560px); transform: translate(-50%, -52%); border-radius: 3px; box-shadow: 0 0 0 1px rgba(233,230,223,.22), 0 8px 30px rgba(0,0,0,.5); background: #0d1013; }
 .br-map canvas { width: 100%; height: 100%; display: block; }
