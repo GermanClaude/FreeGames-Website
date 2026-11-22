@@ -269,7 +269,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   },
   gameStyle: {
     type: 'enum', label: 'Spielstil', group: 'spiel',
-    options: ['arcade', 'realistisch', 'simulation'], labels: { arcade: 'Arcade', realistisch: 'Realistisch', simulation: 'Simulation' },
+    options: ['arcade', 'realistisch', 'ultra', 'simulation'], labels: { arcade: 'Arcade', realistisch: 'Realistisch', ultra: 'Ultra-Realismus', simulation: 'Simulation' },
   },
   // Infanteriesimulation (isim/): Führung wie im Panzer-Modus – Tutorial (Handgriffe + Erklärung), Hilfe auf Anfrage, aus
   simGuide: {

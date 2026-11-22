@@ -23,11 +23,11 @@ export class RocketSystem {
 
   get G() { return this.system.G; }
 
-  _mesh() {
+  _mesh(key = 'rocket') {
     const G = this.G;
     const models = G.modules && G.modules.models;
     let m = null;
-    try { if (models && models.createWeaponModel) m = models.createWeaponModel('rocket', { lod: 'third' }); } catch { m = null; }
+    try { if (models && models.createWeaponModel) m = models.createWeaponModel(key || 'rocket', { lod: 'third' }); } catch { m = null; }
     if (!m) {
       if (!this._fallback) {
         const geo = new THREE.CylinderGeometry(0.035, 0.04, 0.5, 8);
@@ -63,7 +63,7 @@ export class RocketSystem {
       }
     }
     const vel = dir.clone().normalize().multiplyScalar(P.speed || 70);
-    const mesh = this._mesh();
+    const mesh = this._mesh(P.mesh); // Armbrustbolzen (BR, 22.11.): eigenes Modell P.mesh
     mesh.scale.setScalar(P.grenade ? 0.45 : 1); // 40-mm-Granate: kleiner, ohne Rauchspur
     mesh.position.copy(pos);
     mesh.quaternion.setFromUnitVectors(_z, _d.copy(vel).normalize());
@@ -73,7 +73,7 @@ export class RocketSystem {
       id: nextId++, remote: !!opts.remote, cid: Number.isFinite(opts.cid) ? opts.cid : null, netId: Number.isFinite(opts.netId) ? opts.netId : null,
     };
     this.list.push(r);
-    this._backblast(actor, def, P, pos, r.dir, scale);
+    if (!P.bolt) this._backblast(actor, def, P, pos, r.dir, scale); // Bolzen: kein Rückstrahl
     G.events.emit('projectile:launch', { actor, weaponId: def.id, position: pos.clone(), velocity: vel.clone(), kind: P.kind || 'rocket', rocket: r });
     return r;
   }
@@ -153,9 +153,9 @@ export class RocketSystem {
       r.mesh.position.copy(r.pos);
       r.mesh.quaternion.setFromUnitVectors(_z, _d);
       r.trailT -= dt;
-      if (!P.grenade && r.trailT <= 0 && G.effects && typeof G.effects.rocketTrail === 'function') { r.trailT = 0.016; G.effects.rocketTrail(r.pos, _d); }
+      if (!P.grenade && !P.bolt && r.trailT <= 0 && G.effects && typeof G.effects.rocketTrail === 'function') { r.trailT = 0.016; G.effects.rocketTrail(r.pos, _d); }
       const bounds = G.world && G.world.bounds;
-      if (r.age > (P.life || 4.5) || (bounds && r.pos.y < bounds.min.y - 10)) { if (r.remote) this._remove(r); else this._detonate(r, r.pos, null, true); }
+      if (r.age > (P.life || 4.5) || (bounds && r.pos.y < bounds.min.y - 10)) { if (r.remote || P.bolt) this._remove(r); else this._detonate(r, r.pos, null, true); }
     }
   }
 
@@ -183,6 +183,7 @@ export class RocketSystem {
   _impact(r, hit, at, dir) {
     const G = this.G;
     const P = r.P, def = r.def, attacker = r.actor || null;
+    if (P.bolt) { this._boltImpact(r, hit, at, dir); return; }
     const armed = r.travel + hit.distance >= (P.armDistance ?? 6);
     if (hit.vehicle) {
       const v = hit.vehicle;
@@ -206,6 +207,25 @@ export class RocketSystem {
       this._remove(r);
     }
     G.events.emit('projectile:impact', { actor: attacker, weaponId: def.id, position: at.clone(), vehicle: hit.vehicle || null, target: hit.actor || null, armed });
+  }
+
+  /**
+   * Armbrustbolzen (P.bolt, BR 22.11.): kein Sprengkopf – Treffer am Akteur mit Zonenfaktor (Kopf headMult, Glieder limbMult),
+   * an Fahrzeugen kaum Wirkung, in der Welt ein kleiner Einschlag; der Bolzen verschwindet.
+   */
+  _boltImpact(r, hit, at, dir) {
+    const G = this.G;
+    const P = r.P, def = r.def, attacker = r.actor || null;
+    if (hit.actor && G.combat) {
+      const z = hit.zone || 'body';
+      const mult = z === 'head' ? def.headMult || 1 : z === 'body' ? 1 : def.limbMult || 1;
+      G.combat.damage(hit.actor, { amount: (P.actorDamage || 90) * mult * r.scale, attacker, weaponId: def.id, explosive: false, point: at.clone(), dir: dir.clone(), zone: z, distance: r.travel + hit.distance });
+    } else if (hit.vehicle && typeof hit.vehicle.applyDamage === 'function') {
+      hit.vehicle.applyDamage((P.vehicleDamage || 2) * r.scale, { attacker, weaponId: def.id, zone: hit.zone, kind: 'bullet', point: at.clone(), dir: dir.clone() });
+    }
+    if (!hit.actor && G.effects && typeof G.effects.impact === 'function') G.effects.impact(at, hit.normal || dir.clone().negate(), hit.vehicle ? 'metal' : hit.surface || 'wood', {});
+    G.events.emit('projectile:impact', { actor: attacker, weaponId: def.id, position: at.clone(), vehicle: hit.vehicle || null, target: hit.actor || null, armed: false });
+    this._remove(r);
   }
 
   /** Explosion (Splitter) – Fahrzeuge: das getroffene nimmt den Volltreffer, alle anderen den Splitterschaden. */

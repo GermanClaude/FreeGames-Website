@@ -41,10 +41,12 @@ export class Injuries {
 
   get _host() { const m = this.G.match; return !!m && m.netRole !== 'client'; }
   _style() { return (this.G.match && this.G.match.style) === 'realistisch' ? 'realistisch' : 'arcade'; }
+  /** Ultra-Realismus (styleFlags.bandageHeal/bandages): Verband heilt, sonst gibt es keine Heilung. */
+  _flags() { return (this.G.match && this.G.match.styleFlags) || {}; }
 
   /** Verletzungsstand eines Akteurs (legt ihn an). */
   of(a) {
-    if (!a.injury) a.injury = { arm: false, leg: false, bleed: 0, bleedLeft: 0, by: null, wid: null, bandages: BANDAGES };
+    if (!a.injury) a.injury = { arm: false, leg: false, bleed: 0, bleedLeft: 0, by: null, wid: null, bandages: this._flags().bandages > 0 ? this._flags().bandages : BANDAGES };
     return a.injury;
   }
 
@@ -142,9 +144,12 @@ export class Injuries {
 
   /** Spieler drückt den Verband (Taste N / Touch). */
   bandage() {
-    const P = this.G.player, j = P && P.injury;
+    const P = this.G.player;
     if (!P || !P.alive || this._act) return false;
-    if (!j || !(j.bleed > 0 || j.arm || j.leg)) { this.G.events.emit('injury:notice', { text: 'Du bist nicht verwundet.', tone: 'dim' }); return false; }
+    // Ultra-Realismus: auch ohne Blutung verbinden, solange Leben fehlt (einzige Heilung)
+    const heal = this._flags().bandageHeal > 0;
+    const j = heal ? this.of(P) : P.injury;
+    if (!j || !(j.bleed > 0 || j.arm || j.leg || (heal && P.health < P.maxHealth - 0.5))) { this.G.events.emit('injury:notice', { text: 'Du bist nicht verwundet.', tone: 'dim' }); return false; }
     if (j.bandages <= 0) { this.G.events.emit('injury:notice', { text: 'Keine Verbände mehr.', tone: 'dim' }); return false; }
     this._act = { kind: 'verband', t: 0, dur: BANDAGE_TIME };
     P._busyUntil = Math.max(P._busyUntil || 0, this.G.time.elapsed + BANDAGE_TIME);
@@ -246,7 +251,17 @@ export class Injuries {
       } else if (act.t >= act.dur) {
         this._act = null;
         const j = P.injury;
-        if (j) { j.bandages -= 1; this.treat(P); }
+        if (j) {
+          j.bandages -= 1;
+          const was = j.bleed > 0 || j.arm || j.leg;
+          this.treat(P);
+          // Ultra-Realismus: Verband gibt Leben zurück (offline/Host – online entscheidet der Host über das Leben)
+          const heal = this._flags().bandageHeal;
+          if (heal > 0 && this._host) {
+            P.health = Math.min(P.maxHealth, P.health + heal);
+            if (!was) this.G.events.emit('injury:notice', { text: 'Verband angelegt.', tone: 'gold' });
+          }
+        }
       }
     }
   }

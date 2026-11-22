@@ -560,6 +560,8 @@ export class HUD {
       sub = '<div class="h-place"></div>';
     } else if (id === 'training') {
       sub = '<div class="h-parc" hidden><b></b><span></span></div>';
+    } else if (mode && typeof mode.hudSub === 'function') {
+      sub = mode.hudSub(); // Modus mit eigener Zeile unter dem Stand (Battle Royale: Zone, modes/br/hud.js)
     }
     this.el.sub.innerHTML = sub;
     this.el.flags = [...this.el.sub.querySelectorAll('.h-flag')];
@@ -676,7 +678,10 @@ export class HUD {
     // Munition verdeckt (Spielstil Realistisch bzw. HUD „aus“): kein Zähler, kein Vorrat, kein Füllbalken – den Stand
     // zeigt nur das Inspizieren (Magazin-/Kammer-Check im Viewmodel, Schätzung in .h-readout). Touch (kein Inspizieren):
     // grober Füllbalken ohne Zahlen bleibt (game.css)
-    this._realAmmo = fl.id === 'realistisch' || st === 'aus';
+    this._realAmmo = fl.id === 'realistisch' || !!fl.ultra || st === 'aus';
+    // Ultra-Realismus (game/ultra.js, game.css [data-ultra]): auch kein Killfeed, keine Minikarte, keine Hinweise am Fadenkreuz
+    const ul = fl.ultra ? '1' : '';
+    if (this.root.dataset.ultra !== ul) this.root.dataset.ultra = ul;
     const am = this._realAmmo ? 'verdeckt' : '';
     if (this.root.dataset.ammo !== am) this.root.dataset.ammo = am;
     const stamp = !!S.get('bodycamStamp');
@@ -689,7 +694,7 @@ export class HUD {
 
   /** Minikarte sichtbar? (voll; im Realismus-Stil nur als „Tablet“ bei gehaltener Punktetabelle) */
   get _mapShown() {
-    return this.style === 'voll' || this._tablet;
+    return (this.style === 'voll' || this._tablet) && !(this._flags && this._flags.ultra);
   }
 
   _streakName(id) {
@@ -742,7 +747,7 @@ export class HUD {
 
   _onKill(e) {
     const G = this.G;
-    if (!(this._flags && this._flags.killfeed === 'eigene') || e.killer === this.G.player || e.victim === this.G.player) this.feed.pushKill(e, { weapons: !(this._flags && this._flags.killfeed === 'eigene' && this.G.match.style === 'realistisch') });
+    if (!(this._flags && this._flags.killfeed === 'aus') && (!(this._flags && this._flags.killfeed === 'eigene') || e.killer === this.G.player || e.victim === this.G.player)) this.feed.pushKill(e, { weapons: !(this._flags && this._flags.killfeed === 'eigene' && this.G.match.style === 'realistisch') });
     const p = G.player;
     // Abschuss-Bestätigung unter dem Fadenkreuz (Realistisch: nur bei freier Sicht – Ergebnis des letzten Treffers)
     const k = e.killer;
@@ -1401,8 +1406,21 @@ export class HUD {
     const p = G.player;
     if (!mode || !p) return;
     const id = mode.id;
+    // Modus mit eigener Kopfleiste (Zombies: Welle, verbleibende Untote, Pause/Dauer) – Texte kommen übersetzt vom Modus
+    const hs = typeof mode.hudState === 'function' ? mode.hudState(p) : null;
+    if (hs) {
+      setText(this.el.timeT, Number.isFinite(hs.time) ? clock(hs.time) : '∞');
+      setText(this.el.timeS, hs.timeSub || '');
+      toggle(this.el.time, 'is-ot', false);
+      toggle(this.el.time, 'is-last', !!hs.last);
+      setText(this.el.sAv, hs.a); setText(this.el.sAs, hs.aLabel || '');
+      setText(this.el.sBv, hs.b); setText(this.el.sBs, hs.bLabel || '');
+      setStyle(this.el.sAbar, 'transform', `scaleX(${clamp(hs.aBar || 0, 0, 1).toFixed(3)})`);
+      setStyle(this.el.sBbar, 'transform', `scaleX(${clamp(hs.bBar || 0, 0, 1).toFixed(3)})`);
+      return;
+    }
     // Zeit
-    const tl = mode.timeLeft;
+    const tl = typeof mode.hudClock === 'function' ? mode.hudClock() : mode.timeLeft; // Battle Royale: Zonen-Uhr
     setText(this.el.timeT, Number.isFinite(tl) ? clock(tl) : id === 'training' ? '∞' : '∞');
     toggle(this.el.time, 'is-ot', !!mode.overtime);
     toggle(this.el.time, 'is-last', Number.isFinite(tl) && tl <= 30 && !mode.overtime);
@@ -1459,6 +1477,13 @@ export class HUD {
       setStyle(this.el.sBbar, 'transform', `scaleX(${limit ? clamp((s.leaderIsMe ? s.bestOther : s.leaderKills) / limit, 0, 1).toFixed(3) : 0})`);
       setHtml(this.el.place, `Platz <b>${s.place}</b> von ${s.total}`);
       this._lead(s.leaderIsMe && s.mine > 0);
+    } else if (typeof mode.hudScores === 'function') {
+      // Modus mit eigenem Stand (Battle Royale: übrig / eigene Abschüsse)
+      const s = mode.hudScores(p);
+      setText(this.el.sAv, String(s.a)); setText(this.el.sBv, String(s.b));
+      setText(this.el.sAs, s.as || ''); setText(this.el.sBs, s.bs || '');
+      setStyle(this.el.sAbar, 'transform', `scaleX(${clamp(s.ra || 0, 0, 1).toFixed(3)})`);
+      setStyle(this.el.sBbar, 'transform', `scaleX(${clamp(s.rb || 0, 0, 1).toFixed(3)})`);
     } else if (id === 'training' && mode.summary) {
       const s = mode.summary();
       setText(this.el.sAv, String(s.down));
@@ -1553,6 +1578,8 @@ export class HUD {
     } else if (G.injuries && G.injuries.progress()) {
       const a = G.injuries.progress();
       pr = { text: `${a.kind === 'revive' ? 'Wiederbeleben' : 'Verband anlegen'} … ${Math.round(a.p * 100)} %`, key: '', action: () => {} };
+    } else if (mode && mode.id !== 'training' && typeof mode.prompt === 'function' && (trp = mode.prompt())) {
+      pr = { text: trp.text, key: trp.key === undefined ? this._keyFor('interact') : trp.key, action: trp.action }; // Battle Royale: Beute aufnehmen
     } else if (G.injuries && G.injuries.near) {
       pr = { text: G.injuries.near.text, key: this._keyFor('interact'), action: () => G.injuries.revive() };
     } else if (G.doors && G.doors.near && !(G.points && G.points.near)) {

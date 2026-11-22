@@ -54,6 +54,7 @@ import { setWeaponLodEnabled } from './lodbake.js?v=20261122020853';   // geback
 export { setWeaponLod, prefetchWeaponLods, weaponLodEnabled, disposeWeaponLods } from './lodbake.js?v=20261122020853';
 import { uhu, luchs, dachs, elster } from './gunsmith/guns-neu-a.js?v=20261122020853';   // Waffen-Welle 3 (20.11.)
 import { habicht, kranich, hornisse, lindwurm, stier } from './gunsmith/guns-neu-b.js?v=20261122020853';   // Waffen-Welle 3 (20.11.)
+import { amboss, sturmflut, schwarm, sehne, bolzen, fluester } from './gunsmith/guns-br.js?v=20261122020853';   // Battle-Royale-Waffen (22.11., nur als Beute)
 
 const BUILDERS = {
   zwilling, // neue Waffe (26.10.): ZW-12 Zwilling
@@ -65,13 +66,15 @@ const BUILDERS = {
   p9a, wirbel, // neue Waffen (26.10.)
   orkan, // RG-6 Orkan (13.11.)
   uhu, luchs, dachs, elster, habicht, kranich, hornisse, lindwurm, stier, // Waffen-Welle 3 (20.11.)
+  amboss, sturmflut, schwarm, sehne, bolzen, fluester, // Battle-Royale-Waffen (22.11.), bolzen = Armbrust-Projektil
 };
 
 export const MODEL_KEYS = Object.keys(BUILDERS);
 export const GUN_KEYS = ['kv47', 'm17', 'vp9', 'qx90', 'hm60', 'sk14', 'brecher', 'bulldog', 'p9', 'adler',
   'k36', 'bx20', 'g7', 'wespe', 'keiler', 'lm8', 'titan', 'hagel', 'kobra', 'donner', 'hammer', 'trommel', 'ursprung', 'funke',
   'zwilling', 'p9a', 'wirbel', 'orkan',   // neue Waffen (26.10.), RG-6 Orkan (13.11.)
-  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier'];   // Waffen-Welle 3 (20.11.)
+  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier',   // Waffen-Welle 3 (20.11.)
+  'amboss', 'sturmflut', 'schwarm', 'sehne', 'fluester'];   // Battle-Royale-Waffen (22.11.)
 export const MELEE_KEYS = ['knife', 'karambit', 'machete', 'tomahawk', 'kampfaxt', 'schlagstock', 'kampfstock', 'spaten', 'erstlicht'];
 export const THROWABLE_KEYS = ['frag', 'semtex', 'impact', 'molotov', 'flash', 'smoke', 'trophy'];
 export { applyCamo };
@@ -295,7 +298,8 @@ export function getWeaponModelMeta(key) {
 // Aufheben ohne Messung sofort. NEUE FOTO-WAFFEN HIER EINTRAGEN (Integrationsschritt je Etappe, Bauanleitung §8.2).
 const PHOTO_MODELS = new Set(['m17', 'p9', 'kv47', 'vp9', 'qx90', 'adler',   // Etappe 1 (25.10.): KV-47, VP-9, QX-90, Adler
   'zwilling', 'p9a', 'wirbel',   // neue Waffen 26.10.: ZW-12 Zwilling, P-9A, PS-41 Wirbel
-  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier']);   // Welle 3 (20.11.): Distanzfeld-Bauteile, 0,4–1 s Bau
+  'uhu', 'luchs', 'dachs', 'elster', 'habicht', 'kranich', 'hornisse', 'lindwurm', 'stier',   // Welle 3 (20.11.): Distanzfeld-Bauteile, 0,4–1 s Bau
+  'amboss', 'sturmflut', 'schwarm', 'sehne', 'fluester']);   // Battle-Royale-Waffen (22.11.): Distanzfeld-Bauteile
 export function isPhotoWeapon(key) { return PHOTO_MODELS.has(key); }
 
 /**

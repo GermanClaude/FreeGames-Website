@@ -648,6 +648,8 @@ export class HostSync {
       shooter: { alive: p.alive, team: p.team, pos: this._shooterPos(p), weapons: this._weaponsOf(p, from) },
       target: { alive: target.alive, team: target.team, pos: [target.position.x, target.position.y, target.position.z] },
       los: W && typeof W.lineOfSight === 'function' ? (o, q) => W.lineOfSight(_eye.set(o[0], o[1], o[2]), _v.set(q[0], q[1], q[2])) : undefined,
+      // Teambeschuss (Spielstil Ultra-Realismus): Treffer auf Mitspieler sind dann erlaubt (Anti-Cheat wie FFA)
+      ...(G.match && G.match.styleFlags && G.match.styleFlags.friendlyFire ? { ffa: true } : {}),
     };
   }
 

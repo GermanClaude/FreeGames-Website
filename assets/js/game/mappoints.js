@@ -88,7 +88,8 @@ export class MapPoints {
     this.group = new THREE.Group();
     this.group.name = 'kartenpunkte';
     const data = MAPS[mapId];
-    const layout = POINT_LAYOUT[mapId] || [];
+    // Battle Royale (modes/br): keine Munitions-/Sanitätsstationen – Ausrüstung gibt es nur als Beute
+    const layout = G.match && G.match.modeId === 'br' ? [] : POINT_LAYOUT[mapId] || [];
     if (!data) return;
     const world = G.world;
     this.quality = (G.renderer && G.renderer.quality) || 'high';
@@ -219,7 +220,7 @@ export class MapPoints {
   lootWeaponsAllowed() {
     const G = this.G;
     const M = G.match;
-    if (!M || M.modeId === 'gun' || M.modeId === 'messer' || M.modeId === 'training') return false;
+    if (!M || M.modeId === 'gun' || M.modeId === 'messer' || M.modeId === 'training' || M.modeId === 'br') return false; // BR: eigene Beute (modes/br)
     if (M.net) return M.net.lootWeapons !== false;
     return !(G.settings && typeof G.settings.get === 'function' && G.settings.get('lootWeapons') === false);
   }

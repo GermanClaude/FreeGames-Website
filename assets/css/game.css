@@ -2449,6 +2449,17 @@ body[data-touch-edit="1"] .te-overlap { box-shadow: 0 0 0 2px var(--np-enemy), 0
 .h-root[data-hud="aus"].is-tablet .h-notices { top: calc(var(--pad-t) + 118px); }
 .h-root[data-hud="aus"] .h-ammo-hint[data-kind="is-low"] { display: none; }
 .h-root[data-hud="aus"] .kf-row { background: rgba(10, 11, 13, .38); }
+/* Ultra-Realismus (game/ultra.js): gefühlt kein HUD – kein Killfeed, kein Tablet-Kartenbild, keine Munitions-/Granatenhinweise;
+   Ziel-/Zonenmarken nur kurz nach dem Einsatz (.is-brief) und blass, Meldungen gedämpft */
+.h-root[data-ultra="1"] .h-feed,
+.h-root[data-ultra="1"] .h-tl,
+.h-root[data-ultra="1"] .h-cook,
+.h-root[data-ultra="1"] .h-ammo-hint,
+.h-root[data-ultra="1"] .h-killico,
+.h-root[data-ultra="1"] .h-stam { display: none; }
+.h-root[data-ultra="1"] .h-notices { opacity: .7; }
+.h-root[data-ultra="1"] .h-capture { opacity: .55; }
+.h-root[data-ultra="1"].is-brief:not(.is-tablet) .h-markers { display: block; opacity: .45; }
 /* Bodycam-Einblendung (Uhrzeit, Geräte-ID) */
 .h-stamp {
   position: absolute;

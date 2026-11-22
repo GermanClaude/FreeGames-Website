@@ -1144,7 +1144,8 @@ export class ViewModel {
 
     // ---- Handhabung: Masse/Trägheit der Waffe (Daten) × Komfort (Einstellung „Waffenträgheit“, Bewegung reduzieren)
     const hd = this._handlingData();
-    const massK = Math.sqrt(clamp(hd.mass, 0.3, 12) / 3.3);   // 1 = Sturmgewehr; Pistole ≈ 0,5, LMG ≈ 1,6
+    // s.weightMult (Ultra-Realismus, game/ultra.js): gefühlte Masse – träger Nachlauf, schwerere Schritte/Rückstoßfedern
+    const massK = Math.sqrt(clamp(hd.mass * (s.weightMult > 0 ? s.weightMult : 1), 0.3, 12) / 3.3);   // 1 = Sturmgewehr; Pistole ≈ 0,5, LMG ≈ 1,6
     const comfort = this._motionScale();
     const swayK = hd.swayScale * comfort;
     const winded = clamp(s.winded || 0, 0, 1);

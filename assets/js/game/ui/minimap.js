@@ -222,6 +222,8 @@ export class Minimap {
         dot(ctx, pt.x, pt.y, 4.2 * d, COL.enemy, alpha);
       }
     }
+    // Modus-Zeichnung im Kartenmaßstab (Battle Royale: Zonenkreise, modes/br/hud.js) – noch innerhalb des Kreisausschnitts
+    if (mode && typeof mode.drawMinimap === 'function') { try { mode.drawMinimap(ctx, toScreen, scale, d, half, rad); } catch { /* Beiwerk */ } }
     ctx.restore();
 
     // Flaggen (am Rand festgeklemmt)

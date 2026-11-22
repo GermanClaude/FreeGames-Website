@@ -191,7 +191,7 @@ export class WeaponSystem {
   killAmmoEnabled() {
     const G = this.G;
     const M = G.match;
-    if (!M || M.modeId === 'training' || M.modeId === 'gun') return false;
+    if (!M || M.modeId === 'training' || M.modeId === 'gun' || M.modeId === 'br') return false; // BR: Munition nur als Beute
     const m = G.mode;
     if (m && m.def && m.def.infiniteAmmo) return false;
     if (M.net) return M.net.killAmmo !== false;

@@ -162,6 +162,7 @@ export function initDeploy(data, { snd, webgl } = {}) {
     ich: mk('w', 'Ich'), lead: mk('w', 'spiele'), prep: mk('w prep', 'im'), mit: mk('w', 'mit'),
     verb: mk('w', 'Verbündeten'), gegen: mk('w', 'gegen'), bots: mk('w', 'Bots'), auf: mk('w', 'auf'),
     dot: mk('w', '.'),
+    horde: mk('w', 'gegen die Untoten'), // Zombies: Gegner kommen in Wellen (keine Bot-Zahl)
   };
   const go = $('#go', form) || document.createElement('a');
   go.classList.add('go');
@@ -186,7 +187,8 @@ export function initDeploy(data, { snd, webgl } = {}) {
   function arrange(animate) {
     const st = ui.get();
     const m = modeDef(st.mode);
-    const kind = st.mode === 'training' ? 'training' : (m?.teams === false ? 'solo' : 'teams');
+    const horde = m?.teams !== false && m?.limits?.enemies?.[1] === 0; // Zombies: nur Verbündete wählbar
+    const kind = st.mode === 'training' ? 'training' : horde ? 'horde' : (m?.teams === false ? 'solo' : 'teams');
     const changed = kind !== layout;
     if (!changed) return false;
     layout = kind;
@@ -205,8 +207,9 @@ export function initDeploy(data, { snd, webgl } = {}) {
       seq.push(words.dot);
     } else {
       seq.push(sp(), grp(words.prep, nb(), slots.map.label));
-      if (kind === 'teams') seq.push(sp(), grp(words.mit, nb(), slots.allies.label, nb(), words.verb));
-      seq.push(sp(), grp(words.gegen, nb(), slots.enemies.label, nb(), words.bots), sp(), grp(words.auf, nb(), slots.diff.label, words.dot));
+      if (kind === 'teams' || kind === 'horde') seq.push(sp(), grp(words.mit, nb(), slots.allies.label, nb(), words.verb));
+      if (kind === 'horde') seq.push(sp(), grp(words.horde), sp(), grp(words.auf, nb(), slots.diff.label, words.dot));
+      else seq.push(sp(), grp(words.gegen, nb(), slots.enemies.label, nb(), words.bots), sp(), grp(words.auf, nb(), slots.diff.label, words.dot));
     }
     seq.push(sp(), go);
     p.append(...seq);
@@ -239,7 +242,7 @@ export function initDeploy(data, { snd, webgl } = {}) {
     const mapName = D.P.MAPS[st.map]?.name || st.map;
     const parts = [`${m?.name || st.mode} ${mapPrep(st.map)} ${mapName}`];
     if (m?.teams !== false) parts.push(`${st.allies} Verbündete`);
-    parts.push(`${st.enemies} ${st.enemies === 1 ? 'Bot' : 'Bots'}`);
+    if (m?.limits?.enemies?.[1] === 0) parts.push('gegen die Untoten'); else parts.push(`${st.enemies} ${st.enemies === 1 ? 'Bot' : 'Bots'}`);
     parts.push(D.M.DIFFICULTIES[st.diff]?.name || st.diff);
     return `Einsatz: ${parts.join(', ')}.`;
   }

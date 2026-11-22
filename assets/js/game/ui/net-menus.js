@@ -8,7 +8,7 @@
 import { esc, el } from './dom.js?v=20261122020853';
 import { ICON, deviceOf } from './icons.js?v=20261122020853';
 import { LoadoutPanel } from './loadout-panel.js?v=20261122020853';
-import { CLASSES, GAME_STYLES, STYLE_ORDER, SIM_MODES } from '../../shared/classes.data.js?v=20261122020853';
+import { CLASSES, GAME_STYLES, STYLE_ORDER, SIM_MODES, ULTRA_MODES } from '../../shared/classes.data.js?v=20261122020853';
 import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261122020853';
 import { ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, MODES as MODE_DATA } from '../../shared/modes.data.js?v=20261122020853';
 import { modeOptionsHtml, modeOptionsSummary } from './mode-options.js?v=20261122020853';
@@ -866,7 +866,7 @@ export class NetMenus {
     const t = s.time === 'zufall' ? 'Zufall' : s.time === 'echtzeit' ? 'Echtzeit (Uhr des Hosts)' : s.time && s.time !== 'standard' ? (times.find((x) => x.id === s.time) || {}).name || s.time : `${map.timeOfDay || 'Standard'}`;
     const wd = WEATHERS[map.weatherStandard || map.weatherDefault];
     const w = s.weather === 'zufall' ? 'Zufall' : s.weather && s.weather !== 'standard' ? (WEATHERS[s.weather] || {}).name || s.weather : `Standard${wd ? ` (${wd.name})` : ''}`;
-    return { mode, map, time: t, weather: w, diff: (d.DIFF[s.difficulty] || {}).name || s.difficulty, style: s.style === 'simulation' && !(SIM_MODES || []).includes(s.mode) ? (GAME_STYLES.realistisch || {}).label || 'Realistisch' : (GAME_STYLES[s.style] || GAME_STYLES.arcade || {}).label || s.style };
+    return { mode, map, time: t, weather: w, diff: (d.DIFF[s.difficulty] || {}).name || s.difficulty, style: (s.style === 'simulation' && !(SIM_MODES || []).includes(s.mode)) || (s.style === 'ultra' && !(ULTRA_MODES || []).includes(s.mode)) ? (GAME_STYLES.realistisch || {}).label || 'Realistisch' : (GAME_STYLES[s.style] || GAME_STYLES.arcade || {}).label || s.style };
   }
 
   _settingsViewHtml() {
@@ -883,7 +883,7 @@ export class NetMenus {
       ${item(teams ? 'Teamgröße' : 'Teilnehmer', teams ? `${size} gegen ${size}` : `${size * 2}`)}
       ${item('Bots', s.botFill ? 'füllen auf' : 'keine')}${item('Max. Spieler', String(s.maxPlayers || '–'))}
       ${item('Rundendauer', limitText(this._data().MODES[s.mode], s).time)}${modeOptionsSummary(this._data().MODES[s.mode], s.modeOpts, { skipLimits: true }).map(([k, v]) => item(k, v)).join('')}${scoreSteps(this._data().MODES[s.mode]).length ? item('Punkteziel', limitText(this._data().MODES[s.mode], s).score) : ''}
-      ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}${item('Munition pro Abschuss', s.killAmmo === false ? 'aus' : s.style === 'realistisch' ? 'an der Leiche' : 'an')}
+      ${item('Ausdauer', s.stamina === false ? 'unbegrenzt' : 'normal')}${item('Munition pro Abschuss', s.killAmmo === false ? 'aus' : s.style === 'realistisch' || s.style === 'ultra' ? 'an der Leiche' : 'an')}
       ${item('Waffen von Leichen', s.lootWeapons === false ? 'aus' : 'erlaubt')}
       ${item('Fahrzeuge', vehOn(s) ? 'Panzer + Geländewagen' : VEH_MODES.has(s.mode) && !vehMap(s) ? 'nur zivile (kleine Karte)' : 'aus')}
       ${vehOn(s) ? `${item('Außenansicht (Fahrzeuge)', s.thirdPerson === false ? 'aus' : 'erlaubt')}${item('Panzer nachladen', s.vehReload === 'automatisch' ? 'automatisch' : 'manuell')}${item('Panzer-Generation', ({ karte: 'je Karte', modern: 'modern', kk: 'Kalter Krieg', wk2: '2. Weltkrieg', wk1: '1. Weltkrieg' })[s.tankEra] || 'je Karte')}` : ''}
@@ -914,7 +914,8 @@ export class NetMenus {
     const diffs = DIFF_ORDER.map((id) => [id, esc((d.DIFF[id] || {}).name || id), (d.DIFF[id] || {}).description || '']);
     // gesamt 20.11.: „Simulation“ nur in passenden Modi (SIM_MODES, wie in der Lobby) – sonst spielt sie als „Realistisch“
     const simOk = (SIM_MODES || []).includes(s.mode);
-    const styles = (STYLE_ORDER || ['arcade', 'realistisch']).filter((id) => id !== 'simulation' || simOk || s.style === id).map((id) => [id, esc((GAME_STYLES[id] || {}).label || id), (GAME_STYLES[id] || {}).desc || '']);
+    const ultraOk = (ULTRA_MODES || []).includes(s.mode); // Ultra-Realismus: wie in der Lobby nur in Infanterie-Modi; der Host gibt ihn allen vor
+    const styles = (STYLE_ORDER || ['arcade', 'realistisch']).filter((id) => (id !== 'simulation' || simOk || s.style === id) && (id !== 'ultra' || ultraOk || s.style === id)).map((id) => [id, esc((GAME_STYLES[id] || {}).label || id), (GAME_STYLES[id] || {}).desc || '']);
     const stepper = (k, label, v, min, max, shown = v) => `
       <div class="lb-step nr-step"><span>${esc(label)}</span>
         <button type="button" class="m-icon" data-step="${k}" data-d="-1" data-fk="${k}-m" aria-label="${esc(label)} verringern"${v <= min ? ' disabled' : ''}>${ICON.minus}</button>
@@ -973,7 +974,7 @@ export class NetMenus {
         <div class="nr-two">
           ${sw('stamina', 'Ausdauer', s.stamina === false ? 'Aus: unbegrenzt sprinten, rutschen, springen – für alle' : 'Sprinten, Rutschen und Springen kosten Ausdauer', s.stamina !== false)}
           ${VEH_MODES.has(s.mode) ? (vehMap(s) ? sw('vehicles', 'Fahrzeuge', 'Panzer und Geländewagen für beide Teams', vehOn(s)) : `<div class="nr-switch is-locked"><span class="nr-lab2"><b>Fahrzeuge</b><small>${esc(`Panzer und Geländewagen nur auf großen Karten (${LARGE_MAP_NAMES.join(', ')}) – hier nur die zivilen Fahrzeuge der Karte`)}</small></span></div>`) : ''}
-          ${sw('killAmmo', 'Munition pro Abschuss', s.killAmmo === false ? 'Aus: nur die Startmunition' : s.style === 'realistisch' ? 'Realistisch: Munition an der Leiche aufsammeln (Taste F)' : 'Jeder Abschuss bringt ein Magazin (MG: 20 Schuss)', s.killAmmo !== false)}
+          ${sw('killAmmo', 'Munition pro Abschuss', s.killAmmo === false ? 'Aus: nur die Startmunition' : s.style === 'realistisch' || s.style === 'ultra' ? 'Realistisch: Munition an der Leiche aufsammeln (Taste F)' : 'Jeder Abschuss bringt ein Magazin (MG: 20 Schuss)', s.killAmmo !== false)}
           ${sw('lootWeapons', 'Waffen von Leichen', s.lootWeapons === false ? 'Aus: nur die eigene Ausrüstung' : 'Waffe eines Gefallenen aufheben (Taste F halten)', s.lootWeapons !== false)}
         </div>
         ${vehOn(s) ? `<div class="nr-two">

@@ -41,6 +41,7 @@ import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261122020853'; // In
 import { Building } from './building.js?v=20261122020853'; // Bauen (Taste K)
 import { Injuries } from './injuries.js?v=20261122020853'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
 import { InfantrySim } from './isim/index.js?v=20261122020853'; // Infanteriesimulation (Spielstil „Simulation“)
+import { UltraRealism } from './ultra.js?v=20261122020853'; // Ultra-Realismus (Spielstil „Ultra-Realismus“, wie Bodycam)
 import { Gore } from './gore.js?v=20261122020853'; // Blutlachen + Spritzer
 import { Destruction } from './destruction.js?v=20261122020853'; // zerstörbare Fassaden
 import { CarDeform } from './deform.js?v=20261122020853'; // verformbare Autos
@@ -591,11 +592,14 @@ function applyStyle(cfg) {
   // Infanteriesimulation (isim/): baut auf „Realistisch“ auf – G.match.style bleibt 'realistisch' (alle Realismus-Regeln),
   // G.match.sim schaltet die Simulation zu; nur in SIM_MODES (sonst gilt Realistisch)
   const sim = cfg.style === 'simulation' && (classesData.SIM_MODES || []).includes(cfg.modeId);
-  const style = cfg.style === 'realistisch' || cfg.style === 'simulation' ? 'realistisch' : 'arcade';
-  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: sim ? false : cfg.crosshair })) : null;
+  // Ultra-Realismus (game/ultra.js): ebenso auf „Realistisch“ aufgesetzt, G.match.ultra schaltet ihn zu; nur in ULTRA_MODES
+  const ultra = cfg.style === 'ultra' && (classesData.ULTRA_MODES || []).includes(cfg.modeId);
+  const style = cfg.style === 'realistisch' || cfg.style === 'simulation' || cfg.style === 'ultra' ? 'realistisch' : 'arcade';
+  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: sim || ultra ? false : cfg.crosshair })) : null;
   G.match.style = style;
   G.match.sim = sim;
-  G.match.styleFlags = classesData.styleFlags(sim ? 'simulation' : style, { realisticCrosshair: settings.get('realisticCrosshair'), rules });
+  G.match.ultra = ultra;
+  G.match.styleFlags = classesData.styleFlags(sim ? 'simulation' : ultra ? 'ultra' : style, { realisticCrosshair: !ultra && settings.get('realisticCrosshair'), rules });
   G.match.armor = cfg.armor;
   G.match.respawnHold = false;
   G.match.pendingLoadout = null;
@@ -1273,13 +1277,15 @@ async function runStart(config, gen) {
     // Zivilfahrzeuge der Karte (world.civilVehicles: Autos, Transporter, Stapler, Zugmaschinen) gibt es immer – bei
     // „Panzer & Fahrzeuge: Aus“ nur sie (civilOnly)
     const civ = !!(G.world && Array.isArray(G.world.civilVehicles) && G.world.civilVehicles.length);
-    if (!netCfg) { if (cfg.vehicles !== false) safe('vehicles.attach', () => G.vehicles.attach(G)); else if (civ) safe('vehicles.attach', () => G.vehicles.attach(G, { civilOnly: true })); } // Lobby „Panzer & Fahrzeuge: Aus“
+    const civilMode = !!((G.data.MODES || {})[cfg.modeId] || {}).civilVehiclesOnly; // Battle Royale: nur Zivilfahrzeuge
+    if (!netCfg) { if (cfg.vehicles !== false && !civilMode) safe('vehicles.attach', () => G.vehicles.attach(G)); else if (civ) safe('vehicles.attach', () => G.vehicles.attach(G, { civilOnly: true })); } // Lobby „Panzer & Fahrzeuge: Aus“
     else if (netCfg.vehicles) safe('vehicles.attach', () => G.vehicles.attach(G, { replica: netCfg.role === 'client' }));
     else if (civ) safe('vehicles.attach', () => G.vehicles.attach(G, { replica: netCfg.role === 'client', civilOnly: true }));
     safe('points', () => { G.points = new MapPoints(G, cfg.mapId); });
     safe('building', () => { G.building = new Building(G); });
     safe('injuries', () => { G.injuries = new Injuries(G); });
     if (G.match.sim) safe('isim', () => { G.isim = new InfantrySim(G); });
+    if (G.match.ultra) safe('ultra', () => { G.ultra = new UltraRealism(G); });
     safe('gore', () => { G.gore = new Gore(G); });
     safe('destruction', () => { G.destruction = new Destruction(G); });
     safe('deform', () => { G.deform = new CarDeform(G); });
@@ -1654,6 +1660,7 @@ async function teardownMatch({ keepWorld = false } = {}) {
   if (G.building) { safe('building', () => G.building.dispose()); G.building = null; }
   if (G.injuries) { safe('injuries', () => G.injuries.dispose()); G.injuries = null; }
   if (G.isim) { safe('isim', () => G.isim.dispose()); G.isim = null; }
+  if (G.ultra) { safe('ultra', () => G.ultra.dispose()); G.ultra = null; }
   if (G.gore) { safe('gore', () => G.gore.dispose()); G.gore = null; }
   if (G.destruction) { safe('destruction', () => G.destruction.dispose()); G.destruction = null; }
   if (G.deform) { safe('deform', () => G.deform.dispose()); G.deform = null; }
@@ -2049,6 +2056,7 @@ function frame(now, bg = false, xrFrame = null) {
     if (net) step('net:pre', () => net.preUpdate(dt)); // Host: Zustände der Clients → Puppen; Client: Schnappschüsse → Puppen
     if (G.mode && G.mode.preUpdate) step('mode:pre', () => G.mode.preUpdate(dt)); // Cheat-Menü (cheats.js) – Blick/Bewegung/Schuss/Nahkampf vor dem Spieler
     if (G.isim) step('isim:pre', () => G.isim.preUpdate(dt)); // Simulation: Tasten im Ausrüstungsmenü abfangen
+    if (G.ultra) step('ultra:pre', () => G.ultra.preUpdate(dt)); // Ultra-Realismus: Körper-/Waffenwerte des Spielers vor seinem Bild
     step('player', () => (G.player.vehicle ? G.vehicles.updateOccupant(G.player, dt) : G.player.update(dt))); // vehicles: Sitz statt Laufen
     step('bots', () => G.bots.update(dt));
     const live = G.match.state === 'playing' || G.match.netLive;

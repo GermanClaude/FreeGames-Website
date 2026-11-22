@@ -375,7 +375,8 @@ function predicted(rec, age) {
 
 function objectiveFor(bot, now) {
   const mode = bot.G.mode;
-  if (!mode || typeof mode.objectiveFor !== 'function' || !bot.team) return null;
+  // ffaObjectives (Battle Royale, modes/br): Ziele auch ohne Team (Beute, Zone)
+  if (!mode || typeof mode.objectiveFor !== 'function' || (!bot.team && !mode.ffaObjectives)) return null;
   if (!bot._obj || now > bot._objAt) {
     bot._objAt = now + rnd(2.5, 4);
     let o = null;

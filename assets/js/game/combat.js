@@ -222,6 +222,17 @@ export class Combat {
     return a.team !== b.team;
   }
 
+  /** Teambeschuss an? (Spielstil Ultra-Realismus: styleFlags.friendlyFire) */
+  _ff() {
+    const f = this.G.match && this.G.match.styleFlags;
+    return !!(f && f.friendlyFire);
+  }
+
+  /** Darf a b treffen? Feinde immer, Mitspieler nur mit Teambeschuss (nie sich selbst). */
+  canHit(a, b) {
+    return this.isHostile(a, b) || (!!a && !!b && a !== b && this._ff());
+  }
+
   /**
    * Ein Hitscan-Strahl (eine Kugel/Schrotkugel).
    * args: { shooter, origin, dir, range, weapon (def), pelletIndex, damageScale = 1 }
@@ -300,7 +311,7 @@ export class Combat {
     let best = null;
     for (let i = 0; i < actors.length; i++) {
       const a = actors[i];
-      if (!a.alive || a === shooter || !this.isHostile(shooter, a) || typeof a.raycastHitboxes !== 'function') continue;
+      if (!a.alive || a === shooter || !this.canHit(shooter, a) || typeof a.raycastHitboxes !== 'function') continue;
       // Schneller Ausschluss: Abstand Strahl ↔ Körpermitte (liegend: Mitte des Körpers hinter der Kapsel)
       _v1.copy(a.position);
       if (a.proneBlend > 0.5) { _v1.x += Math.sin(a.yaw || 0) * 0.7; _v1.z += Math.cos(a.yaw || 0) * 0.7; _v1.y += 0.25; } else _v1.y += 0.9;
@@ -361,7 +372,7 @@ export class Combat {
       return sync && typeof sync.claimDamage === 'function' ? sync.claimDamage(target, info) || 0 : 0;
     }
     const attacker = info.attacker || null;
-    if (attacker && attacker !== target && !this.isHostile(attacker, target)) return 0; // Friendly Fire aus
+    if (attacker && attacker !== target && !this.isHostile(attacker, target) && !this._ff()) return 0; // Friendly Fire aus (Ultra-Realismus: an)
     if (target.godMode || target.invulnerable) return 0;
     let amount = Number(info.amount) || 0;
     if (amount <= 0) return 0;
@@ -370,7 +381,11 @@ export class Combat {
     // Spielstil (Realistisch: mehr Schaden) und Klasseneigenschaft (Pionier: −20 % Explosionen)
     const flags = G.match && G.match.styleFlags;
     if (!env && flags) amount *= info.explosive ? flags.explosiveMult || 1 : flags.bulletMult || 1;
+    // Ultra-Realismus (styleFlags.headKill): Kopftreffer durch Kugel/Klinge ist sofort tödlich (Helm nimmt nur seinen Anteil)
+    if (!env && flags && flags.headKill && info.zone === 'head' && !info.explosive && info.weaponId !== 'bleed') amount = Math.max(amount, 400);
     if (info.explosive && target.cls) amount *= 1 - ((classDef(target.cls).perks || {}).explosiveResist || 0);
+    // Eigene Trefferregeln des Ziels (Zombie-Modus, bots/zombie/zombie.js: Kopftreffer tödlich, Beine bremsen)
+    if (!env && typeof target.scaleDamage === 'function') { amount = Number(target.scaleDamage(amount, info)) || 0; if (amount <= 0) return 0; }
     // Panzerung: Weste/Helm nehmen ihren Anteil vorweg (Sturz/Welt umgeht sie)
     const zone = info.zone || 'body';
     let armorRes = null;
@@ -418,7 +433,9 @@ export class Combat {
     const G = this.G;
     const now = G.time.elapsed;
     const killer = info.attacker || null;
-    const suicide = !killer || killer === victim;
+    // Teambeschuss (Ultra-Realismus): Abschuss eines Mitspielers zählt wie ein Selbstmord – keine Punkte, keine Serie
+    const teamkill = !!killer && killer !== victim && !this.isHostile(killer, victim) && !killer.isStreakEntity;
+    const suicide = !killer || killer === victim || teamkill;
     const headshot = info.zone === 'head' && !info.explosive;
     victim.alive = false;
     victim.health = 0;
@@ -491,7 +508,7 @@ export class Combat {
     G.events.emit('kill', {
       victim, killer: suicide ? (killer === victim ? victim : null) : killer, weaponId: info.weaponId || null,
       headshot, explosive: !!info.explosive, assisters, streak, firstBlood, longshot, revenge,
-      distance: Math.round(distance * 10) / 10, suicide,
+      distance: Math.round(distance * 10) / 10, suicide, ...(teamkill ? { teamkill: true, teamkiller: killer } : {}),
     });
   }
 
@@ -513,7 +530,7 @@ export class Combat {
     const hits = [];
     for (const a of G.actors) {
       if (!a.alive) continue;
-      if (attacker && a !== attacker && !this.isHostile(attacker, a)) continue;
+      if (attacker && a !== attacker && !this.isHostile(attacker, a) && !this._ff()) continue;
       const chest = _v2.copy(a.position);
       chest.y += (a.body ? a.body.height : 1.8) * 0.55;
       const d = chest.distanceTo(pos);
