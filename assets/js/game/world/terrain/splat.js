@@ -398,7 +398,10 @@ export async function createTerrainMaterial(o) {
         // und ließ dort leuchtend grüne Wiese stehen; ab ≈ 50° Neigung offener Boden (Erde-Schicht bzw. Kartenlook-Aushub)
         float bare = smoothstep(0.34, 0.5, steepB + (n2.x - 0.5) * 0.12) * inside;
         wv.x = max(wv.x, bare * clamp(1.0 - wv.y - wv.z - wv.w, 0.0, 1.0));
-        float wG = clamp(1.0 - wv.x - wv.y - wv.z - wv.w, 0.0, 1.0);
+        // grafik (22.11.): Grundschicht nur, wo die Kontrollkarte Platz lässt – die Kontrastkurve oben drückt Mischungen
+        // aus drei Schichten (z. B. Erde/Fels/Schlamm je ≈ ⅓ an Grabenwänden, Summe 1) unter 1 und ließ dort Gras durchscheinen
+        float cSum = c.x + c.y + c.z + c.w;
+        float wG = clamp(1.0 - wv.x - wv.y - wv.z - wv.w, 0.0, 1.0) * (1.0 - smoothstep(0.82, 0.98, cSum));
         #if TERR_HEX
         // texturen3: je Schicht Hex-Kachelung (Albedo + Höhe im Alpha, Normalen), nur wo die Schicht Gewicht hat –
         // die Kontrollkarte ist räumlich zusammenhängend, meist sind 1–2 Schichten aktiv
