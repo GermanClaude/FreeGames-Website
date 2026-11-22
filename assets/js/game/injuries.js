@@ -184,7 +184,8 @@ export class Injuries {
 
   update(dt) {
     const G = this.G;
-    if (!G.match || G.match.state !== 'playing') return;
+    // online läuft das Match im Pausenmenü des Hosts weiter (netLive): Blutung/Wiederbeleben dürfen dann nicht stehen bleiben
+    if (!G.match || (G.match.state !== 'playing' && !G.match.netLive)) return;
     const now = G.time.elapsed;
     const P = G.player;
     if (this._host) {
@@ -218,7 +219,7 @@ export class Injuries {
       }
     }
     // Spieler: Tasten (N = Verband, F = Wiederbeleben), Einblendung „Wiederbeleben“ und laufende Handlungen
-    const inp = G.input;
+    const inp = G.match.state === 'playing' ? G.input : null; // Pausenmenü (online): keine Tasten auswerten
     if (inp && P && !P.alive && typeof inp.pressed === 'function' && this.medicInfo() && inp.pressed('interact')) this.giveUp();
     if (inp && P && P.alive && typeof inp.pressed === 'function') {
       if (inp.pressed('verband') && !G.isim) this.bandage(); // Simulation: Verband in isim/body.js

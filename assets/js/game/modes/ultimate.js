@@ -22,6 +22,12 @@ export class UltimateMode extends TdmMode {
 
   allowOvertime() { return false; }
 
+  /** Todesanzeige (ui/hud.js): kein Countdown, solange die Runde läuft – zurück erst mit der nächsten Runde. */
+  respawnNote() {
+    if (this.isOver) return null;
+    return this.phase === 'kampf' ? 'Ausgeschaltet – zurück in der nächsten Runde' : 'Nächste Runde beginnt …';
+  }
+
   /** Wiedereinstieg nur beim Rundenwechsel (der Modus setzt dann alle neu ein). */
   canRespawn() { return !this.isOver && this._spawning; }
 

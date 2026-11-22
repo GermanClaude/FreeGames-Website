@@ -15,6 +15,7 @@ export const DEFAULTS = Object.freeze({
   crosshairStyle: 'cross' /* cross|dot|circle */, crosshairColor: '#ffffff', reticleSize: 1.0,
   showFps: false, aimAssist: true /* nur Touch */, autoFire: false /* Touch: „einfacher Modus“ */,
   difficulty: 'regulaer', lastMode: 'tdm', lastMap: 'hafen', lastLoadout: null, reducedMotion: false,
+  lastPanzerMap: 'grenzland', // Karte im Reiter Panzer (ui/panzer-pane.js) – fehlte hier, Kartenwahl blieb wirkungslos (logik 22.11.)
   // Steuerung & Komfort (Realismus-Plan F1/F4/F5, S1–S7; core-input)
   cameraMotion: 0.6, sensitivityY: 1.0, adsSensitivityMid: 0.85, adsSensitivityHigh: 0.85, zoomSensitivityCoef: '0',
   adsMode: 'hold', sprintMode: 'toggle', crouchMode: 'toggle', leanMode: 'hold', freeAim: 'off',
@@ -118,6 +119,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   },
   lastMode: { type: 'id', label: 'Letzter Modus', group: 'intern' },
   lastMap: { type: 'id', label: 'Letzte Karte', group: 'intern' },
+  lastPanzerMap: { type: 'id', label: 'Letzte Panzer-Karte', group: 'intern' },
   lastLoadout: { type: 'loadout', label: 'Letzte Ausrüstung', group: 'intern' },
   reducedMotion: { type: 'boolean', label: 'Bewegung reduzieren', group: 'grafik' },
   // Steuerung & Komfort (core-input; Bedeutung im Changelog „core-input“)

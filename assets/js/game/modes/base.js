@@ -530,8 +530,13 @@ export class BaseMode {
     if (victim.respawnAt == null) return;
     let delay = this.respawnDelay;
     if (this.teams && (victim.team === 'A' || victim.team === 'B')) {
-      const mine = this._teamSize[victim.team] || 0;
-      const other = this._teamSize[victim.team === 'A' ? 'B' : 'A'] || 0;
+      // Teamgrößen jetzt zählen (logik 22.11.): der Stand vom Matchbeginn kannte keine Späteinsteiger/Abgänge online
+      // – das kleinere Team wurde dann nicht schneller zurückgeschickt. Infiziert (netTeamShift) behält mit Absicht den Stand
+      // vom Start: die Infizierten sollen schnell zurückkommen, auch wenn ihre Seite längst die größere ist
+      const size = this.netTeamShift ? this._teamSize : { A: 0, B: 0 };
+      if (!this.netTeamShift) { for (const a of G.actors) if (!a.isStreakEntity && (a.team === 'A' || a.team === 'B')) size[a.team] += 1; this._teamSize = size; }
+      const mine = size[victim.team] || 0;
+      const other = size[victim.team === 'A' ? 'B' : 'A'] || 0;
       const diff = mine - other;
       if (diff > 0) delay += Math.min(2, diff * 0.6);
       else if (diff < 0) delay = Math.max(1.2, delay + diff * 0.35);

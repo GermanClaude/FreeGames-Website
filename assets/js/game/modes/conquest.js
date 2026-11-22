@@ -102,6 +102,8 @@ export class ConquestMode extends DomMode {
 
   onSpawn(actor) {
     if (!this.started || this.isOver || !actor || (actor.team !== 'A' && actor.team !== 'B')) return;
+    // Wiederbelebung durch einen Sanitäter (injuries.js _revive) kostet kein Ticket – wie im Truppmodus (logik 22.11.)
+    if (actor._reviving) { this.squads.of(actor); return; }
     this.spendTicket(actor.team, 1, 'respawn');
     this.squads.of(actor);
     const v = this._enterAfterSpawn.get(actor);

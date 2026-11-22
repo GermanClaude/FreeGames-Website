@@ -27,6 +27,7 @@ import { DeployScreen } from './deploy.js?v=20261122020853';
 import { CommandWheel } from './command-wheel.js?v=20261122020853';
 import { DroneHud } from './drone-hud.js?v=20261122020853';
 import { compass, tx, onChange as onLangChange } from '../../shared/i18n.js?v=20261122020853';
+import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261122020853';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -1161,14 +1162,18 @@ export class HUD {
       const st = ub || w.current;
       setText(this.el.wName, ub ? `${def.name} · Unterlauf` : def.name);
       const FM = G.data.FIRE_MODES || {};
-      setText(this.el.wMode, melee ? 'Nahkampf' : G.data.fireModeLabel ? G.data.fireModeLabel(def, w.fireMode, false) : FM[def.fireMode] || '');
-      const infinite = G.mode && G.mode.def && G.mode.def.infiniteAmmo;
+      const ud = ub ? UNDER_WEAPONS[ub.id] : null; // Unterlauf: dessen Feuerart (Einzelfeuer), nicht die des Gewehrs
+      setText(this.el.wMode, melee ? 'Nahkampf' : ud ? (G.data.fireModeLabel ? G.data.fireModeLabel(ud, ud.fireMode || 'single', false) : FM[ud.fireMode] || '') : G.data.fireModeLabel ? G.data.fireModeLabel(def, w.fireMode, false) : FM[def.fireMode] || '');
+      const infinite = (G.mode && G.mode.def && G.mode.def.infiniteAmmo) || !!w.infiniteAmmo; // auch MG-Stellung (controller.infiniteAmmo)
+      // Magazingröße der angezeigten Waffe: Unterlauf hat eigene (Granatwerfer 1, Schrot 4) – vorher galt die des Gewehrs
+      // (1 von 30 → Balken fast leer, Dauerhinweis „Munition niedrig“; logik 22.11.)
+      const magSize = ub ? ((UNDER_WEAPONS[ub.id] && UNDER_WEAPONS[ub.id].mag) || 0) : def.mag;
       setText(this.el.mag, melee ? '—' : String(st.mag));
       setText(this.el.reserve, melee ? '' : infinite ? '/ ∞' : `/ ${st.reserve}`);
-      if (this.style === 'reduziert') setStyle(this.el.magbar, 'transform', `scaleX(${melee || !(def.mag > 0) ? 1 : clamp(st.mag / def.mag, 0, 1).toFixed(3)})`);
-      const lowMag = def.mag > 0 && st.mag <= Math.ceil(def.mag * 0.25);
+      if (this.style === 'reduziert') setStyle(this.el.magbar, 'transform', `scaleX(${melee || !(magSize > 0) ? 1 : clamp(st.mag / magSize, 0, 1).toFixed(3)})`);
+      const lowMag = magSize > 1 && st.mag <= Math.ceil(magSize * 0.25); // Einzellader (Werfer, 1 Schuss): voll ist nicht „knapp“
       toggle(this.el.weapon, 'is-low', lowMag && st.mag > 0);
-      toggle(this.el.weapon, 'is-empty', def.mag > 0 && st.mag === 0);
+      toggle(this.el.weapon, 'is-empty', magSize > 0 && st.mag === 0);
       const lethal = w.equipment && w.equipment.lethal;
       const EQ = G.data.EQUIPMENT || {};
       const eq = lethal && lethal.id ? EQ[lethal.id] : null;
@@ -1180,15 +1185,15 @@ export class HUD {
       let cls = '';
       if (alive && !melee) {
         if (w.isReloading) { hint = 'Nachladen'; cls = 'is-reload'; }
-        else if (def.mag > 0 && st.mag === 0 && st.reserve <= 0 && !infinite) {
+        else if (magSize > 0 && st.mag === 0 && st.reserve <= 0 && !infinite) {
           const other = (w.slots || []).find((s) => s && s !== st && s.def);
           const usable = other && (other.def.cls === 'melee' || other.mag > 0 || other.reserve > 0);
           hint = usable ? 'Keine Munition' : 'Keine Munition · Messer';
           key = this._keyFor(usable ? 'swap' : 'melee');
           cls = 'is-empty';
         }
-        else if (def.mag > 0 && st.mag === 0) { hint = 'Nachladen'; key = this._keyFor('reload'); cls = 'is-empty'; }
-        else if (lowMag && def.mag > 5 && this.style !== 'aus' && !this._realAmmo) { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
+        else if (magSize > 0 && st.mag === 0) { hint = 'Nachladen'; key = this._keyFor('reload'); cls = 'is-empty'; }
+        else if (lowMag && magSize > 5 && this.style !== 'aus' && !this._realAmmo) { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
       }
       setText(this.el.ammoHintT, hint);
       setText(this.el.ammoHintK, key);
@@ -1270,7 +1275,10 @@ export class HUD {
     if (p && !p.alive && this._death && G.match.state === 'playing') {
       const left = p.respawnAt != null ? Math.max(0, p.respawnAt - now) : 0;
       const total = p.respawnDelay || (G.mode && G.mode.respawnDelay) || 3;
-      setText(this.el.deathRe, left > 0.05 ? `Wiedereinstieg in ${secs(left)}` : 'Wiedereinstieg …');
+      // Modus ohne Wiedereinstieg in dieser Phase (TDM Ultimate: ein Leben je Runde) – vorher lief „Wiedereinstieg in 5 s“
+      // ab und blieb auf „Wiedereinstieg …“ stehen, bis die Runde vorbei war (logik 22.11.)
+      const note = G.mode && typeof G.mode.respawnNote === 'function' ? G.mode.respawnNote(p) : null;
+      setText(this.el.deathRe, note || (left > 0.05 ? `Wiedereinstieg in ${secs(left)}` : 'Wiedereinstieg …'));
       setStyle(this.el.deathBar, 'transform', `scaleX(${(1 - clamp(left / total, 0, 1)).toFixed(3)})`);
     } else if (!this.el.death.hidden && p && p.alive) this.el.death.hidden = true;
 

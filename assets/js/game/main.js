@@ -647,6 +647,7 @@ function requestLoadout(loadout) {
   if (!p || !loadout || typeof loadout !== 'object') return { ok: false, reason: 'ungueltig' };
   const st = G.match.state;
   if (st !== 'playing' && st !== 'countdown' && st !== 'paused') return { ok: false, reason: 'kein-match' };
+  if (G.mode && G.mode.lockLoadout) return { ok: false, reason: 'modus' }; // Ausrüstung kommt vom Modus (Waffenspiel, Infiziert, Nur Messer)
   // Klassenwechsel: Weste/Helm/Werfer der neuen Klasse (außer ausdrücklich gewählt), Waffen bleiben (alle Klassen dürfen alle)
   const prev = p.loadout || G.match.loadout || {};
   const fallback = loadout.cls && loadout.cls !== prev.cls ? { ...prev, cls: loadout.cls, armor: undefined, helmet: undefined, launcher: undefined } : prev;

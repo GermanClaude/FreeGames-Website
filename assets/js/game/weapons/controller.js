@@ -365,7 +365,14 @@ export class WeaponController {
 
   /** Volle Munition + Granaten (Respawn). */
   refill() {
-    for (const s of this.slots) { s.mag = s.def.mag || 0; s.reserve = s.def.reserve || 0; }
+    for (const s of this.slots) {
+      s.mag = s.def.mag || 0; s.reserve = s.def.reserve || 0;
+      // Unterlauf-Waffe (Granatwerfer/Schrotflinte): eigene Munition ebenfalls voll – blieb sonst über den Tod hinaus leer (logik 22.11.)
+      const U = s.under && UNDER_WEAPONS[s.under.id];
+      if (U) { s.under.mag = U.mag; s.under.reserve = U.reserve; }
+    }
+    this.underOn = false;
+    this._underReloadAt = 0;
     const eq = this.equipment.lethal;
     if (eq.id) { const d = this._equipmentDefs()[eq.id]; eq.count = d ? d.count || 1 : 1; }
     const tq = this.equipment.tactical;
