@@ -115,8 +115,9 @@ export function roundPoly(poly, rc, steps = 4) {
   let area = 0;
   for (let i = 0; i < n; i++) { const a = poly[i], b = poly[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
   const ccw = area > 0;
-  const pts = [], nrm = [];
+  const pts = [], nrm = [], corner = [];
   for (let i = 0; i < n; i++) {
+    while (corner.length < pts.length) corner.push(i - 1);
     const p0 = poly[(i + n - 1) % n], p1 = poly[i], p2 = poly[(i + 1) % n];
     const d0 = [p1[0] - p0[0], p1[1] - p0[1]], d1 = [p2[0] - p1[0], p2[1] - p1[1]];
     const l0 = Math.hypot(d0[0], d0[1]), l1 = Math.hypot(d1[0], d1[1]);
@@ -137,7 +138,8 @@ export function roundPoly(poly, rc, steps = 4) {
       pts.push([c[0] + cx * r, c[1] + sy * r]); nrm.push([cx, sy]);
     }
   }
-  return { pts, nrm };
+  while (corner.length < pts.length) corner.push(n - 1);
+  return { pts, nrm, corner };
 }
 
 /**
@@ -146,7 +148,7 @@ export function roundPoly(poly, rc, steps = 4) {
  * schließen; bulge: Wölbung der Seitenwände nach außen (Mitte). axes: Abbildung (u, v, w) → (x, y, z), z. B. 'xzy'
  * (Turm: u=x, v=z, w=y) oder 'zyx' (Fahrerraum).
  */
-export function prism(poly, w0, w1, { rc = 0.1, r0 = 0.04, r1 = 0.06, cap0 = true, cap1 = true, bulge = 0, steps = 4, arcSteps = 3, axes = 'xzy' } = {}) {
+export function prism(poly, w0, w1, { rc = 0.1, r0 = 0.04, r1 = 0.06, cap0 = true, cap1 = true, bulge = 0, steps = 4, arcSteps = 3, axes = 'xzy', open = null } = {}) {
   const RP = roundPoly(poly, rc, steps);
   const prof = []; // [inset, w, nI, nW] (Normale des Profils: nI nach außen, nW entlang der Achse)
   const arc = (cw, sgn, r, from) => { // Viertelbogen: Hohlkehle zwischen Wand und Stirnseite
@@ -174,6 +176,8 @@ export function prism(poly, w0, w1, { rc = 0.1, r0 = 0.04, r1 = 0.06, cap0 = tru
   const ringN = (pi, k) => { const [, , nI, nW] = prof[k]; const n = RP.nrm[pi], l = Math.hypot(nI, nW) || 1; return map(-n[0] * nI / l, -n[1] * nI / l, -nW / l); };
   for (let k = 0; k < prof.length - 1; k++) for (let i = 0; i < nP; i++) {
     const j = (i + 1) % nP;
+    // open: gerade Stücke dieser Kanten weglassen (Kante i von Ecke i zu Ecke i+1) – Wand mit Öffnung baut der Aufrufer
+    if (open && RP.corner[i] !== RP.corner[j] && open.includes(RP.corner[i])) continue;
     const a = ringPt(i, k), b = ringPt(j, k), c = ringPt(j, k + 1), d = ringPt(i, k + 1);
     const na = ringN(i, k), nb = ringN(j, k), nc = ringN(j, k + 1), nd = ringN(i, k + 1);
     for (const [p, n] of [[a, na], [b, nb], [c, nc], [a, na], [c, nc], [d, nd]]) { P.push(...p); N.push(...n); }
@@ -326,3 +330,40 @@ export function edgeMask(g, { curvLo = 22, curvHi = 90 } = {}) {
 
 /** Kantenmaske ohne Wirkung (Schilder, Bildschirme, Leinwandflächen). */
 export function edgeNone(n) { const a = new Float32Array(n * 4); for (let i = 0; i < n; i++) { a[i * 4] = FAR; a[i * 4 + 1] = FAR; a[i * 4 + 2] = FAR; } return a; }
+
+/**
+ * Wand (Ebene z = 0, Vorderseite +Z) über [x0,x1]×[y0,y1] mit rechteckigen Öffnungen holes [[ax, bx, ay, by] …]
+ * (Nutzer 21.11.: Durchgang Funkerplatz ↔ Kampfraum). Öffnungsecken leicht gerundet.
+ */
+export function holeWall(x0, x1, y0, y1, holes = [], r = 0.03) {
+  const shp = new THREE.Shape();
+  shp.moveTo(x0, y0); shp.lineTo(x1, y0); shp.lineTo(x1, y1); shp.lineTo(x0, y1); shp.lineTo(x0, y0);
+  for (const [ax, bx, ay, by] of holes) {
+    const h = new THREE.Path(), rr = Math.min(r, (bx - ax) / 3, (by - ay) / 3);
+    h.moveTo(ax + rr, ay);
+    h.lineTo(bx - rr, ay); h.quadraticCurveTo(bx, ay, bx, ay + rr);
+    h.lineTo(bx, by - rr); h.quadraticCurveTo(bx, by, bx - rr, by);
+    h.lineTo(ax + rr, by); h.quadraticCurveTo(ax, by, ax, by - rr);
+    h.lineTo(ax, ay + rr); h.quadraticCurveTo(ax, ay, ax + rr, ay);
+    shp.holes.push(h);
+  }
+  const g = new THREE.ShapeGeometry(shp, 3);
+  return g;
+}
+
+/** Laibung/Gang: vier Innenflächen eines Quaders [x0,x1]×[y0,y1]×[z0,z1] (Stirnseiten offen), Flächen nach innen. */
+export function tunnel(x0, x1, y0, y1, z0, z1) {
+  const P = [], N = [];
+  const quad = (a, b, c, d, n) => { for (const p of [a, b, c, a, c, d]) { P.push(...p); N.push(...n); } };
+  quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [0, 1, 0]);   // Boden
+  quad([x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [0, -1, 0]);  // Decke
+  quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [1, 0, 0]);   // links
+  quad([x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1], [-1, 0, 0]);  // rechts
+  // Wicklung nach der Normale ausrichten
+  for (let t = 0; t < P.length; t += 9) {
+    const ux = P[t + 3] - P[t], uy = P[t + 4] - P[t + 1], uz = P[t + 5] - P[t + 2], wx = P[t + 6] - P[t], wy = P[t + 7] - P[t + 1], wz = P[t + 8] - P[t + 2];
+    const fx = uy * wz - uz * wy, fy = uz * wx - ux * wz, fz = ux * wy - uy * wx;
+    if (fx * N[t] + fy * N[t + 1] + fz * N[t + 2] < 0) for (const A of [P, N]) for (let q = 0; q < 3; q++) { const x = A[t + 3 + q]; A[t + 3 + q] = A[t + 6 + q]; A[t + 6 + q] = x; }
+  }
+  return triGeom(P, N);
+}

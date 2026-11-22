@@ -1,9 +1,9 @@
 // Statuszeile, Index (Scroll-Spy aus Schrift), Index-Dialog, untere Leiste, Spielen-Umschaltung,
 // Visierlinie und Überschriften (Eintritt + Stauchung bei schnellem Scrollen).
-import { loop } from './loop.js?v=20261121041936';
-import { reduced, calm } from './motion.js?v=20261121041936';
-import { split, Kinetic } from './kinetic.js?v=20261121041936';
-import { jumpTo } from './jump.js?v=20261121041936';
+import { loop } from './loop.js?v=20261122020853';
+import { reduced, calm } from './motion.js?v=20261122020853';
+import { split, Kinetic } from './kinetic.js?v=20261122020853';
+import { jumpTo } from './jump.js?v=20261122020853';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -203,7 +203,8 @@ export function initNav() {
   if (cta) {
     const io = new IntersectionObserver(([e]) => {
       const away = !e.isIntersecting;
-      if (stPlay) stPlay.hidden = !away;
+      // Startbildschirm (21.11.): „Spielen“ steht in der Statuszeile immer; nur die Leiste unten (Telefon) folgt dem Hero
+      if (stPlay) stPlay.hidden = false;
       document.body.classList.toggle('past-hero', away);
       if (bar) {
         bar.hidden = !away;

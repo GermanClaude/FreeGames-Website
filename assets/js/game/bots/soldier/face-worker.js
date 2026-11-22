@@ -1,8 +1,8 @@
 // NULLPUNKT — Hintergrund-Rechner für Soldatenköpfe: lädt das Kopf-Asset (face-mesh.js), baut Kopfnetz + Morph-Ziele je Profil
 // und backt die Hautkarten (face-skin.js) abseits des Hauptfadens; Puffer werden übertragen (ohne Kopie).
 // Nachrichten: { id, kind: 'mesh', res, profile } → { id, D } · { id, kind: 'tex', look, w, h } → { id, T }
-import { loadHeadAsset, buildHeadData, transferList } from './face-mesh.js?v=20261121041936';
-import { bakeFaceMaps } from './face-skin.js?v=20261121041936';
+import { loadHeadAsset, buildHeadData, transferList } from './face-mesh.js?v=20261122020853';
+import { bakeFaceMaps } from './face-skin.js?v=20261122020853';
 
 self.onmessage = async (e) => {
   const { id, kind, res, profile, look, w, h } = e.data || {};

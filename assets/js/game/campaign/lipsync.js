@@ -49,8 +49,26 @@ const isLetter = (c) => /[a-zäöüß]/.test(c);
 const NUM = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn', 'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn', 'zwanzig'];
 
 /** Text normalisieren: klein, Zahlen ≤ 20 als Wort, übrige Ziffern einzeln. */
+// Andere Sprachen (shared/i18n.js übersetzt die Zeilen vor dem Sprechen): Kyrillisch wird in deutsche Schreibweise
+// umgeschrieben, chinesische Schriftzeichen werden zu je einer Silbe (Konsonant + Vokal aus dem Zeichencode), Akzente
+// (é, à, ñ, ç …) fallen weg – so laufen dieselben Graphem-Regeln, Mund und Lesedauer passen ungefähr.
+const CYR = { а: 'a', б: 'b', в: 'w', г: 'g', д: 'd', е: 'e', ё: 'jo', ж: 'sch', з: 's', и: 'i', й: 'j', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'ch', ц: 'z', ч: 'tsch', ш: 'sch', щ: 'schtsch', ъ: '', ы: 'i', ь: '', э: 'e', ю: 'ju', я: 'ja', і: 'i', ї: 'ji', є: 'je' };
+const CJK_P = { '，': ',', '。': '.', '！': '!', '？': '?', '：': ':', '；': ';', '、': ',', '（': '(', '）': ')', '“': '„', '”': '“', '……': '…', '——': '–' };
+const CJK_C = ['b', 'd', 'g', 'm', 'n', 'l', 'h', 's', 'sch', 'z', 'k', 't', 'w', 'j', 'f', 'p'];
+const CJK_V = ['a', 'e', 'i', 'o', 'u', 'ai', 'ao', 'en', 'an', 'ang'];
+export function romanize(text) {
+  let s = String(text || '');
+  if (/[\u0400-\u04ff]/.test(s)) s = s.replace(/[\u0400-\u04ff]/g, (ch) => { const lo = ch.toLowerCase(); const r = CYR[lo]; return r == null ? ch : (ch !== lo ? r.charAt(0).toUpperCase() + r.slice(1) : r); });
+  if (/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(s)) {
+    s = s.replace(/……|——|[，。！？：；、（）“”]/g, (m) => CJK_P[m] || m);
+    s = s.replace(/[\u3400-\u9fff]/g, (ch) => { const c = ch.charCodeAt(0); return ` ${CJK_C[c % CJK_C.length]}${CJK_V[(c >> 4) % CJK_V.length]} `; });
+  }
+  if (/[^\u0000-\u007f äöüÄÖÜß]/.test(s)) s = s.normalize('NFD').replace(/([^aouAOU])[\u0300-\u036f]+/g, '$1').replace(/[\u0300-\u036f]/g, '').normalize('NFC');
+  return s;
+}
+
 export function normalize(text) {
-  return String(text || '')
+  return romanize(text)
     .replace(/\.\.\./g, '…')
     .replace(/\d+/g, (d) => { const n = Number(d); return n <= 20 ? NUM[n] : d.split('').map((x) => NUM[Number(x)]).join(' '); })
     .toLowerCase();

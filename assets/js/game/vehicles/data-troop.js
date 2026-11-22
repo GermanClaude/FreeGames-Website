@@ -431,7 +431,7 @@ export const TROOP_VEHICLES = {
           out(9, 4.0, 2.3, 'mount'),
         ] },
       ...[[-0.62, -0.15], [0.62, 0.3], [-0.62, 0.55], [0.62, 0.95], [-0.62, 1.25], [0.62, 1.6], [-0.62, 1.95], [0.62, 2.25]].map(([x, z], i) => rider(
-        `schuetze${i + 1}`, `Schütze ${i + 1}`, [x, 0.62, z], [x * 0.75, 1.36, z], [[0, 0, 3.9], [x < 0 ? -2.6 : 2.6, 0, z], [x * 1.4, 0, 3.9]], 'closed', { dist: 9, height: 3.9, pivot: 2.2 },
+        `schuetze${i + 1}`, `Schütze ${i + 1}`, [x, 0.62, z], [x * 0.85, 1.56, z], [[0, 0, 3.9], [x < 0 ? -2.6 : 2.6, 0, z], [x * 1.4, 0, 3.9]], 'closed', { dist: 9, height: 3.9, pivot: 2.2 },
         i >= 6 ? { stand: [x * 0.7, 0.62, 1.85], yaw: [x < 0 ? -PI : -1.2, x < 0 ? 1.2 : PI], fireLabel: 'Dachluke: feuern', hatch: 'loader' } : {},
       )),
     ],
@@ -495,7 +495,7 @@ export const TROOP_VEHICLES = {
           out(11, 4.7, 2.7, 'relTurret'),
         ] },
       ...[[-0.68, 0.55], [0.68, 0.85], [-0.68, 1.15], [0.68, 1.5], [-0.68, 1.85], [0.68, 2.2], [-0.68, 2.55], [0.68, 2.9]].map(([x, z], i) => rider(
-        `schuetze${i + 1}`, `Schütze ${i + 1}`, [x, 0.95, z], [x * 0.8, 1.75, z], [[x * 0.5, 0, 5.3], [x < 0 ? -2.8 : 2.8, 0, z], [0, 0, 5.3]], 'closed', { dist: 11, height: 4.6, pivot: 2.6 },
+        `schuetze${i + 1}`, `Schütze ${i + 1}`, [x, 0.95, z], [x * 0.88, 1.9, z], [[x * 0.5, 0, 5.3], [x < 0 ? -2.8 : 2.8, 0, z], [0, 0, 5.3]], 'closed', { dist: 11, height: 4.6, pivot: 2.6 },
         i >= 6 ? { stand: [x * 0.75, 0.98, 2.75], yaw: [x < 0 ? -PI : -0.9, x < 0 ? 0.9 : PI], fireLabel: 'Dachluke: feuern', hatch: 'loader' } : {},
       )),
     ],
@@ -506,7 +506,7 @@ export const TROOP_VEHICLES = {
     },
     // Kampfraum der Schützen hinten (Aufbau wie SZ-8: Bänke, Rampe, Dachluken); Turmraum klein (Einmann-Turm)
     interior: { scale: 0.8, shift: [0, -0.05, 0.05], breech: [0, 0.42, -0.55], breechScale: 0.42, loaderEye: [0.5, 0.62, 0.35], rack: [0, 0.4, 0.9], rackGrid: [6, 2], basket: false },
-    troop: { z0: 0.15, z1: 3.62, floor: 0.95, roof: 2.18, halfW: 1.18 },
+    troop: { z0: 0.15, z1: 3.62, floor: 0.95, roof: 2.18, halfW: 0.92 }, // innen zwischen den Radkästen (Nutzer 21.11.: Räder ragten in den Raum)
     ramp: { z: 3.89, y0: 0.82, y1: 2.12, w: 2.0, kind: 'rampe' },
     crew: { switchTime: 1.1, faceTol: 0.6 },
     ammo: { mbt_ap: 160, mbt_he: 240 },
@@ -540,7 +540,7 @@ export const TROOP_VEHICLES = {
       cabSeat('driver', 'Fahrer', [-0.55, 1.6, -3.0], [-0.55, 2.52, -3.0], [[-2.4, 0, -3.0], [2.4, 0, -3.0], [0, 0, -5.4], [0, 0, 5.6]], { dist: 12, height: 4.8, pivot: 2.6 }, true),
       cabSeat('passenger', 'Beifahrer', [0.55, 1.6, -3.0], [0.55, 2.52, -3.0], [[2.4, 0, -3.0], [-2.4, 0, -3.0], [0, 0, 5.6]], { dist: 12, height: 4.8, pivot: 2.6 }),
       ...[-1.15, -0.15, 0.85, 1.85].flatMap((z, k) => [-1, 1].map((sx) => rider(
-        `bank${sx < 0 ? 'l' : 'r'}${k + 1}`, `Ladefläche ${sx < 0 ? 'links' : 'rechts'} ${k + 1}`, [sx * 0.72, 1.42, z], [sx * 0.72, 2.42, z],
+        `bank${sx < 0 ? 'l' : 'r'}${k + 1}`, `Ladefläche ${sx < 0 ? 'links' : 'rechts'} ${k + 1}`, [sx * 0.66, 1.42, z], [sx * 0.62, 2.48, z],
         [[sx * 0.6, 0, 5.6], [0, 0, 5.6], [sx * 2.4, 0, z]], 'cabin', { dist: 12, height: 4.8, pivot: 2.6 },
       ))),
     ],

@@ -15,17 +15,17 @@
 // Luken und Innenraum liegen außerhalb der LOD-Stufen (eigene Netze; der Innenraum nur für den lokalen Insassen).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boxUV } from '../engine/textures.js?v=20261121041936';
-import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261121041936';
-import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261121041936';
-import { CIVIL_BUILDERS } from './models-civil.js?v=20261121041936';
-import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261121041936';
-import { attachCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261121041936';
-import { NEW_TANK_BUILDERS, buildTroop, sprocket, idler, weld, hullShell, castTurret, towCable } from './models-tanks.js?v=20261121041936';
-import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261121041936';
-import { eraPaint } from './materials.js?v=20261121041936';
-import { HEAVY_BUILDERS } from './models-heavy.js?v=20261121041936';
-import { TROOP_BUILDERS } from './models-troop.js?v=20261121041936';
+import { boxUV } from '../engine/textures.js?v=20261122020853';
+import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261122020853';
+import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261122020853';
+import { CIVIL_BUILDERS } from './models-civil.js?v=20261122020853';
+import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261122020853';
+import { attachCabin, attachTroopCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261122020853';
+import { NEW_TANK_BUILDERS, buildTroop, sprocket, idler, weld, hullShell, castTurret, towCable } from './models-tanks.js?v=20261122020853';
+import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261122020853';
+import { eraPaint } from './materials.js?v=20261122020853';
+import { HEAVY_BUILDERS } from './models-heavy.js?v=20261122020853';
+import { TROOP_BUILDERS } from './models-troop.js?v=20261122020853';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const PI = Math.PI, HP = PI / 2;
@@ -2501,9 +2501,11 @@ export function createVehicleModel(type, { team = null, quality = 'high', varian
     if (!model.interior) return;
     const v = !!on && !model.wrecked;
     // Detail-Innenraum (cabin.js): erst beim ersten Öffnen gebaut/angehängt – fremde Panzer tragen ihn nie
-    if (v && !cabinTried && !VEHICLES[type].noCabin) {
+    // Transporter ohne Panzer-Innenraum (MTW) bzw. auf Rädern (RS-8): Fahrerkabine + Mannschaftsraum (cabin.js attachTroopCabin)
+    const DV = VEHICLES[type];
+    if (v && !cabinTried && (!DV.noCabin || DV.troop)) {
       cabinTried = true;
-      try { model.cabin = attachCabin(model, VEHICLES[type], S, quality); } catch (err) { console.warn('[vehicles] Innenraum-Ausbau fehlgeschlagen:', err); model.cabin = null; }
+      try { model.cabin = DV.noCabin || DV.drive !== 'tracked' ? (DV.troop ? attachTroopCabin(model, DV, S, quality) : null) : attachCabin(model, DV, S, quality); } catch (err) { console.warn('[vehicles] Innenraum-Ausbau fehlgeschlagen:', err); model.cabin = null; }
     }
     if (model.cabin) setCabinVisible(model.cabin, v);
     model.interior.visible = v;

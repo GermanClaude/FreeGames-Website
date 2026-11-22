@@ -6,30 +6,31 @@
 // Lebenszyklus: new VehicleSystem(G) beim Start; attach(G) je Match (nach Welt/Bots), update(dt) je Frame
 // (nach bots, vor weapons), updateOccupant(player, dt) statt player.update, solange der Spieler sitzt; detach().
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor, isRoleKind, transportTypeFor } from './data.js?v=20261121041936';
-import { Vehicle, newIntent } from './vehicle.js?v=20261121041936';
-import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261121041936';
-import { ShellPool, raycastActors } from './projectiles.js?v=20261121041936';
-import { Breaching } from './breach.js?v=20261121041936';
-import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261121041936';
-import { readPlayerControls, resetControlHolds } from './controls.js?v=20261121041936';
-import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261121041936';
-import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261121041936';
-import { VehicleHUD, projectToScreen } from './hud.js?v=20261121041936';
-import { VehicleAudio } from './audio.js?v=20261121041936';
-import * as MATS from './materials.js?v=20261121041936';
-import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261121041936';
-import { VehicleNet } from './net.js?v=20261121041936';
-import { groundRay } from './sim.js?v=20261121041936';
-import { collisionRay, canOccupy } from '../engine/physics.js?v=20261121041936';
-import { falloff, raycastHumanoid } from '../combat.js?v=20261121041936';
-import { Thermal } from './thermal.js?v=20261121041936';
-import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261121041936';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261121041936';
-import { Aircraft } from './air/aircraft.js?v=20261121041936';
-import { AirSupport, AIR_CAP } from './air/index.js?v=20261121041936';
-import { TransportRides } from './ride.js?v=20261121041936';
-import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261121041936';
+import { VEHICLES, VEHICLE_WEAPONS, VEHICLE_CAUSES, VEHICLE_IDS, respawnFor, vehicleWeapon, tankTypeFor, isRoleKind, transportTypeFor } from './data.js?v=20261122020853';
+import { Vehicle, newIntent } from './vehicle.js?v=20261122020853';
+import { TankProgress, tankSkin, skinUnlocked } from './skins.js?v=20261122020853';
+import { ShellPool, raycastActors } from './projectiles.js?v=20261122020853';
+import { Breaching } from './breach.js?v=20261122020853';
+import { VehicleCamera, dirFromYawPitch } from './camera.js?v=20261122020853';
+import { readPlayerControls, resetControlHolds } from './controls.js?v=20261122020853';
+import { viewsOf, viewOf, fpViewOf, isTp, viewExposed, opticIndex, firstFp, viewAnchor, pinWorld, viewLookDir, worldToRel } from './views.js?v=20261122020853';
+import { WHY_TEXT, loaderHint, isHuman, SHORT } from './crew.js?v=20261122020853';
+import { VehicleHUD, projectToScreen } from './hud.js?v=20261122020853';
+import { VehicleAudio } from './audio.js?v=20261122020853';
+import * as MATS from './materials.js?v=20261122020853';
+import { prepareVehicleModels, createVehicleModel } from './models.js?v=20261122020853';
+import { VehicleNet } from './net.js?v=20261122020853';
+import { groundRay } from './sim.js?v=20261122020853';
+import { collisionRay, canOccupy } from '../engine/physics.js?v=20261122020853';
+import { falloff, raycastHumanoid } from '../combat.js?v=20261122020853';
+import { Thermal } from './thermal.js?v=20261122020853';
+import { updateResupply, supplyHint, supplyDoneText, suppliable } from './resupply.js?v=20261122020853';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261122020853';
+import { Aircraft } from './air/aircraft.js?v=20261122020853';
+import { AirSupport, AIR_CAP } from './air/index.js?v=20261122020853';
+import { TransportRides } from './ride.js?v=20261122020853';
+import { CrewFigures } from './crew-figures.js?v=20261122020853';
+import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261122020853';
 
 // Sichten mit Wärmebild-Umschalter; in Optiken ist der eigene Panzer ausgeblendet (Periskop/Zieloptik, kein Rohr im Bild)
 const THERMAL_VIEWS = new Set(['optic', 'wide', 'peri']);
@@ -687,6 +688,9 @@ export class VehicleSystem {
   removeFromSeat(actor, { teleport = true } = {}) {
     const v = actor && actor.vehicle;
     if (!v) return false;
+    // Near-Plane der Innensicht (camera.js) zurück auf den Normalwert
+    const cam = this.G.camera;
+    if (actor === this.G.player && cam && cam.userData.npNear != null) { cam.near = cam.userData.npNear; cam.userData.npNear = null; cam.updateProjectionMatrix(); }
     const idx = v.seatOf(actor);
     let pos = null;
     if (teleport) {
@@ -899,7 +903,10 @@ export class VehicleSystem {
     this.thermal.update(dt, thermalOk);
     // Zielen: 1P/Optik → Blickrichtung (Strichplatte); Außenansicht → Bildmitte-Strahl (Rohr konvergiert, Ballistik)
     // Innensicht (Turm/Wanne von innen): Kopf schaut frei herum, die Waffe hält ihre Richtung (sonst dreht der Turm mit dem Blick)
-    if (seat.def.mount && seat.def.mount !== 'fixed' && !(eff && eff.interior)) {
+    // Winkelspiegel/Sehschlitze (Sichtgeräte, keine Waffenvisiere) führen die Waffe ebenfalls nicht nach (Nutzer 21.11.:
+    // „schießt durch Wände, wenn du dich umdrehst“ – das Turm-MG folgte dem Blick durch den Winkelspiegel)
+    const visionOnly = !!(eff && (eff.prisms || eff.overlay === 'prism' || eff.overlay === 'slit'));
+    if (seat.def.mount && seat.def.mount !== 'fixed' && !(eff && eff.interior) && !visionOnly) {
       const dir = viewLookDir(v, seat, eff, _d);
       if (!eff.tp || !this.camera.ready) {
         seat.intent.aimDir = (seat.intent.aimDir || new THREE.Vector3()).copy(dir);
@@ -987,8 +994,11 @@ export class VehicleSystem {
     const busy = typeof player._busy === 'function' ? player._busy(G.time.elapsed) : null;
     const blocked = frozen || !!busy;
     const sp = Math.abs(v.body.speed || 0);
-    it.fire = !blocked && input.down('fire');
-    it.firePressed = !blocked && input.pressed('fire');
+    // nicht durch das eigene Fahrzeug (Turm, Lukendeckel, Aufbau) schießen: Blickstrahl trifft die eigene Wanne → Feuersperre
+    const own = !!(G.camera && v.raycast(G.camera.position, G.camera.getWorldDirection(_n), 4));
+    if (own && input.pressed('fire')) this._flash('Feuersperre – eigenes Fahrzeug im Schussfeld');
+    it.fire = !blocked && !own && input.down('fire');
+    it.firePressed = !blocked && !own && input.pressed('fire');
     it.ads = !blocked && (input.active ? input.active('ads') : input.down('ads'));
     it.reload = !frozen && !busy && input.pressed('reload');
     it.swap = !blocked && input.pressed('swap');
@@ -1043,6 +1053,8 @@ export class VehicleSystem {
     }
     for (const v of this.list) { v.sync(dt); this._pinOccupants(v); }
     this._updatePlayer(dt);
+    // sichtbare Besatzung im Innenraum des eigenen Fahrzeugs (crew-figures.js; nur Innensicht)
+    (this.crewFigures || (this.crewFigures = new CrewFigures(this))).update(dt);
     this.air.update(dt);
     this.audio.update(dt, this.list, G.player && G.player.vehicle);
     this._stats.ms = performance.now() - t0;
@@ -1067,6 +1079,7 @@ export class VehicleSystem {
     this.shells.update(dt);
     for (const v of this.list) { v.sync(dt); this._pinOccupants(v); }
     this._updatePlayer(dt);
+    (this.crewFigures || (this.crewFigures = new CrewFigures(this))).update(dt);
     this.air.update(dt);
     this.audio.update(dt, this.list, G.player && G.player.vehicle);
   }

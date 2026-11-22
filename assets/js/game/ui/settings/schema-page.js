@@ -1,9 +1,10 @@
 // NULLPUNKT — Einfache Einstellungsseite: alle Schlüssel einer Schema-Gruppe als Zeilen (Audio, Profil, Spiel).
 
-import { rowHtml, bindRows, syncRows } from './rows.js?v=20261121041936';
+import { rowHtml, bindRows, syncRows } from './rows.js?v=20261122020853';
 
 /** Kurze Erklärungen unter den Beschriftungen (alle Seiten). */
 export const HINTS = {
+  language: 'Sprache von Menüs, HUD, Untertiteln und Sprachausgabe. Automatisch: wie der Browser.',
   touchSensitivity: 'Blick ziehen auf der rechten Bildschirmhälfte.',
   aimAssist: 'Verlangsamt das Zielen über Gegnern und zieht leicht mit – Touch und Controller.',
   autoFire: 'Feuert, sobald ein Gegner im Fadenkreuz ist („einfacher Modus“).',

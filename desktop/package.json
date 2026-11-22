@@ -31,6 +31,8 @@
     "files": [
       "main.js",
       "preload.js",
+      "updater.js",
+      "splash.html",
       "package.json"
     ],
     "extraResources": [
@@ -94,11 +96,21 @@
       "artifactName": "NULLPUNKT-linux.${ext}",
       "syncDesktopName": true
     },
-    "publish": null
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "GermanClaude",
+        "repo": "FreeGames-Website",
+        "releaseType": "release"
+      }
+    ]
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/GermanClaude/FreeGames-Website.git"
   },
-  "desktopName": "nullpunkt.desktop"
+  "desktopName": "nullpunkt.desktop",
+  "dependencies": {
+    "electron-updater": "6.8.11"
+  }
 }

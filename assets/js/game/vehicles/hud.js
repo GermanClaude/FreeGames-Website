@@ -4,9 +4,10 @@
 // das Rohr wirklich zeigt), Treffer-/Schadensblitz, Warnungen, Aussteige-Ring (Pad/VR halten) und die Touch-Knöpfe.
 // Eigene Styles (kein game.css-Eingriff). DOM-Schreibzugriffe nur bei Änderung (zwischengespeicherte Werte).
 import * as THREE from 'three';
-import { DriveHUD } from './hud-drive.js?v=20261121041936';
-import { ViewOverlay, VIEW_CSS } from './views.js?v=20261121041936';
-import { SHORT, loaderSeat } from './crew.js?v=20261121041936';
+import { DriveHUD } from './hud-drive.js?v=20261122020853';
+import { ViewOverlay, VIEW_CSS } from './views.js?v=20261122020853';
+import { SHORT, loaderSeat } from './crew.js?v=20261122020853';
+import { tx } from '../../shared/i18n.js?v=20261122020853';
 
 const CSS = `
 .vh-root{position:absolute;inset:0;pointer-events:none;font-family:var(--font-hud,system-ui,sans-serif);color:var(--np-ink,#e9e6df);z-index:4}
@@ -182,8 +183,10 @@ export class VehicleHUD {
         b.className = `tc-btn vc-btn ${cls}${inVeh ? ' vc-in' : ''}`;
         b.dataset.action = action;
         b.setAttribute('role', 'button');
-        b.setAttribute('aria-label', label.replace('-<br>', ''));
-        b.innerHTML = `<span>${label}</span>`;
+        // Getrennte Wörter („Aus-<br>steigen“) erreicht die Seitenübersetzung nicht (zwei Textknoten) → hier übersetzen
+        const plain = label.replace('-<br>', ''), tr = tx(plain, 'touch');
+        b.setAttribute('aria-label', tr);
+        b.innerHTML = `<span>${tr !== plain ? esc(tr) : label}</span>`;
         tui.appendChild(b);
         this.touch.push(b);
       }

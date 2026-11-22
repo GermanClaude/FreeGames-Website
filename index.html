@@ -12,12 +12,12 @@
 <title>NULLPUNKT – Ego-Shooter im Browser</title>
 <meta name="description" content="Realistischer Ego-Shooter im Browser: zwei Kampagnen, Panzersimulation mit vier Besatzungsplätzen, Infanterie-Simulation ohne HUD, zwölf Modi, zehn Karten, Mehrspieler bis 32 Spieler, VR und Controller. Kostenlos, kein Download, kein Konto, kein Tracking.">
 <meta name="theme-color" content="#0A0B0D">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="de_DE">
 <meta property="og:site_name" content="NULLPUNKT">
 <meta property="og:title" content="NULLPUNKT – Ego-Shooter im Browser">
-<meta property="og:description" content="Ein Schriftmusterbuch, das zurückschießt. Zwei Kampagnen, Panzer- und Infanterie-Simulation, zwölf Modi, zehn Karten, Mehrspieler, VR. Kein Download, kein Konto.">
+<meta property="og:description" content="Realistischer Ego-Shooter im Browser. Zwei Kampagnen, Panzer- und Infanterie-Simulation, zwölf Modi, zehn Karten, Mehrspieler, VR. Kein Download, kein Konto.">
 <!-- Vorschauen (Messenger, soziale Netze) brauchen absolute Adressen: bei anderem Repository/Domain anpassen (README) -->
 <link rel="canonical" href="https://germanclaude.github.io/FreeGames-Website/">
 <meta property="og:url" content="https://germanclaude.github.io/FreeGames-Website/">
@@ -44,27 +44,81 @@
 <link rel="stylesheet" href="assets/css/fonts.css">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/menu.css">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.min.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
-<script>document.documentElement.classList.replace('no-js', 'js');
+<script>(function () {
+var d = document.documentElement;
+d.classList.replace('no-js', 'js');
+// Spielmenü (21.11.): mit JavaScript ist die Startseite ein Hauptmenü mit Kategorie-Bildschirmen statt einer langen Seite
+d.classList.add('shell');
 // app: Desktop-App (Electron) bzw. Android-App früh kennzeichnen (Download-Bereich aus, „Spielen“ immer sichtbar)
-if (window.nullpunktDesktop) document.documentElement.classList.add('is-app', 'is-desktop-app');
-try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) document.documentElement.classList.add('is-app', 'is-android-app'); } catch (e) {}</script>
-<link rel="modulepreload" href="assets/js/site/main.js?v=20261121041936">
-<link rel="modulepreload" href="assets/js/shared/weapons.data.js?v=20261121041936">
-<link rel="modulepreload" href="assets/js/shared/modes.data.js?v=20261121041936">
-<link rel="modulepreload" href="assets/js/shared/maps.data.js?v=20261121041936">
-<link rel="modulepreload" href="assets/js/shared/settings.js?v=20261121041936">
-<script type="module" src="assets/js/site/main.js?v=20261121041936"></script>
-<script type="module" src="assets/js/shared/pwa.js?v=20261121041936"></script>
+if (window.nullpunktDesktop) d.classList.add('is-app', 'is-desktop-app');
+try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) d.classList.add('is-app', 'is-android-app'); } catch (e) {}
+// Ladebildschirm: einmal je Sitzung (?boot=1 erzwingt, ?boot=0 überspringt). Die PC-App zeigt dafür ein eigenes Startfenster.
+var q = location.search, on = false;
+try { on = !sessionStorage.getItem('np-boot'); } catch (e) { on = true; }
+if (d.classList.contains('is-desktop-app') || /[?&]boot=0/.test(q)) on = false;
+if (/[?&]boot=1/.test(q)) on = true;
+if (on) d.classList.add('boot-on');
+})();</script>
+<link rel="modulepreload" href="assets/js/site/main.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/site/menu.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/site/boot.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/shared/i18n.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/shared/i18n/de.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/shared/weapons.data.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/shared/modes.data.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/shared/maps.data.js?v=20261122020853">
+<link rel="modulepreload" href="assets/js/shared/settings.js?v=20261122020853">
+<script type="module" src="assets/js/site/main.js?v=20261122020853"></script>
+<script type="module" src="assets/js/shared/pwa.js?v=20261122020853"></script>
 </head>
 <body>
-<a class="skip" href="#einsatz">Zum Inhalt</a>
+<svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+    <symbol id="i-akte" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/><path d="M12 10.6l1.2 2.3 2.5.4-1.8 1.7.4 2.5-2.3-1.2-2.3 1.2.4-2.5-1.8-1.7 2.5-.4z"/></symbol>
+    <symbol id="i-panzer" viewBox="0 0 24 24"><path d="M3 15.5h18l-2.2 4H5.2z"/><path d="M5.5 15.5v-3h12v3"/><path d="M8.5 12.5V9.5h6l1.2 3"/><path d="M14 10.8h8"/></symbol>
+    <symbol id="i-funk" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.2c2.9-.5 5.4 1.6 5.4 4.8"/></symbol>
+    <symbol id="i-ziel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></symbol>
+    <symbol id="i-waffe" viewBox="0 0 24 24"><path d="M2 10.5h13.5l1.5-1.5h5v3h-3.5l-1 1.2h-3l-1.2 4.3h-3.2l1-4.3H2z"/><path d="M9 13.2l-.6 2"/></symbol>
+    <symbol id="i-karte" viewBox="0 0 24 24"><path d="M3 6.2l6-2.2 6 2.2 6-2.2v13.8l-6 2.2-6-2.2-6 2.2z"/><path d="M9 4v13.8M15 6.2V20"/></symbol>
+    <symbol id="i-news" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="1"/><path d="M7 9h10M7 12.5h6M7 16h8"/></symbol>
+    <symbol id="i-bild" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15"/><circle cx="9" cy="10" r="1.8"/><path d="M3 17l5-5 4 4 3-3 6 6"/></symbol>
+    <symbol id="i-pad" viewBox="0 0 24 24"><path d="M7 7.5h10a4 4 0 014 4l1 5a2.2 2.2 0 01-3.8 1.6L15.8 16H8.2l-2.4 2.1A2.2 2.2 0 012 16.5l1-5a4 4 0 014-4z"/><path d="M8 10.5v3.5M6.25 12.25h3.5M15.5 11h.01M17.8 13h.01"/></symbol>
+    <symbol id="i-zahnrad" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/><circle cx="12" cy="12" r="6.6"/></symbol>
+    <symbol id="i-laden" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 16.5V21h16v-4.5"/></symbol>
+    <symbol id="i-update" viewBox="0 0 24 24"><path d="M20 12a8 8 0 01-14.3 4.9M4 12A8 8 0 0118.3 7.1"/><path d="M18.5 3v4.3h-4.3M5.5 21v-4.3h4.3"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10.5v6.5M12 7v.5"/></symbol>
+    <symbol id="i-aus" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1011.4 0"/></symbol>
+    <symbol id="i-zurueck" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-vor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></symbol>
+  </defs>
+</svg>
+<div class="boot" id="boot" aria-live="polite">
+  <div class="boot-scan" aria-hidden="true"></div>
+  <p class="boot-top" aria-hidden="true"><span class="boot-rec">REC</span><span>KÖRPERKAMERA 07</span><span>KANAL 3 · 41,750</span><span class="boot-conn">VERBINDUNG WIRD AUFGEBAUT</span></p>
+  <div class="boot-mid">
+    <p class="boot-mark">NULLPUNKT<span class="o">.</span></p>
+    <p class="boot-sub">Realistischer Ego-Shooter</p>
+  </div>
+  <div class="boot-low">
+    <p class="boot-step"><span id="boot-step">Spielcode wird geladen …</span><span class="boot-pct" id="boot-pct"></span></p>
+    <div class="boot-bar" id="boot-bar" role="progressbar" aria-label="Ladefortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="5"><i id="boot-fill"></i></div>
+    <ol class="boot-log" id="boot-log" aria-hidden="true"></ol>
+    <p class="boot-tip" id="boot-tip"></p>
+    <button class="boot-skip" type="button" id="boot-skip">Überspringen</button>
+  </div>
+</div>
+<a class="skip" href="#hero-menu">Zum Hauptmenü</a>
 <a class="skip" href="spielen.html?mode=tdm&amp;map=hafen&amp;diff=regulaer&amp;allies=5&amp;enemies=6" data-play>Direkt spielen</a>
 
 <div class="visier" aria-hidden="true"></div>
 
 <header class="status" id="status">
-  <a class="brand" href="#nullpunkt">NULLPUNKT.</a>
+  <a class="brand" href="#nullpunkt"><span class="brand-ic" aria-hidden="true"></span>NULLPUNKT<span class="o">.</span></a>
+  <nav class="crumbs js-only" id="crumbs" aria-label="Pfad"><ol><li><a href="#nullpunkt" data-crumb="root">Hauptmenü</a></li></ol></nav>
   <nav class="index" aria-label="Abschnitte">
     <ol>
       <li><a href="#einsatz" data-t="Einsatz"><span>Einsatz</span></a></li>
@@ -84,48 +138,90 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
   <div class="st-actions">
     <button class="st-index ix-more js-only" type="button" aria-haspopup="dialog" data-open-index>Index</button>
     <button class="st-sound js-only" type="button" aria-pressed="false" id="sound-toggle">Ton: aus</button>
-    <a class="st-play" href="spielen.html?mode=tdm&amp;map=hafen&amp;diff=regulaer&amp;allies=5&amp;enemies=6" data-play data-kill hidden>Spielen<span class="o">.</span></a>
+    <a class="st-play" href="spielen.html?mode=tdm&amp;map=hafen&amp;diff=regulaer&amp;allies=5&amp;enemies=6" data-play data-kill><span class="mi-k" aria-hidden="true">▶</span>Spielen</a>
   </div>
 </header>
 
 <main id="main">
 
-  <!-- §00 ─────────────────────────────────────────────── -->
+  <!-- 00 Hauptmenü (21.11.: Spielmenü statt Scroll-Webseite; ohne JavaScript bleibt alles darunter eine lange Seite) ── -->
   <section id="nullpunkt" class="sec hero" aria-labelledby="h-null">
+    <div class="hero-bg" aria-hidden="true">
+      <picture>
+        <source media="(max-aspect-ratio: 4/5)" srcset="assets/img/neu/hero-hoch.webp 720w" sizes="100vw" width="720" height="1280">
+        <img class="hero-img" src="assets/img/neu/hero.webp" srcset="assets/img/neu/hero-m.webp 1024w, assets/img/neu/hero.webp 1920w" sizes="100vw" width="1920" height="1080" alt="" fetchpriority="high" decoding="async">
+      </picture>
+      <div class="scene" id="scene"></div>
+      <canvas class="dust js-only" id="dust" width="8" height="8"></canvas>
+    </div>
+    <div class="cam" aria-hidden="true">
+      <p class="cam-tl"><span class="cam-rec">REC</span><span class="cam-clock" id="cam-clock">00:00:00</span><span class="cam-id">KÖRPERKAMERA 07</span></p>
+      <p class="cam-tr"><span>KANAL 3 · 41,750</span><span class="cam-sig">SIGNAL <i></i><i></i><i></i><i></i></span><span class="cam-bat">AKKU 86 %</span></p>
+      <div class="cam-compass"><div class="cam-strip"><span>N</span><i></i><span>030</span><i></i><span>060</span><i></i><span>O</span><i></i><span>120</span><i></i><span>150</span><i></i><span>S</span><i></i><span>210</span><i></i><span>240</span><i></i><span>W</span><i></i><span>300</span><i></i><span>330</span><i></i><span>N</span><i></i><span>030</span><i></i><span>060</span><i></i><span>O</span><i></i><span>120</span><i></i><span>150</span><i></i><span>S</span><i></i><span>210</span><i></i><span>240</span><i></i><span>W</span><i></i><span>300</span><i></i><span>330</span><i></i></div></div>
+      <span class="cam-c tl"></span><span class="cam-c tr"></span><span class="cam-c bl"></span><span class="cam-c br"></span>
+    </div>
     <div class="hero-top">
-      <p class="rail-label"><span class="sec-no">§00</span> / NULLPUNKT / Einschießen</p>
+      <p class="rail-label"><span class="sec-no">00</span> Stunde null · Einschießen</p>
       <p class="zero-best" id="zero-best" hidden></p>
     </div>
-    <div class="target" id="target">
-      <p class="zero-cap js-only" id="zero-cap">Fünf Schuss auf den Punkt.<span class="arrow" aria-hidden="true"> ↓</span></p>
-      <h1 class="wordmark" id="h-null" data-fit data-fit-max="420" data-kinetic>
-        <span class="fl" data-fit-wdth="125">NULL</span><span class="fl" data-fit-wdth="100">PUNKT<span class="bull-g">.</span></span>
-      </h1>
-      <button class="bull js-only" type="button" aria-label="Auf den Nullpunkt schießen" id="bull"></button>
-      <div class="holes" id="holes" aria-hidden="true"></div>
-    </div>
-    <div class="zero-line js-only"><p class="zero-msg" id="zero-msg"></p><button class="txt-btn" type="button" id="zero-reset" hidden>Neu einschießen</button></div>
-    <p class="data-line" id="data-line"><span class="nw">12 MODI</span> · <span class="nw">10 KARTEN</span> · <span class="nw">28 WAFFEN</span> · <span class="nw">BIS ZU 63 BOTS</span></p>
-    <div class="hero-body">
-      <p class="lead">Ego-Shooter im Browser. Gegen Bots oder online mit Freunden. Kein Download, kein Konto.</p>
-      <div class="hero-cta">
-        <a class="cta-fill" href="spielen.html?mode=tdm&amp;map=hafen&amp;diff=regulaer&amp;allies=5&amp;enemies=6" data-play data-kill>Sofort spielen<span class="o">.</span></a>
-        <p class="cta-cfg" id="cta-cfg">TDM · IM HAFEN · REGULÄR</p>
-        <a class="cta-down" href="#einsatz">Einsatz zusammenstellen<span class="arrow" aria-hidden="true"> ↓</span></a>
-        <a class="hero-new" href="#neu"><span class="hero-new-tag">Neu</span> Panzersimulation, Kampagne „Eisenwind“, Infanterie-Simulation<span class="arrow" aria-hidden="true"> ↓</span></a>
+    <div class="hero-mark">
+      <div class="target" id="target">
+        <p class="zero-cap js-only" id="zero-cap">Fünf Schuss auf den Punkt.<span class="arrow" aria-hidden="true"> ↓</span></p>
+        <h1 class="wordmark" id="h-null" translate="no" data-fit data-fit-max="420" data-kinetic>
+          <span class="fl" data-fit-wdth="125">NULL</span><span class="fl" data-fit-wdth="100">PUNKT<span class="bull-g">.</span></span>
+        </h1>
+        <button class="bull js-only" type="button" aria-label="Auf den Nullpunkt schießen" id="bull"></button>
+        <div class="holes" id="holes" aria-hidden="true"></div>
       </div>
+      <div class="zero-line js-only"><p class="zero-msg" id="zero-msg"></p><button class="txt-btn" type="button" id="zero-reset" hidden>Neu einschießen</button></div>
+    </div>
+    <div class="hero-foot">
+    <div class="hero-brief">
+      <p class="brief-h">Lage</p>
+      <p class="lead">Ego-Shooter im Browser. Gegen Bots oder online mit Freunden. Kein Download, kein Konto.</p>
+      <p class="data-line" id="data-line"><span class="nw">12 MODI</span> · <span class="nw">10 KARTEN</span> · <span class="nw">28 WAFFEN</span> · <span class="nw">BIS ZU 63 BOTS</span></p>
+      <a class="brief-news" href="#news" id="brief-news">
+        <img src="assets/img/neu/eisenwind-s.webp" width="640" height="274" alt="" loading="lazy" decoding="async">
+        <span class="bn-txt"><span class="bn-tag">Neueste Meldung · <time datetime="2026-11-21">21.11.2026</time></span><span class="bn-t">Neues Hauptmenü, Ladebildschirm und Galerie</span><span class="bn-more">Alle News</span></span>
+      </a>
+    </div>
+    <div class="hero-body">
+      <nav class="hero-cta" aria-label="Hauptmenü" id="hero-menu">
+        <a class="cta-fill" href="spielen.html?mode=tdm&amp;map=hafen&amp;diff=regulaer&amp;allies=5&amp;enemies=6" data-play data-kill><span class="mi-k" aria-hidden="true">▶</span>Sofort spielen</a>
+        <p class="cta-cfg" id="cta-cfg">TDM · IM HAFEN · REGULÄR</p>
+        <ol class="menu menu-main">
+          <li><a class="menu-it" href="#spielen" data-cat="spielen"><svg class="mi-ic" aria-hidden="true"><use href="#i-play"/></svg><span class="mi-l">Spielen</span><span class="mi-s">Einsatz zusammenstellen · Modi</span></a></li>
+          <li><a class="menu-it" href="#kampagnen" data-cat="kampagnen"><svg class="mi-ic" aria-hidden="true"><use href="#i-akte"/></svg><span class="mi-l">Kampagnen</span><span class="mi-s">Stille Grenze · Eisenwind</span></a></li>
+          <li><a class="menu-it" href="#panzer" data-cat="panzer"><svg class="mi-ic" aria-hidden="true"><use href="#i-panzer"/></svg><span class="mi-l">Panzer</span><span class="mi-s">Simulation mit vier Plätzen</span></a></li>
+          <li><a class="menu-it" href="#mehrspieler" data-cat="mehrspieler"><svg class="mi-ic" aria-hidden="true"><use href="#i-funk"/></svg><span class="mi-l">Mehrspieler</span><span class="mi-s">Bis 32 Spieler · Raumcode</span></a></li>
+          <li><a class="menu-it" href="#uebung" data-cat="uebung"><svg class="mi-ic" aria-hidden="true"><use href="#i-ziel"/></svg><span class="mi-l">Übungsgelände</span><span class="mi-s">Schießstand · alle Fahrzeuge</span></a></li>
+          <li><a class="menu-it" href="#waffenkammer" data-cat="waffenkammer"><svg class="mi-ic" aria-hidden="true"><use href="#i-waffe"/></svg><span class="mi-l">Waffenkammer</span><span class="mi-s">Waffen, Aufsätze, Ballistik</span></a></li>
+          <li><a class="menu-it" href="#karten" data-cat="karten"><svg class="mi-ic" aria-hidden="true"><use href="#i-karte"/></svg><span class="mi-l">Karten</span><span class="mi-s">Lagekarten aller Einsatzorte</span></a></li>
+        </ol>
+        <ol class="menu-sub">
+          <li><a class="tile" href="#news" data-cat="news"><svg class="mi-ic" aria-hidden="true"><use href="#i-news"/></svg><span class="tl-l">News</span><span class="tl-badge">Neu</span></a></li>
+          <li><a class="tile" href="#galerie" data-cat="galerie"><svg class="mi-ic" aria-hidden="true"><use href="#i-bild"/></svg><span class="tl-l">Galerie</span></a></li>
+          <li><a class="tile" href="#steuerung" data-cat="steuerung"><svg class="mi-ic" aria-hidden="true"><use href="#i-pad"/></svg><span class="tl-l">Steuerung</span></a></li>
+          <li><a class="tile" href="#einstellungen" data-cat="einstellungen"><svg class="mi-ic" aria-hidden="true"><use href="#i-zahnrad"/></svg><span class="tl-l">Einstellungen</span></a></li>
+          <li><a class="tile" href="#app" data-cat="app"><svg class="mi-ic" aria-hidden="true"><use href="#i-laden"/></svg><span class="tl-l" id="tile-app">App &amp; Downloads</span></a></li>
+          <li><a class="tile" href="#ueber" data-cat="ueber"><svg class="mi-ic" aria-hidden="true"><use href="#i-info"/></svg><span class="tl-l">Über</span></a></li>
+          <li class="app-only" hidden><button class="tile" type="button" id="quit-open" data-cat="beenden"><svg class="mi-ic" aria-hidden="true"><use href="#i-aus"/></svg><span class="tl-l">Beenden</span></button></li>
+        </ol>
+      </nav>
       <p class="touch-play js-only" id="touch-play" hidden><span class="tp-phone" aria-hidden="true"></span><span>Quer halten. Links laufen, rechts zielen und feuern. <a href="#steuerung" id="touch-play-link">Touch-Steuerung</a></span></p>
+    </div>
     </div>
   </section>
 
-  <!-- §01 ─────────────────────────────────────────────── -->
-  <section id="einsatz" class="sec" aria-labelledby="h-einsatz" data-view="deploy">
+  <!-- Kategorie Spielen ─────────────────────────────────────── -->
+  <div class="panel" id="spielen" data-panel="spielen" data-title="Spielen" data-kicker="Einsatz zusammenstellen" data-icon="i-play" data-bg="assets/img/neu/hero-m.webp" role="region" aria-label="Spielen">
+  <section id="einsatz" class="sec" data-tab="Einsatz" aria-labelledby="h-einsatz" data-view="deploy">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§01</span> / EINSATZ / Satzbau</p>
+      <p class="rail-label"><span class="sec-no">01</span> Gefechtsbefehl · Satzbau</p>
       <p class="kicker">Jedes Wort ist eine Wahl.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-einsatz" data-fit data-fit-slots>EINSATZ.</h2>
+      <h2 class="hl" id="h-einsatz">EINSATZ</h2>
       <p class="tagline">Satz für Satz ins Gefecht.</p>
       <form class="satz" id="satz" action="spielen.html" method="get" novalidate>
         <p class="satz-text">
@@ -151,144 +247,50 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       <p class="note" id="note-webgl" hidden>Dein Browser meldet kein WebGL. Das Spiel läuft hier vermutlich nicht.</p>
     </div>
   </section>
-
-  <!-- §02 ─────────────────────────────────────────────── -->
-  <section id="neu" class="sec" aria-labelledby="h-neu" data-view="news">
+  <section id="modi" class="sec" data-tab="Modi" aria-labelledby="h-modi" data-view="modes">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§02</span> / NEU / Stand 20. November 2026</p>
-      <p class="kicker">Was seit Oktober dazugekommen ist. Alle Bilder stammen direkt aus dem Spiel.</p>
+      <p class="rail-label"><span class="sec-no">05</span> Regelwerk · Modi und Serien</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-neu" data-fit data-fit-slots>NEU.</h2>
-      <p class="tagline">Panzer mit echten Handgriffen, zwei Kampagnen, eine Simulation ohne HUD.</p>
-      <div class="news-filter js-only" role="group" aria-label="Neuheiten filtern" id="news-filter" hidden>
-        <button type="button" class="chip" aria-pressed="true" data-f="alle">Alles</button>
-        <button type="button" class="chip" aria-pressed="false" data-f="sim">Simulation</button>
-        <button type="button" class="chip" aria-pressed="false" data-f="kampagne">Kampagnen</button>
-        <button type="button" class="chip" aria-pressed="false" data-f="welt">Welt &amp; Technik</button>
-        <button type="button" class="chip" aria-pressed="false" data-f="geraet">Geräte</button>
-      </div>
-      <p class="sr-only" id="news-count" aria-live="polite"></p>
-      <ul class="news" id="news-list">
-        <li class="news-card is-wide" data-tags="sim">
-          <figure class="news-pic"><img src="assets/img/neu/panzer-innen-s.webp" srcset="assets/img/neu/panzer-innen-s.webp 640w, assets/img/neu/panzer-innen.webp 1280w" sizes="(min-width: 1024px) 48vw, 100vw" width="640" height="428" loading="lazy" decoding="async" alt="Richtschützenplatz im Kampfpanzer: Feuerleitrechner, Schalter für Hauptwaffe, Turmantrieb und Laser-Entfernungsmesser."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Modus Panzer · Simulation</p>
-            <h3>Panzersimulation.</h3>
-            <p>Du übernimmst einen von vier Plätzen: Fahrer, Richtschütze, Ladeschütze oder Kommandant. Den Rest macht die KI-Besatzung. Motor anlassen, Gang einlegen, Waffe scharf schalten, laden, entsichern, Ziel ansprechen: Jeder Handgriff passiert an einem echten Bedienelement im Innenraum. Wucht, Hohlladung, Spreng und Kanister wirken nach Panzerung und Auftreffwinkel.</p>
-            <p class="news-how">Führung wählbar: <strong>Tutorial</strong> zeigt den nächsten Handgriff, <strong>Hilfe</strong> nur auf Taste I, <strong>Aus</strong> lässt dich frei machen. Wer nur fahren und schießen will, nimmt Arcade.</p>
-            <p class="news-go"><a class="play-link" href="spielen.html?mode=panzer&amp;map=grenzland">Panzer-Modus öffnen<span class="o">.</span></a> <a class="txt-link" href="#simulation">Rollen ansehen</a></p>
-          </div>
-        </li>
-        <li class="news-card" data-tags="kampagne sim">
-          <figure class="news-pic"><img src="assets/img/neu/eisenwind-s.webp" srcset="assets/img/neu/eisenwind-s.webp 640w, assets/img/neu/eisenwind.webp 1024w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="274" loading="lazy" decoding="async" alt="Zwischensequenz der Panzer-Kampagne: Blick über ein Dorf im Tal der Miren am frühen Morgen."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Panzer-Kampagne · 6 Einsätze</p>
-            <h3>Eisenwind.</h3>
-            <p>Herbst im Tal der Miren. Mit „Falke 2“ und deiner Besatzung brichst du durch Sperrlinien, hältst eine Höhe, sicherst Nachschub und kämpfst bei Nacht mit Wärmebild. Eine Mission spielt achtzig Jahre früher in einem alten Panzer.</p>
-            <p class="news-go"><a class="txt-link" href="#kampagne" data-camp="eisenwind">Alle sechs Einsätze</a></p>
-          </div>
-        </li>
-        <li class="news-card" data-tags="kampagne">
-          <figure class="news-pic"><img src="assets/img/neu/stille-grenze-s.webp" srcset="assets/img/neu/stille-grenze-s.webp 640w, assets/img/neu/stille-grenze.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="256" loading="lazy" decoding="async" alt="Zwischensequenz der Kampagne Stille Grenze: Soldaten im Südgraben des Niemandslands."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Infanterie-Kampagne · <span data-count="sg-missions">16</span> Missionen · 3 Akte</p>
-            <h3>Stille Grenze.</h3>
-            <p>Drei Wochen Waffenruhe, und jemand will sie brechen. Zwischensequenzen mit deutscher Lippensynchronisation, Checkpoints, gespeicherter Fortschritt. Akt III endet offen, weitere Kapitel folgen.</p>
-            <p class="news-go"><a class="txt-link" href="#kampagne" data-camp="stille-grenze">Alle Missionen</a></p>
-          </div>
-        </li>
-        <li class="news-card is-wide" data-tags="sim">
-          <figure class="news-pic"><img src="assets/img/neu/isim-s.webp" srcset="assets/img/neu/isim-s.webp 640w, assets/img/neu/isim.webp 1280w" sizes="(min-width: 1024px) 48vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Spielstil Simulation im Hafen: kein Fadenkreuz, keine Munitionsanzeige, nur die Liste der Handgriffe."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Spielstil Simulation</p>
-            <h3>Infanterie-Simulation.</h3>
-            <p>Kein HUD, kein Fadenkreuz. Magazine zählen einzeln, halbleere bleiben halbleer. Du lädst durch, sicherst, behebst Ladehemmungen und stellst das Visier auf die Entfernung ein. Treffer verwunden einzelne Körperteile, Blutungen stillst du mit Verband oder Abbinden, und wer zu viel Blut verliert, wird bewusstlos.</p>
-            <p class="news-how">Zu finden in der Lobby unter <strong>Spielstil → Simulation</strong> (in Team-Deathmatch, Herrschaft, Jeder gegen jeden, Stellung, Eroberung, Abschuss bestätigt und der Kampagne).</p>
-            <p class="news-go"><a class="txt-link" href="#simulation">Arcade, Realistisch, Simulation vergleichen</a></p>
-          </div>
-        </li>
-        <li class="news-card" data-tags="welt">
-          <figure class="news-pic"><img src="assets/img/neu/zerstoerung-s.webp" srcset="assets/img/neu/zerstoerung-s.webp 640w, assets/img/neu/zerstoerung.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="320" loading="lazy" decoding="async" alt="Altstadt: Bresche in einer Hauswand nach Dauerfeuer und einer Rakete, mit Staub und Trümmern."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Zerstörung</p>
-            <h3>Wände geben nach.</h3>
-            <p>Einschusslöcher je Kaliber, Querschläger und Durchschüsse. Dauerfeuer frisst sich durch Wände, Sprengungen reißen begehbare Breschen mit gebrochenen Rändern, Ruß und Staub. Türen fallen aus zerschossenen Scharnieren, Bäume kippen, Panzer schieben Gebäude ein.</p>
-          </div>
-        </li>
-        <li class="news-card" data-tags="welt">
-          <figure class="news-pic"><img src="assets/img/neu/gesichter-s.webp" srcset="assets/img/neu/gesichter-s.webp 640w, assets/img/neu/gesichter.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="303" loading="lazy" decoding="async" alt="Nahaufnahme eines Soldaten mit Helm und Headset in einer Zwischensequenz."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Menschen</p>
-            <h3>Gesichter, Körper, Hände.</h3>
-            <p>Ein anatomischer Kopf auf Basis des freien MakeHuman-Grundnetzes mit Mimik, Lidern und Kiefer. Dazu Plattenträger mit Taschen, Helme über der gemessenen Kopfform, zivile Kleidung für die Kampagne und neue Handschuh-Hände in der Ich-Sicht.</p>
-          </div>
-        </li>
-        <li class="news-card" data-tags="welt">
-          <figure class="news-pic"><img src="assets/img/maps/flugplatz-s.webp" srcset="assets/img/maps/flugplatz-s.webp 800w, assets/img/maps/flugplatz.webp 1600w" sizes="(min-width: 1024px) 32vw, 100vw" width="800" height="300" loading="lazy" decoding="async" alt="Karte Flugplatz: Startbahn mit Hangars."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Karten · Fotoscan-Texturen</p>
-            <h3>Mehr Welt.</h3>
-            <p>Zwei neue Großkarten, Flugplatz und Stadtkern, Relief auf allen großen Karten und viel Kleinkram auf den Straßen. 82 Materialien sind echte Fotoscans von Poly Haven (frei, CC0), auf Ultra in doppelter Auflösung.</p>
-            <p class="news-go"><a class="txt-link" href="#vergleich">Vorher und nachher</a></p>
-          </div>
-        </li>
-        <li class="news-card" data-tags="geraet">
-          <figure class="news-pic"><img src="assets/img/neu/tv-modus-s.webp" srcset="assets/img/neu/tv-modus-s.webp 640w, assets/img/neu/tv-modus.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Lobby im TV-Modus mit großer Schrift und Controller-Fokus."></figure>
-          <div class="news-txt">
-            <p class="mono-s">Controller · TV</p>
-            <h3>Vom Sofa aus.</h3>
-            <p>Der Controller, mit dem du gerade spielst, wird erkannt, die Symbole passen sich an (Xbox, PlayStation, Nintendo). Der TV-Modus vergrößert Schrift und Bedienflächen für den Abstand zum Fernseher.</p>
-            <p class="news-go"><a class="txt-link" href="#steuerung" data-ctl="pad">Controller-Belegung</a></p>
-          </div>
-        </li>
-        <li class="news-card" data-tags="geraet">
-          <figure class="news-pic"><img src="assets/img/neu/vr-fernrohr-s.webp" srcset="assets/img/neu/vr-fernrohr-s.webp 640w, assets/img/neu/vr-fernrohr.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="VR-Ansicht: Scharfschützengewehr mit echtem Bild im Zielfernrohr."></figure>
-          <div class="news-txt">
-            <p class="mono-s">VR (Beta)</p>
-            <h3>Nachladen mit der Hand.</h3>
-            <p>Magazin auswerfen, ein neues aus der Gürteltasche holen, einsetzen, durchladen. Das Zielfernrohr zeigt ein echtes vergrößertes Bild, Granaten greifst du an der Brust, die Waffen stecken im Holster an Rücken und Hüfte. Fortbewegung per Stick oder Teleport.</p>
-            <p class="news-go"><a class="txt-link" href="#steuerung" data-ctl="vr">VR-Steuerung</a></p>
-          </div>
-        </li>
-        <li class="news-card is-text" data-tags="geraet">
-          <div class="news-txt">
-            <p class="mono-s">Apps · Mehrspieler</p>
-            <h3>Überall dasselbe Spiel.</h3>
-            <p>PC-App für Windows und Linux, Android-App, und auf dem iPhone als Web-App über den Home-Bildschirm. Im Mehrspieler treffen sich bis zu 32 Spieler mit einem Raumcode, egal ob Browser, Handy, VR-Brille oder PC-App. Einzige Bedingung: alle haben dieselbe Spielfassung.</p>
-            <p class="news-go"><a class="txt-link" href="#app">Herunterladen</a></p>
-          </div>
-        </li>
-      </ul>
-
-      <div class="vgl" id="vergleich">
-        <h3 class="sub-h" id="h-vgl">VORHER. NACHHER.</h3>
-        <p class="sub-copy">Gleiche Stelle, gleiche Kamera, einmal vor und einmal nach einer Überarbeitungsrunde im November. Schieb den Regler.</p>
-        <div class="vgl-pick js-only" role="group" aria-label="Vergleich wählen" id="vgl-pick" hidden>
-          <button type="button" class="chip" aria-pressed="true" data-v="wald">Waldrand</button>
-          <button type="button" class="chip" aria-pressed="false" data-v="hafen">Hafenkai</button>
-          <button type="button" class="chip" aria-pressed="false" data-v="auto">Auto</button>
-        </div>
-        <figure class="vgl-stage" id="vgl-stage">
-          <img class="vgl-a" src="assets/img/neu/vgl-wald-vorher-s.webp" srcset="assets/img/neu/vgl-wald-vorher-s.webp 640w, assets/img/neu/vgl-wald-vorher.webp 1280w" sizes="(min-width: 1024px) 70vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Vorher: Waldrand im Grenzland mit lichten, flachen Bäumen.">
-          <div class="vgl-clip"><img class="vgl-b" src="assets/img/neu/vgl-wald-nachher-s.webp" srcset="assets/img/neu/vgl-wald-nachher-s.webp 640w, assets/img/neu/vgl-wald-nachher.webp 1280w" sizes="(min-width: 1024px) 70vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Nachher: derselbe Waldrand mit dichteren Bäumen und Sträuchern."></div>
-          <span class="vgl-lab vgl-lab-a" aria-hidden="true">Vorher</span><span class="vgl-lab vgl-lab-b" aria-hidden="true">Nachher</span>
-          <span class="vgl-line" aria-hidden="true"></span>
-          <input class="vgl-range js-only" type="range" min="0" max="100" value="50" step="1" aria-label="Vergleich: links vorher, rechts nachher" aria-valuetext="Hälfte vorher, Hälfte nachher">
-          <figcaption class="vgl-cap" id="vgl-cap">Waldrand im Grenzland, Grafikstufe Hoch: vor und nach der Überarbeitung der Bäume (14. November).</figcaption>
-        </figure>
+      <h2 class="hl" id="h-modi">MODI</h2>
+      <p class="tagline"><span data-count="modes">12</span> Modi. Ein Fadenkreuz.</p>
+      <ol class="modes static" id="modes-list">
+        <li><h3>Team-Deathmatch</h3><p class="mono-s">TDM · 6 GEGEN 6 · 40 ABSCHÜSSE · 10 MIN</p><p>Sechs gegen sechs. Wer zuerst 40 erreicht, gewinnt.</p></li>
+        <li><h3>Herrschaft</h3><p class="mono-s">DOM · 6 GEGEN 6 · 150 PUNKTE · 10 MIN</p><p>Drei Flaggen. Halte zwei, und die Uhr arbeitet für dich.</p></li>
+        <li><h3>Jeder gegen jeden</h3><p class="mono-s">FFA · 8 SPIELER · 25 ABSCHÜSSE · 10 MIN</p><p>Acht Spieler. Keine Freunde. 25 Abschüsse.</p></li>
+        <li><h3>Waffenspiel</h3><p class="mono-s">GUN · 8 SPIELER · 18 STUFEN · 10 MIN</p><p>18 Stufen, ein Messer. Jeder Abschuss lädt nach.</p></li>
+        <li><h3>Schießstand</h3><p class="mono-s">TRN · KEIN LIMIT</p><p>Kein Druck, kein Limit. Nur du, die Ziele und jedes Fahrzeug.</p></li>
+      </ol>
+      <div class="serien" id="serien">
+        <h3 class="sub-h" id="h-serien">SERIEN.</h3>
+        <p class="sub-rail">Serienprämien</p>
+        <p class="sub-copy">Abschüsse ohne Tod schalten frei, was über dir kreist.</p>
+        <ol class="streak-line" id="streaks">
+          <li><span class="sn">4</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">Aufklärer.</span></li>
+          <li><span class="sn">5</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">FPV-Drohne.</span></li>
+          <li><span class="sn">6</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">Präzisionsschlag.</span></li>
+          <li><span class="sn">8</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">Wachgeschütz.</span></li>
+        </ol>
+        <dl class="streak-notes" id="streak-notes">
+          <div><dt>4 Abschüsse</dt><dd>Eine Drohne kreist über der Karte und zeigt 30 Sekunden lang alle Gegner auf der Minikarte.</dd></div>
+          <div><dt>5 Abschüsse</dt><dd>Du steuerst eine kleine Kamikaze-Drohne aus der Ich-Sicht: Feuern sprengt sie, Interagieren bricht ab. Dein Körper bleibt so lange stehen und ist verwundbar.</dd></div>
+          <div><dt>6 Abschüsse</dt><dd>Markiere einen Punkt auf der Karte, Sekunden später schlagen drei Raketen in einer Linie ein.</dd></div>
+          <div><dt>8 Abschüsse</dt><dd>Ein automatisches Geschütz bewacht 45 Sekunden lang deine Position.</dd></div>
+        </dl>
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §03 ─────────────────────────────────────────────── -->
+  <!-- Kategorie Kampagnen ─────────────────────────────────────── -->
+  <div class="panel" id="kampagnen" data-panel="kampagnen" data-title="Kampagnen" data-kicker="Missionsauswahl" data-icon="i-akte" data-bg="assets/img/neu/stille-grenze.webp" role="region" aria-label="Kampagnen">
   <section id="kampagne" class="sec" aria-labelledby="h-kampagne" data-view="campaign">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§03</span> / KAMPAGNE / Zwei Geschichten</p>
+      <p class="rail-label"><span class="sec-no">03</span> Einsatzakten · Zwei Geschichten</p>
       <p class="kicker">Alle Namen, Länder und Einheiten sind frei erfunden. Ernst, ohne Verherrlichung.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-kampagne" data-fit data-fit-slots>KAMPAGNE.</h2>
+      <h2 class="hl" id="h-kampagne">KAMPAGNE</h2>
       <p class="tagline">Eine zu Fuß. Eine im Turm.</p>
       <div class="camp-root" id="camp-root">
         <div class="camp-static static">
@@ -305,16 +307,19 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       <p class="camp-go"><a class="cta-fill camp-cta" href="spielen.html?tab=kampagne" id="camp-cta">Kampagne öffnen<span class="o">.</span></a></p>
     </div>
   </section>
+  </div>
 
-  <!-- §04 ─────────────────────────────────────────────── -->
+  <!-- Kategorie Panzer ─────────────────────────────────────── -->
+  <div class="panel" id="panzer" data-panel="panzer" data-title="Panzer" data-kicker="Besatzung und Simulation" data-icon="i-panzer" data-bg="assets/img/neu/panzer-innen.webp" role="region" aria-label="Panzer">
   <section id="simulation" class="sec" aria-labelledby="h-sim" data-view="sim">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§04</span> / SIMULATION / Spielstil</p>
+      <p class="rail-label"><span class="sec-no">04</span> Spielstil · Wie viel hilft das Spiel</p>
       <p class="kicker">Die Werte kommen direkt aus dem Spiel. Umstellen kannst du jederzeit in der Lobby.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-sim" data-fit data-fit-slots>SIMULATION.</h2>
+      <h2 class="hl" id="h-sim">SIMULATION</h2>
       <p class="tagline">Wie viel nimmt dir das Spiel ab?</p>
+      <p class="p-cta"><a class="cta-fill" href="spielen.html?tab=panzer">Panzer-Lobby öffnen<span class="o">.</span></a> <a class="dl-btn" href="spielen.html?mode=panzer&amp;map=grenzland">Panzer im Grenzland</a> <a class="dl-btn" href="spielen.html?tab=eisenwind">Kampagne Eisenwind</a></p>
       <div class="sim-root" id="sim-root">
         <table class="sim-table static">
           <caption class="sr-only">Spielstile im Vergleich</caption>
@@ -340,71 +345,81 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §05 ─────────────────────────────────────────────── -->
-  <section id="modi" class="sec" aria-labelledby="h-modi" data-view="modes">
+  <!-- Kategorie Mehrspieler ─────────────────────────────────────── -->
+  <div class="panel" data-panel="mehrspieler" data-title="Mehrspieler" data-kicker="Funkkreis" data-icon="i-funk" data-bg="assets/img/maps/stadtkern.webp" role="region" aria-label="Mehrspieler">
+  <section id="mehrspieler" class="sec" aria-labelledby="h-mehr" data-view="multi">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§05</span> / MODI / Regelwerk</p>
+      <p class="rail-label"><span class="sec-no">04</span> Funkkreis · Mehrspieler (Beta)</p>
+      <p class="kicker">Browser, Handy, VR und PC-App in denselben Räumen.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-modi" data-fit data-fit-slots>MODI.</h2>
-      <p class="tagline"><span data-count="modes">12</span> Modi. Ein Fadenkreuz.</p>
-      <ol class="modes static" id="modes-list">
-        <li><h3>Team-Deathmatch</h3><p class="mono-s">TDM · 6 GEGEN 6 · 40 ABSCHÜSSE · 10 MIN</p><p>Sechs gegen sechs. Wer zuerst 40 erreicht, gewinnt.</p></li>
-        <li><h3>Herrschaft</h3><p class="mono-s">DOM · 6 GEGEN 6 · 150 PUNKTE · 10 MIN</p><p>Drei Flaggen. Halte zwei, und die Uhr arbeitet für dich.</p></li>
-        <li><h3>Jeder gegen jeden</h3><p class="mono-s">FFA · 8 SPIELER · 25 ABSCHÜSSE · 10 MIN</p><p>Acht Spieler. Keine Freunde. 25 Abschüsse.</p></li>
-        <li><h3>Waffenspiel</h3><p class="mono-s">GUN · 8 SPIELER · 18 STUFEN · 10 MIN</p><p>18 Stufen, ein Messer. Jeder Abschuss lädt nach.</p></li>
-        <li><h3>Schießstand</h3><p class="mono-s">TRN · KEIN LIMIT</p><p>Kein Druck, kein Limit. Nur du und die Ziele.</p></li>
-      </ol>
-      <div class="serien" id="serien">
-        <h3 class="sub-h" id="h-serien">SERIEN.</h3>
-        <p class="sub-rail">Serienprämien</p>
-        <p class="sub-copy">Abschüsse ohne Tod schalten frei, was über dir kreist.</p>
-        <ol class="streak-line" id="streaks">
-          <li><span class="sn">4</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">Aufklärer.</span></li>
-          <li><span class="sn">5</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">FPV-Drohne.</span></li>
-          <li><span class="sn">6</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">Präzisionsschlag.</span></li>
-          <li><span class="sn">8</span><span class="sdash" aria-hidden="true"> — </span><span class="snm">Wachgeschütz.</span></li>
-        </ol>
-        <dl class="streak-notes" id="streak-notes">
-          <div><dt>4 Abschüsse</dt><dd>Eine Drohne kreist über der Karte und zeigt 30 Sekunden lang alle Gegner auf der Minikarte.</dd></div>
-          <div><dt>5 Abschüsse</dt><dd>Du steuerst eine kleine Kamikaze-Drohne aus der Ich-Sicht: Feuern sprengt sie, Interagieren bricht ab. Dein Körper bleibt so lange stehen und ist verwundbar.</dd></div>
-          <div><dt>6 Abschüsse</dt><dd>Markiere einen Punkt auf der Karte, Sekunden später schlagen drei Raketen in einer Linie ein.</dd></div>
-          <div><dt>8 Abschüsse</dt><dd>Ein automatisches Geschütz bewacht 45 Sekunden lang deine Position.</dd></div>
-        </dl>
+      <h2 class="hl" id="h-mehr">MEHRSPIELER</h2>
+      <p class="tagline">Bis zu 32 Spieler in einem Raum. Ein Code genügt.</p>
+      <div class="mp-grid">
+        <article class="mp-card mp-host" aria-labelledby="mp-h-host">
+          <h3 class="mono-h" id="mp-h-host">Raum öffnen</h3>
+          <p>In der Lobby den Reiter <strong>Mehrspieler</strong> wählen und einen Raum erstellen. Als Host bestimmst du Modus, Karte und Bots; den sechsstelligen Raumcode oder den Einladungslink schickst du deinen Leuten.</p>
+          <p class="mp-act"><a class="dl-btn is-main" href="spielen.html">Lobby öffnen</a></p>
+        </article>
+        <article class="mp-card mp-join-card" aria-labelledby="mp-h-join">
+          <h3 class="mono-h" id="mp-h-join">Raum beitreten</h3>
+          <form class="mp-join" action="spielen.html" method="get" autocomplete="off">
+            <label class="mp-lab" for="mp-code">Raumcode</label>
+            <span class="mp-row"><input class="mp-code" id="mp-code" name="raum" type="text" inputmode="text" maxlength="6" minlength="6" pattern="[A-HJ-NP-Za-hj-np-z2-9]{6}" placeholder="ABC234" spellcheck="false" autocapitalize="characters" required><button class="dl-btn is-main" type="submit">Beitreten</button></span>
+          </form>
+          <p class="dl-note">Sechs Zeichen, ohne I, O, 0 und 1. Mit einem Einladungslink geht es direkt in den Raum.</p>
+        </article>
+        <article class="mp-card" aria-labelledby="mp-h-info">
+          <h3 class="mono-h" id="mp-h-info">Gut zu wissen</h3>
+          <ul class="app-feat">
+            <li>Bots füllen freie Plätze auf, bis 32 Spieler je Raum.</li>
+            <li>Die Geräte verbinden sich direkt miteinander; einen eigenen Spielserver gibt es nicht.</li>
+            <li>Alle brauchen dieselbe Spielfassung. Die PC-App sagt Bescheid, wenn die Webseite neuer ist.</li>
+            <li>Einladungslinks aus der PC-App zeigen auf die Webseite, damit alle mitkommen.</li>
+          </ul>
+        </article>
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §06 ─────────────────────────────────────────────── -->
-  <section id="karten" class="sec" aria-labelledby="h-karten" data-view="maps">
+  <!-- Kategorie Übungsgelände ─────────────────────────────────────── -->
+  <div class="panel" data-panel="uebung" data-title="Übungsgelände" data-kicker="Schießstand und Fahrzeughof" data-icon="i-ziel" data-bg="assets/img/maps/range.webp" role="region" aria-label="Übungsgelände">
+  <section id="uebung" class="sec" aria-labelledby="h-uebung">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§06</span> / KARTEN / Sichtlinien-Satz</p>
-      <p class="kicker js-only">Bewege dich durch den Plan. Was du siehst, steht fett.</p>
+      <p class="rail-label"><span class="sec-no">05</span> Übungsgelände Nullpunkt</p>
+      <p class="kicker">Allein, ohne Gegner, ohne Zeitdruck.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-karten" data-fit data-fit-slots data-act="light">KARTEN.</h2>
-      <p class="tagline">Miss zweimal. Schieß einmal.</p>
-      <div class="maps-root" id="maps-root">
-        <ul class="maps-static static">
-          <li><h3>Hafen</h3><p>Containerlabyrinth, Portalkran und Lagerhalle bei klarem Nachmittagslicht.</p></li>
-          <li><h3>Altstadt</h3><p>Mediterrane Gassen, Markt und Dachterrassen in der Mittagssonne.</p></li>
-          <li><h3>Werk</h3><p>Industriehalle mit Laufstegen, Pressen und Lkw-Hof bei Tageslicht.</p></li>
-          <li><h3>Schießstand</h3><p>Trainingsanlage mit Klappzielen von 10 bis 100 Metern.</p></li>
+      <h2 class="hl" id="h-uebung">ÜBUNGSGELÄNDE</h2>
+      <p class="tagline">Schießstand in der Mitte, drumherum 2,6 × 2,6 Kilometer zum Ausprobieren.</p>
+      <div class="ub-grid">
+        <figure class="ub-pic"><img src="assets/img/maps/range-s.webp" srcset="assets/img/maps/range-s.webp 800w, assets/img/maps/range.webp 1600w" sizes="(min-width: 1024px) 50vw, 100vw" width="800" height="300" loading="lazy" decoding="async" alt="Übungsgelände: Schießbahnen mit Klappzielen bei kühlem Morgenlicht."></figure>
+        <ul class="ub-list">
+          <li><strong>Schießstand</strong> mit acht Bahnen, Klappzielen auf 10 bis 100 Metern und Trefferstatistik.</li>
+          <li><strong>Fahrzeughof</strong>: jedes Muster zum Einsteigen, vom Kampfpanzer bis zum Kastenwagen.</li>
+          <li><strong>Fahrstrecke</strong> mit Slalom, Rampe, Seitenneigung, Graben und Furt.</li>
+          <li><strong>Panzerschießbahn</strong> mit Zielen auf 200 bis 2500 Metern und Trefferanzeige.</li>
+          <li><strong>Flugfeld</strong>: Jets von der 1200-m-Bahn, Hubschrauber von drei Landeplätzen, Ballons und Zieldrohnen.</li>
         </ul>
       </div>
+      <p class="ub-act"><a class="cta-fill" href="spielen.html?mode=training&amp;map=range">Übungsgelände betreten<span class="o">.</span></a> <a class="dl-btn" href="spielen.html?tab=kampagne">Grundausbildung (Mission 0)</a></p>
     </div>
   </section>
+  </div>
 
-  <!-- §07 ─────────────────────────────────────────────── -->
+  <!-- Kategorie Waffenkammer ─────────────────────────────────────── -->
+  <div class="panel" id="waffenkammer" data-panel="waffenkammer" data-title="Waffenkammer" data-kicker="Waffen und Ausrüstung" data-icon="i-waffe" role="region" aria-label="Waffenkammer">
   <section id="arsenal" class="sec" aria-labelledby="h-arsenal" data-view="arsenal">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§07</span> / ARSENAL / Schriftmusterbuch</p>
+      <p class="rail-label"><span class="sec-no">07</span> Waffenkammer · Schussbild und Reichweite</p>
       <p class="kicker">Breite ist Reichweite. Stärke ist Schaden.</p>
       <div class="w-index-slot" id="w-index-rail"></div>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-arsenal" data-fit data-fit-slots data-act="wave">ARSENAL.</h2>
+      <h2 class="hl" id="h-arsenal" data-act="wave">ARSENAL</h2>
       <p class="tagline">Jede Waffe hat ihren eigenen Schnitt.</p>
       <div class="arsenal-root" id="arsenal-root">
         <ul class="arsenal-static static">
@@ -413,42 +428,312 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §08 ─────────────────────────────────────────────── -->
-  <section id="profil" class="sec" aria-labelledby="h-profil" data-view="profile">
+  <!-- Kategorie Karten ─────────────────────────────────────── -->
+  <div class="panel" data-panel="karten" data-title="Karten" data-kicker="Lagekarten" data-icon="i-karte" role="region" aria-label="Karten">
+  <section id="karten" class="sec" aria-labelledby="h-karten" data-view="maps">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§08</span> / PROFIL / Dein Schnitt</p>
+      <p class="rail-label"><span class="sec-no">06</span> Lagekarte · Sichtlinien</p>
+      <p class="kicker js-only">Bewege dich durch den Plan. Was du siehst, steht fett.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-profil" data-fit data-fit-slots data-act="cut">PROFIL.</h2>
-      <p class="tagline">Dein Schnitt, gesetzt aus deinen Treffern.</p>
-      <div class="profile-root" id="profile-root">
-        <p class="static">Noch kein Einsatz. Dein Schnitt ist ungeschrieben.</p>
+      <h2 class="hl" id="h-karten" data-act="light">KARTEN</h2>
+      <p class="tagline">Miss zweimal. Schieß einmal.</p>
+      <div class="maps-root" id="maps-root">
+        <ul class="maps-static static">
+          <li><h3>Hafen</h3><p>Containerlabyrinth, Portalkran und Lagerhalle bei klarem Nachmittagslicht.</p></li>
+          <li><h3>Altstadt</h3><p>Mediterrane Gassen, Markt und Dachterrassen in der Mittagssonne.</p></li>
+          <li><h3>Werk</h3><p>Industriehalle mit Laufstegen, Pressen und Lkw-Hof bei Tageslicht.</p></li>
+          <li><h3>Schießstand</h3><p>Trainingsanlage mit Klappzielen von 10 bis 100 Metern – und drumherum ein Übungsgelände mit allen Fahrzeugen, Fahrstrecke, Panzerschießbahn bis 2500 Metern und Flugfeld.</p></li>
+        </ul>
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §09 ─────────────────────────────────────────────── -->
-  <section id="einstellungen" class="sec" aria-labelledby="h-einst" data-view="settings">
+  <!-- Kategorie News ─────────────────────────────────────── -->
+  <div class="panel" id="news" data-panel="news" data-title="News" data-kicker="Lagemeldungen" data-icon="i-news" data-bg="assets/img/neu/eisenwind.webp" role="region" aria-label="News">
+  <section id="neu" class="sec" aria-labelledby="h-neu" data-view="news">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§09</span> / EINSTELLUNGEN / Setzkasten</p>
+      <p class="rail-label"><span class="sec-no">02</span> Lagemeldung · Stand 21. November 2026</p>
+      <p class="kicker">Was seit Oktober dazugekommen ist. Alle Bilder stammen direkt aus dem Spiel.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-einst" data-fit data-fit-slots data-act="lens">EINSTELLUNGEN.</h2>
-      <p class="tagline">Gilt für Website und Spiel.</p>
-      <div class="settings-root" id="settings-root">
-        <p class="static nojs-only">Die Einstellungen brauchen JavaScript.</p>
+      <h2 class="hl" id="h-neu">NEWS</h2>
+      <p class="tagline">Patch-Notizen und Neuigkeiten, die neuesten oben. Alle Bilder stammen direkt aus dem Spiel.</p>
+      <div class="news-filter js-only" role="group" aria-label="Neuheiten filtern" id="news-filter" hidden>
+        <button type="button" class="chip" aria-pressed="true" data-f="alle">Alles</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="sim">Simulation</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="kampagne">Kampagnen</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="welt">Welt &amp; Technik</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="geraet">Geräte</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="archiv">Chronik</button>
+      </div>
+      <p class="sr-only" id="news-count" aria-live="polite"></p>
+      <ul class="news" id="news-list">
+        <li data-date="2026-11-21" class="news-card is-wide" data-tags="geraet">
+          <figure class="news-pic"><img src="assets/img/neu/hero-m.webp" srcset="assets/img/neu/hero-m.webp 1024w, assets/img/neu/hero.webp 1920w" sizes="(min-width: 1024px) 48vw, 100vw" width="1024" height="576" loading="lazy" decoding="async" alt="Hauptmenü vor dem Stadtkern: Körperkamera-Einblendung, Menüleiste und Lagemeldung."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-21">21.11.2026</time></p>
+            <p class="mono-s">Startseite · PC-App</p>
+            <h3>Neues Hauptmenü.</h3>
+            <p>Die Startseite ist jetzt ein Spielmenü: Jede Kategorie öffnet sich als eigener Bildschirm, bedienbar mit Maus, Tastatur, Controller und Touch. Die PC-App startet mit einem Ladebildschirm, der Spieldaten, Texturen und Updates prüft. Neu sind außerdem die Galerie mit allen Bildern und die News als eigene Kategorie.</p>
+            <p class="news-go"><a class="txt-link" href="#galerie">Zur Galerie</a> <a class="txt-link" href="#einstellungen">Sprache und Einstellungen</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-20" class="news-card" data-tags="kampagne sim">
+          <figure class="news-pic"><img src="assets/img/neu/eisenwind-s.webp" srcset="assets/img/neu/eisenwind-s.webp 640w, assets/img/neu/eisenwind.webp 1024w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="274" loading="lazy" decoding="async" alt="Zwischensequenz der Panzer-Kampagne: Blick über ein Dorf im Tal der Miren am frühen Morgen."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-20">20.11.2026</time></p>
+            <p class="mono-s">Panzer-Kampagne · 6 Einsätze</p>
+            <h3>Eisenwind.</h3>
+            <p>Herbst im Tal der Miren. Mit „Falke 2“ und deiner Besatzung brichst du durch Sperrlinien, hältst eine Höhe, sicherst Nachschub und kämpfst bei Nacht mit Wärmebild. Eine Mission spielt achtzig Jahre früher in einem alten Panzer.</p>
+            <p class="news-go"><a class="txt-link" href="#kampagne" data-camp="eisenwind">Alle sechs Einsätze</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-20" class="news-card is-wide" data-tags="sim">
+          <figure class="news-pic"><img src="assets/img/neu/isim-s.webp" srcset="assets/img/neu/isim-s.webp 640w, assets/img/neu/isim.webp 1280w" sizes="(min-width: 1024px) 48vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Spielstil Simulation im Hafen: kein Fadenkreuz, keine Munitionsanzeige, nur die Liste der Handgriffe."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-20">20.11.2026</time></p>
+            <p class="mono-s">Spielstil Simulation</p>
+            <h3>Infanterie-Simulation.</h3>
+            <p>Kein HUD, kein Fadenkreuz. Magazine zählen einzeln, halbleere bleiben halbleer. Du lädst durch, sicherst, behebst Ladehemmungen und stellst das Visier auf die Entfernung ein. Treffer verwunden einzelne Körperteile, Blutungen stillst du mit Verband oder Abbinden, und wer zu viel Blut verliert, wird bewusstlos.</p>
+            <p class="news-how">Zu finden in der Lobby unter <strong>Spielstil → Simulation</strong> (in Team-Deathmatch, Herrschaft, Jeder gegen jeden, Stellung, Eroberung, Abschuss bestätigt und der Kampagne).</p>
+            <p class="news-go"><a class="txt-link" href="#simulation">Arcade, Realistisch, Simulation vergleichen</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-20" class="news-card" data-tags="geraet">
+          <figure class="news-pic"><img src="assets/img/neu/tv-modus-s.webp" srcset="assets/img/neu/tv-modus-s.webp 640w, assets/img/neu/tv-modus.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Lobby im TV-Modus mit großer Schrift und Controller-Fokus."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-20">20.11.2026</time></p>
+            <p class="mono-s">Controller · TV</p>
+            <h3>Vom Sofa aus.</h3>
+            <p>Der Controller, mit dem du gerade spielst, wird erkannt, die Symbole passen sich an (Xbox, PlayStation, Nintendo). Der TV-Modus vergrößert Schrift und Bedienflächen für den Abstand zum Fernseher.</p>
+            <p class="news-go"><a class="txt-link" href="#steuerung" data-ctl="pad">Controller-Belegung</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-20" class="news-card" data-tags="geraet">
+          <figure class="news-pic"><img src="assets/img/neu/vr-fernrohr-s.webp" srcset="assets/img/neu/vr-fernrohr-s.webp 640w, assets/img/neu/vr-fernrohr.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="VR-Ansicht: Scharfschützengewehr mit echtem Bild im Zielfernrohr."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-20">20.11.2026</time></p>
+            <p class="mono-s">VR (Beta)</p>
+            <h3>Nachladen mit der Hand.</h3>
+            <p>Magazin auswerfen, ein neues aus der Gürteltasche holen, einsetzen, durchladen. Das Zielfernrohr zeigt ein echtes vergrößertes Bild, Granaten greifst du an der Brust, die Waffen stecken im Holster an Rücken und Hüfte. Fortbewegung per Stick oder Teleport.</p>
+            <p class="news-go"><a class="txt-link" href="#steuerung" data-ctl="vr">VR-Steuerung</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-19" class="news-card is-wide" data-tags="sim">
+          <figure class="news-pic"><img src="assets/img/neu/panzer-innen-s.webp" srcset="assets/img/neu/panzer-innen-s.webp 640w, assets/img/neu/panzer-innen.webp 1280w" sizes="(min-width: 1024px) 48vw, 100vw" width="640" height="428" loading="lazy" decoding="async" alt="Richtschützenplatz im Kampfpanzer: Feuerleitrechner, Schalter für Hauptwaffe, Turmantrieb und Laser-Entfernungsmesser."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-19">19.11.2026</time></p>
+            <p class="mono-s">Modus Panzer · Simulation</p>
+            <h3>Panzersimulation.</h3>
+            <p>Du übernimmst einen von vier Plätzen: Fahrer, Richtschütze, Ladeschütze oder Kommandant. Den Rest macht die KI-Besatzung. Motor anlassen, Gang einlegen, Waffe scharf schalten, laden, entsichern, Ziel ansprechen: Jeder Handgriff passiert an einem echten Bedienelement im Innenraum. Wucht, Hohlladung, Spreng und Kanister wirken nach Panzerung und Auftreffwinkel.</p>
+            <p class="news-how">Führung wählbar: <strong>Tutorial</strong> zeigt den nächsten Handgriff, <strong>Hilfe</strong> nur auf Taste I, <strong>Aus</strong> lässt dich frei machen. Wer nur fahren und schießen will, nimmt Arcade.</p>
+            <p class="news-go"><a class="play-link" href="spielen.html?mode=panzer&amp;map=grenzland">Panzer-Modus öffnen<span class="o">.</span></a> <a class="txt-link" href="#simulation">Rollen ansehen</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-19" class="news-card" data-tags="welt">
+          <figure class="news-pic"><img src="assets/img/neu/zerstoerung-s.webp" srcset="assets/img/neu/zerstoerung-s.webp 640w, assets/img/neu/zerstoerung.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="320" loading="lazy" decoding="async" alt="Altstadt: Bresche in einer Hauswand nach Dauerfeuer und einer Rakete, mit Staub und Trümmern."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-19">19.11.2026</time></p>
+            <p class="mono-s">Zerstörung</p>
+            <h3>Wände geben nach.</h3>
+            <p>Einschusslöcher je Kaliber, Querschläger und Durchschüsse. Dauerfeuer frisst sich durch Wände, Sprengungen reißen begehbare Breschen mit gebrochenen Rändern, Ruß und Staub. Türen fallen aus zerschossenen Scharnieren, Bäume kippen, Panzer schieben Gebäude ein.</p>
+          </div>
+        </li>
+        <li data-date="2026-11-15" class="news-card" data-tags="welt">
+          <figure class="news-pic"><img src="assets/img/neu/gesichter-s.webp" srcset="assets/img/neu/gesichter-s.webp 640w, assets/img/neu/gesichter.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="303" loading="lazy" decoding="async" alt="Nahaufnahme eines Soldaten mit Helm und Headset in einer Zwischensequenz."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-15">15.11.2026</time></p>
+            <p class="mono-s">Menschen</p>
+            <h3>Gesichter, Körper, Hände.</h3>
+            <p>Ein anatomischer Kopf auf Basis des freien MakeHuman-Grundnetzes mit Mimik, Lidern und Kiefer. Dazu Plattenträger mit Taschen, Helme über der gemessenen Kopfform, zivile Kleidung für die Kampagne und neue Handschuh-Hände in der Ich-Sicht.</p>
+          </div>
+        </li>
+        <li data-date="2026-11-14" class="news-card" data-tags="kampagne">
+          <figure class="news-pic"><img src="assets/img/neu/stille-grenze-s.webp" srcset="assets/img/neu/stille-grenze-s.webp 640w, assets/img/neu/stille-grenze.webp 1280w" sizes="(min-width: 1024px) 32vw, 100vw" width="640" height="256" loading="lazy" decoding="async" alt="Zwischensequenz der Kampagne Stille Grenze: Soldaten im Südgraben des Niemandslands."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-14">14.11.2026</time></p>
+            <p class="mono-s">Infanterie-Kampagne · <span data-count="sg-missions">16</span> Missionen · 3 Akte</p>
+            <h3>Stille Grenze.</h3>
+            <p>Drei Wochen Waffenruhe, und jemand will sie brechen. Zwischensequenzen mit deutscher Lippensynchronisation, Checkpoints, gespeicherter Fortschritt. Akt III endet offen, weitere Kapitel folgen.</p>
+            <p class="news-go"><a class="txt-link" href="#kampagne" data-camp="stille-grenze">Alle Missionen</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-14" class="news-card" data-tags="welt">
+          <figure class="news-pic"><img src="assets/img/maps/flugplatz-s.webp" srcset="assets/img/maps/flugplatz-s.webp 800w, assets/img/maps/flugplatz.webp 1600w" sizes="(min-width: 1024px) 32vw, 100vw" width="800" height="300" loading="lazy" decoding="async" alt="Karte Flugplatz: Startbahn mit Hangars."></figure>
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-14">14.11.2026</time></p>
+            <p class="mono-s">Karten · Fotoscan-Texturen</p>
+            <h3>Mehr Welt.</h3>
+            <p>Zwei neue Großkarten, Flugplatz und Stadtkern, Relief auf allen großen Karten und viel Kleinkram auf den Straßen. 82 Materialien sind echte Fotoscans von Poly Haven (frei, CC0), auf Ultra in doppelter Auflösung.</p>
+            <p class="news-go"><a class="txt-link" href="#galerie">Vorher und nachher</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-14" class="news-card is-text" data-tags="geraet">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-14">14.11.2026</time></p>
+            <p class="mono-s">Apps · Mehrspieler</p>
+            <h3>Überall dasselbe Spiel.</h3>
+            <p>PC-App für Windows und Linux, Android-App, und auf dem iPhone als Web-App über den Home-Bildschirm. Im Mehrspieler treffen sich bis zu 32 Spieler mit einem Raumcode, egal ob Browser, Handy, VR-Brille oder PC-App. Einzige Bedingung: alle haben dieselbe Spielfassung.</p>
+            <p class="news-go"><a class="txt-link" href="#app">Herunterladen</a></p>
+          </div>
+        </li>
+        <li data-date="2026-11-20" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-20">20.11.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Pilotenklasse.</h3>
+            <p>Neue Klasse Pilot für Jets und Hubschrauber. Bots fliegen nicht mehr selbst, die Fahrzeug- und Luft-KI am Boden wurde entschärft.</p>
+          </div>
+        </li>
+        <li data-date="2026-11-13" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-11-13">13.11.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Waffen, zweite Detailstufe.</h3>
+            <p>Werfer, Nahkampfwaffen und Granaten neu gebaut, feinere Modelle und Texturen für das ganze Arsenal.</p>
+          </div>
+        </li>
+        <li data-date="2026-10-27" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-10-27">27.10.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>VR mit Händen.</h3>
+            <p>Waffen beidhändig halten, Holster an Rücken und Hüfte, echtes Gehen im Raum. Dazu drei neue Waffen und der Modus Stellung.</p>
+          </div>
+        </li>
+        <li data-date="2026-10-22" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-10-22">22.10.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Flüssiger überall.</h3>
+            <p>Mehr Bilder pro Sekunde auf allen Geräten, Versorgungsstationen auf den Karten, Panzer schieben Gebäude ein, detailliertere Soldaten.</p>
+          </div>
+        </li>
+        <li data-date="2026-10-21" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-10-21">21.10.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Wände unter Dauerfeuer.</h3>
+            <p>Garben fressen sich durch Wände, Explosionen hinterlassen Krater und begehbare Durchbrüche, Granatsplitter fliegen sichtbar.</p>
+          </div>
+        </li>
+        <li data-date="2026-10-16" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-10-16">16.10.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Fahrzeuge zum Einsteigen.</h3>
+            <p>Limousine, Kastenwagen, Gabelstapler und Sattelzugmaschine sind fahrbar. Die Hafencontainer bestehen jetzt aus echtem 3D-Wellblech.</p>
+          </div>
+        </li>
+        <li data-date="2026-10-10" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-10-10">10.10.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Großes Oktober-Update.</h3>
+            <p>Klassen-Fähigkeiten, Bauen, MG-Stellungen, Türen und Tore, Durchschüsse und die steuerbare FPV-Drohne als Abschussserie.</p>
+          </div>
+        </li>
+        <li data-date="2026-10-09" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-10-09">9.10.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Mehrspieler und VR.</h3>
+            <p>Erste Fassungen von Mehrspieler und VR, neue Animationen, Befehlsrad und der Modus „Nur Messer“.</p>
+          </div>
+        </li>
+        <li data-date="2026-10-05" class="news-card is-text is-archiv" data-tags="archiv">
+          <div class="news-txt">
+            <p class="news-date"><time datetime="2026-10-05">5.10.2026</time></p>
+            <p class="mono-s">Chronik</p>
+            <h3>Funkstille vorbei.</h3>
+            <p>Die erste Fassung von NULLPUNKT geht online: Webseite und Browser-Shooter, ohne Download und ohne Konto.</p>
+          </div>
+        </li>
+      </ul>
+
+    </div>
+  </section>
+  </div>
+
+  <!-- Kategorie Galerie ─────────────────────────────────────── -->
+  <div class="panel" data-panel="galerie" data-title="Galerie" data-kicker="Bildarchiv" data-icon="i-bild" role="region" aria-label="Galerie">
+  <section id="galerie" class="sec" aria-labelledby="h-galerie" data-view="gallery">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">09</span> Bildarchiv · Aufnahmen aus dem Spiel</p>
+      <p class="kicker">Alle Bilder sind Standbilder aus NULLPUNKT, nichts ist nachgemalt.</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-galerie">GALERIE</h2>
+      <p class="tagline">Bilder direkt aus dem Spiel. Antippen für Vollbild.</p>
+      <div class="gal-filter js-only" role="group" aria-label="Bilder filtern" id="gal-filter" hidden>
+        <button type="button" class="chip" aria-pressed="true" data-f="alle">Alle</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="karten">Karten</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="fahrzeuge">Fahrzeuge &amp; Panzer</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="menschen">Menschen</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="technik">Technik &amp; Geräte</button>
+        <button type="button" class="chip" aria-pressed="false" data-f="vergleich">Vorher/Nachher</button>
+      </div>
+      <p class="sr-only" id="gal-count" aria-live="polite"></p>
+      <ul class="gal" id="gal-list">
+        <li data-tags="karten"><a class="gal-it" href="assets/img/neu/hero.webp" data-w="1920" data-h="1080"><img src="assets/img/neu/hero-m.webp" width="1024" height="576" loading="lazy" decoding="async" alt="Stadtkern: ausgebranntes Auto vor einer Häuserzeile, Soldat im Hintergrund."><span class="gal-cap">Stadtkern · Startbild</span></a></li>
+        <li data-tags="fahrzeuge"><a class="gal-it" href="assets/img/neu/panzer-innen.webp" data-w="1280" data-h="855"><img src="assets/img/neu/panzer-innen-s.webp" width="640" height="428" loading="lazy" decoding="async" alt="Richtschützenplatz im Kampfpanzer mit Feuerleitrechner und Schaltern."><span class="gal-cap">Panzer · Richtschützenplatz</span></a></li>
+        <li data-tags="fahrzeuge"><a class="gal-it" href="assets/img/neu/eisenwind.webp" data-w="1024" data-h="438"><img src="assets/img/neu/eisenwind-s.webp" width="640" height="274" loading="lazy" decoding="async" alt="Zwischensequenz der Panzer-Kampagne: Dorf im Tal der Miren am frühen Morgen."><span class="gal-cap">Eisenwind · Tal der Miren</span></a></li>
+        <li data-tags="menschen"><a class="gal-it" href="assets/img/neu/stille-grenze.webp" data-w="1280" data-h="511"><img src="assets/img/neu/stille-grenze-s.webp" width="640" height="255" loading="lazy" decoding="async" alt="Soldaten im Südgraben des Niemandslands, Zwischensequenz."><span class="gal-cap">Stille Grenze · Südgraben</span></a></li>
+        <li data-tags="menschen technik"><a class="gal-it" href="assets/img/neu/isim.webp" data-w="1280" data-h="720"><img src="assets/img/neu/isim-s.webp" width="640" height="360" loading="lazy" decoding="async" alt="Spielstil Simulation im Hafen: kein Fadenkreuz, nur die Liste der Handgriffe."><span class="gal-cap">Infanterie-Simulation · Hafen</span></a></li>
+        <li data-tags="technik"><a class="gal-it" href="assets/img/neu/zerstoerung.webp" data-w="1229" data-h="615"><img src="assets/img/neu/zerstoerung-s.webp" width="640" height="320" loading="lazy" decoding="async" alt="Bresche in einer Hauswand der Altstadt nach Dauerfeuer und einer Rakete."><span class="gal-cap">Zerstörung · Altstadt</span></a></li>
+        <li data-tags="menschen"><a class="gal-it" href="assets/img/neu/gesichter.webp" data-w="1280" data-h="606"><img src="assets/img/neu/gesichter-s.webp" width="640" height="303" loading="lazy" decoding="async" alt="Nahaufnahme eines Soldaten mit Helm und Headset."><span class="gal-cap">Gesichter · Zwischensequenz</span></a></li>
+        <li data-tags="technik"><a class="gal-it" href="assets/img/neu/tv-modus.webp" data-w="1280" data-h="720"><img src="assets/img/neu/tv-modus-s.webp" width="640" height="360" loading="lazy" decoding="async" alt="Lobby im TV-Modus mit großer Schrift und Controller-Fokus."><span class="gal-cap">TV-Modus · Lobby</span></a></li>
+        <li data-tags="technik"><a class="gal-it" href="assets/img/neu/vr-fernrohr.webp" data-w="1280" data-h="720"><img src="assets/img/neu/vr-fernrohr-s.webp" width="640" height="360" loading="lazy" decoding="async" alt="VR-Ansicht: Scharfschützengewehr mit echtem Bild im Zielfernrohr."><span class="gal-cap">VR · Zielfernrohr</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/hafen.webp" data-w="1600" data-h="600"><img src="assets/img/maps/hafen-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Hafen: Containerlabyrinth und Portalkran."><span class="gal-cap">Karte · Hafen</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/altstadt.webp" data-w="1600" data-h="600"><img src="assets/img/maps/altstadt-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Altstadt: Gassen und Markt in der Mittagssonne."><span class="gal-cap">Karte · Altstadt</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/werk.webp" data-w="1600" data-h="600"><img src="assets/img/maps/werk-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Werk: Industriehalle mit Laufstegen."><span class="gal-cap">Karte · Werk</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/bibliothek.webp" data-w="1600" data-h="600"><img src="assets/img/maps/bibliothek-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Bibliothek: verwinkelte Galerien und Lesenischen."><span class="gal-cap">Karte · Bibliothek</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/range.webp" data-w="1600" data-h="600"><img src="assets/img/maps/range-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Schießstand: Bahnen mit Klappzielen."><span class="gal-cap">Karte · Schießstand</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/grenzland.webp" data-w="1600" data-h="600"><img src="assets/img/maps/grenzland-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Grenzland: Flusstal mit Brücke und Dorf."><span class="gal-cap">Karte · Grenzland</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/niemandsland.webp" data-w="1600" data-h="600"><img src="assets/img/maps/niemandsland-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Niemandsland: Schützengräben und Granattrichter."><span class="gal-cap">Karte · Niemandsland</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/brandwald.webp" data-w="1600" data-h="600"><img src="assets/img/maps/brandwald-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Brandwald: verbrannter Wald mit Stellungen."><span class="gal-cap">Karte · Brandwald</span></a></li>
+        <li data-tags="karten fahrzeuge"><a class="gal-it" href="assets/img/maps/flugplatz.webp" data-w="1600" data-h="600"><img src="assets/img/maps/flugplatz-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Flugplatz: Startbahn mit Hangars."><span class="gal-cap">Karte · Flugplatz</span></a></li>
+        <li data-tags="karten"><a class="gal-it" href="assets/img/maps/stadtkern.webp" data-w="1600" data-h="600"><img src="assets/img/maps/stadtkern-s.webp" width="800" height="300" loading="lazy" decoding="async" alt="Karte Stadtkern: Altbauten am Lindenplatz."><span class="gal-cap">Karte · Stadtkern</span></a></li>
+        <li data-tags="vergleich karten"><a class="gal-it" href="assets/img/neu/vgl-wald-vorher.webp" data-w="1280" data-h="720"><img src="assets/img/neu/vgl-wald-vorher-s.webp" width="640" height="360" loading="lazy" decoding="async" alt="Vorher: Waldrand im Grenzland mit lichten, flachen Bäumen."><span class="gal-cap">Waldrand · vorher</span></a></li>
+        <li data-tags="vergleich karten"><a class="gal-it" href="assets/img/neu/vgl-wald-nachher.webp" data-w="1280" data-h="720"><img src="assets/img/neu/vgl-wald-nachher-s.webp" width="640" height="360" loading="lazy" decoding="async" alt="Nachher: derselbe Waldrand mit dichteren Bäumen und Sträuchern."><span class="gal-cap">Waldrand · nachher</span></a></li>
+        <li data-tags="vergleich karten"><a class="gal-it" href="assets/img/neu/vgl-hafen-vorher.webp" data-w="1280" data-h="720"><img src="assets/img/neu/vgl-hafen-vorher-s.webp" width="640" height="360" loading="lazy" decoding="async" alt="Vorher: Hafenkai mit wenigen Paletten."><span class="gal-cap">Hafenkai · vorher</span></a></li>
+        <li data-tags="vergleich karten"><a class="gal-it" href="assets/img/neu/vgl-hafen-nachher.webp" data-w="1280" data-h="720"><img src="assets/img/neu/vgl-hafen-nachher-s.webp" width="640" height="360" loading="lazy" decoding="async" alt="Nachher: derselbe Kai mit gestapelter Ladung und Kleinkram."><span class="gal-cap">Hafenkai · nachher</span></a></li>
+        <li data-tags="vergleich fahrzeuge"><a class="gal-it" href="assets/img/neu/vgl-auto-vorher.webp" data-w="1280" data-h="427"><img src="assets/img/neu/vgl-auto-vorher-s.webp" width="640" height="213" loading="lazy" decoding="async" alt="Vorher: roter Pkw mit kantiger Kastenform."><span class="gal-cap">Pkw · vorher</span></a></li>
+        <li data-tags="vergleich fahrzeuge"><a class="gal-it" href="assets/img/neu/vgl-auto-nachher.webp" data-w="1280" data-h="427"><img src="assets/img/neu/vgl-auto-nachher-s.webp" width="640" height="213" loading="lazy" decoding="async" alt="Nachher: derselbe Pkw mit gerundeter, geformter Karosserie."><span class="gal-cap">Pkw · nachher</span></a></li>
+      </ul>
+      <div class="vgl" id="vergleich">
+        <h3 class="sub-h" id="h-vgl">VORHER. NACHHER.</h3>
+        <p class="sub-copy">Gleiche Stelle, gleiche Kamera, einmal vor und einmal nach einer Überarbeitungsrunde im November. Schieb den Regler.</p>
+        <div class="vgl-pick js-only" role="group" aria-label="Vergleich wählen" id="vgl-pick" hidden>
+          <button type="button" class="chip" aria-pressed="true" data-v="wald">Waldrand</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="hafen">Hafenkai</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="auto">Auto</button>
+        </div>
+        <figure class="vgl-stage" id="vgl-stage">
+          <img class="vgl-a" src="assets/img/neu/vgl-wald-vorher-s.webp" srcset="assets/img/neu/vgl-wald-vorher-s.webp 640w, assets/img/neu/vgl-wald-vorher.webp 1280w" sizes="(min-width: 1024px) 70vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Vorher: Waldrand im Grenzland mit lichten, flachen Bäumen.">
+          <div class="vgl-clip"><img class="vgl-b" src="assets/img/neu/vgl-wald-nachher-s.webp" srcset="assets/img/neu/vgl-wald-nachher-s.webp 640w, assets/img/neu/vgl-wald-nachher.webp 1280w" sizes="(min-width: 1024px) 70vw, 100vw" width="640" height="360" loading="lazy" decoding="async" alt="Nachher: derselbe Waldrand mit dichteren Bäumen und Sträuchern."></div>
+          <span class="vgl-lab vgl-lab-a" aria-hidden="true">Vorher</span><span class="vgl-lab vgl-lab-b" aria-hidden="true">Nachher</span>
+          <span class="vgl-line" aria-hidden="true"></span>
+          <input class="vgl-range js-only" type="range" min="0" max="100" value="50" step="1" aria-label="Vergleich: links vorher, rechts nachher" aria-valuetext="Hälfte vorher, Hälfte nachher">
+          <figcaption class="vgl-cap" id="vgl-cap">Waldrand im Grenzland, Grafikstufe Hoch: vor und nach der Überarbeitung der Bäume (14. November).</figcaption>
+        </figure>
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §10 ─────────────────────────────────────────────── -->
+  <!-- Kategorie Steuerung ─────────────────────────────────────── -->
+  <div class="panel" data-panel="steuerung" data-title="Steuerung" data-kicker="Tastenbelegung" data-icon="i-pad" role="region" aria-label="Steuerung">
   <section id="steuerung" class="sec" aria-labelledby="h-steuer" data-view="controls">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§10</span> / STEUERUNG / Belegung</p>
+      <p class="rail-label"><span class="sec-no">10</span> Belegung · Tastatur, Touch, Controller, VR</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-steuer" data-fit data-fit-slots data-act="keys">STEUERUNG.</h2>
+      <h2 class="hl" id="h-steuer" data-act="keys">STEUERUNG</h2>
       <p class="tagline">Drück eine Taste. Sie verrät, was sie tut.</p>
       <div class="controls-root" id="controls-root">
         <table class="keymap static">
@@ -480,15 +765,56 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §11 ─────────────────────────────────────────────── -->
+  <!-- Kategorie Einstellungen ─────────────────────────────────────── -->
+  <div class="panel" data-panel="einstellungen" data-title="Einstellungen" data-kicker="Sprache, Ton, Grafik, Profil" data-icon="i-zahnrad" role="region" aria-label="Einstellungen">
+  <section id="schnellwahl" class="sec" data-tab="Schnellwahl" aria-labelledby="h-schnell" data-view="quick">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">06</span> Schnellwahl</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-schnell">SCHNELLWAHL</h2>
+      <p class="tagline">Sprache, Ton und Grafik auf einen Blick. Alles Weitere darunter.</p>
+      <div class="quick js-only" id="quick-root"></div>
+      <p class="nojs-only note">Die Schnellwahl braucht JavaScript. Die Einstellungen gelten im Spiel ebenso.</p>
+    </div>
+  </section>
+  <section id="einstellungen" class="sec" data-tab="Alle Einstellungen" aria-labelledby="h-einst" data-view="settings">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">09</span> Justierung · Grafik, Ton, Fadenkreuz</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-einst" data-act="lens">EINSTELLUNGEN</h2>
+      <p class="tagline">Gilt für Website und Spiel.</p>
+      <div class="settings-root" id="settings-root">
+        <p class="static nojs-only">Die Einstellungen brauchen JavaScript.</p>
+      </div>
+    </div>
+  </section>
+  <section id="profil" class="sec" data-tab="Profil" aria-labelledby="h-profil" data-view="profile">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">08</span> Dienstakte · Dein Schnitt</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-profil" data-act="cut">PROFIL</h2>
+      <p class="tagline">Dein Schnitt, gesetzt aus deinen Treffern.</p>
+      <div class="profile-root" id="profile-root">
+        <p class="static">Noch kein Einsatz. Dein Schnitt ist ungeschrieben.</p>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- Kategorie App &amp; Downloads ─────────────────────────────────────── -->
+  <div class="panel" data-panel="app" data-title="App &amp; Downloads" data-kicker="Ausgabestelle" data-icon="i-laden" role="region" aria-label="App &amp; Downloads">
   <section id="app" class="sec" aria-labelledby="h-app" data-view="app">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§11</span> / APP / Herunterladen</p>
+      <p class="rail-label"><span class="sec-no">11</span> Ausgabestelle · Herunterladen</p>
       <p class="kicker">Kostenlos. Kein Konto. Alle spielen zusammen.</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-app" data-fit data-fit-slots>APP.</h2>
+      <h2 class="hl" id="h-app">APP</h2>
       <p class="tagline">Browser, Handy, PC-App und VR. Ein Spiel, ein Raum.</p>
       <div class="app-root" id="app-root">
         <div class="app-desk" id="app-desk" hidden></div>
@@ -558,36 +884,16 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       </div>
     </div>
   </section>
+  </div>
 
-  <!-- §12 ─────────────────────────────────────────────── -->
-  <section id="fragen" class="sec" aria-labelledby="h-fragen">
+  <!-- Kategorie Über ─────────────────────────────────────── -->
+  <div class="panel" data-panel="ueber" data-title="Über" data-kicker="Entstehung, Fragen, Rechte" data-icon="i-info" role="region" aria-label="Über">
+  <section id="ueber" class="sec" data-tab="Über & Rechte" aria-labelledby="h-ueber" data-view="about">
     <div class="rail">
-      <p class="rail-label"><span class="sec-no">§12</span> / FRAGEN / Kurz beantwortet</p>
+      <p class="rail-label"><span class="sec-no">13</span> Kontakt, Rechte, Nutzung &amp; Datenschutz</p>
     </div>
     <div class="content">
-      <h2 class="hl" id="h-fragen" data-fit data-fit-slots>FRAGEN.</h2>
-      <p class="tagline">Was oft gefragt wird.</p>
-      <div class="faq">
-        <details><summary>Kostet NULLPUNKT etwas?</summary><p>Nein. Kein Kauf, kein Abo, keine Werbung, kein Konto. Freischalten geht nur durch Spielen.</p></details>
-        <details><summary>Muss ich etwas herunterladen?</summary><p>Nein, der Browser reicht. Wer möchte, installiert die Seite als Web-App oder nimmt die PC-App bzw. die Android-App aus dem Bereich <a href="#app">App</a>.</p></details>
-        <details><summary>Läuft das auf meinem Handy?</summary><p>Auf den meisten aktuellen Handys ja, auf der Grafikstufe „Niedrig“ oder „Mittel“. Das Handy quer halten. Nötig ist ein Browser mit WebGL&nbsp;2. Die Übersicht steht unter <a href="#laeuft-auf">Läuft auf …</a>.</p></details>
-        <details><summary>Wie spiele ich mit Freunden?</summary><p>Im Spiel auf „Mehrspieler“, einen Raum öffnen und den Raumcode oder den Einladungslink teilen. Bis zu 32 Spieler, Bots füllen freie Plätze auf. Die Geräte verbinden sich direkt miteinander, einen eigenen Spielserver gibt es nicht. Alle brauchen dieselbe Spielfassung.</p></details>
-        <details><summary>Wo fange ich an?</summary><p>Mit der Grundausbildung, Mission 0 der Kampagne „Stille Grenze“. Sie erklärt Bewegung, Waffen und Fahrzeuge auf dem Schießstand. Danach Team-Deathmatch gegen Bots oder direkt die Kampagne.</p></details>
-        <details><summary>Was ist der Unterschied zwischen Arcade, Realistisch und Simulation?</summary><p>Arcade zeigt dir alles und heilt schnell. Realistisch blendet Gegner und fast das ganze HUD aus und macht Treffer tödlicher. Simulation geht noch weiter: Magazine, Durchladen, Ladehemmungen, Verwundungen, kein HUD. Der Vergleich steht unter <a href="#simulation">Simulation</a>.</p></details>
-        <details><summary>Es ruckelt. Was kann ich tun?</summary><p>Grafikstufe in den Einstellungen eine Stufe senken, im Browser die Hardwarebeschleunigung einschalten und andere Tabs schließen. Auf schwachen Rechnern hilft „Niedrig“ am meisten. Die PC-App lädt nichts nach und ist auf dem Rechner meist am flüssigsten.</p></details>
-        <details><summary>Wo wird mein Fortschritt gespeichert?</summary><p>Nur in deinem Browser auf diesem Gerät. Ein anderes Gerät oder gelöschte Browserdaten bedeuten einen neuen Spielstand. Details unter <a href="#datenschutz">Datenschutz</a>.</p></details>
-        <details><summary>Ich habe einen Fehler gefunden.</summary><p>Ab 20 Minuten Spielzeit gibt es im Spiel und unten auf dieser Seite ein Feedback-Formular. Sonst über die Kontaktangaben bei <a href="#rechte">Kontakt &amp; Rechte</a>.</p></details>
-      </div>
-    </div>
-  </section>
-
-  <!-- §13 ─────────────────────────────────────────────── -->
-  <section id="ueber" class="sec" aria-labelledby="h-ueber" data-view="about">
-    <div class="rail">
-      <p class="rail-label"><span class="sec-no">§13</span> / ÜBER / Kontakt, Rechte, Nutzung &amp; Datenschutz</p>
-    </div>
-    <div class="content">
-      <h2 class="hl" id="h-ueber" data-fit data-fit-slots>ÜBER.</h2>
+      <h2 class="hl" id="h-ueber">ÜBER</h2>
       <p class="tagline">NULLPUNKT ist ein Ego-Shooter, der vollständig in deinem Browser läuft. Du spielst gegen Bots oder online mit anderen Spielern.</p>
       <p class="statement"><span>Kein Tracking.</span> <span>Keine persönlichen Daten.</span> <span>Nur dein Spielstand.</span></p>
       <div class="about-cols">
@@ -610,7 +916,7 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
             <div><dt><code>Zwischenspeicher np-code / np-lib</code></dt><dd>Nur Spieldateien (Code, Texturen, Modelle), damit die Seite schneller lädt und offline läuft. Keine persönlichen Daten</dd></div>
             <div><dt><code>nullpunkt:og</code></dt><dd>Ob du das Gold der ersten Stunde hast (nur Ja/Nein). Bleibt beim Löschen hier erhalten; ganz weg nur über die Browserdaten dieser Seite</dd></div>
           </dl>
-          <p>Nur bis zum Schließen des Tabs (Sitzungsspeicher): eine zufällige Kennung für den Mehrspieler-Verbindungsaufbau und ein Merker fürs Neuladen.</p>
+          <p>Nur bis zum Schließen des Tabs (Sitzungsspeicher): eine zufällige Kennung für den Mehrspieler-Verbindungsaufbau, ein Merker fürs Neuladen und einer, dass der Ladebildschirm schon lief.</p>
           <button class="txt-btn js-only" type="button" id="wipe-open" aria-haspopup="dialog">Lokale Daten löschen</button>
           <p><strong>Feedback:</strong> Ab 20 Minuten Spielzeit kannst du dem Entwickler eine Rückmeldung geben. Verschickt wird sie nur, wenn du selbst auf „Per E-Mail senden“ klickst (öffnet dein Mailprogramm) oder den Text für Discord kopierst und abschickst. Was du ins Formular schreibst, auch das freiwillige Kontaktfeld, wird nicht gespeichert.</p>
           <p><strong>Hosting:</strong> Die Seite liegt auf GitHub Pages. Beim Abruf verarbeitet GitHub technisch deine IP-Adresse (Server-Protokolle); darauf habe ich keinen Zugriff.</p>
@@ -649,6 +955,27 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
       </div>
     </div>
   </section>
+  <section id="fragen" class="sec" data-tab="Fragen" aria-labelledby="h-fragen">
+    <div class="rail">
+      <p class="rail-label"><span class="sec-no">12</span> Funkverkehr · Kurz beantwortet</p>
+    </div>
+    <div class="content">
+      <h2 class="hl" id="h-fragen">FRAGEN</h2>
+      <p class="tagline">Was oft gefragt wird.</p>
+      <div class="faq">
+        <details><summary>Kostet NULLPUNKT etwas?</summary><p>Nein. Kein Kauf, kein Abo, keine Werbung, kein Konto. Freischalten geht nur durch Spielen.</p></details>
+        <details><summary>Muss ich etwas herunterladen?</summary><p>Nein, der Browser reicht. Wer möchte, installiert die Seite als Web-App oder nimmt die PC-App bzw. die Android-App aus dem Bereich <a href="#app">App</a>.</p></details>
+        <details><summary>Läuft das auf meinem Handy?</summary><p>Auf den meisten aktuellen Handys ja, auf der Grafikstufe „Niedrig“ oder „Mittel“. Das Handy quer halten. Nötig ist ein Browser mit WebGL&nbsp;2. Die Übersicht steht unter <a href="#laeuft-auf">Läuft auf …</a>.</p></details>
+        <details><summary>Wie spiele ich mit Freunden?</summary><p>Im Spiel auf „Mehrspieler“, einen Raum öffnen und den Raumcode oder den Einladungslink teilen. Bis zu 32 Spieler, Bots füllen freie Plätze auf. Die Geräte verbinden sich direkt miteinander, einen eigenen Spielserver gibt es nicht. Alle brauchen dieselbe Spielfassung.</p></details>
+        <details><summary>Wo fange ich an?</summary><p>Mit der Grundausbildung, Mission 0 der Kampagne „Stille Grenze“. Sie erklärt Bewegung, Waffen und Fahrzeuge auf dem Schießstand. Danach Team-Deathmatch gegen Bots oder direkt die Kampagne.</p></details>
+        <details><summary>Was ist der Unterschied zwischen Arcade, Realistisch und Simulation?</summary><p>Arcade zeigt dir alles und heilt schnell. Realistisch blendet Gegner und fast das ganze HUD aus und macht Treffer tödlicher. Simulation geht noch weiter: Magazine, Durchladen, Ladehemmungen, Verwundungen, kein HUD. Der Vergleich steht unter <a href="#simulation">Simulation</a>.</p></details>
+        <details><summary>Es ruckelt. Was kann ich tun?</summary><p>Grafikstufe in den Einstellungen eine Stufe senken, im Browser die Hardwarebeschleunigung einschalten und andere Tabs schließen. Auf schwachen Rechnern hilft „Niedrig“ am meisten. Die PC-App lädt nichts nach und ist auf dem Rechner meist am flüssigsten.</p></details>
+        <details><summary>Wo wird mein Fortschritt gespeichert?</summary><p>Nur in deinem Browser auf diesem Gerät. Ein anderes Gerät oder gelöschte Browserdaten bedeuten einen neuen Spielstand. Details unter <a href="#datenschutz">Datenschutz</a>.</p></details>
+        <details><summary>Ich habe einen Fehler gefunden.</summary><p>Ab 20 Minuten Spielzeit gibt es im Spiel und unten auf dieser Seite ein Feedback-Formular. Sonst über die Kontaktangaben bei <a href="#rechte">Kontakt &amp; Rechte</a>.</p></details>
+      </div>
+    </div>
+  </section>
+  </div>
 </main>
 
 <footer class="foot">
@@ -664,19 +991,19 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
 <dialog class="index-dialog" id="index-dialog" aria-labelledby="index-dialog-h">
   <div class="dlg-head"><p class="rail-label" id="index-dialog-h">Index</p><button class="txt-btn" type="button" data-close>Schließen</button></div>
   <ol class="dlg-list">
-    <li><a href="#nullpunkt">Nullpunkt</a></li>
-    <li><a href="#einsatz">Einsatz</a></li>
-    <li><a href="#neu">Neu</a></li>
-    <li><a href="#kampagne">Kampagne</a></li>
-    <li><a href="#simulation">Simulation</a></li>
-    <li><a href="#modi">Modi</a></li>
+    <li><a href="#nullpunkt">Hauptmenü</a></li>
+    <li><a href="#spielen">Spielen</a></li>
+    <li><a href="#kampagnen">Kampagnen</a></li>
+    <li><a href="#panzer">Panzer</a></li>
+    <li><a href="#mehrspieler">Mehrspieler</a></li>
+    <li><a href="#uebung">Übungsgelände</a></li>
+    <li><a href="#waffenkammer">Waffenkammer</a></li>
     <li><a href="#karten">Karten</a></li>
-    <li><a href="#arsenal">Arsenal</a></li>
-    <li><a href="#profil">Profil</a></li>
-    <li><a href="#einstellungen">Einstellungen</a></li>
+    <li><a href="#news">News</a></li>
+    <li><a href="#galerie">Galerie</a></li>
     <li><a href="#steuerung">Steuerung</a></li>
-    <li><a href="#app">App</a></li>
-    <li><a href="#fragen">Fragen</a></li>
+    <li><a href="#einstellungen">Einstellungen</a></li>
+    <li><a href="#app">App &amp; Downloads</a></li>
     <li><a href="#ueber">Über</a></li>
   </ol>
 </dialog>
@@ -687,6 +1014,36 @@ try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capaci
   <div class="dlg-actions">
     <button class="txt-btn" type="button" data-close>Abbrechen</button>
     <button class="dlg-go" type="button" id="wipe-go">Löschen<span class="o">.</span></button>
+  </div>
+</dialog>
+
+
+<div class="hints js-only" id="hints" aria-hidden="true"></div>
+
+<div class="warp" id="warp" hidden>
+  <div class="warp-pic" id="warp-pic"></div>
+  <div class="warp-box">
+    <p class="warp-k">Einsatz wird vorbereitet</p>
+    <p class="warp-t" id="warp-t">Lobby</p>
+    <div class="boot-bar"><i></i></div>
+    <p class="warp-tip" id="warp-tip"></p>
+  </div>
+</div>
+
+<dialog class="lightbox" id="lightbox" aria-label="Bildbetrachter">
+  <figure class="lb-fig"><img id="lb-img" src="data:," alt=""><figcaption id="lb-cap"></figcaption></figure>
+  <p class="lb-count" id="lb-count"></p>
+  <button class="lb-btn lb-prev" type="button" data-lb="prev" aria-label="Vorheriges Bild"><svg aria-hidden="true"><use href="#i-zurueck"/></svg></button>
+  <button class="lb-btn lb-next" type="button" data-lb="next" aria-label="Nächstes Bild"><svg aria-hidden="true"><use href="#i-vor"/></svg></button>
+  <button class="lb-btn lb-close" type="button" data-lb="close" aria-label="Schließen"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+</dialog>
+
+<dialog class="wipe-dialog quit-dialog" id="quit-dialog" aria-labelledby="quit-h">
+  <p class="rail-label" id="quit-h">Beenden</p>
+  <p class="dlg-text">NULLPUNKT schließen?</p>
+  <div class="dlg-actions">
+    <button class="txt-btn" type="button" data-close>Abbrechen</button>
+    <button class="dlg-go" type="button" id="quit-go">Beenden<span class="o">.</span></button>
   </div>
 </dialog>
 

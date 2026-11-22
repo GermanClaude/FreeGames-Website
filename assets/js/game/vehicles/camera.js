@@ -9,9 +9,9 @@
 //   'relTurret' relYaw/relPitch relativ zum Turm (Ladeschütze)
 // Welche Sicht gilt, entscheidet VehicleSystem (seat.view, erlaubte Sichten); update() bekommt die wirksame Sicht.
 import * as THREE from 'three';
-import { collisionRay, keepClear } from '../engine/physics.js?v=20261121041936';
-import { dirFromYawPitch, viewOf, viewAnchor, viewLookDir, viewZoom, isTp, viewsOf, firstFp } from './views.js?v=20261121041936';
-import { prismIndex } from './periscopes.js?v=20261121041936';
+import { collisionRay, keepClear } from '../engine/physics.js?v=20261122020853';
+import { dirFromYawPitch, viewOf, viewAnchor, viewLookDir, viewZoom, isTp, viewsOf, firstFp } from './views.js?v=20261122020853';
+import { prismIndex } from './periscopes.js?v=20261122020853';
 
 export { dirFromYawPitch };
 
@@ -65,6 +65,11 @@ export class VehicleCamera {
   update(camera, vehicle, seat, dt, world, baseFov = 70, view = null) {
     view = view || viewOf(seat);
     const tp = view.tp;
+    // Innensicht (Nutzer 21.11.: beim Umdrehen/Neigen wurde Nahes weggeschnitten): Near-Plane 2 cm statt 5 cm; der
+    // Normalwert kommt beim Wechsel der Sicht bzw. beim Aussteigen (index.js removeFromSeat) zurück
+    const wantNear = view.interior ? 0.02 : null;
+    if (wantNear && camera.near !== wantNear) { if (camera.userData.npNear == null) camera.userData.npNear = camera.near; camera.near = wantNear; camera.updateProjectionMatrix(); }
+    else if (!wantNear && camera.userData.npNear != null) { camera.near = camera.userData.npNear; camera.userData.npNear = null; camera.updateProjectionMatrix(); }
     const wantZoom = viewZoom(view, seat.zoomIndex || 0);
     const switched = this.view !== view;
     this.view = view;

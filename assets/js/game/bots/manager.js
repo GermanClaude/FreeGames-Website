@@ -13,24 +13,24 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261121041936';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261121041936'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261121041936';
-import { pickNames } from './names.js?v=20261121041936';
-import { Nameplate } from './nameplates.js?v=20261121041936';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261121041936';
-import { upgradeSoldierMaterials, soldierDetailInfo, setSoldierWorld } from './soldier/materials.js?v=20261121041936';
-import { analyze } from './ai/tactics.js?v=20261121041936';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261121041936';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261121041936';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261121041936';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261121041936';
-import { BotAdapt } from './ai/spielstil.js?v=20261121041936';
-import { CorpseStore } from './corpses.js?v=20261121041936';
-import { ActorGrid, CrowdImpostors, crowdScale, spreadSpawn } from './crowd.js?v=20261121041936';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261121041936';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261121041936';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261121041936';
+import { Bot } from './bot.js?v=20261122020853';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261122020853'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261122020853';
+import { pickNames } from './names.js?v=20261122020853';
+import { Nameplate } from './nameplates.js?v=20261122020853';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261122020853';
+import { upgradeSoldierMaterials, soldierDetailInfo, setSoldierWorld } from './soldier/materials.js?v=20261122020853';
+import { analyze } from './ai/tactics.js?v=20261122020853';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261122020853';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261122020853';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261122020853';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261122020853';
+import { BotAdapt } from './ai/spielstil.js?v=20261122020853';
+import { CorpseStore } from './corpses.js?v=20261122020853';
+import { ActorGrid, CrowdImpostors, crowdScale, spreadSpawn } from './crowd.js?v=20261122020853';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261122020853';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261122020853';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261122020853';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();
@@ -1299,8 +1299,13 @@ export class BotManager {
       if (hide && p._target < 1.01 && aimPlate !== p) p._target = 0;
       else placed.push(p);
     }
+    // Spieler im Fahrzeug in einer Ego-/Innensicht (Nutzer 21.11.: Schilder schienen durch Fahrzeugwände): Schilder mit
+    // Tiefentest – Wände, Kabine und Innenraum verdecken sie; sonst wie bisher ohne Tiefentest (Verdeckung per Sichtstrahl)
+    const pv = G.player && G.player.vehicle, vcam = G.vehicles && G.vehicles.camera, vw = pv && vcam ? vcam.view : null;
+    const deep = !!(vw && !vw.tp);
     for (let i = 0; i < bots.length; i++) {
       const p = this._plates.get(bots[i]);
+      if (p && p.material.depthTest !== deep) p.material.depthTest = deep;
       if (p && (p._target > 0 || p.alpha >= 0.02 || p.sprite.visible)) p.update(p._pos, cam, viewH, p._target || 0, dt, p._fade || 6, p._size || 1);
     }
   }

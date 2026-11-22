@@ -5,11 +5,12 @@
 // Truppmenü (Trupp-Typ, Soldaten und Waffen, Funk, Kommandant). Wechsel-Blende beim Übernehmen eines Kameraden.
 // Wird vom Modus erzeugt (onAttach) und je Bild von ui/hud.js aufgerufen (G.trupp.hud.update). Eigene Stilregeln (TRUPP_CSS).
 import * as THREE from 'three';
-import { el, esc, setStyle, setText, toggle, meters, clamp } from './dom.js?v=20261121041936';
+import { el, esc, setStyle, setText, toggle, meters, clamp } from './dom.js?v=20261122020853';
 import {
   TRUPP_ROLES, TRUPP_TYPES, TRUPP_TYPE_ORDER, TRUPP_RADIO, TRUPP_SUPPORT, TRUPP_MARKS,
-} from '../../shared/trupp.data.js?v=20261121041936';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261121041936';
+} from '../../shared/trupp.data.js?v=20261122020853';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261122020853';
+import { tx } from '../../shared/i18n.js?v=20261122020853';
 
 const _eye = new THREE.Vector3();
 const _dir = new THREE.Vector3();
@@ -564,7 +565,7 @@ export class TruppHud {
           const lo = a.loadout || {};
           const opts = Object.keys(WEAPONS).filter((id) => WEAPONS[id].slot === 'primary' && !WEAPONS[id].og && r.weapons.includes(WEAPONS[id].cls));
           const sel = opts.includes(lo.primary) ? lo.primary : '';
-          return `<div class="tr-solrow${a === p ? ' is-me' : ''}"><em>${esc(r.short)}</em><b>${esc(a.name || 'Soldat')}</b><span>${esc(r.name)}${a === p ? ' (du)' : ''}</span>
+          return `<div class="tr-solrow${a === p ? ' is-me' : ''}"><em>${esc(r.short)}</em><b>${esc(a.name || 'Soldat')}</b><span>${esc(tx(r.name, 'trupp'))}${a === p ? ` (${esc(tx('du'))})` : ''}</span>
             <select data-wpn="${esc(String(a.id))}" aria-label="Hauptwaffe">${sel ? '' : '<option value="">Standard</option>'}${opts.map((id) => `<option value="${id}"${id === sel ? ' selected' : ''}>${esc(WEAPONS[id].name || id)}</option>`).join('')}</select></div>`;
         }).join('')}</div>`;
       }

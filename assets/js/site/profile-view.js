@@ -1,14 +1,14 @@
 // §05 Profil: Dein Schnitt. Die eigenen Werte schneiden eine persönliche Archivo:
 // Stärke aus K/D, Breite aus Genauigkeit. Dazu Dienstgrad, Kennzahlen, Lieblingswaffen,
 // Medaillen und der Verlauf als Glyphenzeile.
-import { h, $, signalLost } from './dom.js?v=20261121041936';
-import { fit } from './fit.js?v=20261121041936';
-import { buildPlayUrl, mapPrep } from './deploy.js?v=20261121041936';
-import { cutW, cutG } from './cuts.js?v=20261121041936';
-import { ui } from './state.js?v=20261121041936';
-import { announce } from './live.js?v=20261121041936';
-import { reduced, tween, ease } from './motion.js?v=20261121041936';
-import { num, pct, dur, clock, day, dateLong, clamp, clamp01, NNBSP, count, TERMS } from './fmt.js?v=20261121041936';
+import { h, $, signalLost } from './dom.js?v=20261122020853';
+import { fit } from './fit.js?v=20261122020853';
+import { buildPlayUrl, mapPrep } from './deploy.js?v=20261122020853';
+import { cutW, cutG } from './cuts.js?v=20261122020853';
+import { ui } from './state.js?v=20261122020853';
+import { announce } from './live.js?v=20261122020853';
+import { reduced, tween, ease } from './motion.js?v=20261122020853';
+import { num, pct, dur, clock, day, dateLong, clamp, clamp01, NNBSP, count, TERMS } from './fmt.js?v=20261122020853';
 
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
 const RESULT = { win: ['S', 'Sieg', 'win'], loss: ['N', 'Niederlage', 'loss'], draw: ['U', 'Unentschieden', 'draw'] };
@@ -97,7 +97,7 @@ export async function init(sec, D, ctx = {}) {
     fit(cut, { now: true });
     // PROFIL. steht in deiner eigenen Stärke (die Breite füllt weiter die Spalte)
     const h2 = document.getElementById('h-profil');
-    if (h2 && h2.style.getPropertyValue('--wght') !== String(wg)) { h2.style.setProperty('--wght', String(wg)); fit(h2, { now: true }); }
+    if (h2 && h2.style.getPropertyValue('--wght') !== String(wg)) h2.style.setProperty('--wght', String(wg)); // Überschrift ohne Breitenblocksatz (21.11.)
 
     // Dienstgrad
     const r = st.rank || PM?.rankFor?.(p.level);

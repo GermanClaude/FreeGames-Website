@@ -7,7 +7,7 @@
 // Ladefolge (Ladeschütze, Sicht 'innen', Blick nur über die Gier im Turmraum geprüft):
 //   'munition' (Sorte wählen) → Blick aufs Gestell → 'greifen' 1,0 s → Blick zum Verschluss → 'einschieben' 0,8 s
 //   → 'schliessen' 0,4 s → geladen. Automatik: 5,0 s mit besetztem Ladeschützensitz, sonst 8,0 s.
-import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261121041936';
+import { VEHICLE_WEAPONS, vehicleWeapon } from './data.js?v=20261122020853';
 
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 export const LOAD_TIMES = { tuer: 0.55, greifen: 1.0, einschieben: 0.8, schliessen: 0.4 }; // tuer: Schiebetür des Munitionsbunkers (modern)
@@ -140,7 +140,9 @@ function startAuto(v) {
   if (g.step === 'eingeschoben' && g.loaded) { g.auto = true; g.autoT = g.autoMax = 0.4; return; }
   const ls = loaderSeat(v);
   const w = vehicleWeapon(v.type, ammoWish(v)) || vehicleWeapon(v.type, g.select);
-  g.autoT = g.autoMax = ls && ls.actor ? (w.reload || 5) : (w.reloadNoLoader || 8);
+  // Panzermodus: virtuelle Ladeschützen der Feindpanzer (nur ein Bot an Bord) und Ladezeit nach Können (psim/skill.js)
+  const virt = typeof v._virtualLoader === 'function' && v._virtualLoader();
+  g.autoT = g.autoMax = (ls && (ls.actor || virt) ? (w.reload || 5) : (w.reloadNoLoader || 8)) * (v._reloadMul || 1);
   g.auto = true;
 }
 

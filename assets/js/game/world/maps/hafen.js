@@ -2,29 +2,29 @@
 // Drei Bahnen: Kaikante mit Portalkran (West) · Containerlabyrinth mit Kranplatz (Mitte) · Lagerhalle 3 (Ost).
 // Team A startet im Süden (Torbereich), Team B im Norden (Bereitstellungsfläche).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261121041936';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261122020853';
 import {
   container, CONTAINER_H, crateStack, barrelGroup, pallet, palletStack, sandbags, jersey, bollard, cone,
   lampPost, floodMast, fence, tires, cableReel, gasBottles, electricBox, acUnit, pipe, cable,
   rack, workbench, dumpster, frame, roofVent, dress,
-} from '../props.js?v=20261121041936';
-import { clawd } from '../clawd.js?v=20261121041936';
-import { farShore } from '../kulisse.js?v=20261121041936'; // gfx-welt: ferne Ufer
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261121041936';
+} from '../props.js?v=20261122020853';
+import { clawd } from '../clawd.js?v=20261122020853';
+import { farShore } from '../kulisse.js?v=20261122020853'; // gfx-welt: ferne Ufer
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261122020853';
 // Kartenrunde 2: Fahrzeuge mit richtig gedrehten Rädern, Innenausstattung, begehbare Container, Kartengrenzen
-import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261121041936';
+import { stapler as forklift, lkw as truck, transporter as van, pkw as car, containerstapler } from './hafen-fahrzeuge.js?v=20261122020853';
 import {
   schreibtisch, stuhl, aktenschrank, regal, tisch, besprechung, kaffeeEcke, kuechenzeile, kuehlschrank, minikuehlschrank,
   wasserspender, pinnwand, spinde, deckenleuchte, offenerContainer, kaiAbsperrung, schiebetor, steigleiter,
   festesModell,
-} from './hafen-ausstattung.js?v=20261121041936';
+} from './hafen-ausstattung.js?v=20261122020853';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
-import { belebe, sperrpunkte, KAMPAGNE, tauwerk } from '../kleinkram.js?v=20261121041936';
-import { kaiAusbau } from './hafen-kai.js?v=20261121041936'; // gelaende (Runde 3): Schwergut an der Kaikante
-import { hafenFuellen } from './fuell-karten.js?v=20261121041936'; // fuell (20.11.): Dehnfugen, Fahrspuren
+import { belebe, sperrpunkte, KAMPAGNE, tauwerk } from '../kleinkram.js?v=20261122020853';
+import { kaiAusbau } from './hafen-kai.js?v=20261122020853'; // gelaende (Runde 3): Schwergut an der Kaikante
+import { hafenFuellen } from './fuell-karten.js?v=20261122020853'; // fuell (20.11.): Dehnfugen, Fahrspuren
 
 const H = CONTAINER_H;
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261121041936';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261122020853';
 const QUAY_X = -44;
 
 export default {

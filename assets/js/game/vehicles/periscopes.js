@@ -4,7 +4,8 @@
 // Sicht-Indizes im Netz bleiben gleich).
 //
 // Neue Sichten (alle mit peek: true – nicht in der Sicht-Taste „C“, sondern aus der Innensicht heraus „durchsehen“):
-//   Fahrer       'winkel'  drei Winkelspiegel vorn (1. WK: Sehschlitz), Maus schwenkt von Spiegel zu Spiegel
+//   Fahrer       'winkel'  drei Winkelspiegel vorn (1. WK: Sehschlitz; 2. WK: Sehklappe mit Glasblock + zwei Winkelspiegel),
+//                          Maus schwenkt von Spiegel zu Spiegel
 //   Kommandant   'winkel'  Winkelspiegel rundum in der Kuppel (modern 6, sonst 7)
 //   Ladeschütze  'winkel'  drehbarer Winkelspiegel vor seiner Luke (ohne Luke: im Turmdach über dem Platz)
 //   Funker       'winkel'  Winkelspiegel im Wannendach vor seiner Luke; dazu 'innen' (Funkerplatz: Funkgerät, Kugelblende)
@@ -36,12 +37,30 @@ export function funkerCabin(D, driverCabin) {
   return { F, xl, xr, floor, roof, zFT: R.zFT, zFB: R.zFB, zB: R.zB, eye, mg };
 }
 
-/** Drei (1. WK: ein) Winkelspiegel des Fahrers – Lage wie cabin.js buildDriver. */
+/**
+ * Fahrerplatz 2. WK (Nutzer 21.11.: „zu modern“): Sehklappe mit Panzerglasblock in der Bugplatte vor dem Fahrer (Augenhöhe)
+ * und zwei Winkelspiegel im Dach (links/rechts schräg). → { visor: { c, zg, w, h }, prisms: [{ c, yaw }] } (Wannenraum)
+ */
+export function driverLayoutWk2(R) {
+  const x0 = R.F[0], { floor: yF, roof: yR, zFT, zFB, eye: E } = R;
+  const zg = (y) => zFB + ((y - yF) / Math.max(0.2, yR - yF)) * (zFT - zFB); // Glacis (innen) bei Höhe y
+  const yV = Math.min(E[1] + 0.01, yR - 0.14);
+  const visor = { c: [x0, yV, zg(yV + 0.1) + 0.1], zg: zg(yV), w: 0.24, h: 0.075 };
+  const prisms = [-1, 1].map((k) => ({ c: [x0 + k * 0.27, yR - 0.085, zFT + 0.12], yaw: -k * 0.55 }));
+  return { visor, prisms };
+}
+
+/** Drei (1. WK: ein; 2. WK: Sehklappe + zwei) Winkelspiegel des Fahrers – Lage wie cabin.js buildDriver. */
 function driverPrisms(D, R) {
   const hb = D.hullBox, top = hb[1] + hb[4];
   const wk1 = D.era === 'wk1';
   const x0 = R.F[0], yR = R.roof, zFT = R.zFT;
   if (wk1) return [{ head: [x0, yR - 0.22, zFT - 0.06], yaw: 0, inner: [x0, yR - 0.22, zFT + 0.03], w: 0.36 }];
+  if (D.era === 'wk2') {
+    const L = driverLayoutWk2(R), V = L.visor;
+    const pr = (P) => ({ head: [P.c[0] - Math.sin(P.yaw) * 0.06, Math.max(top, yR) + 0.07, zFT - 0.04], yaw: P.yaw, inner: [P.c[0] + Math.sin(-P.yaw) * 0.07, P.c[1] - 0.015, P.c[2] + Math.cos(P.yaw) * 0.07], w: 0.17 });
+    return [pr(L.prisms[0]), { head: [V.c[0], V.c[1], V.zg - 0.16], yaw: 0, inner: [V.c[0], V.c[1], V.c[2] + 0.02], w: 0.24, block: true }, pr(L.prisms[1])];
+  }
   const out = [];
   for (let k = 0; k < 3; k++) {
     const kk = k - 1, yaw = -kk * 0.35;
@@ -73,7 +92,8 @@ function cupolaPrisms(D, H) {
 /** Drehbarer Winkelspiegel des Ladeschützen (vor der Luke bzw. im Turmdach über dem Platz). */
 export function loaderPrism(D) {
   const H = D.hatches && D.hatches.loader;
-  if (H && H.space === 'turret') return [{ head: [H.pos[0], H.pos[1] + 0.24, H.pos[2] - H.r - 0.1], yaw: 0, inner: [H.pos[0], H.pos[1] - 0.13, H.pos[2] - H.r - 0.06], rot: true, w: 0.12 }];
+  // Spiegelkopf über den Dachaufbauten (Nutzer 21.11.: beim KP-1 verdeckte das Gehäuse der Zieloptik die Bildmitte)
+  if (H && H.space === 'turret') return [{ head: [H.pos[0], H.pos[1] + 0.44, H.pos[2] - H.r - 0.06], yaw: 0, inner: [H.pos[0], H.pos[1] - 0.06, H.pos[2] - H.r - 0.06], rot: true, w: 0.12 }]; // Gehäuse höher (Nutzer 21.11.: 3 cm über dem Auge)
   if (D.era === 'wk1') return null;
   const I = D.interior || {}, sh = I.shift || [0, 0, 0], sc = I.scale || 1, le = I.loaderEye || [0.55, 0.62, 0.35];
   const tb = D.turretBox, roof = tb[1] + tb[4];
@@ -112,7 +132,7 @@ export function addCrewViews(VEHICLES, driverCabin) {
     const R = driverCabin(D);
     for (const s of D.seats) {
       if (!s.views) continue;
-      if (s.drive && R && !has(s, 'winkel')) s.views.push(prismView('winkel', D.era === 'wk1' ? 'Sehschlitz' : 'Winkelspiegel', 'hull', 'rel', driverPrisms(D, R), glass));
+      if (s.drive && R && !has(s, 'winkel')) s.views.push(prismView('winkel', D.era === 'wk1' ? 'Sehschlitz' : D.era === 'wk2' ? 'Sehklappe / Winkelspiegel' : 'Winkelspiegel', 'hull', 'rel', driverPrisms(D, R), glass));
       else if (s.id === 'commander') {
         const H = D.hatches && D.hatches.commander;
         if (H && H.space === 'turret' && D.era !== 'wk1' && s.views.some((v) => v.interior && v.space === 'turret') && !has(s, 'winkel')) s.views.push(prismView('winkel', 'Kuppel-Winkelspiegel', 'turret', 'relTurret', cupolaPrisms(D, H), glass));
@@ -159,4 +179,14 @@ export function funkerLayout(F) {
     lamp: [x0, F.roof - 0.04, z0 + 0.22],
     seat: [x0, y0 + 0.34, z0 + 0.1],
   };
+}
+
+/**
+ * Durchgang vom Funkerplatz in den Kampfraum (Nutzer 21.11.: „kahle Rückwand“): Öffnung in der Rückwand der Funkerkammer
+ * (und in der Stirnwand des Kampfraums dahinter) → [x0, x1, y0, y1] im Wannenraum.
+ */
+export function funkerDoor(F) {
+  const cx = Math.max(F.xl + 0.3, Math.min(F.xr - 0.3, (F.xl + F.xr) / 2 - 0.04));
+  const y0 = F.floor + 0.12, y1 = Math.min(F.roof - 0.14, F.floor + 0.92);
+  return [cx - 0.25, cx + 0.25, y0, y1];
 }

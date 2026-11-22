@@ -16,8 +16,8 @@
 //   { hull: { front, side, rear, top }, turret: { … } } mit Fläche = [mm, Neigung°] oder { ke, ce, slope } (Verbund).
 // Effektive Dicke = Nenndicke / cos(Auftreffwinkel zur geneigten Platte), Wucht-/Panzergranaten normalisieren um `norm`°.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
-import { SHORT, gunSeat } from '../crew.js?v=20261121041936';
+import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261122020853';
+import { SHORT, gunSeat } from '../crew.js?v=20261122020853';
 
 const DEG = Math.PI / 180;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -95,7 +95,7 @@ function kindSpec(kind, cal, era) {
     default: {
       // Panzergranate: Durchschlag nach Kaliber/Mündungsgeschwindigkeit; 2. WK mit Haube und Sprengladung (filler)
       const D0 = era === 'wk1' ? (cal < 45 ? { v: 380, p: 26 } : { v: 480, p: 48 }) : cal >= 85 ? { v: 780, p: 165 } : { v: 620, p: 102 };
-      return { speed: D0.v, life: 6, pen0: D0.p, penLoss: era === 'wk1' ? 0.012 : 0.02, norm: era === 'wk1' ? 2 : 4, rico: era === 'wk1' ? 62 : 70, dmgPen: (era === 'wk1' ? 220 : 300) * Math.sqrt(k), dmgNo: 14, cone: 22, coneLen: 2.2, filler: era === 'wk1' ? 0 : 1.6, splash: { radius: 2.0, maxDamage: 70 }, actorDamage: 200, penetrating: true };
+      return { speed: D0.v, life: 6, pen0: D0.p, penLoss: era === 'wk1' ? 0.012 : 0.02, norm: era === 'wk1' ? 2 : 4, rico: era === 'wk1' ? 62 : 70, dmgPen: (era === 'wk1' ? 220 : 300) * Math.sqrt(k), dmgNo: 14, cone: 22, coneLen: 2.2, filler: era === 'wk1' ? 0 : 1.2, splash: { radius: 2.0, maxDamage: 70 }, actorDamage: 200, penetrating: true };
     }
   }
 }
@@ -312,8 +312,17 @@ export function applyEffects(sys, v, info) {
     if (dmg <= 0) continue;
     dmg *= 0.75 + rnd() * 0.5;
     const a = s.actor;
-    if (a && a.alive && G.combat) {
+    // KI-Panzer (EnemyTank, ein Bot fährt und richtet für alle): nur die virtuelle Besatzung wird getroffen – sonst legte ein
+    // Splitter am Fahrersitz den ganzen Panzer still (der Bot steht stellvertretend für Fahrer und Richtschütze)
+    if (a && a.alive && G.combat && !v._psimAI) {
       const inv = a.invulnerable;
+      // Spieler (Nutzer 21.11.: „kein Sofort-Tod“): Splitterschutzauskleidung/Helm mindern; ein tödlicher Treffer macht ihn
+      // höchstens alle 30 s nur schwer verwundet (Besatzungsausfälle statt Rundenende) – Munitionsbrand bleibt tödlich
+      if (a.isPlayer) {
+        dmg *= 0.6;
+        const now = G.time.elapsed;
+        if (dmg >= a.health && a.health > 15 && now - (a._psimSaved || -1e9) > 30) { a._psimSaved = now; dmg = a.health - 12; notes.push('Du bist schwer verwundet'); }
+      }
       a.invulnerable = false;
       try { G.combat.damage(a, { amount: Math.round(dmg), attacker: info.attacker || null, weaponId: info.weaponId, explosive: true, point: pt.clone(), zone: 'body' }); } catch { /* */ }
       if (a.alive) a.invulnerable = inv;
@@ -331,13 +340,19 @@ export function applyEffects(sys, v, info) {
     const rp = _c.set(rk[0] * sc + sh[0], rk[1] * sc + sh[1], rk[2] * sc + sh[2]).applyQuaternion(_q).add(_b.fromArray(D.turretPivot));
     v.body.toWorld(rp, rp);
     const n = Object.values(g.rack).reduce((x, y) => x + (y | 0), 0);
-    const near = rp.distanceTo(pt) < 1.6 || (burst && rp.distanceTo(burst) < 1.6);
-    if (near && n > 0 && rnd() < (P.role === 'ke' ? 0.45 : P.role === 'ce' ? 0.6 : 0.3) * Math.min(1, 0.4 + n / 14)) {
+    // Zündung nur bei Treffern nahe am Gestell (1,1 m), wahrscheinlicher mit vollem Gestell
+    const near = rp.distanceTo(pt) < 1.1 || (burst && rp.distanceTo(burst) < 1.1);
+    if (near && n > 0 && rnd() < (P.role === 'ke' ? 0.3 : P.role === 'ce' ? 0.4 : 0.18) * Math.min(1, 0.4 + n / 14)) {
       if (I.blastDoor && g.step !== 'offen' && g.busyKind !== 'tuer' && g.busyKind !== 'greifen') {
         for (const k of Object.keys(g.rack)) g.rack[k] = 0;
         mods.munition = 0;
         notes.push('Munitionsbunker getroffen – Sprengklappen haben gehalten');
         G.effects?.explosion?.(rp.clone(), 3);
+      } else if (v.seats.some((s) => s.actor && s.actor.isPlayer && s.actor.alive)) {
+        // Spielerpanzer: Munitionsbrand statt Sofort-Explosion – Löschanlage (geringe Aussicht) oder Ausbooten (modes/panzer.js)
+        notes.push('Munitionsbrand!');
+        mods.munition = 0; mods.brand = Math.max(mods.brand, 1);
+        v._psimAmmoFire = true;
       } else {
         notes.push('Munition gezündet!');
         mods.munition = 0;
@@ -354,6 +369,15 @@ export function knockedOut(v) {
   if (v._psimCookoff) return 'Munition';
   const crew = v._psimCrew;
   if (!crew || !crew.length) return null;
+  // Spielerpanzer: einzelne Ausfälle legen ihn nicht still (der Spieler kann den Platz wechseln, Sitzrad) – erst wenn
+  // mindestens 60 % der Besatzung ausgefallen sind, ist er kampfunfähig
+  if (v.seats.some((s) => s.actor && s.actor.isPlayer && s.actor.alive)) {
+    const n = v.seats.length, deadP = v.seats.filter((s) => !s.actor || !s.actor.alive).length;
+    return n >= 3 && deadP / n >= 0.6 ? 'Besatzung' : null;
+  }
+  // KI-Panzer: fällt der Bot an Bord (fährt und richtet stellvertretend), steht der Panzer still und schweigt → ausgefallen
+  const ai = v._psimAI;
+  if (ai && !(ai.bot && ai.bot.alive && ai.bot.vehicle === v)) return 'Besatzung';
   const dead = crew.filter((c) => c.state === 'tot').length;
   const dr = crew.find((c) => c.role === 'driver'), gu = crew.find((c) => c.role === 'gunner');
   if ((dr && dr.state === 'tot' && gu && gu.state === 'tot') || dead / crew.length >= 0.6) return 'Besatzung';

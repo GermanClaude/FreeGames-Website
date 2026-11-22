@@ -155,7 +155,7 @@ export class CampaignUI {
       <div class="kc-card"><small></small><b></b><span></span></div>
       <div class="kc-toast"></div>
       <div class="kc-hold"><span></span><i><u></u></i></div>
-      <div class="kc-sub" aria-live="polite"><span class="kc-who"></span><span class="kc-txt"></span></div>
+      <div class="kc-sub" aria-live="polite"><span class="kc-who"></span><span class="kc-txt" data-noi18n></span></div>
       <button type="button" class="kc-skip" aria-label="Zwischensequenz überspringen"><svg class="kc-ring" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5l9 7-9 7zM13 5l9 7-9 7z"/></svg><span>Überspringen</span><kbd>Leertaste</kbd></button>
       <div class="kc-fail"><div><b>Mission gescheitert</b><p></p><button type="button" class="pri" data-kc="retry">Ab Checkpoint</button><button type="button" data-kc="restart">Mission neu starten</button><button type="button" data-kc="quit">Kampagne</button></div></div>
       <div class="kc-lesson"><small></small><b></b><span></span><i><u></u></i></div>
@@ -221,7 +221,8 @@ export class CampaignUI {
     this.el.who.textContent = who && who.name ? who.name : '';
     this.el.who.style.color = (who && who.color) || '#ffc23d';
     // Wörter einzeln (Hervorhebung des gesprochenen Wortes); Satzzeichen bleiben am Wort
-    const parts = String(text).split(/(\s+)/);
+    // Chinesisch ohne Leerzeichen: jedes Schriftzeichen (mit folgendem Satzzeichen) einzeln hervorheben
+    const parts = String(text).split(/(\s+)/).flatMap((p) => (/[\u3400-\u9fff]/.test(p) ? p.match(/[\u3400-\u9fff][，。！？：；、”）…—]*|[^\u3400-\u9fff]+/g) : [p]));
     this.el.txt.innerHTML = parts.map((p) => (/^\s+$/.test(p) ? p : `<i class="todo">${esc(p)}</i>`)).join('');
     this._sub = { nodes: [...this.el.txt.querySelectorAll('i')], track, last: -1 };
     s.classList.add('on');

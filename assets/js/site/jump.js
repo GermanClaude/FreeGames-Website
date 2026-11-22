@@ -1,7 +1,7 @@
 // Sprünge im Dokument: Erst alle Abschnitte bis zum Ziel aufbauen, dann scrollen und
 // während der Bewegung nachführen, falls sich darüber noch etwas setzt. Eine Nutzereingabe
 // (Rad, Berührung, Taste) beendet das Nachführen sofort.
-import { reduced } from './motion.js?v=20261121041936';
+import { reduced } from './motion.js?v=20261122020853';
 
 let setReady;
 const ready = new Promise((r) => { setReady = r; });
@@ -11,6 +11,10 @@ const ensureUpTo = async (el) => {
   const fn = await Promise.race([ready, new Promise((r) => setTimeout(() => r(null), 4000))]);
   if (fn) await fn(el);
 };
+
+let router = null;
+/** Spielmenü (21.11.): Sprünge öffnen statt zu scrollen die Kategorie, in der das Ziel liegt (menu.js). */
+export function setRouter(fn) { router = typeof fn === 'function' ? fn : null; }
 
 /** main.js meldet hier, wie Abschnitte bis zu einem Element aufgebaut werden. */
 export function setEnsureUpTo(fn) { setReady(fn); }
@@ -32,6 +36,7 @@ function focusTarget(el) {
 export async function jumpTo(id, { smooth = true, focus = true, hash = true } = {}) {
   const el = document.getElementById(id);
   if (!el) return false;
+  if (router) return router(id, { smooth, focus, hash });
   const my = ++token;
   await ensureUpTo(el);
   await frames(2);

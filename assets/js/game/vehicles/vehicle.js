@@ -9,13 +9,13 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, vehicleWeapon } from './data.js?v=20261121041936';
-import { VehicleBody } from './sim.js?v=20261121041936';
-import { gearName } from './drivetrain.js?v=20261121041936';
-import { createVehicleModel } from './models.js?v=20261121041936';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261121041936';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261121041936';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261121041936';
+import { VEHICLES, vehicleWeapon } from './data.js?v=20261122020853';
+import { VehicleBody } from './sim.js?v=20261122020853';
+import { gearName } from './drivetrain.js?v=20261122020853';
+import { createVehicleModel } from './models.js?v=20261122020853';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261122020853';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261122020853';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261122020853';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -414,6 +414,11 @@ export class Vehicle {
       fw = seat.weapons.find((x) => x.def.id === this.gun.loaded) || { def: vehicleWeapon(this.type, this.gun.loaded), mag: 1, reloadT: 0, cooldown: 0, shots: 0 };
     } else if (w.mag <= 0 || w.reloadT > 0 || w.cooldown > 0) return;
     this.muzzle(seat.index, _ro, _rd);
+    // Feuersperre: Lafetten-MG (Turmdach, Luke, Ringlafette) schießt nicht durch das eigene Fahrzeug (Turm, Wanne, Rohr)
+    if (!shell && seat.def.mount !== 'gun' && this.raycast(_ro, _rd, 9)) {
+      if (isHuman(shooter) && shooter.isPlayer && this.sys._flash && this.G.time.elapsed - (this._lockMsgT || -9) > 1.5) { this._lockMsgT = this.G.time.elapsed; this.sys._flash('Feuersperre – eigenes Fahrzeug im Schussfeld'); }
+      return;
+    }
     const fseat = seat.actor ? seat : Object.create(seat, { actor: { value: shooter } });
     this.sys.fire(this, fseat, fw, _ro.clone(), _rd.clone());
     fw.shots += 1;

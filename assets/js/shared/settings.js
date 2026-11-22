@@ -3,7 +3,7 @@
 // (dann nur im Arbeitsspeicher), validiert und begrenzt jeden Wert, synchronisiert sich
 // zwischen Tabs über das 'storage'-Ereignis.
 
-import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261121041936';
+import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261122020853';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
@@ -66,6 +66,8 @@ export const DEFAULTS = Object.freeze({
   vrLocomotion: 'stick', vrReload: 'hand', vrScope: true, vrGrenadeGrab: true, vrGunAmmo: true, vrFrameRate: 'auto', vrFoveation: 'auto',
   // TV-/Konsolen-Modus (plattform, 19.11.): größere Oberfläche für Couch-Abstand; auto = an auf Xbox/PlayStation/Fernseher
   tvMode: 'auto', uiScale: 'auto',
+  // Sprache (shared/i18n.js): 'auto' = erste passende aus navigator.languages, sonst Deutsch
+  language: 'auto',
 });
 
 const HOLD_TOGGLE = Object.freeze({ options: ['hold', 'toggle'], labels: { hold: 'Halten', toggle: 'Umschalten' } });
@@ -77,6 +79,11 @@ const HOLD_TOGGLE = Object.freeze({ options: ['hold', 'toggle'], labels: { hold:
 /** Desktop-App (desktop/preload.js): zusätzliche Grafikstufe „Extrem“. */
 const DESKTOP_APP = typeof window !== 'undefined' && !!window.nullpunktDesktop;
 export const SETTINGS_SCHEMA = Object.freeze({
+  language: {
+    type: 'enum', label: 'Sprache', group: 'spiel',
+    options: ['auto', 'de', 'en', 'es', 'fr', 'ru', 'zh'],
+    labels: { auto: 'Automatisch', de: 'Deutsch', en: 'English', es: 'Español', fr: 'Français', ru: 'Русский', zh: '简体中文' },
+  },
   playerName: { type: 'string', maxLength: 16, label: 'Spielername', group: 'profil' },
   sensitivity: { type: 'number', min: 0.1, max: 5, step: 0.05, label: 'Mausempfindlichkeit', group: 'steuerung' },
   adsSensitivity: { type: 'number', min: 0.2, max: 2, step: 0.05, label: 'Empfindlichkeit im Anschlag (1×)', group: 'steuerung' },

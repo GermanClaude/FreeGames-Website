@@ -13,6 +13,7 @@
 //   circuit(m, v, pts, o)       – Luftfahrzeug fliegt eine Runde durch Wegpunkte (Autopilot), immer wieder
 
 import * as THREE from 'three';
+import { tx } from '../../../shared/i18n.js?v=20261122020853';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -163,7 +164,7 @@ export function scopeMark(m, id, text, list, { secs = 1.2, cone = 0.035, needAds
     if (best !== cur) { cur = best; t = 0; }
     if (cur) {
       t += dt;
-      if (m.ui) m.ui.hold(`${label}: ${cur.name || 'Ziel'} …`, t / secs);
+      if (m.ui) m.ui.hold(`${tx(label)}: ${tx(cur.name || 'Ziel')} …`, t / secs);
       if (t >= secs) {
         marked.add(cur.key);
         m.progress(id, marked.size, list.length);

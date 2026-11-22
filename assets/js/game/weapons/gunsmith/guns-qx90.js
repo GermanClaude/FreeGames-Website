@@ -8,15 +8,15 @@
 // Rahmen und Gehäuse mit eigenem Atlas (qx90-tex.js), Schrauben/Kleinteile aus dem Polymer-Baukasten (polymer-parts.js).
 // Detailstufen: PC hoch/ultra (b.max) feinste Netze + Kanten-/Muldenfarbe + Kleinteile, PC niedrig/mittel Standard,
 // Handy (b.lite) gröbere Netze und kleiner Atlas, Bots ≤ 600 Dreiecke – Anker in allen Stufen gleich.
-import * as R from './qx90-ref.js?v=20261121041936';
-import { frameUV, upperUV } from './qx90-tex.js?v=20261121041936';
-import { extrudeRound, smin, sdPolygon, simplifyPoly } from './sdf.js?v=20261121041936';
-import { STEEL, POLY, sdfMesh, roundMax } from './sdfkit.js?v=20261121041936';
-import { smoothPoly } from './ak-parts.js?v=20261121041936';
-import { hexScrew, roundRect2, slot2, pocket, boss, smokeBox, gridBand } from './polymer-parts.js?v=20261121041936';
-import { magRounds } from './magfill.js?v=20261121041936';
-import { muzzleDevice, swapOptic } from './parts.js?v=20261121041936';
-import { schrift } from './schrift.js?v=20261121041936';
+import * as R from './qx90-ref.js?v=20261122020853';
+import { frameUV, upperUV } from './qx90-tex.js?v=20261122020853';
+import { extrudeRound, smin, sdPolygon, simplifyPoly } from './sdf.js?v=20261122020853';
+import { STEEL, POLY, sdfMesh, roundMax } from './sdfkit.js?v=20261122020853';
+import { smoothPoly } from './ak-parts.js?v=20261122020853';
+import { hexScrew, roundRect2, slot2, pocket, boss, smokeBox, gridBand } from './polymer-parts.js?v=20261122020853';
+import { magRounds } from './magfill.js?v=20261122020853';
+import { muzzleDevice, swapOptic } from './parts.js?v=20261122020853';
+import { schrift } from './schrift.js?v=20261122020853';
 
 const { U, V, M, HW } = R, AX = R.AXIS, px = (n) => n / R.PPM;
 const MAT = { frame: 'qx90Frame', upper: 'qx90Upper', optic: 'qx90Optic', black: 'qx90Black', butt: 'qx90Butt', steel: 'qx90Steel', rod: 'qx90Rod', mag: 'qx90Mag', cap: 'qx90MagCap', tick: 'qx90MagTick' };

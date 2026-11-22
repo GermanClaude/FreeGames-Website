@@ -5,6 +5,7 @@
 // Dazu die Touch-Knöpfe der Flugsteuerung (input.js verarbeitet .tc-btn[data-action] selbst). Weapons/Sitze/Zustand
 // zeigt weiter die Fahrzeugtafel (vehicles/hud.js).
 import * as THREE from 'three';
+import { compass, tx } from '../../../shared/i18n.js?v=20261122020853';
 
 const CSS = `
 .ah-cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
@@ -36,7 +37,6 @@ const TOUCH = [
 const COL = '#8dffa8', COLW = '#ffd34a', COLR = '#ff5a3c';
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3(), _f = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const DIRS = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
 
 export class AirHUD {
   constructor(sys) {
@@ -61,8 +61,10 @@ export class AirHUD {
         b.className = `tc-btn vc-btn va-btn ${cls} ${extra}`;
         b.dataset.action = action;
         b.setAttribute('role', 'button');
-        b.setAttribute('aria-label', label.replace(/-?<br>/g, ' '));
-        b.innerHTML = `<span>${label}</span>`;
+        // Getrennte Wörter („Stei-<br>gen“) erreicht die Seitenübersetzung nicht (zwei Textknoten) → hier übersetzen
+        const plain = label.replace(/-<br>/g, '').replace(/<br>/g, ' '), tr = tx(plain, 'touch');
+        b.setAttribute('aria-label', tr);
+        b.innerHTML = `<span>${tr !== plain ? String(tr).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])) : label}</span>`;
         tui.appendChild(b);
         this.touch.push(b);
       }
@@ -286,7 +288,7 @@ export class AirHUD {
       const d = base + k * 5, xx = x + (d - hdg) * px;
       const dd = ((d % 360) + 360) % 360;
       g.beginPath(); g.moveTo(xx, y + 8 * sc); g.lineTo(xx, y + (dd % 10 === 0 ? 0 : 4) * sc); g.stroke();
-      if (dd % 45 === 0) g.fillText(DIRS[dd / 45], xx, y - 8 * sc);
+      if (dd % 45 === 0) g.fillText(compass(dd), xx, y - 8 * sc);
       else if (dd % 15 === 0) g.fillText(String(dd / 10).padStart(2, '0'), xx, y - 8 * sc);
     }
     g.restore();

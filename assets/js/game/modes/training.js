@@ -3,9 +3,10 @@
 // (12 Ziele nacheinander, Strafzeit pro Fehlschuss, Bestzeit je Waffe in localStorage 'nullpunkt:training').
 // Trefferzuordnung: world.raycast wird für die Matchdauer umhüllt und merkt sich Zieltreffer; 'impact' bestätigt.
 
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261121041936';
-import { BaseMode } from './base.js?v=20261121041936';
-import { falloff } from '../combat.js?v=20261121041936';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261122020853';
+import { BaseMode } from './base.js?v=20261122020853';
+import { falloff } from '../combat.js?v=20261122020853';
+import { UebungsGelaende } from './training-gelaende.js?v=20261122020853'; // Übungsgelände (Karte range, 21.11.)
 
 const STORE = 'nullpunkt:training';
 const TARGET_HP = 100;
@@ -55,6 +56,7 @@ export class TrainingMode extends BaseMode {
   /* ------------------------------------------------------------ Lebenszyklus */
 
   onAttach(scope) {
+    this._scope = scope;
     scope.on('weapon:fire', (p) => {
       if (!p || p.actor !== this.G.player) return;
       this._shotSerial += 1;
@@ -73,10 +75,38 @@ export class TrainingMode extends BaseMode {
     }
     this._wrap(w);
     this.scores[this.G.player ? this.G.player.id : 'player'] = 0;
+    // Übungsgelände (Großkarte „range“): Stellplätze, Ziel-Panzer, Teleport, Menü (training-gelaende.js)
+    if (w && w.uebung && !this.gelaende) {
+      try { this.gelaende = new UebungsGelaende(this); if (this._scope) this.gelaende.attach(this._scope); this.gelaende.start(); } catch (err) { console.error('[Training] Übungsgelände', err); this.gelaende = null; }
+    }
   }
 
   onDetach() {
     this._unwrap();
+    if (this.gelaende) { try { this.gelaende.dispose(); } catch { /* */ } this.gelaende = null; }
+  }
+
+  /** Spieler zu Fuß am Infanterie-Stand (Parcours nur dort; draußen gehört die Taste Fahrzeugen und Tafeln). */
+  _atStand() {
+    const p = this.G.player;
+    if (!p || p.vehicle) return false;
+    if (!this.gelaende) return true;
+    if (this.G.vehicles && this.G.vehicles._near) return false;
+    return Math.abs(p.position.x) < 31 && p.position.z > 26 && p.position.z < 64;
+  }
+
+  /** HUD-Hinweis für die Taste Interagieren: Teleport-Tafel, sonst Parcours am Stand, sonst keiner (null). */
+  prompt() {
+    const g = this.gelaende && this.gelaende.prompt();
+    if (g) return g;
+    if (!this._atStand() || !this.targets.length) return null;
+    const P = this.parcours, running = P.state === 'running' || P.state === 'countdown';
+    return { text: running ? 'Parcours abbrechen' : 'Parcours starten', action: () => this.interact() };
+  }
+
+  /** Ziel-Panzer der Schießbahn sind keine Fahrzeuge zum Einsteigen (Fahrzeugsystem fragt den Modus). */
+  vehicleSeatFor(actor, v, want, idx) {
+    return v && v.trainingTarget ? -1 : idx;
   }
 
   _wrap(w) {
@@ -176,7 +206,11 @@ export class TrainingMode extends BaseMode {
         if (st && st.firstHit && now - st.firstHit > 3 && st.hp > 0) { st.hp = TARGET_HP; st.firstHit = 0; }
       }
     }
-    if (p && G.input && G.input.pressed('interact')) this.interact();
+    if (this.gelaende) this.gelaende.tick(dt);
+    if (p && G.input && G.input.pressed('interact')) {
+      if (this.gelaende && this.gelaende.onInteract()) { if (G.input.consume) G.input.consume('interact'); }
+      else if (this._atStand()) this.interact();
+    }
     this._tickParcours(dt, now);
   }
 
@@ -374,7 +408,7 @@ export class TrainingMode extends BaseMode {
   }
 
   resultExtra() {
-    return { training: this.summary(), parcours: this.parcours.result, best: this.bestTime() };
+    return { training: this.summary(), parcours: this.parcours.result, best: this.bestTime(), gelaende: this.gelaende ? this.gelaende.info().stats : null };
   }
 
   buildResult(reason) {

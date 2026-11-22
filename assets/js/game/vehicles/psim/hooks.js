@@ -10,8 +10,8 @@
 //   sys.requestExit   Aussteigen gesperrt (Besatzung bleibt im Panzer), außer bei Brand/Ausbooten
 //   sys.audio.update  Motor aus → Motorklang stumm
 import * as THREE from 'three';
-import { VEHICLE_WEAPONS } from '../data.js?v=20261121041936';
-import { penetration, applyEffects, modsOf, knockedOut, KINDS } from './ammo.js?v=20261121041936';
+import { VEHICLE_WEAPONS } from '../data.js?v=20261122020853';
+import { penetration, applyEffects, modsOf, knockedOut, KINDS } from './ammo.js?v=20261122020853';
 
 const _d = new THREE.Vector3(), _n = new THREE.Vector3(), _c = new THREE.Vector3(), _o = new THREE.Vector3();
 
@@ -28,6 +28,7 @@ export function installHooks(sys, mode) {
   // ---- Feuern: Schrotgarbe, Abschussort
   wrap(sys, 'fire', (orig) => function fire(v, seat, w, origin, dir) {
     const def = w && w.def;
+    if (v) v._psimFiredAt = G.time.elapsed; // Mündungsfeuer verrät den Schützen (crew-ai.js scanTargets)
     const P = def && def.psim;
     if (P && P.pellets) {
       const actor = seat.actor;
@@ -98,7 +99,9 @@ export function installHooks(sys, mode) {
     }
     if (s.display) return orig.call(pool, s, hit, dir);
     let dmg;
-    if (res.penetrated) dmg = P.dmgPen * (1 + 0.35 * Math.min(1, (res.penMm - res.eff) / Math.max(20, res.eff)));
+    // Durchschlag kostet Struktur, ausgeschaltet wird ein Panzer aber vor allem über Besatzung, Munition, Brand und Module
+    // (applyEffects/knockedOut) – nicht nach zwei Treffern über den Lebensbalken (Nutzer 21.11.: „stirbt extrem schnell“)
+    if (res.penetrated) dmg = P.dmgPen * 0.5 * (1 + 0.35 * Math.min(1, (res.penMm - res.eff) / Math.max(20, res.eff)));
     else dmg = P.dmgNo * (P.role === 'he' ? 1 : 0.6);
     if (!v.def.armored) dmg = Math.max(dmg, P.dmgPen * 0.9);
     const zone = hit.zone;

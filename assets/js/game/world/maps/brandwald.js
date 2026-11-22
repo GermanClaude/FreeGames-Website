@@ -5,13 +5,13 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261121041936';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261121041936';
+import { sampleSpline } from '../terrain/generate.js?v=20261122020853';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261122020853';
 // karten-voll (14.11.): Trümmer im Niemandsland (Wagenreste, Blech, Hülsen, Kisten, Drahtreste)
-import { truemmerfeld } from './niemandsland-leben.js?v=20261121041936';
-import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261121041936';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261121041936'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261121041936';
+import { truemmerfeld } from './niemandsland-leben.js?v=20261122020853';
+import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261122020853';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261122020853'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261122020853';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x

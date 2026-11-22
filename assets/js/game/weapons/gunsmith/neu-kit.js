@@ -5,10 +5,10 @@
 // Alle Körper als Distanzfeld-Bauteile (gbkit.slab: gerundete Kanten, Kanten-/Muldenfarbe) oder fein gefaste Grundkörper; die
 // Bot-Stufe (b.hi = false) bekommt die einfache Profil-Extrusion bzw. lässt Kleinteile weg (builder.js).
 // Koordinaten wie im Bauplan: x quer (rechts +), v hoch, u nach vorn, Meter, Ursprung = Griffpunkt der rechten Hand.
-import { slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261121041936';
-import { magRounds } from './magfill.js?v=20261121041936';
-import { pinHead, slotScrew, notchSight, bladeSight } from './pistol-parts.js?v=20261121041936';
-import { muzzleDevice } from './parts.js?v=20261121041936';
+import { slab, rrect, pocket, POLY, STEEL } from './gbkit.js?v=20261122020853';
+import { magRounds } from './magfill.js?v=20261122020853';
+import { pinHead, slotScrew, notchSight, bladeSight } from './pistol-parts.js?v=20261122020853';
+import { muzzleDevice } from './parts.js?v=20261122020853';
 
 export { slab, rrect, pocket, POLY, STEEL, pinHead, slotScrew };
 

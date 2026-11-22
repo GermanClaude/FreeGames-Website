@@ -13,11 +13,11 @@
 // Körper abgegriffen; Zivilkleidung (Pullover, Mantel mit weich gehäuteten Schößen, Kragen am gemessenen Halsausschnitt),
 // Zivilistinnen mit eigenem Körper und Frisur; Hautton je Soldat über den Palettenplatz 'skin'.
 import * as THREE from 'three';
-import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf, lathe } from './builder.js?v=20261121041936';
-import { hullShell, hullP, hullN, hullPath, sweep, rectProfile, roundProfile, onHull, pad, rectPoly, place, curve } from './gear-parts.js?v=20261121041936';
-import { SKIN_TONES } from './materials.js?v=20261121041936';
-import { BONE, DIM } from './rig.js?v=20261121041936';
-import { BODY_MESH } from './body-mesh.js?v=20261121041936';
+import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf, lathe } from './builder.js?v=20261122020853';
+import { hullShell, hullP, hullN, hullPath, sweep, rectProfile, roundProfile, onHull, pad, rectPoly, place, curve } from './gear-parts.js?v=20261122020853';
+import { SKIN_TONES } from './materials.js?v=20261122020853';
+import { BONE, DIM } from './rig.js?v=20261122020853';
+import { BODY_MESH } from './body-mesh.js?v=20261122020853';
 
 export const VARIANTS = [
   // Nutzer 16.10.: Grundausführungen wie die Soldaten im Video – Helm mit Tarnbezug (ohne Nachtsicht), dunkle
@@ -57,6 +57,13 @@ export const CIVIL_VARIANTS = [
   { id: 'zivilistin-mantel', name: 'Zivilistin (Mantel)', civil: true, female: true, top: 'mantel', topColor: '#7a6249', shirtColor: '#e0dbd0', pantsColor: '#2a2c33', shoeColor: '#2a1f19', sleeves: 'long', skin: 2, hair: '#2a1d15', hairStyle: 'zopf' },
   { id: 'zivilistin-pullover', name: 'Zivilistin (Pullover)', civil: true, female: true, top: 'pullover', topColor: '#8e8878', shirtColor: '#e0dbd0', pantsColor: '#3b4a63', shoeColor: '#3a2d24', sleeves: 'long', skin: 4, hair: '#3a281b', hairStyle: 'offen', jeans: true },
 ];
+// Panzerbesatzung (Strang crew-figures 21.11.: sichtbare Besatzung im Innenraum, vehicles/crew-figures.js) – nicht in VARIANTS
+// (Bots/Zufall bekommen sie nie), über die Id wie die zivilen Ausführungen: Feldjacke ohne Weste/Rucksack, modern Feldmütze
+// mit Funk-Kopfhörer, Weltkrieg Kopfhaube (Strickhaube) mit Kopfhörer
+CIVIL_VARIANTS.push(
+  { id: 'panzerbesatzung', name: 'Panzerbesatzung', shirt: 'combat', head: 'cap', capBack: true, ears: true, face: null, eyes: null, vest: 'none', back: 'none', knees: false, holster: false, sleeves: 'long', skin: 1, hair: '#2a2119', crew: true },
+  { id: 'panzerbesatzung-wk', name: 'Panzerbesatzung (Kopfhaube)', shirt: 'combat', head: 'beanie', ears: true, face: null, eyes: null, vest: 'none', back: 'none', knees: false, holster: false, sleeves: 'long', skin: 3, hair: '#3b2a1c', crew: true },
+);
 export const CIVIL_IDS = CIVIL_VARIANTS.map((v) => v.id);
 /** Ausführung (Soldat oder zivil) zu einer Id; unbekannt → erste Soldaten-Ausführung. */
 export function variantDef(id) {

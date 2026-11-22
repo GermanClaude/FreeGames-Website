@@ -5,9 +5,9 @@
 // Räder: `mountY` = Aufhängungspunkt; Ruhelage so gewählt, dass die Radunterkante bei statischer Last auf y = 0 steht
 // (mountY = rest + radius − statische Einfederung).
 
-import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261121041936';
-import { TROOP_VEHICLES, ROLE_TYPES, ROLE_KINDS } from './data-troop.js?v=20261121041936';
-import { addCrewViews } from './periscopes.js?v=20261121041936';
+import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261122020853';
+import { TROOP_VEHICLES, ROLE_TYPES, ROLE_KINDS } from './data-troop.js?v=20261122020853';
+import { addCrewViews } from './periscopes.js?v=20261122020853';
 
 const deg = (d) => (d * Math.PI) / 180;
 
@@ -154,7 +154,7 @@ export const VEHICLES = {
         id: 'loader', label: 'Ladeschütze', loader: true, weapons: [],
         pos: [0.6, 0.8, 0.5], exit: [[2.7, 0, 0.6], [-2.7, 0, 0.6], [0, 0, 4.6]],
         views: [
-          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.55, 0.62, 0.35], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.44, 0.62, 0.47], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
           { id: 'luke', label: 'Luke offen', space: 'turret', pos: [0.6, 1.35, 0.55], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 2], exposed: true, hatch: 'loader', pin: [0.6, 0.08, 0.55] },
           { id: 'aussen', label: 'Außenansicht', look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.8, pivot: 2.8 } },
         ],
@@ -167,7 +167,8 @@ export const VEHICLES = {
       loader: { space: 'turret', pos: [0.6, 0.83, 0.55], r: 0.3 },
     },
     // Munitionsbunker im Turmheck hinter einer Schiebetür (Vorbild: moderne Kampfpanzer mit Sprengklappen)
-    interior: { breech: [0, 0.42, -0.55], rack: [0, 0.45, 1.55], loaderEye: [0.55, 0.62, 0.35], blastDoor: true },
+    // Ladeschütze etwas weiter innen/hinten (Nutzer 21.11.: Richtschütze füllte aus 0,3–0,5 m das Bild)
+    interior: { breech: [0, 0.42, -0.55], rack: [0, 0.45, 1.55], loaderEye: [0.44, 0.62, 0.47], blastDoor: true },
     crew: { switchTime: 1.2, faceTol: 0.6 /* rad */ },
     ammo: { mbt_ap: 22, mbt_he: 18 },
     lights: [[-1.25, 1.32, -3.62], [1.25, 1.32, -3.62]],
@@ -617,7 +618,8 @@ export const VEHICLES = {
     ],
     hatches: {},
     // Kleiner Kampfraum (Aufbau des KP-1 auf 72 % verkleinert); Granatkörbe schräg am Wannenheck hinter dem Kommandanten
-    interior: { scale: 0.72, shift: [0, -0.02, 0.06], breech: [0, 0.42, -0.55], breechScale: 0.5, loaderEye: [0, 0.62, 0.35], rack: [0, 0.3, 1.3], rackRot: [0.4, 0] },
+    // Nutzer 21.11.: der Drehkranz wirkte im kleinen Turm wie ein großes Loch im Boden → geschlossene Turmbühne (kein Korb)
+    interior: { scale: 0.72, shift: [0, -0.02, 0.06], breech: [0, 0.42, -0.55], breechScale: 0.5, loaderEye: [0, 0.62, 0.35], rack: [0, 0.3, 1.3], rackRot: [0.4, 0], basket: false },
     crew: { switchTime: 1.0, faceTol: 0.6 },
     ammo: { mbt_ap: 50, mbt_he: 70 },
     lights: [[-0.42, 1.3, -1.98], [0.42, 1.3, -1.98]],
@@ -800,11 +802,12 @@ export function driverCabin(D) {
   if (!hatch && slit) roof = Math.max(roof, slit.pos[1] + 0.12);
   roof = Math.max(roof, floor + 1.0);
   const half = Math.max(0.6, hb[3] - 0.32);
-  const xl = Math.max(-half, F[0] - 0.56), xr = Math.min(half, F[0] + 0.56);
+  // etwas großzügiger (Nutzer 21.11.: „zu wenig Platz“): ±0,6 m statt ±0,56 m, Rückwand 0,68 m hinter dem Sitz
+  const xl = Math.max(-half, F[0] - 0.6), xr = Math.min(half, F[0] + 0.6);
   const zFT = Math.min((slit ? slit.pos[2] : F[2] - 0.35) - 0.14, F[2] - 0.28);
   const zFB = Math.min(zFT - 0.25, Math.max(hb[2] - hb[5] + 0.14, F[2] - 1.0));
   // Rückwand vor dem Kampfraum (models.js hullCompartment beginnt dahinter)
-  const zB = F[2] + 0.62;
+  const zB = F[2] + 0.68;
   const eye = [F[0], Math.min(Math.max(F[1] + 0.86, floor + 0.62), roof - 0.17), F[2] + 0.12];
   return { F, xl, xr, floor, roof, zFT, zFB, zB, eye, hatch };
 }
@@ -827,7 +830,9 @@ for (const D of Object.values(VEHICLES)) {
     if (s.loader) continue;
     const v = (s.views || []).find((x) => x.interior && x.space === 'turret');
     if (!v || v.station) continue;
-    const off = s.mount === 'gun' ? [Math.sign(v.pos[0] || 1) * 0.1, 0.05, 0.28] : [0, 0.03, 0.22];
+    // Kommandant (Nutzer 21.11.): vorher +0,22 m nach hinten → Auge in der Sitzlehne zwischen den Polstern; jetzt knapp vor
+    // der Lehne und etwas tiefer (unter dem Polsterring der Kuppel), Blick in den Kampfraum frei
+    const off = s.mount === 'gun' ? [Math.sign(v.pos[0] || 1) * 0.1, 0.05, 0.36] : [0, -0.05, 0.06]; // Richtschütze 36 cm hinter der Optik (Augenmuschel nicht im Gesicht)
     v.station = v.pos.slice();
     v.pos = [v.pos[0] + off[0] * sc, v.pos[1] + off[1] * sc, v.pos[2] + off[2] * sc];
   }
@@ -910,7 +915,7 @@ const NEW_TANKS = {
       ...[[-0.55, 1.45], [0.55, 1.95], [-0.55, 2.45]].map(([x, z], i) => ({
         id: `schuetze${i + 1}`, label: `Schütze ${i + 1}`, weapons: [], pos: [x, 0.62, z], exit: [[x * 1.6, 0, 4.4], [x < 0 ? -2.6 : 2.6, 0, z], [0, 0, 4.6]],
         views: [
-          { id: 'innen', label: 'Kampfraum', space: 'hull', pos: [x * 0.75, 1.36, z], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.6], zoom: [1], interior: true },
+          { id: 'innen', label: 'Kampfraum', space: 'hull', pos: [x * 0.85, 1.44, z], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.6], zoom: [1], interior: true },
           { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.4, pivot: 2.4 } },
         ],
       })),
@@ -1144,7 +1149,8 @@ const NEW_TANKS = {
         views: [
           { id: 'mg', label: 'Dach-MG (Winkelspiegel)', space: 'cupola', pos: [0, 0.18, 0.35], look: 'mount', zoom: [1.2, 2.5], overlay: 'wide' },
           { id: 'luke', label: 'Luke offen (Scherenfernrohr)', space: 'hull', pos: [0.45, 2.4, -0.35], look: 'rel', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 4, 8], overlay: 'binocular', exposed: true, hatch: 'commander', pin: [0.45, 1.25, -0.35] },
-          { id: 'innen', label: 'Kampfraum', space: 'turret', pos: [0.27, 0.13, 1.54], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
+          // Nutzer 21.11.: Auge lag im Granatgestell an der rechten Wand → linker hinterer Platz (Kommandantensitz)
+          { id: 'innen', label: 'Kampfraum', space: 'turret', pos: [-0.73, 0.13, 1.22], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], interior: true },
           { id: 'aussen', label: 'Außenansicht', look: 'rel', yaw: [-3.1, 3.1], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 9.5, height: 4.0, pivot: 2.2 } },
         ] },
     ],

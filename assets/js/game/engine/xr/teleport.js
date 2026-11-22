@@ -9,7 +9,7 @@
 // Bogen-Rechnung (traceArc) ist reine Logik und per Node prüfbar (scratchpad/plat/test-xr-teleport.mjs).
 
 import * as THREE from 'three';
-import { collisionRay } from '../physics.js?v=20261121041936';
+import { collisionRay } from '../physics.js?v=20261122020853';
 
 export const MAX_DIST = 4.5; // m waagerecht
 export const ARC_SPEED = 7.5; // m/s Abwurf des Bogens

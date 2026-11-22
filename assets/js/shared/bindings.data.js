@@ -229,6 +229,37 @@ const KEY_NAMES = {
   NumpadAdd: ['Num +', 'Ziffernblock Plus'], NumpadSubtract: ['Num −', 'Ziffernblock Minus'], NumpadMultiply: ['Num ×', 'Ziffernblock Mal'],
   NumpadDivide: ['Num ÷', 'Ziffernblock Geteilt'], NumpadDecimal: ['Num ,', 'Ziffernblock Komma'],
 };
+/**
+ * Tastennamen anderer Sprachen (shared/i18n.js setzt die Sprache über setKeyLabelLanguage). Ohne Layout-Karte des Browsers
+ * gilt je Sprache das übliche Layout: de QWERTZ, fr AZERTY, sonst QWERTY (US-Sonderzeichen).
+ */
+const KEY_NAMES_I18N = {
+  en: { Space: ['Space', 'Spacebar'], ShiftLeft: ['Shift', 'Left Shift'], ShiftRight: ['Shift', 'Right Shift'], ControlLeft: ['Ctrl', 'Left Ctrl'], ControlRight: ['Ctrl', 'Right Ctrl'], AltRight: ['Alt Gr', 'Alt Gr'], Tab: ['Tab', 'Tab'], CapsLock: ['Caps', 'Caps Lock'], Enter: ['Enter', 'Enter'], NumpadEnter: ['Num Enter', 'Numpad Enter'], Backspace: ['Backspace', 'Backspace'], Insert: ['Ins', 'Insert'], Delete: ['Del', 'Delete'], Home: ['Home', 'Home'], End: ['End', 'End'], PageUp: ['PgUp', 'Page Up'], PageDown: ['PgDn', 'Page Down'], ArrowUp: ['↑', 'Up Arrow'], ArrowDown: ['↓', 'Down Arrow'], ArrowLeft: ['←', 'Left Arrow'], ArrowRight: ['→', 'Right Arrow'], ContextMenu: ['Menu', 'Menu key'], MetaLeft: ['Win', 'Windows key'], MetaRight: ['Win', 'Windows key'], NumpadAdd: ['Num +', 'Numpad Plus'], NumpadSubtract: ['Num −', 'Numpad Minus'], NumpadMultiply: ['Num ×', 'Numpad Multiply'], NumpadDivide: ['Num ÷', 'Numpad Divide'], NumpadDecimal: ['Num .', 'Numpad Decimal'], num: ['Num', 'Numpad'] },
+  es: { Space: ['Espacio', 'Barra espaciadora'], ShiftLeft: ['Mayús', 'Mayús izq.'], ShiftRight: ['Mayús', 'Mayús der.'], ControlLeft: ['Ctrl', 'Ctrl izq.'], ControlRight: ['Ctrl', 'Ctrl der.'], AltRight: ['Alt Gr', 'Alt Gr'], Tab: ['Tab', 'Tabulador'], CapsLock: ['Bloq Mayús', 'Bloq Mayús'], Enter: ['Intro', 'Intro'], NumpadEnter: ['Num Intro', 'Intro (teclado num.)'], Backspace: ['Retroceso', 'Retroceso'], Insert: ['Insert', 'Insertar'], Delete: ['Supr', 'Suprimir'], Home: ['Inicio', 'Inicio'], End: ['Fin', 'Fin'], PageUp: ['Re Pág', 'Retroceder página'], PageDown: ['Av Pág', 'Avanzar página'], ArrowUp: ['↑', 'Flecha arriba'], ArrowDown: ['↓', 'Flecha abajo'], ArrowLeft: ['←', 'Flecha izquierda'], ArrowRight: ['→', 'Flecha derecha'], ContextMenu: ['Menú', 'Tecla de menú'], MetaLeft: ['Win', 'Tecla Windows'], MetaRight: ['Win', 'Tecla Windows'], NumpadAdd: ['Num +', 'Num más'], NumpadSubtract: ['Num −', 'Num menos'], NumpadMultiply: ['Num ×', 'Num por'], NumpadDivide: ['Num ÷', 'Num entre'], NumpadDecimal: ['Num .', 'Num decimal'], num: ['Num', 'Teclado num.'] },
+  fr: { Space: ['Espace', 'Barre d’espace'], ShiftLeft: ['Maj', 'Maj gauche'], ShiftRight: ['Maj', 'Maj droite'], ControlLeft: ['Ctrl', 'Ctrl gauche'], ControlRight: ['Ctrl', 'Ctrl droite'], AltRight: ['Alt Gr', 'Alt Gr'], Tab: ['Tab', 'Tabulation'], CapsLock: ['Verr Maj', 'Verrouillage maj.'], Enter: ['Entrée', 'Entrée'], NumpadEnter: ['Num Entrée', 'Entrée (pavé num.)'], Backspace: ['Retour', 'Retour arrière'], Insert: ['Inser', 'Insertion'], Delete: ['Suppr', 'Supprimer'], Home: ['Début', 'Début'], End: ['Fin', 'Fin'], PageUp: ['Pg ↑', 'Page précédente'], PageDown: ['Pg ↓', 'Page suivante'], ArrowUp: ['↑', 'Flèche haut'], ArrowDown: ['↓', 'Flèche bas'], ArrowLeft: ['←', 'Flèche gauche'], ArrowRight: ['→', 'Flèche droite'], ContextMenu: ['Menu', 'Touche menu'], MetaLeft: ['Win', 'Touche Windows'], MetaRight: ['Win', 'Touche Windows'], NumpadAdd: ['Num +', 'Pavé num. plus'], NumpadSubtract: ['Num −', 'Pavé num. moins'], NumpadMultiply: ['Num ×', 'Pavé num. fois'], NumpadDivide: ['Num ÷', 'Pavé num. divisé'], NumpadDecimal: ['Num .', 'Pavé num. point'], num: ['Num', 'Pavé num.'] },
+  ru: { Space: ['Пробел', 'Пробел'], ShiftLeft: ['Shift', 'Левый Shift'], ShiftRight: ['Shift', 'Правый Shift'], ControlLeft: ['Ctrl', 'Левый Ctrl'], ControlRight: ['Ctrl', 'Правый Ctrl'], AltRight: ['Alt Gr', 'Правый Alt'], Tab: ['Tab', 'Tab'], CapsLock: ['Caps', 'Caps Lock'], Enter: ['Enter', 'Enter'], NumpadEnter: ['Num Enter', 'Enter (цифр. блок)'], Backspace: ['Backspace', 'Backspace'], Insert: ['Ins', 'Insert'], Delete: ['Del', 'Delete'], Home: ['Home', 'Home'], End: ['End', 'End'], PageUp: ['PgUp', 'Page Up'], PageDown: ['PgDn', 'Page Down'], ArrowUp: ['↑', 'Стрелка вверх'], ArrowDown: ['↓', 'Стрелка вниз'], ArrowLeft: ['←', 'Стрелка влево'], ArrowRight: ['→', 'Стрелка вправо'], ContextMenu: ['Меню', 'Клавиша меню'], MetaLeft: ['Win', 'Клавиша Windows'], MetaRight: ['Win', 'Клавиша Windows'], NumpadAdd: ['Num +', 'Num плюс'], NumpadSubtract: ['Num −', 'Num минус'], NumpadMultiply: ['Num ×', 'Num умножить'], NumpadDivide: ['Num ÷', 'Num разделить'], NumpadDecimal: ['Num .', 'Num точка'], num: ['Num', 'Цифр. блок'] },
+  zh: { Space: ['空格', '空格键'], ShiftLeft: ['Shift', '左 Shift'], ShiftRight: ['Shift', '右 Shift'], ControlLeft: ['Ctrl', '左 Ctrl'], ControlRight: ['Ctrl', '右 Ctrl'], AltRight: ['右 Alt', '右 Alt'], Tab: ['Tab', 'Tab 键'], CapsLock: ['大写锁定', '大写锁定键'], Enter: ['回车', '回车键'], NumpadEnter: ['小键盘回车', '小键盘回车'], Backspace: ['退格', '退格键'], Insert: ['Ins', 'Insert 键'], Delete: ['Del', 'Delete 键'], Home: ['Home', 'Home 键'], End: ['End', 'End 键'], PageUp: ['PgUp', '上翻页'], PageDown: ['PgDn', '下翻页'], ArrowUp: ['↑', '上方向键'], ArrowDown: ['↓', '下方向键'], ArrowLeft: ['←', '左方向键'], ArrowRight: ['→', '右方向键'], ContextMenu: ['菜单', '菜单键'], MetaLeft: ['Win', 'Windows 键'], MetaRight: ['Win', 'Windows 键'], NumpadAdd: ['Num +', '小键盘加'], NumpadSubtract: ['Num −', '小键盘减'], NumpadMultiply: ['Num ×', '小键盘乘'], NumpadDivide: ['Num ÷', '小键盘除'], NumpadDecimal: ['Num .', '小键盘小数点'], num: ['Num', '小键盘'] },
+};
+// US-QWERTY-Sonderzeichen (en/es/ru/zh ohne Layout-Karte) und AZERTY (fr)
+const US_PUNCT = { Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Semicolon: ';', Quote: "'", Backslash: '\\', IntlBackslash: '\\', Comma: ',', Period: '.', Slash: '/' };
+const FR_PUNCT = { Backquote: '²', Minus: ')', Equal: '=', BracketLeft: '^', BracketRight: '$', Semicolon: 'M', Quote: 'Ù', Backslash: '*', IntlBackslash: '<', Comma: ';', Period: ':', Slash: '!' };
+const FR_LETTERS = { Q: 'A', A: 'Q', W: 'Z', Z: 'W', M: ',' };
+const MOUSE_NAMES_I18N = {
+  en: { Mouse0: ['LMB', 'Left mouse button'], Mouse1: ['MMB', 'Middle mouse button'], Mouse2: ['RMB', 'Right mouse button'], Mouse3: ['Mouse 4', 'Mouse button 4 (back)'], Mouse4: ['Mouse 5', 'Mouse button 5 (forward)'], Wheel: ['Wheel', 'Mouse wheel'], WheelUp: ['Wheel ↑', 'Wheel up'], WheelDown: ['Wheel ↓', 'Wheel down'], pad: 'Button' },
+  es: { Mouse0: ['Clic izq.', 'Botón izquierdo'], Mouse1: ['Clic central', 'Botón central'], Mouse2: ['Clic der.', 'Botón derecho'], Mouse3: ['Ratón 4', 'Botón 4 (atrás)'], Mouse4: ['Ratón 5', 'Botón 5 (adelante)'], Wheel: ['Rueda', 'Rueda del ratón'], WheelUp: ['Rueda ↑', 'Rueda arriba'], WheelDown: ['Rueda ↓', 'Rueda abajo'], pad: 'Botón' },
+  fr: { Mouse0: ['Clic G', 'Bouton gauche'], Mouse1: ['Clic M', 'Bouton du milieu'], Mouse2: ['Clic D', 'Bouton droit'], Mouse3: ['Souris 4', 'Bouton 4 (précédent)'], Mouse4: ['Souris 5', 'Bouton 5 (suivant)'], Wheel: ['Molette', 'Molette'], WheelUp: ['Molette ↑', 'Molette haut'], WheelDown: ['Molette ↓', 'Molette bas'], pad: 'Bouton' },
+  ru: { Mouse0: ['ЛКМ', 'Левая кнопка мыши'], Mouse1: ['СКМ', 'Средняя кнопка мыши'], Mouse2: ['ПКМ', 'Правая кнопка мыши'], Mouse3: ['Мышь 4', 'Кнопка мыши 4 (назад)'], Mouse4: ['Мышь 5', 'Кнопка мыши 5 (вперёд)'], Wheel: ['Колесо', 'Колесо мыши'], WheelUp: ['Колесо ↑', 'Колесо вверх'], WheelDown: ['Колесо ↓', 'Колесо вниз'], pad: 'Кнопка' },
+  zh: { Mouse0: ['左键', '鼠标左键'], Mouse1: ['中键', '鼠标中键'], Mouse2: ['右键', '鼠标右键'], Mouse3: ['侧键 4', '鼠标侧键 4（后退）'], Mouse4: ['侧键 5', '鼠标侧键 5（前进）'], Wheel: ['滚轮', '鼠标滚轮'], WheelUp: ['滚轮 ↑', '滚轮上'], WheelDown: ['滚轮 ↓', '滚轮下'], pad: '按键' },
+};
+const PAD_MENU_I18N = { en: ['View', 'Menu'], es: ['Vista', 'Menú'], fr: ['Affichage', 'Menu'], ru: ['Просмотр', 'Меню'], zh: ['视图', '菜单'] };
+let keyLang = 'de';
+let defaultLayout = null;
+/** Sprache der Tastennamen ('de' …) und optional die Layout-Karte des Browsers (navigator.keyboard.getLayoutMap()). */
+export function setKeyLabelLanguage(lang, layout = undefined) {
+  keyLang = KEY_NAMES_I18N[lang] || lang === 'de' ? lang : 'de';
+  if (layout !== undefined) defaultLayout = layout;
+}
+export function keyLabelLanguage() { return keyLang; }
 const MOUSE_NAMES = {
   Mouse0: ['LMT', 'Linke Maustaste'], Mouse1: ['MMT', 'Mittlere Maustaste'], Mouse2: ['RMT', 'Rechte Maustaste'],
   Mouse3: ['Maus 4', 'Maustaste 4 (zurück)'], Mouse4: ['Maus 5', 'Maustaste 5 (vor)'],
@@ -255,6 +286,8 @@ export const PAD_STICK_LABELS = Object.freeze({
  */
 export function codeLabel(code, { long = false, pad = 'xbox', layout = null } = {}) { // pad: 'xbox' | 'ps' | 'nintendo'
   if (!code) return '—';
+  if (!layout) layout = defaultLayout;
+  if (keyLang !== 'de') return codeLabelI18n(code, { long, pad, layout });
   if (code.includes('+')) return code.split('+').map((c) => codeLabel(c, { long, pad, layout })).join(' + ');
   if (code.startsWith('Xr')) return xrLabel(code, long);
   const m = /^Pad(\d{1,2})$/.exec(code);
@@ -273,6 +306,36 @@ export function codeLabel(code, { long = false, pad = 'xbox', layout = null } = 
   if ((r = /^Digit(\d)$/.exec(code))) return r[1];
   if ((r = /^Numpad(\d)$/.exec(code))) return long ? `Ziffernblock ${r[1]}` : `Num ${r[1]}`;
   if (/^F\d{1,2}$/.test(code)) return code;
+  return code;
+}
+
+/** codeLabel für andere Sprachen als Deutsch (Tasten-, Maus- und Controller-Namen der Sprache, Layout je Sprache). */
+function codeLabelI18n(code, { long, pad, layout }) {
+  if (code.includes('+')) return code.split('+').map((c) => codeLabel(c, { long, pad, layout })).join(' + ');
+  if (code.startsWith('Xr')) return xrLabel(code, long);
+  const K = KEY_NAMES_I18N[keyLang], M = MOUSE_NAMES_I18N[keyLang];
+  const m = /^Pad(\d{1,2})$/.exec(code);
+  if (m) {
+    const i = Number(m[1]);
+    const n = PAD_BUTTON_NAMES[i];
+    if (!n) return `${M.pad} ${m[1]}`;
+    if ((i === 8 || i === 9) && pad !== 'ps' && pad !== 'nintendo') return PAD_MENU_I18N[keyLang][i - 8];
+    return n[pad === 'ps' ? 1 : pad === 'nintendo' ? 2 : 0];
+  }
+  if (M[code]) return M[code][long ? 1 : 0];
+  if (layout && typeof layout.get === 'function') {
+    const k = layout.get(code);
+    if (k && k.trim() && !/^\s$/.test(k)) return k.length === 1 ? k.toUpperCase() : k;
+  }
+  if (K[code]) return K[code][long ? 1 : 0];
+  if (code === 'AltLeft') return 'Alt';
+  if (code === 'Escape') return 'Esc';
+  const P = keyLang === 'fr' ? FR_PUNCT : US_PUNCT;
+  if (P[code]) return P[code];
+  let r;
+  if ((r = /^Key([A-Z])$/.exec(code))) return keyLang === 'fr' ? (FR_LETTERS[r[1]] || r[1]) : r[1];
+  if ((r = /^Digit(\d)$/.exec(code))) return r[1];
+  if ((r = /^Numpad(\d)$/.exec(code))) return long ? `${K.num[1]} ${r[1]}` : `Num ${r[1]}`;
   return code;
 }
 

@@ -1,7 +1,9 @@
 // Ton (standardmäßig aus). UI-Klänge aus engine/audio/ui-sounds.js, Waffenklänge aus der Audio-Engine
 // des Spiels (erst bei Bedarf geladen), sonst eine winzige WebAudio-Synthese.
 // Spielt nie vor einem ausdrücklichen Einschalten; startet erst nach einer Nutzergeste.
-import { site } from './state.js?v=20261121041936';
+// Spielmenü (21.11.): Im Menü (html.shell) sind die Menüklänge vorgabemäßig an – hörbar erst nach der ersten Eingabe
+// (Klick, Taste) und nur, solange niemand „Ton: aus“ gewählt hat (site.soundSet).
+import { site } from './state.js?v=20261122020853';
 
 let settings = null;
 let enabled = false;
@@ -58,7 +60,7 @@ function ensure() {
   if (loading) return loading;
   loading = (async () => {
     try {
-      const m = await import('../game/engine/audio/ui-sounds.js?v=20261121041936');
+      const m = await import('../game/engine/audio/ui-sounds.js?v=20261122020853');
       if (typeof m.createUiSounds === 'function') {
         uiSnd = m.createUiSounds(settings, { gestures: false });
         uiSnd.unlock();
@@ -74,7 +76,7 @@ function ensureEngine() {
   if (engine || engineLoading) return engineLoading;
   engineLoading = (async () => {
     try {
-      const mod = await import('../game/engine/audio.js?v=20261121041936');
+      const mod = await import('../game/engine/audio.js?v=20261122020853');
       if (mod?.AudioEngine) {
         engine = new mod.AudioEngine({ settings, events: null }, { autoUnlock: false, autoMusic: false });
         await engine.unlock();
@@ -103,8 +105,9 @@ export const sound = {
   init(S) {
     settings = S;
     const b = document.getElementById('sound-toggle');
-    // Gespeichert „an“: erst die erste Geste startet tatsächlich Audio.
-    if (site.get('sound')) {
+    // Gespeichert „an“ (oder Menü-Vorgabe): erst die erste Geste startet tatsächlich Audio.
+    const menuDefault = document.documentElement.classList.contains('shell') && !site.get('soundSet');
+    if (site.get('sound') || menuDefault) {
       enabled = true;
       const arm = () => {
         ensure().then(() => { uiSnd?.unlock?.(); synth?.resume(); });
@@ -117,7 +120,7 @@ export const sound = {
     setButton();
     b?.addEventListener('click', async () => {
       enabled = !enabled;
-      site.set('sound', enabled);
+      site.patch({ sound: enabled, soundSet: true });
       setButton();
       if (enabled) {
         await ensure();
@@ -126,7 +129,7 @@ export const sound = {
         sound.ui('toggle');
       }
     });
-    site.onChange((k, v) => { if (k === 'sound' && v !== enabled) { enabled = !!v; setButton(); } });
+    site.onChange((k, v) => { if (k === 'sound' && v !== enabled && site.get('soundSet')) { enabled = !!v; setButton(); } });
   },
 
   ui(name) {

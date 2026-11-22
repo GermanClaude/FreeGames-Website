@@ -5,6 +5,7 @@
 //   Gegenstände nur auf Tastendruck: Marschkompass (halten), Karte (halten, Papier, ohne eigene Position),
 //   Ausrüstung (Weste/Rucksack mit Gewicht, Umpacken), Ablesung beim Magazin-/Lager-Check (Schätzung in Worten).
 //   Führung wie im Panzer-Modus (vehicles/psim/hud.js): Handgriffe als Prüfliste aus dem echten Zustand.
+import { compass } from '../../shared/i18n.js?v=20261122020853';
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -111,8 +112,8 @@ export class SimHUD {
       const r0 = big ? 70 : mid ? 76 : 80, r1 = 86;
       s += `<line x1="${(Math.sin(a) * r0).toFixed(1)}" y1="${(-Math.cos(a) * r0).toFixed(1)}" x2="${(Math.sin(a) * r1).toFixed(1)}" y2="${(-Math.cos(a) * r1).toFixed(1)}" stroke="#d9cfb0" stroke-width="${big ? 2 : 1}"/>`;
     }
-    const lab = [[0, 'N'], [45, 'NO'], [90, 'O'], [135, 'SO'], [180, 'S'], [225, 'SW'], [270, 'W'], [315, 'NW']];
-    for (const [d, t] of lab) {
+    for (const d of [0, 45, 90, 135, 180, 225, 270, 315]) {
+      const t = compass(d);
       const a = (d * Math.PI) / 180;
       s += `<text x="${(Math.sin(a) * 56).toFixed(1)}" y="${(-Math.cos(a) * 56 + 5).toFixed(1)}" fill="${d === 0 ? '#e86a4a' : '#d9cfb0'}" font-size="${t.length > 1 ? 11 : 16}" text-anchor="middle" font-family="inherit">${t}</text>`;
     }

@@ -1,12 +1,12 @@
 // §00 Einschießen: Fünf Schuss auf den orangefarbenen Punkt. Löcher im Papier, Glyphen-Kick,
 // Streukreis in mm, Treffpunktlage in Klick – danach gleitet der Nullpunkt unter die Gruppe.
-import { Kinetic, split } from './kinetic.js?v=20261121041936';
-import { glyphModel, fit } from './fit.js?v=20261121041936';
-import { spread, hit } from './cursor.js?v=20261121041936';
-import { site } from './state.js?v=20261121041936';
-import { announce } from './live.js?v=20261121041936';
-import { reduced, SPRINGS } from './motion.js?v=20261121041936';
-import { num, NNBSP } from './fmt.js?v=20261121041936';
+import { Kinetic, split } from './kinetic.js?v=20261122020853';
+import { glyphModel, fit } from './fit.js?v=20261122020853';
+import { spread, hit } from './cursor.js?v=20261122020853';
+import { site } from './state.js?v=20261122020853';
+import { announce } from './live.js?v=20261122020853';
+import { reduced, SPRINGS } from './motion.js?v=20261122020853';
+import { num, NNBSP } from './fmt.js?v=20261122020853';
 
 const $ = (s) => document.querySelector(s);
 const CLICK_PX = 8;
@@ -35,7 +35,7 @@ export function initZero({ sound } = {}) {
   split(h1, { sr: 'NULLPUNKT' });
   const hero = h1.closest('.hero') || document.body;
   // Obergrenze auch aus der Höhe: Was nach der Wortmarke kommt (Satz, Aufruf), bleibt im ersten Bildschirm.
-  const others = ['.hero-top', '#zero-cap', '.zero-line', '.data-line', '.hero-body'];
+  const others = ['.hero-top', '#zero-cap', '.zero-line', '.hero-foot']; // Startbildschirm (21.11.): Lage + Hauptmenü in einer Fußzeile
   const px = (v) => parseFloat(v) || 0;
   h1.fitOpts = {
     weight: true,

@@ -1,17 +1,22 @@
 /* NULLPUNKT – © 2026 German Legend. Alle Rechte vorbehalten. Nutzung, Kopie oder Übernahme nur mit vorheriger
  * schriftlicher Erlaubnis (Discord German_Legend_26201, legendgerman749@gmail.com). Siehe LICENSE. */
 // NULLPUNKT — Website. Start: Chrom und Hero sofort, Daten parallel, Abschnitte erst in Sichtnähe.
-import { loadData } from './data.js?v=20261121041936';
-import { initNav, setNavSound } from './nav.js?v=20261121041936';
-import { initCursor } from './cursor.js?v=20261121041936';
-import { initZero } from './zero.js?v=20261121041936';
-import { fitAll, fontsReady } from './fit.js?v=20261121041936';
-import { initDeploy } from './deploy.js?v=20261121041936';
-import { sound } from './sound.js?v=20261121041936';
-import { setSettingReduced } from './motion.js?v=20261121041936';
-import { signalLost } from './dom.js?v=20261121041936';
-import { startSiteClock } from '../shared/sitetime.js?v=20261121041936';
-import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261121041936';
+import { loadData } from './data.js?v=20261122020853';
+import { initNav, setNavSound } from './nav.js?v=20261122020853';
+import { initCursor } from './cursor.js?v=20261122020853';
+import { initZero } from './zero.js?v=20261122020853';
+import { fitAll, fontsReady } from './fit.js?v=20261122020853';
+import { initDeploy } from './deploy.js?v=20261122020853';
+import { sound } from './sound.js?v=20261122020853';
+import { setSettingReduced } from './motion.js?v=20261122020853';
+import { signalLost } from './dom.js?v=20261122020853';
+import { startSiteClock } from '../shared/sitetime.js?v=20261122020853';
+import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261122020853';
+import { initHud } from './hud.js?v=20261122020853'; // Startbildschirm (21.11.)
+import { bootStep, bootDone } from './boot.js?v=20261122020853'; // Spielmenü (21.11.): Ladebildschirm
+import { initMenu, notifyNewBuild, watchNewBuild } from './menu.js?v=20261122020853'; // Spielmenü (21.11.): Kategorien als Bildschirme
+import { t, attachI18n } from './lang.js?v=20261122020853';
+import { BUILD } from '../shared/build.js?v=20261122020853';
 
 const html = document.documentElement;
 const DEBUG = /[?&]debug=1/.test(location.search);
@@ -55,13 +60,18 @@ showTouch();
 coarseMq.addEventListener?.('change', showTouch);
 // app (14.11.): in der Desktop-/Android-App heißt es nicht „im Browser, kein Download“
 if (html.classList.contains('is-app')) {
-  const lead = document.querySelector('.hero-body .lead');
+  const lead = document.querySelector('#nullpunkt .lead');
   if (lead) lead.textContent = window.nullpunktDesktop ? 'Ego-Shooter. Du gegen Bots oder online mit allen – PC-App mit Extrem-Grafik.' : 'Ego-Shooter. Du gegen Bots oder online mit allen.';
 }
 startSiteClock(); // Zeit auf der Webseite fürs Zwiegespräch (§09 Über)
 initNav();
 setNavSound(sound);
 initZero({ sound });
+initHud({ sound });
+// Spielmenü: Kategorien bauen, Anker/Direktlinks umleiten (vor dem Aufbau der Abschnitte, die Bildschirme verschieben sie)
+initMenu({ sound, ensureView: (key) => ctx.ensure(key), getData: () => ctx.D });
+// Übersetzung (shared/i18n.js): übersetzt die Seite selbst, sobald eine andere Sprache als Deutsch gewählt ist
+import('../shared/i18n.js?v=20261122020853').then(attachI18n).catch((err) => console.error('[NULLPUNKT] Übersetzung:', err));
 
 initJumps();
 
@@ -83,18 +93,71 @@ const fontsP = (document.fonts?.ready || Promise.resolve()).then(() => {
 setTimeout(() => { if (!fontsDone) { fontsReady(); fitAll(document, { now: true }); } }, 3000);
 
 const VIEWS = {
-  news: () => import('./news-view.js?v=20261121041936'), // §02 Neu (20.11.)
-  campaign: () => import('./campaign-view.js?v=20261121041936'), // §03 Kampagne
-  sim: () => import('./sim-view.js?v=20261121041936'), // §04 Simulation
-  modes: () => import('./modes-view.js?v=20261121041936'),
-  maps: () => import('./maps-view.js?v=20261121041936'),
-  arsenal: () => import('./arsenal-view.js?v=20261121041936'),
-  profile: () => import('./profile-view.js?v=20261121041936'),
-  settings: () => import('./settings-view.js?v=20261121041936'),
-  controls: () => import('./controls-view.js?v=20261121041936'),
-  about: () => import('./about-view.js?v=20261121041936'),
-  app: () => import('./app-view.js?v=20261121041936'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
+  news: () => import('./news-view.js?v=20261122020853'), // §02 Neu (20.11.)
+  campaign: () => import('./campaign-view.js?v=20261122020853'), // §03 Kampagne
+  sim: () => import('./sim-view.js?v=20261122020853'), // §04 Simulation
+  modes: () => import('./modes-view.js?v=20261122020853'),
+  maps: () => import('./maps-view.js?v=20261122020853'),
+  arsenal: () => import('./arsenal-view.js?v=20261122020853'),
+  profile: () => import('./profile-view.js?v=20261122020853'),
+  settings: () => import('./settings-view.js?v=20261122020853'),
+  controls: () => import('./controls-view.js?v=20261122020853'),
+  about: () => import('./about-view.js?v=20261122020853'),
+  app: () => import('./app-view.js?v=20261122020853'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
+  gallery: () => import('./gallery-view.js?v=20261122020853'), // Spielmenü (21.11.): Galerie mit Bildbetrachter
+  quick: () => import('./quick-view.js?v=20261122020853'), // Spielmenü (21.11.): Schnellwahl Sprache/Ton/Grafik
+  multi: () => import('./multi-view.js?v=20261122020853'), // Spielmenü (21.11.): Mehrspieler – Raumcode
 };
+
+/* Ladebildschirm (21.11.): die echten Schritte nach den Spieldaten – Texturen vorladen, Service Worker, Update-Prüfung */
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+function preloadImages(srcs, ms = 3000) {
+  let n = 0;
+  return Promise.all(srcs.filter(Boolean).map((src) => Promise.race([
+    new Promise((res) => {
+      const im = new Image();
+      im.decoding = 'async';
+      im.onload = () => { n++; (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(res); };
+      im.onerror = () => res();
+      im.src = src;
+    }),
+    wait(ms),
+  ]))).then(() => n);
+}
+async function bootSequence() {
+  try {
+    bootStep(t('boot.tex'), 62);
+    const hero = document.querySelector('.hero-img');
+    const wide = window.matchMedia('(orientation: landscape)').matches;
+    const n = await preloadImages([
+      hero?.currentSrc || hero?.src,
+      document.querySelector('#brief-news img')?.src,
+      wide ? 'assets/img/neu/vgl-hafen-nachher.webp' : null,
+      'assets/img/maps/hafen.webp', // Übergang „Sofort spielen“
+      'assets/img/neu/hero-m.webp',
+    ]);
+    bootStep(t('boot.tex.ok', { n }), 82, { ok: true });
+    bootStep(t('boot.update'), 86);
+    const swP = import('../shared/pwa.js?v=20261122020853').then((m) => m.registerSW()).catch(() => null);
+    let web = '';
+    let offline = false;
+    try {
+      const ctl = new AbortController();
+      const tm = setTimeout(() => ctl.abort(), 2500);
+      const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store', signal: ctl.signal });
+      clearTimeout(tm);
+      web = String((await r.json()).build || '');
+    } catch { offline = true; }
+    const reg = await Promise.race([swP, wait(1200).then(() => null)]);
+    bootStep(offline ? t('boot.update.off', { build: BUILD }) : web && web > BUILD ? t('boot.update.new', { build: web }) : t('boot.update.ok', { build: BUILD }), 96, { ok: true });
+    if (reg) bootStep(t('boot.update.sw'), 98, { ok: true });
+    // Neue Fassung online (Browser, Web-App, Android): sanfter Hinweis „Neu laden“, danach alle 10 min erneut prüfen
+    if (!offline && web && web > BUILD) setTimeout(() => notifyNewBuild(web), 1500);
+    watchNewBuild(BUILD);
+    bootStep(t('boot.ready'), 100);
+  } catch (err) { console.error('[NULLPUNKT] Ladebildschirm:', err); }
+  bootDone();
+}
 
 function heroData(D) {
   const line = document.getElementById('data-line');
@@ -140,7 +203,9 @@ function statusWho(D) {
 }
 
 async function boot() {
+  bootStep(t('boot.data'), 14);
   const D = await loadData();
+  bootStep(t('boot.data.ok'), 40, { ok: true });
   ctx.D = D;
   sound.init(D.settings);
   initCursor(D.settings);
@@ -151,7 +216,10 @@ async function boot() {
   statusWho(D);
 
   // Abschnitte erst initialisieren, wenn sie innerhalb eines Bildschirms herankommen
+  bootStep(t('boot.fonts'), 48);
   await fontsP;
+  bootStep(t('boot.fonts.ok'), 56, { ok: true });
+  bootSequence();
   const started = new Map();
   const start = (sec) => {
     const key = sec?.dataset.view;
@@ -227,9 +295,9 @@ async function boot() {
   if (D.profile) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 400));
     idle(async () => {
-      try { (await import('./fahne.js?v=20261121041936')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
+      try { (await import('./fahne.js?v=20261122020853')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
     });
   }
 }
 
-boot().catch((err) => console.error('[NULLPUNKT] Start:', err));
+boot().catch((err) => { console.error('[NULLPUNKT] Start:', err); bootDone(); });

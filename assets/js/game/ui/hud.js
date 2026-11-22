@@ -16,16 +16,17 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261121041936';
-import { ICON, medalBadge } from './icons.js?v=20261121041936';
-import { Minimap } from './minimap.js?v=20261121041936';
-import { Killfeed } from './killfeed.js?v=20261121041936';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261121041936';
-import { StrikeTargeting } from './strike-target.js?v=20261121041936';
-import { actionKey } from './settings/keys.js?v=20261121041936';
-import { DeployScreen } from './deploy.js?v=20261121041936';
-import { CommandWheel } from './command-wheel.js?v=20261121041936';
-import { DroneHud } from './drone-hud.js?v=20261121041936';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261122020853';
+import { ICON, medalBadge } from './icons.js?v=20261122020853';
+import { Minimap } from './minimap.js?v=20261122020853';
+import { Killfeed } from './killfeed.js?v=20261122020853';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261122020853';
+import { StrikeTargeting } from './strike-target.js?v=20261122020853';
+import { actionKey } from './settings/keys.js?v=20261122020853';
+import { DeployScreen } from './deploy.js?v=20261122020853';
+import { CommandWheel } from './command-wheel.js?v=20261122020853';
+import { DroneHud } from './drone-hud.js?v=20261122020853';
+import { compass, tx, onChange as onLangChange } from '../../shared/i18n.js?v=20261122020853';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -196,9 +197,11 @@ export class HUD {
     for (let d = -360; d <= 720; d += 15) {
       const deg = ((d % 360) + 360) % 360;
       const lab = COMPASS.find((c) => c[0] === deg);
-      strip += `<span class="${lab ? 'c-lab' : deg % 45 === 0 ? 'c-mid' : 'c-tick'}" style="left:${(d + 360) * DEG_PX}px">${lab ? lab[1] : deg % 45 === 0 ? deg : ''}</span>`;
+      strip += `<span class="${lab ? 'c-lab' : deg % 45 === 0 ? 'c-mid' : 'c-tick'}"${lab ? ` data-noi18n data-deg="${deg}"` : ''} style="left:${(d + 360) * DEG_PX}px">${lab ? compass(deg) : deg % 45 === 0 ? deg : ''}</span>`;
     }
     this.el.strip.innerHTML = strip;
+    // Himmelsrichtungen in der gewählten Sprache (N/NO/O … ↔ N/NE/E … ↔ С/СВ/В …), auch beim Sprachwechsel im Match
+    onLangChange(() => { for (const s of this.el.strip.querySelectorAll('[data-deg]')) s.textContent = compass(+s.dataset.deg); });
     // Pool für Schadenszahlen (Schießstand)
     for (let i = 0; i < 10; i++) {
       const n = el('span', 'h-dmgnum');
@@ -887,7 +890,7 @@ export class HUD {
     const G = this.G;
     if (v === 3) {
       const def = G.mode ? G.mode.def : {};
-      const map = G.world ? G.world.name : '';
+      const map = G.world ? tx(G.world.name) : ''; // einzeln übersetzen: „Hafen · 10 min“ fasst sonst die Schablone „{0} min“ als Ganzes
       setText(this.el.bannerK, `${map}${G.mode && G.mode.timeLimit ? ` · ${Math.round(G.mode.timeLimit / 60)} min` : ''}`);
       setHtml(this.el.bannerT, `${esc(def.name || '')}<em>.</em>`);
       this.el.bannerT.hidden = !!(G.mode && G.mode.id === 'training');
@@ -1524,17 +1527,21 @@ export class HUD {
   _updatePrompt(touch) {
     const G = this.G;
     const mode = G.mode;
-    let pr = null;
+    let pr = null, trp;
     const B = G.building && G.building.mode;
     const med = G.injuries && G.injuries.medicInfo();
     if (med) {
       pr = { text: `Sanitäter ${med.name} kommt · ${med.dist} m · Aufgeben`, key: this._keyFor('interact'), action: () => G.injuries.giveUp() };
     } else if (B) {
       pr = { text: `Bauen: ${B.ok ? '' : '(kein Platz) '}${B.name} · Klick setzt · ${this._keyFor('bauen') || 'K'} weiter`, key: this._keyFor('interact'), action: () => G.building.close() };
-    } else if (mode && mode.id === 'training' && G.player && G.player.alive && mode.targets && mode.targets.length) {
-      const P = mode.parcours;
-      const running = P.state === 'running' || P.state === 'countdown';
-      pr = { text: running ? 'Parcours abbrechen' : 'Parcours starten', key: this._keyFor('interact'), action: () => mode.interact() };
+    } else if (mode && mode.id === 'training' && G.player && G.player.alive && mode.targets && mode.targets.length && (trp = typeof mode.prompt === 'function' ? mode.prompt() : undefined) !== null) {
+      // Übungsgelände (Großkarte): Teleport-Tafel bzw. Parcours nur am Stand (mode.prompt → null: kein Hinweis hier)
+      if (trp) pr = { text: trp.text, key: this._keyFor('interact'), action: trp.action };
+      else {
+        const P = mode.parcours;
+        const running = P.state === 'running' || P.state === 'countdown';
+        pr = { text: running ? 'Parcours abbrechen' : 'Parcours starten', key: this._keyFor('interact'), action: () => mode.interact() };
+      }
     } else if (G.injuries && G.injuries.progress()) {
       const a = G.injuries.progress();
       pr = { text: `${a.kind === 'revive' ? 'Wiederbeleben' : 'Verband anlegen'} … ${Math.round(a.p * 100)} %`, key: '', action: () => {} };

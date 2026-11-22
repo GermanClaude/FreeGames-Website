@@ -3,13 +3,15 @@
 // Anleitung für iPhone/Firefox/Safari), Offline-Paket, VR-Hinweis, Vergleich. In der Desktop-App statt der Downloads:
 // „Du spielst in der App“ mit großem „Spielen.“, Systemangaben, App-Einstellungen (VSync, Start im Vollbild,
 // Absturzmerker), Vollbild und Beenden. Plattform-Erkennung und Service Worker: shared/pwa.js.
-import { appKind, installState, onInstallChange, promptInstall, precache, swStatus, storageUsage, registerSW } from '../shared/pwa.js?v=20261121041936';
+import { appKind, installState, onInstallChange, promptInstall, precache, swStatus, storageUsage, registerSW } from '../shared/pwa.js?v=20261122020853';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const mb = (b) => `${Math.round(b / 1048576)} MB`;
 
 export function init(sec, D, ctx) {
   const kind = appKind();
+  // Spielmenü (21.11.): In der PC-App heißt die Kategorie „Updates & App“ (menu.js) – statt Downloads: Version,
+  // Update-Prüfung, App-Einstellungen
   if (kind === 'desktop-app') { initDesktop(sec, D, ctx); return; }
   initWeb(sec, kind);
 }
@@ -89,6 +91,13 @@ function initDesktop(sec, D, ctx) {
   const crash = A.lastCrash;
   const os = { win32: 'Windows', linux: 'Linux', darwin: 'macOS' }[A.platform] || A.platform;
   box.innerHTML = `
+    <h3 class="mono-h">Updates</h3>
+    <div class="app-upd" data-upd>
+      <p class="app-upd-st" data-upd-st aria-live="polite">Installiert: Spielfassung ${esc(A.build || '?')} · App ${esc(A.version || '?')}</p>
+      <div class="app-upd-bar" data-upd-bar hidden><i></i></div>
+      <p class="app-acts"><button class="dl-btn is-main" type="button" data-act="upd">Nach Updates suchen</button> <button class="dl-btn is-main" type="button" data-act="upd-install" hidden>Jetzt neu starten und installieren</button> <button class="dl-btn is-main" type="button" data-act="upd-open" hidden>Neue Version herunterladen</button> <button class="dl-btn" type="button" data-act="rel">Download-Seite öffnen</button></p>
+      <p class="dl-note" data-upd-mode></p>
+    </div>
     <p class="app-play"><a class="cta-fill" href="${esc(href)}" data-play data-kill>Spielen<span class="o">.</span></a>
       <a class="dl-btn" href="spielen.html">Lobby &amp; Mehrspieler</a></p>
     <dl class="keys app-sys">
@@ -114,6 +123,11 @@ function initDesktop(sec, D, ctx) {
     </div>
     <p class="dl-note">Mehrspieler: Browser-, Handy- und VR-Spieler sind in denselben Räumen, wenn alle dieselbe Spielfassung haben. Einladungslinks aus der App führen auf die Webseite.</p>`;
   box.hidden = false;
+  // Selbstaktualisierung (desktop/updater.js): Zustand anzeigen und mitlaufen lassen
+  if (A.update) {
+    A.update.state().then((st) => renderUpd(box, A, st)).catch(() => {});
+    A.update.onChange((st) => renderUpd(box, A, st));
+  }
   const note = box.querySelector('[data-cfg-note]');
   box.addEventListener('change', async (e) => {
     const inp = e.target.closest('input[data-cfg]');
@@ -135,6 +149,63 @@ function initDesktop(sec, D, ctx) {
     else if (act === 'quit') A.quit();
     else if (act === 'relaunch') A.relaunch();
     else if (act === 'web') A.openExternal(A.webUrl);
+    else if (act === 'rel') A.openExternal(A.releasesUrl || 'https://github.com/GermanClaude/FreeGames-Website/releases');
+    else if (act === 'upd') {
+      if (A.update) { b.disabled = true; A.update.check().then((st) => { b.disabled = false; renderUpd(box, A, st); }).catch(() => { b.disabled = false; }); }
+      else checkUpdate(A, box.querySelector('[data-upd-st]'), b);
+    } else if (act === 'upd-install') A.update?.install();
+    else if (act === 'upd-open') A.update?.openDownload();
     else if (act === 'crash-reset') { A.setConfig('lastCrash', null).then(() => { b.closest('p').textContent = 'Zurückgesetzt. Extrem nutzt wieder 8K-Schatten, wo die Grafikkarte es kann.'; }); }
   });
+}
+
+/** Spielmenü (21.11.): Webseite nach einer neueren Spielfassung fragen (über die App, sonst direkt). */
+async function checkUpdate(A, out, btn) {
+  if (!out) return;
+  btn.disabled = true;
+  out.textContent = 'Suche nach Updates …';
+  let r = null;
+  try {
+    if (typeof A.checkUpdate === 'function') r = await A.checkUpdate();
+    else {
+      const res = await fetch(`${A.webUrl}version.json?t=${Date.now()}`, { cache: 'no-store' });
+      const web = String((await res.json()).build || '');
+      r = { local: A.build, web, newer: !!(web && A.build && web > A.build) };
+    }
+  } catch { r = null; }
+  btn.disabled = false;
+  if (!r || r.error) { out.textContent = 'Keine Verbindung – Update-Prüfung nicht möglich. Offline spielst du weiter wie bisher.'; return; }
+  out.textContent = r.newer
+    ? `Neue Spielfassung ${r.web} verfügbar (installiert: ${r.local}). Für Online-Spiele mit Browser-Spielern bitte die neue Version installieren – „Download-Seite öffnen“.`
+    : `Aktuell: Spielfassung ${r.local} ist die neueste.`;
+}
+
+const UPD_ERR = { offline: 'Keine Verbindung – die nächste Prüfung läuft automatisch.', 'kein-release': 'Noch kein Release mit Update-Daten gefunden.', gesperrt: 'GitHub ist gerade nicht erreichbar – später erneut.' };
+const mbS = (b) => `${(b / 1048576).toFixed(1).replace('.', ',')} MB`;
+/** Spielmenü (21.11.): Anzeige der Selbstaktualisierung in „Updates & App“. */
+function renderUpd(box, A, st) {
+  if (!st) return;
+  const out = box.querySelector('[data-upd-st]');
+  const bar = box.querySelector('[data-upd-bar]');
+  const inst = box.querySelector('[data-act="upd-install"]');
+  const open = box.querySelector('[data-act="upd-open"]');
+  const modeEl = box.querySelector('[data-upd-mode]');
+  const cur = `App ${st.current || A.version || '?'} · Spielfassung ${A.build || '?'}`;
+  let txt = `Installiert: ${cur}`;
+  if (st.status === 'checking') txt = `Suche nach Updates … (${cur})`;
+  else if (st.status === 'none') txt = `Aktuell: ${cur} ist die neueste Version.`;
+  else if (st.status === 'downloading') txt = `Neue Version ${st.version || ''} wird im Hintergrund geladen: ${st.percent || 0} %${st.total ? ` (${mbS(st.transferred)} von ${mbS(st.total)})` : ''}. Du kannst weiterspielen.`;
+  else if (st.status === 'downloaded') txt = `Version ${st.version || ''} ist geladen. Sie wird beim Beenden installiert – oder jetzt mit Neustart.`;
+  else if (st.status === 'manual') txt = `Neue Version ${st.version} verfügbar. Die portable Fassung kann sich nicht selbst ersetzen – bitte neu herunterladen.`;
+  else if (st.status === 'error') txt = `Update-Prüfung nicht möglich: ${UPD_ERR[st.error] || st.error || 'unbekannt'} (${cur})`;
+  if (out) out.textContent = txt;
+  if (bar) { bar.hidden = st.status !== 'downloading'; bar.firstElementChild.style.transform = `scaleX(${Math.max(0.02, (st.percent || 0) / 100)})`; }
+  if (inst) inst.hidden = st.status !== 'downloaded';
+  if (open) open.hidden = st.status !== 'manual';
+  if (modeEl) {
+    modeEl.textContent = st.mode === 'auto' ? 'Automatische Updates: an. Geprüft wird beim Start und alle 30 Minuten.'
+      : st.mode === 'portable' ? 'Portable Fassung: Updates werden gemeldet, aber nicht selbst installiert.'
+        : st.mode === 'dev' ? 'Entwicklungsstart: keine automatischen Updates.'
+          : 'Automatische Updates sind in dieser Fassung aus.';
+  }
 }

@@ -30,18 +30,23 @@
 //
 // attachCabin(model, D, quality) → cab | null; syncCabin(cab, vehicle, dt) je Bild (vehicle.js _syncCrew, nur innen);
 // setCabinVisible(cab, on).
+// Nutzer 21.11.: Transporter (MTW-13, RS-8) über attachTroopCabin (Fahrerkabine mit Durchgang + Mannschaftsraum aus
+// cabin-troop.js), Schützenpanzer mit Mannschaftsraum im Detail, 2.-WK-Fahrerplatz epochentypisch (Sehklappe, Blechtafel,
+// Kurskreisel, Zündschloss/Anlasserknopf), Funker mit Durchgang zum Kampfraum; cabinSeatAnchors(vehicle) liefert die
+// Sitz-Anker (Hüfte, Auge, Blickrichtung je Platz) für die sichtbaren Besatzungsfiguren (crew-figures.js).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { boxUV } from '../engine/textures.js?v=20261121041936';
-import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261121041936';
-import { driverCabin, vehicleWeapon } from './data.js?v=20261121041936';
-import * as DT from './cabin-detail.js?v=20261121041936';
-import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261121041936';
-import * as SH from './cabin-shape.js?v=20261121041936';
-import * as BASE from './cabin-base.js?v=20261121041936';
-import { assets, tierFor } from '../../../lib/loader.js?v=20261121041936';
-import { funkerCabin, funkerLayout, loaderPrism } from './periscopes.js?v=20261121041936';
+import { boxUV } from '../engine/textures.js?v=20261122020853';
+import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261122020853';
+import { driverCabin, vehicleWeapon } from './data.js?v=20261122020853';
+import * as DT from './cabin-detail.js?v=20261122020853';
+import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261122020853';
+import * as SH from './cabin-shape.js?v=20261122020853';
+import * as BASE from './cabin-base.js?v=20261122020853';
+import { assets, tierFor } from '../../../lib/loader.js?v=20261122020853';
+import { funkerCabin, funkerLayout, funkerDoor, loaderPrism, driverLayoutWk2 } from './periscopes.js?v=20261122020853';
+import { buildTroopRoom } from './cabin-troop.js?v=20261122020853';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -271,7 +276,12 @@ function atlas() {
   stencil('s_tritt', 'KEIN TRITT', 256, 48, 'rgba(25,25,22,0.9)');
   stencil('s_pfeil', '▲ OBEN ▲', 192, 48, 'rgba(25,25,22,0.9)');
   stencil('s_wk', 'Kampfraum · Nr. 311', 256, 48, 'rgba(40,34,22,0.9)');
+  // Mannschaftsraum (cabin-troop.js, Nutzer 21.11.)
+  for (let i = 1; i <= 4; i++) stencil('s_platz' + i, 'PLATZ ' + i, 128, 40);
+  stencil('s_notaus', 'NOTAUSSTIEG', 256, 40, 'rgba(25,25,22,0.9)');
+  plate('w_rampe', 'warn', 'RAMPE', 'Nur im Stand öffnen – Bereich frei?', 224, 56);
   // Gebrauchsspuren als Abziehbilder (Nutzer 20.11.): Hülsen-Abdrücke (Rußring), Ölfleck – durchsichtiger Grund
+  // (Nutzer 21.11.: Ölfleck hieß wie das Öldruck-Zifferblatt 'd_oel' → das Zifferblatt überschrieb ihn, Skalen lagen am Boden)
   put('d_ring', 128, 128, (g2, w, h) => {
     g2.clearRect(0, 0, w, h);
     for (let k = 0; k < 3; k++) {
@@ -283,7 +293,7 @@ function atlas() {
     for (let i = 0; i < 160; i++) { g2.fillStyle = `rgba(0,0,0,${Math.random()})`; g2.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1 + Math.random() * 3); }
     g2.globalCompositeOperation = 'source-over';
   });
-  put('d_oel', 128, 128, (g2, w, h) => {
+  put('d_fleck', 128, 128, (g2, w, h) => {
     g2.clearRect(0, 0, w, h);
     for (let i = 0; i < 14; i++) { const x = w / 2 + (Math.random() - 0.5) * 50, y = h / 2 + (Math.random() - 0.5) * 40, r = 10 + Math.random() * 22; g2.fillStyle = `rgba(${22 + Math.random() * 10},${17 + Math.random() * 6},${8},0.95)`; g2.beginPath(); g2.ellipse(x, y, r, r * (0.6 + Math.random() * 0.4), Math.random() * 3, 0, 7); g2.fill(); }
     g2.globalCompositeOperation = 'destination-out';
@@ -381,6 +391,27 @@ function atlas() {
   dial('w_az', '#e6dcbc', '#1b1712', 'Turm ×100 ‰', 64, null, 'Richtungsanzeiger');
   dial('e_rpm', '#c9a961', '#2a1d0c', 'Umdr. ×100', 16, 0.9);
   dial('e_oel', '#c9a961', '#2a1d0c', 'Öl', 6, 0.85);
+  // Fahrerplatz 2. WK (Nutzer 21.11.): Kühlwasser-Fernthermometer, Kurskreisel-Rose, Beschriftung der Bedienteile
+  dial('w_temp', '#e6dcbc', '#1b1712', 'Wasser ×10 °C', 12, 0.83);
+  put('w_kurs', 128, 128, (g2, w) => {
+    const cx = w / 2, cy = w / 2;
+    g2.fillStyle = '#ddd2b0'; g2.beginPath(); g2.arc(cx, cy, 62, 0, 7); g2.fill();
+    g2.strokeStyle = '#1b1712'; g2.fillStyle = '#1b1712';
+    for (let i = 0; i < 72; i++) {
+      const a = (i / 72) * PI * 2 - HP, big = i % 6 === 0;
+      g2.lineWidth = big ? 2 : 1; g2.beginPath(); g2.moveTo(cx + Math.cos(a) * (big ? 46 : 52), cy + Math.sin(a) * (big ? 46 : 52)); g2.lineTo(cx + Math.cos(a) * 58, cy + Math.sin(a) * 58); g2.stroke();
+    }
+    g2.textAlign = 'center'; g2.textBaseline = 'middle';
+    [['N', 0], ['O', 90], ['S', 180], ['W', 270]].forEach(([t, d]) => { const a = (d / 180) * PI - HP; g2.font = `800 15px ${SANS}`; g2.fillStyle = t === 'N' ? '#8a2a14' : '#1b1712'; g2.fillText(t, cx + Math.cos(a) * 34, cy + Math.sin(a) * 34); });
+    g2.fillStyle = '#1b1712'; g2.font = `700 9px ${SANS}`;
+    for (const d of [30, 60, 120, 150, 210, 240, 300, 330]) { const a = (d / 180) * PI - HP; g2.fillText(String(d / 10), cx + Math.cos(a) * 36, cy + Math.sin(a) * 36); }
+    g2.font = `600 8px ${SANS}`; g2.fillText('KURSKREISEL', cx, cy + 14);
+    grime(g2, w, w, 0.5);
+  });
+  plate('k_zuend', 'ivory', 'Zündung', 'Aus · Ein', 128, 40);
+  plate('k_anl', 'ivory', 'Anlasser', 'drücken', 128, 40);
+  plate('k_licht', 'ivory', 'Licht', 'Aus · Tarn · Innen', 128, 40);
+  plate('k_klappe', 'ivory', 'Sehklappe', 'Glasblock bei Sprung tauschen', 160, 44);
   // Steppnaht-Polster (Höhe → Normalen, für die Polsterflächen)
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
@@ -613,14 +644,16 @@ function cabinShader(sh, renderer, mat) {
             cbPrim = smoothstep( 0.78, 0.84, e ) * W * uCabK.x;
             cbBare = smoothstep( 0.98, 1.06, e + cbM.r * 0.15 ) * W * uCabK.x;
             // Abplatzer auf der Fläche (gruppiert, eher unten)
-            float fc = cbM.b * smoothstep( 0.42 - uCabEra.y, 0.85, cbLo ) * ( 1.15 - 0.5 * smoothstep( 0.2, 0.7, vCabO.y ) );
+            // (Nutzer 21.11.: auf Decken wirkten die Flächen-Abplatzer wie Spritzer → dort selten, eher an Kanten)
+            float fc = cbM.b * smoothstep( 0.42 - uCabEra.y, 0.85, cbLo ) * ( 1.15 - 0.5 * smoothstep( 0.2, 0.7, vCabO.y ) ) * ( 1.0 - 0.75 * smoothstep( 0.3, 0.8, -cbNo.y ) );
             cbPrim = max( cbPrim, smoothstep( 0.5, 0.56, fc ) * W * uCabK.x );
             cbBare = max( cbBare, smoothstep( 0.7, 0.78, fc ) * W * uCabK.x );
             // Kratzer und Schrammen im Lack
             cbScr = smoothstep( 0.16, 0.5, cbM.r ) * ( 0.3 + 0.7 * smoothstep( 0.25, 0.75, cbLo ) ) * W * uCabK.x;
             float lum = dot( cbC, vec3( 0.3, 0.59, 0.11 ) );
             cbC = mix( cbC, mix( vec3( 0.36, 0.34, 0.31 ), cbC * 1.3 + 0.05, step( lum, 0.25 ) ), cbScr * 0.55 );
-            cbC = mix( cbC, vec3( 0.15, 0.045, 0.026 ) * ( 0.8 + 0.4 * cbN( vCabO * 70.0 ) ), cbPrim );
+            // Grundierung: matt graubraun-ocker (kein Rot – Nutzer 21.11.: rote Flecken wirkten wie Blut)
+            cbC = mix( cbC, vec3( 0.2, 0.115, 0.062 ) * ( 0.8 + 0.4 * cbN( vCabO * 70.0 ) ), cbPrim );
             cbC = mix( cbC, vec3( 0.52, 0.51, 0.49 ) * ( 0.85 + 0.3 * cbN( vCabO * 150.0 ) ), cbBare );
             cbHgt = -( cbPrim + cbBare ) * 0.00035;
           }
@@ -636,16 +669,22 @@ function cabinShader(sh, renderer, mat) {
             cbScr = smoothstep( 0.2, 0.6, cbM.r ) * W * 0.5;
             cbC *= ( 1.0 - 0.35 * smoothstep( 0.35, 0.9, cbM.g ) * W ) * ( 1.0 + 0.25 * cbScr );
           }
-          // Rost: in Abplatzern und blankem Metall, Läufer senkrecht darunter (Weltkrieg stark)
+          // Rost (Nutzer 21.11.: braun-orange und körnig, an Kanten, Nähten und als Läufer – keine Spritzerform, kein Blutrot):
+          // an abgestoßenen Kanten/Griffstellen, in Abplatzern nahe Kanten, Läufer senkrecht unter Kanten, feine Körnung
           float ra = uCabEra.x * uCabK.y * W;
           if ( ra > 0.0 ) {
-            float spot = max( cbBare, cbPrim * 0.6 ) * smoothstep( 0.35, 0.65, cbN( vCabO * 40.0 ) + 0.25 * ra );
-            float run = smoothstep( 0.3, 0.75, cbM.g ) * smoothstep( 0.45, 0.8, cbN( vec3( vCabO.x * 9.0, vCabO.y * 0.8, vCabO.z * 9.0 ) ) ) * ( 1.0 - smoothstep( 0.4, 0.75, abs( cbNo.y ) ) );
-            float pit = smoothstep( 0.72, 0.9, cbM.b * cbLo * 1.5 );
-            cbRust = clamp( spot * 1.2 + run * 0.7 + pit * 0.6 * uCabK.y, 0.0, 1.0 ) * min( 1.0, ra );
-            vec3 rc = mix( vec3( 0.16, 0.055, 0.02 ), vec3( 0.36, 0.13, 0.04 ), cbN( vCabO * 90.0 ) );
-            cbC = mix( cbC, rc, cbRust * 0.85 );
-            cbHgt += cbRust * 0.00025;
+            float gr = cbN( vCabO * 260.0 ), gr2 = cbN( vCabO * 95.0 + 3.1 );
+            float edgeZone = max( 1.0 - smoothstep( 0.0, 0.03, cbE0 ), clamp( vCabE.w, 0.0, 1.0 ) );
+            float spot = max( cbBare, cbPrim * 0.5 ) * ( 0.25 + 0.75 * edgeZone ) * smoothstep( 0.35, 0.65, cbN( vCabO * 40.0 ) + 0.25 * ra );
+            float seam = edgeZone * smoothstep( 0.5, 0.8, cbN( vCabO * 18.0 + 7.0 ) * 0.7 + cbLo * 0.5 ) * ra;
+            float vert = 1.0 - smoothstep( 0.4, 0.75, abs( cbNo.y ) );
+            float run = smoothstep( 0.35, 0.8, cbM.g ) * smoothstep( 0.5, 0.82, cbN( vec3( vCabO.x * 14.0, vCabO.y * 0.9, vCabO.z * 14.0 ) ) ) * vert * ( 0.4 + 0.6 * edgeZone );
+            cbRust = clamp( spot * 1.1 + seam * 0.8 + run * 0.55, 0.0, 1.0 ) * min( 1.0, ra );
+            cbRust *= smoothstep( 0.15, 0.55, gr * 0.6 + gr2 * 0.6 ); // körnig, ausgefranster Rand
+            vec3 rc = mix( vec3( 0.19, 0.085, 0.032 ), vec3( 0.43, 0.205, 0.075 ), gr2 * 0.7 + gr * 0.3 );
+            rc = mix( rc, vec3( 0.12, 0.07, 0.04 ), smoothstep( 0.7, 0.95, gr ) * 0.6 ); // dunkle Körner
+            cbC = mix( cbC, rc, cbRust * 0.8 );
+            cbHgt += cbRust * ( 0.00015 + 0.00025 * gr );
           }
           // Fingerabdrücke / Fettfilm an Griffen und Bildschirmen
           cbFing = cbM.a * smoothstep( 0.15, 0.6, cbWr + ( uCabK.w > 2.5 ? 0.7 : 0.0 ) ) * W;
@@ -1043,20 +1082,96 @@ function roomGeom(poly, xl, xr) {
 
 /* ===================================================================== Fahrerraum (Wannenraum) */
 
-function buildDriver(root, D, C, det, era, cab) {
-  const R = driverCabin(D);
+/**
+ * Bedienteil 2. WK (Simulation 'sw:<id>', Hotspot folgt dem Teil): Rosette auf der Tafel, bewegliches Teil 'hebel' dreht um
+ * die Achse zum Auge (set(): rotation.x) – Zündschloss mit Schlüssel, Anlasserknopf, Lichtdrehschalter; Schild darunter.
+ */
+function wkSwitch(grp, B, C, det, id, kind, F, lp, labelKey) {
+  const p = part(grp, 'sw:' + id, F.w(lp), F.q);
+  F.add(cyl(0.021, 0.023, 0.008, det ? 16 : 10), C.steel, [lp[0], lp[1], lp[2] + 0.004], [HP, 0, 0]);
+  if (kind === 'key') F.add(tor(0.017, 0.003, 4, 14), C.brass, [lp[0], lp[1], lp[2] + 0.009]);
+  if (labelKey) flabel(F, C, labelKey, [lp[0], lp[1] - 0.043, lp[2] + 0.0015], 0.074);
+  const ax = part(p, 'achse', [0, 0, 0.008], new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -HP, 0)));
+  const hv = part(ax, 'hebel', [0, 0, 0]);
+  const L = new MB(); L.wear = 0.75;
+  const X = [0, 0, -HP]; // Zylinderachse → lokal +X (= zum Auge)
+  if (kind === 'key') {
+    L.add(cyl(0.009, 0.009, 0.014, 10), C.brass, [0.007, 0, 0], X);
+    L.add(box(0.005, 0.028, 0.022), C.steel, [0.026, 0, 0]);
+    L.add(cyl(0.004, 0.004, 0.006, 8), C.black, [0.026, 0.006, 0], [HP, 0, 0]);
+  } else if (kind === 'button') {
+    L.add(cyl(0.015, 0.015, 0.008, 12), C.steel, [0.004, 0, 0], X);
+    L.add(cyl(0.012, 0.013, 0.014, 12), C.red, [0.014, 0, 0], X);
+  } else {
+    L.add(cyl(0.017, 0.015, 0.018, 12), C.black, [0.009, 0, 0], X);
+    L.add(box(0.006, 0.026, 0.006), C.black, [0.02, 0.006, 0]);
+    L.add(box(0.002, 0.012, 0.002), C.needle, [0.0235, 0.012, 0]);
+  }
+  L.build(hv, 'hebel');
+  cab_sw.push('sw:' + id);
+  return p;
+}
+
+/** Instrumententafel 2. WK (Nutzer 21.11.): gekantete Blechtafel mit Nieten, Rundinstrumente Drehzahl, Öldruck, Kühlwasser,
+ * Kurskreisel (Zeiger zeigt den Kurs), Lade- und Öldruck-Kontrolllampe, Zündschloss, Anlasserknopf, Lichtdrehschalter. */
+function wk2Panel(grp, B, PF, C, det, pw, E) {
+  const H = 0.27;
+  PF.add(box(pw, H, 0.012), C.metal, [0, 0, -0.006]);
+  PF.add(box(pw + 0.02, 0.018, 0.06), C.metal, [0, H / 2 + 0.006, -0.025]);
+  PF.add(box(pw + 0.02, 0.018, 0.045), C.metal, [0, -H / 2 - 0.006, -0.02]);
+  for (const sx of [-1, 1]) PF.add(box(0.018, H + 0.02, 0.06), C.metal, [sx * (pw / 2 + 0.006), 0, -0.025]);
+  if (det) for (let i = 0; i <= 8; i++) for (const sy of [-1, 1]) DT.rivet(PF, C.metal, [-pw / 2 + 0.02 + i * (pw - 0.04) / 8, sy * (H / 2 - 0.015), 0.001], 0.0055);
+  const ga = (key, x, y, r, kind, max) => {
+    PF.add(cyl(r * 1.16, r * 1.2, 0.03, det ? 20 : 12), C.metal, [x, y, -0.006], [HP, 0, 0]); // Einbautopf
+    return gauge(PF, C, key, [x, y, 0.012], r, C.steel, grp, kind, max, det);
+  };
+  ga('w_rpm', -pw / 2 + 0.095, 0.035, 0.058, 'rpm', 3500);
+  ga('w_oel', -0.045, 0.048, 0.043, 'oel', 10);
+  ga('w_temp', 0.075, 0.048, 0.043, 'wasser', 120);
+  // Kurskreisel: Gehäuse mit rundem Fenster, Kurszeiger über der Rose, Stellknopf
+  const kx = pw / 2 - 0.095, ky = 0.03;
+  PF.add(rbox(0.15, 0.14, 0.09, 0.02), C.metal, [kx, ky, 0.02]);
+  gauge(PF, C, 'w_kurs', [kx, ky, 0.066], 0.05, C.brass, grp, 'kurs', 1, det);
+  PF.add(cyl(0.012, 0.012, 0.025, 10), C.black, [kx + 0.055, ky - 0.06, 0.07], [HP, 0, 0]);
+  // Kontrolllampen (Ladung rot, Öldruck grün) mit Messingfassung
+  [[-0.02, C.lampRed], [0.02, C.lampOff]].forEach(([x, m]) => { PF.add(cyl(0.008, 0.008, 0.012, 8), m, [x, -0.075, 0.004], [HP, 0, 0]); PF.add(tor(0.0105, 0.0028, 4, 10), C.brass, [x, -0.075, 0.008]); });
+  wkSwitch(grp, B, C, det, 'batterie', 'key', PF, [-pw / 2 + 0.07, -0.07, 0.0], 'k_zuend');
+  wkSwitch(grp, B, C, det, 'anlasser', 'button', PF, [-pw / 2 + 0.17, -0.07, 0.0], 'k_anl');
+  wkSwitch(grp, B, C, det, 'licht', 'rotary', PF, [0.12, -0.07, 0.0], 'k_licht');
+  // Knieschutz-Bügel unter der Tafel
+  PF.rod(C.steel, [-pw / 2, -0.17, 0.02], [pw / 2, -0.17, 0.02], 0.01);
+}
+
+function buildDriver(root, D, C, det, era, cab, o = {}) {
+  // o.R: Raum (Radfahrzeuge: troopDriverRoom), o.wheel: Lenkrad statt Lenkbügel/-hebel, o.door: { rect, zK } Durchgang
+  // in der Rückwand mit Gang bis zum Mannschaftsraum (Transporter, Nutzer 21.11.)
+  const R = o.R || driverCabin(D);
   if (!R) return null;
   const grp = new THREE.Group();
   grp.name = 'cabin:fahrer';
   root.add(grp);
   const B = new MB();
   const W = C.wall[era], modern = era === 'modern', wk1 = era === 'wk1';
+  // 2. WK (Nutzer 21.11.: „zu modern“): Sehklappe mit Glasblock + zwei Winkelspiegel, Blechtafel mit Rundinstrumenten,
+  // Kurskreisel, Zündschloss/Anlasserknopf/Lichtschalter statt Schaltkasten, Schalthebel mit Kulisse rechts
+  const w2 = D.era === 'wk2';
   const { xl, xr, floor: yF, roof: yR, zFT, zFB, zB, eye: E } = R;
   const x0 = R.F[0], z0 = R.F[2];
   // Raum: Boden, Glacis (schräg), Decke, Rückwand, Seitenwände – nach innen gekehrt
   // Raum: gerundetes Prisma (Hohlkehlen an den Stößen, leicht gewölbte Flächen) statt ebener Polygone
-  if (det) B.add(SH.prism([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr, { rc: 0.07, r0: 0.05, r1: 0.05, bulge: 0.006, steps: det > 1 ? 4 : 2, arcSteps: det > 1 ? 3 : 2, axes: 'zyx' }), W);
+  const dr = det && o.door ? o.door.rect : null;
+  if (det) B.add(SH.prism([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr, { rc: 0.07, r0: 0.05, r1: 0.05, bulge: 0.006, steps: det > 1 ? 4 : 2, arcSteps: det > 1 ? 3 : 2, axes: 'zyx', open: dr ? [3] : null }), W);
   else B.add(roomGeom([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr), W);
+  if (dr) {
+    // Trennwand zum Mannschaftsraum mit Durchgang, Gang (Laibung) bis zur Stirnwand des Mannschaftsraums, Rahmen
+    B.add(SH.holeWall(-xr, -xl, yF, yR, [[-dr[1], -dr[0], dr[2], dr[3]]]), W, [0, 0, zB - 0.002], [0, PI, 0]);
+    for (const x of [xl + 0.006, xr - 0.006]) B.add(box(0.012, yR - yF, 0.075), W, [x, (yF + yR) / 2, zB - 0.036]);
+    for (const y of [yF + 0.006, yR - 0.006]) B.add(box(xr - xl, 0.012, 0.075), W, [(xl + xr) / 2, y, zB - 0.036]);
+    if (o.door.zK > zB + 0.02) { B.add(SH.tunnel(dr[0], dr[1], dr[2], dr[3], zB - 0.004, o.door.zK + 0.02), W); B.add(box(dr[1] - dr[0], 0.012, o.door.zK - zB), C.floor, [(dr[0] + dr[1]) / 2, dr[2] + 0.006, (zB + o.door.zK) / 2]); }
+    const DF = new Frame(B, [(dr[0] + dr[1]) / 2, (dr[2] + dr[3]) / 2, zB - 0.012], null), dw = dr[1] - dr[0], dh = dr[3] - dr[2];
+    for (const sx of [-1, 1]) DF.add(box(0.045, dh + 0.06, 0.03), C.metal, [sx * (dw / 2 + 0.02), 0, 0]);
+    for (const sy of [-1, 1]) DF.add(box(dw + 0.08, 0.045, 0.03), C.metal, [0, sy * (dh / 2 + 0.02), 0]);
+  }
   B.add(box(xr - xl - 0.04, 0.012, zB - zFB - 0.06), C.floor, [(xl + xr) / 2, yF + 0.006, (zB + zFB) / 2]);
   if (det) for (let z = zFB + 0.12; z < zB - 0.05; z += 0.11) B.add(box(xr - xl - 0.1, 0.004, 0.012), C.steel, [(xl + xr) / 2, yF + 0.014, z], [0, 0.35, 0]);
   // Schweißnähte / Rippen an Glacis und Decke
@@ -1131,11 +1246,20 @@ function buildDriver(root, D, C, det, era, cab) {
     L.add(rbox(0.04, 0.05, 0.05, 0.015), C.black, [0, 0.14, 0]);
     L.build(p, 'gang');
   } else {
-    const p = part(grp, 'gang', [x0 - 0.33, sy + 0.02, sz - 0.12]);
+    const gx = w2 ? Math.min(x0 + 0.31, xr - 0.16) : x0 - 0.33;
+    if (w2) {
+      // Getriebe-Schaltgehäuse mit Kulisse (H-Schaltbild, Rastnasen), Hebel kommt durch den Kulissenschlitz
+      B.add(rbox(0.2, 0.3, 0.3, 0.02), C.metal, [gx, sy + 0.15, sz - 0.12]);
+      B.add(box(0.17, 0.012, 0.22), C.steel, [gx, sy + 0.306, sz - 0.12]);
+      for (const dx of [-0.045, 0, 0.045]) B.add(box(0.012, 0.004, 0.16), C.black, [gx + dx, sy + 0.313, sz - 0.12]);
+      B.add(box(0.1, 0.004, 0.012), C.black, [gx, sy + 0.313, sz - 0.12]);
+      if (det) { const F = new DT.LF(B, [gx, sy + 0.313, sz - 0.12], new THREE.Quaternion().setFromEuler(new THREE.Euler(-HP, 0, 0))); for (const a of [-1, 1]) for (const b of [-1, 1]) DT.bolt(F, C.steel, [a * 0.075, b * 0.1, 0], 0.005, det); }
+    }
+    const p = part(grp, 'gang', [gx, sy + 0.02, sz - 0.12]);
     const L = new MB();
     L.add(cyl(0.05, 0.06, 0.05, 10), C.metal);
     L.rod(C.steel, [0, 0, 0], [0, 0.55, 0.05], 0.012, 6);
-    L.add(new THREE.SphereGeometry(0.03, 10, 8), wk1 ? C.wood : C.black, [0, 0.57, 0.05]);
+    L.wear = 0.8; L.add(new THREE.SphereGeometry(0.03, 10, 8), wk1 || w2 ? C.wood : C.black, [0, 0.57, 0.05]); L.wear = 0;
     L.build(p, 'gang');
   }
 
@@ -1145,6 +1269,8 @@ function buildDriver(root, D, C, det, era, cab) {
   P.z = Math.max(P.z, zFB + (P.y - yF) / Math.max(0.2, yR - yF) * (zFT - zFB) + 0.14);
   const PF = new Frame(B, P.toArray(), aim(P.toArray(), E));
   const pw = Math.min(0.66, xr - xl - 0.08);
+  if (w2) wk2Panel(grp, B, PF, C, det, pw, E);
+  else {
   PF.add(rbox(pw, 0.3, 0.05, 0.015), C.black, [0, 0, -0.03]);
   PF.add(box(pw + 0.02, 0.025, 0.08), C.metal, [0, 0.16, -0.02]);
   if (det) for (const sx of [-1, 1]) PF.add(cyl(0.006, 0.006, 0.01, 6), C.steel, [sx * (pw / 2 - 0.02), 0.13, 0.0], [HP, 0, 0]);
@@ -1188,19 +1314,42 @@ function buildDriver(root, D, C, det, era, cab) {
   if (wk1) PF.add(box(0.5, 0.3, 0.02), C.wood, [0, 0, -0.058]);
   // Schutzbügel unter der Tafel (Knie)
   PF.rod(C.steel, [-pw / 2, -0.16, 0.02], [pw / 2, -0.16, 0.02], 0.01);
+  }
 
   // ---- Winkelspiegel (drei Prismen an der Decke vorn) mit Stirnpolstern
   const nP = wk1 ? 1 : 3;
+  const L2 = w2 ? driverLayoutWk2(R) : null;
   for (let k = 0; k < nP; k++) {
+    if (w2 && k === 1) continue; // 2. WK: Mitte = Sehklappe (unten)
     const kk = nP === 1 ? 0 : k - 1;
-    const c = [x0 + kk * 0.26, yR - 0.085, zFT + 0.1 + Math.abs(kk) * 0.04];
-    const F = new Frame(B, c, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -kk * 0.35, 0)));
+    const c = w2 ? L2.prisms[k ? 1 : 0].c : [x0 + kk * 0.26, yR - 0.085, zFT + 0.1 + Math.abs(kk) * 0.04];
+    const F = new Frame(B, c, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, w2 ? L2.prisms[k ? 1 : 0].yaw : -kk * 0.35, 0)));
     F.add(rbox(0.21, 0.15, 0.14, 0.012), C.metal, [0, 0, 0]);
     F.add(new THREE.PlaneGeometry(0.17, 0.07), C.prism, [0, -0.015, 0.0705], null, null, true);
     (cab.prisms || (cab.prisms = [])).push({ obj: 'hull', pos: F.w([0, -0.015, 0.072]), quat: F.q.toArray(), w: 0.17, h: 0.07, up: 0.12 }); // Glas (optics.js: Außenbild auf dem Spiegel im Blick)
     F.add(box(0.19, 0.012, 0.02), C.rubber, [0, 0.026, 0.075]);
     F.add(rbox(0.21, 0.05, 0.06, 0.02), C.pad, [0, 0.07, 0.08]);
     if (det) for (const sx of [-1, 1]) F.add(cyl(0.01, 0.01, 0.02, 6), C.steel, [sx * 0.09, -0.06, 0.07], [HP, 0, 0]);
+  }
+  if (w2) {
+    // Sehklappe: Gussrahmen in der Bugplatte, Panzerglasblock (dick, gelblich, in Gummi gefasst) mit Halteklammern,
+    // Stirnpolster darüber, Klappenhebel rechts (Sehklappe auf/zu), Schutzbügel
+    const V = L2.visor, c = V.c, F = new Frame(B, c, null);
+    const dz = c[2] - V.zg;
+    // Gussrahmen um das Fenster (oben/unten/seitlich), Glasblock etwas zurückgesetzt in Gummi
+    const fw = V.w + 0.14, fh = V.h + 0.12, fd = dz + 0.04, fz = -dz / 2 + 0.005;
+    for (const sy of [-1, 1]) F.add(rbox(fw, (fh - V.h) / 2, fd, 0.012), C.metal, [0, sy * (V.h / 2 + (fh - V.h) / 4), fz]);
+    for (const sx of [-1, 1]) F.add(rbox((fw - V.w) / 2, V.h + 0.01, fd, 0.012), C.metal, [sx * (V.w / 2 + (fw - V.w) / 4), 0, fz]);
+    F.add(box(V.w + 0.012, V.h + 0.012, 0.012), C.rubber, [0, 0, -0.012]);
+    F.add(box(V.w - 0.004, V.h - 0.004, 0.06), C.lens, [0, 0, -0.05]);
+    F.add(new THREE.PlaneGeometry(V.w - 0.012, V.h - 0.01), C.prism, [0, 0, -0.0195], null, null, true);
+    (cab.prisms || (cab.prisms = [])).push({ obj: 'hull', pos: F.w([0, 0, -0.018]), quat: F.q.toArray(), w: V.w - 0.012, h: V.h - 0.01, up: 0 });
+    for (const sx of [-1, 1]) F.add(box(0.022, V.h + 0.05, 0.016), C.steel, [sx * (V.w / 2 + 0.018), 0, 0.006]);
+    if (det) for (const sx of [-1, 1]) for (const sy of [-1, 1]) DT.bolt(F, C.steel, [sx * (V.w / 2 + 0.05), sy * (V.h / 2 + 0.035), 0.014], 0.007, det);
+    F.add(rbox(V.w + 0.1, 0.05, 0.06, 0.02), C.pad, [0, V.h / 2 + 0.085, 0.035]);
+    F.rod(C.steel, [V.w / 2 + 0.07, -0.02, 0.02], [V.w / 2 + 0.13, -0.09, 0.08], 0.009);
+    F.add(cyl(0.014, 0.012, 0.05, 8), C.wood, [V.w / 2 + 0.135, -0.1, 0.09], [0.7, 0, 0]);
+    label(B, C, 'k_klappe', F.w([-0.06, -V.h / 2 - 0.036, 0.027]), null, 0.1);
   }
   if (wk1) {
     // Sehschlitze mit Schiebern (1. WK): Schlitz hell, Schieber darüber
@@ -1248,9 +1397,16 @@ function buildDriver(root, D, C, det, era, cab) {
   label(B, C, 'diesel', [xr - 0.097, yF + 0.07 + tH * 0.3, z0 - 0.42], [0, -HP, 0], 0.16);
   B.add(cyl(0.012, 0.012, tH * 0.6, 8), C.lens, [xr - 0.1, yF + 0.07 + tH * 0.45, z0 - 0.62]);
   B.add(box(0.02, tH * 0.65, 0.04), C.steel, [xr - 0.095, yF + 0.07 + tH * 0.45, z0 - 0.62]);
-  B.add(rbox(0.26, 0.24, 0.4, 0.015), C.black, [xr - 0.22, yF + 0.13, z0 + 0.36]);
-  for (const zz of [z0 + 0.24, z0 + 0.48]) { B.add(cyl(0.02, 0.02, 0.03, 8), C.metal, [xr - 0.22, yF + 0.265, zz]); B.add(box(0.012, 0.012, 0.08), zz < z0 + 0.3 ? C.cableRed : C.black, [xr - 0.22, yF + 0.29, zz + 0.05]); }
-  label(B, C, 'haupt', [xr - 0.351, yF + 0.16, z0 + 0.36], [0, -HP, 0], 0.15);
+  if (!w2) {
+    B.add(rbox(0.26, 0.24, 0.4, 0.015), C.black, [xr - 0.22, yF + 0.13, z0 + 0.36]);
+    for (const zz of [z0 + 0.24, z0 + 0.48]) { B.add(cyl(0.02, 0.02, 0.03, 8), C.metal, [xr - 0.22, yF + 0.265, zz]); B.add(box(0.012, 0.012, 0.08), zz < z0 + 0.3 ? C.cableRed : C.black, [xr - 0.22, yF + 0.29, zz + 0.05]); }
+    label(B, C, 'haupt', [xr - 0.351, yF + 0.16, z0 + 0.36], [0, -HP, 0], 0.15);
+  } else {
+    // 2. WK: Werkzeugkasten (Holz, Eisenbeschläge) statt Batteriekasten
+    B.add(box(0.24, 0.2, 0.42), C.wood, [xr - 0.22, yF + 0.11, z0 + 0.36]);
+    for (const zz of [z0 + 0.17, z0 + 0.55]) B.add(box(0.25, 0.03, 0.02), C.metal, [xr - 0.22, yF + 0.11, zz]);
+    DT.worn(B, 0.8, () => B.add(SH.bentTube([[xr - 0.25, yF + 0.21, z0 + 0.3], [xr - 0.25, yF + 0.25, z0 + 0.3], [xr - 0.25, yF + 0.25, z0 + 0.42], [xr - 0.25, yF + 0.21, z0 + 0.42]], 0.006, 0.015, 6), C.steel));
+  }
   if (det) {
     B.add(rbox(0.12, 0.3, 0.2, 0.025), C.olive, [xr - 0.17, yF + 0.16, z0 - 0.62]);
     B.add(cyl(0.02, 0.02, 0.04, 8), C.black, [xr - 0.17, yF + 0.33, z0 - 0.66]);
@@ -1263,8 +1419,10 @@ function buildDriver(root, D, C, det, era, cab) {
   B.rod(C.steel, [x0 - 0.12, yF + 0.03, zB - 0.25], [x0 + 0.1, yF + 0.03, zB - 0.25], 0.012);
   label(B, C, 'bodenluke', [x0 - 0.02, yF + 0.022, zB - 0.42], [-HP, 0, 0], 0.13);
   const toC = x0 < 0 ? 1 : -1, ox = clamp(x0 + toC * 0.28, xl + 0.3, xr - 0.3);
-  B.add(box(0.46, Math.min(0.62, yR - yF - 0.25), 0.012), C.rubber, [ox, yF + 0.36, zB - 0.008]);
-  B.add(box(0.5, 0.03, 0.03), C.steel, [ox, yF + 0.36 + Math.min(0.31, (yR - yF - 0.25) / 2), zB - 0.02]);
+  if (!dr) {
+    B.add(box(0.46, Math.min(0.62, yR - yF - 0.25), 0.012), C.rubber, [ox, yF + 0.36, zB - 0.008]);
+    B.add(box(0.5, 0.03, 0.03), C.steel, [ox, yF + 0.36 + Math.min(0.31, (yR - yF - 0.25) / 2), zB - 0.02]);
+  }
   B.add(rbox(0.13, 0.13, 0.05, 0.01), C.black, [x0 - toC * 0.22, yR - 0.22, zB - 0.03]);
   label(B, C, 'bsakasten', [x0 - toC * 0.22, yR - 0.22, zB - 0.056], [0, PI, 0], 0.12);
   label(B, C, 'typ', [x0 + toC * 0.25, yR - 0.1, zB - 0.004], [0, PI, 0], 0.18);
@@ -1278,7 +1436,20 @@ function buildDriver(root, D, C, det, era, cab) {
     L.build(p, 'kopfhoerer');
     p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
   }
-  if (modern) {
+  if (modern && o.wheel) {
+    // Radfahrzeug: Lenkrad mit drei Speichen und Prallnabe an schräger Lenksäule (dreht mit dem Lenkeinschlag)
+    const cp = [x0, P.y - 0.2, P.z + 0.2];
+    B.rod(C.black, [x0, P.y - 0.34, P.z - 0.05], cp, 0.03, 12);
+    B.add(rbox(0.12, 0.1, 0.16, 0.03), C.black, [x0, P.y - 0.3, P.z - 0.02], [0.6, 0, 0]);
+    const p = part(grp, 'hebel:l', [cp[0], cp[1] + 0.012, cp[2] + 0.02], [-0.95, 0, 0]);
+    p.userData.yoke = true; p.userData.wheel = true;
+    const L = new MB();
+    L.wear = 0.85; L.add(tor(0.19, 0.017, 8, det ? 36 : 18), C.rubber, [0, 0, 0.02], [HP, 0, 0]); L.wear = 0;
+    for (const a of [-HP, HP + 0.6, HP - 0.6 + PI]) L.rod(C.metal, [0, 0.0, 0], [Math.cos(a) * 0.18, 0.02, Math.sin(a) * 0.18], 0.011, 8);
+    L.add(cyl(0.06, 0.055, 0.05, det ? 18 : 10), C.black, [0, 0.015, 0]);
+    L.add(cyl(0.035, 0.035, 0.008, 12), C.steel, [0, 0.043, 0]);
+    L.build(p, 'hebel:l');
+  } else if (modern) {
     // Lenkbügel vor der Instrumententafel (Säule aus dem Boden)
     const cp = [x0, P.y - 0.26, P.z + 0.17];
     B.rod(C.metal, [x0, sy + 0.05, P.z - 0.02], cp, 0.035, 12);
@@ -1320,15 +1491,15 @@ function buildDriver(root, D, C, det, era, cab) {
     for (let i = 0; i < 3; i++) DT.connector(PB, C, [-0.15 + i * 0.12, 0, 0], det, i === 1 ? C.cableRed : C.rubber);
     // Feldflasche, Prüfplakette, Etiketten, Schablonenschrift
     DT.bottle(B, C, det, new DT.LF(B, [xl + 0.003, yF + 0.3, z0 + 0.12], new THREE.Quaternion().setFromEuler(new THREE.Euler(0, HP, 0))), [0, 0, 0]);
-    label(B, C, 'w_24v', [xr - 0.351, yF + 0.22, z0 + 0.5], [0, -HP, 0], 0.08);
+    if (!w2) label(B, C, 'w_24v', [xr - 0.351, yF + 0.22, z0 + 0.5], [0, -HP, 0], 0.08);
     label(B, C, 'w_pruef', [xl + 0.006, yF + 0.8, z0 + 0.2], [0, HP, 0], 0.12);
     label(B, C, 'w_oel', [xr - 0.0975, yF + 0.07 + tH * 0.15, z0 + 0.0], [0, -HP, 0], 0.12);
     stencil(B, C, 's_fahrer', [ox, yR - 0.06, zB - 0.003], [0, PI, 0], 0.22);
     stencil(B, C, 's_nr', [xr - 0.0945, yF + 0.07 + tH * 0.85, z0 - 0.45], [0, -HP, 0], 0.16);
     stencil(B, C, 's_halt', [xl + 0.004, yR - 0.1, z0 - 0.1], [0, HP, 0], 0.16);
   }
-  // Schalttafel rechts (Simulation: Batterie, Anlasser, Innenlicht) auf dem Kraftstoffbehälter
-  {
+  // Schalttafel rechts (Simulation: Batterie, Anlasser, Innenlicht) auf dem Kraftstoffbehälter – 2. WK: an der Instrumententafel
+  if (!w2) {
     const pz = E[2] - 0.23, py = E[1] - 0.2;
     B.add(rbox(0.024, 0.34, 0.32, 0.006), C.black, [xr - 0.1, py, pz]);
     if (det) { const F = new DT.LF(B, [xr - 0.113, py, pz], new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -HP, 0))); for (const sy of [-1, 1]) for (const sz2 of [-1, 1]) DT.bolt(F, C.steel, [sz2 * 0.14, sy * 0.155, 0], 0.006, det); }
@@ -1359,7 +1530,7 @@ function buildDriver(root, D, C, det, era, cab) {
   // Kuppellampe (Streuscheibe folgt dem Lichtmodus), Tageslicht durch die Winkelspiegel
   const lp = [x0 - toC * 0.05, yR - 0.03, z0 + 0.32];
   DT.domeLamp(B, C, det, new DT.LF(B, [lp[0], lp[1] + 0.01, lp[2]], new THREE.Quaternion().setFromEuler(new THREE.Euler(HP, 0, 0))), C.dome);
-  cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(lp[0], lp[1] - 0.06, lp[2]), col: new THREE.Color(modern ? 0xff3a22 : 0xffc27a).multiplyScalar(modern ? 0.9 : 0.9), where: 'fahrer' });
+  cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(lp[0], lp[1] - 0.06, lp[2]), col: new THREE.Color(modern ? 0xff3a22 : 0xffb870).multiplyScalar(modern ? 0.9 : 0.62), where: 'fahrer' });
   cab.lamps.push({ obj: 'hull', pos: P.clone().addScaledVector(V3(E).sub(P).normalize(), 0.12), col: new THREE.Color(modern ? 0x48ff70 : 0xffb050).multiplyScalar(modern ? 0.28 : 0.15), where: 'fahrer', glow: true });
   cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(x0, yR - 0.1, zFT + 0.2), col: new THREE.Color(0x9ab8c8).multiplyScalar(0.25), where: 'fahrer', glow: true }); // Tageslicht durch die Winkelspiegel
   B.build(grp, 'fahrerraum');
@@ -1384,8 +1555,23 @@ function buildFunker(root, D, C, det, era, cab) {
   const W = C.wall[era], wk = era !== 'modern';
   const { xl, xr, floor: yF, roof: yR, zFT, zFB, zB, eye: E } = F;
   const x0 = F.F[0], z0 = F.F[2];
-  if (det) B.add(SH.prism([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr, { rc: 0.07, r0: 0.05, r1: 0.05, bulge: 0.006, steps: det > 1 ? 4 : 2, arcSteps: det > 1 ? 3 : 2, axes: 'zyx' }), W);
+  // Rückwand mit Durchgang zum Kampfraum (Nutzer 21.11.): Prisma hinten offen, eigene Wand mit Öffnung, Laibung bis zum
+  // Kampfraum (models.js hullCompartment beginnt dahinter; ohne Turmkorb: Kasematte), Rahmen mit Kantenschutz
+  const door = funkerDoor(F);
+  if (det) B.add(SH.prism([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr, { rc: 0.07, r0: 0.05, r1: 0.05, bulge: 0.006, steps: det > 1 ? 4 : 2, arcSteps: det > 1 ? 3 : 2, axes: 'zyx', open: [3] }), W);
   else B.add(roomGeom([[zB, yF], [zFB, yF], [zFT, yR], [zB, yR]], xl, xr), W);
+  if (det) {
+    B.add(SH.holeWall(-xr, -xl, yF, yR, [[-door[1], -door[0], door[2], door[3]]]), W, [0, 0, zB - 0.002], [0, PI, 0]);
+    for (const x of [xl + 0.006, xr - 0.006]) B.add(box(0.012, yR - yF, 0.075), W, [x, (yF + yR) / 2, zB - 0.036]); // Ecken (Hohlkehle fehlt)
+    for (const y of [yF + 0.006, yR - 0.006]) B.add(box(xr - xl, 0.012, 0.075), W, [(xl + xr) / 2, y, zB - 0.036]);
+    const A0 = anchorsOf(D), zK = A0.basket ? BASE.hullDims(D, A0).zF : zB + 0.12;
+    B.add(SH.tunnel(door[0], door[1], door[2], door[3], zB - 0.004, zK + 0.03), W);
+    const DF = new Frame(B, [(door[0] + door[1]) / 2, (door[2] + door[3]) / 2, zB - 0.012], null), dw = door[1] - door[0], dh = door[3] - door[2];
+    for (const sx of [-1, 1]) DF.add(box(0.045, dh + 0.06, 0.03), C.metal, [sx * (dw / 2 + 0.02), 0, 0]);
+    for (const sy of [-1, 1]) DF.add(box(dw + 0.08, 0.045, 0.03), C.metal, [0, sy * (dh / 2 + 0.02), 0]);
+    DF.add(cyl(0.012, 0.012, dw, 8), C.rubber, [0, -dh / 2 - 0.0, -0.02], [0, 0, HP]);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) DT.bolt(new DT.LF(B, DF.w([sx * (dw / 2 + 0.02), sy * (dh / 2 - 0.05), -0.016]), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, PI, 0))), C.steel, [0, 0, 0], 0.006, det);
+  }
   B.add(box(xr - xl - 0.04, 0.012, zB - zFB - 0.06), C.floor, [(xl + xr) / 2, yF + 0.006, (zB + zFB) / 2]);
   for (const zz of [zFT + 0.25, (zFT + zB) / 2 + 0.1]) B.add(box(xr - xl - 0.04, 0.03, 0.035), C.metal, [(xl + xr) / 2, yR - 0.016, zz]);
   if (det) for (let z = zFT + 0.1; z < zB; z += 0.16) for (const y of [yF + 0.12, yR - 0.1]) B.add(new THREE.SphereGeometry(0.011, 6, 4), C.metal, [xr - 0.006, y, z]);
@@ -1470,7 +1656,8 @@ function buildFunker(root, D, C, det, era, cab) {
     p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
     B.add(box(0.04, 0.03, 0.05), C.steel, [xl + 0.03, yR - 0.19, z0 + 0.25]);
   }
-  BASE.cabinet(new DT.LF(B, [x0 + 0.2, yF + 0.62, zB - 0.005], Qy(PI)), C, det, 0.12, 0.17, 0.1, { mat: wk ? C.metal : C.olive });
+  { const bx = x0 + 0.2 > door[0] - 0.1 && x0 + 0.2 < door[1] + 0.1 ? (door[1] + 0.14 < xr - 0.08 ? door[1] + 0.14 : door[0] - 0.14) : x0 + 0.2;
+    BASE.cabinet(new DT.LF(B, [bx, yF + 0.62, zB - 0.005], Qy(PI)), C, det, 0.12, 0.17, 0.1, { mat: wk ? C.metal : C.olive }); }
   // ---- Regal mit Ersatz-Gurtkästen an der rechten Wand
   {
     const [gx, gy, gz] = L.regal;
@@ -1500,7 +1687,7 @@ function buildFunker(root, D, C, det, era, cab) {
   if (det) DT.seat(B, C, det, L.seat, 0, { post: 0.26, back: true, w: 0.4, d: 0.38, foot: false, seed: 4 });
   else B.add(rbox(0.4, 0.08, 0.38, 0.03), C.pad, L.seat);
   DT.domeLamp(B, C, det, new DT.LF(B, [L.lamp[0], L.lamp[1] + 0.01, L.lamp[2]], new THREE.Quaternion().setFromEuler(new THREE.Euler(HP, 0, 0))), C.dome);
-  cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(L.lamp[0], L.lamp[1] - 0.06, L.lamp[2]), col: new THREE.Color(0xffc27a).multiplyScalar(0.8), where: 'fahrer' });
+  cab.lamps.push({ obj: 'hull', pos: new THREE.Vector3(L.lamp[0], L.lamp[1] - 0.06, L.lamp[2]), col: new THREE.Color(0xffb46a).multiplyScalar(0.45), where: 'fahrer' });
   if (det) { stencil(B, C, 's_nr', [xr - 0.004, yF + 0.6, z0 - 0.4], [0, -HP, 0], 0.14); label(B, C, 'w_24v', [xl + 0.004, yF + 0.25, z0 + 0.3], [0, HP, 0], 0.08); extinguisher(B, C, [xr - 0.09, yF + 0.25, zB - 0.15], 1, det); }
   B.build(grp, 'funkerraum');
   cab.funkerEye = E;
@@ -1578,8 +1765,10 @@ function turretDetail(D, C, det, era, cab, A, B, grp, GB) {
   // ---- Sitze
   if (c && !wk1) {
     const post = A.basket ? Math.max(0.2, 0.34 - 0.085 - A.yb) : 0.19;
-    DT.seat(B, C, det, [-0.62, 0.345, 0.55], 0, { post, back: true, w: 0.42, d: 0.4, foot: false, seed: 1 });
-    label(B, C, 'w_sitz', [-0.62 + 0.215, 0.27, 0.55], [0, HP, 0], 0.07);
+    // am Platz des Kommandanten, Lehne gut hinter dem Augpunkt (Nutzer 21.11.: Auge zwischen Polstern, zu wenig Platz)
+    const cz = Math.max(0.55, c[2] + 0.2);
+    DT.seat(B, C, det, [c[0], 0.345, cz], 0, { post, back: true, w: 0.42, d: 0.4, foot: false, seed: 1 });
+    label(B, C, 'w_sitz', [c[0] + 0.215, 0.27, cz], [0, HP, 0], 0.07);
   }
   if (!wk1) {
     if (rackRight) DT.seat(B, C, det, [0.6, 0.34, 1.35], PI, { post: 0.2, back: false, seed: 2 });
@@ -1780,9 +1969,9 @@ function buildTurret(D, C, det, era, cab, A) {
       const [hx, hy, hz] = H.pos, r = H.r;
       const yr = Math.min(hy, 0.75) - 0.03;
       B.add(tor(r + 0.05, 0.032, 6, det ? 32 : 16), C.steel, [hx, yr, hz], [HP, 0, 0]);
-      B.add(tor(r + 0.1, 0.04, 6, det ? 32 : 16), C.pad, [hx, yr - 0.06, hz], [HP, 0, 0]);
+      B.add(tor(r + 0.1, 0.026, 6, det ? 32 : 16), C.pad, [hx, yr - 0.045, hz], [HP, 0, 0]); // Polsterring (schmal: Nutzer 21.11.)
       // Kuppelschacht: Wand zwischen Turmdecke und Spiegelkranz, die Winkelspiegel sitzen darin
-      { const hgt = Math.max(0.12, 0.76 - (yr - 0.17)); const g2 = inwardGeom(cyl(r + 0.075, r + 0.075, hgt, det ? 32 : 16, true)); B.add(g2, W, [hx, yr - 0.17 + hgt / 2, hz]); }
+      { const hgt = Math.max(0.12, Math.max(0.76, hy - 0.01) - (yr - 0.17)); const g2 = inwardGeom(cyl(r + 0.075, r + 0.075, hgt, det ? 32 : 16, true)); B.add(g2, W, [hx, yr - 0.17 + hgt / 2, hz]); } // Schacht bis an die Luke (Nutzer 21.11.: hohe Kuppel – Lücke nach außen)
       B.add(tor(r + 0.075, 0.015, 4, det ? 32 : 16), C.steel, [hx, yr - 0.17, hz], [HP, 0, 0]);
       const n = modern ? 6 : 7;
       for (let i = 0; i < n; i++) {
@@ -1972,7 +2161,7 @@ function buildTurret(D, C, det, era, cab, A) {
   // Hülsen-Abdrücke und Ölflecken auf dem Korbboden bzw. der Bodenplatte, Schweißspritzer an den Turmnähten
   if (det) {
     const fy = A.basket ? A.yb + 0.0015 : 0.0815, [cx, , cz] = A.basket ? A.rc : [0.15, 0, 0.3];
-    for (let i = 0; i < (det > 1 ? 7 : 3); i++) { const a = i * 2.3 + 0.4, r = 0.12 + (i % 3) * 0.13; stencil(B, C, i % 3 === 2 ? 'd_oel' : 'd_ring', [cx + Math.cos(a) * r, fy + i * 0.0002, cz + Math.sin(a) * r], [-HP, 0, a], i % 3 === 2 ? 0.16 : 0.11); }
+    for (let i = 0; i < (det > 1 ? 7 : 3); i++) { const a = i * 2.3 + 0.4, r = 0.12 + (i % 3) * 0.13; stencil(B, C, i % 3 === 2 ? 'd_fleck' : 'd_ring', [cx + Math.cos(a) * r, fy + i * 0.0002, cz + Math.sin(a) * r], [-HP, 0, a], i % 3 === 2 ? 0.16 : 0.11); }
     if (!wk1) for (const [x, z] of [[0.9, 1.15], [-0.9, 1.15], [1.24, -0.8]]) BASE.spatter(B, C, [x * 0.985, 0.12, -z * 0.985], [x * 0.985, 0.7, -z * 0.985], 9, Math.round(x * 10 + 20), 0.02);
   }
   B.build(grp, 'turmraum');
@@ -2036,9 +2225,18 @@ function buildTemplate(D, C0, det) {
   buildFunker(hull, D, C, det, era, info);
   const hx = buildHullExtras(D, C, det, era, A);
   if (hx) hull.add(hx);
+  // Schützenpanzer (SZ-8 u. a.): Mannschaftsraum hinter dem Kampfraum (Nutzer 21.11.: „karg“)
+  let hasTroop = false;
+  if (D.troop && !D.noCabin) {
+    const tg = new THREE.Group(); tg.name = 'cabin:truppe'; hull.add(tg);
+    const TB = new MB();
+    buildTroopRoom(TB, C, det, D, troopKit(TB, C, det), info, { era });
+    TB.build(tg, 'mannschaftsraum');
+    hasTroop = true;
+  }
   // Verschluss (Bodenstück, Keil) und Gestell im Detail – werden beim Anbau an die Gruppen des Grund-Innenraums gehängt
   const br = new THREE.Group(); br.name = 'cabin:verschluss';
-  DT.breechParts(MB, C, det, era).B.build(br, 'verschluss');
+  DT.breechParts(MB, C, det, era, { guard: !D.turretLimits }).B.build(br, 'verschluss');
   const keil = new THREE.Group(); keil.name = 'cabin:keil';
   DT.keilParts(MB, C, det).build(keil, 'keil');
   const I = Object.assign({ breech: [0, 0.42, -0.55], rack: [0, 0.45, 1.55] }, D.interior || {});
@@ -2054,7 +2252,148 @@ function buildTemplate(D, C0, det) {
   TESS = 0;
   info.sw = cab_sw.slice();
   for (const gg of [t.tur, t.gun, hull, br, keil, rack, door]) if (gg) gg.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
-  return { tur: t.tur, gun: t.gun, hull, br, keil, rack, door, info, A, era };
+  return { tur: t.tur, gun: t.gun, hull, br, keil, rack, door, info, A, era, hasTroop };
+}
+
+/** Helfer für cabin-troop.js (Mannschaftsraum) an einem Bucket. */
+function troopKit(B, C, det) {
+  return {
+    Frame, box, rbox, cyl, tor,
+    label: (pos, rot, key, w) => label(B, C, key, pos, rot, w),
+    stencil: (pos, rot, key, w) => stencil(B, C, key, pos, rot, w),
+    flabel: (F, key, lpos, w, lrot = null) => flabel(F, C, key, lpos, w, lrot),
+    harness: (pts, d, colors = 3) => harness(B, C, pts, d, colors),
+    extinguisher: (pos, nx) => extinguisher(B, C, pos, nx, det),
+  };
+}
+
+/** Fahrerraum eines Transporters (auch Radfahrzeug, ohne Kettenprüfung) – Maße wie data.js driverCabin. */
+function troopDriverRoom(D) {
+  const R = driverCabin(D);
+  if (R) return R;
+  const s = D.seats && D.seats.find((x) => x.drive);
+  if (!s || !D.troop) return null;
+  const hb = D.hullBox, F = s.pos;
+  const slit = (s.views || []).find((v) => v.overlay === 'slit') || null;
+  const hatch = D.hatches && D.hatches.driver && D.hatches.driver.space === 'hull' ? D.hatches.driver : null;
+  const floor = Math.max(hb[1] - hb[4] + 0.1, F[1] - 0.02);
+  let roof = hatch ? hatch.pos[1] - 0.04 : hb[1] + hb[4] - 0.06;
+  if (!hatch && slit) roof = Math.max(roof, slit.pos[1] + 0.12);
+  roof = Math.max(roof, floor + 1.0);
+  // Radfahrzeug: zwischen den Radkästen bleiben (Reifen ragten sonst in den Fahrerraum)
+  const half = Math.max(0.6, Math.min(hb[3] - 0.32, D.wheels && D.wheels.x ? D.wheels.x - 0.3 : 9));
+  const xl = Math.max(-half, F[0] - 0.6), xr = Math.min(half, F[0] + 0.6);
+  const zFT = Math.min((slit ? slit.pos[2] : F[2] - 0.35) - 0.14, F[2] - 0.28);
+  const zFB = Math.min(zFT - 0.25, Math.max(hb[2] - hb[5] + 0.14, F[2] - 1.0));
+  const eye = [F[0], Math.min(Math.max(F[1] + 0.86, floor + 0.62), roof - 0.17), F[2] + 0.12];
+  return { F, xl, xr, floor, roof, zFT, zFB, zB: F[2] + 0.68, eye, hatch };
+}
+
+/** Durchgang Fahrerkabine ↔ Mannschaftsraum (Rückwand des Fahrers, Stirnwand des Mannschaftsraums). */
+function troopDoor(R, D) {
+  const x0 = R.F[0], toC = x0 < 0 ? 1 : -1, ox = clamp(x0 + toC * 0.28, R.xl + 0.3, R.xr - 0.3);
+  const T = D.troop, cx = clamp(ox, -T.halfW + 0.35, T.halfW - 0.35);
+  const y0 = Math.max(R.floor, T.floor) + 0.1, y1 = Math.min(R.roof, T.roof) - 0.14;
+  return [cx - 0.23, cx + 0.23, y0, Math.min(y1, y0 + 0.9)];
+}
+
+/** Vorlage Transporter (MTW, RS-8): Fahrerkabine (abgetrennt, Durchgang) + Mannschaftsraum (cabin-troop.js). */
+function buildTroopTemplate(D, C0, det) {
+  const era = eraOf(D);
+  CHAMF = det >= 1 ? 1 : 0; DT.setChamfer(det >= 1);
+  const C = D.era === 'kk' ? Object.assign(Object.create(C0), { wall: { ...C0.wall, wk2: C0.wall.kk } }) : C0;
+  const info = { lamps: [], screens: {}, partNames: [], driverEye: null, prisms: [] };
+  cab_sw = [];
+  TESS = det >= 2 ? 0.1 : det === 1 ? 0.16 : 0;
+  const hull = new THREE.Group();
+  hull.name = 'cabin:wanne';
+  const R = troopDriverRoom(D);
+  const door = R && det ? troopDoor(R, D) : null;
+  if (R) buildDriver(hull, D, C, det, era, info, { R, wheel: D.drive !== 'tracked', door: door ? { rect: door, zK: D.troop.z0 } : null });
+  const tg = new THREE.Group(); tg.name = 'cabin:truppe'; hull.add(tg);
+  const B = new MB();
+  buildTroopRoom(B, C, det, D, troopKit(B, C, det), info, { era, frontDoor: door });
+  B.build(tg, 'mannschaftsraum');
+  TESS = 0;
+  info.sw = cab_sw.slice();
+  hull.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  return { hull, info, era };
+}
+
+/** Leuchten je Raum auf die Shader-Plätze verteilen, bewegliche Teile einsammeln (attachCabin/attachTroopCabin). */
+function cabSlots(cab) {
+  cab.slots = {};
+  for (const where of ['turm', 'fahrer']) {
+    const L = cab.lamps.filter((x) => x.where === where);
+    const main = L.filter((x) => !x.glow), glow = L.filter((x) => x.glow);
+    const sl = new Array(NL).fill(null);
+    main.slice(0, 4).forEach((x, i) => { sl[i] = x; });
+    [...glow, ...main.slice(4)].slice(0, NL - 4).forEach((x, i) => { sl[4 + i] = x; });
+    cab.slots[where] = sl;
+  }
+}
+function cabParts(cab, groups) {
+  const C = cab.C;
+  for (const gg of groups) gg.traverse((o) => {
+    if (!o.name || o.isMesh) return;
+    if (o.name.startsWith('zeiger:')) cab.needles.push(o);
+    else if (o.name.startsWith('pendel:')) cab.pend.push(o);
+    else if (o.name.startsWith('pedal:')) cab.pedals.push(o);
+    else if (o.name.startsWith('btn:')) cab.btn[o.name.slice(4)] = o.children[0];
+    else if (o.name.startsWith('sw:')) {
+      const lever = o.getObjectByName('hebel'), lamp = o.getObjectByName('lampe');
+      cab.parts[o.name] = o;
+      cab.sw[o.name.slice(3)] = {
+        group: o, cabin: true,
+        set(on, warn = false) {
+          if (lever) lever.rotation.x = on ? -0.45 : 0.45;
+          if (lamp) { const m = warn ? C.lampAmber : on ? C.lampGreen : C.lampRed; if (lamp.material !== m) lamp.material = m; }
+        },
+      };
+    } else if (o.name.startsWith('hebel:') || o.name.startsWith('rad:') || ['gang', 'griff', 'luefter', 'lampe:sicher', 'bugmg'].includes(o.name)) cab.parts[o.name] = o;
+  });
+  for (const p of cab.pend) p.userData.pend = { ax: 0, az: 0, vx: 0, vz: 0 };
+}
+
+/**
+ * Transporter ohne Panzer-Innenraum (MTW-13, RS-8; Nutzer 21.11.: „Mannschaftsraum sehr grob“): Fahrerkabine und
+ * Mannschaftsraum über das cabin-System (Innenlicht, Gebrauchsspuren, gebackene Verdeckung) statt der Kästen aus
+ * models-heavy.js troopInner. Takt über syncCabin (Lampen, Hebel, Zeiger). → cab | null
+ */
+export function attachTroopCabin(model, D, S, quality = 'high') {
+  if (!model || !D || !D.troop) return null;
+  const det = quality === 'low' ? 0 : quality === 'medium' ? 1 : 2;
+  const C = cabinMats(S, det);
+  resyncMats();
+  const key = `${D.id}:t:${det}`;
+  let tpl = TPL.get(key);
+  if (!tpl) { tpl = buildTroopTemplate(D, C, det); TPL.set(key, tpl); }
+  const hull = tpl.hull.clone(true);
+  if (model.hullInterior) model.hullInterior.traverse((o) => { if (o.isMesh) o.visible = false; });
+  model.root.add(hull);
+  const cab = {
+    D, C, det, era: tpl.era, A: null, tur: new THREE.Group(), gun: new THREE.Group(), hull, model, info: tpl.info,
+    needles: [], pend: [], pedals: [], parts: {}, btn: {}, sw: {}, lamps: tpl.info.lamps.map((l) => ({ ...l, w: new THREE.Vector3() })),
+    t: 0, recoilPrev: 0, hitPrev: null, flick: 0, ejectAt: -1, casings: [], smoke: [], vel: null, acc: new THREE.Vector3(), yawPrev: null, pitchPrev: null,
+    screenT: 0, extra: [], bake: null, troop: true,
+  };
+  cabSlots(cab);
+  cabParts(cab, [hull]);
+  if (det >= 1) {
+    try {
+      const H = [];
+      model.root.updateMatrixWorld(true);
+      hull.traverse((o) => {
+        if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+        H.push({ mesh: o, M: relMatrix(o, model.root), occ: true, set: 1, shadow: true, skip: !!o.geometry.userData.cabBaked });
+        o.geometry.userData.cabBaked = true;
+      });
+      const hl = cab.slots.fahrer.slice(0, 4).map((L) => (L ? L.pos.clone() : new THREE.Vector3(0, -99, 0)));
+      cab.bake = createBake([{ set: 1, items: H, lamps: hl, shadows: true }], { cell: det >= 2 ? 0.035 : 0.05, aoDirs: det >= 2 ? 14 : 8, aoReach: 0.42 });
+    } catch (err) { console.warn('[cabin] Licht backen (Transporter) nicht möglich:', err); cab.bake = null; }
+  }
+  setCabinVisible(cab, false);
+  return cab;
 }
 
 /** Hülsen-/Dampf-Pool je Anbau (eigene Netze; Geometrie geteilt je Typ). */
@@ -2100,6 +2439,9 @@ export function attachCabin(model, D, S, quality = 'high') {
   const rg0 = model.interior.getObjectByName('rackGrp');
   if (rg0) for (const o of rg0.children) if (o.isMesh && !o.userData.rack) o.visible = false;
   if (model.hullInterior && tpl.A.basket) for (const o of model.hullInterior.children) if (o.isMesh) o.visible = false;
+  // Schützenpanzer: Mannschaftsraum im Detail (cabin-troop.js) statt der Kästen aus models-tanks.js buildTroop
+  const tro = model.hullInterior && tpl.hasTroop ? model.hullInterior.getObjectByName('troopInterior') : null;
+  if (tro) tro.traverse((o) => { if (o.isMesh) o.visible = false; });
   for (const gg of [model.interior, model.breech]) if (gg) gg.traverse((o) => {
     if (!o.isMesh || !o.geometry || o.geometry.attributes.cabE) return;
     const g = o.geometry, n = g.attributes.position.count;
@@ -2196,7 +2538,7 @@ function prepareBake(cab, model, tpl) {
       if (skipName.has(o.name) || o.name === 'huelse' || o.isSprite) return;
       const f = { ...flags };
       if (o.name === 'rackDoor' || o.name === 'cabin:tuer') f.occ = false;
-      if (o.name === 'cabin:fahrer' || o.name === 'cabin:funker') { f.set = 1; f.shadow = true; }
+      if (o.name === 'cabin:fahrer' || o.name === 'cabin:funker' || o.name === 'cabin:truppe') { f.set = 1; f.shadow = true; }
       if (o.name === 'cabin:kampfraum') { f.set = 0; f.shadow = false; }
       if (o.isMesh && o.visible && o.geometry && o.geometry.attributes.position) {
         const g = o.geometry;
@@ -2254,7 +2596,8 @@ export function syncCabin(cab, v, dt, ctx = {}) {
   const steer = clamp(+c.steer || 0, -1, 1), brake = clamp(+c.brake || 0, 0, 1) + (c.handbrake && Math.abs(b.speed || 0) < 0.5 ? 0.3 : 0), thr = clamp(+c.throttle || 0, -1, 1);
   const P = cab.parts;
   const ease = (o, k, want) => { o.rotation.x = lerp(o.rotation.x, want, Math.min(1, dt * k)); };
-  if (P['hebel:l'] && P['hebel:l'].userData.yoke) P['hebel:l'].rotation.z = lerp(P['hebel:l'].rotation.z, steer * 0.6, Math.min(1, dt * 8));
+  if (P['hebel:l'] && P['hebel:l'].userData.wheel) P['hebel:l'].rotation.y = lerp(P['hebel:l'].rotation.y, steer * 2.2, Math.min(1, dt * 8));
+  else if (P['hebel:l'] && P['hebel:l'].userData.yoke) P['hebel:l'].rotation.z = lerp(P['hebel:l'].rotation.z, steer * 0.6, Math.min(1, dt * 8));
   else if (P['hebel:l']) ease(P['hebel:l'], 10, 0.38 * clamp(Math.max(0, steer) + brake * 0.8, 0, 1));
   if (P['hebel:r']) ease(P['hebel:r'], 10, 0.38 * clamp(Math.max(0, -steer) + brake * 0.8, 0, 1));
   for (const p of cab.pedals) {
@@ -2276,6 +2619,7 @@ export function syncCabin(cab, v, dt, ctx = {}) {
       case 'oel': t = on ? (1.8 + 4.2 * clamp(rpm / (E.ratedRpm || 2600), 0, 1)) / G.max : 0; break;
       case 'wasser': t = on ? (78 + Math.min(14, cab.t * 0.3)) / G.max : 0.35; break;
       case 'az': t = 0; break;
+      case 'kurs': n.rotation.z = typeof b.yaw === 'function' ? b.yaw() : 0; continue; // Kurskreisel: Zeiger folgt dem Kurs
       default: t = 0;
     }
     if (G.full) { n.rotation.z = m.turretYaw; continue; }
@@ -2390,8 +2734,11 @@ export function syncCabin(cab, v, dt, ctx = {}) {
   const dome = cab.C.dome;
   if (dome && dn) {
     const mx = Math.max(dr, dg, db, 1e-4), lvl = Math.min(1, (dr + dg + db) / dn / 0.9);
-    dome.emissive.setRGB(dr / mx, dg / mx, db / mx);
-    dome.emissiveIntensity = 0.15 + 2.4 * lvl;
+    // Nutzer 21.11. („Deckenlampen überstrahlen stark weiß“): Streuscheibe gedämpft (kein Bloom-Fleck), Glühlampen der
+    // Weltkriegs-/Kalter-Krieg-Panzer warm getönt
+    if (cab.era === 'modern') dome.emissive.setRGB(dr / mx, dg / mx, db / mx);
+    else dome.emissive.setRGB(0.55 + 0.45 * dr / mx, 0.36 + 0.3 * dg / mx, 0.14 + 0.14 * db / mx);
+    dome.emissiveIntensity = 0.08 + (cab.era === 'modern' ? 1.2 : 0.5) * lvl;
   }
   // offene Luke: Tageslicht-Kegel von oben (Lukenmitte, 40 cm darüber), dazu mehr Himmelslicht
   let hk = 0;
@@ -2417,7 +2764,7 @@ export function syncCabin(cab, v, dt, ctx = {}) {
 /** Hülse aus dem Verschluss (Lage im Turmgruppenraum), fliegt nach hinten unten, rollt aus. */
 function eject(cab) {
   const M = cab.model;
-  if (!M.breech) return;
+  if (!M.breech || !cab.A || !cab.casings.length) return;
   const slot = cab.casings.reduce((a, x) => (x.t > a.t ? x : a), cab.casings[0]);
   cab.casings.forEach((x) => { x.t += 1; });
   slot.t = 0;
@@ -2442,6 +2789,7 @@ function eject(cab) {
   }
 }
 function stepCasings(cab, dt) {
+  if (!cab.A || !cab.casings.length) return; // Transporter (attachTroopCabin): keine Hülsen
   const A = cab.A, s = A.sc, floor = A.yb + 0.03 / s;
   for (const c of cab.casings) {
     if (!c.m.visible || c.rest) continue;
@@ -2606,4 +2954,41 @@ export function syncCockpit(cab, v, dt) {
     const t = G.kind === 'rpm' ? rpm / 6000 : G.kind === 'kmh' ? kmh / G.max : G.kind === 'oel' ? (on ? 0.45 + 0.3 * clamp(rpm / 5000, 0, 1) : 0) : on ? 0.72 : 0.35;
     n.rotation.z = lerp(n.rotation.z, 0.75 * PI - 1.5 * PI * clamp(t, 0, 1.04) + (on ? Math.sin(cab.t * 41 + n.id) * 0.005 : 0), Math.min(1, dt * 6));
   }
+}
+
+/* ===================================================================== Sitz-Anker für Besatzungsfiguren */
+
+const ROLE = { driver: 'fahrer', gunner: 'richtschuetze', commander: 'kommandant', loader: 'ladeschuetze', funker: 'funker', mg: 'mg', mechaniker: 'mechaniker' };
+/**
+ * Sitz-Anker je Platz (Strang crew-figures.js, Nutzer 21.11.: sichtbare Besatzung im Innenraum) – reine Daten aus der
+ * Fahrzeugdefinition, gleiche Lagen, die cabin.js/cabin-troop.js für Sitze und Augpunkte nutzt. vehicleOrDef: Fahrzeug
+ * (mit .def) oder Definition. → [{ index, seat, role, space ('hull' | 'turret'), hip [x,y,z] (Mitte Sitzfläche oben),
+ * eye [x,y,z] (Augpunkt der Innensicht), yaw (rad, 0 = Fahrtrichtung −Z, positiv = nach links gedreht), posture
+ * ('sitzend' | 'stehend'), interior (Platz liegt im geschlossenen Innenraum) }]. Koordinaten im Raum `space` (Wanne:
+ * Fahrzeug lokal; Turm: Turmraum wie die Sichten). Plätze ohne Innenraum (offene Sitze) bekommen interior: false.
+ */
+export function cabinSeatAnchors(vehicleOrDef) {
+  const D = vehicleOrDef && vehicleOrDef.def ? vehicleOrDef.def : vehicleOrDef;
+  if (!D || !D.seats) return [];
+  const I = D.interior || {}, sh = I.shift || [0, 0, 0], sc = I.scale || 1;
+  const fromG = (p) => [p[0] * sc + sh[0], p[1] * sc + sh[1], p[2] * sc + sh[2]];
+  const R = D.troop ? troopDriverRoom(D) : driverCabin(D);
+  const FK = funkerCabin(D, driverCabin);
+  const out = [];
+  D.seats.forEach((s, index) => {
+    const inner = (s.views || []).find((v) => v.interior) || null;
+    const role = ROLE[s.id] || (s.loader ? 'ladeschuetze' : /^schuetze|^bank|^reihe|^hinten/.test(s.id) ? 'mitfahrer' : s.id);
+    const eye = inner ? (inner.pos || null) : null;
+    const a = { index, seat: s.id, role, space: inner && inner.space === 'turret' ? 'turret' : 'hull', hip: null, eye: eye ? eye.slice() : null, yaw: 0, posture: 'sitzend', interior: !!inner };
+    if (s.drive && R) { a.space = 'hull'; a.hip = [R.F[0], R.floor + 0.29, R.F[2] + 0.1]; a.eye = R.eye.slice(); }
+    else if (s.id === 'funker' && FK) { const L = funkerLayout(FK); a.space = 'hull'; a.hip = [L.seat[0], L.seat[1] + 0.04, L.seat[2]]; a.eye = FK.eye.slice(); }
+    // Ladeschütze steht: Hüfte ≈ 0,68 m unter dem Auge, leicht hinter dem Kopf (Nutzer/Crew-Strang 21.11.: lag über dem Auge)
+    else if (s.loader && inner && inner.space === 'turret') { const le = I.loaderEye || [0.55, 0.62, 0.35]; a.posture = 'stehend'; a.hip = fromG([le[0], le[1] - 0.68, le[2] + 0.06]); a.eye = fromG(le); a.yaw = 0; }
+    // Richtschütze sitzt hinter der Optik (Station = Okular), Kommandant vor seiner Lehne (Sitz bei Station + 0,2 m)
+    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos; a.hip = [inner.pos[0], st[1] - 0.6 * sc, st[2] + (s.mount === 'gun' ? 0.34 : 0.2) * sc]; a.eye = inner.pos.slice(); }
+    else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + Math.min(0.42, (D.troop.roof - D.troop.floor) * 0.3) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; }
+    else if (s.pos) { a.hip = [s.pos[0], s.pos[1] + 0.45, s.pos[2]]; a.interior = !!inner; }
+    out.push(a);
+  });
+  return out;
 }

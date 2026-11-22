@@ -31,7 +31,7 @@ export const ui = store({
 
 const KEY = 'nullpunkt:site';
 // teams: zuletzt gewählte Mannschaftsstärken je Modus { [modeId]: { allies, enemies } } (Satzbau ↔ Spiel-Links)
-const DEFAULTS = { v: 1, sound: false, bestGroupMm: null, lastSeenMatchAt: 0, lastSeenLevel: 1, teams: {} };
+const DEFAULTS = { v: 1, sound: false, soundSet: false, bestGroupMm: null, lastSeenMatchAt: 0, lastSeenLevel: 1, teams: {} };
 
 /** Nur ganzzahlige, nicht negative Stärken je Modus übernehmen (Grenzen prüft der Satzbau je Modus). */
 function readTeams(t) {
@@ -64,6 +64,7 @@ function read() {
     const d = JSON.parse(raw);
     const out = { ...DEFAULTS };
     if (typeof d.sound === 'boolean') out.sound = d.sound;
+    if (typeof d.soundSet === 'boolean') out.soundSet = d.soundSet; // Spielmenü (21.11.): Ton ausdrücklich gewählt
     if (Number.isFinite(d.bestGroupMm) && d.bestGroupMm > 0) out.bestGroupMm = d.bestGroupMm;
     if (Number.isFinite(d.lastSeenMatchAt) && d.lastSeenMatchAt >= 0) out.lastSeenMatchAt = d.lastSeenMatchAt;
     if (Number.isFinite(d.lastSeenLevel) && d.lastSeenLevel >= 1) out.lastSeenLevel = d.lastSeenLevel;

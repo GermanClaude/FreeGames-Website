@@ -183,6 +183,7 @@ export const VIEW_CSS = `
 .vo-peri{position:absolute;inset:0;box-shadow:inset 0 0 0 7vmin #050505,inset 0 0 12vmin 9vmin rgba(0,0,0,.9);border-radius:2px}
 .vo-ring{position:absolute;left:50%;bottom:calc(9vmin + 10px);width:84px;height:84px;margin-left:-42px}
 .vo-ring svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9))}
+.vo-mask{position:absolute;inset:0}.vo-mask svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .vo-wide{position:absolute;left:50%;top:50%;width:0;height:0}
 .vo-wide svg{position:absolute;left:-120px;top:-120px;width:240px;height:240px;overflow:visible;filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9))}
 .vo-load{position:absolute;left:50%;bottom:calc(16% + env(safe-area-inset-bottom));transform:translateX(-50%);min-width:300px;max-width:92vw;padding:8px 14px;border-radius:6px;background:rgba(10,11,13,.62);font:600 15px var(--font-hud,system-ui);text-align:center;text-shadow:0 1px 2px #000}
@@ -213,6 +214,30 @@ const SLIT_SVG = `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path fi
 d="M0 0H100V100H0Z M6 34L33 31L33 63L6 60Z M36 30.5H64V63.5H36Z M67 31L94 34L94 60L67 63Z"/>
 <g fill="rgba(70,95,80,.16)"><path d="M6 34L33 31L33 63L6 60Z"/><path d="M36 30.5H64V63.5H36Z"/><path d="M67 31L94 34L94 60L67 63Z"/></g>
 <g stroke="rgba(0,0,0,.7)" stroke-width=".6" fill="none"><path d="M6 34L33 31L33 63L6 60Z M36 30.5H64V63.5H36Z M67 31L94 34L94 60L67 63Z"/></g></svg>`;
+// Kugelblende (Nutzer 21.11.): runder Ausschnitt mit Panzerglasblock im Stahlring, Schrauben, Kreisvisier des MG mit Korn
+// (dunkle Kimme/Korn-Silhouette wie bei echten MG-Visieren), leicht gelblich-grünes Panzerglas mit Randabschattung
+const KUGEL_SVG = (() => {
+  const o = [];
+  o.push('<defs><radialGradient id="vo-kg-g" r=".5"><stop offset=".72" stop-color="#000" stop-opacity="0"/><stop offset=".97" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity=".85"/></radialGradient>');
+  o.push('<radialGradient id="vo-kg-r" r=".5"><stop offset=".86" stop-color="#2b2c27"/><stop offset=".93" stop-color="#4a4b43"/><stop offset="1" stop-color="#17181500"/></radialGradient></defs>');
+  o.push('<path fill="#050505" fill-rule="evenodd" d="M-300 -200H300V200H-300Z M0 -58A58 58 0 1 0 0.01 -58Z"/>');
+  o.push('<circle r="63" fill="none" stroke="#2c2d28" stroke-width="10"/><circle r="58.5" fill="none" stroke="#0d0d0c" stroke-width="1.6"/><circle r="67.5" fill="none" stroke="#3a3b35" stroke-width="1"/>');
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + 0.2; o.push(`<circle cx="${(Math.cos(a) * 63).toFixed(1)}" cy="${(Math.sin(a) * 63).toFixed(1)}" r="1.8" fill="#4d4e47" stroke="#000" stroke-width=".4"/>`); }
+  o.push('<circle r="58" fill="rgba(90,96,60,.13)"/><circle r="58" fill="url(#vo-kg-g)"/>');
+  o.push('<path d="M-38 -48Q-20 -56 6 -55" stroke="#fff" stroke-opacity=".07" stroke-width="5" fill="none"/>');
+  // Kreisvisier: zwei Ringe, vier Speichen, Korn mit Schutzbügel unten
+  o.push('<g fill="none" stroke="#0b0b0a" stroke-opacity=".88"><circle r="24" stroke-width="1.6"/><circle r="11" stroke-width="1.3"/><path d="M0 -24V-11M0 11V24M-24 0H-11M11 0H24" stroke-width="1.2"/></g>');
+  o.push('<path d="M-1.6 58V3.5L0 1.2L1.6 3.5V58Z" fill="#0b0b0a" opacity=".92"/><path d="M-9 58V16Q-9 11 -4.5 11M9 58V16Q9 11 4.5 11" fill="none" stroke="#0b0b0a" stroke-width="2.2" opacity=".85"/>');
+  return `<svg viewBox="-100 -100 200 200" preserveAspectRatio="xMidYMid slice">${o.join('')}</svg>`;
+})();
+// Weitwinkel/Visier (Nutzer 21.11.): Rahmen des Okulars (abgerundetes Fenster, Randabschattung, Schraubenköpfe)
+const FRAME_SVG = `<svg viewBox="0 0 160 90" preserveAspectRatio="none"><defs>
+<linearGradient id="vo-fr-h" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".6"/><stop offset=".1" stop-color="#000" stop-opacity="0"/><stop offset=".9" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></linearGradient>
+<linearGradient id="vo-fr-v" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".5"/><stop offset=".14" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient></defs>
+<path fill="#060606" fill-rule="evenodd" d="M-40 -40H200V130H-40Z M17 12H143Q151 12 151 20V70Q151 78 143 78H17Q9 78 9 70V20Q9 12 17 12Z"/>
+<path fill="none" stroke="#33342f" stroke-width="1.1" d="M17 12H143Q151 12 151 20V70Q151 78 143 78H17Q9 78 9 70V20Q9 12 17 12Z"/>
+<rect x="9" y="12" width="142" height="66" rx="8" fill="url(#vo-fr-h)"/><rect x="9" y="12" width="142" height="66" rx="8" fill="url(#vo-fr-v)"/>
+<g fill="#2e2f2a" stroke="#000" stroke-width=".3"><circle cx="5" cy="8" r="1.3"/><circle cx="155" cy="8" r="1.3"/><circle cx="5" cy="82" r="1.3"/><circle cx="155" cy="82" r="1.3"/></g></svg>`;
 // Fernglas: zwei Kreise
 const BINO_SVG = `<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><defs><mask id="vo-bm"><rect x="-120" y="-120" width="400" height="330" fill="#fff"/>
 <circle cx="57" cy="45" r="35" fill="#000"/><circle cx="103" cy="45" r="35" fill="#000"/></mask></defs>
@@ -243,10 +268,11 @@ const PRISM_GLASS = {
   wk2: { tint: 'rgba(150,120,55,.15)', dust: 34, scratch: 4, streak: 0.08, edge: 0.7 },
   wk1: { tint: 'rgba(0,0,0,0)', dust: 0, scratch: 0, streak: 0, edge: 0.75 },
 };
-function prismSvg(glass) {
+function prismSvg(glass, block = false) {
   const G = PRISM_GLASS[glass] || PRISM_GLASS.modern;
   const slit = glass === 'wk1';
-  const [x0, y0, x1, y1, r] = slit ? [18, 42, 142, 49, 0.6] : [24, 31, 136, 61, 2.4];
+  // block: Sehklappe mit Panzerglasblock (2. WK-Fahrer, Nutzer 21.11.) – breites, flaches Fenster, dicker Rahmen
+  const [x0, y0, x1, y1, r] = slit ? [18, 42, 142, 49, 0.6] : block ? [20, 37, 140, 55, 1.2] : [24, 31, 136, 61, 2.4];
   let seed = glass.length * 977 + 13;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   const win = `M${x0 + r} ${y0}H${x1 - r}Q${x1} ${y0} ${x1} ${y0 + r}V${y1 - r}Q${x1} ${y1} ${x1 - r} ${y1}H${x0 + r}Q${x0} ${y1} ${x0} ${y1 - r}V${y0 + r}Q${x0} ${y0} ${x0 + r} ${y0}Z`;
@@ -260,10 +286,12 @@ function prismSvg(glass) {
   o.push(`<path fill="#050505" fill-rule="evenodd" d="M-40 -40H200V130H-40Z ${win}"/>`);
   o.push(`<path fill="url(#vo-pe-m)" fill-rule="evenodd" opacity=".5" d="M${x0 - 3} ${y0 - 6}H${x1 + 3}Q${x1 + 8} ${y0 - 6} ${x1 + 8} ${y0 - 1}V${y1 + 2}Q${x1 + 8} ${y1 + 7} ${x1 + 3} ${y1 + 7}H${x0 - 3}Q${x0 - 8} ${y1 + 7} ${x0 - 8} ${y1 + 2}V${y0 - 1}Q${x0 - 8} ${y0 - 6} ${x0 - 3} ${y0 - 6}Z ${win}"/>`);
   o.push(`<path d="${win}" fill="none" stroke="#3a3c36" stroke-width=".9"/><path d="${win}" fill="none" stroke="#000" stroke-width=".35" transform="translate(0 .5)"/>`);
-  if (!slit) o.push(`<rect x="${x0 + 14}" y="${y0 - 10}" width="${x1 - x0 - 28}" height="4.5" rx="2.2" fill="#121110" stroke="#24221f" stroke-width=".35"/>`);
+  if (block) o.push(`<rect x="${x0 - 10}" y="${y0 - 8}" width="${x1 - x0 + 20}" height="5" fill="#1d1a15"/><rect x="${x0 - 10}" y="${y1 + 3}" width="${x1 - x0 + 20}" height="6" fill="#16130f"/><path d="M${x0 - 3} ${y0 - 2}H${x1 + 3}" stroke="#4a4436" stroke-width=".6"/>`);
+  else if (!slit) o.push(`<rect x="${x0 + 14}" y="${y0 - 10}" width="${x1 - x0 - 28}" height="4.5" rx="2.2" fill="#121110" stroke="#24221f" stroke-width=".35"/>`);
   else o.push(`<rect x="${x0 - 4}" y="${y0 - 10}" width="${x1 - x0 + 8}" height="8" fill="#241e17"/><rect x="${x0 - 4}" y="${y1 + 2}" width="${x1 - x0 + 8}" height="6" fill="#1c1712"/>`);
   for (const sx of [x0 - 6, x1 + 6]) o.push(`<circle cx="${sx}" cy="${(y0 + y1) / 2}" r="1.3" fill="#2f302b" stroke="#000" stroke-width=".3"/>`);
   // Glas: Tönung, Randabschattung, Staub, Kratzer, Lichtschliere
+  if (block) o.push(`<path d="${win}" fill="rgba(120,110,40,.14)"/>`); // dickes Panzerglas: gelblich-grün
   o.push(`<g><path d="${win}" fill="${G.tint}"/><path d="${win}" fill="url(#vo-pe-h)"/><path d="${win}" fill="url(#vo-pe-v)"/>`);
   for (let i = 0; i < G.dust; i++) {
     const x = x0 + 2 + rnd() * (x1 - x0 - 4), y = y0 + 1.5 + rnd() * (y1 - y0 - 3), rr = 0.12 + rnd() * rnd() * 0.5;
@@ -349,6 +377,7 @@ export class ViewOverlay {
       <div class="vo-bino" hidden>${BINO_SVG}</div>
       <div class="vo-peri" hidden></div>
       <div class="vo-ret" hidden></div>
+      <div class="vo-mask" hidden></div>
       <div class="vo-wide" hidden>${WIDE_RET}</div>
       <div class="vo-marks" hidden></div>
       <div class="vo-ammo" hidden></div>
@@ -364,7 +393,7 @@ export class ViewOverlay {
     this.root = el;
     const q = (s) => el.querySelector(s);
     this.el = {
-      slit: q('.vo-slit'), prism: q('.vo-prism'), optic: q('.vo-optic'), bino: q('.vo-bino'), peri: q('.vo-peri'), ret: q('.vo-ret'), wide: q('.vo-wide'),
+      slit: q('.vo-slit'), prism: q('.vo-prism'), optic: q('.vo-optic'), bino: q('.vo-bino'), peri: q('.vo-peri'), ret: q('.vo-ret'), wide: q('.vo-wide'), mask: q('.vo-mask'),
       marks: q('.vo-marks'), ammo: q('.vo-ammo'), range: q('.vo-range'), ring: q('.vo-ring'), hull: q('.vo-hull'), tur: q('.vo-tur'),
       target: q('.vo-target'), arrowL: q('.vo-arrow.is-l'), arrowR: q('.vo-arrow.is-r'), dot: q('.vo-dot'),
       load: q('.vo-load'), step: q('.vo-step'), do: q('.vo-do'), ask: q('.vo-ask'), bar: q('.vo-bar i'), label: q('.vo-label'), fade: q('.vo-fade'),
@@ -389,7 +418,7 @@ export class ViewOverlay {
   }
 
   hideAll() {
-    for (const k of ['slit', 'prism', 'optic', 'bino', 'peri', 'ret', 'wide', 'marks', 'ammo', 'range', 'ring', 'target', 'arrowL', 'arrowR', 'dot', 'load', 'label']) this._set(k + 'H', this.el[k], 'hidden', true);
+    for (const k of ['slit', 'prism', 'optic', 'bino', 'peri', 'ret', 'wide', 'mask', 'marks', 'ammo', 'range', 'ring', 'target', 'arrowL', 'arrowR', 'dot', 'load', 'label']) this._set(k + 'H', this.el[k], 'hidden', true);
     this._set('fadeO', this.el.fade, 'opacity', '0');
     this._set('fadeT', this.el.fade, 'text', '');
   }
@@ -403,15 +432,16 @@ export class ViewOverlay {
     // Winkelspiegel: Gehäuse/Glas je Generation, kurzes Abblenden beim Wechsel auf den Nachbarspiegel
     this._set('prismH', el.prism, 'hidden', ov !== 'prism');
     if (ov === 'prism') {
-      const glass = view.glass || 'modern';
-      if (this._c.prismG !== glass) { this._c.prismG = glass; el.prism.innerHTML = prismSvg(glass) + '<b></b>'; this._c.prismL = null; }
       const n = view.prisms ? view.prisms.length : 1, pi = s.vehicle ? s.vehicle._prism | 0 : 0;
+      const blk = !!(view.prisms && view.prisms[Math.min(pi, n - 1)] && view.prisms[Math.min(pi, n - 1)].block);
+      const glass = (view.glass || 'modern') + (blk ? '|block' : '');
+      if (this._c.prismG !== glass) { this._c.prismG = glass; el.prism.innerHTML = prismSvg(view.glass || 'modern', blk) + '<b></b>'; this._c.prismL = null; }
       const key = `${view.id}|${pi}`;
       if (this._c.prismK !== key) {
         if (this._c.prismK != null && this._c.prismK.split('|')[0] === view.id) { this._flip = !this._flip; el.prism.className = `vo-prism ${this._flip ? 'is-f1' : 'is-f0'}`; }
         this._c.prismK = key;
       }
-      const lab = n > 1 ? `Spiegel ${pi + 1} / ${n}` : view.prisms && view.prisms[0].rot ? 'drehbar' : '';
+      const lab = blk ? 'Sehklappe' : n > 1 ? `Spiegel ${pi + 1} / ${n}` : view.prisms && view.prisms[0].rot ? 'drehbar' : '';
       if (this._c.prismL !== lab) { this._c.prismL = lab; const b = el.prism.querySelector('b'); if (b) b.textContent = lab; }
     }
     this._set('opticH', el.optic, 'hidden', ov !== 'optic');
@@ -433,7 +463,11 @@ export class ViewOverlay {
       this._set('opticC', el.optic, 'class', era === 'modern' ? 'vo-optic' : 'vo-optic is-wk');
     }
     this._set('retK', el.ret, 'html', retHtml);
-    this._set('wideH', el.wide, 'hidden', ov !== 'wide');
+    // Maske der Weitwinkel-/Kugelblenden-Sicht: Kugelblende rund mit Panzerglas und MG-Visier, sonst Okularrahmen
+    const mk = ov === 'wide' ? (view.id === 'kugel' ? 'kugel' : 'frame') : '';
+    this._set('maskH', el.mask, 'hidden', !mk);
+    if (mk) this._set('maskK', el.mask, 'html', mk === 'kugel' ? KUGEL_SVG : FRAME_SVG);
+    this._set('wideH', el.wide, 'hidden', ov !== 'wide' || mk === 'kugel');
     this._set('periH', el.peri, 'hidden', ov !== 'peri');
     this._set('ringH', el.ring, 'hidden', ov !== 'peri' && ov !== 'prism');
     this._set('binoH', el.bino, 'hidden', !bino);
