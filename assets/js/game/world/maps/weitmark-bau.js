@@ -133,7 +133,10 @@ export function rathaus(b, x, z, o = {}) {
   const y = o.y ?? 0, w = o.w ?? 22, d = o.d ?? 13, floors = 3, fh = 3.4, door = o.door || 's';
   const ops = oeffnungen(w, d, floors, [{ side: door, at: 0, w: 2.2, h: 2.6 }]);
   const run = (fh - 0.12) / 0.62;
-  const holes = [1, 2].map((f) => ({ floor: f, x0: x - w / 2 + 0.6, x1: x - w / 2 + 0.6 + run + 0.4, z0: z - d / 2 + 0.35, z1: z - d / 2 + 0.35 + 1.4 }));
+  // karten (22.11.): die zwei Läufe liegen nebeneinander (Bahn 0 an der Wand, Bahn 1 daneben) – vorher genau übereinander:
+  // der obere Lauf begann über dem Treppenloch in der Luft, der untere stieß mit dem Kopf an dessen Unterseite
+  const lane = (f) => f * 1.4;
+  const holes = [1, 2].map((f) => ({ floor: f, x0: x - w / 2 + 0.6, x1: x - w / 2 + 0.6 + run + 0.4, z0: z - d / 2 + 0.35 + lane(f - 1), z1: z - d / 2 + 0.35 + lane(f - 1) + 1.4 }));
   const B = building(b, {
     x, z, w, d, floors, fh, y, mat: 'plaster_white', tint: o.tint || '#d9c9a8', openings: ops, holes,
     roof: { edge: false, mat: 'concrete', tint: '#a49c8c' }, floorMat: 'tiles', upperFloorMat: 'wood_planks', floorTint: '#a8977e',
@@ -141,7 +144,7 @@ export function rathaus(b, x, z, o = {}) {
     plinth: { h: 0.8, mat: 'stone_wall', tint: '#b8ad98', over: 0.05 }, interiorFactor: 0.55, nutzung: 'buero',
   });
   for (let f = 0; f < 2; f++) {
-    stairs(b, { x: x - w / 2 + 0.7, z: z - d / 2 + 1.05, dir: 'e', y0: y + f * fh + (f ? 0.02 : 0.12), y1: y + (f + 1) * fh, w: 1.2, run, style: 'solid', mat: 'concrete', tint: '#b8b0a2', rail: 'right', railTint: '#3d4247' });
+    stairs(b, { x: x - w / 2 + 0.7, z: z - d / 2 + 1.05 + lane(f), dir: 'e', y0: y + f * fh + (f ? 0.02 : 0.12), y1: y + (f + 1) * fh, w: 1.2, run, style: 'solid', mat: 'concrete', tint: '#b8b0a2', rail: 'right', railFrom: 1.1, railTint: '#3d4247' }); // Antritt seitlich (hinten nur 0,4 m bis zur Wand)
   }
   // weit2: steiles Satteldach mit Dachreiter (Glocke, Uhr), Eckquaderung, Balkon über dem Portal, Podest, Fahnen
   pitchedRoof(b, { x, z, w: w + 0.02, d: d + 0.02, y: B.roofY - 0.02, ridge: 'x', pitch: 1.05, over: 0.6, gableMat: 'plaster_white', gableTint: o.tint || '#d9c9a8', tint: '#7d5a4c' });

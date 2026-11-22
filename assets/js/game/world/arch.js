@@ -38,21 +38,34 @@ export function wall(b, o) {
     b.box(x0 + ux * c, yy, z0 + uz * c, s1 - s0, hh, t, mat, { ...common, ...extra });
   };
   const ops = (o.openings || []).slice().sort((a, c) => a.at - c.at);
-  let s = 0;
-  for (const op of ops) {
-    const a = op.at - op.w / 2, e = op.at + op.w / 2;
-    const sill = op.sill ?? (op.kind === 'window' ? 0.95 : 0);
-    const top = Math.min(h, sill + op.h);
-    seg(s, a, y, h);
-    if (sill > 0) seg(a, e, y, sill);
-    if (top < h - 0.005) seg(a, e, y + top, h - top, { grad: false, minimap: false });
-    s = e;
+  // karten (22.11.): Wandstücke über Abschnitte zwischen allen Öffnungskanten – übereinander liegende Öffnungen (Tür unter
+  // einem Oberlicht, z. B. Hafen-Halle Nordwand) schneiden sich gegenseitig frei. Vorher füllte das Brüstungsstück des
+  // Fensters die darunterliegende Tür bis zur Fensterbank zu (Tür nur optisch vorhanden, Kollision dicht).
+  // Ohne Überlappung entstehen dieselben Quader in derselben Reihenfolge wie bisher.
+  const spans = ops.map(op => { const sill = op.sill ?? (op.kind === 'window' ? 0.95 : 0); return { a: op.at - op.w / 2, e: op.at + op.w / 2, sill, top: Math.min(h, sill + op.h) }; });
+  const cuts = [...new Set([0, L, ...spans.flatMap(p => [p.a, p.e])])].sort((p, q) => p - q);
+  let run = null; // zusammenhängendes Stück mit gleichem Höhenprofil: { s0, s1, key, solid }
+  const flush = () => { if (run) for (const [lo, hi] of run.solid) seg(run.s0, run.s1, y + lo, hi - lo, lo > 0.005 ? { grad: false, minimap: false } : {}); run = null; };
+  for (let k = 0; k + 1 < cuts.length; k++) {
+    const c0 = cuts[k], c1 = cuts[k + 1], mid = (c0 + c1) / 2;
+    const cover = spans.filter(p => p.a < mid && p.e > mid);
+    if (!cover.length && (mid < 0 || mid > L)) { flush(); continue; }
+    const holes = cover.map(p => [p.sill, p.top]).sort((p, q) => p[0] - q[0]);
+    const solid = []; let yy = 0;
+    for (const [lo, hi] of holes) { if (lo > yy) solid.push([yy, lo]); yy = Math.max(yy, hi); }
+    if (yy < h - 0.005) solid.push([yy, h]);
+    const key = cover.map(p => spans.indexOf(p)).join(',') + '/' + solid.map(r => r.join(':')).join('|');
+    if (run && run.key === key && Math.abs(run.s1 - c0) < 1e-9) run.s1 = c1;
+    else { flush(); run = { s0: c0, s1: c1, key, solid }; }
+  }
+  flush();
+  spans.forEach((sp, i) => {
+    const op = ops[i];
     // Fenster ohne Angabe bekommen eine Scheibe (zerschießbar/zu öffnen, game/doors.js) – nicht vergittert, nicht mit
     // geschlossenen Läden, nicht in Ruinen (o.ruin) und nicht, wenn die Karte glass:false sagt
     const op2 = op.kind === 'window' && op.glass === undefined && !op.bars && !op.closed && !o.ruin && o.glass !== false && op.frame !== false ? { ...op, glass: true } : op;
-    openingDetails(b, o, op2, { x0, z0, ux, uz, ry, y, t, sill, top });
-  }
-  seg(s, L, y, h);
+    openingDetails(b, o, op2, { x0, z0, ux, uz, ry, y, t, sill: sp.sill, top: sp.top });
+  });
   // Gesims/Abschluss oben (unterbrochen an Öffnungen bis zur Oberkante, z. B. Brüstungslücken)
   if (o.cap && !wid) { // zerstörbare Wand: ohne Abdeckung (sie bliebe sonst in der Luft hängen)
     const ch = o.cap.h ?? 0.12, ov = o.cap.over ?? 0.06;
@@ -315,10 +328,21 @@ export function catwalk(b, x0, z0, x1, z1, y, o = {}) {
   // Stützen
   if (o.supports !== false) {
     const nSup = Math.max(2, Math.round(L / (o.supportSpacing ?? 6)) + 1);
+    // karten (22.11.): Stützen nicht in Tür-/Toröffnungen am Boden (Werk: Stütze mitten im Osttor der Halle) – stattdessen
+    // knapp neben die Laibung auf der Laufsteg-Seite zur Mitte hin
+    const gy = o.groundY ?? 0;
+    const inOpening = (px, pz) => (b.openings || []).find(p => (p.kind === 'door' || p.kind === 'gap') && p.y - p.h / 2 < gy + 0.6 && Math.abs((px - p.x) * p.ux + (pz - p.z) * p.uz) < p.w / 2 + 0.25 && Math.abs((px - p.x) * p.uz - (pz - p.z) * p.ux) < (p.t || 0.3) / 2 + 0.6);
     for (let i = 0; i < nSup; i++) {
-      const s = -L / 2 + 0.3 + ((L - 0.6) * i) / (nSup - 1);
+      let s = -L / 2 + 0.3 + ((L - 0.6) * i) / (nSup - 1);
+      for (let k = 0; k < 3; k++) {
+        const p = inOpening(cx + ux * s, cz + uz * s);
+        if (!p) break;
+        const along = ux * p.ux + uz * p.uz; // Laufsteg entlang der Wand? dann längs verschieben, sonst quer zur Wand davor
+        if (Math.abs(along) > 0.5) s += (s > 0 ? -1 : 1) * (p.w / 2 + 0.4);
+        else s += (s > 0 ? -1 : 1) * ((p.t || 0.3) / 2 + 1.3);
+      }
       for (const side of (o.supportBoth ? [-1, 1] : [0])) {
-        b.box(cx + ux * s + nx * side * (w / 2 - 0.1), o.groundY ?? 0, cz + uz * s + nz * side * (w / 2 - 0.1), 0.16, y - 0.26 - (o.groundY ?? 0), 0.16, 'metal_painted', { ry, tint: o.supportTint || '#3d4247', minimap: 'pillar', interior: o.interior });
+        b.box(cx + ux * s + nx * side * (w / 2 - 0.1), gy, cz + uz * s + nz * side * (w / 2 - 0.1), 0.16, y - 0.26 - gy, 0.16, 'metal_painted', { ry, tint: o.supportTint || '#3d4247', minimap: 'pillar', interior: o.interior });
       }
     }
   }

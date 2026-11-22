@@ -12,7 +12,7 @@
 // Ein Soldat = 1 SkinnedMesh je Detailstufe (alles in einer Geometrie + einem Material zusammengeführt)
 // + Waffe (2–4 Draw Calls). Detailstufen: 0 nah, 1 mittel, 2 fern (Schwellen je Qualität).
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, BIND, DIM } from './soldier/rig.js?v=20261122020853';
+import { BONES, BONE, BONE_COUNT, BIND, DIM, GRIP_Y } from './soldier/rig.js?v=20261122020853';
 import { Animator } from './soldier/animator.js?v=20261122020853';
 import { Ragdoll } from './soldier/ragdoll.js?v=20261122020853';
 import { soldierGeometry, VARIANTS, VARIANT_IDS, CIVIL_IDS, variantDef } from './soldier/gear.js?v=20261122020853';
@@ -36,19 +36,23 @@ const BONE_INVERSES = BIND.map((p) => new THREE.Matrix4().makeTranslation(-p[0],
 // Trefferzonen: [Name, Zone, Gelenk A, Gelenk B (oder -1 = Kugel), Radius]
 // Gelenke: Knochenindex, oder 'head' (Kopfmitte)
 // 16.10./21.10.: Radien an die breitere Statur (gear.js BULK) angepasst – sichtbare Treffer am Rand zählen auch
+// Proportionen 22.11.: gegen die Silhouette des Körpers gemessen (Bindehaltung, vorn/seitlich, Raster 5 mm): die Zonen ragten
+// vorn im Mittel 15 % über den sichtbaren Körper hinaus (Kopfkugel 2,7 cm breiter als der Helm und 2 cm zu tief, Unterarme und
+// Unterschenkel bis 25 %) → Radien auf die mittlere Gliedbreite, Kopfmitte auf die Mitte von Kinn bis Helm (rig.js headCenter).
+// Jetzt ≈ 11 % Rand bei unveränderter Abdeckung (98–99 % der Körperfläche vorn).
 export const HITBOXES = [
-  ['kopf', 'head', 'head', -1, 0.135],
-  ['hals', 'body', BONE.neck, BONE.head, 0.078],
+  ['kopf', 'head', 'head', -1, 0.125],
+  ['hals', 'body', BONE.neck, BONE.head, 0.07],
   ['rumpf', 'body', BONE.spine, BONE.neck, 0.22],
-  ['becken', 'body', 'hipL', 'hipR', 0.165],
-  ['oberarmL', 'limb', BONE.upperArmL, BONE.foreArmL, 0.084],
-  ['unterarmL', 'limb', BONE.foreArmL, BONE.handL, 0.07],
-  ['oberarmR', 'limb', BONE.upperArmR, BONE.foreArmR, 0.084],
-  ['unterarmR', 'limb', BONE.foreArmR, BONE.handR, 0.07],
-  ['oberschenkelL', 'limb', BONE.thighL, BONE.shinL, 0.118],
-  ['unterschenkelL', 'limb', BONE.shinL, BONE.footL, 0.084],
-  ['oberschenkelR', 'limb', BONE.thighR, BONE.shinR, 0.118],
-  ['unterschenkelR', 'limb', BONE.shinR, BONE.footR, 0.084],
+  ['becken', 'body', 'hipL', 'hipR', 0.155],
+  ['oberarmL', 'limb', BONE.upperArmL, BONE.foreArmL, 0.075],
+  ['unterarmL', 'limb', BONE.foreArmL, BONE.handL, 0.06],
+  ['oberarmR', 'limb', BONE.upperArmR, BONE.foreArmR, 0.075],
+  ['unterarmR', 'limb', BONE.foreArmR, BONE.handR, 0.06],
+  ['oberschenkelL', 'limb', BONE.thighL, BONE.shinL, 0.11],
+  ['unterschenkelL', 'limb', BONE.shinL, BONE.footL, 0.075],
+  ['oberschenkelR', 'limb', BONE.thighR, BONE.shinR, 0.11],
+  ['unterschenkelR', 'limb', BONE.shinR, BONE.footR, 0.075],
 ];
 
 // Detailstufen-Schwellen (m, × FOV/60) je Qualitätsstufe: Telefone früh vereinfachen, Ultra lange voll
@@ -236,14 +240,14 @@ export class Soldier {
     try {
       if (!this.props.grenade) {
         const g = M.createWeaponModel('frag', { lod: 'third' });
-        g.position.set(-0.03, -0.07, 0);
+        g.position.set(-0.03, GRIP_Y - 0.008, 0);
         g.visible = false;
         this.bones[BONE.handR].add(g);
         this.props.grenade = g;
       }
       if (!this.props.knife) {
         const k = M.createWeaponModel('knife', { lod: 'third' });
-        k.position.set(0.026, -0.062, 0);
+        k.position.set(0.026, GRIP_Y, 0);
         k.visible = false;
         this.bones[BONE.handL].add(k);
         this.props.knife = k;

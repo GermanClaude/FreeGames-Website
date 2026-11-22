@@ -16,7 +16,7 @@
 //  • Ergebnis: lokale Knochen-Quaternionen + Modellraum-Gelenke (für Trefferzonen/Ragdoll) +
 //    Waffentransformation.
 import * as THREE from 'three';
-import { BONES, BONE, BONE_COUNT, DIM } from './rig.js?v=20261122020853';
+import { BONES, BONE, BONE_COUNT, DIM, GRIP_Y } from './rig.js?v=20261122020853';
 import { quatFromYZ, quatFromXY, twoBone, clamp, lerp, smooth, damp, wrap, ramp, spring, qrot } from './ik.js?v=20261122020853';
 import { Handling } from './actions.js?v=20261122020853';
 
@@ -116,8 +116,8 @@ const POSES = {
 };
 
 // Griffpunkt relativ zum Handgelenk (Handraum): Mitte der Handfläche, zur Innenseite versetzt
-const GRIP_R = new THREE.Vector3(-0.026, -0.062, 0);
-const GRIP_L = new THREE.Vector3(0.026, -0.062, 0);
+const GRIP_R = new THREE.Vector3(-0.026, GRIP_Y, 0); // Handflächenmitte (rig.js, wächst mit der Hand)
+const GRIP_L = new THREE.Vector3(0.026, GRIP_Y, 0);
 
 export class Animator {
   /**

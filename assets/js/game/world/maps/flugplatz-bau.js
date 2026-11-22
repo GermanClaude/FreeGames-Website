@@ -288,7 +288,9 @@ export function hangar(b, o) {
     const wx = s < 0 ? x0 + t + 0.45 : x1 - t - 0.45, ry = s < 0 ? Q : -Q;
     workbench(b, wx, z - 2, { ry, y: yF, w: 2.2 });
     workbench(b, wx, z + 4, { ry, y: yF, w: 2.2 });
-    lockers(b, wx - s * 0.05, z + 10, { ry, y: yF, n: 5, tint: '#5a6a5a' });
+    // karten (22.11.): Spinde nicht vor die Personaltür der Ostwand (z1 − 5; bei 30 m Hallentiefe genau z + 10)
+    const lz = s > 0 && Math.abs(d / 2 - 5 - 10) < 1.8 ? 12.6 : 10;
+    lockers(b, wx - s * 0.05, z + lz, { ry, y: yF, n: 5, tint: '#5a6a5a' });
     gasBottles(b, wx - s * 0.2, z + 14.5, { n: 4, y: yF });
     b.model('tool_cart', wx - s * 1.6, yF, z + 1, { ry: ry + 0.2, collide: false, fallback: (bb) => bb.box(wx - s * 1.6, yF, z + 1, 1.27, 0.96, 0.75, 'metal_painted', { ry, tint: '#c8402f', ...KEIN }) });
     b.box(wx - s * 1.6, yF, z + 1, 1.27, 0.96, 0.75, 'black', { ry, visual: false, minimap: 'cover' });
@@ -308,7 +310,7 @@ function bueroEinbau(b, x, zb, o) {
   const B = building(b, {
     x, z: zc, w, d: dd, floors: 2, fh, mat: 'plaster_white', tint: '#d8d4c8', t: 0.25, skipWalls: ['n'],
     openings: [
-      { side: 's', at: -7, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
+      { side: 's', at: -9.5, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 }, // karten (22.11.): vorher at −7 – direkt hinter der Stahltreppe (deren Rampe darunter massiv ist), unter die Galerie gerückt
       { side: 's', at: 6.5, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
       { side: 's', at: -3, w: 2.6, h: 1.3, sill: 0.95, kind: 'window', floor: 0 },
       { side: 's', at: 2, w: 2.6, h: 1.3, sill: 0.95, kind: 'window', floor: 0 },
@@ -326,7 +328,7 @@ function bueroEinbau(b, x, zb, o) {
   // Stahltreppe vor der Front (Ost → West ansteigend) zur Galerie
   const gz = zb + dd + 0.8;
   stairs(b, { x: x - 3.0, z: gz + 0.15, dir: 'w', y0: 0.08, y1: fh, w: 1.1, run: 5.0, style: 'steel', rail: 'left', railTint: '#d9a72a' });
-  catwalk(b, x - 11, gz, x - 7.6, gz, fh, { w: 1.6, rails: ['l'], railTint: '#d9a72a', supports: true });
+  catwalk(b, x - 11, gz, x - 8.0, gz, fh, { w: 1.6, rails: ['l'], railTint: '#d9a72a', supports: true }); // karten (22.11.): endet am Treppenaustritt (x − 8), vorher 0,4 m über dem obersten Lauf (Kopf stieß an)
   // Galerie-Geländer zur Treppenseite (West-Ende offen zur Tür)
   railing(b, x - 11, gz - 0.75, x - 11, gz + 0.75, fh, { tint: '#d9a72a' });
   // Einrichtung: unten Werkstattbüro + Lager, oben Flugbereitschaft
@@ -558,7 +560,7 @@ export function feuerwache(b, x, z) {
     f.solid(0, 0, 0, 2.5, 3.1, 7.4, { minimap: 'vehicle' });
   }
   lockers(b, x + 9.6, z - 3, { ry: -Q, n: 6, tint: '#7a2e26', y: 0.12 });
-  rack(b, x + 6.5, z - 4.6, { ry: 0, bays: 1, levels: 2, y: 0.12 });
+  rack(b, x + 2.5, z - 4.6, { ry: 0, bays: 1, levels: 2, y: 0.12 }); // karten (22.11.): vorher x + 6,5 – genau vor der Nordtür (x + 6)
   for (let k = 0; k < 4; k++) b.cyl(x + 8.5, 1.4 + k * 0.4, z - 5.6, 0.09, 0.32, 'metal_painted', { tint: '#c8402f', ...KEIN, seg: 8, axis: 'x' });
   deckenleuchte(b, x - 3, 4.75, z, 0, 1.25, { real: true });
   deckenleuchte(b, x + 3, 4.75, z, 0, 1.25);
@@ -768,7 +770,7 @@ export function kantine(b, x, z) {
   // Ausgabe + Küche (West)
   b.box(x - 6, 0.12, z, 0.7, 1.0, 9, 'metal_galvanized', { minimap: 'cover' });
   b.box(x - 6, 1.12, z, 0.8, 0.05, 9.1, 'metal_galvanized', { ...VG });
-  for (let k = 0; k < 3; k++) b.box(x - 9.2, 0.12, z - 3.5 + k * 3.5, 0.9, 0.9, 1.6, 'metal_galvanized', { minimap: 'cover' });
+  for (let k = 0; k < 3; k++) b.box(x - 9.2, 0.12, z - 4.6 + k * 3.0, 0.9, 0.9, 1.6, 'metal_galvanized', { minimap: 'cover' }); // karten (22.11.): Herdblöcke von der Westtür (z + 4) weg (vorher z + 3,5 direkt davor)
   kuehlschrank(b, x - 9.3, 0.12, z + 5.4, Q);
   for (let k = 0; k < 4; k++) b.cyl(x - 6 + (k % 2) * 0.1, 1.17, z - 3 + k * 2, 0.18, 0.3, 'metal_galvanized', { ...KEIN, seg: 10 });
   for (const lz of [-3.5, 3.5]) for (const lx of [-3, 3]) deckenleuchte(b, x + lx, 3.75, z + lz, Q, 1.25, { real: lx < 0 && lz < 0 });

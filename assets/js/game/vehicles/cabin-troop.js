@@ -16,6 +16,16 @@ import * as SH from './cabin-shape.js?v=20261122020853';
 import * as DT from './cabin-detail.js?v=20261122020853';
 import * as BASE from './cabin-base.js?v=20261122020853';
 
+/**
+ * Sitzhöhe der Bänke über dem Boden (Oberkante Polster) – Proportionen 22.11.: echte Bänke 0,35–0,42 m; in niedrigen Räumen
+ * tiefer (bis 0,28 m), damit ein sitzender 1,80-m-Soldat (Hüftgelenk → Scheitel ≈ 0,85 m, leicht vorgebeugt) unter das Dach
+ * passt. Vorher 0,3 × Raumhöhe: im SZ-8 (1,02 m) stak der Kopf 0,27 m durchs Dach. cabin.js (Sitz-Anker) nutzt dieselbe Höhe.
+ */
+export function troopSeatH(T) {
+  const H = T.roof - T.floor;
+  return Math.max(0.28, Math.min(0.42, H - 0.9));
+}
+
 const PI = Math.PI, HP = PI / 2;
 const Q = (x = 0, y = 0, z = 0) => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z));
 
@@ -52,7 +62,7 @@ export function buildTroopRoom(B, C, det, D, K, cab, { era = 'modern', frontDoor
   // ---- Sitzbänke: Plätze aus den Sitzdaten (sonst gleichmäßig), Gestell durchgehend
   let riders = ridersOf(D);
   if (!riders.length) for (let z = z0 + 0.45; z < z1 - 0.4; z += 0.62) for (const sx of [-1, 1]) riders.push({ x: sx, z });
-  const segLen = 0.5, sy = yF + Math.min(0.42, H * 0.3);
+  const segLen = 0.5, sy = yF + troopSeatH(T);
   for (const sx of [-1, 1]) {
     const mine = riders.filter((r) => Math.sign(r.x) === sx).map((r) => r.z).sort((a, b) => a - b);
     if (!mine.length) continue;

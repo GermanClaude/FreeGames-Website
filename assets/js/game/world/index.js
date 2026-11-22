@@ -60,6 +60,45 @@ function openYaw(bvh, pos, preferred, hit) {
 }
 
 /**
+ * karten (22.11.): Team-Startpunkte ohne Sichtlinie zum gegnerischen Startbereich. Prüfskript: auf Hafen, Werk, Altstadt,
+ * Stadtkern und Bibliothek sahen sich 5–10 Startpunkt-Paare über 50–100 m Gassen hinweg auf Augenhöhe (Spawn-Beschuss).
+ * Sieht ein Startpunkt einen gegnerischen, rückt er bis 4 m zur Seite hinter Deckung – nur auf freien Boden gleicher Höhe
+ * (Kapsel frei, Kopf frei). Deterministisch (gleiche Welt auf allen Geräten); bleibt alles sichtbar, bleibt der Punkt.
+ */
+const SPAWN_EYE_Y = 1.6, SPAWN_SHIELD_R = [0.75, 1.5, 2.25, 3.0, 4.0];
+export function shieldSpawns(src, pos, bvh, cbvh, hit) {
+  const eyeSees = (a, c) => {
+    const dx = c.x - a.x, dy = c.y - a.y, dz = c.z - a.z, l = Math.hypot(dx, dy, dz);
+    return l > 1e-3 && l < 400 && !bvh.occluded(a.x, a.y + SPAWN_EYE_Y, a.z, dx / l, dy / l, dz / l, l - 0.05);
+  };
+  const capsFree = (x, y, z) => {
+    if (cbvh.raycast(x, y + 0.15, z, 0, 1, 0, 1.75, hit)) return false;
+    for (const hy of [0.6, 1.4]) for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; if (cbvh.raycast(x, y + hy, z, Math.cos(a), 0, Math.sin(a), 0.4, hit)) return false; }
+    return true;
+  };
+  for (const [team, foe] of [['A', 'B'], ['B', 'A']]) {
+    const enemies = src.map((e, i) => (e.team === foe ? i : -1)).filter(i => i >= 0);
+    src.forEach((e, i) => {
+      if (e.team !== team) return;
+      const p = pos[i];
+      if (!enemies.some(k => eyeSees(p, pos[k]))) return;
+      for (const r of SPAWN_SHIELD_R) for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r;
+        if (!cbvh.raycast(x, p.y + 1.2, z, 0, -1, 0, 2.0, hit) || hit.ny < 0.7) continue;
+        const y = p.y + 1.2 - hit.t;
+        if (Math.abs(y - p.y) > 0.3 || !capsFree(x, y, z)) continue;
+        // Weg vom alten Punkt frei (nicht durch eine Wand versetzen)
+        if (cbvh.raycast(p.x, p.y + 0.8, p.z, Math.cos(a), 0, Math.sin(a), r, hit)) continue;
+        const q = new THREE.Vector3(x, y, z);
+        if (enemies.some(k2 => eyeSees(q, pos[k2]))) continue;
+        p.copy(q);
+        return;
+      }
+    });
+  }
+}
+
+/**
  * Rechenintensiven Teil (BVHs, Startpunkte einrasten, Navigationsgraph) im Welt-Worker ausführen; ohne Worker
  * (file://, CSP, sehr alte Browser) im Hauptthread. onStage(label) meldet den Abschnitt.
  */
@@ -335,8 +374,10 @@ export async function loadWorld(G, mapId, opts = {}) {
   const bvh = TriangleBVH.fromData(job.bullet), cbvh = TriangleBVH.fromData(job.col);
   const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
   const spawns = { A: [], B: [], ffa: [] };
+  const spawnPos = spawnSrc.map((e, i) => new THREE.Vector3(points[i].x, job.snapped[i], points[i].z));
+  shieldSpawns(spawnSrc, spawnPos, bvh, cbvh, hit);
   spawnSrc.forEach(({ team, s }, i) => {
-    const position = new THREE.Vector3(points[i].x, job.snapped[i], points[i].z);
+    const position = spawnPos[i];
     const toCenter = Math.atan2(-(center.x - position.x), -(center.z - position.z));
     spawns[team].push({ position, yaw: openYaw(bvh, position, s.yaw ?? toCenter, hit) });
   });

@@ -52,7 +52,10 @@ function ladenInnen(b, kind, R, s) {
   shelf(b, R.x0 + 0.22, y, (zf + zb) / 2 + dir * 0.6, Q, { w: 1.2, goods: S.goods });
   // Theke quer im Raum (Kasse)
   if (kind === 'cafe') {
-    theke(b, R.x1 - 1.6, y, zb - dir * 1.2, toStreet, { len: 2.4 });
+    // karten (22.11.): Theke nicht vor einen Durchgang der Mittelwand (vorher 0,9 m Restbreite dahinter) – seitlich ausweichen
+    const G = R.gaps || [], frei = (tx) => !G.some((g) => Math.abs(g - tx) < 1.2 + 0.5) && tx - 1.2 > R.x0 + 0.5 && tx + 1.2 < R.x1 - 0.2;
+    const tx = [R.x1 - 1.6, R.x1 - 3.4, cx + 0.6, ...(G.length > 1 ? [(G[0] + G[1]) / 2] : [])].find(frei) ?? R.x1 - 1.6;
+    theke(b, tx, y, zb - dir * 1.2, toStreet, { len: 2.4 });
     for (let k = 0; k < 2; k++) essplatz(b, cx - 1.6 + k * 2.4, y, (zf + zb) / 2, { w: 0.8, d: 0.8, n: 2, ry: hash01(cx, k, 2) * 0.4 });
   } else {
     const tz = zb - dir * 1.5;
@@ -89,8 +92,13 @@ function wohnungInnen(b, R, s, seed) {
   const bz = (R.zm + R.zb) / 2;
   if (h(4) < 0.5) {
     bett(b, cx + 0.8, y, R.zb - dir * 1.05, fromStreet === 0 ? PI : 0, { w: 1.4, blanket: ['#7a4a3a', '#3a4a6a', '#5a6a3a'][Math.floor(h(5) * 3)] });
-    schrank(b, R.x0 + 0.32, y, bz, Q);
-    if (mittel(b)) waschtisch(b, R.x1 - 0.25, y, bz, -Q);
+    // karten (22.11.): Durchgang zur Kammer (Flurwand, R.kz) freihalten – Schrank/Waschtisch an der Flurwand rücken zur Seite
+    // (vorher stand der Schrank je nach Treppenhaus-Seite genau vor dem Durchgang; Prüfskript: Tür blockiert)
+    const frei = (atX, z) => R.kz == null || Math.abs(atX - R.flurX) > 0.6 || Math.abs(z - R.kz) >= 1.4;
+    const zAt = (atX) => [bz, (R.zm + bz) / 2, (bz + R.zb) / 2].find(z => frei(atX, z));
+    const zs = zAt(R.x0), zw = zAt(R.x1);
+    if (zs != null) schrank(b, R.x0 + 0.32, y, zs, Q);
+    if (mittel(b) && zw != null) waschtisch(b, R.x1 - 0.25, y, zw, -Q);
   } else {
     kueche(b, cx, y, R.zb - dir * 0.32, toStreet, { len: Math.min(2.8, w - 2) });
     essplatz(b, cx, y, bz - dir * 0.3, { w: 1.2, d: 0.8, n: 4 });
@@ -225,7 +233,7 @@ export function altbau(b, o) {
       crateStack(b, (mx0 + mx1) / 2 - 1, lz, { y: yy, ry: 0.2, pattern: [[0, 0, 0, 0.8], [0.85, 0, 0.05, 0.7]] });
       kafiglampe(b, (mx0 + mx1) / 2, (f + 1) * fh - 0.25, lz, yy);
     } else {
-      const R2 = { x0: mx0, x1: mx1, y: yy, yC: (f + 1) * fh - 0.25, zf: zIn0, zb: zIn1, zm };
+      const R2 = { x0: mx0, x1: mx1, y: yy, yC: (f + 1) * fh - 0.25, zf: zIn0, zb: zIn1, zm, kz: kammer ? kz : null, flurX: fx };
       if (!(ruin && f === floors - 1)) wohnungInnen(b, R2, s, seed + f * 13);
     }
     // Treppenhaus-Licht

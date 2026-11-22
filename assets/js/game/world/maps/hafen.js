@@ -213,8 +213,9 @@ export default {
     crateStack(b, -9, 32.5, { ry: -1.0, pattern: [[0, 0, 0, 1.1], [0, 0, 1.15, 1.0], [0, 1, 0.55, 1.0]] });
     gasBottles(b, -20.8, -31.5, { n: 5 });
     dumpster(b, -20.6, 31.6, { ry: Math.PI / 2 });
-    electricBox(b, 0.6, 0, -30.8, { ry: 0, w: 1.6, h: 1.8, d: 0.6, tint: '#8f9a90' });
-    electricBox(b, 0.6, 0, 30.8, { ry: Math.PI, w: 1.6, h: 1.8, d: 0.6, tint: '#8f9a90' });
+    // karten (22.11.): mit dem Rücken an die Westwand der Lagerhalle (x 1,0), neben der Tür (z ±30) – vorher quer gedreht, halb in der Wand
+    electricBox(b, 0.68, 0, -32.2, { ry: -Math.PI / 2, w: 1.6, h: 1.8, d: 0.6, tint: '#8f9a90' });
+    electricBox(b, 0.68, 0, 32.2, { ry: -Math.PI / 2, w: 1.6, h: 1.8, d: 0.6, tint: '#8f9a90' });
 
     // -----------------------------------------------------------------------
     // Ostbahn: Laderampe + Lagerhalle 3
@@ -724,7 +725,7 @@ function warehouse(b, ctx) {
   wall(b, { x0: ox0, z0: oz1, x1: ox1, z1: oz1, h: fy, t: 0.2, mat: 'plaster_white', destructible: true, tint: '#dcd8cf', frameMat: 'metal_painted', frameTint: '#2a2e33', openings: [{ at: 3, w: 1.1, h: 2.2, kind: 'door' }, { at: 7.5, w: 3, h: 1.2, kind: 'window', sill: 1.0, glass: false }] });
   wall(b, { x0: ox0, z0: oz0, x1: ox0, z1: oz1, h: fy, t: 0.2, mat: 'plaster_white', destructible: true, tint: '#dcd8cf', openings: [{ at: 3.5, w: 2.2, h: 1.1, kind: 'window', sill: 1.0, glass: false }] });
   // Obergeschoss-Wände (Glasfront zur Halle)
-  wall(b, { x0: ox0, z0: oz1, x1: ox1, z1: oz1, y: fy, h: 3.0, t: 0.2, mat: 'plaster_white', tint: '#dcd8cf', frameMat: 'metal_painted', frameTint: '#2a2e33', openings: [{ at: 2.2, w: 1.0, h: 2.1, kind: 'door' }, { at: 6.8, w: 4.4, h: 1.4, kind: 'window', sill: 0.9, glass: false }] });
+  wall(b, { x0: ox0, z0: oz1, x1: ox1, z1: oz1, y: fy, h: 3.0, t: 0.2, mat: 'plaster_white', tint: '#dcd8cf', frameMat: 'metal_painted', frameTint: '#2a2e33', openings: [{ at: 2.2, w: 1.0, h: 1.4, kind: 'window', sill: 0.9, glass: false }, { at: 6.8, w: 4.4, h: 1.4, kind: 'window', sill: 0.9, glass: false }] }); // karten 22.11.: statt Tür ins Leere (3,6 m über dem Hallenboden) ein Fenster
   slab(b, x0 + t, oz0, ox1, oz1, fy - 0.2, 0.2, 'concrete', [], {});
   // Deckenleuchten im Erdgeschoss-Büro (gebacken)
   for (const xx of [33.5, 38.5]) {
@@ -951,10 +952,10 @@ function videoHalle(b, sz) {
   }
   for (let xx = x0 + 3.25; xx < x1 - 1; xx += 3.25) b.box(xx, H - 0.6, (zA + zB) / 2, 0.25, 0.6, zB - zA - 0.6, 'metal_painted', { tint: '#4b5560', collide: false, minimap: false, grad: false });
   // Einrichtung wie im Video: Paletten mit Kartons hinter dem Tor, Regale an Rück- und Westwand
-  rack(b, 5.6, zS - sz * 1.0, { y: yf, bays: 2, levels: 3, levelH: 1.6, ry: 0 });
+  rack(b, 6.95, zS - sz * 1.0, { y: yf, bays: 1, levels: 3, levelH: 1.6, ry: 0 }); // karten 22.11.: zwischen Tür (x 4) und Tor (x 10) der Rückwand, vorher stand das Regal vor der Tür
   rack(b, x0 + 1.0, zN + sz * 8.0, { y: yf, bays: 1, levels: 3, levelH: 1.6, ry: Math.PI / 2 });
   palletStack(b, 10.2, zN + sz * 3.6, { y: yf, n: 2, load: 'boxes', ry: 0.1 });
-  pallet(b, 12.4, yf, zN + sz * 5.4, { load: 'boxes', ry: -0.15 });
+  pallet(b, 11.0, yf, zN + sz * 5.4, { load: 'boxes', ry: -0.15 }); // karten 22.11.: aus dem Osttor-Durchgang gerückt
   pallet(b, 6.2, yf, zN + sz * 3.2, { load: 'wrapped', ry: 0.25 });
   crateStack(b, 11.4, zS - sz * 4.4, { y: yf, ry: 0.3 });
 }

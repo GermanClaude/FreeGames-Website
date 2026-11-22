@@ -330,7 +330,7 @@ function house(b, M, o) {
     acUnit(b, px, a.y ?? fh + 1.0, pz, { ry, pipe: a.pipe });
   }
   for (const v of o.vines || []) {
-    const [px, pz] = onWall(M, res, v.side, v.at, 0.25);
+    const [px, pz] = onWall(M, res, v.side, v.at, 0.36); // karten (22.11.): Topf r 0,3 – bei 0,25 m Abstand steckte er in der Wand
     for (let k = 0; k < (v.n ?? 4); k++) b.plant('vine', px + (b.rand() - 0.5) * 0.6, k * 0.85 + 0.2, pz + (b.rand() - 0.5) * 0.6, { s: 0.9 + b.rand() * 0.4, tint: b.pick(['#d0408a', '#c63a7c', '#e05a9a', '#b8306e']) });
     pot(b, px, 0, pz, { r: 0.3, h: 0.45 });
   }
@@ -741,7 +741,10 @@ function church(b) {
   wall(b, { ...wl, x0, z0: z0 + t / 2, x1, z1: z0 + t / 2, openings: [tallWin(3.4), tallWin(6.4), { at: 9.2, w: 1.4, h: 2.7, kind: 'door', sill: 0, frame: true }] });
   wall(b, { ...wl, x0: x1, z0: z1 - t / 2, x1: x0, z1: z1 - t / 2, openings: [tallWin(8.6), tallWin(5.6), { at: 2.8, w: 1.4, h: 2.7, kind: 'door', sill: 0, frame: true }] });
   // Ostwand: Tür zur Gasse
-  wall(b, { ...wl, x0: x1 - t / 2, z0, x1: x1 - t / 2, z1, openings: [{ at: 8, w: 1.5, h: 2.8, kind: 'door', sill: 0, frame: true }, { at: 8, w: 1.2, h: 1.6, kind: 'window', sill: 5.6, glass: true }] });
+  // karten (22.11.): Tür seitlich (z +5,5) – mittig lag sie hinter Altar und Altarbild; solange das Oberlicht darüber das
+  // Wandstück bis 5,6 m zuschnitt (arch.wall), war sie ohnehin zugemauert
+  const eDoorZ = 5.5;
+  wall(b, { ...wl, x0: x1 - t / 2, z0, x1: x1 - t / 2, z1, openings: [{ at: eDoorZ - z0, w: 1.5, h: 2.8, kind: 'door', sill: 0, frame: true }, { at: 8, w: 1.2, h: 1.6, kind: 'window', sill: 5.6, glass: true }] });
   // Bögen über Portal + Seitentüren
   arch(b, x0 + t / 2, 3.4, 0, 2.6, 1.2, 1.2, t + 0.04, mat, { ry: Math.PI / 2, tint: '#d8c9ab' });
   // Portalgewände
@@ -761,9 +764,9 @@ function church(b) {
     b.boxMM(27.45, 0, s > 0 ? z1 - t : z0, 28.95, fy, s > 0 ? z1 : z0 + t, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
   }
   b.boxMM(x0, 0, -1.3, x0 + t, fy, 1.3, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
-  b.boxMM(x1 - t, 0, -0.75, x1, fy, 0.75, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
-  b.boxMM(x1, 0, -1.2, x1 + 0.9, 0.18, 1.2, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
-  b.boxMM(x1, 0, -1.2, x1 + 0.45, 0.36, 1.2, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
+  b.boxMM(x1 - t, 0, eDoorZ - 0.75, x1, fy, eDoorZ + 0.75, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
+  b.boxMM(x1, 0, eDoorZ - 1.2, x1 + 0.9, 0.18, eDoorZ + 1.2, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
+  b.boxMM(x1, 0, eDoorZ - 1.2, x1 + 0.45, 0.36, eDoorZ + 1.2, 'stone_wall', { tint: '#e2d6bd', minimap: false, grad: false });
   // Fassade: Giebel mit Rosette + Gesims
   const rise = 3.4;
   b.wedge(x0 + t / 2, H, z0 + 4, t, rise, 8, mat, { tint, uv: 'world', minimap: false });
@@ -1115,12 +1118,12 @@ function half(b, M) {
       { side: 'w', at: -3.6, w: 1.1, h: 1.7, kind: 'window', sill: 0.85, floor: 1, shutters: true },
       { side: 'w', at: 1.4, w: 1.1, h: 1.7, kind: 'window', sill: 0.85, floor: 1, shutters: true },
       { side: 'e', at: -3.6, w: 1.1, h: 1.7, kind: 'window', sill: 0.85, floor: 1, shutters: true },
-      { side: 'e', at: 1.0, w: 1.1, h: 1.7, kind: 'window', sill: 0.85, floor: 1 },
+      { side: 'e', at: -1.2, w: 1.1, h: 1.7, kind: 'window', sill: 0.85, floor: 1 }, // karten (22.11.): vorher at 1,0 – Fenster und Balkon in der Brandwand zum Café (z 13…24), Balkon ragte ins Nachbarhaus
       { side: 'n', at: 1.6, w: 1.1, h: 1.7, kind: 'window', sill: 0.85, floor: 1, shutters: true },
       { side: 's', at: -3.0, w: 1.1, h: 1.7, kind: 'window', sill: 0.85, floor: 1 },
     ],
     stairsIn: { x: -17.6, z: 18.1, dir: 'w', w: 1.1, open: 'right' },
-    balconies: [{ side: 'e', at: 1.0, floor: 1, w: 2.0 }],
+    balconies: [{ side: 'e', at: -1.2, floor: 1, w: 2.0 }],
     ac: [{ side: 's', at: 2.2, y: 4.2 }],
   });
   // Möblierung WM1 (Kartenrunde 2): Wohnküche im EG, Schlafzimmer im OG – Möbel an den Wänden, Türachsen frei
@@ -1246,7 +1249,7 @@ function half(b, M) {
   for (const x of [-5.4, 5.4]) b.cyl(x, 0, Z(13.6), 0.16, 0.7, 'stone_wall', { r1: 0.12, tint: STONE, seg: 8, minimap: 'prop' });
   if (south) { scooter(b, 4.4, Z(17.5), 0.3, '#2f6f9a'); handcart(b, -3.6, Z(38.6), 0.15, { goods: ['#e6c53a', '#e8862a'] }); barrelGroup(b, 4.6, Z(36.4), { n: 3, colors: ['#3a6f8a', '#3a6f8a', '#8a3a2a'] }); }
   else { trike(b, 3.4, Z(19.0), Math.PI + 0.12, '#e8e4dc'); crateStack(b, -4.2, Z(37.6), { ry: 0.5 }); planter(b, 4.2, Z(38.2), 1.0, 2.4, { h: 0.75 }); }
-  pot(b, -5.6, 0, Z(21.0), { r: 0.32 }); pot(b, 5.6, 0, Z(15.4), { r: 0.28, plant: 'flowers' });
+  pot(b, -5.6, 0, Z(22.3), { r: 0.32 }); // karten (22.11.): neben statt vor die Café-Seitentür (z 21,1) pot(b, 5.6, 0, Z(15.4), { r: 0.28, plant: 'flowers' });
   // Laternen (Kartenrunde 2: Ausleger zur Gasse – im Süden steckte der Leuchtenkopf vorher in der Hauswand; abends an)
   // (Mast 1 m weiter zur Straße: stand vorher mitten in der Kletterpflanze an der Hausecke)
   for (const [lx, lz, lry] of [[-5.5, Z(33.4), south ? Math.PI / 2 : -Math.PI / 2], [14.4, Z(25.0), Math.PI]]) {

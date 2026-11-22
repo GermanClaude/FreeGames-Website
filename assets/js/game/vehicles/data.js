@@ -154,7 +154,7 @@ export const VEHICLES = {
         id: 'loader', label: 'Ladeschütze', loader: true, weapons: [],
         pos: [0.6, 0.8, 0.5], exit: [[2.7, 0, 0.6], [-2.7, 0, 0.6], [0, 0, 4.6]],
         views: [
-          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.44, 0.62, 0.47], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
+          { id: 'innen', label: 'Turm innen', space: 'turret', pos: [0.5, 0.62, 0.66], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.9, 0.5], zoom: [1], overlay: 'loader', interior: true },
           { id: 'luke', label: 'Luke offen', space: 'turret', pos: [0.6, 1.35, 0.55], look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.6, 0.8], zoom: [1, 2], exposed: true, hatch: 'loader', pin: [0.6, 0.08, 0.55] },
           { id: 'aussen', label: 'Außenansicht', look: 'relTurret', yaw: [-Math.PI, Math.PI], pitch: [-0.7, 0.75], zoom: [1], tp: { dist: 10, height: 4.8, pivot: 2.8 } },
         ],
@@ -167,8 +167,10 @@ export const VEHICLES = {
       loader: { space: 'turret', pos: [0.6, 0.83, 0.55], r: 0.3 },
     },
     // Munitionsbunker im Turmheck hinter einer Schiebetür (Vorbild: moderne Kampfpanzer mit Sprengklappen)
-    // Ladeschütze etwas weiter innen/hinten (Nutzer 21.11.: Richtschütze füllte aus 0,3–0,5 m das Bild)
-    interior: { breech: [0, 0.42, -0.55], rack: [0, 0.45, 1.55], loaderEye: [0.44, 0.62, 0.47], blastDoor: true },
+    // Ladeschütze etwas weiter innen/hinten (Nutzer 21.11.: Richtschütze füllte aus 0,3–0,5 m das Bild). Proportionen 22.11.: der
+    // Kopf des Richtschützen war noch 0,57 m vor dem Auge → Ladeschütze unter seiner Luke (hinten rechts), Richtschütze an der
+    // Optik (cabin.js) – jetzt ≈ 1,1 m, wie in echten Türmen mit Richtschütze und Ladeschütze auf derselben Seite
+    interior: { breech: [0, 0.42, -0.55], rack: [0, 0.45, 1.55], loaderEye: [0.5, 0.62, 0.66], blastDoor: true },
     crew: { switchTime: 1.2, faceTol: 0.6 /* rad */ },
     ammo: { mbt_ap: 22, mbt_he: 18 },
     lights: [[-1.25, 1.32, -3.62], [1.25, 1.32, -3.62]],

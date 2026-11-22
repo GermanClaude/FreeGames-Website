@@ -174,7 +174,11 @@ class Figure {
     } else if (role === 'mg') {
       o.l = [eye[0] - 0.1, eye[1] - 0.3, eye[2] - 0.35]; o.r = [eye[0] + 0.1, eye[1] - 0.3, eye[2] - 0.32];
     } else {
-      o.l = [hip[0] - 0.14, hip[1] + 0.06, hip[2] - 0.34]; o.r = [hip[0] + 0.14, hip[1] + 0.06, hip[2] - 0.34];
+      // Hände auf den Knien – in Blickrichtung der Figur (a.yaw; Bänke quer: ±90°). Proportionen 22.11.: vorher ohne Drehung,
+      // die Mitfahrer griffen neben sich bzw. hinter sich in die Bordwand
+      const yw = a.yaw || 0, fx = -Math.sin(yw), fz = -Math.cos(yw), rx = Math.cos(yw), rz = -Math.sin(yw);
+      o.l = [hip[0] - rx * 0.14 + fx * 0.34, hip[1] + 0.06, hip[2] - rz * 0.14 + fz * 0.34];
+      o.r = [hip[0] + rx * 0.14 + fx * 0.34, hip[1] + 0.06, hip[2] + rz * 0.14 + fz * 0.34];
     }
     return o;
   }
@@ -195,11 +199,17 @@ class Figure {
     const root = _w.set(hip[0], hip[1] - HIP_Y + (o.stand ? 0 : 0.1), hip[2]);
     // Kopfziel → Neigung des Oberkörpers (Augpunkt der Innensicht)
     const P = this.P, Qm = this.Qm;
-    const eyeM = this.toModel(a.eye || [hip[0], hip[1] + 0.75, hip[2]], root, _eye);
+    const eyeM = this.toModel(a.look || a.eye || [hip[0], hip[1] + 0.75, hip[2]], root, _eye); // look: Richtschütze am Okular (cabin.js)
     const hipsPos = P[0].set(0, HIP_Y, 0);
     if (o.stand) hipsPos.y = HIP_Y - 0.02 + Math.sin(this.ph * 1.3) * 0.004;
     const dz = eyeM.z - hipsPos.z, dy = Math.max(0.3, eyeM.y - hipsPos.y);
-    const lean = clamp(Math.atan2(-dz, dy), -0.15, o.stand ? 0.45 : 0.7) + (o.steady ? 0 : Math.sin(this.ph * 0.7) * 0.01);
+    let lean = clamp(Math.atan2(-dz, dy), -0.15, o.stand ? 0.45 : 0.7) + (o.steady ? 0 : Math.sin(this.ph * 0.7) * 0.01);
+    // Proportionen 22.11.: niedriger Kampfraum (a.roof, cabin.js) – so weit vorbeugen, dass der Scheitel unter dem Dach bleibt
+    // (Hüftgelenk → Scheitel ≈ 0,85 m; die Neigung verteilt sich auf Lende/Brust, der Kopf richtet sich zu 40 % wieder auf)
+    if (!o.stand && a.roof != null) {
+      const avail = a.roof - 0.04 - (hip[1] + 0.1);
+      if (avail < 0.85) lean = Math.max(lean, Math.min(1.0, Math.acos(clamp(avail / 0.85, 0, 1)) / 0.8));
+    }
     const breath = Math.sin(this.ph * 1.6) * 0.012;
     // FK Rumpf
     Qm[0].identity();

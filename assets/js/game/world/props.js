@@ -620,9 +620,44 @@ export function civilSpot(b, type, x, y, z, ry, color, extra = 0) {
 /** Staplerlast (Palette auf der Gabel) → Variantenzusatz: 0 leer, 8 Kartons, 16 Säcke. */
 export const staplerLast = (load) => (load === 'sacks' ? 16 : load ? 8 : 0);
 
+/**
+ * karten (22.11.): freier Stellplatz für ein Auto (Hülle 1,9 × 4,6 m): nicht in Wänden/Pfeilern (Grundriss-Einträge
+ * des Baukastens) und nicht im Erdgeschoss eines Wohn-/Geschäftshauses (building(), außer Garagen, Scheunen, Hallen).
+ * Prüfskript: Autos an festen Koordinaten standen in Häusern, die später entlang der Straßen gewachsen waren
+ * (Weitmark), oder steckten mit dem Heck im Brückengeländer. Türen bleiben frei. Sucht seitlich/längs bis 6 m; null = kein Platz.
+ */
+const CAR_HW = 0.95, CAR_HD = 2.3;
+function carOverlap(f, x, z, ry) {
+  const ca = Math.cos(ry), sa = Math.sin(ry), cb = Math.cos(f.ry || 0), sb = Math.sin(f.ry || 0);
+  const A = [[ca, -sa], [sa, ca]], B = [[cb, -sb], [sb, cb]], hA = [CAR_HW, CAR_HD], hB = [f.hw, f.hd];
+  const dx = f.x - x, dz = f.z - z;
+  let m = Infinity;
+  for (const ax of [...A, ...B]) {
+    const pr = (M, h) => h[0] * Math.abs(M[0][0] * ax[0] + M[0][1] * ax[1]) + h[1] * Math.abs(M[1][0] * ax[0] + M[1][1] * ax[1]);
+    m = Math.min(m, pr(A, hA) + pr(B, hB) - Math.abs(dx * ax[0] + dz * ax[1]));
+    if (m <= 0) return 0;
+  }
+  return m;
+}
+export function freeCarSpot(b, x, y, z, ry) {
+  const solid = (b.footprints || []).filter((f) => (f.kind === 'wall' || f.kind === 'building' || f.kind === 'pillar') && f.y0 < y + 1.4 && f.y1 > y + 0.25 && Math.abs(f.x - x) < f.hw + f.hd + 9 && Math.abs(f.z - z) < f.hw + f.hd + 9);
+  // Tür-/Tordurchgänge am Boden (1,5 m davor und dahinter) zählen wie Wände
+  for (const p of b.openings || []) if ((p.kind === 'door' || p.kind === 'gap') && Math.abs(p.y - p.h / 2 - y) < 1 && Math.abs(p.x - x) < 12 && Math.abs(p.z - z) < 12) solid.push({ x: p.x, z: p.z, hw: p.w / 2 + 0.3, hd: 1.5, ry: Math.atan2(-p.uz, p.ux) });
+  const houses = (b._gebaeude || []).filter((h) => !/garage|scheune|halle|stall|werk|lager/.test(h.nutzung || '') && y < (h.roofY ?? h.y0 + 3) - 1 && y > (h.y0 ?? 0) - 1);
+  const free = (px, pz) => !solid.some((f) => carOverlap(f, px, pz, ry) > 0.06) && !houses.some((h) => Math.abs(px - h.x) < h.w / 2 + 0.2 && Math.abs(pz - h.z) < h.d / 2 + 0.2);
+  if (free(x, z)) return [x, z];
+  const lx = Math.cos(ry), lz = -Math.sin(ry), fx = Math.sin(ry), fz = Math.cos(ry); // quer / längs
+  for (const d of [1.0, 2.0, 3.0, 4.5, 6.0]) for (const [ux, uz] of [[lx, lz], [-lx, -lz], [fx, fz], [-fx, -fz]]) {
+    const px = x + ux * d, pz = z + uz * d;
+    if (free(px, pz)) return [px, pz];
+  }
+  return null;
+}
+
 /** PKW (lokal z = Länge). style: 'sedan'|'hatch'|'wreck' – fahrbar, nur Wracks bleiben Kulisse */
 export function car(b, x, z, o = {}) {
   const col = o.color || b.pick(['#8c2b24', '#2f4f6e', '#c7c7c2', '#3b3d40', '#6b7a52', '#b98b3a']);
+  if (o.free !== false) { const sp = freeCarSpot(b, x, o.y ?? 0, z, o.ry || 0); if (!sp) return; [x, z] = sp; }
   if (o.style !== 'wreck' && o.drivable !== false && civilSpot(b, 'pkw', x, o.y ?? 0, z, o.ry || 0, col)) {
     b.decal(x, (o.y ?? 0) + 0.01, z, 2.6, 4.6, 'oil', { ry: o.ry || 0, opacity: 0.5 });
     return;
@@ -994,9 +1029,10 @@ export function chair(b, x, z, o = {}) {
     return;
   }
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0), t = o.tint || '#2f6f9a';
-  for (const sx of [-0.18, 0.18]) for (const sz of [-0.18, 0.18]) f.box(sx, 0, sz, 0.035, 0.45, 0.035, 'metal_painted', { tint: '#2b2d30', collide: false, minimap: false });
-  f.box(0, 0.45, 0, 0.42, 0.04, 0.42, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
-  f.box(0, 0.49, -0.2, 0.42, 0.42, 0.04, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
+  // Proportionen 22.11.: Sitzfläche oben 0,46 m (vorher 0,49 – Richtwert Stuhl 0,45–0,47 bei Tisch 0,75)
+  for (const sx of [-0.18, 0.18]) for (const sz of [-0.18, 0.18]) f.box(sx, 0, sz, 0.035, 0.42, 0.035, 'metal_painted', { tint: '#2b2d30', collide: false, minimap: false });
+  f.box(0, 0.42, 0, 0.42, 0.04, 0.42, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
+  f.box(0, 0.46, -0.2, 0.42, 0.42, 0.04, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
 }
 
 /** Sonnenschirm */

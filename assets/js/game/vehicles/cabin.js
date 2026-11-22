@@ -46,7 +46,7 @@ import * as SH from './cabin-shape.js?v=20261122020853';
 import * as BASE from './cabin-base.js?v=20261122020853';
 import { assets, tierFor } from '../../../lib/loader.js?v=20261122020853';
 import { funkerCabin, funkerLayout, funkerDoor, loaderPrism, driverLayoutWk2 } from './periscopes.js?v=20261122020853';
-import { buildTroopRoom } from './cabin-troop.js?v=20261122020853';
+import { buildTroopRoom, troopSeatH } from './cabin-troop.js?v=20261122020853';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -2985,8 +2985,10 @@ export function cabinSeatAnchors(vehicleOrDef) {
     // Ladeschütze steht: Hüfte ≈ 0,68 m unter dem Auge, leicht hinter dem Kopf (Nutzer/Crew-Strang 21.11.: lag über dem Auge)
     else if (s.loader && inner && inner.space === 'turret') { const le = I.loaderEye || [0.55, 0.62, 0.35]; a.posture = 'stehend'; a.hip = fromG([le[0], le[1] - 0.68, le[2] + 0.06]); a.eye = fromG(le); a.yaw = 0; }
     // Richtschütze sitzt hinter der Optik (Station = Okular), Kommandant vor seiner Lehne (Sitz bei Station + 0,2 m)
-    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos; a.hip = [inner.pos[0], st[1] - 0.6 * sc, st[2] + (s.mount === 'gun' ? 0.34 : 0.2) * sc]; a.eye = inner.pos.slice(); }
-    else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + Math.min(0.42, (D.troop.roof - D.troop.floor) * 0.3) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; }
+    // Proportionen 22.11.: Richtschütze 8 cm näher an der Optik (Sitz 0,26 m hinter dem Okular, Stirn an der Stirnstütze);
+    // look = Kopfziel der Figur (crew-figures.js) – vorher saß sie aufrecht am Augpunkt der Innensicht, 0,36 m hinter der Optik
+    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos, gun = s.mount === 'gun'; a.hip = [inner.pos[0], st[1] - 0.6 * sc, st[2] + (gun ? 0.26 : 0.2) * sc]; a.eye = inner.pos.slice(); if (gun && inner.station) a.look = [st[0], st[1], st[2] + 0.07 * sc]; }
+    else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + troopSeatH(D.troop) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; a.roof = D.troop.roof; }
     else if (s.pos) { a.hip = [s.pos[0], s.pos[1] + 0.45, s.pos[2]]; a.interior = !!inner; }
     out.push(a);
   });
