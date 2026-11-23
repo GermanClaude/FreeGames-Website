@@ -1,7 +1,7 @@
 // Welle 2 – schwere Waffen: RW-90 Donnerkeil (Panzerabwehr-Rohr, vorn geladene Raketengranate), die fliegende Rakete und
 // die Granatwerfer GW-40 Hammer / GW-6 Trommel. Titan, Hagel und Kobra sind seit 13.11. nach Vorbild neu gebaut
 // (guns-praezision.js, guns-flinten.js, guns-kobra.js).
-import { triggerGuard, arGrip, roundRect } from './parts.js?v=20261122020853';
+import { triggerGuard, arGrip, roundRect } from './parts.js?v=20261123073102';
 
 // Rakete (Panzerabwehr-Granate): Spitze vorn (+u), Leitwerk hinten. Für Ladeteil und fliegende Rakete.
 function rocketBody(b, u0, axis, o = {}) {

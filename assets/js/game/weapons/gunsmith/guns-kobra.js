@@ -5,14 +5,14 @@
 // (Daumenstück links hinter der Trommel), Trommel mit 6 Kammern und Rastkerben, Hahn mit gerieftem Sporn, glatter Abzug,
 // Holzgriffschalen (Walnuss) mit Fingermulden, Fischhaut und Medaillon. Edelstahl hochglanz (wie die „Stainless“-Ausführung).
 // Teile/Anker wie das Vormodell (crane, cylinder, ejector, loader, hammer, Griffpunkte) – Nachladen und Haltung bleiben.
-import { triggerGuard } from './parts.js?v=20261122020853';
-import { notchSight } from './pistol-parts.js?v=20261122020853';   // Kimme mit echter Kerbe (visier, 14.11.)
-import { magRounds } from './magfill.js?v=20261122020853';
-import { checkering } from './guns-flinten.js?v=20261122020853';
-import { schrift } from './schrift.js?v=20261122020853';   // Gravuren (14.11., gfx-waffen)
-import { slab, STEEL, POLY } from './gbkit.js?v=20261122020853';   // 20.11. (Waffen-Welle 3): Rahmen, Lauf, Trommel, Griff als Distanzfelder
-import { sdfMesh, sdRoundRect } from './sdfkit.js?v=20261122020853';
-import { smin } from './sdf.js?v=20261122020853';
+import { triggerGuard } from './parts.js?v=20261123073102';
+import { notchSight } from './pistol-parts.js?v=20261123073102';   // Kimme mit echter Kerbe (visier, 14.11.)
+import { magRounds } from './magfill.js?v=20261123073102';
+import { checkering } from './guns-flinten.js?v=20261123073102';
+import { schrift } from './schrift.js?v=20261123073102';   // Gravuren (14.11., gfx-waffen)
+import { slab, STEEL, POLY } from './gbkit.js?v=20261123073102';   // 20.11. (Waffen-Welle 3): Rahmen, Lauf, Trommel, Griff als Distanzfelder
+import { sdfMesh, sdRoundRect } from './sdfkit.js?v=20261123073102';
+import { smin } from './sdf.js?v=20261123073102';
 const MARK_KOBRA = schrift('kobra').mark;
 
 export function kobra(b) {

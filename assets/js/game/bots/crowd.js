@@ -31,7 +31,7 @@
 //   1000       Absturz (Speicher, ≈ 2 MB je Bot) bzw. vorher 314 ms/Bild → nicht freigegeben
 //   (* Rauschen; bei 100 greift nur die leichte Skalierung.) Draw Calls: Silhouetten 1–5 statt ≈ 4 je ferner Soldat.
 import * as THREE from 'three';
-import { SCHEMES } from './soldier/materials.js?v=20261122020853';
+import { SCHEMES } from './soldier/materials.js?v=20261123073102';
 
 /* ============================================================== Raster */
 

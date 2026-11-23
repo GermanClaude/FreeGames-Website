@@ -12,7 +12,7 @@
  *
  * Reine Daten + kleine Hilfen; importiert nur weapons.data.js (Rechenfunktionen). Werte folgen den Feldern dort (Kopfkommentar).
  */
-import { computeStats, adsFovFor, HANDLING_BY_CLASS } from './weapons.data.js?v=20261122020853';
+import { computeStats, adsFovFor, HANDLING_BY_CLASS } from './weapons.data.js?v=20261123073102';
 
 const SVG = (d) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 32" fill="none" stroke="currentColor" ' +
   `stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;

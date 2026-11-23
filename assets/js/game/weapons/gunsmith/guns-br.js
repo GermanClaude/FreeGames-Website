@@ -12,10 +12,10 @@
 //                   Rändelbändern, Skelettschaft mit Wangenauflage, 10-Schuss-Magazin, 3-fach-Kampfvisier auf der Schiene.
 // Dazu der fliegende Bolzen ('bolzen', Projektil der Armbrust, ballistics/rockets.js P.mesh).
 // Haltung/Abläufe: Einträge in HANDLING/ID_TO_MODEL (handling.js) werden hier ergänzt – nur additiv.
-import { mm, slab, POLY, STEEL, pistolGrip, triggerUnit, boxMag, barrel, frontSight, rearNotch, swivel, selectorLever, boltInPort, chargeKnob, ownMuzzle } from './neu-kit.js?v=20261122020853';
-import { acog } from './parts.js?v=20261122020853';
-import { magRounds } from './magfill.js?v=20261122020853';
-import { HANDLING, ID_TO_MODEL } from './handling.js?v=20261122020853';
+import { mm, slab, POLY, STEEL, pistolGrip, triggerUnit, boxMag, barrel, frontSight, rearNotch, swivel, selectorLever, boltInPort, chargeKnob, ownMuzzle } from './neu-kit.js?v=20261123073102';
+import { acog } from './parts.js?v=20261123073102';
+import { magRounds } from './magfill.js?v=20261123073102';
+import { HANDLING, ID_TO_MODEL } from './handling.js?v=20261123073102';
 
 const rect = (u0, v0, u1, v1) => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
 

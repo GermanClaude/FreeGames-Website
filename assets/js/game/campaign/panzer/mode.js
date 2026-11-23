@@ -13,14 +13,14 @@
 //
 // Konsole (Tests): __game.campaign → { director, skip(), win(), stage(id), killTargets(), debug() }, __game.panzer wie im Modus.
 import * as THREE from 'three';
-import { PanzerMode } from '../../modes/panzer.js?v=20261122020853';
-import { Director } from '../director.js?v=20261122020853';
-import { CampaignUI } from '../ui.js?v=20261122020853';
-import { CampaignProgress } from '../progress.js?v=20261122020853';
-import { VEHICLES } from '../../vehicles/data.js?v=20261122020853';
-import { prepareVehicleModels } from '../../vehicles/models.js?v=20261122020853';
-import { PZ_MISSIONS, PZ_ORDER, pzMission, PZ_CAMPAIGN } from './missions.js?v=20261122020853';
-import { makeFrame, PZ_SPEAKERS } from './kit.js?v=20261122020853';
+import { PanzerMode } from '../../modes/panzer.js?v=20261123073102';
+import { Director } from '../director.js?v=20261123073102';
+import { CampaignUI } from '../ui.js?v=20261123073102';
+import { CampaignProgress } from '../progress.js?v=20261123073102';
+import { VEHICLES } from '../../vehicles/data.js?v=20261123073102';
+import { prepareVehicleModels } from '../../vehicles/models.js?v=20261123073102';
+import { PZ_MISSIONS, PZ_ORDER, pzMission, PZ_CAMPAIGN } from './missions.js?v=20261123073102';
+import { makeFrame, PZ_SPEAKERS } from './kit.js?v=20261123073102';
 
 const _v = new THREE.Vector3();
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

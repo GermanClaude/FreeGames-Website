@@ -12,14 +12,14 @@
 // Kein Nachladen, keine Regeneration, kein Namensschild, keine Waffe in der Hand (Messer-Controller nur als Platzhalter).
 // Nur offline/Host-lokal: Puppen (Mehrspieler) laufen über Bot.update unverändert.
 import * as THREE from 'three';
-import { Bot } from '../bot.js?v=20261122020853';
-import { Soldier } from '../character.js?v=20261122020853';
-import { sense } from '../ai/perception.js?v=20261122020853';
-import { difficultyProfile } from '../difficulty.js?v=20261122020853';
-import { ZOMBIE_TYPES, zombieDamage, legSlow } from '../../modes/zombie-waves.js?v=20261122020853';
-import { lookFor, dressZombie, restoreLook, syncRag, faceLook } from './look.js?v=20261122020853';
-import { applyZombiePose } from './pose.js?v=20261122020853';
-import { tx } from '../../../shared/i18n.js?v=20261122020853';
+import { Bot } from '../bot.js?v=20261123073102';
+import { Soldier } from '../character.js?v=20261123073102';
+import { sense } from '../ai/perception.js?v=20261123073102';
+import { difficultyProfile } from '../difficulty.js?v=20261123073102';
+import { ZOMBIE_TYPES, zombieDamage, legSlow } from '../../modes/zombie-waves.js?v=20261123073102';
+import { lookFor, dressZombie, restoreLook, syncRag, faceLook } from './look.js?v=20261123073102';
+import { applyZombiePose } from './pose.js?v=20261123073102';
+import { tx } from '../../../shared/i18n.js?v=20261123073102';
 
 const GRAVITY = 24;
 const JUMP_V = Math.sqrt(2 * GRAVITY * 0.8);

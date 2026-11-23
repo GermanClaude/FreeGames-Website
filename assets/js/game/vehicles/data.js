@@ -5,9 +5,9 @@
 // Räder: `mountY` = Aufhängungspunkt; Ruhelage so gewählt, dass die Radunterkante bei statischer Last auf y = 0 steht
 // (mountY = rest + radius − statische Einfederung).
 
-import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261122020853';
-import { TROOP_VEHICLES, ROLE_TYPES, ROLE_KINDS } from './data-troop.js?v=20261122020853';
-import { addCrewViews } from './periscopes.js?v=20261122020853';
+import { AIR_VEHICLES, AIR_WEAPONS } from './air/data.js?v=20261123073102';
+import { TROOP_VEHICLES, ROLE_TYPES, ROLE_KINDS } from './data-troop.js?v=20261123073102';
+import { addCrewViews } from './periscopes.js?v=20261123073102';
 
 const deg = (d) => (d * Math.PI) / 180;
 

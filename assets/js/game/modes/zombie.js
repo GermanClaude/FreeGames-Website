@@ -10,13 +10,13 @@
 // Untote sind Bot-Unterklassen (bots/zombie/zombie.js) in G.bots.bots/G.actors; Wertungstabelle und Ergebnis lassen sie aus.
 // Mehrspieler: nicht freigeschaltet (MODES.zombie.online = false) – siehe Bericht/Changelog.
 import * as THREE from 'three';
-import { BaseMode } from './base.js?v=20261122020853';
-import { SCORE_RULES, modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261122020853';
-import { waveSpec, pickType, waveBonus, PAUSE_S, PREP_S, TYPE_IDS } from './zombie-waves.js?v=20261122020853';
-import { createZombie } from '../bots/zombie/zombie.js?v=20261122020853';
-import { warmRagMesh } from '../bots/zombie/look.js?v=20261122020853';
-import { refillAmmo } from '../mappoints.js?v=20261122020853';
-import { tx } from '../../shared/i18n.js?v=20261122020853';
+import { BaseMode } from './base.js?v=20261123073102';
+import { SCORE_RULES, modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261123073102';
+import { waveSpec, pickType, waveBonus, PAUSE_S, PREP_S, TYPE_IDS } from './zombie-waves.js?v=20261123073102';
+import { createZombie } from '../bots/zombie/zombie.js?v=20261123073102';
+import { warmRagMesh } from '../bots/zombie/look.js?v=20261123073102';
+import { refillAmmo } from '../mappoints.js?v=20261123073102';
+import { tx } from '../../shared/i18n.js?v=20261123073102';
 
 const _eye = new THREE.Vector3();
 const _p = new THREE.Vector3();

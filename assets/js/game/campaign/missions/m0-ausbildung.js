@@ -9,9 +9,9 @@
 //   fahrzeug (Einsteigen, Fahren, MG-Sitz, Aussteigen)
 // Auch einzeln aus dem Kampagnenmenü startbar („Ausbildung“). Spieler unverwundbar, Munition wird aufgefüllt.
 
-import { actor } from './cast.js?v=20261122020853';
-import { FIRE_SELECT } from '../../../shared/weapons.data.js?v=20261122020853';
-import { refillAmmo } from '../../mappoints.js?v=20261122020853';
+import { actor } from './cast.js?v=20261123073102';
+import { FIRE_SELECT } from '../../../shared/weapons.data.js?v=20261123073102';
+import { refillAmmo } from '../../mappoints.js?v=20261123073102';
 
 const LANE4 = [-2.75, 36.4]; // Schützenposition Bahn 4 (Blick nach Süden)
 const JEEP_AT = [24.2, 24];

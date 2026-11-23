@@ -1,7 +1,7 @@
 // NULLPUNKT — Canvas-Atlanten: Decals (Flecken, Pfützen, Markierungen), Schilder (fiktive Beschriftung),
 // Foliage (Büsche, Gräser, Palmwedel, Blüten) als instanzierte Karten mit Wind (Owner: world)
 import * as THREE from 'three';
-import { buildCrown, buildBush, createLeafMaterial, loadTreeAtlas } from './terrain/trees.js?v=20261122020853';
+import { buildCrown, buildBush, createLeafMaterial, loadTreeAtlas } from './terrain/trees.js?v=20261123073102';
 
 const FONT = '"Archivo NP", "Arial Narrow", "Helvetica Neue", Arial, sans-serif';
 const MONO = '"JetBrains Mono NP", "Courier New", monospace';

@@ -5,7 +5,7 @@
 // Dazu die Touch-Knöpfe der Flugsteuerung (input.js verarbeitet .tc-btn[data-action] selbst). Weapons/Sitze/Zustand
 // zeigt weiter die Fahrzeugtafel (vehicles/hud.js).
 import * as THREE from 'three';
-import { compass, tx } from '../../../shared/i18n.js?v=20261122020853';
+import { compass, tx } from '../../../shared/i18n.js?v=20261123073102';
 
 const CSS = `
 .ah-cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}

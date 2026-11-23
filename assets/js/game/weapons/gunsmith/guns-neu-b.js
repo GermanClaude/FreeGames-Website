@@ -12,13 +12,13 @@
 //                  verstärker, Zuführdeckel mit Gurtschieber, Gurttrommel links, Zweibein, Holz-Kolben, Tragegriff.
 //   PF-12 Stier    Vorderschaftrepetierflinte: Aluminiumgehäuse mit Schiene, Röhrenmagazin mit Verlängerung und Schelle,
 //                  gelochter Hitzeschild, Geisterring-Visier, Schrotpatronen-Halter links (sechs Patronen), Pistolengriffschaft.
-import { mm, slab, rrect, pocket, POLY, STEEL, pinHead, slotScrew, pistolGrip, triggerUnit, boxMag, barrel, frontSight, rearNotch, swivel, selectorLever, boltInPort, chargeKnob, ownMuzzle, serrations, rivets } from './neu-kit.js?v=20261122020853';
-import { ejectionPort } from './parts.js?v=20261122020853';
-import { apertureSight } from './pistol-parts.js?v=20261122020853';
-import { checkering } from './guns-flinten.js?v=20261122020853';
-import { precisionScope } from './guns-praezision.js?v=20261122020853';
-import { magRounds } from './magfill.js?v=20261122020853';
-import { schrift } from './schrift.js?v=20261122020853';
+import { mm, slab, rrect, pocket, POLY, STEEL, pinHead, slotScrew, pistolGrip, triggerUnit, boxMag, barrel, frontSight, rearNotch, swivel, selectorLever, boltInPort, chargeKnob, ownMuzzle, serrations, rivets } from './neu-kit.js?v=20261123073102';
+import { ejectionPort } from './parts.js?v=20261123073102';
+import { apertureSight } from './pistol-parts.js?v=20261123073102';
+import { checkering } from './guns-flinten.js?v=20261123073102';
+import { precisionScope } from './guns-praezision.js?v=20261123073102';
+import { magRounds } from './magfill.js?v=20261123073102';
+import { schrift } from './schrift.js?v=20261123073102';
 const MARK_HABICHT = schrift('habicht').mark;
 const MARK_KRANICH = schrift('kranich').mark;
 const MARK_HORNISSE = schrift('hornisse').mark;

@@ -7,7 +7,7 @@
 // eigenen, texturlosen Materialien (1–2 Sampler). Sichtbar nur im Umkreis von 42 m um die Kamera (alle 0,3 s geprüft).
 // Die Kartendateien bleiben unberührt: hier wird nur ausgelesen (world.nav, world.raycast, world.groundHeight).
 import * as THREE from 'three';
-import { rollSpot, weaponPool, itemName } from './items.js?v=20261122020853';
+import { rollSpot, weaponPool, itemName } from './items.js?v=20261123073102';
 
 const SHOW_R = 42;
 const SPACING = 5;

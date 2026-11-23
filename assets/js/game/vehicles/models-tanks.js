@@ -21,7 +21,7 @@
 // addRoadWheelHQ, addRoadWheel, rgWheel, markingMaterial, VEHICLES, HQ, DET, setLod. Signatur der Bauer: (lod, S, team, K)
 // → { hull, tur, gun, cmg }. low (HQ aus) bleibt bei einfachen Quadern/Extrusionen (Handy).
 import * as THREE from 'three';
-import { armorShell, sideHullRings, stackRings, weldSeam, insetPoly } from './armorkit.js?v=20261122020853';
+import { armorShell, sideHullRings, stackRings, weldSeam, insetPoly } from './armorkit.js?v=20261123073102';
 
 const PI = Math.PI, HP = PI / 2;
 

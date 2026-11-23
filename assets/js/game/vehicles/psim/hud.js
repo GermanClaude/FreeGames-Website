@@ -2,7 +2,7 @@
 // Besatzungs- und Modulstatus, Gestell je Munitionsart, Befehlsanzeige für den Fahrer, Wegmarke, Hotspot-Markierung
 // (Simulation: Bedienelement im Blick), Befehlsrad (Taste „Befehlsrad“ halten), Bedienhilfe, Prüfliste der Handgriffe.
 // Rein darstellend (DOM); Logik in modes/panzer.js, crew-ai.js und sim.js.
-import { KINDS, kindOf, MOD_LABEL, modsOf } from './ammo.js?v=20261122020853';
+import { KINDS, kindOf, MOD_LABEL, modsOf } from './ammo.js?v=20261123073102';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 

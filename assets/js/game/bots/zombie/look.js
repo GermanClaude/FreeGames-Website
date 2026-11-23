@@ -9,7 +9,7 @@
 //    sie dürfen im Schatten versinken (bedrückend statt arcadig). restoreLook() setzt die Uniforms zurück, bevor das Material
 //    in den Pool der Soldaten zurückgeht.
 import * as THREE from 'three';
-import { BONE, BIND } from '../soldier/rig.js?v=20261122020853';
+import { BONE, BIND } from '../soldier/rig.js?v=20261123073102';
 
 /** Kleidung je Typ (Ausführungs-Ids aus gear.js). */
 const OUTFITS = {

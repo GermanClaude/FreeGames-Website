@@ -10,18 +10,18 @@
 // Bots: bots.js (Beute, Zone, Verbände) über objectiveFor(bot) – die übrige KI (Gefecht, Deckung) bleibt die normale.
 // Mehrspieler: nur offline (MODES.br.online = false).
 import * as THREE from 'three';
-import { BaseMode } from '../base.js?v=20261122020853';
-import { WEAPONS } from '../../../shared/weapons.data.js?v=20261122020853';
-import { modeOptionValues, parseModeOptions } from '../../../shared/modes.data.js?v=20261122020853';
-import { registerBrWeapons, unregisterBrWeapons, BR_WEAPON_IDS } from '../../../shared/weapons-br.data.js?v=20261122020853';
-import { tx } from '../../../shared/i18n.js?v=20261122020853';
-import { Zone } from './zone.js?v=20261122020853';
-import { LootField, rngFrom } from './loot.js?v=20261122020853';
-import { DropSystem, makeCanopy, makePlane } from './drop.js?v=20261122020853';
-import { BrBots } from './bots.js?v=20261122020853';
-import { BrHud } from './hud.js?v=20261122020853';
-import { take, dropAll, strip, guns } from './inventory.js?v=20261122020853';
-import { ammoTypeOf, AMMO_TYPES } from './items.js?v=20261122020853';
+import { BaseMode } from '../base.js?v=20261123073102';
+import { WEAPONS } from '../../../shared/weapons.data.js?v=20261123073102';
+import { modeOptionValues, parseModeOptions } from '../../../shared/modes.data.js?v=20261123073102';
+import { registerBrWeapons, unregisterBrWeapons, BR_WEAPON_IDS } from '../../../shared/weapons-br.data.js?v=20261123073102';
+import { tx } from '../../../shared/i18n.js?v=20261123073102';
+import { Zone } from './zone.js?v=20261123073102';
+import { LootField, rngFrom } from './loot.js?v=20261123073102';
+import { DropSystem, makeCanopy, makePlane } from './drop.js?v=20261123073102';
+import { BrBots } from './bots.js?v=20261123073102';
+import { BrHud } from './hud.js?v=20261123073102';
+import { take, dropAll, strip, guns } from './inventory.js?v=20261123073102';
+import { ammoTypeOf, AMMO_TYPES } from './items.js?v=20261123073102';
 
 const PICK_R = 2.2;
 const END_DELAY = 5;

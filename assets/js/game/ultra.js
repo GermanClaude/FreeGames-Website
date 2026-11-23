@@ -15,7 +15,7 @@
 // Dazu: Körperkamera-Stoß bei jedem eigenen Schuss (Kamera sitzt an der Brust, nicht an der Waffe), kurze und blasse
 // Ziel-/Zonenmarken nach dem Einsatz (HUD .is-brief, game.css), einmalige Hinweise auf Magazin-Prüfen und Verband.
 // Keine Allokation je Bild, keine Strahlen – kostet praktisch nichts.
-import { tx } from '../shared/i18n.js?v=20261122020853';
+import { tx } from '../shared/i18n.js?v=20261123073102';
 
 /** Abstimmung (Bodycam-Gefühl; Bewegungsphysik geprüft mit festen Zeitschritten, siehe Bericht). */
 export const ULTRA = Object.freeze({

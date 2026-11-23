@@ -5,10 +5,10 @@
 // Ohne Herstellerzeichen. Bauteile: Gehäuse (glasfaserverstärkt) mit Kornturm, Spannschieber-Kanal links, Durchbrüchen,
 // Auswurffenster rechts, Picatinny oben; Griffstück mit Schacht, Abzugsbügel, Griff; Klappschaft (Rahmen mit zwei
 // Fenstern, Gelenk mit Riegel); Trommeldiopter; Mündungsfeuerdämpfer (vier Schlitze), Laufmutter; Magazin mit Rippen.
-import { ref, slab, rrect, pocket, POLY } from './gbkit.js?v=20261122020853';
-import { redDot } from './parts.js?v=20261122020853';
-import { magRounds } from './magfill.js?v=20261122020853';
-import { schrift } from './schrift.js?v=20261122020853';   // Gravuren (14.11., gfx-waffen)
+import { ref, slab, rrect, pocket, POLY } from './gbkit.js?v=20261123073102';
+import { redDot } from './parts.js?v=20261123073102';
+import { magRounds } from './magfill.js?v=20261123073102';
+import { schrift } from './schrift.js?v=20261123073102';   // Gravuren (14.11., gfx-waffen)
 const MARK_KEILER = schrift('keiler').mark;
 
 const R = ref(2193, 898, 315);

@@ -5,7 +5,7 @@
 // vorgestreckt oder schlaff (je Aussehen), Schlurfen (ein Bein zieht nach: Fuß bleibt flach, Knie steifer), Schlag
 // (Ausholen → Zuschlagen → Nachschwingen) aus zombie.js (attack 0…1, Phase).
 import * as THREE from 'three';
-import { BONE, BONE_COUNT, DIM } from '../soldier/rig.js?v=20261122020853';
+import { BONE, BONE_COUNT, DIM } from '../soldier/rig.js?v=20261123073102';
 
 const _e = new THREE.Euler();
 const _q = new THREE.Quaternion();

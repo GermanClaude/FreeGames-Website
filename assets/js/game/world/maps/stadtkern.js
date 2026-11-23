@@ -5,10 +5,10 @@
 // (Schaufenster, Auslagen), Treppenhäusern bis aufs Dach, möblierten Wohnungen, Balkonen und Toreinfahrten; dahinter
 // Hinterhöfe, das Kaufhaus am Platz mit Dachterrasse, Hinterhäuser, eine Hinterstraße (Startbereich) und Querstraßen.
 // Vertikales Spiel: Dächer (verbunden über die Brüstungen), Balkone, U-Bahn. Alle Namen frei erfunden.
-import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261122020853';
-import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261122020853';
-import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261122020853';
-import { stadtkernFuellen } from './fuell-karten.js?v=20261122020853'; // fuell (20.11.): Linden der Lindenallee u. a.
+import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261123073102';
+import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261123073102';
+import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261123073102';
+import { stadtkernFuellen } from './fuell-karten.js?v=20261123073102'; // fuell (20.11.): Linden der Lindenallee u. a.
 
 const PI = Math.PI, Q = PI / 2;
 const HX = 56, HZ = 56; // Spielfläche (Kulissen dahinter)

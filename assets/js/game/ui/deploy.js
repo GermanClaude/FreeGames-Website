@@ -6,10 +6,10 @@
 // Klasse Pilot (20.11.): Leiste „Luftfahrzeug“ mit den Hubschraubern/Jets des eigenen Teams (vehicles/air/deploy.js) –
 // Wahl „Zu Fuß“ oder ein freies Muster; nach dem Einsatz sitzt der Spieler im Cockpit. Nur auf Karten mit Luftfahrzeugen.
 
-import { el, esc, secs } from './dom.js?v=20261122020853';
-import { ICON } from './icons.js?v=20261122020853';
-import { activePad } from '../../shared/gamepad.js?v=20261122020853';
-import { LoadoutPanel } from './loadout-panel.js?v=20261122020853';
+import { el, esc, secs } from './dom.js?v=20261123073102';
+import { ICON } from './icons.js?v=20261123073102';
+import { activePad } from '../../shared/gamepad.js?v=20261123073102';
+import { LoadoutPanel } from './loadout-panel.js?v=20261123073102';
 
 const OPEN_DELAY = 1.1; // s Todeskamera, bevor die Einsatzkarte erscheint (Eroberung)
 const AUTO_GRACE = 2.5; // s nach Ablauf ohne Eingabe → automatisch einsetzen

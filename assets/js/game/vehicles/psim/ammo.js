@@ -16,8 +16,8 @@
 //   { hull: { front, side, rear, top }, turret: { … } } mit Fläche = [mm, Neigung°] oder { ke, ce, slope } (Verbund).
 // Effektive Dicke = Nenndicke / cos(Auftreffwinkel zur geneigten Platte), Wucht-/Panzergranaten normalisieren um `norm`°.
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261122020853';
-import { SHORT, gunSeat } from '../crew.js?v=20261122020853';
+import { VEHICLES, VEHICLE_WEAPONS } from '../data.js?v=20261123073102';
+import { SHORT, gunSeat } from '../crew.js?v=20261123073102';
 
 const DEG = Math.PI / 180;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

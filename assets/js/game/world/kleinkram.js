@@ -15,8 +15,8 @@
 // Geometrie landet in den Material-Eimern des MapBuilders (zusammengefasst je Material/Chunk → kaum zusätzliche
 // Draw Calls); Fotoscan-Modelle laufen über b.model (instanziert, LOD).
 import * as THREE from 'three';
-import { frame, hash01, cable, pallet } from './props.js?v=20261122020853';
-import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261122020853';
+import { frame, hash01, cable, pallet } from './props.js?v=20261123073102';
+import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261123073102';
 
 const D = { collide: false, minimap: false };
 const DG = { ...D, grad: false };

@@ -2,8 +2,8 @@
 // §02 Neu: Neuheiten als Karten (statisch im HTML, hier nur Filter), Sprünge in Kampagne/Steuerung mit Vorauswahl und
 // der Vorher-Nachher-Regler (Bildpaare aus assets/img/neu, gleiche Kamera). Ohne JavaScript stehen alle Karten da und der
 // Regler zeigt die Hälfte von beiden Bildern.
-import { $, $$ } from './dom.js?v=20261122020853';
-import { announce } from './live.js?v=20261122020853';
+import { $, $$ } from './dom.js?v=20261123073102';
+import { announce } from './live.js?v=20261123073102';
 
 /** Vergleichspaare: Bildname (assets/img/neu/vgl-<id>-vorher|nachher), Beschriftung, Alternativtexte. */
 const VGL = {

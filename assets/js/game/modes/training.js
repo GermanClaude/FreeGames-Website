@@ -3,10 +3,10 @@
 // (12 Ziele nacheinander, Strafzeit pro Fehlschuss, Bestzeit je Waffe in localStorage 'nullpunkt:training').
 // Trefferzuordnung: world.raycast wird für die Matchdauer umhüllt und merkt sich Zieltreffer; 'impact' bestätigt.
 
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261122020853';
-import { BaseMode } from './base.js?v=20261122020853';
-import { falloff } from '../combat.js?v=20261122020853';
-import { UebungsGelaende } from './training-gelaende.js?v=20261122020853'; // Übungsgelände (Karte range, 21.11.)
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261123073102';
+import { BaseMode } from './base.js?v=20261123073102';
+import { falloff } from '../combat.js?v=20261123073102';
+import { UebungsGelaende } from './training-gelaende.js?v=20261123073102'; // Übungsgelände (Karte range, 21.11.)
 
 const STORE = 'nullpunkt:training';
 const TARGET_HP = 100;

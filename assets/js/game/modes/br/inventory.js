@@ -4,8 +4,8 @@
 //   dropAll(actor) → [Gegenstände] (Tod: alles fällt)
 //   value(ctx, actor, item) → Nutzen für Bots (0 = nutzlos)
 // ctx = { G, W (Waffentabelle), injuries }
-import { createArmorState } from '../../../shared/classes.data.js?v=20261122020853';
-import { AMMO_TYPES, VEST_RANK, HELMET_RANK, GRENADE_MAX, BANDAGE_MAX, ammoTypeOf, weaponValue, itemName } from './items.js?v=20261122020853';
+import { createArmorState } from '../../../shared/classes.data.js?v=20261123073102';
+import { AMMO_TYPES, VEST_RANK, HELMET_RANK, GRENADE_MAX, BANDAGE_MAX, ammoTypeOf, weaponValue, itemName } from './items.js?v=20261123073102';
 
 export const KNIFE_LOADOUT = { primary: 'knife', secondary: null, lethal: null, tactical: null, melee: 'knife', tool: null };
 

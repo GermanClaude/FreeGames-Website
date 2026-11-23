@@ -24,9 +24,9 @@
 // autoWrack(b, x, y, z, ry, { seed, color, style }) – ry wie Requisiten (lokal +z = Front).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { tube, steelRim, brakeDisc } from '../vehicles/bodykit.js?v=20261122020853';
-import { pkwSub, pkwShape, TAG } from '../vehicles/carbody.js?v=20261122020853';
-import { vertexNormals, cornerNormals, toGeometry, toLimit, seamGeometry, faceNormals } from '../engine/subsurf.js?v=20261122020853';
+import { tube, steelRim, brakeDisc } from '../vehicles/bodykit.js?v=20261123073102';
+import { pkwSub, pkwShape, TAG } from '../vehicles/carbody.js?v=20261123073102';
+import { vertexNormals, cornerNormals, toGeometry, toLimit, seamGeometry, faceNormals } from '../engine/subsurf.js?v=20261123073102';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;

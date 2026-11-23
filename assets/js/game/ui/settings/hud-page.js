@@ -2,9 +2,9 @@
 // Fadenkreuz (Form, Farbe, Vorschau), Bodycam-Einblendung, FPS-Anzeige. Vorlage „Ultra-Realismus“ (wie Bodycam): setzt
 // Spielstil, HUD, Bildstil, Kamerabewegung, Waffenhaltung und freies Zielen auf einmal (alles einzeln wieder änderbar).
 
-import { esc } from '../dom.js?v=20261122020853';
-import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261122020853';
-import { HINTS } from './schema-page.js?v=20261122020853';
+import { esc } from '../dom.js?v=20261123073102';
+import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261123073102';
+import { HINTS } from './schema-page.js?v=20261123073102';
 
 const STYLES = [
   { id: 'voll', label: 'Voll', desc: 'Alles im Blick: Minikarte, Kompass, Munition, Leben, Treffermarker.' },

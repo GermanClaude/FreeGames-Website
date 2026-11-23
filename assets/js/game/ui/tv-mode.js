@@ -6,7 +6,7 @@
 //                         nicht für Weltmarker/Fadenkreuz (die rechnen in Bildschirm-Pixeln)
 // Rein DOM-seitig, kein Einfluss auf Spiellogik oder Netz.
 
-import { uiScaleFor, consoleKind } from '../../shared/gamepad.js?v=20261122020853';
+import { uiScaleFor, consoleKind } from '../../shared/gamepad.js?v=20261123073102';
 
 /** Zustand anwenden; → { tv, scale }. */
 export function applyTvMode(settings) {

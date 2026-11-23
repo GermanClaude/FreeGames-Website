@@ -3,10 +3,10 @@
 // Raster mit Links auf die große Fassung (ohne JavaScript öffnet der Link das Bild). Hier: Filter nach Thema,
 // Vollbild-Betrachter (<dialog id="lightbox">) mit Pfeiltasten, Wischen, Controller (LB/RB bzw. Steuerkreuz) und
 // der Vorher/Nachher-Regler (aus news-view.js).
-import { $, $$ } from './dom.js?v=20261122020853';
-import { announce } from './live.js?v=20261122020853';
-import { t } from './lang.js?v=20261122020853';
-import { initCompare } from './news-view.js?v=20261122020853';
+import { $, $$ } from './dom.js?v=20261123073102';
+import { announce } from './live.js?v=20261123073102';
+import { t } from './lang.js?v=20261123073102';
+import { initCompare } from './news-view.js?v=20261123073102';
 
 function initFilter(sec) {
   const bar = $('#gal-filter', sec);
