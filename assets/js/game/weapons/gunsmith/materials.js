@@ -183,12 +183,17 @@ const DEFS = {
   // Kornträger), Polymer-Schaft/-Griff mit eigenem Atlas (m17-tex.js)
   // M-17 (Nutzer 13.10.2026: realistisch statt „knetig“): anthrazit eloxiert mit seidiger Klarschicht (spiegelt die
   // Umgebung weich), Phosphat-Stahl matt, Magazin grau beschichtet; alle mit Gebrauchsspuren (wearPatch).
-  m17Mag: () => wearPatch(std({ color: 0x4a4d51, metalness: 0.4, roughness: 0.52, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 2.5), normalScale: new THREE.Vector2(0.18, 0.18) }), { col: 0xaeb2b7, metal: 1, rough: 0.26, k: 1.15 }),
+  // 23.11. (Vorbild-Abgleich): Truppenmagazin = hart eloxiertes Alu unter grauem Trockenschmierfilm – stumpf, kaum metallisch
+  // (vorher Metall 0,4 / Rauheit 0,52: wirkte im Licht wie blankes, glasiges Alu); Kratzer zeigen das helle Grundmetall
+  m17Mag: () => wearPatch(std({ color: 0x46484b, metalness: 0.12, roughness: 0.68, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 2.5), normalScale: new THREE.Vector2(0.18, 0.18) }), { col: 0xa6aaaf, metal: 1, rough: 0.3, k: 0.6, smear: 0.25 }),
   m17Rec: () => wearPatch(phys({ color: 0x2b2d30, metalness: 0.15, roughness: 0.64, clearcoat: 0.06, clearcoatRoughness: 0.3, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 2.5), normalScale: new THREE.Vector2(0.2, 0.2) }), ALU_WEAR),
   m17Ras: () => wearPatch(phys({ color: 0x292b2e, metalness: 0.15, roughness: 0.66, clearcoat: 0.05, clearcoatRoughness: 0.3, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 2.5), normalScale: new THREE.Vector2(0.2, 0.2) }), { ...ALU_WEAR, tone: 0.16 }),
   m17Steel: () => wearPatch(std({ color: 0x2b2c2d, metalness: 0.3, roughness: 0.64, roughnessMap: fine(finishMaps('steel').rough, 2.5), normalMap: fine(finishMaps('steel').normal, 4), normalScale: new THREE.Vector2(0.12, 0.12) }), { ...STEEL_WEAR, bump: 0.00004 }),
   // Verschlussgruppe (innen, keine Tarnung): manganphosphatiert, leicht geölt – matter Grund mit dünnem Ölglanz
   m17Bcg: () => wearPatch(phys({ color: 0x2c2d2e, metalness: 0.5, roughness: 0.55, clearcoat: 0.45, clearcoatRoughness: 0.22, roughnessMap: fine(finishMaps('steel').rough, 3), normalMap: fine(finishMaps('steel').normal, 5), normalScale: new THREE.Vector2(0.08, 0.08) }), { col: 0x9a9c9e, metal: 1, rough: 0.3, bump: 0.00003, tone: 0.06 }),
+  // Holo-Visier (parts.js holoSightMax, 23.11.): Gehäuse wie das eloxierte Waffengehäuse, aber kaum Kantenabrieb – die dünnen,
+  // gefasten Haubenstege galten sonst ganz als „Kante“ und leuchteten silbern (Vorbild: matt schwarzes Visiergehäuse)
+  holoBody: () => wearPatch(phys({ color: 0x232427, metalness: 0.1, roughness: 0.7, clearcoat: 0.04, clearcoatRoughness: 0.35, roughnessMap: fine(finishMaps('alu').rough, 2), normalMap: fine(finishMaps('alu').normal, 2.5), normalScale: new THREE.Vector2(0.16, 0.16) }), { ...ALU_WEAR, k: 0.22, tone: 0.08 }),
   m17RecV: () => DEFS.m17Rec(), m17RasV: () => DEFS.m17Ras(), m17SteelV: () => DEFS.m17Steel(), m17FurnV: () => DEFS.m17Furn(),
   m17Furn: () => m17FurnMat(false), 'm17Furn@lite': () => m17FurnMat(true),
   barrelNitride: () => std({ color: 0x38393c, metalness: 0.85, roughness: 0.42, roughnessMap: wearMap() }),
@@ -271,8 +276,10 @@ const DEFS = {
   // Durchscheinende Polymermagazine (Rauch, Wüstenbraun, Grau wie Lancer/UMP/AUG): Patronen + Zubringer innen
   // sichtbar (magfill.js). userData.solid: zählt für den Handkontakt (contact.js) wie ein festes Teil;
   // Bot-Detailstufe: undurchsichtige Ersatzfarbe (LOD_COLORS)
-  smokeTan: () => solid(std({ color: 0x9a7f55, metalness: 0.05, roughness: 0.3, transparent: true, opacity: 0.58, envMapIntensity: 1.1 })),
-  smokeGrey: () => solid(std({ color: 0x5c6266, metalness: 0.05, roughness: 0.26, transparent: true, opacity: 0.52, envMapIntensity: 1.1 })),
+  // Durchscheinende Magazine (K-36 nach G36, BX-20 nach AUG; 23.11. Vorbild-Abgleich): Rauchglas-Polymer leicht mattiert, die
+  // Patronen dahinter gedämpft und nicht grell messingfarben wie hinter Klarglas (vorher Deckkraft 0,52/0,58)
+  smokeTan: () => solid(std({ color: 0x8a7150, metalness: 0.04, roughness: 0.34, transparent: true, opacity: 0.66, envMapIntensity: 1.0 })),
+  smokeGrey: () => solid(std({ color: 0x4b5155, metalness: 0.04, roughness: 0.32, transparent: true, opacity: 0.64, envMapIntensity: 1.0 })),
   smokeDark: () => solid(std({ color: 0x2f363b, metalness: 0.08, roughness: 0.24, transparent: true, opacity: 0.6, envMapIntensity: 1.2 })),
   // Patronen im Magazin (InstancedMesh, Vertex-Farben Messing/Tombak bzw. rote Schrothülse) und Zubringer
   rounds: () => std({ color: 0xffffff, vertexColors: true, metalness: 0.95, roughness: 0.3 }),
@@ -351,7 +358,7 @@ const LOD_COLORS = { woodWarm: 0x6a3a22, woodWalnut: 0x4a2d1c, polymerTan: 0x665
 // Bot-Detailstufe ohne Erzeugung der (texturierten) Waffenmaterialien (24.10., V4: Bots ohne Atlas/Texturen – vorher
 // legte schon der erste Bot mit M-17 deren Materialien samt Oberflächenkarten an, ≈ 0,2 s): Farbe wie material.color,
 // Metall-Gruppe wie metalness ≥ 0,5
-const LOD_META = { m17Rec: [0x2b2d30, 0], m17Ras: [0x292b2e, 0], m17Steel: [0x2b2c2d, 0], m17Mag: [0x4a4d51, 0], m17Bcg: [0x2c2d2e, 1],
+const LOD_META = { m17Rec: [0x2b2d30, 0], m17Ras: [0x292b2e, 0], m17Steel: [0x2b2c2d, 0], m17Mag: [0x46484b, 0], holoBody: [0x232427, 0], m17Bcg: [0x2c2d2e, 1],
   m17Furn: [0x26272a, 0], p9Slide: [0x5c5e62, 1], p9Frame: [0x232427, 0],
   kv47Wood: [0x4e1f0c, 0], kv47Rec: [0x222325, 0], kv47Steel: [0x252629, 1], kv47Mag: [0x33363b, 1], kv47Bcg: [0x3a3c40, 1],
   qx90Frame: [0x3a3b3e, 0], qx90Upper: [0x343538, 0], qx90Mag: [0x2c241d, 0], qx90Rod: [0x67645f, 1],

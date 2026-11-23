@@ -72,19 +72,23 @@ export function bulldog(b) {
     b.cyl('paintSignal', 0.0036, 0.0036, 0.002, -0.016, 0.0115, 0.002, { axis: 'x', seg: 14 });               // roter Ring = entsichert
   }
   // Walnuss-Schaft mit halbem Pistolengriff, Fischhaut am Griff, Riemenöse, Gummikappe mit Distanzplatte
+  // 23.11. (Vorbild-Abgleich 870): Schaftrücken fällt zur Kappe ab (Senkung am Kamm ≈ 37 mm, an der Ferse ≈ 61 mm unter der
+  // Laufschiene statt 9/28 mm, Kappe 13 cm hoch), schlanker Kolbenhals (≈ 50 mm senkrecht zur Griffachse statt ≈ 85 mm) mit hochgezogener
+  // Unterlinie und abgesetztem Halbpistolengriff – vorher wirkte der Schaft wie ein gerades Brett. Griffpunkt und Schaftlänge unverändert.
   b.side('woodWalnut', [
-    [-0.068, 0.078], [-0.12, 0.068], [-0.26, 0.062], [-0.4, 0.059], [-0.404, 0.053], [-0.404, -0.08], [-0.39, -0.085],
-    [-0.3, -0.062], [-0.18, -0.032], [-0.1, -0.016], [-0.066, -0.032], [-0.046, -0.048], [-0.024, -0.05], [-0.008, -0.027],
-    [0.0, 0.0], [-0.008, 0.016], [-0.068, 0.018],
+    [-0.068, 0.078], [-0.078, 0.071], [-0.095, 0.06], [-0.12, 0.051], [-0.2, 0.043], [-0.3, 0.034], [-0.396, 0.027], [-0.404, 0.021],
+    [-0.404, -0.102], [-0.396, -0.109], [-0.3, -0.08], [-0.22, -0.054], [-0.16, -0.03], [-0.125, -0.01], [-0.108, -0.002],
+    [-0.094, -0.004], [-0.08, -0.018], [-0.066, -0.035], [-0.052, -0.05], [-0.04, -0.057], [-0.026, -0.058], [-0.014, -0.05],
+    [-0.008, -0.032], [-0.002, -0.012], [0.0, 0.004], [-0.006, 0.016], [-0.068, 0.018],
   ], 0.041, 0, { bevel: 0.01, bevelSeg: 3 });
-  for (const s of [-1, 1]) checkering(b, s * 0.0207, -0.052, -0.012, -0.036, 0.008);
-  b.side('polymer', [[-0.404, 0.06], [-0.408, 0.06], [-0.408, -0.086], [-0.404, -0.086]], 0.044, 0, { bevel: 0.001 });
-  b.side('rubber', [[-0.408, 0.06], [-0.426, 0.06], [-0.43, 0.046], [-0.43, -0.084], [-0.422, -0.096], [-0.408, -0.092]], 0.045, 0, { bevel: 0.005, bevelSeg: 2 });
+  for (const s of [-1, 1]) checkering(b, s * 0.0207, -0.052, -0.02, -0.04, -0.006);
+  b.side('polymer', [[-0.404, 0.021], [-0.408, 0.021], [-0.408, -0.107], [-0.404, -0.107]], 0.044, 0, { bevel: 0.001 });
+  b.side('rubber', [[-0.408, 0.021], [-0.426, 0.021], [-0.43, 0.009], [-0.43, -0.103], [-0.422, -0.115], [-0.408, -0.111]], 0.045, 0, { bevel: 0.005, bevelSeg: 2 });
   if (b.hi) {
-    b.box('polymer', 0.03, 0.006, 0.022, 0, -0.062, -0.036, { rx: 0.5, c: 0.002 });
-    b.cyl('steel', 0.0052, 0.0052, 0.004, 0, -0.068, -0.33, { axis: 'v', seg: 12 });
-    b.torus('steel', 0.009, 0.0016, 0, -0.078, -0.33, { ry: Math.PI / 2, seg: 6, tseg: 16 });
-    for (const s of [-1, 1]) b.screw('steel', s * 0.0228, 0.0, -0.418, 'x', 0.0024);
+    b.box('polymer', 0.03, 0.006, 0.022, 0, -0.0585, -0.033, { rx: 0.2, c: 0.002 });                       // Griffkappe
+    b.cyl('steel', 0.0052, 0.0052, 0.004, 0, -0.089, -0.33, { axis: 'v', seg: 12 });
+    b.torus('steel', 0.009, 0.0016, 0, -0.099, -0.33, { ry: Math.PI / 2, seg: 6, tseg: 16 });
+    for (const s of [-1, 1]) b.screw('steel', s * 0.0228, -0.04, -0.418, 'x', 0.0024);
   }
   // Lauf mit Laufrippe + Perlkorn, Würgebohrung
   b.cyl('steelDark', 0.0118, 0.0118, 0.47, 0, axis, 0.387, { seg: b.seg(24, 6) });
@@ -115,6 +119,12 @@ export function bulldog(b) {
   if (b.hi) b.screw('steel', 0.0082, axis - 0.012, 0.535, 'x', 0.002);
   // Vorderschaft (Walnuss, gerippt) – animiert, mit Vorderschaftstangen
   b.part('pump', 0, axis - 0.022, 0.3);
+  // Verschluss im Auswurffenster (23.11., Vorbild 870: bei geschlossenem Verschluss blanker Verschlusskopf mit Auszieher sichtbar
+  // statt schwarzer Fläche). Fest, nicht am Vorderschaft: ein mitlaufendes Teil würde außen über das Gehäuse gleiten.
+  if (b.hi) {
+    b.box('steelBright', 0.0007, 0.016, 0.056, 0.0206, 0.058, 0.08, { c: 0 });
+    b.box('cavity', 0.0004, 0.003, 0.019, 0.0211, 0.062, 0.098, { c: 0 });
+  }
   const ribs = [[0, 0.0135], [0.005, 0.021]];
   const nR = b.hi ? 13 : 2, L = 0.19;
   for (let i = 0; i < nR; i++) { const u = 0.014 + i * (L / nR); ribs.push([u, 0.024], [u + L / nR * 0.55, 0.024], [u + L / nR * 0.78, 0.0222]); }

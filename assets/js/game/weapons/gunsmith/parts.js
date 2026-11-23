@@ -47,7 +47,7 @@ export function holoSight(b, u0, railTop, o = {}) {
 // Schienenklemme mit Querschraube und Schnellspannhebel, Bedienknöpfe links, Batteriedeckel rechts vorn,
 // Einstellschrauben, Haube mit gefasten Kanten, zweifach getöntes Fenster. Gleiche Maße/Achse wie die einfache Fassung.
 function holoSightMax(b, u0, railTop) {
-  const L = 0.092, W = 0.034, baseH = 0.017, axis = railTop + baseH + 0.019, M = 'm17Rec';
+  const L = 0.092, W = 0.034, baseH = 0.017, axis = railTop + baseH + 0.019, M = 'holoBody';   // eigenes Material (23.11.)
   // Körper (abgerundet) + vordere Schräge
   b.box(M, W, baseH, L - 0.006, 0, railTop + baseH / 2, u0 + (L - 0.006) / 2, { r: 0.0032 });
   // Klemme: Backen bis zur Schienenflanke, Querschraube links (Schlitz), Schnellspannhebel rechts
