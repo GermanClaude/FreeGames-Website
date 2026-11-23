@@ -2987,9 +2987,21 @@ export function cabinSeatAnchors(vehicleOrDef) {
     // Richtschütze sitzt hinter der Optik (Station = Okular), Kommandant vor seiner Lehne (Sitz bei Station + 0,2 m)
     // Proportionen 22.11.: Richtschütze 8 cm näher an der Optik (Sitz 0,26 m hinter dem Okular, Stirn an der Stirnstütze);
     // look = Kopfziel der Figur (crew-figures.js) – vorher saß sie aufrecht am Augpunkt der Innensicht, 0,36 m hinter der Optik
-    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos, gun = s.mount === 'gun'; a.hip = [inner.pos[0], st[1] - 0.6 * sc, st[2] + (gun ? 0.26 : 0.2) * sc]; a.eye = inner.pos.slice(); if (gun && inner.station) a.look = [st[0], st[1], st[2] + 0.07 * sc]; }
+    // rest 22.11. (Nutzer: „Richtschütze ohne Kopf in der Ladersicht“): der Sitz lag 0,6 m unter Okular bzw. Augpunkt – sitzend
+    // reicht das Auge aber ≈ 0,8 m über die Sitzfläche: Scheitel und Mütze stießen durch die Turmdecke (gemessen KP-1: Decke
+    // 0,25 m über dem Kopfknochen des Richtschützen, beim Kommandanten 0,01 m – Kopf von innen unsichtbar). Jetzt 0,8 m darunter
+    // (Auge auf Okular-/Augpunkthöhe)
+    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos, gun = s.mount === 'gun'; a.hip = [inner.pos[0], st[1] - 0.8 * sc, st[2] + (gun ? 0.26 : 0.2) * sc]; a.eye = inner.pos.slice(); if (gun && inner.station) a.look = [st[0], st[1], st[2] + 0.07 * sc]; }
     else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + troopSeatH(D.troop) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; a.roof = D.troop.roof; }
     else if (s.pos) { a.hip = [s.pos[0], s.pos[1] + 0.45, s.pos[2]]; a.interior = !!inner; }
+    // Decke über dem Platz (crew-figures.js hält den Scheitel darunter): Turm – Schale des Innenraums (cabin-base.js
+    // turretBase, Gruppenraum 0,75 m; die Luken sind in der Innenschale nicht ausgeschnitten); Fahrer/Funker – Raumdecke aus
+    // driverCabin/funkerCabin
+    if (a.roof == null && a.hip) {
+      if (a.space === 'turret' && D.turretBox) a.roof = 0.75 * sc + sh[1];
+      else if (s.drive && R && Number.isFinite(R.roof)) a.roof = R.roof;
+      else if (s.id === 'funker' && FK && Number.isFinite(FK.roof)) a.roof = FK.roof;
+    }
     out.push(a);
   });
   return out;

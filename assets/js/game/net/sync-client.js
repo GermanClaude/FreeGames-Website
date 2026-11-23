@@ -715,6 +715,9 @@ export class ClientSync {
       case 'ap':
         this._applyArmor(m.ar);
         return;
+      case 'ij': // Wundstand der eigenen Puppe (injuries.js applyNet)
+        if (G.injuries) G.injuries.applyNet(m);
+        return;
       case 'sk': case 'sa': case 'sv': case 'dr': case 'de': {
         // Serienprämien/FPV-Drohne (mode.streaks läuft auf dem Client als Abbild)
         const st = G.mode && G.mode.streaks;
@@ -856,6 +859,12 @@ export class ClientSync {
     if (!this.active || this.ended || !Number.isInteger(i)) return;
     // a: t umschalten, k auframmen, h Treffer, g Scharnier x getroffen, p lose Tür anstoßen (x = Seite)
     this.net.send(HOST_ID, { t: 'door', i, a: ['k', 'h', 'g', 'p'].includes(a) ? a : 't', d: Math.round(d), x: x | 0 });
+  }
+
+  /** Verband fertig angelegt ('verband'): der Host prüft und wirkt an der Puppe (injuries.js netBandage), Antwort 'ev' ij. */
+  sendBandage() {
+    if (!this.active || this.ended) return;
+    this.net.send(HOST_ID, { t: 'verband' });
   }
 
   /** Grabwunsch ('dig' {x, z}): der Host prüft und verteilt ('ev' dg, digging.js). */

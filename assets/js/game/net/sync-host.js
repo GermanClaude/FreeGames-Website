@@ -105,6 +105,8 @@ export class HostSync {
       net.on('ability', (m, from) => this._onAbility(m, from)),
       net.on('loot', (m, from) => this._onLoot(m, from)),
       net.on('door', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.doors) this.G.doors.netRequest(p, m); }),
+      // Verband eines Clients (injuries.js netBandage prüft: lebendig, Verbände je Leben, Abklingzeit, verwundet) – rest 22.11.
+      net.on('verband', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.injuries) this.G.injuries.netBandage(p); }),
       net.on('dig', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.digging) this.G.digging.netRequest(p, m); }),
       net.on('build', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.building) this.G.building.netRequest(p, m); }),
       net.on('point', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && m && this.G.points) this.G.points.netUse(p, m.i, from); }),
@@ -191,6 +193,8 @@ export class HostSync {
     s.on('score', (e) => { if (e && e.actor && e.actor.isRemoteHuman) this._toActor(e.actor, { t: 'ev', e: 'sc', p: e.points, r: e.reason }); });
     s.on('medal', (e) => { if (e && e.actor && e.actor.isRemoteHuman) this._toActor(e.actor, { t: 'ev', e: 'md', id: e.id, label: e.label, tier: e.tier }); });
     s.on('actor:remove', () => { this._actorsDirty = true; });
+    // Wundstand der Puppe (injuries.js): Blutung/Arm/Bein + Verbände an den betroffenen Client ('ev' ij)
+    s.on('injury:state', (e) => { if (e && e.actor && e.actor.isRemoteHuman && this.G.injuries) this._toActor(e.actor, { t: 'ev', e: 'ij', ...this.G.injuries.netState(e.actor) }); });
     // Panzerung (Großkarten): Reserveplatte nach Abschuss an den betroffenen Client
     s.on('armor:pickup', (e) => { if (e && e.actor && e.actor.isRemoteHuman && e.actor.armor) this._toActor(e.actor, { t: 'ev', e: 'ap', ar: armorOf(e.actor) }); });
     s.on('armor:plate', (e) => { if (e && e.actor && e.actor.isRemoteHuman && e.phase === 'end' && e.actor.armor) this._toActor(e.actor, { t: 'ev', e: 'ap', ar: armorOf(e.actor) }); });
