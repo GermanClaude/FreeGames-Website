@@ -4,12 +4,13 @@
 // zwischen Tabs über das 'storage'-Ereignis.
 
 import { sanitizeBindings, sanitizeTouchLayout, DEFAULT_TOUCH_LAYOUT } from './bindings.data.js?v=20261123082814';
+import { appClient } from './appgate.js?v=20261123082814';
 
 const STORAGE_KEY = 'nullpunkt:settings';
 
 export const DEFAULTS = Object.freeze({
   playerName: 'Operator', sensitivity: 1.0, adsSensitivity: 0.85, touchSensitivity: 1.0,
-  invertY: false, fov: 80, quality: 'auto' /* auto|low|medium|high|ultra */,
+  invertY: false, fov: 80, quality: 'auto' /* auto|low|medium|high|ultra|extrem (nur App) */,
   masterVolume: 0.8, sfxVolume: 1.0, musicVolume: 0.5, uiVolume: 0.7,
   ambienceVolume: 1.0, vehicleVolume: 1.0, tinnitus: true, // Klang 20.11. (audio): Umgebung, Fahrzeuge, Ohrenklingeln
   crosshairStyle: 'cross' /* cross|dot|circle */, crosshairColor: '#ffffff', reticleSize: 1.0,
@@ -77,8 +78,13 @@ const HOLD_TOGGLE = Object.freeze({ options: ['hold', 'toggle'], labels: { hold:
  * Beschreibung jedes Werts für Einstellungsoberflächen (Website + Spielmenü):
  * type, Grenzen, Schrittweite, deutsche Beschriftung, Optionen mit Beschriftungen.
  */
-/** Desktop-App (desktop/preload.js): zusätzliche Grafikstufe „Extrem“. */
-const DESKTOP_APP = typeof window !== 'undefined' && !!window.nullpunktDesktop;
+/** Desktop-App (desktop/preload.js bzw. Nutzeragent-Zusatz, shared/appgate.js): zusätzliche Grafikstufe „Extrem“.
+ *  app-engine (23.11.): „extrem“ ist überall ein gültiger Wert (eine aus der App übernommene Einstellung bleibt erhalten),
+ *  im Browser aber gesperrt (locked: ausgegraut „Nur in der PC-App“) – engine/renderer.js resolveQuality fällt dort auf
+ *  Ultra (Telefon/Tablet: Hoch) zurück. */
+const DESKTOP_APP = appClient().kind === 'desktop-app';
+/** Bildratengrenzen über 120 nur in der App (VSync aus: App-Einstellung; im Browser bindet requestAnimationFrame an den Bildschirm). */
+const FPS_APP = DESKTOP_APP ? ['144', '165', '240'] : [];
 export const SETTINGS_SCHEMA = Object.freeze({
   language: {
     type: 'enum', label: 'Sprache', group: 'spiel',
@@ -93,8 +99,9 @@ export const SETTINGS_SCHEMA = Object.freeze({
   fov: { type: 'number', min: 60, max: 110, step: 1, integer: true, unit: '°', label: 'Sichtfeld', group: 'grafik' },
   quality: {
     type: 'enum', label: 'Grafikqualität', group: 'grafik',
-    options: ['auto', 'low', 'medium', 'high', 'ultra', ...(DESKTOP_APP ? ['extrem'] : [])], // desktop: „Extrem“ nur in der App
-    labels: { auto: 'Automatisch', low: 'Niedrig', medium: 'Mittel', high: 'Hoch', ultra: 'Ultra', extrem: 'Extrem' },
+    options: ['auto', 'low', 'medium', 'high', 'ultra', 'extrem'], // desktop: „Extrem“ nur in der App wählbar
+    labels: { auto: 'Automatisch', low: 'Niedrig', medium: 'Mittel', high: 'Hoch', ultra: 'Ultra', extrem: DESKTOP_APP ? 'Extrem' : 'Extrem (nur App)' },
+    locked: DESKTOP_APP ? [] : ['extrem'], lockNote: 'Nur in der PC-App',
   },
   masterVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Gesamtlautstärke', group: 'audio' },
   sfxVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Effekte', group: 'audio' },
@@ -258,7 +265,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   },
   fpsLimit: {
     type: 'enum', label: 'Bildratenbegrenzung', group: 'erweitert',
-    options: ['0', '30', '60', '120'], labels: { 0: 'Frei', 30: '30', 60: '60', 120: '120' },
+    options: ['0', '30', '60', '120', ...FPS_APP], labels: { 0: 'Frei', 30: '30', 60: '60', 120: '120', 144: '144', 165: '165', 240: '240' },
   },
   gyroBiasX: { type: 'number', min: -5, max: 5, step: 0.001, label: 'Gyro-Nullpunkt X (°/s)', group: 'intern' },
   gyroBiasY: { type: 'number', min: -5, max: 5, step: 0.001, label: 'Gyro-Nullpunkt Y (°/s)', group: 'intern' },
