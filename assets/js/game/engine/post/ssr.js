@@ -272,12 +272,15 @@ const CONTACT_FRAG = /* glsl */ `
       vec3 Q = O + uSunView * t;
       vec2 suv = proj(Q);
       if (suv.x < 0.0 || suv.x > 1.0 || suv.y < 0.0 || suv.y > 1.0) break;
-      float dz;
-      if (uHasOpaque > 0.5) { float so = texture2D(tOpaque, suv).x; dz = so >= 0.99999 ? -1.0 : viewPosO(suv, so).z - Q.z; }
-      else { float sd = texture2D(tDepth, suv).x; dz = viewPos(suv, sd).z - Q.z; }
+      float sd = texture2D(tDepth, suv).x;
+      float dz = viewPos(suv, sd).z - Q.z;
       // dünne Verdecker zählen (Dicke ~ 0,3 m + Tiefenauflösung): kein Schatten hinter ganzen Wänden
       float thick = 0.3 + 0.004 * -Q.z;
-      if (dz > 0.015 && dz < thick) { occ = 1.0 - float(i) / float(STEPS) * 0.5; break; }
+      bool hit = dz > 0.015 && dz < thick;
+      // Verdecker muss auch in der deckenden Tiefe davor liegen (Gras/Laub zählen nicht). Nur als Bestätigung: die
+      // Vorpass-Tiefe hat high halbe Auflösung – allein genutzt warf der Boden flacher Blickwinkel Zeilenstreifen auf sich selbst
+      if (hit && uHasOpaque > 0.5) { float so = texture2D(tOpaque, suv).x; hit = so < 0.99999 && viewPosO(suv, so).z - Q.z > 0.5 * dz; }
+      if (hit) { occ = 1.0 - float(i) / float(STEPS) * 0.5; break; }
     }
     float s = occ * fade * smoothstep(0.02, 0.2, nl) * uStrength;
     gl_FragColor = vec4(vec3(1.0 - s), 1.0);

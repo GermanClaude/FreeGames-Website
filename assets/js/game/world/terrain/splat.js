@@ -382,7 +382,8 @@ export async function createTerrainMaterial(o) {
         // gemischt – Grabenwände (Fläche ≈ 65°) lagen mit der geglätteten Normale allein unter jeder Schwelle
         vec3 tFN = cross(tPd3x, tPd3y);
         float steepF = dot(tFN, tFN) > 1e-12 ? 1.0 - abs(normalize(tFN).y) : steepS;
-        float steepB = mix(steepS, max(steepS, steepF), 0.65);
+        // nur in der Nähe: fern sind die Bildschirm-Ableitungen über Kuppen/Kanten unzuverlässig (Zeilenstreifen)
+        float steepB = mix(steepS, max(steepS, steepF), 0.65 * (1.0 - smoothstep(22.0, 40.0, camD)));
         bool tSide = steepB + (n2.x - 0.5) * 0.14 > 0.46 && inside > 0.5;
         bool tSideX = abs(wN.x) > abs(wN.z);
         vec2 tP = tSide ? (tSideX ? vTW.zy : vTW.xy) : vTW.xz;
