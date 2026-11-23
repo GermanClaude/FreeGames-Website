@@ -3,8 +3,8 @@
 // schaltet die feindlichen Panzer an der Flussbrücke aus und hält die Brücke, bis die Pioniere Kessars Sprengladungen
 // entfernt haben. Checkpoints: start, dorf, bruecke.
 
-import { actor } from './cast.js?v=20261123073102';
-import { arm } from './hilfen-c.js?v=20261123073102';
+import { actor } from './cast.js?v=20261123082814';
+import { arm } from './hilfen-c.js?v=20261123082814';
 
 // kamp3 (15.11.): vertieft – Panzerabwehrtrupps am Ortsrand (Raketenwerfer gegen Eisen 2) und ein Gegenstoß über die
 // Brücke mit zwei Geländewagen, nachdem die Pioniere fertig sind.

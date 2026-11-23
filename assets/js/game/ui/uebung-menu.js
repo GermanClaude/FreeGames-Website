@@ -2,8 +2,8 @@
 // world.uebung; Logik in modes/training-gelaende.js). Abschnitte: Teleport, Hilfen (Fahrzeug zurücksetzen, Munition,
 // Ziele, Zeitlupe, Unverwundbar), Fahrzeug herbeirufen (alle Muster), Panzer-Übung (Simulation/Arcade, Rolle, Panzer →
 // Modus „Panzer“ auf dieser Karte), Trefferbilanz. Nutzt nur vorhandene Menü-Klassen (game.css).
-import { esc } from './dom.js?v=20261123073102';
-import { ICON } from './icons.js?v=20261123073102';
+import { esc } from './dom.js?v=20261123082814';
+import { ICON } from './icons.js?v=20261123082814';
 
 const ROLES = [['kommandant', 'Kommandant'], ['richtschuetze', 'Richtschütze'], ['fahrer', 'Fahrer'], ['ladeschuetze', 'Ladeschütze'], ['mgschuetze', 'MG-Schütze']];
 const TANKS = ['karte', 'mbt', 'spz', 'lp21', 'kk', 'kks', 'wk2', 'wk2m', 'wk2h', 'wk2s', 'wk2l', 'wk2j', 'wk1', 'wk1l'];

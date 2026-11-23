@@ -4,9 +4,9 @@
 // (b.rand) bleibt unberührt – übrige Platzierung unverändert. Kollision unabhängig von der Grafikstufe; auf low
 // entfallen nur kleine Auslagen ohne Kollision.
 import * as THREE from 'three';
-import { frame, hash01, awning, lowSphereGeom, sphereGeom } from '../props.js?v=20261123073102';
-import { railing } from '../arch.js?v=20261123073102';
-import { tire, steelRim } from '../../vehicles/bodykit.js?v=20261123073102';
+import { frame, hash01, awning, lowSphereGeom, sphereGeom } from '../props.js?v=20261123082814';
+import { railing } from '../arch.js?v=20261123082814';
+import { tire, steelRim } from '../../vehicles/bodykit.js?v=20261123082814';
 
 // ---------------------------------------------------------------------------
 // Bauernmarkt (Gemüsestände)

@@ -5,8 +5,8 @@
 //   P3 „Geleit nach Ostrau“ Grenzland, Vormittag – Geleitschutz für drei Transporter mit dem alten KP-68 „Auerochs“ aus der
 //                         Reserve (Kalter Krieg: Treibspiegel/Hohlladung/Quetschkopf, nur Optik); Hinterhalte am Weg
 // Positionen im Kartenrahmen F (kit.js makeFrame): F.at(t, quer).
-import { convoy } from '../missions/hilfen-b.js?v=20261123073102';
-import { foeTank, allyTank, target, destroy, infantry, aliveOf, playerPos, crewSay, cast, roleTip } from './kit.js?v=20261123073102';
+import { convoy } from '../missions/hilfen-b.js?v=20261123082814';
+import { foeTank, allyTank, target, destroy, infantry, aliveOf, playerPos, crewSay, cast, roleTip } from './kit.js?v=20261123082814';
 
 /* ====================================================================== P1 Erster Kontakt */
 

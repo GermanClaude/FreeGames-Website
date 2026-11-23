@@ -5,12 +5,12 @@
 // Startbahn-Markierung und -Befeuerung, Hubschrauberlandeplätze. Alles frei erfunden (Fliegerhorst „Hagenmoor“).
 // Koordinaten: x Osten, z Süden (Norden = −z). Zufall nur über hash01 bzw. den Ortschafts-Zufall (b.rand).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261123073102';
-import { frame, hash01, container, crateStack, barrelGroup, palletStack, sandbags, fence, lampPost, floodMast, tires, workbench, lockers, rack, gasBottles, electricBox, pipe, cone, jersey, truck, van, forklift, cableReel, dress } from '../props.js?v=20261123073102';
-import { flight, stairCore, vaultGeom, gableGeom, vaultProfile, KEIN, VG, hoch, mittel, rubble, igel } from './neu-bau.js?v=20261123073102';
-import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, stockbett, waschtisch, munitionskisten, funktisch, werkzeugwand, bild, teppich } from './grenzland-innen.js?v=20261123073102';
-import { schreibtisch, stuhl as bueroStuhl, aktenschrank, regal as stahlregal, besprechung, kuechenzeile, kuehlschrank, spinde, deckenleuchte, pinnwand, wasserspender } from './hafen-ausstattung.js?v=20261123073102';
-import { mgNest } from './grenzland-stellungen.js?v=20261123073102';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261123082814';
+import { frame, hash01, container, crateStack, barrelGroup, palletStack, sandbags, fence, lampPost, floodMast, tires, workbench, lockers, rack, gasBottles, electricBox, pipe, cone, jersey, truck, van, forklift, cableReel, dress } from '../props.js?v=20261123082814';
+import { flight, stairCore, vaultGeom, gableGeom, vaultProfile, KEIN, VG, hoch, mittel, rubble, igel } from './neu-bau.js?v=20261123082814';
+import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, stockbett, waschtisch, munitionskisten, funktisch, werkzeugwand, bild, teppich } from './grenzland-innen.js?v=20261123082814';
+import { schreibtisch, stuhl as bueroStuhl, aktenschrank, regal as stahlregal, besprechung, kuechenzeile, kuehlschrank, spinde, deckenleuchte, pinnwand, wasserspender } from './hafen-ausstattung.js?v=20261123082814';
+import { mgNest } from './grenzland-stellungen.js?v=20261123082814';
 
 const PI = Math.PI, Q = PI / 2;
 const OLIV = '#6b7458', OLIV_D = '#4f5742', BETON = '#b4b0a6', HANGAR = '#8a9182';

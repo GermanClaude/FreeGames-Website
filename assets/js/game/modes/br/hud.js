@@ -8,9 +8,9 @@
 // HUD-Stil (Einstellung hudStyle): „voll“ alles; „reduziert“ Ausrüstung nur kurz nach Änderungen bzw. mit gehaltener
 // Punktetabelle; „aus“ (Bodycam) keine Zahlen – Ausrüstung und Karte nur auf Tastendruck, Zonenwarnung als Text.
 // Alle Texte deutsch im Quelltext, übersetzt über tx() (shared/i18n.js, Tabelle tools/i18n/66-br.mjs).
-import { tx } from '../../../shared/i18n.js?v=20261123073102';
-import { VEST_NAMES, HELMET_NAMES } from './items.js?v=20261123073102';
-import { bandagesOf } from './inventory.js?v=20261123073102';
+import { tx } from '../../../shared/i18n.js?v=20261123082814';
+import { VEST_NAMES, HELMET_NAMES } from './items.js?v=20261123082814';
+import { bandagesOf } from './inventory.js?v=20261123082814';
 
 const CSS = `
 .br-hud { position: absolute; inset: 0; pointer-events: none; font-family: "Rajdhani NP", "Rajdhani", system-ui, sans-serif; color: var(--hud-ink, #e9e6df); text-shadow: var(--hud-shadow, 0 1px 2px rgba(0,0,0,.75)); }

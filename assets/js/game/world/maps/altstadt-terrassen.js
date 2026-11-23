@@ -5,7 +5,7 @@
 // Pflasterbelag, Brüstungsmauer (Deckung) und Treppe zur Gasse (die Brüstung ist überkletterbar): eine zweite Ebene mit Blick über den
 // Platz, darunter Deckung an der Stützmauer. Spiegelgleich in z; geprüft gegen Start-, Flaggen-, Stellungs- und
 // Kampagnenpunkte (gelaende.platzFrei). Feste Kollision, auf jedem Gerät gleich.
-import { freiPruefer, kartenSperre, platzFrei, podest } from '../gelaende.js?v=20261123073102';
+import { freiPruefer, kartenSperre, platzFrei, podest } from '../gelaende.js?v=20261123082814';
 
 export function terrassen(b, spawns) {
   const frei = freiPruefer(kartenSperre('altstadt', spawns));

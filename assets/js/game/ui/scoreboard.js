@@ -5,8 +5,8 @@
 // (PC/Handy/VR-Brille), der Host ein Abzeichen. Offline wie bisher.
 // cheat = Cheat-Menü aktiv (modes/base.js, cheats.js) → kleines Symbol hinter dem Namen (Stil: ui/cheat-menu.js).
 
-import { esc, kd } from './dom.js?v=20261123073102';
-import { ICON, deviceOf } from './icons.js?v=20261123073102';
+import { esc, kd } from './dom.js?v=20261123082814';
+import { ICON, deviceOf } from './icons.js?v=20261123082814';
 
 /** masse: höchstens so viele Zeilen je Team-Block (große Schlachten), danach eine Sammelzeile. */
 const LIST_MAX = 32;

@@ -17,13 +17,13 @@
 // Innensichten (views.js). Kosten: nur Innensicht, nur eigenes Fahrzeug; Figuren entstehen beim ersten Blick in den
 // Innenraum und verschwinden beim Aussteigen.
 import * as THREE from 'three';
-import { createSoldier } from '../bots/character.js?v=20261123073102';
-import { BONES, BONE, BIND, DIM } from '../bots/soldier/rig.js?v=20261123073102';
-import { twoBone } from '../bots/soldier/ik.js?v=20261123073102';
-import { spaceLocal } from './views.js?v=20261123073102';
-import { cabinSeatAnchors } from './cabin.js?v=20261123073102';
-import { driverCabin } from './data.js?v=20261123073102';
-import { funkerCabin, funkerLayout } from './periscopes.js?v=20261123073102';
+import { createSoldier } from '../bots/character.js?v=20261123082814';
+import { BONES, BONE, BIND, DIM } from '../bots/soldier/rig.js?v=20261123082814';
+import { twoBone } from '../bots/soldier/ik.js?v=20261123082814';
+import { spaceLocal } from './views.js?v=20261123082814';
+import { cabinSeatAnchors } from './cabin.js?v=20261123082814';
+import { driverCabin } from './data.js?v=20261123082814';
+import { funkerCabin, funkerLayout } from './periscopes.js?v=20261123082814';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };

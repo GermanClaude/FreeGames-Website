@@ -2,9 +2,9 @@
 // Spielmenü (21.11.): Schnellwahl oben in „Einstellungen“ – Sprache (über lang.js an die Übersetzungs-API), Menüklänge,
 // Grafik-Voreinstellung und Bewegung. Grafik und Bewegung sind dieselben Einstellungen wie im Spiel (shared/settings.js);
 // die vollständige Liste steht darunter im Abschnitt „Alle Einstellungen“.
-import { $, h } from './dom.js?v=20261123073102';
-import { announce } from './live.js?v=20261123073102';
-import { t, LANGS, getLang, setLang, onLang, hasTranslations } from './lang.js?v=20261123073102';
+import { $, h } from './dom.js?v=20261123082814';
+import { announce } from './live.js?v=20261123082814';
+import { t, LANGS, getLang, setLang, onLang, hasTranslations } from './lang.js?v=20261123082814';
 
 function seg(label, opts, cur, onPick, { lang = false } = {}) {
   const id = `q-${Math.random().toString(36).slice(2, 8)}`;

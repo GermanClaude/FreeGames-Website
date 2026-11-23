@@ -27,19 +27,19 @@
 // Modus-Zustand ('mode' s.tr, netExtra/applyNetExtra) zu allen Clients.
 // Debug: spielen.html?debug=1&autostart=1&mode=trupp&map=grenzland&mopt=rolle:truppfuehrer,groesse:6 · Konsole: __game.mode
 import * as THREE from 'three';
-import { ConquestMode } from './conquest.js?v=20261123073102';
-import { DomMode } from './dom.js?v=20261123073102';
-import { TruppSquads } from './trupp-squads.js?v=20261123073102';
-import { Strike, strikeResources, groundAt } from './strike.js?v=20261123073102';
-import { issueCommand } from '../bots/ai/orders.js?v=20261123073102';
-import { MAPS } from '../../shared/maps.data.js?v=20261123073102';
-import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261123073102';
-import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261123073102';
-import { CLASSES } from '../../shared/classes.data.js?v=20261123073102';
+import { ConquestMode } from './conquest.js?v=20261123082814';
+import { DomMode } from './dom.js?v=20261123082814';
+import { TruppSquads } from './trupp-squads.js?v=20261123082814';
+import { Strike, strikeResources, groundAt } from './strike.js?v=20261123082814';
+import { issueCommand } from '../bots/ai/orders.js?v=20261123082814';
+import { MAPS } from '../../shared/maps.data.js?v=20261123082814';
+import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261123082814';
+import { WEAPONS, EQUIPMENT } from '../../shared/weapons.data.js?v=20261123082814';
+import { CLASSES } from '../../shared/classes.data.js?v=20261123082814';
 import {
   TRUPP_ROLES, TRUPP_DEFAULT_ROLE, TRUPP_MARKS, TRUPP_RADIO, TRUPP_SUPPORT, TRUPP_RALLY, TRUPP_OUTPOST, TRUPP_DOWN_TIME,
   TRUPP_LOSS_SHARE, TRUPP_SIZES, TRUPP_TYPES, TRUPP_TYPE_DEFAULT, TRUPP_BUILD_ORDERS, truppTickets, frontOrder, frontTargets,
-} from '../../shared/trupp.data.js?v=20261123073102';
+} from '../../shared/trupp.data.js?v=20261123082814';
 
 const _v = new THREE.Vector3();
 const REQ_GAP = 0.2; // s zwischen zwei Anfragen eines Akteurs
@@ -119,7 +119,7 @@ export class TruppMode extends ConquestMode {
     if (G.player) this.squads.setPref(G.player, { type: TRUPP_TYPES[this.options.trupp] ? this.options.trupp : TRUPP_TYPE_DEFAULT });
     if (!this.replica) s.on('kill', (e) => { const v = e && e.victim; if (v && isHuman(v)) this._downAt.set(v, G.time.elapsed); });
     if (typeof document !== 'undefined' && G.hud) {
-      import('../ui/trupp-hud.js?v=20261123073102').then(({ TruppHud }) => {
+      import('../ui/trupp-hud.js?v=20261123082814').then(({ TruppHud }) => {
         if (G.mode !== this || this.hud) return;
         try { this.hud = new TruppHud(G, this); } catch (err) { console.error('[NULLPUNKT] Trupp-HUD:', err); }
       }).catch((err) => console.error('[NULLPUNKT] Trupp-HUD laden:', err));

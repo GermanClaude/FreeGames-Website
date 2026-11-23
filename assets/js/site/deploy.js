@@ -1,9 +1,9 @@
 // §01 Satzbau: Der Einsatz ist ein Satz. Jedes Wort ist eine native Auswahl.
 // buildPlayUrl() ist der EINZIGE Erzeuger von Spiel-Links auf der Seite.
-import { ui, site } from './state.js?v=20261123073102';
-import { mapsForMode } from './data.js?v=20261123073102';
-import { reduced } from './motion.js?v=20261123073102';
-import { announce, debounced } from './live.js?v=20261123073102';
+import { ui, site } from './state.js?v=20261123082814';
+import { mapsForMode } from './data.js?v=20261123082814';
+import { reduced } from './motion.js?v=20261123082814';
+import { announce, debounced } from './live.js?v=20261123082814';
 
 const $ = (s, r = document) => r.querySelector(s);
 const NB = ' ';

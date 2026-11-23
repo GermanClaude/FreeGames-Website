@@ -17,7 +17,7 @@
 //     Stufe, höchstens auf der Obergrenze.
 // Alles bleibt lokal im Browser (kein Versand); „Lokale Daten löschen“ auf der Website entfernt es mit.
 import * as THREE from 'three';
-import { consoleKind } from '../../shared/gamepad.js?v=20261123073102';
+import { consoleKind } from '../../shared/gamepad.js?v=20261123082814';
 
 const KEY = 'nullpunkt:geraet';
 const VERSION = 1;
