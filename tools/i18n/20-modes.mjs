@@ -331,4 +331,10 @@ export default [
 ['{0} Abschüsse mit dieser Waffe ({1}/{2})', '{0} kills with this weapon ({1}/{2})', '{0} bajas con esta arma ({1}/{2})', '{0} éliminations avec cette arme ({1}/{2})', '{0} убийств из этого оружия ({1}/{2})', '使用此武器击杀 {0} 次（{1}/{2}）'],
 ['{0} Kopftreffer mit dieser Waffe ({1}/{2})', '{0} headshots with this weapon ({1}/{2})', '{0} disparos a la cabeza con esta arma ({1}/{2})', '{0} tirs à la tête avec cette arme ({1}/{2})', '{0} попаданий в голову из этого оружия ({1}/{2})', '使用此武器爆头 {0} 次（{1}/{2}）'],
 ['Verfügbar', 'Available', 'Disponible', 'Disponible', 'Доступно', '可用'],
+// Modus-Zeile der Startseite (site/modes-view.js modeLine): Zahl + Wertungseinheit, „ohne Zeitlimit“ (Battle Royale, Zombies) – Gesamttest 23.11.
+['ohne Zeitlimit', 'no time limit', 'sin límite de tiempo', 'sans limite de temps', 'без лимита времени', '无时间限制'],
+['{#} Punkte', { one: '{#} point', other: '{#} points' }, { one: '{#} punto', other: '{#} puntos' }, { one: '{#} point', other: '{#} points' }, { one: '{#} очко', few: '{#} очка', many: '{#} очков', other: '{#} очка' }, '{#} 分'],
+['{#} Runden', { one: '{#} round', other: '{#} rounds' }, { one: '{#} ronda', other: '{#} rondas' }, { one: '{#} manche', other: '{#} manches' }, { one: '{#} раунд', few: '{#} раунда', many: '{#} раундов', other: '{#} раунда' }, '{#} 回合'],
+['{#} Bestätigungen', { one: '{#} confirm', other: '{#} confirms' }, { one: '{#} confirmación', other: '{#} confirmaciones' }, { one: '{#} confirmation', other: '{#} confirmations' }, { one: '{#} подтверждение', few: '{#} подтверждения', many: '{#} подтверждений', other: '{#} подтверждения' }, '{#} 次确认'],
+['{#} Stufen', { one: '{#} level', other: '{#} levels' }, { one: '{#} nivel', other: '{#} niveles' }, { one: '{#} niveau', other: '{#} niveaux' }, { one: '{#} уровень', few: '{#} уровня', many: '{#} уровней', other: '{#} уровня' }, '{#} 级'],
 ];

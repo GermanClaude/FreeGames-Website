@@ -48,10 +48,12 @@ function styleTable(sec, D, C, ctx) {
   const table = h('table.sim-table', {}, h('caption.sr-only', {}, 'Spielstile im Vergleich'), h('thead', {}, head), body);
   const desc = h('p.sim-desc', { 'aria-live': 'polite' });
   const simModes = (C.SIM_MODES || []).map((id) => D.M?.MODES?.[id]?.name).filter(Boolean);
-  const note = simModes.length ? h('p.sim-note', {}, `Simulation gibt es in: ${simModes.join(', ')}. In den übrigen Modi spielt sie sich wie „Realistisch“.`) : null;
+  // Modusnamen je eigener Knoten – die Übersetzung (shared/i18n.js) trifft sie so einzeln statt als ein Satz mit deutscher Liste
+  const nameList = (names) => names.flatMap((n, i) => (i ? [', ', h('span', {}, n)] : [h('span', {}, n)]));
+  const note = simModes.length ? h('p.sim-note', {}, 'Simulation gibt es in: ', nameList(simModes), '. In den übrigen Modi spielt sie sich wie „Realistisch“.') : null;
   // Ultra-Realismus (wie Bodycam): eigene Modusliste
   const ultraModes = (C.ULTRA_MODES || []).map((id) => D.M?.MODES?.[id]?.name).filter(Boolean);
-  const unote = ultraModes.length ? h('p.sim-note', {}, `Ultra-Realismus gibt es in: ${ultraModes.join(', ')}. In den übrigen Modi spielt er sich wie „Realistisch“.`) : null;
+  const unote = ultraModes.length ? h('p.sim-note', {}, 'Ultra-Realismus gibt es in: ', nameList(ultraModes), '. In den übrigen Modi spielt er sich wie „Realistisch“.') : null;
   const setBtn = h('button.txt-btn.sim-set', { type: 'button' });
   const state = h('span.mono-s.sim-state');
 
