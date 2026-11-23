@@ -787,7 +787,9 @@ function buildWK2(lod, S, team) {
   for (const sx of [-1, 1]) {
     const x = sx * W.x;
     for (const zb of [-1.5, 0.02, 1.54]) {
-      if (lod < 2) for (const dz of [-0.36, 0.36]) {
+      // Vorbild Schraubenfeder-Federbock (VVSS): die zwei Rollen eines Bocks stehen dicht beieinander (Lücke ~9 cm),
+      // zwischen den Böcken bleibt eine deutliche Lücke (~40 cm) – vorher wirkten die sechs Rollen gleichmäßig verteilt
+      if (lod < 2) for (const dz of [-0.3, 0.3]) {
         if (HQ) addRoadWheelHQ(B, S, paint, x, 0.29, zb + dz, 0.255, lod === 0 ? 12 : 8, lod);
         else addRoadWheel(B, S, x, 0.29, zb + dz, 0.255, lod === 0 ? 12 : 6, lod);
       }

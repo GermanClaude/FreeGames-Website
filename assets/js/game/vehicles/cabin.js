@@ -1155,6 +1155,9 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
   // 2. WK (Nutzer 21.11.: „zu modern“): Sehklappe mit Glasblock + zwei Winkelspiegel, Blechtafel mit Rundinstrumenten,
   // Kurskreisel, Zündschloss/Anlasserknopf/Lichtschalter statt Schaltkasten, Schalthebel mit Kulisse rechts
   const w2 = D.era === 'wk2';
+  // Kalter Krieg (KP-68, SP-58; Raum/Wandfarbe wie 'wk2'): Wandlerautomatik wie die Simulation (psim eraOf: kk → modern) –
+  // Lenkbügel, Wählhebel rechts, keine Kupplung, schwarze Rundinstrumente ohne Bildschirm, geschweißte Wände ohne Nieten
+  const kk = D.era === 'kk', auto = modern || kk;
   const { xl, xr, floor: yF, roof: yR, zFT, zFB, zB, eye: E } = R;
   const x0 = R.F[0], z0 = R.F[2];
   // Raum: Boden, Glacis (schräg), Decke, Rückwand, Seitenwände – nach innen gekehrt
@@ -1180,7 +1183,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
   const gn = new THREE.Vector3(0, -(zFB - zFT), yR - yF).normalize(); // Innen-Normale des Glacis (zeigt nach hinten oben)
   if (det) B.add(box(xr - xl - 0.06, 0.018, 0.012), C.metal, [(xl + xr) / 2, yF + (yR - yF) * 0.55 + gn.y * 0.004, zFB + (zFT - zFB) * 0.55 + gn.z * 0.004], [ga - PI, 0, 0]);
   for (const zz of [zFT + 0.25, (zFT + zB) / 2 + 0.1]) B.add(box(xr - xl - 0.04, 0.03, 0.035), C.metal, [(xl + xr) / 2, yR - 0.016, zz]);
-  if (wk1 || era === 'wk2') {
+  if (wk1 || (era === 'wk2' && !kk)) {
     // Nieten an den Wänden
     for (let z = zFT + 0.1; z < zB; z += 0.16) for (const x of [xl + 0.006, xr - 0.006]) for (const y of [yF + 0.12, yR - 0.1]) B.add(new THREE.SphereGeometry(0.011, 6, 4), C.metal, [x, y, z]);
   }
@@ -1208,7 +1211,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
   }
 
   // ---- Lenkung: modern Lenkbügel an der Lenksäule (dreht), sonst Lenkhebel (Drehpunkt am Boden, ziehen = Kette bremsen)
-  if (!modern) for (const [nm, sx] of [['hebel:l', -1], ['hebel:r', 1]]) {
+  if (!auto) for (const [nm, sx] of [['hebel:l', -1], ['hebel:r', 1]]) {
     const p = part(grp, nm, [x0 + sx * 0.2, sy + 0.04, sz - 0.3]);
     const L = new MB();
     L.add(box(0.07, 0.05, 0.09), C.metal, [0, 0, 0]);
@@ -1223,7 +1226,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
 
   // ---- Pedale (Gas rechts, Bremse Mitte, Kupplung links bei den Weltkriegspanzern)
   const peds = [['pedal:gas', x0 + 0.13, 0.07, 0.1], ['pedal:bremse', x0 - 0.04, 0.12, 0.08]];
-  if (!modern) peds.push(['pedal:kupplung', x0 - 0.2, 0.08, 0.08]);
+  if (!auto) peds.push(['pedal:kupplung', x0 - 0.2, 0.08, 0.08]);
   for (const [nm, px, pw, ph] of peds) {
     const p = part(grp, nm, [px, sy + 0.03, sz - 0.8]);
     p.userData.pedal = true;
@@ -1235,8 +1238,8 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
     L.build(p, nm);
   }
 
-  // ---- Gangwahl: modern Wählhebel in Kulisse rechts, Weltkrieg Schalthebel aus dem Boden links
-  if (modern) {
+  // ---- Gangwahl: modern/Kalter Krieg Wählhebel in Kulisse rechts, Weltkrieg Schalthebel aus dem Boden links
+  if (auto) {
     B.add(rbox(0.08, 0.06, 0.24, 0.01), C.black, [x0 + 0.32, sy + 0.33, sz - 0.04]);
     label(B, C, 'gang', [x0 + 0.32, sy + 0.361, sz - 0.04], [-HP, 0, HP], 0.22);
     B.add(box(0.06, 0.33, 0.06), C.metal, [x0 + 0.32, sy + 0.15, sz - 0.04]);
@@ -1286,6 +1289,13 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
     const sg = new THREE.PlaneGeometry(0.17, 0.085);
     PF.add(sg, s.mat, [0.07, 0.05, 0.015], null, null, true);
     flabel(PF, C, 'n_oel', [-pw / 2 + 0.1, 0.128, 0.003], 0.11);
+  } else if (kk) {
+    // Kalter Krieg: schwarze Rundinstrumente (Drehzahl, Tempo, Öl, Kühlwasser), Batterieanzeige, kein Bildschirm
+    ga2('d_rpm', -pw / 2 + 0.09, 0.05, 0.06, 'rpm', 3000);
+    ga2('d_kmh', -pw / 2 + 0.24, 0.05, 0.06, 'kmh', 80);
+    ga2('d_oel', pw / 2 - 0.05, 0.09, 0.032, 'oel', 10);
+    ga2('d_wasser', pw / 2 - 0.05, 0.015, 0.032, 'wasser', 120);
+    flabel(PF, C, 'n_batt', [pw / 2 - 0.16, 0.128, 0.003], 0.1);
   } else if (era === 'wk2') {
     flabel(PF, C, 'n_batt', [pw / 2 - 0.12, 0.128, 0.003], 0.1);
     ga2('w_rpm', -pw / 2 + 0.09, 0.05, 0.06, 'rpm', 3500);
@@ -1449,7 +1459,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
     L.add(cyl(0.06, 0.055, 0.05, det ? 18 : 10), C.black, [0, 0.015, 0]);
     L.add(cyl(0.035, 0.035, 0.008, 12), C.steel, [0, 0.043, 0]);
     L.build(p, 'hebel:l');
-  } else if (modern) {
+  } else if (auto) {
     // Lenkbügel vor der Instrumententafel (Säule aus dem Boden)
     const cp = [x0, P.y - 0.26, P.z + 0.17];
     B.rod(C.metal, [x0, sy + 0.05, P.z - 0.02], cp, 0.035, 12);
