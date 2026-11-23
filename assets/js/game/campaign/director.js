@@ -15,13 +15,13 @@
 // Wiedereinstieg am Checkpoint k: mission.prepare(m) (gemeinsam, z. B. Verbündete), stages[k].setup(m), dann ab k.
 
 import * as THREE from 'three';
-import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261123082814';
-import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261123082814';
-import { prepareVehicleModels } from '../vehicles/models.js?v=20261123082814';
-import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261123082814';
-import { tx } from '../../shared/i18n.js?v=20261123082814'; // Zeilen in der gewählten Sprache (Untertitel + Mund)
-import { createFaceRig, FaceDriver } from './face.js?v=20261123082814';
-import { issueCommand } from '../bots/ai/orders.js?v=20261123082814';
+import { Cutscene, StageActor, toVec, groundY, buriedY, yawTo } from './stage.js?v=20261123115551';
+import { ACTION_IDS } from '../../shared/bindings.data.js?v=20261123115551';
+import { prepareVehicleModels } from '../vehicles/models.js?v=20261123115551';
+import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261123115551';
+import { tx } from '../../shared/i18n.js?v=20261123115551'; // Zeilen in der gewählten Sprache (Untertitel + Mund)
+import { createFaceRig, FaceDriver } from './face.js?v=20261123115551';
+import { issueCommand } from '../bots/ai/orders.js?v=20261123115551';
 
 const _v = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

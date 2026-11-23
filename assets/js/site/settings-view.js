@@ -1,9 +1,9 @@
 // §06 Einstellungen: Setzkasten. Formular aus SETTINGS_SCHEMA (ohne 'intern'), ein <fieldset> pro Gruppe.
 // Jede Änderung gilt sofort für Website und Spiel; Änderungen aus anderen Tabs/dem Spiel kommen zurück.
-import { h, $, signalLost } from './dom.js?v=20261123082814';
-import { crosshairSvg } from './cursor.js?v=20261123082814';
-import { announce } from './live.js?v=20261123082814';
-import { num, NNBSP, clamp01 } from './fmt.js?v=20261123082814';
+import { h, $, signalLost } from './dom.js?v=20261123115551';
+import { crosshairSvg } from './cursor.js?v=20261123115551';
+import { announce } from './live.js?v=20261123115551';
+import { num, NNBSP, clamp01 } from './fmt.js?v=20261123115551';
 
 const GROUPS = [['profil', 'Profil'], ['steuerung', 'Steuerung'], ['hud', 'Fadenkreuz & HUD'], ['grafik', 'Grafik'], ['audio', 'Audio'], ['spiel', 'Spiel']];
 const SWATCHES = [['#ffffff', 'Weiß'], ['#ff5b1f', 'Signalorange'], ['#38b6ff', 'Blau'], ['#5fe08a', 'Grün'], ['#ffc23d', 'Gelb']];
@@ -13,6 +13,7 @@ const QUALITY_HELP = {
   medium: 'Mittel: Schatten und Glanz.',
   high: 'Hoch: weiche Schatten, Kantenglättung.',
   ultra: 'Ultra: Umgebungsverdeckung, 4K-Schatten.',
+  extrem: 'Extrem (PC-App): 8K-Schatten, weitere Sicht, dichteres Gras, mehr Effekte.',
 };
 const HELP = {
   fov: 'Waagerecht gemessen, bezogen auf ein 4:3-Bild. Breitere Bildschirme sehen seitlich mehr.',
@@ -151,11 +152,14 @@ export async function init(sec, D, ctx = {}) {
       const group = h('div.enum', { role: 'radiogroup', 'aria-labelledby': legendId });
       const radios = [];
       for (const opt of s.options) {
-        const r = h('input', { type: 'radio', name: id, value: opt, id: `${id}-${opt}` });
-        r.addEventListener('change', () => { if (r.checked) { S.set(k, opt); snd?.ui('click'); } });
+        // app-engine: gesperrte Option (Grafikstufe „Extrem“ außerhalb der PC-App) ausgegraut, nicht wählbar
+        const locked = !!s.locked?.includes(opt);
+        const r = h('input', { type: 'radio', name: id, value: opt, id: `${id}-${opt}`, disabled: locked ? '' : null });
+        r.addEventListener('change', () => { if (r.checked && !locked) { S.set(k, opt); snd?.ui('click'); } });
         radios.push(r);
-        group.append(h('label', { for: r.id }, r, h('span', {}, s.labels?.[opt] || opt)));
+        group.append(h('label', { for: r.id, class: locked ? 'is-locked' : null, title: locked ? s.lockNote || null : null }, r, h('span', {}, s.labels?.[opt] || opt)));
       }
+      if (s.locked?.length && s.lockHint) ctl.append(h('p.q-lock', {}, s.lockHint));
       ctl.append(group);
       let qhelp = null;
       if (k === 'quality') { qhelp = h('p.q-help', { 'aria-live': 'polite' }); ctl.append(qhelp); }

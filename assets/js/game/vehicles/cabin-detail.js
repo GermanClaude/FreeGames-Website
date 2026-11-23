@@ -11,7 +11,7 @@
 // B ist ein Sammel-Bucket aus cabin.js (add/rod/tube, Eigenschaft wear = Abnutzung 0…1 für die folgenden Teile).
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { cbox, ccyl, quilt } from './cabin-shape.js?v=20261123082814';
+import { cbox, ccyl, quilt } from './cabin-shape.js?v=20261123115551';
 
 const PI = Math.PI, HP = PI / 2;
 // Nutzer 20.11. („zu kantig“): Kästen/Zylinder mit Fase und gewichteten Normalen, low ohne (setChamfer aus cabin.js)

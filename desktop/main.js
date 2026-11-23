@@ -74,6 +74,12 @@ app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('enable-unsafe-webgpu');
 app.commandLine.appendSwitch('force_high_performance_gpu'); // Laptops: dedizierte GPU statt der integrierten
+// app-engine (23.11.): nach einem Absturz des GPU-Prozesses (Treiber-Reset, z. B. bei 8K-Schatten auf knappem
+// Grafikspeicher) nicht dauerhaft auf Software-Rendering (≈ 1 FPS) oder gesperrtes WebGL zurückfallen: Chromium startet den
+// GPU-Prozess sonst höchstens dreimal neu und sperrt danach 3D-APIs für die Seite bis zum Neustart. Electron-API bzw.
+// Chromium-Schalter aus gpu/config/gpu_switches; das Spiel baut den Kontext nach webglcontextlost selbst neu auf.
+app.disableDomainBlockingFor3DAPIs();
+app.commandLine.appendSwitch('disable-gpu-process-crash-limit');
 // Bildrate nicht an die Bildschirmfrequenz koppeln? Nein – VSync bleibt an (Spiel hat eigene FPS-Grenze).
 // Keine Drosselung im Hintergrund (Online-Host, Ladebildschirm hinter anderem Fenster)
 app.commandLine.appendSwitch('disable-renderer-backgrounding');

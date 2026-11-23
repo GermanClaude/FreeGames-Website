@@ -5,26 +5,26 @@
 // br Battle Royale (Solo gegen Bots, schrumpfende Zone, Beute, kein Wiedereinstieg, 22.11.).
 // Gemeinsame API siehe base.js; Bot-Schnittstelle (objectives, objectiveFor, streaks) im Changelog.
 
-import { MODES } from '../../shared/modes.data.js?v=20261123082814';
-import { BaseMode } from './base.js?v=20261123082814';
-import { TdmMode } from './tdm.js?v=20261123082814';
-import { FfaMode } from './ffa.js?v=20261123082814';
-import { DomMode } from './dom.js?v=20261123082814';
-import { GunMode } from './gun.js?v=20261123082814';
-import { TrainingMode } from './training.js?v=20261123082814';
-import { ConquestMode } from './conquest.js?v=20261123082814';
-import { KillConfirmedMode } from './killconfirmed.js?v=20261123082814';
-import { InfectedMode } from './infected.js?v=20261123082814';
-import { UltimateMode } from './ultimate.js?v=20261123082814';
-import { KnifeMode } from './knife.js?v=20261123082814';
-import { HoldPointMode } from './hp.js?v=20261123082814';
-import { TruppMode } from './trupp.js?v=20261123082814'; // Trupp: eigener KI-Trupp, Front-Eroberung (20.11.)
-import { BattleRoyaleMode } from './br/br.js?v=20261123082814'; // Battle Royale: Solo gegen Bots, Zone, Beute (22.11., modes/br/*)
-import { ZombieMode } from './zombie.js?v=20261123082814'; // Zombies: Wellen-Überleben gegen Untote (offline, 22.11.)
-import { CampaignMode, campaignConditions as infantryConditions } from '../campaign/mode.js?v=20261123082814'; // Kampagne „Stille Grenze“ (game/campaign/*)
-import { PanzerMode } from './panzer.js?v=20261123082814'; // Panzersimulation (vehicles/psim/*)
-import { PanzerCampaignMode } from '../campaign/panzer/mode.js?v=20261123082814'; // Panzer-Kampagne „Eisenwind“ (Missionen p1…p6)
-import { pzMission } from '../campaign/panzer/missions.js?v=20261123082814';
+import { MODES } from '../../shared/modes.data.js?v=20261123115551';
+import { BaseMode } from './base.js?v=20261123115551';
+import { TdmMode } from './tdm.js?v=20261123115551';
+import { FfaMode } from './ffa.js?v=20261123115551';
+import { DomMode } from './dom.js?v=20261123115551';
+import { GunMode } from './gun.js?v=20261123115551';
+import { TrainingMode } from './training.js?v=20261123115551';
+import { ConquestMode } from './conquest.js?v=20261123115551';
+import { KillConfirmedMode } from './killconfirmed.js?v=20261123115551';
+import { InfectedMode } from './infected.js?v=20261123115551';
+import { UltimateMode } from './ultimate.js?v=20261123115551';
+import { KnifeMode } from './knife.js?v=20261123115551';
+import { HoldPointMode } from './hp.js?v=20261123115551';
+import { TruppMode } from './trupp.js?v=20261123115551'; // Trupp: eigener KI-Trupp, Front-Eroberung (20.11.)
+import { BattleRoyaleMode } from './br/br.js?v=20261123115551'; // Battle Royale: Solo gegen Bots, Zone, Beute (22.11., modes/br/*)
+import { ZombieMode } from './zombie.js?v=20261123115551'; // Zombies: Wellen-Überleben gegen Untote (offline, 22.11.)
+import { CampaignMode, campaignConditions as infantryConditions } from '../campaign/mode.js?v=20261123115551'; // Kampagne „Stille Grenze“ (game/campaign/*)
+import { PanzerMode } from './panzer.js?v=20261123115551'; // Panzersimulation (vehicles/psim/*)
+import { PanzerCampaignMode } from '../campaign/panzer/mode.js?v=20261123115551'; // Panzer-Kampagne „Eisenwind“ (Missionen p1…p6)
+import { pzMission } from '../campaign/panzer/missions.js?v=20261123115551';
 
 export const MODE_CLASSES = { tdm: TdmMode, ffa: FfaMode, dom: DomMode, gun: GunMode, training: TrainingMode, cq: ConquestMode, kc: KillConfirmedMode, inf: InfectedMode, zombie: ZombieMode, messer: KnifeMode, ult: UltimateMode, hp: HoldPointMode, trupp: TruppMode, br: BattleRoyaleMode, kampagne: CampaignMode, panzer: PanzerMode };
 
@@ -45,6 +45,6 @@ export function campaignConditions(missionId) {
   if (pm) return { time: pm.time || null, weather: pm.weather || null };
   return infantryConditions(missionId);
 }
-export { SquadSystem } from './squads.js?v=20261123082814';
-export { chooseSpawn } from './spawns.js?v=20261123082814';
-export { StreakManager } from './streaks.js?v=20261123082814';
+export { SquadSystem } from './squads.js?v=20261123115551';
+export { chooseSpawn } from './spawns.js?v=20261123115551';
+export { StreakManager } from './streaks.js?v=20261123115551';

@@ -14,12 +14,13 @@
 // (siehe post/lens.js). Ohne aktives Objektiv sind das Identitäten.
 
 import * as THREE from 'three';
-import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261123082814';
-import { estimateMemory } from './post/memory.js?v=20261123082814';
-import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261123082814';
-import { resetFormatCache } from './post/common.js?v=20261123082814';
-import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261123082814'; // Erweitert-Grafik (S9, ui-controls)
-import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261123082814';
+import { PostPipeline, LENS_DEFAULTS, LENS_STYLES, renderViewmodel } from './post/pipeline.js?v=20261123115551';
+import { estimateMemory } from './post/memory.js?v=20261123115551';
+import { MOODS, MOOD_FOR_MAP } from './post/grade.js?v=20261123115551';
+import { resetFormatCache } from './post/common.js?v=20261123115551';
+import { applyGraphics, samePreset, GFX_KEYS } from '../../shared/graphics.data.js?v=20261123115551'; // Erweitert-Grafik (S9, ui-controls)
+import { deviceInfo, provisionalTier, decideAuto, autoDecision, gpuName, classifyGpu } from './device.js?v=20261123115551';
+import { appClient } from '../../shared/appgate.js?v=20261123115551';
 
 export { LENS_DEFAULTS, LENS_STYLES, MOODS, MOOD_FOR_MAP };
 
@@ -61,13 +62,19 @@ export const QUALITY_PRESETS = Object.freeze({
 // (id bleibt 'ultra' – alle Abnehmer wählen ihre Detailstufe wie bisher), dazu extreme: true für die Zusätze:
 // 8K-Sonnenschatten, mehr Schatten von Figuren, mehr Partikel/Einschüsse; world/library.js holt 4K-Sätze (wo vorhanden),
 // bigworld.js weitere Sicht, modes.data.js limitsFor höhere Massenschlacht-Grenze (tier 'extrem').
+// app-engine (23.11., Nutzer: „die App-Version soll besser bleiben“) – dazu: Pixelverhältnis bis 3 (4K-/HiDPI-Monitore
+// mit Skalierung > 200 %), GTAO mit 16 statt 12 Proben, Fernkaskade 4096² statt 2048² (world/shadows.js; nur zusammen mit der 8K-Freigabe), Nahkaskade
+// mit 8K-Karte 1,5× so weit (world/lighting.js), dichteres Gras (bigworld.js BIG_EXTREME, vegetation.js), mehr Leichen,
+// Blut, Hülsen-Liegezeit und Staub (corpses.js, gore.js, debris, effects.js). Keine neuen Sampler in irgendeinem Shader.
+// Erkennung wie die App-Karten über shared/appgate.js (Brücke window.nullpunktDesktop oder Nutzeragent-Zusatz).
 export const EXTREME = 'extrem';
-export const isDesktopApp = () => typeof window !== 'undefined' && !!window.nullpunktDesktop;
+export const isDesktopApp = () => appClient().kind === 'desktop-app';
 export const EXTREME_PRESET = Object.freeze({
   ...QUALITY_PRESETS.ultra, extreme: true, shadowMapSize: 8192, maxBotsVisibleShadows: 32, particleScale: 1.5, decals: 240,
+  pixelRatio: 3, aoSamples: 16, farShadow: 4096,
 });
 /** Vorgabe zu Wunsch q (auch 'extrem') und aufgelöster Stufe. */
-const EXTREME_PRESET_4K = Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096 });
+const EXTREME_PRESET_4K = Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096, farShadow: 2048 }); // app-engine: Fernkaskade 4096² nur mit 8K-Freigabe
 // app (14.11.): 8K-Schatten (256 MB Tiefentextur) nur, wenn alles dafür spricht – GPU kann ≥ 16K-Texturen, ist eine
 // starke Desktop-GPU (keine Software-GL, kein iGPU-/Mobilchip), ≥ 16 GB RAM, und der letzte Spielprozess der App ist
 // nicht abgestürzt (desktop/main.js meldet lastCrash). Sonst „Extrem“ mit 4096² (wie Ultra) – der Rest bleibt Extrem.
@@ -100,7 +107,11 @@ export function isLowEndDevice() {
  */
 export function resolveQuality(q) {
   if (QUALITY_LEVELS.includes(q)) return q;
-  if (q === EXTREME && isDesktopApp()) return 'ultra'; // desktop
+  if (q === EXTREME) {
+    if (isDesktopApp()) return 'ultra'; // desktop
+    // app-engine: gespeichertes „Extrem“ im Browser (übernommene Einstellung) → Ultra, auf Telefon/Tablet Hoch
+    return typeof window !== 'undefined' && deviceInfo().touch ? 'high' : 'ultra';
+  }
   if (typeof window === 'undefined') return 'high';
   return provisionalTier();
 }
@@ -194,7 +205,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
   let gpu = { name: '', cls: 'unbekannt' };
   try { const name = gpuName(renderer.getContext()); gpu = { name, cls: classifyGpu(name, deviceInfo()).cls }; } catch { /* ohne Namen */ }
   extremeBigShadow = bigShadowOk(renderer.capabilities.maxTextureSize || 4096, gpu.cls); // desktop: Stufe Extrem
-  const startAuto = !QUALITY_LEVELS.includes(quality) && !(quality === EXTREME && isDesktopApp());
+  const startAuto = !QUALITY_LEVELS.includes(quality) && quality !== EXTREME; // „extrem“ ist feste Stufe (Browser: Ultra/Hoch)
   try {
     const d = decideAuto(renderer, { bench: benchmark && startAuto });
     if (startAuto) { auto = d; initial = d.tier; }
@@ -293,7 +304,7 @@ export function createRenderer(canvas, { quality = 'auto', settings = null, benc
     get mood() { return pipeline.mood.id; },
 
     setQuality(q) {
-      if (!QUALITY_LEVELS.includes(q) && !(q === EXTREME && isDesktopApp())) {
+      if (!QUALITY_LEVELS.includes(q) && q !== EXTREME) {
         // „Automatisch“ erst in dieser Sitzung gewählt (Start mit fester Stufe): GPU-Test jetzt nachholen (21.10.)
         const a = autoDecision();
         if (!a || a.pending) { try { decideAuto(renderer, { bench: benchmark }); } catch (err) { console.warn('[NULLPUNKT] Geräteprofil:', err); } }

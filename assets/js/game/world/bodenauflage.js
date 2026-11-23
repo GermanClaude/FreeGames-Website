@@ -14,7 +14,7 @@
 //
 // placeGroundDressing(world, group, { quality, seed, def }) → { count, wall, tufts, meshes, ms }
 import * as THREE from 'three';
-import { createFoliage } from './atlas.js?v=20261123082814';
+import { createFoliage } from './atlas.js?v=20261123115551';
 
 export const GROUND_CELL = { laub: 0, erde: 1, sand: 2, splitt: 3, oel: 4, pfuetze: 5, wandfuss: 6, blaetter: 7 };
 // fuell (20.11., Nutzer: „Maps sehen immer noch leer aus“): etwa doppelt so dicht; Großkarten über opt.bereiche

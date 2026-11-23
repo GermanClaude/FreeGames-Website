@@ -12,8 +12,8 @@
 // pkwBodyHQ(K, S, B, GB, LB, lod, paint, variant) füllt die Buckets (Lack/Kleinteile B, Glas GB, Scheinwerfer LB).
 // addCarBody(R, S, B, GB, LB, paint) – Teile einer carbody-Karosserie in die Buckets (auch Kastenwagen/Lkw).
 import * as THREE from 'three';
-import { tube, roundPlate } from './bodykit.js?v=20261123082814';
-import { pkwBody, pkwShape, TAG, softBox } from './carbody.js?v=20261123082814';
+import { tube, roundPlate } from './bodykit.js?v=20261123115551';
+import { pkwBody, pkwShape, TAG, softBox } from './carbody.js?v=20261123115551';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;

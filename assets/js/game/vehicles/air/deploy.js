@@ -7,8 +7,8 @@
 // Einzelspiel/Host: VehicleSystem.enter (Regeln air/policy.js). Online-Client: Einsteige-Anfrage 'veh' mit dem optionalen
 // Feld dep: 1 – der Host prüft mayDeploy (Klasse Pilot, ≤ 5 s nach dem Erscheinen, Luftfahrzeug des eigenen Teams steht
 // frei am Boden) und verzichtet dann auf die Griffweite. Kein neues Nachrichtenformat.
-import { VEHICLES } from '../data.js?v=20261123082814';
-import { isPilot } from './policy.js?v=20261123082814';
+import { VEHICLES } from '../data.js?v=20261123115551';
+import { isPilot } from './policy.js?v=20261123115551';
 
 const BOARD_WINDOW = 4; // s nach dem Erscheinen, in denen der Einsatz im Cockpit versucht wird
 const TYPE_ORDER = { heli: 0, jet: 1 };

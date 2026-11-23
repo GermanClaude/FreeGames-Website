@@ -2,9 +2,9 @@
 // Spielmenü (21.11.): Schnellwahl oben in „Einstellungen“ – Sprache (über lang.js an die Übersetzungs-API), Menüklänge,
 // Grafik-Voreinstellung und Bewegung. Grafik und Bewegung sind dieselben Einstellungen wie im Spiel (shared/settings.js);
 // die vollständige Liste steht darunter im Abschnitt „Alle Einstellungen“.
-import { $, h } from './dom.js?v=20261123082814';
-import { announce } from './live.js?v=20261123082814';
-import { t, LANGS, getLang, setLang, onLang, hasTranslations } from './lang.js?v=20261123082814';
+import { $, h } from './dom.js?v=20261123115551';
+import { announce } from './live.js?v=20261123115551';
+import { t, LANGS, getLang, setLang, onLang, hasTranslations } from './lang.js?v=20261123115551';
 
 function seg(label, opts, cur, onPick, { lang = false } = {}) {
   const id = `q-${Math.random().toString(36).slice(2, 8)}`;
@@ -52,7 +52,7 @@ export function init(sec, D, ctx = {}) {
   // Grafik-Voreinstellung
   const q = D.schema?.quality;
   if (S && q?.options) {
-    const opts = q.options.map((o) => [o, q.labels?.[o] || o]);
+    const opts = q.options.filter((o) => !q.locked?.includes(o)).map((o) => [o, q.labels?.[o] || o]); // app-engine: „Extrem“ nur in der App
     const gfx = seg(t('quick.gfx'), opts, S.get('quality'), (v) => { S.set('quality', v); gfx.set(S.get('quality')); snd?.ui('click'); announce(q.labels?.[v] || v); });
     root.append(gfx.row);
     S.onChange((k, v) => { if (k === 'quality') gfx.set(v); });

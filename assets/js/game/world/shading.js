@@ -12,7 +12,7 @@
 // Mehrere Shader-Haken je Material (z. B. Weltraum-Variation aus engine/textures.js + dieser) laufen über
 // addShaderPatch(): ein Verteiler statt überschriebener onBeforeCompile-Funktionen.
 import * as THREE from 'three';
-import { GFX } from '../engine/post/common.js?v=20261123082814'; // gfx-licht: weiche Sonnenschatten (Proben, TAA-Drehung)
+import { GFX } from '../engine/post/common.js?v=20261123115551'; // gfx-licht: weiche Sonnenschatten (Proben, TAA-Drehung)
 
 // ---------------------------------------------------------------------------
 // Verteiler für mehrere onBeforeCompile-Haken je Material

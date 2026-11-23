@@ -50,13 +50,13 @@
 // Telefone (quality low) bekommen im Spiel keinen Detailkopf (Detailstufe 1 schon aus der Nähe), in Zwischensequenzen den
 // einfachen Shader (NP_LOW, ohne Relief) und kleine Karten.
 import * as THREE from 'three';
-import { FACE_MORPHS, HEAD_C, loadHeadAsset, buildHeadData, normProfile } from './face-mesh.js?v=20261123082814';
-import { bakeFaceMaps, normLook } from './face-skin.js?v=20261123082814';
-import { BONE } from './rig.js?v=20261123082814';
-import { VARIANTS, variantDef, EAR_CUP } from './gear.js?v=20261123082814';
-import { SKIN_TONES, SCHEMES } from './materials.js?v=20261123082814';
-import { BODY_MESH } from './body-mesh.js?v=20261123082814';
-import { hairGeometry, beardGeometry, hairMaterial, pickHairStyle, disposeHair } from './hair.js?v=20261123082814';
+import { FACE_MORPHS, HEAD_C, loadHeadAsset, buildHeadData, normProfile } from './face-mesh.js?v=20261123115551';
+import { bakeFaceMaps, normLook } from './face-skin.js?v=20261123115551';
+import { BONE } from './rig.js?v=20261123115551';
+import { VARIANTS, variantDef, EAR_CUP } from './gear.js?v=20261123115551';
+import { SKIN_TONES, SCHEMES } from './materials.js?v=20261123115551';
+import { BODY_MESH } from './body-mesh.js?v=20261123115551';
+import { hairGeometry, beardGeometry, hairMaterial, pickHairStyle, disposeHair } from './hair.js?v=20261123115551';
 
 export { FACE_MORPHS };
 
@@ -200,7 +200,7 @@ const jobs = new Map(), pending = new Map();
 function getWorker() {
   if (worker || workerBroken || typeof Worker === 'undefined') return worker;
   try {
-    worker = new Worker(new URL('./face-worker.js?v=20261123082814', import.meta.url), { type: 'module', name: 'gesichter' });
+    worker = new Worker(new URL('./face-worker.js?v=20261123115551', import.meta.url), { type: 'module', name: 'gesichter' });
     worker.onmessage = (e) => {
       const { id, D, T, error } = e.data || {};
       const j = jobs.get(id);

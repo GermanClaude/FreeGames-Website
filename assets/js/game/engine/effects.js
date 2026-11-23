@@ -11,11 +11,11 @@
 // Punktlicht wie Explosionen → konstante Lichterzahl), Pulvergas eigener Schüsse, Rauchfäden aus heißen Läufen.
 
 import * as THREE from 'three';
-import { caliberOf } from '../../shared/calibers.js?v=20261123082814'; // Austritts-Splitter nach Geschossenergie
-import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261123082814';
-import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261123082814';
-import { Debris } from '../weapons/ballistics/debris.js?v=20261123082814';
-import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261123082814';
+import { caliberOf } from '../../shared/calibers.js?v=20261123115551'; // Austritts-Splitter nach Geschossenergie
+import { ParticleLayer, TracerLayer, DecalLayer, PF } from '../weapons/ballistics/fxlayers.js?v=20261123115551';
+import { getParticleAtlas, getDecalAtlas, getDecalNormalAtlas, CELL, DECAL } from '../weapons/ballistics/fxtex.js?v=20261123115551';
+import { Debris } from '../weapons/ballistics/debris.js?v=20261123115551';
+import { handlingFor } from '../weapons/gunsmith/handling.js?v=20261123115551';
 
 const ALPHA_CAP = 900;
 const ADD_CAP = 640;
@@ -125,7 +125,7 @@ export class Effects {
     for (const L of [this.alpha, this.fire, this.add, this.tracers, this.glints, this.motes]) L.mesh.visible = true;
     this.debris.events = G.events;
     this.debris.showForCompile();
-    this.debris.setQuality(this.preset.id || G.renderer?.quality || 'high');
+    this.debris.setQuality(this.preset.id || G.renderer?.quality || 'high', !!this.preset.extreme); // app-engine: Extrem
     // liegende Hülsen empfangen Schatten ab high (nur hier: anderes Programm, nicht beim Qualitätswechsel im Match)
     { const q = this.preset.id || G.renderer?.quality; this.debris.setShadows(q === 'high' || q === 'ultra'); }
     // Decals 2.0: ab medium beleuchtete Einschusslöcher mit Normalen (zwischen Matches, Shader im Ladebildschirm)
@@ -144,7 +144,7 @@ export class Effects {
       this._offQuality = G.renderer.onQualityChange((q) => {
         if (!this._built) return;
         this.decals.setLimit(this.preset.decals || 40);
-        this.debris.setQuality(this.preset.id || q || 'high');
+        this.debris.setQuality(this.preset.id || q || 'high', !!this.preset.extreme);
       });
     }
     const s = (this._subs = G.events.scope());
@@ -1335,7 +1335,7 @@ export class Effects {
   _updateMotes(dt) {
     const M = this.motes;
     const id = this.preset.id;
-    const want = id === 'ultra' ? 110 : id === 'high' ? 70 : id === 'medium' ? 36 : 0;
+    const want = id === 'ultra' ? (this.preset.extreme ? 126 : 110) : id === 'high' ? 70 : id === 'medium' ? 36 : 0; // app-engine: Extrem 126 (Platz: capacity 128)
     const w = this.G.world;
     const L = w && w.lighting;
     if (!want || !L || !L.sunDirection || typeof w.lineOfSight !== 'function') { if (M.n) M.clear(); return; }

@@ -17,10 +17,10 @@
 // weiches Ausblenden im Shader, spärliche Wiesenblumen (medium+). Alles aus Positions-Hashes – berührt weder die
 // Zufallsströme noch die Kollision (Felsen werden nur gelesen, um Gras aus ihnen herauszuhalten).
 import * as THREE from 'three';
-import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM, spruceMaterial } from '../atlas.js?v=20261123082814';
-import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261123082814';
-import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261123082814';
-import { TREE_SPECIES, DEFAULT_MIX, TREE_LOD, buildTreeVariant, buildBush, buildFern, createLeafMaterial, createBarkMaterial, renderImpostors, impostorGeometry, createImpostorMaterial } from './trees.js?v=20261123082814';
+import { createFoliage, foliageUniforms, WIND_VERTEX, setWindAttribute, setFoliageQuality, LAUBBAUM, spruceMaterial } from '../atlas.js?v=20261123115551';
+import { rng, hash2, createSimplex, smoothstep } from './noise.js?v=20261123115551';
+import { terrainLook, terrainNoise, meadowTintAt } from './splat.js?v=20261123115551';
+import { TREE_SPECIES, DEFAULT_MIX, TREE_LOD, buildTreeVariant, buildBush, buildFern, createLeafMaterial, createBarkMaterial, renderImpostors, impostorGeometry, createImpostorMaterial } from './trees.js?v=20261123115551';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 const _c = new THREE.Color();
@@ -265,7 +265,11 @@ const GRASS_LOOK = {
   medium: { blades: 18, far: 6, lod: 0.5, flowers: 0.07, near: 2 },
   high: { blades: 22, far: 7, lod: 0.5, flowers: 0.1, near: 3 },
   ultra: { blades: 24, far: 8, lod: 0.5, flowers: 0.11, near: 3 },
+  // app-engine: Stufe „Extrem“ der Desktop-App (tier.extreme aus bigworld.js BIG_EXTREME) – mehr Halme je Fleck nah und fern,
+  // ferne Stufe erst ab 60 % des Radius, ein Trabant mehr
+  extrem: { blades: 28, far: 10, lod: 0.6, flowers: 0.12, near: 4 },
 };
+const grassLook = (q, t) => (t && t.extreme && GRASS_LOOK.extrem) || GRASS_LOOK[q] || GRASS_LOOK.high;
 
 function merge(geoms) {
   const parts = geoms.map(g => g.index ? g.toNonIndexed() : g);
@@ -744,7 +748,7 @@ export class Vegetation {
     // Grasring (eigene Halme statt Laub-Atlas: liest sich auf Wiesen besser und braucht keinen Alpha-Test)
     // spec.grass === false: kein Grasring (Brandwald: die Grundschicht ist Brandboden, kein Gras)
     if (t.grass > 0 && this.spec.grass !== false) {
-      const R = t.grass, look = GRASS_LOOK[q] || GRASS_LOOK.high;
+      const R = t.grass, look = grassLook(q, t);
       // gl-ground: Farbe ab 40 % des Radius zum Boden, Höhe ab 62 % weich auf 0 (Rand je Horst ±10 % versetzt)
       const gm = grassMaterial([R * 0.4, R * 0.82, R * 0.62, R * 0.95]);
       const blades = look.blades ?? (t.grassBlades || 0);
@@ -1068,7 +1072,7 @@ export class Vegetation {
    */
   _updateGrass(p) {
     const hf = this.hf, t = this.tier, R = t.grass, st = t.grassStep, g = this.grass, cap = g.instanceMatrix.count;
-    const look = GRASS_LOOK[this.quality] || GRASS_LOOK.high;
+    const look = grassLook(this.quality, t);
     const gf = this.grassFar || null, fcapG = gf ? gf.instanceMatrix.count : 0;
     const fl = this.flowers || null, fcap = fl ? fl.instanceMatrix.count : 0;
     const y0 = hf.heightAt(p.x, p.z);

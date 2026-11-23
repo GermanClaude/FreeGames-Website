@@ -12,7 +12,7 @@
 //   (Blech). Zeigt die Materialstärke statt eines papierdünnen Schnitts. Ab „mittel“, ein InstancedMesh (Quader).
 // Nur Optik + Deckung; Kosten: zwei InstancedMeshes (Zylinder, Quader) je Match, Arbeit verteilt auf update().
 import * as THREE from 'three';
-import { worldPartsFrom } from './building.js?v=20261123082814';
+import { worldPartsFrom } from './building.js?v=20261123115551';
 
 const REBAR_MAX = { low: 0, medium: 420, high: 900, ultra: 1400 };
 const EDGE_MAX = { low: 0, medium: 600, high: 1400, ultra: 2000 };

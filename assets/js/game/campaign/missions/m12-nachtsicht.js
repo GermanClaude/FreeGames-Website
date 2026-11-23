@@ -7,9 +7,9 @@
 // anzeige (director.stealth; Alarm = mehr Gegner, kein Fehlschlag), schallgedämpfte Waffe, Leuchtkugeln (heller, Sicht
 // der Bots besser). Checkpoints: start, gehoeft, furt, huegel, flucht.
 
-import { actor } from './cast.js?v=20261123082814';
-import { purgeDead, clearAir } from './hilfen-b.js?v=20261123082814';
-import { night } from './hilfen-c.js?v=20261123082814';
+import { actor } from './cast.js?v=20261123115551';
+import { purgeDead, clearAir } from './hilfen-b.js?v=20261123115551';
+import { night } from './hilfen-c.js?v=20261123115551';
 
 const START = [-214, 150];          // Waldrand nordwestlich des Gehöfts (Feldweg)
 const FARM = [-150, 104];           // Gehöft (Hof zwischen Scheune und Wohnhaus)

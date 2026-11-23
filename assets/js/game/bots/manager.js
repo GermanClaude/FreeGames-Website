@@ -13,24 +13,24 @@
 // Befehlsrad (ai/orders.js): issueOrder({ leader, order, point, target, formation, radius }) → Anzahl; orderableNear(leader);
 //      commandedBy(leader). Online befiehlt ein Client über den Host (net/sync-host.js, Nachricht 'order').
 import * as THREE from 'three';
-import { Bot } from './bot.js?v=20261123082814';
-export { netPoseOf, NET_FLAGS } from './bot.js?v=20261123082814'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
-import { difficultyProfile } from './difficulty.js?v=20261123082814';
-import { pickNames } from './names.js?v=20261123082814';
-import { Nameplate } from './nameplates.js?v=20261123082814';
-import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261123082814';
-import { upgradeSoldierMaterials, soldierDetailInfo, setSoldierWorld } from './soldier/materials.js?v=20261123082814';
-import { analyze } from './ai/tactics.js?v=20261123082814';
-import { botHearRange } from '../../shared/calibers.data.js?v=20261123082814';
-import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261123082814';
-import { TeamTactics, planRoles } from './ai/squad.js?v=20261123082814';
-import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261123082814';
-import { BotAdapt } from './ai/spielstil.js?v=20261123082814';
-import { CorpseStore } from './corpses.js?v=20261123082814';
-import { ActorGrid, CrowdImpostors, crowdScale, spreadSpawn } from './crowd.js?v=20261123082814';
-import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261123082814';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261123082814';
-import { attachmentsFor } from '../../shared/attachments.data.js?v=20261123082814';
+import { Bot } from './bot.js?v=20261123115551';
+export { netPoseOf, NET_FLAGS } from './bot.js?v=20261123115551'; // Mehrspieler: Netz-Pose lokal simulierter Akteure (Sync-Module, G.modules.bots)
+import { difficultyProfile } from './difficulty.js?v=20261123115551';
+import { pickNames } from './names.js?v=20261123115551';
+import { Nameplate } from './nameplates.js?v=20261123115551';
+import { VARIANTS, schemeForTeam, ffaSchemes } from './character.js?v=20261123115551';
+import { upgradeSoldierMaterials, soldierDetailInfo, setSoldierWorld } from './soldier/materials.js?v=20261123115551';
+import { analyze } from './ai/tactics.js?v=20261123115551';
+import { botHearRange } from '../../shared/calibers.data.js?v=20261123115551';
+import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261123115551';
+import { TeamTactics, planRoles } from './ai/squad.js?v=20261123115551';
+import { issueCommand, isCommanded, ORDER_DEFS, ORDER_RADIUS, ORDER_MAX } from './ai/orders.js?v=20261123115551';
+import { BotAdapt } from './ai/spielstil.js?v=20261123115551';
+import { CorpseStore } from './corpses.js?v=20261123115551';
+import { ActorGrid, CrowdImpostors, crowdScale, spreadSpawn } from './crowd.js?v=20261123115551';
+import { CLASSES, DEFAULT_CLASS, pickBotClass, resolveClassLoadout } from '../../shared/classes.data.js?v=20261123115551';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261123115551';
+import { attachmentsFor } from '../../shared/attachments.data.js?v=20261123115551';
 
 const _m = new THREE.Matrix4();
 const _v = new THREE.Vector3();

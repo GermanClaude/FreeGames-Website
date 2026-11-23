@@ -12,9 +12,9 @@
 // nach `rest` s aus.
 // Keine Allokationen pro Bild außer world.raycast-Treffern (selten: nur beim Aufschlag).
 import * as THREE from 'three';
-import { casingGeometry } from '../gunsmith/fx.js?v=20261123082814';
-import { createWeaponModel } from '../models.js?v=20261123082814';
-import { dropRounds } from '../gunsmith/magfill.js?v=20261123082814';
+import { casingGeometry } from '../gunsmith/fx.js?v=20261123115551';
+import { createWeaponModel } from '../models.js?v=20261123115551';
+import { dropRounds } from '../gunsmith/magfill.js?v=20261123115551';
 
 export const CASING_TYPES = ['rifle', 'pistol', 'big', 'shotgun'];
 // Je Qualitätsstufe: liegende Hülsen gesamt, Magazine, Liegezeit der Magazine (s), Strahlen je Bild,
@@ -165,8 +165,10 @@ export class Debris {
   }
 
   /** Stufe 'low' | 'medium' | 'high' | 'ultra' (Mengen, Liegezeit der Magazine, Strahlenbudget). */
-  setQuality(q) {
+  setQuality(q, extreme = false) {
     this.tier = DEBRIS_TIERS[q] || DEBRIS_TIERS.high;
+    // app-engine: Extrem (Desktop-App) – Magazine liegen 30 s statt 20 s, 56 Strahlen je Bild (Mengen bleiben: Plätze = ultra)
+    if (extreme && q === 'ultra') this.tier = { ...this.tier, rest: 30, rays: 56 };
     this._enforceCaps(true);
   }
 

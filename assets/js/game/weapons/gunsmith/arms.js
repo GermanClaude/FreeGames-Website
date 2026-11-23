@@ -8,15 +8,15 @@
 // bis sie anliegen; der Zeigefinger sucht den Abzug; die Daumenausrichtung wird gesucht, bis die Kuppe ihr
 // Ziel auf der Gegenseite erreicht. Ergebnisse werden je Griffart + Maßen gecacht.
 import * as THREE from 'three';
-import { chamferBoxGeometry } from './builder.js?v=20261123082814';
-import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js?v=20261123082814';
-import { takeMaterials, parkMaterials } from './materials.js?v=20261123082814';
-import { vmLight } from './vmlight.js?v=20261123082814';
-import { contactHit, MultiCollider } from './contact.js?v=20261123082814';
+import { chamferBoxGeometry } from './builder.js?v=20261123115551';
+import { camoMap, watchFaceTexture, tapeMap, fbm } from './textures.js?v=20261123115551';
+import { takeMaterials, parkMaterials } from './materials.js?v=20261123115551';
+import { vmLight } from './vmlight.js?v=20261123115551';
+import { contactHit, MultiCollider } from './contact.js?v=20261123115551';
 
 // Fingermaße + Bindehaltung des Handschuhnetzes (hands-v4): gemeinsam mit tools/assets/hands/build_hand.py (MakeHuman-Hand)
-import { FINGERS, THUMB, THUMB_REST, BIND_SPLAY, BIND_CURL, BIND_THUMB_FLEX, handDimsKey } from './handdims.js?v=20261123082814';
-import { GLOVE_MESH } from './glove-mesh.js?v=20261123082814';
+import { FINGERS, THUMB, THUMB_REST, BIND_SPLAY, BIND_CURL, BIND_THUMB_FLEX, handDimsKey } from './handdims.js?v=20261123115551';
+import { GLOVE_MESH } from './glove-mesh.js?v=20261123115551';
 
 const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const _v1 = V3(), _v2 = V3(), _v3 = V3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler();

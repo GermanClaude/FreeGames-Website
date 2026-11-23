@@ -4,8 +4,8 @@
 // Funkstation mit Gittermast, Flugleitung. Dazu ein Straßenzug-Platzierer, der Häuser beidseitig achsparalleler
 // Straßen reiht (eigener Zufallsstrom je Ortschaft, Freiflächen/Flaggen/Startpunkte bleiben frei).
 // Alles achsparallel (arch.js building()), Koordinaten Welt-x/z, Boden y = Bauflächenhöhe.
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261123082814';
-import { sandbags, crateStack, barrelGroup, palletStack, floodMast, fence, hash01, frame } from '../props.js?v=20261123082814';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261123115551';
+import { sandbags, crateStack, barrelGroup, palletStack, floodMast, fence, hash01, frame } from '../props.js?v=20261123115551';
 
 const PI = Math.PI;
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };

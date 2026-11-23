@@ -1,22 +1,22 @@
 /* NULLPUNKT – © 2026 German Legend. Alle Rechte vorbehalten. Nutzung, Kopie oder Übernahme nur mit vorheriger
  * schriftlicher Erlaubnis (Discord German_Legend_26201, legendgerman749@gmail.com). Siehe LICENSE. */
 // NULLPUNKT — Website. Start: Chrom und Hero sofort, Daten parallel, Abschnitte erst in Sichtnähe.
-import { loadData } from './data.js?v=20261123082814';
-import { initNav, setNavSound } from './nav.js?v=20261123082814';
-import { initCursor } from './cursor.js?v=20261123082814';
-import { initZero } from './zero.js?v=20261123082814';
-import { fitAll, fontsReady } from './fit.js?v=20261123082814';
-import { initDeploy } from './deploy.js?v=20261123082814';
-import { sound } from './sound.js?v=20261123082814';
-import { setSettingReduced } from './motion.js?v=20261123082814';
-import { signalLost } from './dom.js?v=20261123082814';
-import { startSiteClock } from '../shared/sitetime.js?v=20261123082814';
-import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261123082814';
-import { initHud } from './hud.js?v=20261123082814'; // Startbildschirm (21.11.)
-import { bootStep, bootDone } from './boot.js?v=20261123082814'; // Spielmenü (21.11.): Ladebildschirm
-import { initMenu, notifyNewBuild, watchNewBuild } from './menu.js?v=20261123082814'; // Spielmenü (21.11.): Kategorien als Bildschirme
-import { t, attachI18n } from './lang.js?v=20261123082814';
-import { BUILD } from '../shared/build.js?v=20261123082814';
+import { loadData } from './data.js?v=20261123115551';
+import { initNav, setNavSound } from './nav.js?v=20261123115551';
+import { initCursor } from './cursor.js?v=20261123115551';
+import { initZero } from './zero.js?v=20261123115551';
+import { fitAll, fontsReady } from './fit.js?v=20261123115551';
+import { initDeploy } from './deploy.js?v=20261123115551';
+import { sound } from './sound.js?v=20261123115551';
+import { setSettingReduced } from './motion.js?v=20261123115551';
+import { signalLost } from './dom.js?v=20261123115551';
+import { startSiteClock } from '../shared/sitetime.js?v=20261123115551';
+import { initJumps, jumpTo, setEnsureUpTo } from './jump.js?v=20261123115551';
+import { initHud } from './hud.js?v=20261123115551'; // Startbildschirm (21.11.)
+import { bootStep, bootDone } from './boot.js?v=20261123115551'; // Spielmenü (21.11.): Ladebildschirm
+import { initMenu, notifyNewBuild, watchNewBuild } from './menu.js?v=20261123115551'; // Spielmenü (21.11.): Kategorien als Bildschirme
+import { t, attachI18n } from './lang.js?v=20261123115551';
+import { BUILD } from '../shared/build.js?v=20261123115551';
 
 const html = document.documentElement;
 const DEBUG = /[?&]debug=1/.test(location.search);
@@ -71,7 +71,7 @@ initHud({ sound });
 // Spielmenü: Kategorien bauen, Anker/Direktlinks umleiten (vor dem Aufbau der Abschnitte, die Bildschirme verschieben sie)
 initMenu({ sound, ensureView: (key) => ctx.ensure(key), getData: () => ctx.D });
 // Übersetzung (shared/i18n.js): übersetzt die Seite selbst, sobald eine andere Sprache als Deutsch gewählt ist
-import('../shared/i18n.js?v=20261123082814').then(attachI18n).catch((err) => console.error('[NULLPUNKT] Übersetzung:', err));
+import('../shared/i18n.js?v=20261123115551').then(attachI18n).catch((err) => console.error('[NULLPUNKT] Übersetzung:', err));
 
 initJumps();
 
@@ -93,20 +93,20 @@ const fontsP = (document.fonts?.ready || Promise.resolve()).then(() => {
 setTimeout(() => { if (!fontsDone) { fontsReady(); fitAll(document, { now: true }); } }, 3000);
 
 const VIEWS = {
-  news: () => import('./news-view.js?v=20261123082814'), // §02 Neu (20.11.)
-  campaign: () => import('./campaign-view.js?v=20261123082814'), // §03 Kampagne
-  sim: () => import('./sim-view.js?v=20261123082814'), // §04 Simulation
-  modes: () => import('./modes-view.js?v=20261123082814'),
-  maps: () => import('./maps-view.js?v=20261123082814'),
-  arsenal: () => import('./arsenal-view.js?v=20261123082814'),
-  profile: () => import('./profile-view.js?v=20261123082814'),
-  settings: () => import('./settings-view.js?v=20261123082814'),
-  controls: () => import('./controls-view.js?v=20261123082814'),
-  about: () => import('./about-view.js?v=20261123082814'),
-  app: () => import('./app-view.js?v=20261123082814'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
-  gallery: () => import('./gallery-view.js?v=20261123082814'), // Spielmenü (21.11.): Galerie mit Bildbetrachter
-  quick: () => import('./quick-view.js?v=20261123082814'), // Spielmenü (21.11.): Schnellwahl Sprache/Ton/Grafik
-  multi: () => import('./multi-view.js?v=20261123082814'), // Spielmenü (21.11.): Mehrspieler – Raumcode
+  news: () => import('./news-view.js?v=20261123115551'), // §02 Neu (20.11.)
+  campaign: () => import('./campaign-view.js?v=20261123115551'), // §03 Kampagne
+  sim: () => import('./sim-view.js?v=20261123115551'), // §04 Simulation
+  modes: () => import('./modes-view.js?v=20261123115551'),
+  maps: () => import('./maps-view.js?v=20261123115551'),
+  arsenal: () => import('./arsenal-view.js?v=20261123115551'),
+  profile: () => import('./profile-view.js?v=20261123115551'),
+  settings: () => import('./settings-view.js?v=20261123115551'),
+  controls: () => import('./controls-view.js?v=20261123115551'),
+  about: () => import('./about-view.js?v=20261123115551'),
+  app: () => import('./app-view.js?v=20261123115551'), // app (14.11.): Herunterladen / Web-App / App-Einstellungen
+  gallery: () => import('./gallery-view.js?v=20261123115551'), // Spielmenü (21.11.): Galerie mit Bildbetrachter
+  quick: () => import('./quick-view.js?v=20261123115551'), // Spielmenü (21.11.): Schnellwahl Sprache/Ton/Grafik
+  multi: () => import('./multi-view.js?v=20261123115551'), // Spielmenü (21.11.): Mehrspieler – Raumcode
 };
 
 /* Ladebildschirm (21.11.): die echten Schritte nach den Spieldaten – Texturen vorladen, Service Worker, Update-Prüfung */
@@ -138,7 +138,7 @@ async function bootSequence() {
     ]);
     bootStep(t('boot.tex.ok', { n }), 82, { ok: true });
     bootStep(t('boot.update'), 86);
-    const swP = import('../shared/pwa.js?v=20261123082814').then((m) => m.registerSW()).catch(() => null);
+    const swP = import('../shared/pwa.js?v=20261123115551').then((m) => m.registerSW()).catch(() => null);
     let web = '';
     let offline = false;
     try {
@@ -295,7 +295,7 @@ async function boot() {
   if (D.profile) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 400));
     idle(async () => {
-      try { (await import('./fahne.js?v=20261123082814')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
+      try { (await import('./fahne.js?v=20261123115551')).initFahne(D, ctx); } catch (err) { console.error('[NULLPUNKT] Fahne:', err); }
     });
   }
 }

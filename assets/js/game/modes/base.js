@@ -3,12 +3,12 @@
 // Unterklassen überschreiben die Haken onKillScored / onSuicide / tick / decide / extraRow.
 
 import * as THREE from 'three';
-import { modeOptionValues, parseModeOptions, MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261123082814';
-import { WEAPONS } from '../../shared/weapons.data.js?v=20261123082814';
-import { chooseSpawn } from './spawns.js?v=20261123082814';
-import { MedalTracker } from './medals.js?v=20261123082814';
-import { StreakManager } from './streaks.js?v=20261123082814';
-import { CheatSystem } from '../cheats.js?v=20261123082814';
+import { modeOptionValues, parseModeOptions, MODES, SCORE_RULES, MEDAL_RULES, VEHICLE_POINTS, STYLE_RESPAWN, isLongshot } from '../../shared/modes.data.js?v=20261123115551';
+import { WEAPONS } from '../../shared/weapons.data.js?v=20261123115551';
+import { chooseSpawn } from './spawns.js?v=20261123115551';
+import { MedalTracker } from './medals.js?v=20261123115551';
+import { StreakManager } from './streaks.js?v=20261123115551';
+import { CheatSystem } from '../cheats.js?v=20261123115551';
 
 /** Karten mit Einsatzkarte nach dem Tod (Draufsicht, Einstieg bei Kameraden). */
 const DEPLOY_MAPS = new Set(['grenzland', 'bibliothek', 'niemandsland', 'brandwald', 'flugplatz', 'weitmark']);

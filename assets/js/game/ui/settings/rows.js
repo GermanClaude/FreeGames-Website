@@ -3,7 +3,7 @@
 // (syncRows). Bedienbar per Touch, Maus, Tastatur (Pfeile links/rechts am Wähler) und Gamepad (menus.js schickt
 // links/rechts als „np-step“ an fokussierte Wähler und Schieberegler).
 
-import { esc, num } from '../dom.js?v=20261123082814';
+import { esc, num } from '../dom.js?v=20261123115551';
 
 export const COLORS = ['#ffffff', '#ff5b1f', '#5fe08a', '#38b6ff', '#ffc23d', '#ff4fd8'];
 
@@ -70,7 +70,12 @@ export function rowHtml(ctx, key, opts = {}) {
           <button type="button" class="sp-step-b" data-d="-1" tabindex="-1" aria-label="Vorherige Option"${da}>‹</button><output>${esc(labels[v] || v)}</output><button type="button" class="sp-step-b" data-d="1" tabindex="-1" aria-label="Nächste Option"${da}>›</button><span class="sp-pips" aria-hidden="true">${pips}</span></div></div></div>`;
       }
       const wide = opts.wide || def.options.length >= 5;
-      return `<div class="sp-row${wide ? ' sp-row-wide' : ''}${dis}" data-k="${key}">${lab}<div class="sp-ctl m-seg" role="radiogroup" aria-label="${aria}">${def.options.map((o) => `<button type="button" role="radio" data-v="${esc(o)}" aria-checked="${o === v}"${da}>${esc(labels[o] || o)}</button>`).join('')}</div></div>`;
+      // app-engine: gesperrte Optionen (def.locked, z. B. Grafikstufe „Extrem“ außerhalb der Desktop-App) ausgegraut mit Grund
+      const locked = def.locked || [];
+      const lk = (o) => (locked.includes(o) ? ` disabled aria-disabled="true" data-locked="1" class="is-locked" title="${esc(def.lockNote || '')}"` : da);
+      const lockNote = locked.length && (def.lockHint || def.lockNote) && !opts.disabled ? `<small class="sp-note-lock">${esc(def.lockHint || def.lockNote)}</small>` : '';
+      const lab2 = lockNote ? lab.replace(/<\/div>$/, `${lockNote}</div>`) : lab;
+      return `<div class="sp-row${wide ? ' sp-row-wide' : ''}${dis}" data-k="${key}">${lab2}<div class="sp-ctl m-seg" role="radiogroup" aria-label="${aria}">${def.options.map((o) => `<button type="button" role="radio" data-v="${esc(o)}" aria-checked="${o === v}"${lk(o)}>${esc(labels[o] || o)}</button>`).join('')}</div></div>`;
     }
     case 'color':
       return `<div class="sp-row${dis}" data-k="${key}">${lab}<div class="sp-ctl sp-colors">${COLORS.map((c) => `<button type="button" class="sp-sw" data-v="${c}" style="--c:${c}" aria-label="Farbe ${c}" aria-pressed="${c === String(v).toLowerCase()}"></button>`).join('')}<label class="sp-sw sp-custom" aria-label="Eigene Farbe"><input type="color" value="${esc(v)}"></label></div></div>`;
@@ -99,8 +104,10 @@ function step(ctx, row, d) {
   const def = S.schema[key];
   if (!def || row.classList.contains('is-disabled')) return;
   const i = def.options.indexOf(S.get(key));
-  const j = Math.max(0, Math.min(def.options.length - 1, (i < 0 ? 0 : i) + d));
-  if (j === i) { ctx.sound && ctx.sound('back'); return; }
+  let j = Math.max(0, Math.min(def.options.length - 1, (i < 0 ? 0 : i) + d));
+  const locked = def.locked || []; // app-engine: gesperrte Optionen überspringen
+  while (locked.includes(def.options[j]) && j !== i) j = Math.max(0, Math.min(def.options.length - 1, j - Math.sign(d || 1)));
+  if (j === i || locked.includes(def.options[j])) { ctx.sound && ctx.sound('back'); return; }
   S.set(key, def.options[j]);
   ctx.sound && ctx.sound('click');
 }
@@ -147,7 +154,7 @@ export function bindRows(root, ctx) {
       const st = e.target.closest('.sp-step');
       if (st) { step(ctx, row, 1); after(k); return; } // Antippen der Mitte = weiter
       const b = e.target.closest('[data-v]');
-      if (!b) return;
+      if (!b || b.dataset.locked) return;
       S.set(k, b.dataset.v);
       ctx.sound && ctx.sound('click');
       after(k);
@@ -245,7 +252,7 @@ export function syncRows(root, ctx, key) {
 export function setRowDisabled(root, key, disabled, note = '') {
   for (const row of root.querySelectorAll(`.sp-row[data-k="${key}"]`)) {
     row.classList.toggle('is-disabled', !!disabled);
-    row.querySelectorAll('button, input').forEach((n) => { n.disabled = !!disabled; });
+    row.querySelectorAll('button, input').forEach((n) => { n.disabled = !!disabled || !!n.dataset.locked; });
     const st = row.querySelector('.sp-step');
     if (st) { st.tabIndex = disabled ? -1 : 0; if (disabled) st.setAttribute('aria-disabled', 'true'); else st.removeAttribute('aria-disabled'); }
     let n = row.querySelector('.sp-note-dis');

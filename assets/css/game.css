@@ -1382,6 +1382,10 @@ body[data-input-mode="touch"] .m-btn kbd { display: none; }
 .m-seg button:last-child { border-right: 0; }
 .m-seg button:hover { color: var(--np-ink); }
 .m-seg button[aria-checked="true"] { background: var(--np-ink); color: var(--np-black); }
+/* app-engine: gesperrte Option (Grafikstufe „Extrem“ außerhalb der PC-App) */
+.m-seg button.is-locked { opacity: .38; cursor: not-allowed; }
+.m-seg button.is-locked[aria-checked="true"] { background: transparent; color: var(--np-ink); opacity: .6; }
+.sp-note-lock { display: block; color: var(--np-gold) !important; }
 
 .m-switch { appearance: none; position: relative; width: 50px; height: 28px; border: 1px solid var(--np-line-strong); border-radius: 14px; background: rgba(233, 230, 223, .06); cursor: pointer; touch-action: manipulation; }
 .m-switch i { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--np-ink-2); transition: transform .18s var(--ease-out), background-color .18s; }

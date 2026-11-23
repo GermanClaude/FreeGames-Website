@@ -12,8 +12,8 @@
 // die älteste Leiche zuerst. Leichen sind reine Optik (keine Treffer, keine Kollision) und überall lokal (offline,
 // Host, Clients). Prüfhilfe: G.bots.corpses.stats(), .debugFill(n).
 import * as THREE from 'three';
-import { BONE_COUNT } from './soldier/rig.js?v=20261123082814';
-import { soldierMaterial, releaseSoldierMaterial } from './soldier/materials.js?v=20261123082814';
+import { BONE_COUNT } from './soldier/rig.js?v=20261123115551';
+import { soldierMaterial, releaseSoldierMaterial } from './soldier/materials.js?v=20261123115551';
 
 /**
  * Obergrenze je Grafikstufe. Gemessen (Hafen, 09.10.): je Leiche niedrig 727 Dreiecke/48 KB (ferne Stufe), sonst
@@ -23,6 +23,9 @@ import { soldierMaterial, releaseSoldierMaterial } from './soldier/materials.js?
 export const CORPSE_CAP = Object.freeze({ low: 24, medium: 48, high: 96, ultra: 160 });
 /** Waffen am Boden (statische Kopien, je 2–4 Draw Calls): nur für die jüngsten Leichen. */
 export const GUN_CAP = Object.freeze({ low: 4, medium: 8, high: 16, ultra: 24 });
+/** app-engine: Extrem (nur Desktop-App) – 240 Leichen (≈ 670 k Dreiecke, 36 MB), 32 Waffen. */
+export const CORPSE_CAP_EXTREME = 240;
+export const GUN_CAP_EXTREME = 32;
 /** Einstellung „Leichen“ → Lebensdauer in Sekunden. */
 export const CORPSE_LIFE = Object.freeze({ bleiben: Infinity, '10min': 600, '2min': 120 });
 
@@ -55,8 +58,10 @@ export class CorpseStore {
   }
 
   get tier() { const t = this.mgr && this.mgr.tier; return CORPSE_CAP[t] ? t : 'high'; }
-  get cap() { return CORPSE_CAP[this.tier]; }
-  get gunCap() { return GUN_CAP[this.tier]; }
+  /** app-engine: Stufe „Extrem“ der Desktop-App (renderer preset.extreme) – 1,5× Leichen, 32 Waffen am Boden. */
+  get _extreme() { const G = this.mgr && this.mgr.G; return !!(G && G.renderer && G.renderer.preset && G.renderer.preset.extreme && this.tier === 'ultra'); }
+  get cap() { return this._extreme ? CORPSE_CAP_EXTREME : CORPSE_CAP[this.tier]; }
+  get gunCap() { return this._extreme ? GUN_CAP_EXTREME : GUN_CAP[this.tier]; }
 
   /** Lebensdauer aus der Einstellung (s; Infinity = bleiben liegen). */
   life() {

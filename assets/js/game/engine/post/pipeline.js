@@ -25,15 +25,15 @@ import * as THREE from 'three';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-import { Fullscreen, hdrFormat, hdrTarget, ldrTarget, GFX } from './common.js?v=20261123082814';
-import { TemporalAA } from './taa.js?v=20261123082814';
-import { AimDepthOfField } from './dof.js?v=20261123082814';
-import { ScreenSpaceReflections, ContactShadows, gbufferMaterial } from './ssr.js?v=20261123082814';
-import { LensModel, LensPass } from './lens.js?v=20261123082814';
-import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261123082814';
-import { AutoExposure } from './exposure.js?v=20261123082814';
-import { Bloom, lensDirtTexture } from './bloom.js?v=20261123082814';
-import { LightShafts } from './shafts.js?v=20261123082814';
+import { Fullscreen, hdrFormat, hdrTarget, ldrTarget, GFX } from './common.js?v=20261123115551';
+import { TemporalAA } from './taa.js?v=20261123115551';
+import { AimDepthOfField } from './dof.js?v=20261123115551';
+import { ScreenSpaceReflections, ContactShadows, gbufferMaterial } from './ssr.js?v=20261123115551';
+import { LensModel, LensPass } from './lens.js?v=20261123115551';
+import { GradePass, setGradeUniforms, resolveMood, buildLut } from './grade.js?v=20261123115551';
+import { AutoExposure } from './exposure.js?v=20261123115551';
+import { Bloom, lensDirtTexture } from './bloom.js?v=20261123115551';
+import { LightShafts } from './shafts.js?v=20261123115551';
 
 export const LENS_STYLES = Object.freeze(['bodycam', 'klassisch', 'aus']);
 
@@ -175,7 +175,7 @@ export class PostPipeline {
         this.gtao = new GTAOPass(null, new THREE.PerspectiveCamera(70, 1, 0.05, 600), aw, ah);
         this.gtao.output = GTAOPass.OUTPUT.Off;
         this.gtao.blendIntensity = 0.85;
-        this.gtao.updateGtaoMaterial({ radius: AO_RADIUS, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: this.aoScale < 1 ? 8 : 12 });
+        this.gtao.updateGtaoMaterial({ radius: AO_RADIUS, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: this.aoScale < 1 ? 8 : Math.max(12, Math.min(16, preset.aoSamples || 12)) }); // app-engine: Extrem 16
         // SSR: Normalen-Vorpass schreibt zusätzlich Rauheit/Metall in Alpha (GTAO liest nur rgb)
         if (this.ssr) {
           const gb = gbufferMaterial();
