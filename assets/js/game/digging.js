@@ -26,7 +26,21 @@ export class Digging {
     // (tiefste Geländehöhe unter der Kapsel-Grundfläche: Mitte + 4 Punkte auf Radius r – darunter steht man nie)
     if (this.hf && G.world) {
       const hf = this.hf;
-      G.world.terrainFloor = (x, z, r = 0.3) => (hf.dugAt(x, z) ? Math.min(hf.heightAt(x, z), hf.heightAt(x + r, z), hf.heightAt(x - r, z), hf.heightAt(x, z + r), hf.heightAt(x, z - r)) : null);
+      // gross (23.11.): auch außerhalb gegrabener Löcher – Bots fielen im Brandwald an steilen Grabenböschungen (Höhenfeld
+      // 60–75°) durch das Gelände auf y ≈ −13: die Böschung schiebt die Kapsel nur waagerecht, die Bodensonde findet auf
+      // der steilen Fläche keinen Halt, die einseitige Dreiecksprüfung verliert sie, sobald die Mitte unter der Fläche
+      // liegt. Greift dort erst ab 0,5 m unter dem Gelände und nur, wenn darunter kein Bauwerksboden liegt (Keller,
+      // Gebäude am Hang) – y ist die Fußhöhe der Kapsel.
+      const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
+      G.world.terrainFloor = (x, z, r = 0.3, y = null, force = false) => {
+        if (!hf.contains(x, z)) return null;
+        const g = Math.min(hf.heightAt(x, z), hf.heightAt(x + r, z), hf.heightAt(x - r, z), hf.heightAt(x, z + r), hf.heightAt(x, z - r));
+        if (force || hf.dugAt(x, z)) return g;
+        if (y === null || y >= g - 0.5) return null;
+        const bvh = G.world.collider && G.world.collider.bvh;
+        if (bvh && typeof bvh.raycast === 'function' && bvh.raycast(x, y + 0.4, z, 0, -1, 0, 1.6, hit) && hit.ny > 0.6) return null;
+        return g;
+      };
     }
     this._off = this.hf ? [G.events.on('impact', (e) => this._impact(e)), G.events.on('explosion', (e) => this._blast(e))] : [];
   }

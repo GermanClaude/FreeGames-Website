@@ -73,6 +73,67 @@ export const BIG_TIERS = {
   ultra: { view: 850, steps: [1, 2, 4, 8], dists: [90, 240, 420], treeNear: 190, treeFar: 840, grass: 55, grassStep: 1.25, grassCap: 7400, grassBlades: 12, grassNear: 16, treeShadow: true, density: 1, far: 1000, mapPx: 1024, siteCull: 800, shadow: 70 },
 };
 
+/**
+ * gross (23.11.): Sichtschutz der Startpunkte auf Großkarten (Gegenstück zu shieldSpawns in world/index.js). Prüfskript:
+ * Grenzland 12, Brandwald 6 Sichtlinien zwischen den Startbereichen (180–340 m, Augenhöhe); Brandwald A6 stand an der
+ * Grabenwand (Kapsel blockiert). Sieht ein Startpunkt einen gegnerischen der gleichen Liste (Teamkampf A↔B,
+ * Eroberung hq.A↔hq.B) oder steckt die Kapsel in der Geometrie, rückt er auf den nächsten Navigationsknoten (über
+ * Verbindungen erreichbar, ≤ 14 m, gleiche Höhe ± 1 m), der frei ist und keinen gegnerischen Startpunkt sieht; ohne
+ * solchen Knoten nur aus der Geometrie heraus. Sicht und Kapsel nur gegen Höhenfeld + Kollisions-BVH: beide sind auf
+ * jeder Qualitätsstufe gleich (die Kugel-BVH nicht – Kleinkram je Stufe), Knotenfolge fest → gleiches Ergebnis auf
+ * allen Geräten (Mehrspieler). → { moved, freed, seen } (Anzahl)
+ */
+const BIG_EYE = 1.6, BIG_SHIELD_R = 14;
+function shieldBigSpawns(groups, nav, comp) {
+  const hit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
+  const sees = (a, c) => {
+    const dx = c.x - a.x, dy = c.y - a.y, dz = c.z - a.z, l = Math.hypot(dx, dy, dz);
+    return l > 1e-3 && l < 400 && !comp.occluded(a.x, a.y + BIG_EYE, a.z, dx / l, dy / l, dz / l, l - 0.05);
+  };
+  const capsFree = (p) => {
+    if (comp.raycast(p.x, p.y + 0.15, p.z, 0, 1, 0, 1.75, hit)) return false;
+    for (const hy of [0.6, 1.4]) for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; if (comp.raycast(p.x, p.y + hy, p.z, Math.cos(a), 0, Math.sin(a), 0.42, hit)) return false; }
+    return true;
+  };
+  const st = { moved: 0, freed: 0, seen: 0 };
+  if (!nav?.nodes?.length) return st;
+  for (const [LA, LB] of groups) for (const [mine, foe] of [[LA, LB], [LB, LA]]) {
+    for (const s of mine) {
+      const p = s.position, seen = foe.some((f) => sees(p, f.position)), free = capsFree(p);
+      if (!seen && free) continue;
+      // Kandidaten: Breitensuche über Verbindungen ab dem nächsten Knoten, sortiert nach Abstand (stabil: Knoten-ID)
+      const start = nav.nearest(p);
+      if (!start) continue;
+      const seenIds = new Set([start.id]), queue = [start], cand = [];
+      while (queue.length) {
+        const n = queue.shift();
+        cand.push(n);
+        for (const l of n.links) {
+          const m = nav.nodes[l];
+          if (!m || seenIds.has(m.id)) continue;
+          seenIds.add(m.id);
+          if (Math.hypot(m.position.x - p.x, m.position.z - p.z) <= BIG_SHIELD_R && Math.abs(m.position.y - p.y) < 1.0) queue.push(m);
+        }
+      }
+      cand.sort((a, b) => (a.position.distanceToSquared(p) - b.position.distanceToSquared(p)) || a.id - b.id);
+      const others = mine.filter((o) => o !== s).map((o) => o.position);
+      let best = null, fallback = null;
+      for (const n of cand) {
+        const q = n.position;
+        if (others.some((o) => o.distanceToSquared(q) < 1.5 * 1.5) || !capsFree(q)) continue;
+        if (!fallback) fallback = n;
+        if (!seen || !foe.some((f) => sees(q, f.position))) { best = n; break; }
+      }
+      const to = best || (!free ? fallback : null);
+      if (seen) st.seen++;
+      if (!to) continue;
+      p.copy(to.position);
+      if (best && seen) st.moved++; else st.freed++;
+    }
+  }
+  return st;
+}
+
 /** Gelände-/Welt-Aufträge im Worker (Rückfall: Hauptthread). */
 function createRunner() {
   let worker = null, seq = 0;
@@ -569,6 +630,9 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   const spawns = { A: [], B: [], ffa: [], hq: { A: [], B: [] } };
   for (const e of spawnSrc) spawns[e.team].push({ position: onNav(V(e.i)), yaw: e.s[2] ?? yawTo(e.s[0], e.s[1]) });
   for (const e of hqSrc) spawns.hq[e.team].push({ position: onNav(V(e.i)), yaw: e.s[2] ?? yawTo(e.s[0], e.s[1]) });
+  const tSh = performance.now();
+  const shield = shieldBigSpawns([[spawns.A, spawns.B], [spawns.hq.A, spawns.hq.B]], nav, compCol);
+  ms.spawnShield = Math.round(performance.now() - tSh);
   const objectives = {
     dom: domSrc.map(e => ({ id: e.f.id, name: e.f.name, position: V(e.i), radius: e.f.radius ?? 9 })),
     cq: cqSrc.map(e => ({
@@ -634,7 +698,7 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
     viewDistance: tier.view,
     mapImage: minimap.canvas,
     stats: {
-      totalMs: 0, ms, worker: job.ms, usesWorker, quality,
+      totalMs: 0, ms, worker: job.ms, usesWorker, quality, spawnShield: shield,
       nav: nav.stats, roads: roads.stats, vegetation: veg.stats, deadwood: dead?.stats || null, litter: litter?.stats || null, terrain: chunks.stats, terrainSource: tmat.source,
       colliderTris: colTris.length / 9, bulletTris: bulletTris.length / 9,
       meshes: sites.reduce((n, s) => n + s.built.stats.meshes, 0), triangles: sites.reduce((n, s) => n + s.built.stats.triangles, 0),

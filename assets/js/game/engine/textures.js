@@ -115,6 +115,7 @@ const MATS = {
   wood_planks:       { tex: 'wood_planks', tile: 2, surface: 'wood' },
   wood_dark:         { tex: 'wood_dark', tile: 2, surface: 'wood' },
   wood_painted:      { tex: 'wood_paint', tile: 2, surface: 'wood' }, // Fensterläden/Türen mit Tönung (immer prozedural)
+  buecher:           { tex: 'buecher', tile: 1, surface: 'wood' }, // gross (23.11.): Buchrücken der Regalreihen (immer prozedural, Abbildung 'fit')
   wood_crate:        { tex: 'wood_crate', tile: 1, surface: 'wood' },
   wood_stock:        { tex: 'wood_stock', tile: 0.4, surface: 'wood', params: { roughness: 1 } },
   bark:              { tex: 'bark', tile: 1.2, surface: 'wood' },

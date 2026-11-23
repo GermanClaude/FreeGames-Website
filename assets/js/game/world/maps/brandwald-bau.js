@@ -375,9 +375,10 @@ export function trenchWorks(b, ctx, trenches, o = {}) {
       b.geom(g, cx, cy, cz, earthM, { tint: EARTH_TINT, collide: false, minimap: false, uv: 'keep', grad: false, ao: false });
       b.geom(g2, cx, cy, cz, earthM, { tint: EARTH_TINT, collide: false, minimap: false, uv: 'keep', grad: false, ao: false });
       // Kollision der Stirnfläche (sonst ließe sich unter die Kappe laufen); Punkte ohne Rauschen = auf allen Stufen gleich
+      // gross (23.11.): beidseitig (beide Wicklungen) – die Kapselprüfung (Octree.triangleCapsuleIntersect) ist einseitig
       const gc = new THREE.BufferGeometry();
       gc.setAttribute('position', new THREE.Float32BufferAttribute(P.slice(), 3));
-      gc.setIndex(I.slice());
+      gc.setIndex([...I, ...I.slice().reverse()]);
       b.geom(gc, cx, cy, cz, earthM, { visual: false, collide: 'mesh', minimap: false });
     }
     // Kollision: glatte Front + Kappe (unabhängig von der Qualitätsstufe)
@@ -393,6 +394,10 @@ export function trenchWorks(b, ctx, trenches, o = {}) {
         const a = i * m + k, b2 = (i + 1) * m + k;
         I.push(a, a + 1, b2, b2, a + 1, b2 + 1);
       }
+      // gross (23.11.): Wicklung wie die sichtbare Wand (Front in den Graben, Kappe nach oben). Vorher zeigte auf der
+      // rechten Grabenseite (side −1) die ganze Kollisionsfläche nach außen/unten: die einseitige Kapselprüfung ließ Bots
+      // durch die Wand ins Erdreich, die „Decke“ der Kappe drückte sie dann unter das Höhenfeld (Sturz auf y ≈ −13)
+      fixWinding(P, I, Q[0], cx, cz, true);
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
       g.setIndex(I);

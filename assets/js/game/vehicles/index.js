@@ -29,6 +29,7 @@ import { militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261122020
 import { Aircraft } from './air/aircraft.js?v=20261122020853';
 import { AirSupport, AIR_CAP } from './air/index.js?v=20261122020853';
 import { TransportRides } from './ride.js?v=20261122020853';
+import { planVehiclePath } from './autopilot.js?v=20261122020853';
 import { CrewFigures } from './crew-figures.js?v=20261122020853';
 import { airSeatFor, airContext, isAirVehicle, AIR_WHY } from './air/policy.js?v=20261122020853';
 
@@ -1545,12 +1546,22 @@ export class VehicleSystem {
   }
 
   /** Fahrweg (Straßennetz, sonst Nav-Graph, sonst gerade). → Vector3[] */
-  planPath(from, to) {
+  planPath(from, to, vehicle = null) {
     const w = this.world;
     let path = null;
     try {
-      if (w && w.roads && typeof w.roads.findPath === 'function') path = w.roads.findPath(from, to);
-      else if (w && w.nav && typeof w.nav.findPath === 'function') path = w.nav.findPath(from, to);
+      // gross (23.11.): Straßennetz nur, wenn Start und Ziel an einer Straße liegen (vorher immer, auch ohne Straße in
+      // der Nähe oder mit leerem Netz → gerade Linie durch Gräben/Haine); sonst Großkarten-Fahrweg mit Fahrzeugbreite
+      const roads = w && w.roads, hasRoads = roads && typeof roads.findPath === 'function' && roads.nodes && roads.nodes.length > 1;
+      const nearRoad = (p) => { try { return roads.distanceTo(p.x, p.z).distance < 30; } catch { return false; } };
+      if (hasRoads && nearRoad(from) && nearRoad(to)) path = roads.findPath(from, to);
+      if ((!path || !path.length) && w && w.scale === 'gross' && w.terrain && w.terrain.heightfield) {
+        const hb = vehicle && vehicle.def && vehicle.def.hullBox;
+        const vp = planVehiclePath(w, from, to, hb ? hb[3] : 1.25);
+        if (vp && vp.length) return vp; // schon ausgedünnt/geglättet
+      }
+      if ((!path || !path.length) && hasRoads && !(w.nav && typeof w.nav.findPath === 'function')) path = roads.findPath(from, to);
+      if ((!path || !path.length) && w && w.nav && typeof w.nav.findPath === 'function') path = w.nav.findPath(from, to);
     } catch { path = null; }
     if (!path || !path.length) return [to.clone()];
     // Ausdünnen (Fahrzeuge brauchen keine engen Wegpunkte)

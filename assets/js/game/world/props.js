@@ -106,8 +106,9 @@ export function corrPanel(w, h, { pitch = 0.278, depth = 0.036, dir = 'v', flatT
       const [s0, z0] = prof[j], [s1, z1] = prof[j + 1];
       const ds = s1 - s0, dz = z1 - z0, l = Math.hypot(ds, dz);
       if (dir === 'v') {
-        const xa = -w / 2 + s0, xb = -w / 2 + s1;
-        quad([xa, y0, z0], [xb, y0, z1], [xb, y0 + h, z1], [xa, y0 + h, z0], -dz / l, 0, ds / l);
+        // gross (23.11.): senkrechte Sicken zwischen glattem Fuß-/Kopffeld (Türflügel)
+        const xa = -w / 2 + s0, xb = -w / 2 + s1, ya = y0 + flatBottom, yb = y0 + h - flatTop;
+        quad([xa, ya, z0], [xb, ya, z1], [xb, yb, z1], [xa, yb, z0], -dz / l, 0, ds / l);
       } else {
         const ya = y0 + flatBottom + s0, yb = y0 + flatBottom + s1;
         quad([w / 2, ya, z0], [w / 2, yb, z1], [-w / 2, yb, z1], [-w / 2, ya, z0], 0, -dz / l, ds / l);
@@ -140,11 +141,11 @@ function container3d(f, b, x, y, z, o, len, H, W, color, ground) {
   for (const side of [1, -1]) f.geom(corrPanel(wallW, wallH), 0, 0.08, side * zw, 'ctr_lack', { ...L, ...G, ry: side < 0 ? Math.PI : 0 });
   // Dach: flache Quersicken (Teilung ≈ 0,55 m), leicht unter der Oberkante der Gurte
   f.geom(corrPanel(len - 0.3, W - 0.14, { pitch: 0.55, depth: 0.022, center: true }), 0, H - 0.012, 0, 'ctr_lack', { ...L, tint: shade(color, 0.92), rx: -Math.PI / 2 });
-  // Stirnseiten: Türen (waagrechte Sicken) bzw. geschlossene Stirnwand (senkrechte Sicken)
+  // Stirnseiten: Türen und geschlossene Stirnwand mit senkrechten Sicken (gross 23.11.: Türen vorher waagrecht, grob)
   // Flügel zwischen den Eckpfosten (sonst ragen die Sicken über die Pfosten → Zahnmuster an der Kante)
   const leafW = W / 2 - 0.18 - 0.006, leafH = H - 0.12;
   const doorEnd = (sx) => {
-    for (const sz of [-1, 1]) f.geom(corrPanel(leafW, leafH, { dir: 'h', pitch: 0.36, depth: 0.028, flatTop: 0.34, flatBottom: 0.16 }), sx * (len / 2 + 0.003), 0.06, sz * (leafW / 2 + 0.006), 'ctr_lack', { ...L, ...G, ry: sx > 0 ? Math.PI / 2 : -Math.PI / 2 });
+    for (const sz of [-1, 1]) f.geom(corrPanel(leafW, leafH, { dir: 'v', pitch: 0.26, depth: 0.024, flatTop: 0.34, flatBottom: 0.16 }), sx * (len / 2 + 0.003), 0.06, sz * (leafW / 2 + 0.006), 'ctr_lack', { ...L, ...G, ry: sx > 0 ? Math.PI / 2 : -Math.PI / 2 });
     // Türfuge (dunkel) zwischen den Flügeln
     f.box(sx * (len / 2 - 0.01), 0.06, 0, 0.02, leafH, 0.014, 'black', { collide: false, minimap: false, cast: false, ao: false });
   };
@@ -195,7 +196,7 @@ export function container(b, x, y, z, o = {}) {
       else {
         // aufgeklappter Flügel: Wellblech außen, Innenseite glatt, Kollision wie vorher
         f.box(ex + W / 4, 0.05, sz * (W / 2 + 0.02), W / 2 - 0.05, H - 0.18, 0.05, 'metal_painted', { collide: true, minimap: false, uv: 'local', tint: shade(color, 0.85), grad: ground, visual: true });
-        f.geom(corrPanel(W / 2 - 0.05, H - 0.18, { dir: 'h', pitch: 0.36, depth: 0.028, flatTop: 0.3, flatBottom: 0.14 }), ex + W / 4, 0.05, sz * (W / 2 + 0.046), 'ctr_lack', { collide: false, minimap: false, uv: 'keep', tint: color, ry: sz > 0 ? 0 : Math.PI });
+        f.geom(corrPanel(W / 2 - 0.05, H - 0.18, { dir: 'v', pitch: 0.26, depth: 0.024, flatTop: 0.3, flatBottom: 0.14 }), ex + W / 4, 0.05, sz * (W / 2 + 0.046), 'ctr_lack', { collide: false, minimap: false, uv: 'keep', tint: color, ry: sz > 0 ? 0 : Math.PI });
       }
     }
   }

@@ -159,7 +159,7 @@ export class Vehicle {
     it.moveTo = point ? point.clone() : null;
     Object.assign(it, { arriveRadius: opts.arriveRadius ?? 5, maxSpeed: opts.maxSpeed ?? null, reverseAllowed: opts.reverseAllowed ?? true });
     if (point && opts.plan !== false) {
-      const path = this.sys.planPath(this.position, point);
+      const path = this.sys.planPath(this.position, point, this);
       if (path && path.length) it.path = path;
     }
     return true;

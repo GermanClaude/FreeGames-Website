@@ -19,7 +19,9 @@ const BOARD_R = 12, CALL_R = 45, CALL_T = 14, MAX_RIDERS = 7, DRIVE_MAX = 80, PA
 // rest 22.11.: Transporter, die sich festfahren (Brandwald: Basis-Ecke bei 36/151, Niemandsland: Laufgraben am Hauptquartier),
 // hielten ihre Mitfahrer bis zu 80 s fest – intent.stuck der Fahrzeug-KI ist nur ein Bild lang wahr (danach setzt sie zurück),
 // das Absitzen griff fast nie. Jetzt: kein Fortschritt (< PROG_D m in PROG_T s) → anhalten, absitzen, längere Pause
-const PROG_D = 3, PROG_T = 5, STUCK_PAUSE = 60;
+// gross (23.11.): Ursache behoben (Fahrweg mit Fahrzeugbreite, Festfahr-Erkennung + Neuplanung in autopilot.js) – die
+// Absitz-Sicherung bleibt als Rückfall, lässt dem Autopiloten aber Zeit für Zurücksetzen und Umplanen (9 s statt 5 s)
+const PROG_D = 3, PROG_T = 9, STUCK_PAUSE = 60;
 
 export class TransportRides {
   constructor(sys) {

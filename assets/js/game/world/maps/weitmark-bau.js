@@ -416,7 +416,8 @@ export function gartenzaun(b, x0, z0, x1, z1, o = {}) {
   const ry = Math.atan2(-(z1 - z0), x1 - x0), ux = (x1 - x0) / L, uz = (z1 - z0) / L, mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
   const tint = o.tint || '#8a6a4a', h = o.h ?? 1.0;
   if (o.art === 'hecke') {
-    b.box(mx, y, mz, L, h + 0.3, 0.7, 'grass', { ry, tint: '#55703a', minimap: 'wall' });
+    // gross (23.11.): Grasmaterial ist schon dunkelgrün – die kräftige Tönung #55703a machte die Hecke fast schwarz
+    b.box(mx, y, mz, L, h + 0.3, 0.7, 'grass', { ry, tint: '#c3cfa6', minimap: 'wall' });
     return;
   }
   for (let s = 0; s <= L + 0.01; s += 2.2) b.box(x0 + ux * s, y, z0 + uz * s, 0.09, h + 0.1, 0.09, 'wood_dark', { ry, tint: '#5a4636', ...NOCOL });

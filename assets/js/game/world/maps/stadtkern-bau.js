@@ -245,6 +245,19 @@ export function altbau(b, o) {
     for (const side of [-1, 1]) b.box(gx2 + side * 0.45, y0 + 0.05, zz, broken ? 0.28 : 0.36, 1.8, 0.02, 'tarp', { tint: c, ...VG, ao: false, rz: broken ? side * 0.12 : 0, bullet: false });
     b.box(gx2, y0 + 1.9, zz, 1.5, 0.04, 0.04, 'metal_painted', { tint: '#5a5048', ...VG, ao: false });
   }
+  // gross (23.11.): auch hinter den Hoffenstern (zu 60 % ohne Scheibe – vorher schwarze Löcher in der Hoffassade):
+  // Gardinen bzw. halb zugezogene Vorhänge, auf jeder Stufe (low: ein Vorhangschal statt zwei, ohne Stange)
+  for (let f = 1; f < floors; f++) for (let k = 0; k < nAx; k++) {
+    if (ruin && f === floors - 1) continue;
+    const at = ax0 + k * 2.6, hk = H(200 + f * 7 + k);
+    if (hk > 0.8) continue;
+    const zz = zb - s * 0.33, y0 = f * fh + 0.95, gx2 = x + at;
+    const c = ['#e2dccb', '#d0c6ae', '#bfa984', '#d9cdb8', '#aebab6', '#8c6a56'][Math.floor(H(210 + f * 5 + k) * 6)];
+    const closed = hk < 0.25; // Vorhang fast zu: nur ein Spalt in der Mitte
+    if (!mittel(b)) { b.box(gx2 + (closed ? 0 : 0.36), y0 + 0.05, zz, closed ? 1.0 : 0.34, 1.5, 0.02, 'tarp', { tint: c, ...VG, ao: false, bullet: false }); continue; }
+    for (const side of [-1, 1]) b.box(gx2 + side * (closed ? 0.26 : 0.4), y0 + 0.05, zz, closed ? 0.5 : 0.3, 1.55, 0.02, 'tarp', { tint: c, ...VG, ao: false, rz: (hk * 10 % 1 - 0.5) * 0.06, bullet: false });
+    b.box(gx2, y0 + 1.65, zz, 1.4, 0.04, 0.04, 'metal_painted', { tint: '#5a5048', ...VG, ao: false });
+  }
   // Balkone (Platte + Gitter) vor den Fenstertüren
   for (const [bx, f] of balk) {
     const by = f * fh, bz = zf - s * 0.65;
