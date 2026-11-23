@@ -916,6 +916,9 @@ main { position: relative; z-index: 1; padding-bottom: var(--bar-h); }
 .fov-prev text { fill: var(--np-ink); font-family: var(--font-display); font-weight: 700; }
 .fov-prev .mono-s { text-transform: none; letter-spacing: .02em; }
 .q-help { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--ink-2); flex-basis: 100%; letter-spacing: .02em; }
+.enum label.is-locked { cursor: not-allowed; opacity: .4; } /* app-engine: „Extrem“ nur in der PC-App */
+.enum label.is-locked input { cursor: not-allowed; }
+.q-lock { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--ink-2); flex-basis: 100%; letter-spacing: .02em; opacity: .8; }
 .set-tools { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
 
 /* ───────────────────────────────────────────── §07 Steuerung */

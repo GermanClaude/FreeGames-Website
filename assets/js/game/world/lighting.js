@@ -235,7 +235,9 @@ export function createLighting(G, def, group, { hdri = null, far = null, heightF
   // Kaskadengröße: Kartenwert, auf schwachen Stufen gedeckelt (preset.shadowExtent, z. B. 24 m auf low)
   const mapHalf = def.shadow?.size ?? 38;
   // Mit Fernkaskade (medium+) übernimmt die Nahkaskade nur noch die Nähe → kleinerer Ausschnitt, schärfere Schatten
-  const extentFor = (p) => Math.min(mapHalf, p?.shadowExtent || Infinity, far && farShadowBudget(p) ? (def.shadow?.near ?? NEAR_CAP[p.id] ?? 20) : Infinity);
+  // app-engine: Extrem mit 8K-Karte → Nahkaskade 1,5× so weit (Texeldichte bleibt über Ultra: 8192/48 m statt 4096/32 m)
+  const nearWide = (p) => (p?.extreme && (p.shadowMapSize || 0) >= 8192 ? 1.5 : 1);
+  const extentFor = (p) => Math.min(mapHalf, p?.shadowExtent || Infinity, far && farShadowBudget(p) ? (def.shadow?.near ?? NEAR_CAP[p.id] ?? 20) * nearWide(p) : Infinity);
   const half = extentFor(preset);
   const mapSize = preset.shadowMapSize || 2048;
   sun.shadow.mapSize.set(mapSize, mapSize);

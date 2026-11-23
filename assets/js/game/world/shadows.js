@@ -17,6 +17,7 @@ export const NEAR_CAP = Object.freeze({ medium: 22, high: 18, ultra: 16 });
 export function farShadowBudget(preset) {
   if (!preset || preset.shadows === false || (preset.shadowInterval || 1) > 1) return 0;
   if (preset.id === 'medium') return 1024;
+  if (preset.extreme && preset.farShadow) return Math.min(4096, preset.farShadow); // app-engine: Extrem 4096² (≈ 48 MB)
   return Math.min(2048, Math.max(1024, preset.shadowMapSize || 2048));
 }
 

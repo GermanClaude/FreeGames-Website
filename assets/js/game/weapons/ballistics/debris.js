@@ -165,8 +165,10 @@ export class Debris {
   }
 
   /** Stufe 'low' | 'medium' | 'high' | 'ultra' (Mengen, Liegezeit der Magazine, Strahlenbudget). */
-  setQuality(q) {
+  setQuality(q, extreme = false) {
     this.tier = DEBRIS_TIERS[q] || DEBRIS_TIERS.high;
+    // app-engine: Extrem (Desktop-App) – Magazine liegen 30 s statt 20 s, 56 Strahlen je Bild (Mengen bleiben: Plätze = ultra)
+    if (extreme && q === 'ultra') this.tier = { ...this.tier, rest: 30, rays: 56 };
     this._enforceCaps(true);
   }
 

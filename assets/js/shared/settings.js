@@ -102,6 +102,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
     options: ['auto', 'low', 'medium', 'high', 'ultra', 'extrem'], // desktop: „Extrem“ nur in der App wählbar
     labels: { auto: 'Automatisch', low: 'Niedrig', medium: 'Mittel', high: 'Hoch', ultra: 'Ultra', extrem: DESKTOP_APP ? 'Extrem' : 'Extrem (nur App)' },
     locked: DESKTOP_APP ? [] : ['extrem'], lockNote: 'Nur in der PC-App',
+    lockHint: 'Extrem gibt es nur in der PC-App (Windows, Linux): 8K-Schatten, weitere Sicht, dichteres Gras, mehr Effekte.',
   },
   masterVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Gesamtlautstärke', group: 'audio' },
   sfxVolume: { type: 'number', min: 0, max: 1, step: 0.05, label: 'Effekte', group: 'audio' },

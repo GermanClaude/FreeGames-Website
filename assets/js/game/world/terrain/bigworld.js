@@ -65,7 +65,9 @@ function keepAppFiles(id) {
 /** Budgets je Qualitätsstufe (GROSSKAMPF_PLAN §3.4; Handy = low). density: Anteil der kollisionslosen Büsche/Schilf –
  * Bäume und Felsen (Kollision) stehen auf jeder Stufe vollständig (Mehrspieler, terrain/vegetation.js). */
 /** desktop: Zusätze der Stufe „Extrem“ auf Ultra (mehr Speicher/GPU in der Desktop-App). */
-export const BIG_EXTREME = Object.freeze({ view: 1400, dists: [120, 300, 560], treeNear: 260, treeFar: 1300, grass: 70, grassCap: 11000, grassNear: 20, far: 1600, mapPx: 2048, siteCull: 1250, shadow: 90 });
+// app-engine (23.11.): Gras dichter (Raster 1,15 m statt 1,25 m ≈ +18 % Flecken, Halme 28 statt 24 – vegetation.js
+// GRASS_LOOK.extrem), Obergrenze passend (π·70²/1,15² ≈ 11 600 Zellen); extreme: true wählt dort die Grasdetails.
+export const BIG_EXTREME = Object.freeze({ view: 1400, dists: [120, 300, 560], treeNear: 260, treeFar: 1300, grass: 70, grassStep: 1.15, grassCap: 13000, grassNear: 20, far: 1600, mapPx: 2048, siteCull: 1250, shadow: 90, extreme: true });
 export const BIG_TIERS = {
   low: { view: 340, steps: [2, 4, 8, 16], dists: [56, 150, 260], treeNear: 55, treeFar: 330, grass: 12, grassStep: 1.7, grassCap: 220, treeShadow: false, density: 0.55, far: 700, mapPx: 512, siteCull: 210, shadow: 24 },
   medium: { view: 600, steps: [1, 2, 4, 8], dists: [48, 150, 330], treeNear: 90, treeFar: 580, grass: 25, grassStep: 1.4, grassCap: 1600, grassBlades: 10, treeShadow: false, density: 0.8, far: 900, mapPx: 1024, siteCull: 520, shadow: 40 },

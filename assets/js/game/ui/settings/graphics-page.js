@@ -7,7 +7,7 @@
 
 import { esc, num } from '../dom.js?v=20261123082814';
 import { ICON } from '../icons.js?v=20261123082814';
-import { QUALITY_PRESETS, EXTREME_PRESET } from '../../engine/renderer.js?v=20261123082814';
+import { QUALITY_PRESETS, EXTREME_PRESET, isDesktopApp } from '../../engine/renderer.js?v=20261123082814';
 import { GPU_BUDGET_MB, CONTENT_MODEL_MB, GFX_KEYS, presetValue, modelCost, applyGraphics } from '../../../shared/graphics.data.js?v=20261123082814';
 import { rowHtml, headHtml, bindRows, syncRows, setRowDisabled, setRowCost } from './rows.js?v=20261123082814';
 import { HINTS } from './schema-page.js?v=20261123082814';
@@ -25,10 +25,12 @@ const SECTIONS = [
   ['Effekte', ['gfxEffects']],
 ];
 const LOCAL_HINTS = {
-  quality: 'Grundlage aller Optionen mit „Automatisch“.',
+  quality: isDesktopApp() ? 'Grundlage aller Optionen mit „Automatisch“. Extrem: nur in der PC-App – 8K-Schatten, weitere Sicht, dichteres Gras, mehr Effekte.' : 'Grundlage aller Optionen mit „Automatisch“.',
   renderScale: 'Dynamisch: regelt bei Ruckeln die interne Auflösung herunter. Fest: immer diese Auflösung.',
   gfxPixelRatio: 'Obergrenze für hochauflösende Bildschirme (Retina). Mehr = schärfer, kostet viel Leistung.',
-  fpsLimit: 'Spart Akku und hält Telefone kühler. 30 ist auf Handys ruhiger als schwankende 40–60.',
+  fpsLimit: isDesktopApp()
+    ? 'Frei: so schnell wie der Bildschirm (VSync). Mehr als die Bildwiederholrate erst mit „VSync aus“ in den App-Einstellungen auf der Startseite.'
+    : 'Spart Akku und hält Telefone kühler. 30 ist auf Handys ruhiger als schwankende 40–60.',
   gfxShadows: 'Auflösung und Reichweite der Sonnenschatten, Schatten der Figuren.',
   gfxAO: 'Verdeckung in Ecken und Fugen. Rendert die Szene ein zweites Mal (auf „Hoch“ in halber Auflösung) – kostet Leistung.',
   gfxPost: 'Einfach: alles in einem Durchgang (Handys). Voll: Leuchten, Kantenglättung, Lichtstrahlen.',

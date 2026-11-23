@@ -52,7 +52,7 @@ export function init(sec, D, ctx = {}) {
   // Grafik-Voreinstellung
   const q = D.schema?.quality;
   if (S && q?.options) {
-    const opts = q.options.map((o) => [o, q.labels?.[o] || o]);
+    const opts = q.options.filter((o) => !q.locked?.includes(o)).map((o) => [o, q.labels?.[o] || o]); // app-engine: „Extrem“ nur in der App
     const gfx = seg(t('quick.gfx'), opts, S.get('quality'), (v) => { S.set('quality', v); gfx.set(S.get('quality')); snd?.ui('click'); announce(q.labels?.[v] || v); });
     root.append(gfx.row);
     S.onChange((k, v) => { if (k === 'quality') gfx.set(v); });

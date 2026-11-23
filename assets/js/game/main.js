@@ -115,7 +115,7 @@ const TIPS = [
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
 const AUTOSTART = params.get('autostart') === '1';
-const QUALITY_OVERRIDE = QUALITY_LEVELS.includes(params.get('quality')) || (params.get('quality') === 'extrem' && window.nullpunktDesktop) ? params.get('quality') : null; // desktop: auch „extrem“
+const QUALITY_OVERRIDE = QUALITY_LEVELS.includes(params.get('quality')) || params.get('quality') === 'extrem' ? params.get('quality') : null; // desktop: auch „extrem“ (Browser: renderer.resolveQuality → Ultra/Hoch)
 const clampTimeScale = (v) => Math.min(4, Math.max(0.05, Number(v) || 1));
 // Test-/Entwicklerparameter wirken nur zusammen mit debug=1 (und machen das Match „ungewertet“)
 const DEV_GOD = DEBUG && params.get('god') === '1';

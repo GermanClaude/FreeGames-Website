@@ -42,7 +42,8 @@ export class Gore {
   constructor(G) {
     this.G = G;
     const q = (G.renderer && (G.renderer.quality || (G.renderer.preset && G.renderer.preset.id))) || 'medium';
-    this.cap = CAP[q] || CAP.medium;
+    // app-engine: Stufe „Extrem“ der Desktop-App – 200 Blutflecken statt 120 (Platz im InstancedMesh ab Erzeugung)
+    this.cap = q === 'ultra' && G.renderer && G.renderer.preset && G.renderer.preset.extreme ? 200 : CAP[q] || CAP.medium;
     const mat = new THREE.MeshLambertMaterial({
       color: 0x4a0604, alphaMap: texture(), transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3,

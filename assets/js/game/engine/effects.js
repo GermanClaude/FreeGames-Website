@@ -125,7 +125,7 @@ export class Effects {
     for (const L of [this.alpha, this.fire, this.add, this.tracers, this.glints, this.motes]) L.mesh.visible = true;
     this.debris.events = G.events;
     this.debris.showForCompile();
-    this.debris.setQuality(this.preset.id || G.renderer?.quality || 'high');
+    this.debris.setQuality(this.preset.id || G.renderer?.quality || 'high', !!this.preset.extreme); // app-engine: Extrem
     // liegende Hülsen empfangen Schatten ab high (nur hier: anderes Programm, nicht beim Qualitätswechsel im Match)
     { const q = this.preset.id || G.renderer?.quality; this.debris.setShadows(q === 'high' || q === 'ultra'); }
     // Decals 2.0: ab medium beleuchtete Einschusslöcher mit Normalen (zwischen Matches, Shader im Ladebildschirm)
@@ -144,7 +144,7 @@ export class Effects {
       this._offQuality = G.renderer.onQualityChange((q) => {
         if (!this._built) return;
         this.decals.setLimit(this.preset.decals || 40);
-        this.debris.setQuality(this.preset.id || q || 'high');
+        this.debris.setQuality(this.preset.id || q || 'high', !!this.preset.extreme);
       });
     }
     const s = (this._subs = G.events.scope());
@@ -1335,7 +1335,7 @@ export class Effects {
   _updateMotes(dt) {
     const M = this.motes;
     const id = this.preset.id;
-    const want = id === 'ultra' ? 110 : id === 'high' ? 70 : id === 'medium' ? 36 : 0;
+    const want = id === 'ultra' ? (this.preset.extreme ? 126 : 110) : id === 'high' ? 70 : id === 'medium' ? 36 : 0; // app-engine: Extrem 126 (Platz: capacity 128)
     const w = this.G.world;
     const L = w && w.lighting;
     if (!want || !L || !L.sunDirection || typeof w.lineOfSight !== 'function') { if (M.n) M.clear(); return; }

@@ -175,7 +175,7 @@ export class PostPipeline {
         this.gtao = new GTAOPass(null, new THREE.PerspectiveCamera(70, 1, 0.05, 600), aw, ah);
         this.gtao.output = GTAOPass.OUTPUT.Off;
         this.gtao.blendIntensity = 0.85;
-        this.gtao.updateGtaoMaterial({ radius: AO_RADIUS, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: this.aoScale < 1 ? 8 : 12 });
+        this.gtao.updateGtaoMaterial({ radius: AO_RADIUS, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: this.aoScale < 1 ? 8 : Math.max(12, Math.min(16, preset.aoSamples || 12)) }); // app-engine: Extrem 16
         // SSR: Normalen-Vorpass schreibt zusätzlich Rauheit/Metall in Alpha (GTAO liest nur rgb)
         if (this.ssr) {
           const gb = gbufferMaterial();
