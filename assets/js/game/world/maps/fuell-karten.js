@@ -3,7 +3,7 @@
 // Zufall nur über hash01 (Lage). Kollision nur für Dinge, die man als Hindernis erwartet (Baumstämme, Masten); alles
 // Kleinere ist reine Optik (keine Kollision, keine Minikarte). Symmetrie der Karten bleibt erhalten (Platzierung
 // gespiegelt bzw. punktsymmetrisch wie die Karte selbst).
-import { frame, hash01 } from '../props.js?v=20261123082814';
+import { frame, hash01 } from '../props.js?v=20261123115551';
 
 const KEIN = { collide: false, minimap: false };
 const VG = { ...KEIN, grad: false };

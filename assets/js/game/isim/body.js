@@ -15,7 +15,7 @@
 // Schaden und Bewusstlosigkeit entscheidet nur, wer den Schaden rechnet (offline bzw. Host für sich selbst); auf einem
 // Mehrspieler-Client gibt es Verwundungen ohne Bewusstlosigkeit (der Host kennt die Simulation des Clients nicht).
 import * as THREE from 'three';
-import { issueCommand } from '../bots/ai/orders.js?v=20261123082814';
+import { issueCommand } from '../bots/ai/orders.js?v=20261123115551';
 
 const PARTS = { kopf: 'Kopf', rumpf: 'Oberkörper', armL: 'linker Arm', armR: 'rechter Arm', beinL: 'linkes Bein', beinR: 'rechtes Bein' };
 /** Blutverlust je Sekunde (Prozentpunkte Blut) je Schwere. */

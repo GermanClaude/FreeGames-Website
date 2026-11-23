@@ -17,8 +17,8 @@
 // Signatur wie models-tanks.js: (lod, S, team, K) → { hull, tur, gun, cmg, inner?, ramp? }; inner/ramp nur Stufe 0.
 // low (K.HQ aus) bleibt bei Extrusionen/Quadern (Handy); Nieten, Schweißnähte, Gitter nur high/ultra (K.DET 2).
 import * as THREE from 'three';
-import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261123082814';
-import { sprocket, idler, smokeRack, guardedLamp, towCable, spareLinks, jerrycan, antenna, weld, stowBox, hullShell, castTurret, buildTroop } from './models-tanks.js?v=20261123082814';
+import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261123115551';
+import { sprocket, idler, smokeRack, guardedLamp, towCable, spareLinks, jerrycan, antenna, weld, stowBox, hullShell, castTurret, buildTroop } from './models-tanks.js?v=20261123115551';
 
 const PI = Math.PI, HP = PI / 2;
 

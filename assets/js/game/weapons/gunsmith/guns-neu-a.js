@@ -13,11 +13,11 @@
 // Teile/Anker für Hände, Nachladen und Anschlag wie die bisherigen Waffen (mag, bolt, charge, selector; magGrab, magWell,
 // chargeGrab, rightHandGrip, leftHandGrip, sight, muzzle, ejection, trigger) – Animationen (anim/reloads.js), Infanterie-
 // simulation (isim/gun.js) und VR (engine/xr/hands.js) arbeiten damit ohne Sonderfall.
-import { mm, slab, rrect, pocket, POLY, STEEL, pinHead, slotScrew, pistolGrip, triggerUnit, boxMag, barrel, frontSight, rearNotch, swivel, selectorLever, boltInPort, chargeKnob, ownMuzzle, serrations, rivets } from './neu-kit.js?v=20261123082814';
-import { redDot, acog, ejectionPort } from './parts.js?v=20261123082814';
-import { apertureSight } from './pistol-parts.js?v=20261123082814';
-import { checkering } from './guns-flinten.js?v=20261123082814';
-import { schrift } from './schrift.js?v=20261123082814';
+import { mm, slab, rrect, pocket, POLY, STEEL, pinHead, slotScrew, pistolGrip, triggerUnit, boxMag, barrel, frontSight, rearNotch, swivel, selectorLever, boltInPort, chargeKnob, ownMuzzle, serrations, rivets } from './neu-kit.js?v=20261123115551';
+import { redDot, acog, ejectionPort } from './parts.js?v=20261123115551';
+import { apertureSight } from './pistol-parts.js?v=20261123115551';
+import { checkering } from './guns-flinten.js?v=20261123115551';
+import { schrift } from './schrift.js?v=20261123115551';
 const MARK_UHU = schrift('uhu').mark;
 const MARK_LUCHS = schrift('luchs').mark;
 const MARK_DACHS = schrift('dachs').mark;

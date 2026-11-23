@@ -26,11 +26,11 @@
 // nicht dringender Aufträge laufen nur, solange der Leerlauf noch reicht (idleLeft, main.js rechnet die Bauzeit auf Countdown und
 // Wiedereinstieg an – der Leerlauf wird nicht länger, nur genutzt).
 import * as THREE from 'three';
-import { createWeaponModel, weaponDetailTier, hasWeaponModel, weaponBuildCost, isPhotoWeapon, releaseEgoTemplates, releaseWeaponTemplate } from './models.js?v=20261123082814';
-import { applyCamo } from './gunsmith/camos.js?v=20261123082814';
-import { ID_TO_MODEL } from './gunsmith/handling.js?v=20261123082814';
-import { magWellOf } from './anim/magwell.js?v=20261123082814';
-import { uploadTextures } from '../engine/warm.js?v=20261123082814';
+import { createWeaponModel, weaponDetailTier, hasWeaponModel, weaponBuildCost, isPhotoWeapon, releaseEgoTemplates, releaseWeaponTemplate } from './models.js?v=20261123115551';
+import { applyCamo } from './gunsmith/camos.js?v=20261123115551';
+import { ID_TO_MODEL } from './gunsmith/handling.js?v=20261123115551';
+import { magWellOf } from './anim/magwell.js?v=20261123115551';
+import { uploadTextures } from '../engine/warm.js?v=20261123115551';
 
 // Sofort bauen, was so billig ist wie die Waffen alter Bauweise (1 000–7 000 Dreiecke; 2–90 ms im Container, unter Last und mit
 // Aufsätzen in max mehr) – Foto-Waffen liegen bei ≥ 70 000 Dreiecken und ≥ 300 ms

@@ -4,7 +4,7 @@
 // html.boot-on), überspringbar mit Klick, Taste oder Controller-Knopf; ohne künstliche Wartezeit (höchstens eine kurze
 // Mindestdauer, damit nichts nur aufblitzt). In der PC-App gehen dieselben Schritte an das Startfenster der App
 // (window.nullpunktDesktop.bootStep/bootDone, desktop/preload.js); dort bleibt die Seite unsichtbar, bis sie fertig ist.
-import { t } from './lang.js?v=20261123082814';
+import { t } from './lang.js?v=20261123115551';
 
 const html = document.documentElement;
 const A = window.nullpunktDesktop;

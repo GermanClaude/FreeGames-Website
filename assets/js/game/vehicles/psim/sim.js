@@ -13,10 +13,10 @@
 // Leuchtmelder), ist er das Ziel des Hotspots; sonst setzt die Simulation ab medium eigene Schalterkästen, auf low gibt es
 // nur die Markierung (vereinfachte Interaktion). Kopf neigen: Q/E seitlich, Z vorbeugen (halten).
 import * as THREE from 'three';
-import { driverCabin } from '../data.js?v=20261123082814';
-import { spaceLocal, viewOf, viewsOf } from '../views.js?v=20261123082814';
-import { funkerCabin, funkerLayout } from '../periscopes.js?v=20261123082814';
-import { kindOf, KINDS } from './ammo.js?v=20261123082814';
+import { driverCabin } from '../data.js?v=20261123115551';
+import { spaceLocal, viewOf, viewsOf } from '../views.js?v=20261123115551';
+import { funkerCabin, funkerLayout } from '../periscopes.js?v=20261123115551';
+import { kindOf, KINDS } from './ammo.js?v=20261123115551';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

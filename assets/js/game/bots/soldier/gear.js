@@ -13,11 +13,11 @@
 // Körper abgegriffen; Zivilkleidung (Pullover, Mantel mit weich gehäuteten Schößen, Kragen am gemessenen Halsausschnitt),
 // Zivilistinnen mit eigenem Körper und Frisur; Hautton je Soldat über den Palettenplatz 'skin'.
 import * as THREE from 'three';
-import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf, lathe } from './builder.js?v=20261123082814';
-import { hullShell, hullP, hullN, hullPath, sweep, rectProfile, roundProfile, onHull, pad, rectPoly, place, curve } from './gear-parts.js?v=20261123082814';
-import { SKIN_TONES } from './materials.js?v=20261123082814';
-import { BONE, DIM, armY } from './rig.js?v=20261123082814';
-import { BODY_MESH } from './body-mesh.js?v=20261123082814';
+import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf, lathe } from './builder.js?v=20261123115551';
+import { hullShell, hullP, hullN, hullPath, sweep, rectProfile, roundProfile, onHull, pad, rectPoly, place, curve } from './gear-parts.js?v=20261123115551';
+import { SKIN_TONES } from './materials.js?v=20261123115551';
+import { BONE, DIM, armY } from './rig.js?v=20261123115551';
+import { BODY_MESH } from './body-mesh.js?v=20261123115551';
 
 export const VARIANTS = [
   // Nutzer 16.10.: Grundausführungen wie die Soldaten im Video – Helm mit Tarnbezug (ohne Nachtsicht), dunkle

@@ -6,9 +6,9 @@
 //   pitch (+ Nase hoch), roll (+ rechts), level (Schwebe-Assistent / Lage halten), boost (Nachbrenner), flare (Täuschkörper),
 //   brake (Luftbremse/Radbremse). Spieler: air/controls.js; Bots: air/pilot-ai.js; Netz: vehicles/net.js (VEH_INPUT).
 import * as THREE from 'three';
-import { Vehicle } from '../vehicle.js?v=20261123082814';
-import { AirBody, groundBelow } from './flight.js?v=20261123082814';
-import { createAirModel } from './models.js?v=20261123082814';
+import { Vehicle } from '../vehicle.js?v=20261123115551';
+import { AirBody, groundBelow } from './flight.js?v=20261123115551';
+import { createAirModel } from './models.js?v=20261123115551';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3(), _n = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _iq = new THREE.Quaternion(), _ro = new THREE.Vector3(), _rd = new THREE.Vector3();

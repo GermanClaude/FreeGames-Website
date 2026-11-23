@@ -11,7 +11,7 @@
 //
 // placeLookDecals(world, group, { quality, seed, def }) → { count, meshes, ms }
 import * as THREE from 'three';
-import { streuRaster, bodenY } from './bodenauflage.js?v=20261123082814'; // fuell: Bereiche (Großkarten) + Bodenhöhe
+import { streuRaster, bodenY } from './bodenauflage.js?v=20261123115551'; // fuell: Bereiche (Großkarten) + Bodenhöhe
 
 export const LOOK_DECAL = { rust: 0, water: 1, grime: 2, cracks: 3, leak: 4, poster: 5, tag: 6, soot: 7,
   // karten-voll (14.11.): Kriegsspuren und mehr Stadtleben (zweite Atlashälfte, 1024×1024)

@@ -6,7 +6,7 @@
 // abwehren, raus aus dem brennenden Ostflügel. Die Zauber-Ausstattung der Karte (fliegende Bücher, Kerzen) wird für die
 // Kampagne ausgeblendet. Ende von Akt I: Rauch über dem Brandwald. Checkpoints: start, zugriff, geiseln, magazin, raus.
 
-import { actor } from './cast.js?v=20261123082814';
+import { actor } from './cast.js?v=20261123115551';
 
 const ENTRY = [0, 23.2];
 const GALLERY = [35.6, 4.4, 13.5];

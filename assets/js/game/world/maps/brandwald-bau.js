@@ -4,14 +4,14 @@
 // durchhängenden Leitungen, einzelne Masten umgestürzt), Gewächshausruine (Bogenrippen aus Rohr, Pfetten,
 // Windverbände, teils eingeknickt), abgebrannter Holzplatz (Polterholz, Schuppenruine, Sägebock) und Feldposten.
 import * as THREE from 'three';
-import { sampleSpline } from '../terrain/generate.js?v=20261123082814';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261123082814';
-import { SandbagField } from '../sandbag-field.js?v=20261123082814';
-import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261123082814';
-import { getMaterial } from '../../engine/textures.js?v=20261123082814';
-import { createSimplex } from '../terrain/noise.js?v=20261123082814';
-import { mgNest } from './grenzland-stellungen.js?v=20261123082814';
-import { autoWrack } from '../autowrack.js?v=20261123082814';
+import { sampleSpline } from '../terrain/generate.js?v=20261123115551';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261123115551';
+import { SandbagField } from '../sandbag-field.js?v=20261123115551';
+import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261123115551';
+import { getMaterial } from '../../engine/textures.js?v=20261123115551';
+import { createSimplex } from '../terrain/noise.js?v=20261123115551';
+import { mgNest } from './grenzland-stellungen.js?v=20261123115551';
+import { autoWrack } from '../autowrack.js?v=20261123115551';
 
 const Y = new THREE.Vector3(0, 1, 0);
 const _d = new THREE.Vector3(), _qq = new THREE.Quaternion(), _ee = new THREE.Euler();

@@ -6,7 +6,7 @@
 // Granattasche; Verband/Abbinden aus der Erste-Hilfe-Tasche (sonst dauert es länger – erst den Rucksack öffnen).
 // Gewicht: Grundausstattung + Schutzweste + Waffen (weapons.data handling.mass) + Magazine mit echtem Füllstand + Granaten
 // + Sanitätsmaterial → Belastung (Ausdauer, Tempo, Schwanken; isim/body.js). Obergrenze 42 kg: darüber nimmt man nichts auf.
-import { weaponHandling } from '../../shared/weapons.data.js?v=20261123082814';
+import { weaponHandling } from '../../shared/weapons.data.js?v=20261123115551';
 
 export const LIMIT_KG = 42;
 const BASE_KG = 7.5;           // Uniform, Stiefel, Helm, Koppel, Wasser, Rucksack leer

@@ -3,24 +3,24 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261123082814';
-import { modeOptionsHtml } from './mode-options.js?v=20261123082814'; // Modus-Einstellungen (B6, 26.10.)
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261123082814';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261123082814'; // atmosphere-weather; Fahrzeuge je Kartengröße
-import { realTimePreset } from '../world/weather.js?v=20261123082814'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, ULTRA_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261123082814';
-import { esc, num, secs, meters } from './dom.js?v=20261123082814';
-import { ICON } from './icons.js?v=20261123082814';
-import { drawMapArt } from './mapart.js?v=20261123082814';
-import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261123082814'; // riesen: Riesenkarte nur in der App
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261123082814';
-import { openCamoEditor } from './camo-editor.js?v=20261123082814';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261123082814';
-import { ProgressView } from './progress.js?v=20261123082814';
-import { CampaignPane } from '../campaign/menu.js?v=20261123082814'; // Reiter „Kampagne“ (game/campaign)
-import { PanzerPane } from './panzer-pane.js?v=20261123082814'; // Reiter „Panzer“ (Panzersimulation, 20.11.)
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261123082814';
-import { tx } from '../../shared/i18n.js?v=20261123082814'; // Zombies: Teams-Feld
+import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261123115551';
+import { modeOptionsHtml } from './mode-options.js?v=20261123115551'; // Modus-Einstellungen (B6, 26.10.)
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261123115551';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261123115551'; // atmosphere-weather; Fahrzeuge je Kartengröße
+import { realTimePreset } from '../world/weather.js?v=20261123115551'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, ULTRA_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261123115551';
+import { esc, num, secs, meters } from './dom.js?v=20261123115551';
+import { ICON } from './icons.js?v=20261123115551';
+import { drawMapArt } from './mapart.js?v=20261123115551';
+import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261123115551'; // riesen: Riesenkarte nur in der App
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261123115551';
+import { openCamoEditor } from './camo-editor.js?v=20261123115551';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261123115551';
+import { ProgressView } from './progress.js?v=20261123115551';
+import { CampaignPane } from '../campaign/menu.js?v=20261123115551'; // Reiter „Kampagne“ (game/campaign)
+import { PanzerPane } from './panzer-pane.js?v=20261123115551'; // Reiter „Panzer“ (Panzersimulation, 20.11.)
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261123115551';
+import { tx } from '../../shared/i18n.js?v=20261123115551'; // Zombies: Teams-Feld
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];

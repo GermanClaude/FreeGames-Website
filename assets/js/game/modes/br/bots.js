@@ -7,8 +7,8 @@
 // Dazu je Bot alle ~0,6 s: leere Waffe wechseln bzw. wegwerfen, ohne Feind in Ruhe verbinden (Verband: +30 Leben in 2,5 s).
 // Ferne Bots (Simulationsstufe ≥ 2 des Bot-Managers) werden seltener verwaltet und schauen nur 30 m weit nach Beute.
 import * as THREE from 'three';
-import { take, value, guns, bandagesOf, setBandages, setGuns, ammoCount } from './inventory.js?v=20261123082814';
-import { ammoTypeOf } from './items.js?v=20261123082814';
+import { take, value, guns, bandagesOf, setBandages, setGuns, ammoCount } from './inventory.js?v=20261123115551';
+import { ammoTypeOf } from './items.js?v=20261123115551';
 
 const PICK_R = 1.7;
 const HEAL = 30, HEAL_TIME = 2.5;

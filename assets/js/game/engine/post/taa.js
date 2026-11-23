@@ -12,7 +12,7 @@
 // Sonnenschatten (world/shading.js, GFX.npGfx.y) wechselt je Bild und wird hier zu glatten Halbschatten gemittelt.
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261123082814';
+import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261123115551';
 
 const RESOLVE_FRAG = /* glsl */ `
   ${GLSL_COMMON}

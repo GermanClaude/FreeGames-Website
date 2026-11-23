@@ -19,10 +19,10 @@
 // Durchbrüche, durch die ein Mensch passt, bekommen Navigationskanten (Bots laufen hindurch, _navLink), Kisten/Paletten/
 // Zaunfelder zerbrechen (breakables.js).
 import * as THREE from 'three';
-import { worldPartsFrom } from './building.js?v=20261123082814';
+import { worldPartsFrom } from './building.js?v=20261123115551';
 import { Capsule } from 'three/addons/math/Capsule.js';
-import { Breakables } from './breakables.js?v=20261123082814';
-import { WEAPONS } from '../shared/weapons.data.js?v=20261123082814';
+import { Breakables } from './breakables.js?v=20261123115551';
+import { WEAPONS } from '../shared/weapons.data.js?v=20261123115551';
 
 const HP = { concrete: 380, plaster: 260, tile: 300, wood: 160, metal: 300 };
 const _n = new THREE.Vector3();

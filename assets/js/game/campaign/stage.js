@@ -14,9 +14,9 @@
 //   die Zeile gesprochen ist (Lesetempo) + Nachlauf. Überspringen: ganzer Ablauf (Knopf, Leertaste/Eingabe, Gamepad A).
 
 import * as THREE from 'three';
-import { createFaceRig, FaceDriver } from './face.js?v=20261123082814';
-import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261123082814';
-import { tx } from '../../shared/i18n.js?v=20261123082814'; // Zeilen in der gewählten Sprache
+import { createFaceRig, FaceDriver } from './face.js?v=20261123115551';
+import { textToVisemes, subtitleDuration, wordAt } from './lipsync.js?v=20261123115551';
+import { tx } from '../../shared/i18n.js?v=20261123115551'; // Zeilen in der gewählten Sprache
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();

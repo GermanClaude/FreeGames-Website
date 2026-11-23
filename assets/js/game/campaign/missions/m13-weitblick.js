@@ -8,9 +8,9 @@
 // Checkpoints: start, spaeher, angriff, duell, platz.
 
 import * as THREE from 'three';
-import { actor } from './cast.js?v=20261123082814';
-import { purgeDead } from './hilfen-b.js?v=20261123082814';
-import { scopeMark, walker, arm, roofY } from './hilfen-c.js?v=20261123082814';
+import { actor } from './cast.js?v=20261123115551';
+import { purgeDead } from './hilfen-b.js?v=20261123115551';
+import { scopeMark, walker, arm, roofY } from './hilfen-c.js?v=20261123115551';
 
 // Kaufhaus Süd: x −14…14, z 24…36, Dachterrasse auf 8,4 m mit Sandsäcken an der Brüstung (x −9…−4 und 1…5, z 25,3)
 const NEST = [3, 25.9];        // hinter dem östlichen Sandsackwall an der Brüstung (zwischen den beiden Linden)

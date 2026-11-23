@@ -4,8 +4,8 @@
 // hinauf, Kugeln schlagen ein), eingefasst von Beton-Legeblöcken (Schüttgutboxen), dazu Erdwälle als Sichtdeckung.
 // Spiegelgleich in z (Team A Süden, Team B Norden); jede Stelle wird gegen Start-, Flaggen-, Stellungs- und
 // Kampagnenpunkte und vorhandene Deckung geprüft (gelaende.platzFrei) – fällt eine Seite weg, entfällt das Paar.
-import { freiPruefer, kartenSperre, suchePlatz, huegel, erdwall } from '../gelaende.js?v=20261123082814';
-import { legebloecke } from './hafen-kai.js?v=20261123082814';
+import { freiPruefer, kartenSperre, suchePlatz, huegel, erdwall } from '../gelaende.js?v=20261123115551';
+import { legebloecke } from './hafen-kai.js?v=20261123115551';
 
 const MAT = { kies: ['gravel', '#9a9182'], sand: ['sand', '#c4a678'], schlacke: ['gravel', '#3a3633'], erde: ['dirt', '#7a6448'] };
 

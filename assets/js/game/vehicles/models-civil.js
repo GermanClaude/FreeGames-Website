@@ -14,12 +14,12 @@
 //   extra (nur Stufe 0): [Lenkrad-Gruppe 'lenkrad' mit Kind 'lenkrad:dreh', Insassen 'occ:i' (unsichtbar)]
 // Lage wie alle Fahrzeuge: vorwärts −z, y = 0 Boden bei statischer Last, Radmitte y = Radius (data.js).
 import * as THREE from 'three';
-import { VEHICLES } from './data.js?v=20261123082814';
-import { civilPaint } from './materials.js?v=20261123082814';
-import { pkwBodyHQ, plateMaterial } from './models-car.js?v=20261123082814';
-import { vanBodyHQ, cabBodyHQ } from './models-utility.js?v=20261123082814';
-import { softBox } from './carbody.js?v=20261123082814';
-import { tire, alloyRim, steelRim, brakeDisc, bodyLoft, roundPlate, tube } from './bodykit.js?v=20261123082814';
+import { VEHICLES } from './data.js?v=20261123115551';
+import { civilPaint } from './materials.js?v=20261123115551';
+import { pkwBodyHQ, plateMaterial } from './models-car.js?v=20261123115551';
+import { vanBodyHQ, cabBodyHQ } from './models-utility.js?v=20261123115551';
+import { softBox } from './carbody.js?v=20261123115551';
+import { tire, alloyRim, steelRim, brakeDisc, bodyLoft, roundPlate, tube } from './bodykit.js?v=20261123115551';
 
 const PI = Math.PI, HP = PI / 2;
 const _q = new THREE.Quaternion(), _e = new THREE.Euler(), _d = new THREE.Vector3(), AZ = new THREE.Vector3(0, 0, 1);

@@ -10,7 +10,7 @@
 // Ketten: einzelne Kettenglied-Schläge (Metall-Moden + Stoß), alle paar Glieder ein schwerer Laufrollen-Schlag.
 // Rotor: Blattschlag (tiefer Druckstoß + scharfer BVI-„Slap“) und Rauschen je Blattdurchgang, Heckrotor als Summen.
 // Strahl: „Buzzsaw“ (Bläser-Drehklang-Harmonische mit fester Blattstreuung) und Nachbrenner-Knistern.
-import { Biquad, makeRng, hashString, clamp } from '../engine/audio/dsp.js?v=20261123082814';
+import { Biquad, makeRng, hashString, clamp } from '../engine/audio/dsp.js?v=20261123115551';
 
 const TAU = Math.PI * 2;
 

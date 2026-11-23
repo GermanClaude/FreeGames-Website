@@ -3,21 +3,21 @@
 // Gassen und Dachterrassen (Ost). Team A startet im Süden (Südtor), Team B im Norden (Nordtor).
 // Nord- und Südhälfte sind spiegelsymmetrisch (z → −z), unterscheiden sich aber in Farben und Details.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261123082814';
+import { building, wall, stairs, railing, pitchedRoof } from '../arch.js?v=20261123115551';
 import {
   frame, crate, crateStack, barrel, barrelGroup, pallet, sandbags, car, van, acUnit, cable,
   cafeTable, parasol, awning, marketStall, palm, tree, pot, laundry, electricBox, pipe, sphereGeom, lowSphereGeom, dumpster, chair, dress,
-} from '../props.js?v=20261123082814';
-import { createBell } from './altstadt-glocke.js?v=20261123082814';
+} from '../props.js?v=20261123115551';
+import { createBell } from './altstadt-glocke.js?v=20261123115551';
 import {
   setupLook, isNight, lampGlass, lampLight, parkBench, flowerBed, fountainWater, hrng,
   table, tableChairs, bed, wardrobe, dresser, nightstand, shelf, kitchen, armchair, pendant, ceilingLamp, rug, picture, barrelRack, sacks,
-} from './altstadt-ausstattung.js?v=20261123082814';
+} from './altstadt-ausstattung.js?v=20261123115551';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
-import { belebe, sperrpunkte, KAMPAGNE, merkeFensterdeko } from '../kleinkram.js?v=20261123082814';
-import { altstadtFuellen } from './fuell-karten.js?v=20261123082814'; // fuell (20.11.): Bodenspuren auf dem Pflaster
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261123082814';
-import { terrassen } from './altstadt-terrassen.js?v=20261123082814'; // gelaende (Runde 3)
+import { belebe, sperrpunkte, KAMPAGNE, merkeFensterdeko } from '../kleinkram.js?v=20261123115551';
+import { altstadtFuellen } from './fuell-karten.js?v=20261123115551'; // fuell (20.11.): Bodenspuren auf dem Pflaster
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261123115551';
+import { terrassen } from './altstadt-terrassen.js?v=20261123115551'; // gelaende (Runde 3)
 
 const SEED = 7311;
 const FH = 3.2;                       // Geschosshöhe

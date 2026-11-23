@@ -10,10 +10,10 @@
 // • Startbild: wechselnde Spielszenen (Kamerafahrt), Staub, Körperkamera-HUD; Tastenleiste unten.
 // • Übergang ins Spiel: jeder Link auf spielen.html zeigt kurz einen Ladeschirm (Modus, Karte, Tipp), dann geht's los.
 // • prefers-reduced-motion bzw. Einstellung „Bewegung reduzieren“: keine Szenenwechsel, kein Staub, Übergänge kurz.
-import { t } from './lang.js?v=20261123082814';
-import { setRouter } from './jump.js?v=20261123082814';
-import { reduced } from './motion.js?v=20261123082814';
-import { afterBoot, bootVisible } from './boot.js?v=20261123082814';
+import { t } from './lang.js?v=20261123115551';
+import { setRouter } from './jump.js?v=20261123115551';
+import { reduced } from './motion.js?v=20261123115551';
+import { afterBoot, bootVisible } from './boot.js?v=20261123115551';
 
 const html = document.documentElement;
 const $ = (s, r = document) => r.querySelector(s);
