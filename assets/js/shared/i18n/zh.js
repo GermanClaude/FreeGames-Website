@@ -6100,7 +6100,7 @@ export default {
 "– Begrenzer 144, 165 oder 240 unter Einstellungen → Grafik → Erweitert; über die Bildwiederholrate hinaus mit „VSync aus“ (unten).":"——在 设置 → 图形 → 高级 中可选 144、165 或 240 帧上限；要超过刷新率，请在下方关闭 VSync。",
 "– Bots füllen freie Plätze auf.":"——机器人填补空位。",
 "– Einstellungen → Grafik. Schatten bis 8192² (auf starken Grafikkarten mit 16 GB RAM, sonst 4096²), mehr Figurenschatten, Partikel und Einschüsse, größte Texturstufe, weitere Sicht auf Großkarten.":"——设置 → 图形。阴影最高 8192²（16 GB 内存的强力显卡，否则 4096²），更多人物阴影、粒子和弹孔，最高纹理等级，大地图视距更远。",
-"– Einstellungen → Grafik. Schatten bis 8192² mit 1,5-facher Reichweite (auf starken Grafikkarten mit 16 GB RAM, sonst 4096²), Fernschatten 4096², dichteres Gras und weitere Sicht auf Großkarten, volle Auflösung auch auf hochauflösenden Bildschirmen, feinere Umgebungsverdeckung, mehr Figurenschatten, Leichen, Partikel und Einschüsse, größte Texturstufe.":"——设置 → 图形。阴影最高 8192²，覆盖范围扩大 1.5 倍（需强力显卡和 16 GB 内存，否则为 4096²），远景阴影 4096²，大地图上草地更茂密、视距更远，高分辨率屏幕上也以全分辨率渲染，环境光遮蔽更精细，更多角色阴影、尸体、粒子和弹孔，最高纹理等级。",
+"– Einstellungen → Grafik. Schatten bis 8192² mit 1,5-facher Reichweite und Fernschatten 4096² (auf starken Grafikkarten mit 16 GB RAM, sonst 4096² bzw. 2048²), dichteres Gras und weitere Sicht auf Großkarten, volle Auflösung auch auf hochauflösenden Bildschirmen, feinere Umgebungsverdeckung, mehr Figurenschatten, Leichen, Partikel und Einschüsse, größte Texturstufe.":"——设置 → 图形。阴影最高 8192²，覆盖范围扩大 1.5 倍，远景阴影 4096²（需强力显卡和 16 GB 内存，否则分别为 4096² 和 2048²），大地图上草地更茂密、视距更远，高分辨率屏幕上也以全分辨率渲染，环境光遮蔽更精细，更多角色阴影、尸体、粒子和弹孔，最高纹理等级。",
 "– F11 oder Alt+Enter, die App merkt sich Fenster und Vollbild.":"——F11 或 Alt+Enter，应用会记住窗口和全屏状态。",
 "– Verband ({0})":"——包扎（{0}）",
 "– ab dem nächsten Einsatz":"——下次部署生效",

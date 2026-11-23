@@ -63,7 +63,7 @@ export const QUALITY_PRESETS = Object.freeze({
 // 8K-Sonnenschatten, mehr Schatten von Figuren, mehr Partikel/Einschüsse; world/library.js holt 4K-Sätze (wo vorhanden),
 // bigworld.js weitere Sicht, modes.data.js limitsFor höhere Massenschlacht-Grenze (tier 'extrem').
 // app-engine (23.11., Nutzer: „die App-Version soll besser bleiben“) – dazu: Pixelverhältnis bis 3 (4K-/HiDPI-Monitore
-// mit Skalierung > 200 %), GTAO mit 16 statt 12 Proben, Fernkaskade 4096² statt 2048² (world/shadows.js), Nahkaskade
+// mit Skalierung > 200 %), GTAO mit 16 statt 12 Proben, Fernkaskade 4096² statt 2048² (world/shadows.js; nur zusammen mit der 8K-Freigabe), Nahkaskade
 // mit 8K-Karte 1,5× so weit (world/lighting.js), dichteres Gras (bigworld.js BIG_EXTREME, vegetation.js), mehr Leichen,
 // Blut, Hülsen-Liegezeit und Staub (corpses.js, gore.js, debris, effects.js). Keine neuen Sampler in irgendeinem Shader.
 // Erkennung wie die App-Karten über shared/appgate.js (Brücke window.nullpunktDesktop oder Nutzeragent-Zusatz).
@@ -74,7 +74,7 @@ export const EXTREME_PRESET = Object.freeze({
   pixelRatio: 3, aoSamples: 16, farShadow: 4096,
 });
 /** Vorgabe zu Wunsch q (auch 'extrem') und aufgelöster Stufe. */
-const EXTREME_PRESET_4K = Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096 });
+const EXTREME_PRESET_4K = Object.freeze({ ...EXTREME_PRESET, shadowMapSize: 4096, farShadow: 2048 }); // app-engine: Fernkaskade 4096² nur mit 8K-Freigabe
 // app (14.11.): 8K-Schatten (256 MB Tiefentextur) nur, wenn alles dafür spricht – GPU kann ≥ 16K-Texturen, ist eine
 // starke Desktop-GPU (keine Software-GL, kein iGPU-/Mobilchip), ≥ 16 GB RAM, und der letzte Spielprozess der App ist
 // nicht abgestürzt (desktop/main.js meldet lastCrash). Sonst „Extrem“ mit 4096² (wie Ultra) – der Rest bleibt Extrem.

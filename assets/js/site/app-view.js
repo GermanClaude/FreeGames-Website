@@ -106,7 +106,7 @@ function initDesktop(sec, D, ctx) {
     </dl>
     <h3 class="mono-h">Nur in der App</h3>
     <ul class="app-feat">
-      <li><strong>Grafikstufe Extrem</strong> – Einstellungen → Grafik. Schatten bis 8192² mit 1,5-facher Reichweite (auf starken Grafikkarten mit 16 GB RAM, sonst 4096²), Fernschatten 4096², dichteres Gras und weitere Sicht auf Großkarten, volle Auflösung auch auf hochauflösenden Bildschirmen, feinere Umgebungsverdeckung, mehr Figurenschatten, Leichen, Partikel und Einschüsse, größte Texturstufe.</li>
+      <li><strong>Grafikstufe Extrem</strong> – Einstellungen → Grafik. Schatten bis 8192² mit 1,5-facher Reichweite und Fernschatten 4096² (auf starken Grafikkarten mit 16 GB RAM, sonst 4096² bzw. 2048²), dichteres Gras und weitere Sicht auf Großkarten, volle Auflösung auch auf hochauflösenden Bildschirmen, feinere Umgebungsverdeckung, mehr Figurenschatten, Leichen, Partikel und Einschüsse, größte Texturstufe.</li>
       <li><strong>Bildrate bis 240 FPS</strong> – Begrenzer 144, 165 oder 240 unter Einstellungen → Grafik → Erweitert; über die Bildwiederholrate hinaus mit „VSync aus“ (unten).</li>
       <li><strong>Massenschlacht bis 400 je Seite</strong> (Browser: bis 250).</li>
       <li><strong>Alle Grafiken lokal</strong> – nichts wird nachgeladen, Karten starten schneller.</li>
