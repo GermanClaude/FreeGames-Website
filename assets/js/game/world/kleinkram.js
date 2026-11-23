@@ -15,7 +15,7 @@
 // Geometrie landet in den Material-Eimern des MapBuilders (zusammengefasst je Material/Chunk → kaum zusätzliche
 // Draw Calls); Fotoscan-Modelle laufen über b.model (instanziert, LOD).
 import * as THREE from 'three';
-import { frame, hash01, cable, pallet } from './props.js?v=20261123073102';
+import { frame, hash01, cable, pallet, ZINK } from './props.js?v=20261123073102';
 import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261123073102';
 
 const D = { collide: false, minimap: false };
@@ -49,24 +49,64 @@ function stab(f, ax, ay, bx, by, lz, th, mat, tint) {
 // ---------------------------------------------------------------------------
 // Einzelstücke (Unterkante-Mitte (x,y,z), ry: lokal +z = Vorderseite, meist von der Wand weg)
 // ---------------------------------------------------------------------------
-const TONNE = ['#6a7076', '#3f7a4f', '#3a6aa8', '#8a6040', '#5c6268', '#d4b02a']; // hell genug, dass Polymer nicht schwarz wirkt
+const shade = (hex, k) => { const c = new THREE.Color(hex); c.multiplyScalar(k); return '#' + c.getHexString(); };
+/** Korpus der 240-l-Tonne: oben 0,58 × 0,7 m, unten 0,5 × 0,6 m (verjüngt), 0,92 m hoch, senkrechte Kanten gefast,
+ *  UV in Metern. Gecacht (≈ 40 Dreiecke). */
+function tonnenKorpus() {
+  return cached('tonnenKorpus', () => {
+    const g = new THREE.CylinderGeometry(1, 1, 0.92, 8, 1, true, Math.PI / 8);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const top = p.getY(i) > 0, w = top ? 0.29 : 0.25, d = top ? 0.35 : 0.3;
+      // Achteck → Rechteck mit gefasten Ecken (Fase ≈ 6 cm)
+      const ax = p.getX(i), az = p.getZ(i), sx = Math.sign(ax), sz = Math.sign(az);
+      let nx, nz;   // Ecken des Achtecks liegen bei 22,5° + k·45°: je eine Kante parallel zu x bzw. z
+      if (Math.abs(ax) > Math.abs(az)) { nx = sx * w; nz = sz * (d - 0.06); }
+      else { nz = sz * d; nx = sx * (w - 0.06); }
+      p.setXYZ(i, nx, p.getY(i) + 0.46, nz);
+    }
+    const ng = g.toNonIndexed();
+    const bottom = new THREE.PlaneGeometry(0.5, 0.6).rotateX(Math.PI / 2).toNonIndexed();
+    const merged = new THREE.BufferGeometry();
+    const pa = [...ng.attributes.position.array, ...bottom.attributes.position.array];
+    merged.setAttribute('position', new THREE.Float32BufferAttribute(pa, 3));
+    merged.computeVertexNormals();
+    const pp = merged.attributes.position, uv = new Float32Array(pp.count * 2);
+    for (let i = 0; i < pp.count; i++) { uv[i * 2] = pp.getX(i) + pp.getZ(i); uv[i * 2 + 1] = pp.getY(i); }
+    merged.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    return merged;
+  });
+}
+// ding 23.11.: Farben nach RAL-üblichen Tonnenfarben (Anthrazit, Grün, Blau, Braun, Gelb), gedeckt. Der Korpus nutzt jetzt
+// das helle, halbmatte 'white' (Rauheit 0,55) mit Tönung – 'polymer' ist fast schwarz (#2b2c2e), jede Tönung blieb schwarz.
+const TONNE = ['#4a4e52', '#3e5a40', '#34507a', '#5e4432', '#3b3e41', '#b8962a'];
 /** 240-l-Mülltonne (Kunststoff) mit Deckel, Griff und Rädern. */
 export function muelltonne(b, x, y, z, ry, o = {}) {
   const f = frame(b, x, y, z, ry), t = o.tint || TONNE[Math.floor(hash01(x, z, 41) * TONNE.length)];
+  // ding 23.11.: Vorbild 240-l-Tonne nach EN 840 (≈ 580 × 730 × 1075 mm, Räder Ø 200 mm): Korpus nach unten
+  // verjüngt (stapelbar), umlaufender Kragen mit Schüttkamm vorn, Griffstange hinten, Deckel mit Überstand und
+  // Griffmulde, Räder hinten außen auf einer Achsaufnahme. Keine Kollision (wie bisher).
   const open = hash01(x, z, 42) < 0.18;
-  f.box(0, 0.05, 0, 0.56, 0.98, 0.68, 'polymer', { ...DG, tint: t });
-  f.box(0, 0.02, -0.22, 0.6, 0.12, 0.2, 'polymer', { ...DG, tint: t });
-  f.box(0, 1.03, 0.02, 0.6, 0.05, 0.76, 'polymer', { ...DG, tint: t, rx: open ? -0.9 : 0, ao: false });
-  f.box(0, 0.93, -0.38, 0.5, 0.05, 0.05, 'polymer', { ...DN, tint: '#202224' });
-  for (const sx of [-0.28, 0.28]) f.cyl(sx, 0.1, -0.3, 0.1, 0.06, 'rubber', { ...DN, axis: 'x', seg: 8 });
-  if (open && fein(b)) f.box(0, 0.98, 0.05, 0.45, 0.12, 0.5, 'polymer', { ...DN, tint: '#1c1d1f' });
+  f.geom(tonnenKorpus(), 0, 0.03, 0.02, 'white', { ...DG, tint: t });
+  f.box(0, 0.95, 0.02, 0.6, 0.06, 0.73, 'white', { ...DG, tint: shade(t, 0.9), ao: false });           // Kragen
+  f.box(0, 0.85, 0.385, 0.5, 0.1, 0.03, 'white', { ...DN, tint: shade(t, 0.85) });                    // Schüttkamm vorn
+  f.box(0, 1.025, 0.04, 0.6, 0.045, 0.77, 'white', { ...DG, tint: t, rx: open ? -0.9 : 0, ao: false }); // Deckel
+  if (fein(b) && !open) f.box(0, 1.005, 0.43, 0.3, 0.03, 0.03, 'white', { ...DN, tint: shade(t, 0.8) }); // Griffmulde
+  f.cyl(0, 0.965, -0.37, 0.016, 0.5, 'polymer', { ...DN, axis: 'x', seg: 6, tint: '#202224' });         // Griffstange
+  f.box(0, 0.05, -0.3, 0.46, 0.1, 0.1, 'white', { ...DN, tint: shade(t, 0.8) });                      // Achsaufnahme
+  for (const sx of [-0.27, 0.27]) {
+    f.cyl(sx, 0.1, -0.3, 0.1, 0.055, 'rubber', { ...DN, axis: 'x', seg: 10 });
+    if (fein(b)) f.cyl(sx * 1.04, 0.1, -0.3, 0.045, 0.06, 'polymer', { ...DN, axis: 'x', seg: 6, tint: '#3a3c3e' });
+  }
+  if (open && fein(b)) f.box(0, 0.93, 0.05, 0.45, 0.1, 0.5, 'polymer', { ...DN, tint: '#1c1d1f' });
 }
 
 /** Runde verzinkte Mülltonne (Fotoscan metal_trash_can) bzw. Ersatz. */
 export function blechtonne(b, x, y, z, ry) {
   lib(b, 'metal_trash_can', x, y, z, { ry }, (bb) => {
-    bb.cyl(x, y, z, 0.26, 0.72, 'metal_galvanized', { ...DG, seg: 12, r1: 0.24 });
-    bb.cyl(x, y + 0.72, z, 0.28, 0.05, 'metal_galvanized', { ...DN, seg: 12 });
+    // ding 23.11.: Zinkgrau auf 'metal_painted' – der Fotoscan-Satz „Metal Plate 02“ (metal_galvanized) wirkt rostbraun
+    bb.cyl(x, y, z, 0.26, 0.72, 'metal_painted', { ...DG, seg: 12, r1: 0.24, tint: ZINK });
+    bb.cyl(x, y + 0.72, z, 0.28, 0.05, 'metal_painted', { ...DN, seg: 12, tint: ZINK });
   });
 }
 
@@ -298,12 +338,16 @@ export function bauzaun(b, x0, z0, x1, z1, y = 0, o = {}) {
   for (let i = 0; i < n; i++) {
     const s = (i + 0.5) * w, cx = x0 + ux * s, cz = z0 + uz * s, tilt = (hash01(cx, cz, 85) - 0.5) * 0.06;
     const f = frame(b, cx, y, cz, ry);
-    for (const sx of [-w / 2 + 0.05, w / 2 - 0.05]) {
-      f.box(sx, 0, 0, 0.62, 0.14, 0.22, 'concrete', { ...DG, tint: '#a8a49a' });
-      f.box(sx, 0.1, 0, 0.04, 2.0, 0.04, 'metal_galvanized', { ...DN, rx: tilt });
+    // ding 23.11.: Vorbild Mobilzaun 3,5 × 2,0 m – Rahmen aus Rundrohr Ø 33 mm (Datenblätter 27–40 mm; vorher Vierkant), EIN Fuß je Stoß
+    // (Betonfuß ≈ 0,6 × 0,21 × 0,13 m, längs zum Zaun, nimmt die Pfosten beider Felder auf; vorher zwei Füße dicht nebeneinander),
+    // Schelle am Stoß in Knie- und Brusthöhe
+    for (const end of i === n - 1 ? [-1, 1] : [-1]) {
+      f.box(end * w / 2, 0, 0, 0.6, 0.13, 0.21, 'concrete', { ...DG, tint: '#8f8b82' });
+      if (fein(b)) for (const cy of [0.35, 1.75]) f.box(end * w / 2, cy, 0, 0.11, 0.05, 0.05, 'metal_painted', { ...DN, rx: tilt, tint: ZINK });
     }
+    for (const sx of [-w / 2 + 0.05, w / 2 - 0.05]) f.cyl(sx, 0.08, 0, 0.0165, 2.0, 'metal_painted', { ...DN, seg: 6, rx: tilt, tint: ZINK });
     f.box(0, 0.12, 0, w - 0.1, 1.9, 0.015, 'metal_grate', { ...DN, rx: tilt, uvScale: 0.8 });
-    for (const yy of [0.12, 2.0]) f.box(0, yy, 0, w - 0.1, 0.035, 0.035, 'metal_galvanized', { ...DN, rx: tilt });
+    for (const yy of [0.12, 2.04]) f.cyl(0, yy, 0, 0.0165, w - 0.1, 'metal_painted', { ...DN, axis: 'x', seg: 6, rx: tilt, tint: ZINK });
     if (o.plane && hash01(cx, cz, 86) < 0.5) f.box(0, 0.5, 0.02, w - 0.2, 1.1, 0.01, 'tarp', { ...DN, tint: o.plane, rx: tilt });
   }
 }
@@ -383,13 +427,18 @@ export function strommast(b, x, y, z, ry, o = {}) {
   const h = o.h ?? 8.5, f = frame(b, x, y, z, ry);
   b.cyl(x, y - 0.3, z, 0.13, h + 0.3, 'wood_weathered', { seg: 8, r1: 0.1, tint: '#6a5a48', collide: o.collide !== false, minimap: false, grad: false });
   f.box(0, h - 0.55, 0.13, 1.7, 0.1, 0.1, 'wood_weathered', { ...DG, tint: '#5a4a3a' });
-  stab(f, -0.55, h - 0.5, 0, h - 1.2, 0.13, 0.05, 'metal_galvanized');
-  stab(f, 0.55, h - 0.5, 0, h - 1.2, 0.13, 0.05, 'metal_galvanized');
+  stab(f, -0.55, h - 0.5, 0, h - 1.2, 0.13, 0.05, 'metal_painted', ZINK);
+  stab(f, 0.55, h - 0.5, 0, h - 1.2, 0.13, 0.05, 'metal_painted', ZINK);
   const pts = [];
   for (const sx of [-0.75, 0, 0.75]) {
     const lx = sx, ly = h - 0.45 + (sx === 0 ? 0.25 : 0);
     if (sx === 0) f.box(0, h - 0.45, 0.13, 0.06, 0.25, 0.06, 'wood_weathered', { ...DN, tint: '#5a4a3a' });
-    f.cyl(lx, ly, 0.13, 0.035, 0.12, 'white', { ...DN, seg: 6, tint: '#cfd4cf' });
+    // ding 23.11.: Stützenisolator (Porzellan, glasiert) mit zwei Schirmen statt glattem Zylinder; Stahlstütze darunter
+    if (fein(b)) {
+      f.cyl(lx, ly - 0.05, 0.13, 0.012, 0.06, 'metal_galvanized', { ...DN, seg: 5, caps: false });
+      f.cyl(lx, ly, 0.13, 0.055, 0.06, 'white', { ...DN, seg: 8, r1: 0.03, tint: '#d8dad4' });        // Schirm
+      f.cyl(lx, ly + 0.06, 0.13, 0.04, 0.06, 'white', { ...DN, seg: 6, r1: 0.022, tint: '#d8dad4' });  // Kopf mit Rille
+    } else f.cyl(lx, ly, 0.13, 0.035, 0.12, 'white', { ...DN, seg: 6, tint: '#cfd4cf' });
     const [px, pz] = f.P(lx, 0.13);
     pts.push([px, y + ly + 0.12, pz]);
   }

@@ -17,6 +17,8 @@ export function frame(b, x, y, z, ry = 0) {
   };
 }
 
+/** ding 23.11.: Farbe für verzinkten Stahl auf 'metal_painted' (einfärbbar) – 'metal_galvanized' (Fotoscan) wirkt rostbraun. */
+export const ZINK = '#8f979c';
 const shade = (hex, k) => { const c = new THREE.Color(hex); c.multiplyScalar(k); return '#' + c.getHexString(); };
 
 /** Positionsabhängiger Zufall 0..1 (Varianten/Drehungen der Bibliotheksmodelle, ohne den Kartenzufall zu verbrauchen). */
@@ -289,8 +291,15 @@ function crateParts(b, x, y, z, s, o) {
     for (const sx of [-1, 1]) f.box(sx * ax, yy - (yy ? -e : 0), 0, t, t, d - 2 * t + 2 * e, 'wood_crate', { tint: lt, ...P });
   }
   if (b.quality === 'low') return;   // Telefone: nur die Kantenleisten
-  for (const sz of [-1, 1]) f.box(0, h / 2 - t / 2, sz * az, w - 2 * t, t, t * 0.6, 'wood_crate', { tint: lt, ...P });
-  for (const sx of [-1, 1]) f.box(sx * ax, h / 2 - t / 2, 0, t * 0.6, t, d - 2 * t, 'wood_crate', { tint: lt, ...P });
+  // ding 23.11.: Schräg-Strebe (Diagonale) statt Querriegel je Seite – wie bei genagelten Transport-/Lattenkisten, wo sie
+  // das Feld gegen Verschieben aussteift; Richtung je Kiste gespiegelt
+  const fw = w - 2 * t, fd = d - 2 * t, fh = h - 2 * t, flip = hash01(x, z, 22) < 0.5 ? 1 : -1;
+  const Lz = Math.hypot(fw, fh), Lx = Math.hypot(fd, fh);
+  // (die alten Querriegel lagen mit 0,6 t Tiefe bei d/2 − t/2 vollständig IN der Kiste und waren unsichtbar) – Strebe
+  // 16 mm stark auf der Seitenfläche, bündig mit den Kantenleisten
+  const sd = 0.016, sw = d / 2 + 0.004, sv = w / 2 + 0.004;
+  for (const sz of [-1, 1]) f.box(0, h / 2 - t / 2, sz * sw, Lz - t * 0.5, t, sd, 'wood_crate', { tint: lt, ...P, rz: flip * sz * Math.atan2(fh, fw) });
+  for (const sx of [-1, 1]) f.box(sx * sv, h / 2 - t / 2, 0, sd, t, Lx - t * 0.5, 'wood_crate', { tint: lt, ...P, rx: flip * sx * Math.atan2(fh, fd) });
 }
 
 /** Kistenstapel: Muster als Liste [lx, ly(Stufe), lz, size] relativ zur Mitte. */
@@ -326,15 +335,24 @@ export function barrel(b, x, y, z, o = {}) {
 
 /** Prozedurales Fass – nur Optik (Kollision setzt barrel()). */
 function barrelProc(b, x, y, z, o) {
-  const color = o.color;
+  // ding 23.11.: Maße nach dem 200-l-Spundfass (Ø 584 mm am Mantel, 597 mm über die Rollsicken, 880 mm hoch,
+  // Sicken bei ⅓ und ⅔ der Höhe): Mantel r 0,292 (vorher 0,3), Sicken r 0,2985 (vorher 0,31 – standen 2 cm über),
+  // gebördelte Ränder (Falz) oben und unten, Deckel 8 mm eingesenkt mit zwei Spundstopfen (2″ und ¾″) am Rand.
+  // Kollision (barrel(): Zylinder r 0,3 × 0,88) unverändert.
+  const color = o.color, P = { collide: false, minimap: false, ao: false };
   if (o.tipped) {
-    b.cyl(x, y + 0.3, z, 0.3, 0.88, 'metal_painted', { axis: 'x', ry: o.ry || 0, tint: color, collide: false, minimap: false });
+    const ry = o.ry || 0, c = Math.cos(ry), s = Math.sin(ry);
+    b.cyl(x, y + 0.3, z, 0.292, 0.88, 'metal_painted', { axis: 'x', ry, tint: color, collide: false, minimap: false, seg: 14 });
+    for (const lx of [-0.44 + 0.02, -0.147, 0.147, 0.44 - 0.02]) b.cyl(x + lx * c, y + 0.3, z - lx * s, Math.abs(lx) > 0.3 ? 0.297 : 0.2985, 0.03, 'metal_painted', { axis: 'x', ry, tint: shade(color, 0.8), seg: 14, ...P });
     return;
   }
-  b.cyl(x, y, z, 0.3, 0.88, 'metal_painted', { tint: color, collide: false, minimap: false, seg: 14, aoFloor: y });
-  for (const ry of [0.28, 0.58]) b.cyl(x, y + ry, z, 0.31, 0.03, 'metal_painted', { tint: shade(color, 0.8), collide: false, seg: 14, minimap: false, ao: false });
-  b.cyl(x, y + 0.875, z, 0.285, 0.015, 'metal_painted', { tint: shade(color, 0.6), collide: false, seg: 14, minimap: false, ao: false });
-  b.cyl(x + 0.14, y + 0.88, z + 0.05, 0.035, 0.02, 'metal_galvanized', { collide: false, seg: 6, minimap: false, ao: false });
+  b.cyl(x, y, z, 0.292, 0.88, 'metal_painted', { tint: color, collide: false, minimap: false, seg: 14, aoFloor: y });
+  for (const hy of [0.278, 0.572]) b.cyl(x, y + hy, z, 0.2985, 0.03, 'metal_painted', { tint: shade(color, 0.82), collide: false, seg: 14, ...P });
+  const lo = b.quality === 'low';   // Telefone: Dreieckszahl wie vorher (Mantel, 2 Sicken, Deckel, 1 Spund)
+  if (!lo) for (const hy of [0.0, 0.858]) b.cyl(x, y + hy, z, 0.297, 0.022, 'metal_painted', { tint: shade(color, 0.7), collide: false, seg: 14, ...P });   // Falz
+  b.cyl(x, y + 0.868, z, 0.28, 0.004, 'metal_painted', { tint: shade(color, 0.62), collide: false, seg: 14, ...P });                       // Deckel (eingesenkt)
+  b.cyl(x + 0.19, y + 0.872, z + 0.06, 0.034, 0.014, 'metal_galvanized', { seg: 8, ...P });                                                // 2″-Spund
+  if (!lo) b.cyl(x - 0.2, y + 0.872, z - 0.04, 0.016, 0.012, 'metal_galvanized', { seg: 6, ...P });                     // ¾″-Spund
 }
 
 export function barrelGroup(b, x, z, o = {}) {
@@ -355,6 +373,8 @@ export function barrelGroup(b, x, z, o = {}) {
  *  Kartons: Fotoscan cardboard_box_01 (falls geladen), sonst prozedurale Kartons mit Klebeband. Kollision unverändert. */
 export function pallet(b, x, y, z, o = {}) {
   // zerstoerung 15.11.: leere/foliierte Paletten zerbrechen (game/breakables.js); mit Kartons (Bibliotheksmodelle) nicht
+  // ding 23.11.: collide: false (Deko-Paletten aus kleinkram.js, Menge je Grafikstufe) → weder Kollision noch zerbrechliches
+  // Stück; vorher setzte palletParts den Kollisionsquader trotzdem → Kollision/Breakable-Ids hingen von der Stufe ab
   const own = o.load !== 'boxes' && o.collide !== false && typeof b.beginBreak === 'function' && !b._brk;
   if (own) b.beginBreak({ kind: 'palette', x, y, z, w: 1.2, h: o.load ? 0.9 : 0.144, d: 0.8, ry: o.ry || 0, surface: 'wood', hp: o.load ? 140 : 60 });
   try { return palletParts(b, x, y, z, o); } finally { if (own) b.endBreak(); }
@@ -364,7 +384,9 @@ function palletParts(b, x, y, z, o) {
   const f = frame(b, x, y, z, o.ry || 0);
   const m = 'wood_crate', grad = Math.abs(y) < 0.05, P = { collide: false, minimap: false };
   const h0 = hash01(x, z, 11);
-  const tint = o.tint || (h0 < 0.5 ? '#e4dfd6' : h0 < 0.82 ? '#d2cabb' : '#b9b5ad');
+  // ding 23.11.: Fichtenholz der EPAL-Paletten ist hell gelblich-weiß und vergraut im Umlauf – die Kistentextur ist
+  // orangebraun, deshalb kühle Tönungen (nehmen die Sättigung heraus) statt warmer: frisch, gebraucht, vergraut
+  const tint = o.tint || (h0 < 0.5 ? '#d9dadb' : h0 < 0.82 ? '#c3c6c8' : '#a7adb1');
   const tv = (k) => shade(tint, 0.9 + hash01(x + k * 0.37, z - k * 0.21, 12) * 0.16);
   const zs = [-0.35, 0, 0.35], ws = [0.1, 0.145, 0.1];
   // Schatten wirft nur das Deck (Bodenbretter/Klötze/Querbretter darunter liegen ohnehin im Schatten – spart den Schattenpass)
@@ -399,9 +421,11 @@ function palletParts(b, x, y, z, o) {
     h += 0.45;
   } else if (L === 'wrapped') {
     // Stretchfolie: gerundeter Block (glänzend), Wickellagen als leicht abgesetzte Bänder, Deckblatt mit Überstand
-    const wt = o.wrapTint || '#ffffff', wg = wrapGeometry();
+    // ding 23.11.: Stretchfolie ist milchig-durchscheinend – die Ladung (Karton) schimmert durch; reinweiß wirkte wie ein
+    // Gipsblock. Ohne Transparenz (eigener Sampler/Pass): milchig-beige Grundtönung, Wickelbänder heller (mehr Lagen)
+    const wt = o.wrapTint || '#d8d2c6', wg = wrapGeometry();
     f.geom(wg.body, 0, h - 0.02, 0, 'stretch_film', { tint: wt, ...P, grad: false });
-    for (let k = 0; k < 2; k++) f.geom(wg.band, 0, h + 0.18 + k * 0.42 + hash01(x, z, 14 + k) * 0.06, 0, 'stretch_film', { tint: shade(wt, 0.93), ...P, grad: false, ao: false, cast: false });
+    for (let k = 0; k < 2; k++) f.geom(wg.band, 0, h + 0.18 + k * 0.42 + hash01(x, z, 14 + k) * 0.06, 0, 'stretch_film', { tint: o.wrapTint ? shade(wt, 0.93) : '#eceae4', ...P, grad: false, ao: false, cast: false });
     f.box(0, h + 0.95, 0, 1.12, 0.006, 0.72, 'stretch_film', { tint: shade(wt, 0.97), ...P, grad: false, ao: false, cast: false, ry: 0.01 });
     h += 0.95;
   } else if (L === 'bricks') {
@@ -501,7 +525,9 @@ export function sandbags(b, x0, z0, x1, z1, o = {}) {
   const ux = (x1 - x0) / L, uz = (z1 - z0) / L;
   const depth = o.double ? 2 : 1;
   // o.tints: eigene Jute-Tönungen (z. B. Brandwald: ruß-/schlammverschmiert); b.pick verbraucht je Sack genau eine Ziehung
-  const tints = o.tints || ['#b8a87f', '#a99a72', '#c2b28a', '#9e9070'];
+  // ding 23.11.: neben Jute (braun-beige) auch Polypropylen-Säcke in Oliv/Khaki und ausgeblichene – echte Wälle sind aus
+  // gemischten Lieferungen gebaut. b.pick zieht unabhängig von der Listenlänge genau einmal (Platzierung bleibt gleich).
+  const tints = o.tints || ['#b8a87f', '#a99a72', '#c2b28a', '#9e9070', '#8e8b6c', '#b5ad92'];
   for (let r = 0; r < rows; r++) {
     const off = r % 2 ? 0.27 : 0;
     const n = Math.floor((L - off) / 0.54);
@@ -528,8 +554,15 @@ export function sandbags(b, x0, z0, x1, z1, o = {}) {
 // ---------------------------------------------------------------------------
 function jerseyGeom(len) {
   return cached('jersey' + len, () => {
+    // ding 23.11.: Profil nach der New-Jersey-Form (FHWA): 810 mm hoch, Fuß 610 mm, Krone 150 mm; 75 mm senkrechter
+    // Sockel, steile Fußschräge bis 330 mm, darüber fast senkrecht (vorher Knick bei 250 mm und 400 mm breit – zu bauchig).
+    // Kanten der Krone 15 mm gefast. Kollisionsquader (0,81 × 0,6 m) unverändert.
     const s = new THREE.Shape();
-    s.moveTo(-0.3, 0); s.lineTo(0.3, 0); s.lineTo(0.3, 0.08); s.lineTo(0.2, 0.25); s.lineTo(0.09, 0.81); s.lineTo(-0.09, 0.81); s.lineTo(-0.2, 0.25); s.lineTo(-0.3, 0.08); s.closePath();
+    const P = [[0.305, 0], [0.305, 0.075], [0.127, 0.33], [0.077, 0.795], [0.062, 0.81]];
+    s.moveTo(-P[0][0], 0);
+    for (const [px, py] of P) s.lineTo(px, py);
+    for (let i = P.length - 1; i >= 0; i--) s.lineTo(-P[i][0], P[i][1]);
+    s.closePath();
     const g = new THREE.ExtrudeGeometry(s, { depth: len, bevelEnabled: false });
     g.translate(0, 0, -len / 2);
     g.rotateY(Math.PI / 2); // Länge entlang x
@@ -879,10 +912,17 @@ export function lampPost(b, x, z, o = {}) {
   b.cyl(x, y + 0.35, z, 0.07, h - 0.35, 'metal_painted', { r1: 0.05, tint, seg: 8, collide: true, minimap: false });
   const arm = o.arm ?? 1.3;
   f.box(arm / 2, h - 0.08, 0, arm, 0.08, 0.08, 'metal_painted', { tint, collide: false, minimap: false, grad: false });
-  f.box(arm, h - 0.2, 0, 0.6, 0.16, 0.3, 'metal_painted', { tint, collide: false, minimap: false, grad: false });
+  // ding 23.11.: Leuchtenkopf flach wie eine Mastaufsatzleuchte (≈ 0,62 × 0,1 × 0,28 m, hinten verjüngt), Glas bündig
+  // unten; Mastklappe (Anschlussraum) auf 0,6 m und Fußflansch – Vorbild handelsübliche 6-m-Lichtmaste
+  f.box(arm, h - 0.15, 0, 0.62, 0.085, 0.28, 'metal_painted', { tint, collide: false, minimap: false, grad: false });
+  f.box(arm - 0.18, h - 0.07, 0, 0.26, 0.03, 0.2, 'metal_painted', { tint, collide: false, minimap: false, grad: false, ao: false });
+  if (b.quality !== 'low') {
+    f.box(0, 0.55, 0.062, 0.07, 0.28, 0.012, 'metal_painted', { tint: shade(tint, 0.8), collide: false, minimap: false, grad: false, ao: false, cast: false });
+    b.cyl(x, y + 0.35, z, 0.095, 0.03, 'metal_painted', { tint, seg: 8, collide: false, minimap: false, ao: false, cast: false });
+  }
   const on = lampsOn(b);
   const lampMat = !on ? 'white' : o.kind === 'cool' ? 'lamp_cool' : o.kind === 'warm' ? 'lamp_warm' : 'lamp_sodium';
-  f.box(arm, h - 0.23, 0, 0.5, 0.03, 0.24, lampMat, { tint: on ? undefined : '#e4e2dc', collide: false, minimap: false, ao: false, cast: false });
+  f.box(arm + 0.04, h - 0.165, 0, 0.46, 0.016, 0.22, lampMat, { tint: on ? undefined : '#bfc3c4', collide: false, minimap: false, ao: false, cast: false });
   const [lx, lz] = f.P(arm, 0);
   if (on && o.light) b.light('point', lx, y + h - 0.45, lz, { color: o.kind === 'cool' ? '#dfe9ff' : o.kind === 'warm' ? '#ffd59a' : '#ffad55', intensity: o.intensity ?? 18, distance: o.distance ?? 16, priority: o.priority ?? 1 });
   if (on && o.glow) b.glow(lx, y + h - 0.3, lz, { color: o.kind === 'cool' ? '#cfe0ff' : o.kind === 'warm' ? '#ffd090' : '#ffa040', size: o.glowSize ?? 2.4, intensity: o.glow === true ? 1 : o.glow });
@@ -915,8 +955,13 @@ export function fence(b, x0, z0, x1, z1, o = {}) {
   for (let i = 0; i < n; i++) {
     const s0 = seg * i, sm = s0 + seg / 2, mx = x0 + ux * sm, mz = z0 + uz * sm;
     if (brk) b.beginBreak({ kind: chain || style === 'mesh' ? 'zaun' : 'gitterzaun', x: mx, y, z: mz, w: seg, h, d: 0.12, ry, surface: 'metal', hp: 260 });
-    b.cyl(x0 + ux * s0, y, z0 + uz * s0, 0.045, h + 0.05, 'metal_galvanized', { seg: 6, collide: false, minimap: false, ao: o.ao });
-    b.cyl(mx, y + h, mz, 0.03, seg, 'metal_galvanized', { axis: 'x', ry, seg: 6, collide: false, minimap: false, ao: false });
+    // ding 23.11.: Rohre nach Maschendrahtzaun-Norm: Pfosten Ø 48 mm (Endpfosten Ø 60 mm, vorher Ø 90 mm), Oberholm
+    // Ø 34 mm unter der Pfostenkappe. Kollision je Feld unverändert.
+    // Rohre als hellgrau lackiert/verzinkt: der Fotoscan-Satz 'metal_galvanized' wirkt rostbraun und lässt sich nicht tönen
+    const pr = i === 0 ? 0.03 : 0.024;
+    b.cyl(x0 + ux * s0, y, z0 + uz * s0, pr, h + 0.03, 'metal_painted', { seg: 6, collide: false, minimap: false, ao: o.ao, tint: ZINK });
+    if (b.quality !== 'low') b.cyl(x0 + ux * s0, y + h + 0.03, z0 + uz * s0, pr + 0.006, 0.03, 'metal_painted', { tint: ZINK, r1: pr * 0.6, seg: 6, caps: false, collide: false, minimap: false, ao: false, cast: false });
+    b.cyl(mx, y + h - 0.03, mz, 0.017, seg, 'metal_painted', { axis: 'x', ry, seg: 6, collide: false, minimap: false, ao: false, tint: ZINK });
     if (!bars) {
       // Maschendraht: Fotoscan-Satz „chainlink“ (dünn → geblendet, bleibt auch in kleinen Mip-Stufen durchsichtig);
       // Gitterzaun („mesh“): dichtes Gitter mit Alphatest
@@ -931,15 +976,48 @@ export function fence(b, x0, z0, x1, z1, o = {}) {
     b.box(mx, y, mz, seg, Math.max(h, o.colliderH ?? 4), 0.12, 'black', { ry, visual: false, minimap: o.minimap ?? 'wall', bullet: !bars ? false : true });
     if (brk) b.endBreak();
   }
-  b.cyl(x1, y, z1, 0.045, h + 0.05, 'metal_galvanized', { seg: 6, collide: false, minimap: false, ao: o.ao });
+  b.cyl(x1, y, z1, 0.03, h + 0.03, 'metal_painted', { seg: 6, collide: false, minimap: false, ao: o.ao, tint: ZINK });
 }
 
 /** Müllcontainer */
 export function dumpster(b, x, z, o = {}) {
-  const f = frame(b, x, o.y ?? 0, z, o.ry || 0), col = o.color || '#2f5e3e';
-  f.box(0, 0.12, 0, 1.9, 1.05, 1.1, 'metal_painted', { tint: col, collide: false, minimap: false, grad: false });
-  f.box(0, 1.17, 0, 1.95, 0.06, 1.15, 'polymer', { collide: false, minimap: false, grad: false, rx: o.open ? -0.5 : 0.05 });
-  for (const sx of [-0.8, 0.8]) for (const sz of [-0.42, 0.42]) f.cyl(sx, 0, sz, 0.07, 0.12, 'rubber', { collide: false, minimap: false, seg: 8 });
+  // ding 23.11.: Vorbild Frontlader-Container 2 yd³ (≈ 1,9 × 1,0 × 1,15 m, Snyder/Wastequip-Datenblätter): Wanne mit
+  // schräger Vorderwand (unten eingezogen), umlaufender Oberkante, senkrechten Sicken, seitlichen Gabeltaschen für den
+  // Frontlader, zwei Kunststoffdeckeln (hinten angeschlagen, leicht gewölbt) und Lenkrollen. Lack stumpf und verschrammt
+  // statt Spielzeuggrün. Kollision unverändert (1,95 × 1,25 × 1,15 m).
+  const f = frame(b, x, o.y ?? 0, z, o.ry || 0), col = videoTone(o.color || '#2f5e3e');
+  const lo = b.quality === 'low', P = { collide: false, minimap: false, grad: false };
+  const dark = shade(col, 0.7), PN = { ...P, ao: false, cast: false };
+  // Wanne: Rückwand senkrecht (lokal −z), Vorderwand unten 0,22 m eingezogen
+  f.box(0, 0.14, -0.1, 1.84, 1.0, 0.86, 'metal_painted', { tint: col, ...P });
+  f.wedge(0, 0.69, 0.43, 1.84, 0.55, 0.2, 'metal_painted', { tint: col, ...P, rx: Math.PI }); // kopfstehender Keil: oben voll, unten eingezogen
+  f.box(0, 0.69, 0.43, 1.84, 0.45, 0.2, 'metal_painted', { tint: col, ...P });
+  // Oberkante (Kragen) und Bodenrahmen
+  f.box(0, 1.1, 0, 1.9, 0.06, 1.1, 'metal_painted', { tint: dark, ...P });
+  f.box(0, 0.12, -0.12, 1.86, 0.05, 0.84, 'metal_painted', { tint: dark, ...PN });
+  // Gabeltaschen (Frontlader) an beiden Seiten
+  for (const sx of [-1, 1]) {
+    f.box(sx * 0.95, 0.74, 0.0, 0.07, 0.11, 1.02, 'metal_painted', { tint: dark, ...P });
+    if (!lo) f.box(sx * 0.95, 0.72, 0.49, 0.09, 0.15, 0.06, 'metal_painted', { tint: dark, ...PN });
+  }
+  // senkrechte Sicken an Rück- und Vorderwand
+  if (!lo) {
+    for (const sx of [-0.62, 0, 0.62]) {
+      f.box(sx, 0.2, -0.535, 0.06, 0.88, 0.02, 'metal_painted', { tint: shade(col, 0.88), ...PN });
+      f.box(sx, 0.7, 0.535, 0.06, 0.38, 0.02, 'metal_painted', { tint: shade(col, 0.88), ...PN });
+    }
+  }
+  // zwei Deckel (schwarzer Kunststoff), hinten angeschlagen, Vorderkante leicht hochstehend; o.open klappt einen auf
+  for (const sx of [-0.475, 0.475]) {
+    const op = o.open && sx < 0;
+    f.box(sx, 1.16, op ? -0.42 : 0.02, 0.93, 0.05, 1.12, 'polymer', { tint: '#2a2c2e', ...P, rx: op ? -1.2 : 0.035 });
+    if (!lo && !op) f.box(sx, 1.2, 0.54, 0.3, 0.04, 0.04, 'polymer', { tint: '#232527', ...PN });
+  }
+  // Lenkrollen: Gabel + Rad
+  for (const sx of [-0.78, 0.78]) for (const sz of [-0.4, 0.36]) {
+    f.box(sx, 0.08, sz, 0.08, 0.05, 0.1, 'metal_galvanized', PN);
+    f.cyl(sx, 0.065, sz, 0.065, 0.05, 'rubber', { ...P, axis: 'x', seg: 8 });
+  }
   f.solid(0, 0, 0, 1.95, 1.25, 1.15, { minimap: 'cover' });
 }
 
@@ -964,21 +1042,40 @@ export function tires(b, x, z, o = {}) {
 /** Kabeltrommel */
 export function cableReel(b, x, z, o = {}) {
   const r = o.r ?? 0.65, y = o.y ?? 0, ry = o.ry || 0;
-  const f = frame(b, x, y, z, ry);
-  for (const s of [-1, 1]) f.cyl(s * 0.38, r, 0, r, 0.06, 'wood_planks', { axis: 'x', tint: '#b89a6c', collide: false, minimap: false });
-  f.cyl(0, r, 0, r * 0.55, 0.7, 'rubber', { axis: 'x', tint: '#3d6b45', collide: false, minimap: false });
+  // ding 23.11.: Vorbild Holz-Kabeltrommel (DIN 46391, Flansch Ø 1,3 m): Flansche aus Brettern mit zwei aufgenagelten
+  // Versteifungsleisten außen, Stahlplatte mit Bohrung in der Nabe, Kabel schwarz (NYY) bzw. rot (Mittelspannung) statt
+  // grün; Holz vergraut. Kollision unverändert.
+  const f = frame(b, x, y, z, ry), P = { collide: false, minimap: false }, PN = { ...P, ao: false, grad: false, cast: false };
+  const wood = shade('#b9b8b2', 0.8 + hash01(x, z, 52) * 0.22), cab = hash01(x, z, 53) < 0.3 ? '#6e2a24' : '#262728';
+  for (const s of [-1, 1]) {
+    f.cyl(s * 0.38, r, 0, r, 0.06, 'wood_planks', { axis: 'x', tint: wood, ...P, seg: 16 });
+    if (b.quality === 'low') continue;
+    for (const k of [0, 1]) f.box(s * 0.425, r - 0.04, 0, 0.03, 0.08, r * 1.9, 'wood_planks', { tint: shade(wood, 0.85), ...PN, rx: k ? Math.PI / 2 : 0, ry: 0 });
+    f.cyl(s * 0.442, r, 0, 0.13, 0.006, 'metal_painted', { axis: 'x', ...PN, seg: 10, tint: '#5a4636' });   // Nabenplatte (rostig)
+    f.cyl(s * 0.446, r, 0, 0.045, 0.004, 'metal_painted', { axis: 'x', ...PN, seg: 8, tint: '#151515' });  // Bohrung
+  }
+  f.cyl(0, r, 0, r * 0.62, 0.7, 'rubber', { axis: 'x', tint: cab, ...P, seg: 16 });
   f.solid(0, 0, 0, 0.85, r * 2, r * 2, { minimap: 'cover' });
 }
 
 /** Gasflaschen-Gruppe */
 export function gasBottles(b, x, z, o = {}) {
-  const n = o.n ?? 5, y = o.y ?? 0, colors = ['#3a6fb0', '#c8402f', '#5c6b3a', '#d9d9d2', '#c9a227'];
+  // ding 23.11.: Vorbild 50-l-Stahlflasche (Ø 229 mm, ≈ 1,6 m mit Kappe): Körper meist grau/schwarz, nur die Schulter
+  // trägt die Gasfarbe nach EN 1089-3 (Sauerstoff weiß, Stickstoff schwarz, Argon dunkelgrün, CO₂ grau, Acetylen
+  // kastanienbraun, Wasserstoff rot), Ventil unter einer Tulpen-Schutzkappe, Fußring. Gedeckte Lacke statt Bonbonfarben.
+  // Kollision unverändert (Zylinder r 0,42, 1,45 m – die 15 cm Kappe darüber trifft die Kugel über die Optik).
+  const n = o.n ?? 5, y = o.y ?? 0, lo = b.quality === 'low';
+  const GAS = [['#3d4043', '#e4e2da'], ['#4e5256', '#2a2b2c'], ['#3d4043', '#2f4a36'], ['#7a7d7f', '#7a7d7f'], ['#5e3330', '#5e3330'], ['#4e5256', '#8e2f26']];
+  const P = { collide: false, minimap: false, ao: false };
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2, rr = n > 3 ? 0.28 : 0.15;
     const bx = x + Math.cos(a) * rr, bz = z + Math.sin(a) * rr;
-    b.cyl(bx, y, bz, 0.11, 1.25, 'metal_painted', { tint: colors[i % colors.length], seg: 10, collide: false, minimap: false });
-    b.cyl(bx, y + 1.25, bz, 0.11, 0.12, 'metal_painted', { r1: 0.04, tint: colors[i % colors.length], seg: 10, collide: false, minimap: false, ao: false });
-    b.cyl(bx, y + 1.37, bz, 0.03, 0.08, 'metal_galvanized', { seg: 6, collide: false, minimap: false, ao: false });
+    const [body, sh] = GAS[(Math.floor(hash01(x, z, 51) * GAS.length) + i * (i % 2 ? 1 : 2)) % GAS.length];   // gemischt wie am Schweißplatz
+    if (!lo) b.cyl(bx, y, bz, 0.105, 0.06, 'metal_painted', { tint: shade(body, 0.7), seg: 10, collide: false, minimap: false });   // Fußring
+    b.cyl(bx, y + (lo ? 0 : 0.04), bz, 0.115, lo ? 1.3 : 1.26, 'metal_painted', { tint: body, seg: lo ? 10 : 12, collide: false, minimap: false });
+    b.cyl(bx, y + 1.3, bz, 0.115, 0.11, 'metal_painted', { r1: 0.05, tint: sh, seg: lo ? 10 : 12, collide: false, ...P });                   // Schulter
+    if (!lo) b.cyl(bx, y + 1.41, bz, 0.045, 0.03, 'metal_galvanized', { seg: 8, ...P });                                        // Halsring
+    b.cyl(bx, y + 1.41, bz, 0.06, 0.18, 'metal_painted', { r1: 0.07, tint: '#55595c', seg: lo ? 6 : 10, ...P });                         // Schutzkappe
   }
   b.cyl(x, y, z, 0.42, 1.45, 'black', { visual: false, minimap: 'cover' });
 }
@@ -989,6 +1086,14 @@ export function electricBox(b, x, y, z, o = {}) {
   f.box(0, 0, 0, w, h, d, 'metal_painted', { tint: o.tint || '#9aa39a', minimap: o.minimap ?? 'cover', collide: o.collide ?? true, aoFloor: o.aoFloor });
   f.box(0, 0.08, d / 2 + 0.005, 0.01, h - 0.16, 0.01, 'black', { collide: false, minimap: false, ao: false });
   f.box(w / 4, h * 0.55, d / 2 + 0.02, 0.06, 0.12, 0.03, 'metal_galvanized', { collide: false, minimap: false, ao: false });
+  // ding 23.11.: Kabelverteilerschrank als Vorbild – überstehendes, leicht geneigtes Dach, dunkler Sockel, Lüftungsschlitze
+  // unten an der Tür, Schmutzrand am Fuß (nur Optik; Kollision wie bisher der Korpus)
+  if (b.quality !== 'low' && o.detail !== false) {
+    const PN = { collide: false, minimap: false, ao: false, grad: false, cast: false }, t = o.tint || '#9aa39a';
+    f.box(0, h, 0.01, w + 0.04, 0.035, d + 0.05, 'metal_painted', { ...PN, cast: true, tint: shade(t, 0.92), rx: 0.03 });
+    f.box(0, 0, d / 2 + 0.004, w + 0.004, 0.09, 0.006, 'metal_painted', { ...PN, tint: shade(t, 0.45) });
+    for (let k = 0; k < 4; k++) f.box(-w / 4, 0.16 + k * 0.035, d / 2 + 0.004, w * 0.3, 0.012, 0.006, 'metal_painted', { ...PN, tint: '#1a1b1c' });
+  }
   // karten-voll: Reihenfolge x, y, z (vorher x, z, y → Schild schwebte an falscher Stelle)
   if (o.warn !== false) { const [sx, sz] = f.P(-w / 4, d / 2 + 0.01); b.sign(sx, y + h * 0.62, sz, 0.22, 0.2, 'warn_volt', { ry: o.ry || 0, back: false, depth: 0 }); }
 }
