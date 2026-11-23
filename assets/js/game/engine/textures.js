@@ -7,9 +7,9 @@
 // preloadMaterials(names, onProgress) → erzeugt Texturen parallel (Worker-Pool) mit Fortschritt
 // Generatoren: ../world/texgen.js (ohne three, auch im Worker lauffähig)
 import * as THREE from 'three';
-import { generateTexture } from '../world/texgen.js?v=20261122020853';
-import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261122020853';
-import { applySurface } from './surface.js?v=20261122020853';
+import { generateTexture } from '../world/texgen.js?v=20261123073102';
+import { addShaderPatch, ensureWorldVaryings } from '../world/shading.js?v=20261123073102';
+import { applySurface } from './surface.js?v=20261123073102';
 
 // ---------------------------------------------------------------------------
 // Konfiguration
@@ -115,6 +115,7 @@ const MATS = {
   wood_planks:       { tex: 'wood_planks', tile: 2, surface: 'wood' },
   wood_dark:         { tex: 'wood_dark', tile: 2, surface: 'wood' },
   wood_painted:      { tex: 'wood_paint', tile: 2, surface: 'wood' }, // Fensterläden/Türen mit Tönung (immer prozedural)
+  buecher:           { tex: 'buecher', tile: 1, surface: 'wood' }, // gross (23.11.): Buchrücken der Regalreihen (immer prozedural, Abbildung 'fit')
   wood_crate:        { tex: 'wood_crate', tile: 1, surface: 'wood' },
   wood_stock:        { tex: 'wood_stock', tile: 0.4, surface: 'wood', params: { roughness: 1 } },
   bark:              { tex: 'bark', tile: 1.2, surface: 'wood' },
@@ -358,7 +359,7 @@ function getPool() {
   try {
     if (typeof Worker === 'undefined') throw new Error('no workers');
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    const url = new URL('../world/texgen.worker.js?v=20261122020853', import.meta.url);
+    const url = new URL('../world/texgen.worker.js?v=20261123073102', import.meta.url);
     pool = [];
     for (let i = 0; i < n; i++) {
       const w = new Worker(url, { type: 'module' });

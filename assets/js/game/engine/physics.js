@@ -187,10 +187,10 @@ export class CapsuleBody {
     // Erde. Rutscht die Kapsel an einer steilen Schachtwand hinein, zurück an den Anfang des Schritts und auf den Boden.
     const tf = world.terrainFloor;
     if (tf) {
-      let g = tf(this.position.x, this.position.z, this.radius);
+      let g = tf(this.position.x, this.position.z, this.radius, this.position.y);
       if (g !== null && this.position.y < g - 0.2) {
         this.position.x = _stepStart.x; this.position.z = _stepStart.z;
-        g = tf(this.position.x, this.position.z, this.radius);
+        g = tf(this.position.x, this.position.z, this.radius, null, true);
         if (g !== null && this.position.y < g) { this.position.y = g; if (v.y < 0) v.y = 0; this.onGround = true; this.groundY = g; }
         v.x = 0; v.z = 0;
         this._sync();

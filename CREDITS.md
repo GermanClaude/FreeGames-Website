@@ -306,6 +306,15 @@ Seit 20.11. zusätzlich der **weibliche Zivilkörper** und das Kopf-Form-Ziel �
 `tools/assets/soldier/build_body.py` und `tools/assets/kopf/build_head.py`). Kleidung, Stiefel, Frisuren und
 Ausrüstung sind eigene Modelle nach allgemeinen Bau-Beschreibungen realer Kleidung (keine fremden Modelle oder Bilder).
 
+## Battle Royale (22.11.2026)
+
+Der Modus Battle Royale (`assets/js/game/modes/br/`) verwendet keine fremden Assets: Die fünf Zusatzwaffen (SM-12 Amboss,
+AS-20 Sturmflut, MT-95 Schwarm, AB-3 Sehne, SV-9 Flüsterer; `assets/js/game/weapons/gunsmith/guns-br.js`) sind eigene,
+frei erfundene prozedurale Modelle nach allgemeinen Bauarten (keine Nachbauten bestimmter Waffen, keine Herstellerzeichen)
+mit den vorhandenen Waffenmaterialien. Transportflugzeug, Fallschirm, Beutekisten, Westen, Helme, Verbände und
+Zonenwand sind schlichte eigene Grundkörper ohne Texturen (`modes/br/drop.js`, `modes/br/loot.js`; CC0 wie das übrige
+prozedurale Material).
+
 ## Klänge
 
 Die aufgenommenen Klänge unter `assets/lib/audio/` (ebenfalls CC0: The Free Firearm Sound Library, Freesound,

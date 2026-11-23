@@ -411,8 +411,25 @@ export const GAME_STYLES = deepFreeze({
     killfeed: 'eigene', enemyMarkers: false, crosshair: 'aus', hudMin: 'aus', spotting: false, damageDirection: false,
     staminaMult: 1.4,
   },
+  // Ultra-Realismus (Nutzer 22.11., „wie Bodycam“): baut auf „Realistisch“ auf – main.applyStyle setzt G.match.style =
+  // 'realistisch' (alle Realismus-Regeln) und G.match.ultra = true (game/ultra.js: Trägheit, Waffengewicht, Atemwackeln,
+  // Körperkamera-Rückstoß, kurze Zielhinweise). Gefühlt kein HUD: kein Fadenkreuz, keine Zahlen, kein Killfeed, keine
+  // Namensschilder. Kopftreffer sofort tödlich (headKill), wenige Körpertreffer, keine Regeneration – nur Verbände
+  // (bandageHeal Leben je Verband, bandages Stück), Teambeschuss an (friendlyFire), Fallschaden ab ≈ 2,5 m (fallSafe m/s).
+  // Nur in ULTRA_MODES; sonst gilt „Realistisch“. Netz: nur die Stil-Id im Raum (room.settings.style) – kein neues Feld.
+  ultra: {
+    id: 'ultra', label: 'Ultra-Realismus', short: 'Ultra', ultra: true,
+    desc: 'Wie Bodycam: gefühlt kein HUD, Trägheit und Waffengewicht, Kopftreffer tödlich, keine Heilung außer Verbänden, Teambeschuss an.',
+    bulletMult: 2.2, explosiveMult: 1.5, regenDelay: 1e9, regenRate: 0, bleedout: 6,
+    nameplates: 'aus', minimapEnemies: false, uavEnemies: false, hitmarkers: 'aus', hitmarkerThroughWalls: false,
+    killfeed: 'aus', enemyMarkers: false, crosshair: 'aus', hudMin: 'aus', spotting: false, damageDirection: false,
+    staminaMult: 1.8, // ≈ 4 s Dauersprint
+    headKill: true, friendlyFire: true, bandageHeal: 35, bandages: 3, fallSafe: 11, fallMult: 1.6,
+  },
 });
-export const STYLE_ORDER = Object.freeze(['arcade', 'realistisch', 'simulation']);
+export const STYLE_ORDER = Object.freeze(['arcade', 'realistisch', 'ultra', 'simulation']);
+/** Modi mit Ultra-Realismus (Infanterie); übrige Modi spielen ihn als „Realistisch“. */
+export const ULTRA_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'hp', 'cq', 'kc', 'ult', 'trupp']);
 /** Modi mit Infanteriesimulation (Spielstil „Simulation“); übrige Modi spielen ihn als „Realistisch“. */
 export const SIM_MODES = Object.freeze(['tdm', 'ffa', 'dom', 'hp', 'cq', 'kc', 'kampagne']);
 export const DEFAULT_STYLE = 'arcade';

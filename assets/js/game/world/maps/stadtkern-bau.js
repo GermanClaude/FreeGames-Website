@@ -5,12 +5,12 @@
 // Verteilerebene unter der Straße mit zwei Abgängen, Litfaßsäule, Telefonzelle, Kulissenfassaden am Kartenrand.
 // Spiegelung: Bausteine bekommen s = ±1 (Team-Hälfte); Straßenseite liegt bei kleinerem |z|.
 import * as THREE from 'three';
-import { building, wall, railing, slab } from '../arch.js?v=20261122020853';
-import { frame, hash01, sandbags, car, jersey, lampPost, awning, tree, bench, dumpster, electricBox, crateStack, barrelGroup, palletStack, tires, cone } from '../props.js?v=20261122020853';
-import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, chip, igel, tonnen, bauzaun } from './neu-bau.js?v=20261122020853';
-import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, regal, kommode, kueche, bild, teppich, theke, waschtisch } from './grenzland-innen.js?v=20261122020853';
-import { shelf, armchair, wardrobe, dresser, picture, rug } from './altstadt-ausstattung.js?v=20261122020853';
-import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde, pinnwand } from './hafen-ausstattung.js?v=20261122020853';
+import { building, wall, railing, slab } from '../arch.js?v=20261123073102';
+import { frame, hash01, sandbags, car, jersey, lampPost, awning, tree, bench, dumpster, electricBox, crateStack, barrelGroup, palletStack, tires, cone } from '../props.js?v=20261123073102';
+import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, chip, igel, tonnen, bauzaun } from './neu-bau.js?v=20261123073102';
+import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, regal, kommode, kueche, bild, teppich, theke, waschtisch } from './grenzland-innen.js?v=20261123073102';
+import { shelf, armchair, wardrobe, dresser, picture, rug } from './altstadt-ausstattung.js?v=20261123073102';
+import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde, pinnwand } from './hafen-ausstattung.js?v=20261123073102';
 
 const PI = Math.PI, Q = PI / 2;
 export const FH = 3.4;
@@ -52,7 +52,10 @@ function ladenInnen(b, kind, R, s) {
   shelf(b, R.x0 + 0.22, y, (zf + zb) / 2 + dir * 0.6, Q, { w: 1.2, goods: S.goods });
   // Theke quer im Raum (Kasse)
   if (kind === 'cafe') {
-    theke(b, R.x1 - 1.6, y, zb - dir * 1.2, toStreet, { len: 2.4 });
+    // karten (22.11.): Theke nicht vor einen Durchgang der Mittelwand (vorher 0,9 m Restbreite dahinter) – seitlich ausweichen
+    const G = R.gaps || [], frei = (tx) => !G.some((g) => Math.abs(g - tx) < 1.2 + 0.5) && tx - 1.2 > R.x0 + 0.5 && tx + 1.2 < R.x1 - 0.2;
+    const tx = [R.x1 - 1.6, R.x1 - 3.4, cx + 0.6, ...(G.length > 1 ? [(G[0] + G[1]) / 2] : [])].find(frei) ?? R.x1 - 1.6;
+    theke(b, tx, y, zb - dir * 1.2, toStreet, { len: 2.4 });
     for (let k = 0; k < 2; k++) essplatz(b, cx - 1.6 + k * 2.4, y, (zf + zb) / 2, { w: 0.8, d: 0.8, n: 2, ry: hash01(cx, k, 2) * 0.4 });
   } else {
     const tz = zb - dir * 1.5;
@@ -89,8 +92,13 @@ function wohnungInnen(b, R, s, seed) {
   const bz = (R.zm + R.zb) / 2;
   if (h(4) < 0.5) {
     bett(b, cx + 0.8, y, R.zb - dir * 1.05, fromStreet === 0 ? PI : 0, { w: 1.4, blanket: ['#7a4a3a', '#3a4a6a', '#5a6a3a'][Math.floor(h(5) * 3)] });
-    schrank(b, R.x0 + 0.32, y, bz, Q);
-    if (mittel(b)) waschtisch(b, R.x1 - 0.25, y, bz, -Q);
+    // karten (22.11.): Durchgang zur Kammer (Flurwand, R.kz) freihalten – Schrank/Waschtisch an der Flurwand rücken zur Seite
+    // (vorher stand der Schrank je nach Treppenhaus-Seite genau vor dem Durchgang; Prüfskript: Tür blockiert)
+    const frei = (atX, z) => R.kz == null || Math.abs(atX - R.flurX) > 0.6 || Math.abs(z - R.kz) >= 1.4;
+    const zAt = (atX) => [bz, (R.zm + bz) / 2, (bz + R.zb) / 2].find(z => frei(atX, z));
+    const zs = zAt(R.x0), zw = zAt(R.x1);
+    if (zs != null) schrank(b, R.x0 + 0.32, y, zs, Q);
+    if (mittel(b) && zw != null) waschtisch(b, R.x1 - 0.25, y, zw, -Q);
   } else {
     kueche(b, cx, y, R.zb - dir * 0.32, toStreet, { len: Math.min(2.8, w - 2) });
     essplatz(b, cx, y, bz - dir * 0.3, { w: 1.2, d: 0.8, n: 4 });
@@ -225,7 +233,7 @@ export function altbau(b, o) {
       crateStack(b, (mx0 + mx1) / 2 - 1, lz, { y: yy, ry: 0.2, pattern: [[0, 0, 0, 0.8], [0.85, 0, 0.05, 0.7]] });
       kafiglampe(b, (mx0 + mx1) / 2, (f + 1) * fh - 0.25, lz, yy);
     } else {
-      const R2 = { x0: mx0, x1: mx1, y: yy, yC: (f + 1) * fh - 0.25, zf: zIn0, zb: zIn1, zm };
+      const R2 = { x0: mx0, x1: mx1, y: yy, yC: (f + 1) * fh - 0.25, zf: zIn0, zb: zIn1, zm, kz: kammer ? kz : null, flurX: fx };
       if (!(ruin && f === floors - 1)) wohnungInnen(b, R2, s, seed + f * 13);
     }
     // Treppenhaus-Licht
@@ -234,8 +242,23 @@ export function altbau(b, o) {
   // Gardinen hinter den Straßenfenstern (bewohnt wirkende Fassade; zerschossene Fenster: zerrissen, schräg) – ab mittel
   if (mittel(b)) for (const [gx2, f, broken] of gard) {
     const zz = zf + s * 0.33, y0 = f * fh + 0.85, c = ['#e8e2d0', '#d8cfb8', '#c9b48e', '#e2d6c2', '#b8c4c0'][Math.floor(hash01(gx2, f, 21) * 5)];
-    for (const side of [-1, 1]) b.box(gx2 + side * 0.45, y0 + 0.05, zz, broken ? 0.28 : 0.36, 1.8, 0.02, 'tarp', { tint: c, ...VG, ao: false, rz: broken ? side * 0.12 : 0, bullet: false });
+    for (const side of [-1, 1]) b.box(gx2 + side * 0.45, y0 + 0.05, zz, broken ? 0.28 : 0.36, 1.8, 0.02, 'tarp', { tint: c, ...VG, ao: false, interior: false, rz: broken ? side * 0.12 : 0, bullet: false });
     b.box(gx2, y0 + 1.9, zz, 1.5, 0.04, 0.04, 'metal_painted', { tint: '#5a5048', ...VG, ao: false });
+  }
+  // gross (23.11.): Gardinen ohne Innenraum-Abdunklung (interior: false) – sie hängen im Tageslicht am Fenster, mit der
+  // Abdunklung waren sie von außen so dunkel wie der Raum dahinter und nicht zu sehen
+  // gross (23.11.): auch hinter den Hoffenstern (zu 60 % ohne Scheibe – vorher schwarze Löcher in der Hoffassade):
+  // Gardinen bzw. halb zugezogene Vorhänge, auf jeder Stufe (low: ein Vorhangschal statt zwei, ohne Stange)
+  for (let f = 1; f < floors; f++) for (let k = 0; k < nAx; k++) {
+    if (ruin && f === floors - 1) continue;
+    const at = ax0 + k * 2.6, hk = H(200 + f * 7 + k);
+    if (hk > 0.8) continue;
+    const zz = zb - s * 0.33, y0 = f * fh + 0.95, gx2 = x + at;
+    const c = ['#e2dccb', '#d0c6ae', '#bfa984', '#d9cdb8', '#aebab6', '#8c6a56'][Math.floor(H(210 + f * 5 + k) * 6)];
+    const closed = hk < 0.25; // Vorhang fast zu: nur ein Spalt in der Mitte
+    if (!mittel(b)) { b.box(gx2 + (closed ? 0 : 0.36), y0 + 0.05, zz, closed ? 1.0 : 0.34, 1.5, 0.02, 'tarp', { tint: c, ...VG, ao: false, interior: false, bullet: false }); continue; }
+    for (const side of [-1, 1]) b.box(gx2 + side * (closed ? 0.26 : 0.4), y0 + 0.05, zz, closed ? 0.5 : 0.3, 1.55, 0.02, 'tarp', { tint: c, ...VG, ao: false, interior: false, rz: (hk * 10 % 1 - 0.5) * 0.06, bullet: false });
+    b.box(gx2, y0 + 1.65, zz, 1.4, 0.04, 0.04, 'metal_painted', { tint: '#5a5048', ...VG, ao: false });
   }
   // Balkone (Platte + Gitter) vor den Fenstertüren
   for (const [bx, f] of balk) {
@@ -582,9 +605,25 @@ export function kulisse(b, x0, z0, x1, z1, h, face, color) {
   const along = face === 'n' || face === 's' ? w : d, n = Math.floor((along - 1) / 2.6), fl = Math.floor(h / FH);
   for (let f = 0; f < fl; f++) for (let k = 0; k < n; k++) {
     const t = -((n - 1) * 2.6) / 2 + k * 2.6, yy = f * FH + (f ? 0.85 : 0.6), hh = f ? 1.8 : 2.2;
-    const dark = hash01(x0 + k, f + z0, 5) < 0.5 ? '#1c2024' : '#2a2e30';
-    if (face === 'n' || face === 's') { const zz = face === 'n' ? z0 - 0.02 : z1 + 0.02; b.box(cx + t, yy, zz, 1.2, hh, 0.04, 'glass', { tint: dark, ...VG, ao: false }); b.box(cx + t, yy - 0.06, zz, 1.4, 0.08, 0.14, 'stone_wall', { tint: '#c8bfae', ...VG }); }
-    else { const xx = face === 'w' ? x0 - 0.02 : x1 + 0.02; b.box(xx, yy, cz + t, 0.04, hh, 1.2, 'glass', { tint: dark, ...VG, ao: false }); b.box(xx, yy - 0.06, cz + t, 0.14, 0.08, 1.4, 'stone_wall', { tint: '#c8bfae', ...VG }); }
+    // gross (23.11.): vorher eine fast schwarze Glasplatte je Fenster (#1c2024 – „schwarze Löcher“). Jetzt Innenraum-
+    // Andeutung auf der Kulissenwand: dunkler Raum (heller als vorher, je Fenster verschieden), Vorhänge/Gardinen bzw.
+    // halb heruntergelassenes Rollo, weiße Sprossen und Fensterbank (das Glasmaterial ist deckend dunkel – keine Scheibe davor)
+    const h1 = hash01(x0 + k, f + z0, 5), h2 = hash01(x0 + k, f + z0, 6), h3 = hash01(x0 + k, f + z0, 7);
+    const room = ['#3c3a36', '#46423c', '#34383a', '#4a443a'][Math.floor(h1 * 4)];
+    const fab = ['#e6e0d0', '#d8ccb2', '#c4b08a', '#e0d6c4', '#b4c0bc'][Math.floor(h2 * 5)];
+    const ns = face === 'n' || face === 's', sgn = face === 'n' || face === 'w' ? -1 : 1;
+    const base = ns ? (face === 'n' ? z0 : z1) : (face === 'w' ? x0 : x1), cA = ns ? cx + t : cz + t;
+    // Kasten entlang der Fassade: a = Lage entlang, o = Abstand vor der Wand, w = Breite entlang, dd = Dicke
+    const pan = (a, y, o, w, hgt, dd, mat, opt) => (ns ? b.box(cA + a, y, base + sgn * o, w, hgt, dd, mat, opt) : b.box(base + sgn * o, y, cA + a, dd, hgt, w, mat, opt));
+    pan(0, yy, 0.012, 1.2, hh, 0.02, 'plaster_white', { tint: room, ...VG, ao: false });
+    if (mittel(b)) {
+      if (h3 < 0.45) for (const sd of [-1, 1]) pan(sd * 0.44, yy + 0.02, 0.03, 0.3 + h2 * 0.08, hh - 0.06, 0.012, 'tarp', { tint: fab, ...VG, ao: false, bullet: false });
+      else if (h3 < 0.75) pan(0, yy + hh * (0.45 + h1 * 0.3), 0.03, 1.16, hh * (0.55 - h1 * 0.3), 0.012, 'tarp', { tint: shadeHex(fab, 0.92), ...VG, ao: false, bullet: false });
+      pan(0, yy, 0.046, 0.05, hh, 0.03, 'wood_dark', { tint: '#e8e2d4', ...VG, ao: false });
+      if (f) pan(0, yy + hh * 0.62, 0.046, 1.2, 0.05, 0.03, 'wood_dark', { tint: '#e8e2d4', ...VG, ao: false });
+      for (const sd of [-1, 1]) pan(sd * 0.6, yy, 0.046, 0.07, hh, 0.04, 'wood_dark', { tint: '#e8e2d4', ...VG, ao: false });
+    }
+    pan(0, yy - 0.06, 0.07, 1.4, 0.08, 0.14, 'stone_wall', { tint: '#c8bfae', ...VG });
   }
 }
 

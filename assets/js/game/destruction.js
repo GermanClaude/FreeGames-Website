@@ -3,7 +3,9 @@
 // (Kollision/Kugeln über building.js addSolid). Explosionen (Granate, Rakete, Panzer, Luftschlag) und wiederholte
 // schwere Treffer (MG, Präzisionsgewehr, Panzerbüchse) zermürben es; bei 0 bricht es heraus: Staubwolke, Brocken,
 // Durchgang. Steht ein Paneel danach ohne Halt da (darunter und beidseitig nichts mehr), stürzt es nach.
-// Jedes Gerät rechnet aus denselben Ereignissen ('explosion', Treffer) – reine Weltänderung, keine Netzbotschaft.
+// Mehrspieler (logik 22.11.): Der Host bzw. das Einzelspiel entscheidet; gebrochene Paneele gehen als 'ev' wb {i:[…]}
+// an alle, Späteinsteiger bekommen die Liste beim Beitritt (net/sync-host.js). Vorher rechnete jedes Gerät selbst – die
+// Kugeln der Host-Bots zermürbten Wände nur beim Host, eigene Kugeln eines Clients nur bei ihm: Wand hier offen, dort zu.
 //
 // zerstoerung 15.11. – gemeinsame Schnittstelle für alle Wirkungen (Panzersimulation, Granaten, Kleinwaffen):
 //   G.destruction.impact({ point, normal, dir, type: 'bullet'|'ap'|'heat'|'he'|'charge', cal, energy, radius, weaponId,
@@ -17,10 +19,10 @@
 // Durchbrüche, durch die ein Mensch passt, bekommen Navigationskanten (Bots laufen hindurch, _navLink), Kisten/Paletten/
 // Zaunfelder zerbrechen (breakables.js).
 import * as THREE from 'three';
-import { worldPartsFrom } from './building.js?v=20261122020853';
+import { worldPartsFrom } from './building.js?v=20261123073102';
 import { Capsule } from 'three/addons/math/Capsule.js';
-import { Breakables } from './breakables.js?v=20261122020853';
-import { WEAPONS } from '../shared/weapons.data.js?v=20261122020853';
+import { Breakables } from './breakables.js?v=20261123073102';
+import { WEAPONS } from '../shared/weapons.data.js?v=20261123073102';
 
 const HP = { concrete: 380, plaster: 260, tile: 300, wood: 160, metal: 300 };
 const _n = new THREE.Vector3();
@@ -49,6 +51,7 @@ export class Destruction {
       p.below = [...byKey.values()].find((q) => q.d.wall === wall && q.d.col === col && q.d.row < row && Math.abs(q.d.y + q.d.h - p.d.y) < 0.05) || null;
       p.side = [...byKey.values()].filter((q) => q !== p && q.d.wall === wall && q.d.row === row && Math.abs(Math.hypot(q.d.x - p.d.x, q.d.z - p.d.z) - (p.d.w + q.d.w) / 2) < 0.05);
     }
+    this.panels.forEach((p, i) => { p.idx = i; }); // Netz-Id: Reihenfolge der Kartendaten (auf allen Geräten gleich)
     this._off = this.panels.length ? [G.events.on('explosion', (e) => this._explosion(e))] : [];
     // Breschen/Paneele → Navigationskanten; zerbrechliche Requisiten
     this._navDone = new Set();
@@ -153,8 +156,20 @@ export class Destruction {
     return true;
   }
 
+  /** Entscheidet dieses Gerät über Wandbrüche? (Einzelspiel/Host; Clients übernehmen 'ev' wb) */
+  get authority() { const M = this.G.match; return !(M && M.netRole === 'client'); }
+
+  /** Netz ('ev' wb): Ids gebrochener Paneele vom Host (now: Beitritt – ohne Staub/Krach). */
+  applyNet(m) {
+    if (!m || !Array.isArray(m.i)) return;
+    for (const i of m.i) { const p = this.panels[i | 0]; if (p && p.alive) this._break(p, false, { fromNet: true, now: !!m.now }); }
+  }
+
+  /** Gebrochene Paneele (Host → Späteinsteiger). */
+  snapshot() { return this.panels.filter((p) => !p.alive).map((p) => p.idx); }
+
   _explosion(e) {
-    if (!e || e.nonLethal || !e.position) return;
+    if (!e || e.nonLethal || !e.position || !this.authority) return;
     const r = (e.radius || 6) + 0.8;
     // schwere Ladungen: Luftschlag, Panzergranaten (SG/PG, vehicles/projectiles.js) brechen Paneele schneller heraus
     const heavy = e.type === 'strike' || e.type === 'tank' || e.type === 'shell_he' || e.type === 'shell_ap';
@@ -171,7 +186,7 @@ export class Destruction {
   }
 
   _bullet(p, dmg, def) {
-    if (!p.alive || !def) return;
+    if (!p.alive || !def || !this.authority) return;
     const k = def.antiMateriel ? 3 : (def.penetration || 0) >= 0.75 ? 0.5 : 0.12;
     this._damage(p, dmg * k);
   }
@@ -182,7 +197,7 @@ export class Destruction {
     if (p.hp <= 0) this._break(p);
   }
 
-  _break(p, chain = false) {
+  _break(p, chain = false, { fromNet = false, now = false } = {}) {
     if (!p.alive) return;
     p.alive = false;
     this.broken++;
@@ -190,11 +205,14 @@ export class Destruction {
     if (G.building) G.building.removeSolid(p.solid);
     if (p.d.mesh) p.d.mesh.visible = false; // Geometrie gibt die Welt beim Abbau frei
     _n.set(Math.sin(p.d.ry), 0, Math.cos(p.d.ry)); // Wandnormale (lokal z)
-    if (G.effects && typeof G.effects.rubble === 'function') G.effects.rubble(p.center, _n, p.surface, Math.max(p.d.w, p.d.h));
-    if (G.audio && typeof G.audio.play === 'function') { try { G.audio.play('debris', { position: p.center, volume: chain ? 0.6 : 1 }); } catch { /* */ } }
+    if (!now && G.effects && typeof G.effects.rubble === 'function') G.effects.rubble(p.center, _n, p.surface, Math.max(p.d.w, p.d.h));
+    if (!now && G.audio && typeof G.audio.play === 'function') { try { G.audio.play('debris', { position: p.center, volume: chain ? 0.6 : 1 }); } catch { /* */ } }
     G.events.emit('wall:break', { position: p.center.clone(), surface: p.surface, chain });
+    // Host: an die Clients (logik 22.11.); den Nachsturz entscheidet nur, wer den Bruch entschieden hat (Clients bekommen 'wb')
+    const sync = G.net && G.net.sync;
+    if (!fromNet && G.match && G.match.netRole === 'host' && sync && typeof sync.relayWalls === 'function') { try { sync.relayWalls([p.idx]); } catch { /* */ } }
     // ohne Halt: Paneele darüber stürzen kurz danach nach
-    for (const q of this.panels) if (q.alive && q.below === p) this._queue.push({ p: q, at: G.time.elapsed + 0.25 + Math.random() * 0.2 });
+    if (!fromNet) for (const q of this.panels) if (q.alive && q.below === p) this._queue.push({ p: q, at: G.time.elapsed + 0.25 + Math.random() * 0.2 });
   }
 
   update(dt = 0) {

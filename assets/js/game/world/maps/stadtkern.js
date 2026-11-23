@@ -5,10 +5,10 @@
 // (Schaufenster, Auslagen), Treppenhäusern bis aufs Dach, möblierten Wohnungen, Balkonen und Toreinfahrten; dahinter
 // Hinterhöfe, das Kaufhaus am Platz mit Dachterrasse, Hinterhäuser, eine Hinterstraße (Startbereich) und Querstraßen.
 // Vertikales Spiel: Dächer (verbunden über die Brüstungen), Balkone, U-Bahn. Alle Namen frei erfunden.
-import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261122020853';
-import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261122020853';
-import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261122020853';
-import { stadtkernFuellen } from './fuell-karten.js?v=20261122020853'; // fuell (20.11.): Linden der Lindenallee u. a.
+import { altbau, kaufhaus, hofAusstattung, gleise, fahrleitung, strassenbahn, haltestelle, litfass, telefonzelle, wrack, kulisse, ubahn, UB, FH } from './stadtkern-bau.js?v=20261123073102';
+import { sandbags, jersey, lampPost, bench, car, cone, crateStack, barrelGroup, tree, dumpster, hash01, bollard } from '../props.js?v=20261123073102';
+import { rubble, igel, bauzaun, KEIN, VG, mittel } from './neu-bau.js?v=20261123073102';
+import { stadtkernFuellen } from './fuell-karten.js?v=20261123073102'; // fuell (20.11.): Linden der Lindenallee u. a.
 
 const PI = Math.PI, Q = PI / 2;
 const HX = 56, HZ = 56; // Spielfläche (Kulissen dahinter)
@@ -70,7 +70,7 @@ function haelfte(b, s, zones) {
   for (let k = 0; k < 5; k++) b.box(-3 + k * 0.6, 0, Z(22.8), 0.05, 0.75, 1.2, 'metal_galvanized', { ...KEIN });
   // Gehweg: Laternen, Haltestelle, Hydrant, Poller
   for (const x of [-42, -18, 18, 42]) lampPost(b, x, Z(8.3), { h: 6.2, ry: s > 0 ? Q : -Q, kind: 'warm', arm: 1.0 });
-  haltestelle(b, 30, Z(7.8), s);
+  haltestelle(b, 22.5, Z(7.8), s); // karten (22.11.): vorher x 30 – die Seitenscheiben standen vor den Ladentüren x 28,2 und 31,8
   b.model('fire_hydrant', -30, 0, Z(8.2), { ry: s > 0 ? PI : 0, collide: false });
   b.box(-30, 0, Z(8.2), 0.4, 0.8, 0.4, 'black', { visual: false, minimap: 'prop' });
   // platz (19.11.): Poller an der Bordsteinkante vor dem Platz (Kommentar oben versprach sie, es gab keine) – Abstand 2,5 m

@@ -9,7 +9,7 @@
 //   • ringXY/ringZY/… : Hilfen für Querschnitte (Grundriss je Höhe, Seitenprofil je Breite).
 // Lage wie alle Fahrzeuge: vorwärts −z, x rechts, y oben.
 import * as THREE from 'three';
-import { subdivide, triangulate } from '../engine/subdiv.js?v=20261122020853';
+import { subdivide, triangulate } from '../engine/subdiv.js?v=20261123073102';
 
 const PI = Math.PI;
 

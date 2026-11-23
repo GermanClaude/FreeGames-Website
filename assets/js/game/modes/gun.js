@@ -5,8 +5,8 @@
 // Waffe des eigenen Spielers und meldet gun:promote/gun:demote fürs HUD. Anti-Cheat des Hosts: netWeaponsOf erlaubt die
 // Nachbarstufen, bis der Client die neue Stufe hat.
 
-import { WEAPONS, GUN_GAME_STEPS } from '../../shared/weapons.data.js?v=20261122020853';
-import { BaseMode } from './base.js?v=20261122020853';
+import { WEAPONS, GUN_GAME_STEPS } from '../../shared/weapons.data.js?v=20261123073102';
+import { BaseMode } from './base.js?v=20261123073102';
 
 export class GunMode extends BaseMode {
   constructor(G, modeId, opts) {
@@ -17,6 +17,9 @@ export class GunMode extends BaseMode {
     this.scoreLimit = this.steps.length;
     this.level = new Map();
     this._pending = new Set();
+    // Waffe kommt von der Stufe: kein „Ausrüstung“ im Pausenmenü/Todesbildschirm – sonst ließ sich ≤ 5 s nach dem Spawn
+    // jede beliebige Waffe nehmen (main.js requestLoadout, logik 22.11.)
+    this.lockLoadout = true;
   }
 
   onStart() {

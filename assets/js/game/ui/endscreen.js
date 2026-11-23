@@ -3,14 +3,17 @@
 // animierter EP-Balken mit Stufen-/Dienstgrad-Aufstieg (rankIcon), neue Freischaltungen.
 // Knöpfe: Revanche · Lobby · Zur Website.
 
-import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261122020853';
-import { ICON, medalBadge } from './icons.js?v=20261122020853';
-import { scoreboardHtml, netRows } from './scoreboard.js?v=20261122020853';
+import { esc, num, pct, kd, clock, meters, secs } from './dom.js?v=20261123073102';
+import { ICON, medalBadge } from './icons.js?v=20261123073102';
+import { scoreboardHtml, netRows } from './scoreboard.js?v=20261123073102';
+import { tx } from '../../shared/i18n.js?v=20261123073102';
 
 const REASON = {
   score: 'Punktelimit erreicht', time: 'Zeit abgelaufen', overtime: 'In der Verlängerung entschieden', forced: 'Match beendet',
   finished: 'Training beendet',
 };
+// Zombie-Modus (modes/zombie.js): eigene Gründe, übersetzt beim Anzeigen
+const REASON_TX = { cleared: 'Alle Wellen überstanden', wiped: 'Alle Überlebenden gefallen' };
 
 export class EndScreen {
   constructor(G) {
@@ -25,7 +28,7 @@ export class EndScreen {
     const r = result || {};
     const ps = r.playerSummary || {};
     const D = G.data || {};
-    const names = D.TEAM_NAMES || { A: 'Team A', B: 'Team B' };
+    const names = r.teamNames || D.TEAM_NAMES || { A: 'Team A', B: 'Team B' }; // Modus-eigene Namen (Zombies: Wellen)
     const p = G.player;
     const mine = p && p.team === 'B' ? 'B' : 'A';
     const other = mine === 'A' ? 'B' : 'A';
@@ -34,7 +37,7 @@ export class EndScreen {
     let title = { win: 'Sieg', loss: 'Niederlage', draw: 'Unentschieden' }[outcome];
     if (training) { outcome = 'train'; title = 'Training beendet'; }
     else if (!r.teams && r.placement) title = r.draw ? 'Gleichstand' : `Platz ${r.placement}`; // draw: Spieler unter den punktgleichen Führenden
-    const kicker = [r.modeName, r.mapName, r.duration ? clock(r.duration) : null, REASON[r.reason] || null].filter(Boolean).map(esc).join(' · ');
+    const kicker = [r.modeName, r.mapName, r.duration ? clock(r.duration) : null, REASON[r.reason] || (REASON_TX[r.reason] ? tx(REASON_TX[r.reason]) : null)].filter(Boolean).map(esc).join(' · ');
     let line = '';
     if (r.teams && r.teamScores) {
       line = `<div class="e-teams"><span class="a"><small>${esc(names[mine])}</small><b>${r.teamScores[mine] ?? 0}</b></span><i>:</i><span class="b"><b>${r.teamScores[other] ?? 0}</b><small>${esc(names[other])}</small></span></div>`;
@@ -66,6 +69,7 @@ export class EndScreen {
       if (r.modeId === 'dom' || r.modeId === 'cq' || r.modeId === 'trupp') cells[8] = ['Erobe\u00adrungen', String(ps.captures ?? 0)];
       if ((r.modeId === 'cq' || r.modeId === 'trupp') && ct.vehicles) cells[7] = ['Fahrzeuge zerstört', String(ct.vehicles)];
       if (r.modeId === 'kc') cells[8] = ['Marken', String(ct.confirms ?? 0), ct.denies ? `${ct.denies} verweigert` : ''];
+      if (r.modeId === 'zombie' && r.extra) cells[8] = [tx('Wellen'), String(r.extra.waves ?? 0), r.extra.endless ? tx(`Welle ${r.extra.reached ?? 0} erreicht`) : ''];
       if (r.modeId === 'inf') cells[8] = ['Infiziert', String(ct.infects ?? 0), ct.survivals ? 'Überlebt' : ''];
       if (r.modeId === 'hp') cells[8] = ['Halte\u00adzeit', clock(Math.floor(ct.hpTime || 0)), ct.hpCaptures ? `${ct.hpCaptures}× eingenommen` : '']; // Stellung (26.10.)
     }

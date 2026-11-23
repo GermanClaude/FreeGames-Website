@@ -1,15 +1,15 @@
 /* NULLPUNKT – © 2026 German Legend. Alle Rechte vorbehalten. Siehe LICENSE. */
-// §04 Simulation: Spielstile Arcade / Realistisch / Simulation im Vergleich – die Werte kommen direkt aus
+// §04 Simulation: Spielstile Arcade / Realistisch / Ultra-Realismus / Simulation im Vergleich – die Werte kommen direkt aus
 // shared/classes.data.js (GAME_STYLES), ändern sich dort also mit. Ein Stil lässt sich als Vorgabe setzen (Einstellung
 // gameStyle, gilt in der Lobby). Darunter die vier Plätze im Panzer als Reiter (statisch im HTML, hier nur Reiter).
-import { h, $, $$, tabs } from './dom.js?v=20261122020853';
-import { announce } from './live.js?v=20261122020853';
+import { h, $, $$, tabs } from './dom.js?v=20261123073102';
+import { announce } from './live.js?v=20261123073102';
 
 const yes = (v) => (v ? 'ja' : 'nein');
 const num = (v) => String(v).replace('.', ',');
 const HUD = { voll: 'volles HUD', reduziert: 'reduziert', aus: 'kein HUD' };
 const XH = { an: 'immer', einstellung: 'nach Einstellung', aus: 'nie' };
-const PLATES = { alle: 'Freund und Feind', team: 'nur eigenes Team' };
+const PLATES = { alle: 'Freund und Feind', team: 'nur eigenes Team', aus: 'keine' };
 const HITS = { immer: 'immer, auch durch Wände', sicht: 'nur bei Sicht', aus: 'keine' };
 
 /** Zeilen: [Bezeichnung, (stil) → Text]. */
@@ -20,7 +20,10 @@ const ROWS = [
   ['Gegner auf der Minikarte', (s) => yes(s.minimapEnemies)],
   ['Trefferanzeige', (s) => HITS[s.hitmarkers] || s.hitmarkers],
   ['Schaden durch Kugeln', (s) => `×${num(s.bulletMult)}`],
-  ['Heilung setzt ein nach', (s) => `${num(s.regenDelay)} s`],
+  ['Heilung setzt ein nach', (s) => (s.regenDelay >= 1e6 ? 'nie – nur Verband' : `${num(s.regenDelay)} s`)],
+  ['Kopftreffer sofort tödlich', (s) => yes(!!s.headKill)],
+  ['Teambeschuss', (s) => yes(!!s.friendlyFire)],
+  ['Trägheit, Waffengewicht, Atem im Anschlag', (s) => yes(!!s.ultra)],
   ['Ausdauer', (s) => (s.staminaMult > 1 ? 'knapper' : 'normal')],
   ['Magazine einzeln, Durchladen, Ladehemmung', (s) => yes(s.id === 'simulation')],
   ['Verwundung je Körperteil, Bewusstlosigkeit', (s) => yes(s.id === 'simulation')],
@@ -45,7 +48,12 @@ function styleTable(sec, D, C, ctx) {
   const table = h('table.sim-table', {}, h('caption.sr-only', {}, 'Spielstile im Vergleich'), h('thead', {}, head), body);
   const desc = h('p.sim-desc', { 'aria-live': 'polite' });
   const simModes = (C.SIM_MODES || []).map((id) => D.M?.MODES?.[id]?.name).filter(Boolean);
-  const note = simModes.length ? h('p.sim-note', {}, `Simulation gibt es in: ${simModes.join(', ')}. In den übrigen Modi spielt sie sich wie „Realistisch“.`) : null;
+  // Modusnamen je eigener Knoten – die Übersetzung (shared/i18n.js) trifft sie so einzeln statt als ein Satz mit deutscher Liste
+  const nameList = (names) => names.flatMap((n, i) => (i ? [', ', h('span', {}, n)] : [h('span', {}, n)]));
+  const note = simModes.length ? h('p.sim-note', {}, 'Simulation gibt es in: ', nameList(simModes), '. In den übrigen Modi spielt sie sich wie „Realistisch“.') : null;
+  // Ultra-Realismus (wie Bodycam): eigene Modusliste
+  const ultraModes = (C.ULTRA_MODES || []).map((id) => D.M?.MODES?.[id]?.name).filter(Boolean);
+  const unote = ultraModes.length ? h('p.sim-note', {}, 'Ultra-Realismus gibt es in: ', nameList(ultraModes), '. In den übrigen Modi spielt er sich wie „Realistisch“.') : null;
   const setBtn = h('button.txt-btn.sim-set', { type: 'button' });
   const state = h('span.mono-s.sim-state');
 
@@ -72,7 +80,7 @@ function styleTable(sec, D, C, ctx) {
     announce(`Spielstil ${C.GAME_STYLES[sel].label} ist jetzt deine Vorgabe.`, { now: true });
   });
   S.onChange?.((k) => { if (k === 'gameStyle') paint(); });
-  root.replaceChildren(pick, h('div.sim-scroll', {}, table), desc, note, h('p.sim-acts', {}, setBtn, state));
+  root.replaceChildren(pick, h('div.sim-scroll', {}, table), desc, note, unote, h('p.sim-acts', {}, setBtn, state));
   paint();
 }
 
@@ -97,7 +105,7 @@ function crewTabs(sec, ctx) {
 
 export async function init(sec, D, ctx = {}) {
   let C = null;
-  try { C = await import('../shared/classes.data.js?v=20261122020853'); } catch { C = null; }
+  try { C = await import('../shared/classes.data.js?v=20261123073102'); } catch { C = null; }
   styleTable(sec, D, C, ctx);
   crewTabs(sec, ctx);
 }

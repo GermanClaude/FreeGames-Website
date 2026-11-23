@@ -25,14 +25,14 @@
 //     {a:'h'} Treffer eines Clients auf eine Drohne (Waffe, Feuerrate, Reichweite, Sicht). Alle Drohnen gehen mit 12 Hz als
 //     'ev' dr an alle, ihr Ende als 'ev' de.
 import * as THREE from 'three';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261122020853';
-import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261122020853';
-import { ABILITIES } from '../../shared/classes.data.js?v=20261122020853';
-import { MOUNT_WEAPON, looksOf } from '../mappoints.js?v=20261122020853';
-import { netPoseOf } from '../bots/bot.js?v=20261122020853';
-import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261122020853';
-import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261122020853';
-import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261122020853';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261123073102';
+import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261123073102';
+import { ABILITIES } from '../../shared/classes.data.js?v=20261123073102';
+import { MOUNT_WEAPON, looksOf } from '../mappoints.js?v=20261123073102';
+import { netPoseOf } from '../bots/bot.js?v=20261123073102';
+import { PKT_STATE, decodeState, encodeSnapshot, packetType, FLAGS } from './protocol.js?v=20261123073102';
+import { HOST_ID, FIRST_BOT_ID, sanitizeLoadout, loadoutWeapons } from './index.js?v=20261123073102';
+import { SNAPSHOT_HZ, MODE_MIN_GAP, MODE_MAX_GAP, rnd, arr3, vec3, dist3, loadoutOf, identityOf, vrPoseOf, newVrPose } from './sync-common.js?v=20261123073102';
 
 const nowSec = () => performance.now() / 1000;
 const DOWN = new THREE.Vector3(0, -1, 0);
@@ -56,7 +56,7 @@ const INTEREST_MIN = 12;
 export class HostSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261122020853').NetSystem} net
+   * @param {import('./index.js?v=20261123073102').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'host', teamSize, botFill, pvp, ffa …)
    */
   constructor(G, net, cfg = {}) {
@@ -105,6 +105,8 @@ export class HostSync {
       net.on('ability', (m, from) => this._onAbility(m, from)),
       net.on('loot', (m, from) => this._onLoot(m, from)),
       net.on('door', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.doors) this.G.doors.netRequest(p, m); }),
+      // Verband eines Clients (injuries.js netBandage prüft: lebendig, Verbände je Leben, Abklingzeit, verwundet) – rest 22.11.
+      net.on('verband', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.injuries) this.G.injuries.netBandage(p); }),
       net.on('dig', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.digging) this.G.digging.netRequest(p, m); }),
       net.on('build', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && this.G.building) this.G.building.netRequest(p, m); }),
       net.on('point', (m, from) => { const p = this._puppet(from); if (this.active && !this.ended && p && m && this.G.points) this.G.points.netUse(p, m.i, from); }),
@@ -191,6 +193,8 @@ export class HostSync {
     s.on('score', (e) => { if (e && e.actor && e.actor.isRemoteHuman) this._toActor(e.actor, { t: 'ev', e: 'sc', p: e.points, r: e.reason }); });
     s.on('medal', (e) => { if (e && e.actor && e.actor.isRemoteHuman) this._toActor(e.actor, { t: 'ev', e: 'md', id: e.id, label: e.label, tier: e.tier }); });
     s.on('actor:remove', () => { this._actorsDirty = true; });
+    // Wundstand der Puppe (injuries.js): Blutung/Arm/Bein + Verbände an den betroffenen Client ('ev' ij)
+    s.on('injury:state', (e) => { if (e && e.actor && e.actor.isRemoteHuman && this.G.injuries) this._toActor(e.actor, { t: 'ev', e: 'ij', ...this.G.injuries.netState(e.actor) }); });
     // Panzerung (Großkarten): Reserveplatte nach Abschuss an den betroffenen Client
     s.on('armor:pickup', (e) => { if (e && e.actor && e.actor.isRemoteHuman && e.actor.armor) this._toActor(e.actor, { t: 'ev', e: 'ap', ar: armorOf(e.actor) }); });
     s.on('armor:plate', (e) => { if (e && e.actor && e.actor.isRemoteHuman && e.phase === 'end' && e.actor.armor) this._toActor(e.actor, { t: 'ev', e: 'ap', ar: armorOf(e.actor) }); });
@@ -381,6 +385,7 @@ export class HostSync {
     if (G.trees) for (const t of G.trees.snapshot()) this.net.send(id, { t: 'ev', e: 'tf', ...t, now: 1 }); // gefallene Bäume
     if (G.holes && typeof G.holes.breachState === 'function') for (const b of G.holes.breachState()) this.net.send(id, { t: 'ev', e: 'br', ...b, now: 1 }); // Panzerbreschen
     { const pb = G.destruction && G.destruction.breakables; if (pb && pb.active) { const ids = pb.snapshot(); if (ids.length) this.net.send(id, { t: 'ev', e: 'pb', i: ids, now: 1 }); } } // zerbrochene Kisten/Zaunfelder (breakables.js)
+    { const D = G.destruction; if (D && typeof D.snapshot === 'function') { const ids = D.snapshot(); if (ids.length) this.net.send(id, { t: 'ev', e: 'wb', i: ids, now: 1 }); } } // gebrochene Wandpaneele (destruction.js)
   }
 
   /** Bresche (Panzergranate/Rammen, bullet-holes.js breach): vollständige Form an alle ('ev' br). */
@@ -388,6 +393,9 @@ export class HostSync {
 
   /** Zerbrochene Requisiten ('ev' pb, breakables.js): Ids. */
   relayProps(ids) { if (this.active && this.net.online && ids && ids.length) this.net.send('all', { t: 'ev', e: 'pb', i: ids }); }
+
+  /** Gebrochene Wandpaneele ('ev' wb, destruction.js): Ids. */
+  relayWalls(ids) { if (this.active && this.net.online && ids && ids.length) this.net.send('all', { t: 'ev', e: 'wb', i: ids }); }
 
   /** Baum gefallen ('ev' tf, treefall.js). */
   relayTree(msg) { if (this.active && this.net.online) this.net.send('all', { t: 'ev', e: 'tf', ...msg }); }
@@ -644,6 +652,8 @@ export class HostSync {
       shooter: { alive: p.alive, team: p.team, pos: this._shooterPos(p), weapons: this._weaponsOf(p, from) },
       target: { alive: target.alive, team: target.team, pos: [target.position.x, target.position.y, target.position.z] },
       los: W && typeof W.lineOfSight === 'function' ? (o, q) => W.lineOfSight(_eye.set(o[0], o[1], o[2]), _v.set(q[0], q[1], q[2])) : undefined,
+      // Teambeschuss (Spielstil Ultra-Realismus): Treffer auf Mitspieler sind dann erlaubt (Anti-Cheat wie FFA)
+      ...(G.match && G.match.styleFlags && G.match.styleFlags.friendlyFire ? { ffa: true } : {}),
     };
   }
 

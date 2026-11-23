@@ -409,7 +409,9 @@ export const TROOP_VEHICLES = {
     gunLimits: { min: deg(-12), max: deg(55) },
     traverse: deg(120), elevate: deg(80),
     wheels: { radius: 0.3, rest: 0.4, stiffness: 160000, damping: 15000, x: 1.12, z: [-1.9, -0.95, 0, 0.95, 1.9] },
-    roadZ: [-1.95, -0.97, 0, 0.97, 1.95],
+    // Vorbild M113-artiger MTW: fünf Laufrollen (Ø 0,6 m) dicht an dicht (Abstand ~0,7 m, Lücke ~10 cm), etwas nach hinten
+    // gerückt – vorn steigt die Kette lang zum hohen Triebrad an, hinten sitzt das Leitrad dicht hinter der letzten Rolle
+    roadZ: [-1.25, -0.55, 0.15, 0.85, 1.55],
     engine: tankEngine({ curve: MBT_TQ, k: 0.19, F: 3.9, r: 0.27, brake: 95000, turn: 1.0, turnM: 0.78, lat: 4.8, vmax: 18.0, vrev: 6.5, air: 2.6, drag: 6500, conv: 1.9, lag: 0.2, shift: 0.45 }),
     drivetrain: { powerKW: 160, pwr: 12.8, gears: '3/1 (Wandler)', vmax: 64 },
     grip: { long: 1.0, lat: 0.95, latTurning: 0.55, rollInfluence: 0.25 },

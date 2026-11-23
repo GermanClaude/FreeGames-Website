@@ -5,15 +5,15 @@
 // Panzerschießbahn bis 2500 m, Flugfeld mit Startbahn und Zielgebiet mit Luftzielen (Bereiche: range-gelaende.js,
 // Bedienung: modes/training-gelaende.js). Klarer Morgen. Koordinaten der Anlage unverändert (Kampagne M0).
 import * as THREE from 'three';
-import { getMaterial } from '../../engine/textures.js?v=20261122020853';
-import { building, wall, stairs, railing } from '../arch.js?v=20261122020853';
-import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261122020853';
-import { rangeFuellen } from './fuell-karten.js?v=20261122020853'; // fuell (20.11.): Bodenspuren, Wiesen außen
-import { VEHICLES } from '../../vehicles/data.js?v=20261122020853';
+import { getMaterial } from '../../engine/textures.js?v=20261123073102';
+import { building, wall, stairs, railing } from '../arch.js?v=20261123073102';
+import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261123073102';
+import { rangeFuellen } from './fuell-karten.js?v=20261123073102'; // fuell (20.11.): Bodenspuren, Wiesen außen
+import { VEHICLES } from '../../vehicles/data.js?v=20261123073102';
 import {
   RUNWAY, FIRE_Z as TANK_LINE, TANK_X, AREA, HOF, STRECKE, SCHIESSBAHN, FLUGFELD, ZIELGEBIET, rectClearings, boardsIn,
   hof, strecke, schiessbahn, flugfeld, zielgebiet, installTargetRaycast, createDynamicTargets, installHitTest, uebungOf,
-} from './range-gelaende.js?v=20261122020853';
+} from './range-gelaende.js?v=20261123073102';
 
 const LANES = 8, LANE_W = 5.5, FIRE_Z = 34; // Schießstand (Infanterie): Feuerlinie z 34, Bahnen nach Norden
 const laneX = i => -((LANES - 1) / 2) * LANE_W + i * LANE_W;
@@ -211,7 +211,8 @@ function stand(b) {
   for (let k = 0; k <= LANES; k++) {
     const x = -22 + k * LANE_W;
     b.box(x, 0.15, z0 + 0.2, 0.3, roofY - 0.15, 0.3, 'metal_painted', { tint: '#2a2e33', minimap: 'pillar', aoFloor: 0.15 });
-    b.box(x, 0.15, z1 - 0.3, 0.3, roofY - 0.15, 0.3, 'metal_painted', { tint: '#2a2e33', minimap: 'pillar', aoFloor: 0.15 });
+    // karten (22.11.): die mittlere Rückstütze stand mitten im 4-m-Durchgang (x 0) – dort zwei Stützen an den Laibungen
+    for (const px of x === 0 ? [-2.15, 2.15] : [x]) b.box(px, 0.15, z1 - 0.3, 0.3, roofY - 0.15, 0.3, 'metal_painted', { tint: '#2a2e33', minimap: 'pillar', aoFloor: 0.15 });
   }
   for (const x of [-25.6, 25.6]) for (const z of [z0 + 0.2, z1 - 0.3]) b.box(x, 0.15, z, 0.3, roofY - 0.15, 0.3, 'metal_painted', { tint: '#2a2e33', minimap: 'pillar', aoFloor: 0.15 });
   // Dach mit Träger und Lichtbändern
@@ -243,7 +244,8 @@ function stand(b) {
   }
   // Rückwand mit Durchgängen
   wall(b, { x0: -26, z0: z1 + 0.05, x1: 26, z1: z1 + 0.05, y: 0.15, h: roofY - 0.15, t: 0.25, mat: 'panel_wall', tint: '#cfd6da', openings: [
-    { at: 5, w: 2.6, h: 2.8, kind: 'gap', frame: false }, { at: 26, w: 4, h: 2.9, kind: 'gap', frame: false }, { at: 47, w: 2.6, h: 2.8, kind: 'gap', frame: false }] });
+    // karten (22.11.): seitliche Durchgänge genau zwischen Eckstütze (x ±22) und Gehörschutz-Ständer – vorher ragte die Stütze hinein
+    { at: 5.15, w: 2.0, h: 2.8, kind: 'gap', frame: false }, { at: 26, w: 4, h: 2.9, kind: 'gap', frame: false }, { at: 46.85, w: 2.0, h: 2.8, kind: 'gap', frame: false }] });
   b.sign(-6, 2.2, z1 + 0.2, 4.2, 0.9, 'ear', { ry: 0, depth: 0.03 });
   b.sign(6, 2.2, z1 + 0.2, 3.6, 0.9, 'danger', { ry: 0, depth: 0.03 });
   b.interior(-26, z0 - 0.4, 26, z1 + 0.1, 0, roofY - 0.05, 0.78);
@@ -297,7 +299,7 @@ function stand(b) {
   lockers(b, 9, 60.9, { n: 6, ry: Math.PI });
   b.decal(0, 0.01, 52, 12, 10, 'hatch', { ry: 0, tint: '#ff5b1f', kind: 'paint', opacity: 0.5 });
   for (const x of [-12, 12]) for (const z of [47, 57]) b.plant('bush', x, 0, z, { s: 0.9 });
-  electricBox(b, 0, 0, 43.2, { ry: 0, w: 1.2, h: 1.6 });
+  electricBox(b, 4.0, 0, 43.2, { ry: 0, w: 1.2, h: 1.6 }); // karten (22.11.): neben statt in den mittleren Durchgang (x 0)
 
   // --- Waffenkammer (Ost) --------------------------------------------------
   const ar = building(b, {
@@ -348,7 +350,7 @@ function stand(b) {
   sandbags(b, -18, 53.5, -15, 53.5, { rows: 4 });
   crate(b, -25, 0, 48, 1.0, { ry: 0.3 }); crate(b, -24.1, 0, 48.3, 0.8, { ry: -0.2 });
   barrel(b, -14, 0, 59.5); barrel(b, -13.4, 0, 59.8);
-  pallet(b, -20, 0, 59.6, { load: 'boxes', ry: 0.1 });
+  pallet(b, -18.8, 0, 59.6, { load: 'boxes', ry: 0.1 }); // karten (22.11.): vorher x −20 – stand im Geländer der Turmtreppe
   for (const [x, z] of [[-26.5, 53], [-17, 47.5]]) cone(b, x, z);
 
   dressing(b);

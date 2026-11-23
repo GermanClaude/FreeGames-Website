@@ -24,13 +24,13 @@
 //     sa Antwort auf die eigene Anfrage (sendStreak), sv Prämie eines anderen, dr Lage fremder Drohnen, de Ende einer Drohne;
 //     die eigene Drohne fliegt lokal und meldet Lage/Sprengung/Ende über sendDrone.
 import * as THREE from 'three';
-import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261122020853';
-import { importCC } from '../../shared/customcamo.js?v=20261122020853';
-import { netPoseOf } from '../bots/bot.js?v=20261122020853';
-import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261122020853';
-import { HOST_ID } from './index.js?v=20261122020853';
-import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261122020853';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261122020853';
+import { WEAPONS, CAMOS } from '../../shared/weapons.data.js?v=20261123073102';
+import { importCC } from '../../shared/customcamo.js?v=20261123073102';
+import { netPoseOf } from '../bots/bot.js?v=20261123073102';
+import { PKT_SNAPSHOT, decodeSnapshot, encodeState, packetType, FLAGS } from './protocol.js?v=20261123073102';
+import { HOST_ID } from './index.js?v=20261123073102';
+import { STATE_HZ, INTERP_MIN, INTERP_MAX, STALE_SEC, rnd, arr3, vec3, wrapAngle, vrPoseOf, newVrPose, lerpVrPose } from './sync-common.js?v=20261123073102';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261123073102';
 
 const nowSec = () => performance.now() / 1000;
 const ENV_GAP = 0.4;
@@ -50,7 +50,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 export class ClientSync {
   /**
    * @param {object} G
-   * @param {import('./index.js?v=20261122020853').NetSystem} net
+   * @param {import('./index.js?v=20261123073102').NetSystem} net
    * @param {object} cfg cfg.net des Matches (role 'client', selfId, team …)
    */
   constructor(G, net, cfg = {}) {
@@ -654,6 +654,7 @@ export class ClientSync {
       case 'dg': if (G.digging && Number.isFinite(m.x) && Number.isFinite(m.z)) G.digging.apply(m.x, m.z, true, Number(m.r) || 0, Number(m.d) || 0); return; // Graben / Explosionskrater (digging.js)
       case 'br': if (G.holes && typeof G.holes.applyBreach === 'function') G.holes.applyBreach(m, { quiet: !!m.now }); return; // Panzerbresche (bullet-holes.js)
       case 'pb': if (G.destruction && G.destruction.breakables && Array.isArray(m.i)) G.destruction.breakables.applyNet(m); return; // Kisten/Zaunfelder zerbrochen (breakables.js)
+      case 'wb': if (G.destruction && typeof G.destruction.applyNet === 'function' && Array.isArray(m.i)) G.destruction.applyNet(m); return; // Wandpaneele gebrochen (destruction.js)
       case 'tf': if (G.trees && Number.isInteger(m.i) && Number.isFinite(m.y) && Number.isFinite(m.dx) && Number.isFinite(m.dz)) G.trees.fell(m.i, m.y, m.dx, m.dz, true, !!m.now); return; // Baum gefallen (treefall.js)
       case 'gr': {
         if (!W) return;
@@ -713,6 +714,9 @@ export class ClientSync {
       }
       case 'ap':
         this._applyArmor(m.ar);
+        return;
+      case 'ij': // Wundstand der eigenen Puppe (injuries.js applyNet)
+        if (G.injuries) G.injuries.applyNet(m);
         return;
       case 'sk': case 'sa': case 'sv': case 'dr': case 'de': {
         // Serienprämien/FPV-Drohne (mode.streaks läuft auf dem Client als Abbild)
@@ -855,6 +859,12 @@ export class ClientSync {
     if (!this.active || this.ended || !Number.isInteger(i)) return;
     // a: t umschalten, k auframmen, h Treffer, g Scharnier x getroffen, p lose Tür anstoßen (x = Seite)
     this.net.send(HOST_ID, { t: 'door', i, a: ['k', 'h', 'g', 'p'].includes(a) ? a : 't', d: Math.round(d), x: x | 0 });
+  }
+
+  /** Verband fertig angelegt ('verband'): der Host prüft und wirkt an der Puppe (injuries.js netBandage), Antwort 'ev' ij. */
+  sendBandage() {
+    if (!this.active || this.ended) return;
+    this.net.send(HOST_ID, { t: 'verband' });
   }
 
   /** Grabwunsch ('dig' {x, z}): der Host prüft und verteilt ('ev' dg, digging.js). */

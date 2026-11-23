@@ -1,7 +1,7 @@
 // NULLPUNKT — Requisiten aus Primitiven: Container, Fahrzeuge, Kisten, Fässer, Paletten, Sandsäcke,
 // Betonbarrieren, Lampen, Zäune, Bäume, Marktstände … (Owner: world)
 import * as THREE from 'three';
-import { autoWrack } from './autowrack.js?v=20261122020853';
+import { autoWrack } from './autowrack.js?v=20261123073102';
 
 /** Lokales Koordinatensystem (x, y, z, ry) für Unterteile eines Props. */
 export function frame(b, x, y, z, ry = 0) {
@@ -106,8 +106,9 @@ export function corrPanel(w, h, { pitch = 0.278, depth = 0.036, dir = 'v', flatT
       const [s0, z0] = prof[j], [s1, z1] = prof[j + 1];
       const ds = s1 - s0, dz = z1 - z0, l = Math.hypot(ds, dz);
       if (dir === 'v') {
-        const xa = -w / 2 + s0, xb = -w / 2 + s1;
-        quad([xa, y0, z0], [xb, y0, z1], [xb, y0 + h, z1], [xa, y0 + h, z0], -dz / l, 0, ds / l);
+        // gross (23.11.): senkrechte Sicken zwischen glattem Fuß-/Kopffeld (Türflügel)
+        const xa = -w / 2 + s0, xb = -w / 2 + s1, ya = y0 + flatBottom, yb = y0 + h - flatTop;
+        quad([xa, ya, z0], [xb, ya, z1], [xb, yb, z1], [xa, yb, z0], -dz / l, 0, ds / l);
       } else {
         const ya = y0 + flatBottom + s0, yb = y0 + flatBottom + s1;
         quad([w / 2, ya, z0], [w / 2, yb, z1], [-w / 2, yb, z1], [-w / 2, ya, z0], 0, -dz / l, ds / l);
@@ -140,11 +141,11 @@ function container3d(f, b, x, y, z, o, len, H, W, color, ground) {
   for (const side of [1, -1]) f.geom(corrPanel(wallW, wallH), 0, 0.08, side * zw, 'ctr_lack', { ...L, ...G, ry: side < 0 ? Math.PI : 0 });
   // Dach: flache Quersicken (Teilung ≈ 0,55 m), leicht unter der Oberkante der Gurte
   f.geom(corrPanel(len - 0.3, W - 0.14, { pitch: 0.55, depth: 0.022, center: true }), 0, H - 0.012, 0, 'ctr_lack', { ...L, tint: shade(color, 0.92), rx: -Math.PI / 2 });
-  // Stirnseiten: Türen (waagrechte Sicken) bzw. geschlossene Stirnwand (senkrechte Sicken)
+  // Stirnseiten: Türen und geschlossene Stirnwand mit senkrechten Sicken (gross 23.11.: Türen vorher waagrecht, grob)
   // Flügel zwischen den Eckpfosten (sonst ragen die Sicken über die Pfosten → Zahnmuster an der Kante)
   const leafW = W / 2 - 0.18 - 0.006, leafH = H - 0.12;
   const doorEnd = (sx) => {
-    for (const sz of [-1, 1]) f.geom(corrPanel(leafW, leafH, { dir: 'h', pitch: 0.36, depth: 0.028, flatTop: 0.34, flatBottom: 0.16 }), sx * (len / 2 + 0.003), 0.06, sz * (leafW / 2 + 0.006), 'ctr_lack', { ...L, ...G, ry: sx > 0 ? Math.PI / 2 : -Math.PI / 2 });
+    for (const sz of [-1, 1]) f.geom(corrPanel(leafW, leafH, { dir: 'v', pitch: 0.26, depth: 0.024, flatTop: 0.34, flatBottom: 0.16 }), sx * (len / 2 + 0.003), 0.06, sz * (leafW / 2 + 0.006), 'ctr_lack', { ...L, ...G, ry: sx > 0 ? Math.PI / 2 : -Math.PI / 2 });
     // Türfuge (dunkel) zwischen den Flügeln
     f.box(sx * (len / 2 - 0.01), 0.06, 0, 0.02, leafH, 0.014, 'black', { collide: false, minimap: false, cast: false, ao: false });
   };
@@ -195,7 +196,7 @@ export function container(b, x, y, z, o = {}) {
       else {
         // aufgeklappter Flügel: Wellblech außen, Innenseite glatt, Kollision wie vorher
         f.box(ex + W / 4, 0.05, sz * (W / 2 + 0.02), W / 2 - 0.05, H - 0.18, 0.05, 'metal_painted', { collide: true, minimap: false, uv: 'local', tint: shade(color, 0.85), grad: ground, visual: true });
-        f.geom(corrPanel(W / 2 - 0.05, H - 0.18, { dir: 'h', pitch: 0.36, depth: 0.028, flatTop: 0.3, flatBottom: 0.14 }), ex + W / 4, 0.05, sz * (W / 2 + 0.046), 'ctr_lack', { collide: false, minimap: false, uv: 'keep', tint: color, ry: sz > 0 ? 0 : Math.PI });
+        f.geom(corrPanel(W / 2 - 0.05, H - 0.18, { dir: 'v', pitch: 0.26, depth: 0.024, flatTop: 0.3, flatBottom: 0.14 }), ex + W / 4, 0.05, sz * (W / 2 + 0.046), 'ctr_lack', { collide: false, minimap: false, uv: 'keep', tint: color, ry: sz > 0 ? 0 : Math.PI });
       }
     }
   }
@@ -354,7 +355,7 @@ export function barrelGroup(b, x, z, o = {}) {
  *  Kartons: Fotoscan cardboard_box_01 (falls geladen), sonst prozedurale Kartons mit Klebeband. Kollision unverändert. */
 export function pallet(b, x, y, z, o = {}) {
   // zerstoerung 15.11.: leere/foliierte Paletten zerbrechen (game/breakables.js); mit Kartons (Bibliotheksmodelle) nicht
-  const own = o.load !== 'boxes' && typeof b.beginBreak === 'function' && !b._brk;
+  const own = o.load !== 'boxes' && o.collide !== false && typeof b.beginBreak === 'function' && !b._brk;
   if (own) b.beginBreak({ kind: 'palette', x, y, z, w: 1.2, h: o.load ? 0.9 : 0.144, d: 0.8, ry: o.ry || 0, surface: 'wood', hp: o.load ? 140 : 60 });
   try { return palletParts(b, x, y, z, o); } finally { if (own) b.endBreak(); }
 }
@@ -408,7 +409,9 @@ function palletParts(b, x, y, z, o) {
     h += 0.7;
   }
   // Kollision wie bisher (Höhe 0,122 + Ladung): gleiche Maße auf allen Grafikstufen
-  f.solid(0, 0, 0, 1.2, h - 0.022, 0.8, { minimap: L ? 'cover' : 'prop' });
+  // gross (23.11.): collide: false beachten – Kleinkram (kleinkram.js, Menge je Grafikstufe) setzte sonst je Stufe andere
+  // Kollisionsquader (Grenzland: Navigationsgraph low ≠ medium, Mehrspieler uneins)
+  if (o.collide !== false) f.solid(0, 0, 0, 1.2, h - 0.022, 0.8, { minimap: L ? 'cover' : 'prop' });
   return h - 0.022;
 }
 
@@ -620,9 +623,44 @@ export function civilSpot(b, type, x, y, z, ry, color, extra = 0) {
 /** Staplerlast (Palette auf der Gabel) → Variantenzusatz: 0 leer, 8 Kartons, 16 Säcke. */
 export const staplerLast = (load) => (load === 'sacks' ? 16 : load ? 8 : 0);
 
+/**
+ * karten (22.11.): freier Stellplatz für ein Auto (Hülle 1,9 × 4,6 m): nicht in Wänden/Pfeilern (Grundriss-Einträge
+ * des Baukastens) und nicht im Erdgeschoss eines Wohn-/Geschäftshauses (building(), außer Garagen, Scheunen, Hallen).
+ * Prüfskript: Autos an festen Koordinaten standen in Häusern, die später entlang der Straßen gewachsen waren
+ * (Weitmark), oder steckten mit dem Heck im Brückengeländer. Türen bleiben frei. Sucht seitlich/längs bis 6 m; null = kein Platz.
+ */
+const CAR_HW = 0.95, CAR_HD = 2.3;
+function carOverlap(f, x, z, ry) {
+  const ca = Math.cos(ry), sa = Math.sin(ry), cb = Math.cos(f.ry || 0), sb = Math.sin(f.ry || 0);
+  const A = [[ca, -sa], [sa, ca]], B = [[cb, -sb], [sb, cb]], hA = [CAR_HW, CAR_HD], hB = [f.hw, f.hd];
+  const dx = f.x - x, dz = f.z - z;
+  let m = Infinity;
+  for (const ax of [...A, ...B]) {
+    const pr = (M, h) => h[0] * Math.abs(M[0][0] * ax[0] + M[0][1] * ax[1]) + h[1] * Math.abs(M[1][0] * ax[0] + M[1][1] * ax[1]);
+    m = Math.min(m, pr(A, hA) + pr(B, hB) - Math.abs(dx * ax[0] + dz * ax[1]));
+    if (m <= 0) return 0;
+  }
+  return m;
+}
+export function freeCarSpot(b, x, y, z, ry) {
+  const solid = (b.footprints || []).filter((f) => (f.kind === 'wall' || f.kind === 'building' || f.kind === 'pillar') && f.y0 < y + 1.4 && f.y1 > y + 0.25 && Math.abs(f.x - x) < f.hw + f.hd + 9 && Math.abs(f.z - z) < f.hw + f.hd + 9);
+  // Tür-/Tordurchgänge am Boden (1,5 m davor und dahinter) zählen wie Wände
+  for (const p of b.openings || []) if ((p.kind === 'door' || p.kind === 'gap') && Math.abs(p.y - p.h / 2 - y) < 1 && Math.abs(p.x - x) < 12 && Math.abs(p.z - z) < 12) solid.push({ x: p.x, z: p.z, hw: p.w / 2 + 0.3, hd: 1.5, ry: Math.atan2(-p.uz, p.ux) });
+  const houses = (b._gebaeude || []).filter((h) => !/garage|scheune|halle|stall|werk|lager/.test(h.nutzung || '') && y < (h.roofY ?? h.y0 + 3) - 1 && y > (h.y0 ?? 0) - 1);
+  const free = (px, pz) => !solid.some((f) => carOverlap(f, px, pz, ry) > 0.06) && !houses.some((h) => Math.abs(px - h.x) < h.w / 2 + 0.2 && Math.abs(pz - h.z) < h.d / 2 + 0.2);
+  if (free(x, z)) return [x, z];
+  const lx = Math.cos(ry), lz = -Math.sin(ry), fx = Math.sin(ry), fz = Math.cos(ry); // quer / längs
+  for (const d of [1.0, 2.0, 3.0, 4.5, 6.0]) for (const [ux, uz] of [[lx, lz], [-lx, -lz], [fx, fz], [-fx, -fz]]) {
+    const px = x + ux * d, pz = z + uz * d;
+    if (free(px, pz)) return [px, pz];
+  }
+  return null;
+}
+
 /** PKW (lokal z = Länge). style: 'sedan'|'hatch'|'wreck' – fahrbar, nur Wracks bleiben Kulisse */
 export function car(b, x, z, o = {}) {
   const col = o.color || b.pick(['#8c2b24', '#2f4f6e', '#c7c7c2', '#3b3d40', '#6b7a52', '#b98b3a']);
+  if (o.free !== false) { const sp = freeCarSpot(b, x, o.y ?? 0, z, o.ry || 0); if (!sp) return; [x, z] = sp; }
   if (o.style !== 'wreck' && o.drivable !== false && civilSpot(b, 'pkw', x, o.y ?? 0, z, o.ry || 0, col)) {
     b.decal(x, (o.y ?? 0) + 0.01, z, 2.6, 4.6, 'oil', { ry: o.ry || 0, opacity: 0.5 });
     return;
@@ -994,9 +1032,10 @@ export function chair(b, x, z, o = {}) {
     return;
   }
   const f = frame(b, x, o.y ?? 0, z, o.ry || 0), t = o.tint || '#2f6f9a';
-  for (const sx of [-0.18, 0.18]) for (const sz of [-0.18, 0.18]) f.box(sx, 0, sz, 0.035, 0.45, 0.035, 'metal_painted', { tint: '#2b2d30', collide: false, minimap: false });
-  f.box(0, 0.45, 0, 0.42, 0.04, 0.42, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
-  f.box(0, 0.49, -0.2, 0.42, 0.42, 0.04, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
+  // Proportionen 22.11.: Sitzfläche oben 0,46 m (vorher 0,49 – Richtwert Stuhl 0,45–0,47 bei Tisch 0,75)
+  for (const sx of [-0.18, 0.18]) for (const sz of [-0.18, 0.18]) f.box(sx, 0, sz, 0.035, 0.42, 0.035, 'metal_painted', { tint: '#2b2d30', collide: false, minimap: false });
+  f.box(0, 0.42, 0, 0.42, 0.04, 0.42, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
+  f.box(0, 0.46, -0.2, 0.42, 0.42, 0.04, 'wood_planks', { tint: t, collide: false, minimap: false, grad: false });
 }
 
 /** Sonnenschirm */

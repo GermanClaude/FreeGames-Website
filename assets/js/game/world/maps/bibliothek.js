@@ -6,17 +6,19 @@
 // Versiegeltes Archiv hinter Eisengittern mit drei Durchgängen (Team B). Beide Hälften punktsymmetrisch (fair).
 // Magie: fliegende Bücher, schwebende Kerzen, schwebende Armillarsphäre (ohne Kollision, über Kopfhöhe). (Owner: world)
 import * as THREE from 'three';
-import { wall, slab, stairs, railing } from '../arch.js?v=20261122020853';
-import { chair, hash01 } from '../props.js?v=20261122020853';
+import { wall, slab, stairs, railing } from '../arch.js?v=20261123073102';
+import { chair, hash01 } from '../props.js?v=20261123073102';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { atlasTexture, atlasScale } from '../atlas.js?v=20261122020853';
+import { atlasTexture, atlasScale } from '../atlas.js?v=20261123073102';
 
 const X = 38, Z = 27, H = 13, GY = 4.4; // Halle, Höhe, Galerie-/Brückenhöhe
 const GAL = X - 4.5, GZ = 22.5; // Innenkante und Länge (±) der Galerien
 const SZ = 21.2, SW = 1.15, SRUN = 7; // Treppen: z-Mitte (±), halbe Breite, Lauflänge
 const BRIDGES = [-11, 11], BW = 1.3; // Brücken (z-Mitte, halbe Breite)
 const STONE = '#9a8f7d', STONE_D = '#7d7262', WOOD = '#4a3020', WOOD_L = '#7a5233', WOOD_D = '#3a2418';
-const BOOK = ['#7a1f1f', '#1f3f6a', '#2f5a2a', '#6a4a1f', '#4a2a5a', '#8a6a2a', '#2a2a2a', '#5a1f3a'];
+// gross (23.11.): gedeckte Leinen-/Ledertöne statt kräftiger Grundfarben (Stapel, Pulte, fliegende Bücher)
+const BOOK = ['#5b2f28', '#2e3a4a', '#38432f', '#5e4b36', '#4a3a3e', '#7a6a50', '#2e2a26', '#6b3a30', '#8a7c64'];
+const SPINE_TINT = ['#ffffff', '#efe9df', '#f6f1e8', '#e2dbcf', '#faf6ee'];
 const Q = Math.PI / 2;
 
 // Regale des Ostflügels (x > 0): { x, z, len, ry, h }. Der Westflügel ist dieselbe Anordnung um 180° gedreht.
@@ -206,10 +208,12 @@ function shelf(b, x, z, len, h, seed, o = {}) {
     for (let l = 0; l < levels; l++) {
       const ly = y + 0.12 + l * (h - 0.2) / levels;
       for (let i = 0; i < n; i++) {
-        const col = BOOK[Math.floor(hash01(seed + i, l * 3 + side, 5) * BOOK.length)];
+        // gross (23.11.): Buchrücken als Textur (texgen 'books': einzelne Bände, gedeckte Farben, Höhen, Bünde) statt
+        // eines einfarbig getönten Blocks je Fach; Versatz je Fach, damit sich die Reihen nicht wiederholen
+        const col = SPINE_TINT[Math.floor(hash01(seed + i, l * 3 + side, 5) * SPINE_TINT.length)];
         const bh = 0.55 + hash01(seed, i + l * 7, 9) * 0.22;
         const [px, pz] = at(-len / 2 + seg * (i + 0.5), side * (w / 2 + 0.005));
-        b.box(px, ly, pz, seg - 0.06, bh, 0.06, 'wood_painted', { ry, tint: col, collide: false, minimap: false, grad: false, ao: false });
+        b.box(px, ly, pz, seg - 0.06, bh, 0.06, 'buecher', { ry, tint: col, collide: false, minimap: false, grad: false, ao: false, uv: 'fit', uvOffset: [hash01(seed + i, l + side * 5, 13), 0] });
       }
     }
   }

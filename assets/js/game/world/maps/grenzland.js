@@ -4,17 +4,17 @@
 // Flaggen (Eroberung): A Gehöft · B Dorf · C Brücke · D Kieswerk · E Funkhügel; HQ A im Süden, HQ B im Norden.
 // Geladen von world/terrain/bigworld.js (Ortschaften je eigener MapBuilder, Boden y = 0 bzw. Plateauhöhe).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261122020853';
-import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261122020853';
-import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261122020853';
-import * as Innen from './grenzland-innen.js?v=20261122020853';
-import { mgNest } from './grenzland-stellungen.js?v=20261122020853';
-import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261122020853';
+import { building, wall, stairs, railing, catwalk, slab, pitchedRoof } from '../arch.js?v=20261123073102';
+import { container, crateStack, barrelGroup, palletStack, sandbags, car, truck, fence, lampPost, floodMast, tires, bench, dumpster } from '../props.js?v=20261123073102';
+import { gemueseStand, aufsteller, traktor, durchlass } from './grenzland-ausstattung.js?v=20261123073102';
+import * as Innen from './grenzland-innen.js?v=20261123073102';
+import { mgNest } from './grenzland-stellungen.js?v=20261123073102';
+import { grenzanlage, grenzLinie } from './grenzland-grenze.js?v=20261123073102';
 // karten-voll (14.11.): Kleinkram an Häusern/Höfen, Freileitungen, Fahrspuren, Hochsitze, Feldstellungen
-import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261122020853';
-import { landschaft } from './grenzland-land.js?v=20261122020853';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261122020853'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261122020853';
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261123073102';
+import { landschaft } from './grenzland-land.js?v=20261123073102';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261123073102'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261123073102';
 
 const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 // Grafik-Vorlage (Video-Dorfplatz bild-7_8s): hellgrau-weißer Putz, Tonziegel rot-orange (Farbe aus der Textur v_roof,
@@ -365,7 +365,7 @@ function bruecke(b) {
   // Straßensperre auf der Rampe: Fahrbahn liegt hier 0,75–0,9 m hoch (vorher y 0,6 → Säcke halb im Boden)
   sandbags(b, 28, -4, 33, -6, { rows: 4, y: 0.8 }); sandbags(b, 41, -5, 45, -2, { rows: 4, y: Y });
   sandbags(b, 39, -54, 43, -56, { rows: 4, y: Y }); sandbags(b, 51, -52, 55, -49, { rows: 4, y: Y });
-  car(b, 41.5, -24, { ry: ry + 0.35, color: '#5a5f63', y: Y, model: false });
+  car(b, 40.0, -24, { ry: ry + 0.3, color: '#5a5f63', y: Y, model: false }); // karten (22.11.): vorher x 41,5 – 2,9 m neben der Brückenachse steckte das Heck im Geländer
   // Kistenstapel neben die Rampe auf den ebenen Brückenkopf (stand bei 26/1 auf der 1,4 m hohen Rampe → 0,8 m im Boden)
   crateStack(b, 42, 1.5, { ry: 0.5, y: Y });
   // MG-Stellungen an beiden Brückenköpfen, Blick über die Brücke (Engstelle)
@@ -467,7 +467,8 @@ function muehle(b) {
   // Ruine einer Wassermühle: Bruchsteinmauern mit Lücken, ohne Dach, Mühlrad am Ufer
   const x = -62, z = 14, w = 12, d = 9, x0 = x - w / 2, x1 = x + w / 2, z0 = z - d / 2, z1 = z + d / 2;
   const sw = (ax, az, bx, bz, h, ops) => wall(b, { x0: ax, z0: az, x1: bx, z1: bz, h, t: 0.55, mat: 'stone_wall', tint: '#bcb3a2', openings: ops, minimap: 'wall' });
-  sw(x0, z0, x1, z0, 3.6, [{ at: 3, w: 1.1, h: 2.1, kind: 'door', frame: false }, { at: 8.5, w: 2.4, h: 2.6, kind: 'gap', frame: false }]);
+  // karten (22.11.): statt Tür ein Fensterloch – die Tür lag genau hinter dem Mühlrad (Kollision 4,6 m), war also nie begehbar
+  sw(x0, z0, x1, z0, 3.6, [{ at: 3, w: 1.0, h: 1.0, sill: 1.2, kind: 'window', frame: false }, { at: 8.5, w: 2.4, h: 2.6, kind: 'gap', frame: false }]);
   sw(x1, z0, x1, z1, 2.2, [{ at: 4, w: 1.0, h: 1.0, sill: 0.95, kind: 'window', frame: false }]);
   sw(x1, z1, x0, z1, 4.4, [{ at: 2.5, w: 1.0, h: 1.2, sill: 1.0, kind: 'window', frame: false }, { at: 7.6, w: 1.6, h: 2.2, kind: 'gap', frame: false }]);
   sw(x0, z1, x0, z0, 1.6, [{ at: 4.5, w: 1.6, h: 1.6, kind: 'gap', frame: false }]);

@@ -17,13 +17,13 @@
 // Innensichten (views.js). Kosten: nur Innensicht, nur eigenes Fahrzeug; Figuren entstehen beim ersten Blick in den
 // Innenraum und verschwinden beim Aussteigen.
 import * as THREE from 'three';
-import { createSoldier } from '../bots/character.js?v=20261122020853';
-import { BONES, BONE, BIND, DIM } from '../bots/soldier/rig.js?v=20261122020853';
-import { twoBone } from '../bots/soldier/ik.js?v=20261122020853';
-import { spaceLocal } from './views.js?v=20261122020853';
-import { cabinSeatAnchors } from './cabin.js?v=20261122020853';
-import { driverCabin } from './data.js?v=20261122020853';
-import { funkerCabin, funkerLayout } from './periscopes.js?v=20261122020853';
+import { createSoldier } from '../bots/character.js?v=20261123073102';
+import { BONES, BONE, BIND, DIM } from '../bots/soldier/rig.js?v=20261123073102';
+import { twoBone } from '../bots/soldier/ik.js?v=20261123073102';
+import { spaceLocal } from './views.js?v=20261123073102';
+import { cabinSeatAnchors } from './cabin.js?v=20261123073102';
+import { driverCabin } from './data.js?v=20261123073102';
+import { funkerCabin, funkerLayout } from './periscopes.js?v=20261123073102';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const wrap = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
@@ -37,6 +37,12 @@ const N = BIND.length;
 const PARENT = BONES.map((b) => b[1]);
 const LOFF = BIND.map((b, i) => (PARENT[i] < 0 ? new THREE.Vector3(...b) : new THREE.Vector3(b[0] - BIND[PARENT[i]][0], b[1] - BIND[PARENT[i]][1], b[2] - BIND[PARENT[i]][2])));
 const HIP_Y = BIND[0][1];
+// Scheitel (Mütze/Kopfhörer eingerechnet) über der Wurzel bei Rumpfneigung lean – wie die Vorwärtskinematik unten: Hüfte →
+// Lende senkrecht, Lende → Brust 45 %, Brust → Hals 100 %, Hals → Kopf 60 % der Neigung, Kopf aufrecht (Kopf → Scheitel ≈ 0,26 m)
+const L_SP = BIND[BONE.spine][1] - HIP_Y, L_CH = BIND[BONE.chest][1] - BIND[BONE.spine][1], L_NK = BIND[BONE.neck][1] - BIND[BONE.chest][1], L_HD = BIND[BONE.head][1] - BIND[BONE.neck][1];
+function crownAt(hipsY, lean) {
+  return hipsY + L_SP + L_CH * Math.cos(lean * 0.45) + L_NK * Math.cos(lean) + L_HD * Math.cos(lean * 0.6) + 0.26;
+}
 
 let SHELL = null;
 function shellMesh() {
@@ -174,7 +180,11 @@ class Figure {
     } else if (role === 'mg') {
       o.l = [eye[0] - 0.1, eye[1] - 0.3, eye[2] - 0.35]; o.r = [eye[0] + 0.1, eye[1] - 0.3, eye[2] - 0.32];
     } else {
-      o.l = [hip[0] - 0.14, hip[1] + 0.06, hip[2] - 0.34]; o.r = [hip[0] + 0.14, hip[1] + 0.06, hip[2] - 0.34];
+      // Hände auf den Knien – in Blickrichtung der Figur (a.yaw; Bänke quer: ±90°). Proportionen 22.11.: vorher ohne Drehung,
+      // die Mitfahrer griffen neben sich bzw. hinter sich in die Bordwand
+      const yw = a.yaw || 0, fx = -Math.sin(yw), fz = -Math.cos(yw), rx = Math.cos(yw), rz = -Math.sin(yw);
+      o.l = [hip[0] - rx * 0.14 + fx * 0.34, hip[1] + 0.06, hip[2] - rz * 0.14 + fz * 0.34];
+      o.r = [hip[0] + rx * 0.14 + fx * 0.34, hip[1] + 0.06, hip[2] + rz * 0.14 + fz * 0.34];
     }
     return o;
   }
@@ -195,11 +205,30 @@ class Figure {
     const root = _w.set(hip[0], hip[1] - HIP_Y + (o.stand ? 0 : 0.1), hip[2]);
     // Kopfziel → Neigung des Oberkörpers (Augpunkt der Innensicht)
     const P = this.P, Qm = this.Qm;
-    const eyeM = this.toModel(a.eye || [hip[0], hip[1] + 0.75, hip[2]], root, _eye);
+    const eyeM = this.toModel(a.look || a.eye || [hip[0], hip[1] + 0.75, hip[2]], root, _eye); // look: Richtschütze am Okular (cabin.js)
     const hipsPos = P[0].set(0, HIP_Y, 0);
     if (o.stand) hipsPos.y = HIP_Y - 0.02 + Math.sin(this.ph * 1.3) * 0.004;
     const dz = eyeM.z - hipsPos.z, dy = Math.max(0.3, eyeM.y - hipsPos.y);
-    const lean = clamp(Math.atan2(-dz, dy), -0.15, o.stand ? 0.45 : 0.7) + (o.steady ? 0 : Math.sin(this.ph * 0.7) * 0.01);
+    let lean = clamp(Math.atan2(-dz, dy), -0.15, o.stand ? 0.45 : 0.7) + (o.steady ? 0 : Math.sin(this.ph * 0.7) * 0.01);
+    // Proportionen 22.11.: niedriger Raum (a.roof, cabin.js: Mannschaftsraum, Turmdecke, Fahrer-/Funkerraum) – der Scheitel
+    // samt Mütze bleibt 4 cm unter der Decke. rest 22.11.: vorher nur für Mitfahrer; im Turm steckten Kopf und Mütze der
+    // Besatzung in der Decke (von innen unsichtbar). Sitzend: vorbeugen bis 0,7 rad (die Neigung verteilt sich auf Lende/Brust,
+    // der Kopf richtet sich zu 40 % wieder auf; der Fahrer lehnt sich stattdessen zurück – Liegesitz unter geschlossener
+    // Luke), dann tiefer sitzen (≤ 0,25 m), zuletzt weiter neigen (≤ 1 rad); stehend: in die Knie (≤ 0,12 m), vorbeugen, tiefer
+    // in die Knie (enge Türme der Weltkriegs-Panzer)
+    if (a.roof != null) {
+      const lim = a.roof - 0.04 - (hip[1] - HIP_Y + (o.stand ? 0 : 0.1)); // Decke über der Wurzel (Modellraum)
+      let over = crownAt(hipsPos.y, lean) - lim;
+      const back = o.role === 'fahrer';
+      const tilt = (max) => {
+        for (let k = 0; over > 0 && k < 30 && (back ? lean > -max : lean < max); k++) {
+          lean = back ? Math.max(-max, Math.min(lean, 0) - 0.04) : Math.min(max, Math.max(lean, 0) + 0.04);
+          over = crownAt(hipsPos.y, lean) - lim;
+        }
+      };
+      const sink = (max) => { if (over > 0) { const k = Math.min(over, max); hipsPos.y -= k; over -= k; } };
+      if (o.stand) { sink(0.12); tilt(0.45); sink(0.2); } else { tilt(0.7); sink(0.25); tilt(1.0); }
+    }
     const breath = Math.sin(this.ph * 1.6) * 0.012;
     // FK Rumpf
     Qm[0].identity();

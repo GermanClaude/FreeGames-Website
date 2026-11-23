@@ -3,23 +3,24 @@
 // Vorlagen, 3D-Vorschau). Vorbelegung aus URL-Parametern (erster Aufruf) und den letzten Einstellungen.
 // Reiter „Mehrspieler“: Inhalt und Logik in ui/net-menus.js (menus.net); der Fußknopf wird dort zu „Raum erstellen“.
 
-import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261122020853';
-import { modeOptionsHtml } from './mode-options.js?v=20261122020853'; // Modus-Einstellungen (B6, 26.10.)
-import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261122020853';
-import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261122020853'; // atmosphere-weather; Fahrzeuge je Kartengröße
-import { realTimePreset } from '../world/weather.js?v=20261122020853'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
-import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261122020853';
-import { esc, num, secs, meters } from './dom.js?v=20261122020853';
-import { ICON } from './icons.js?v=20261122020853';
-import { drawMapArt } from './mapart.js?v=20261122020853';
-import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261122020853'; // riesen: Riesenkarte nur in der App
-import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261122020853';
-import { openCamoEditor } from './camo-editor.js?v=20261122020853';
-import { loadAttachments } from '../../shared/attachments.data.js?v=20261122020853';
-import { ProgressView } from './progress.js?v=20261122020853';
-import { CampaignPane } from '../campaign/menu.js?v=20261122020853'; // Reiter „Kampagne“ (game/campaign)
-import { PanzerPane } from './panzer-pane.js?v=20261122020853'; // Reiter „Panzer“ (Panzersimulation, 20.11.)
-import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261122020853';
+import { rulesFor, limitsFor, teamWarning, modeOptionDiff } from '../../shared/modes.data.js?v=20261123073102';
+import { modeOptionsHtml } from './mode-options.js?v=20261123073102'; // Modus-Einstellungen (B6, 26.10.)
+import { TANK_SKINS, tankSkin, skinUnlocked, loadTankProgress, saveTankProgress } from '../vehicles/skins.js?v=20261123073102';
+import { WEATHERS, militaryVehiclesAllowed, LARGE_MAP_NAMES } from '../../shared/maps.data.js?v=20261123073102'; // atmosphere-weather; Fahrzeuge je Kartengröße
+import { realTimePreset } from '../world/weather.js?v=20261123073102'; // Tageszeit „Echtzeit“ (Vorschau der aufgelösten Zeit)
+import { CLASSES, SOLDIER_CLASS_ORDER, GAME_STYLES, STYLE_ORDER, SIM_MODES, ULTRA_MODES, resolveClassLoadout, classAllows, classProfile } from '../../shared/classes.data.js?v=20261123073102';
+import { esc, num, secs, meters } from './dom.js?v=20261123073102';
+import { ICON } from './icons.js?v=20261123073102';
+import { drawMapArt } from './mapart.js?v=20261123073102';
+import { mapLockedHere, lockReason, APP_PAGE_URL } from '../../shared/appgate.js?v=20261123073102'; // riesen: Riesenkarte nur in der App
+import { camoRowHtml, equippedCamo, attRowHtml, onAttChange } from './loadout-panel.js?v=20261123073102';
+import { openCamoEditor } from './camo-editor.js?v=20261123073102';
+import { loadAttachments } from '../../shared/attachments.data.js?v=20261123073102';
+import { ProgressView } from './progress.js?v=20261123073102';
+import { CampaignPane } from '../campaign/menu.js?v=20261123073102'; // Reiter „Kampagne“ (game/campaign)
+import { PanzerPane } from './panzer-pane.js?v=20261123073102'; // Reiter „Panzer“ (Panzersimulation, 20.11.)
+import { eligible as feedbackUnlocked } from '../../shared/feedback.js?v=20261123073102';
+import { tx } from '../../shared/i18n.js?v=20261123073102'; // Zombies: Teams-Feld
 
 const DIFF_ORDER = ['rekrut', 'regulaer', 'veteran', 'elite'];
 const STAT_LABELS = [['damage', 'Schaden'], ['fireRate', 'Kadenz'], ['range', 'Reichweite'], ['accuracy', 'Präzision'], ['mobility', 'Mobilität'], ['control', 'Kontrolle']];
@@ -161,7 +162,7 @@ export class Lobby {
     c.enemies = clampInt(c.enemies, lim.enemies[0], lim.enemies[1]);
     if (!teams) c.allies = 0;
     else {
-      if (c.modeId === 'inf') { if (!Number.isFinite(c.allies) || c.allies == null) c.allies = L.recommended.allies ?? 10; } else if (c.balance || !Number.isFinite(c.allies) || c.allies == null) c.allies = c.balance ? c.enemies - 1 : m.defaultAllies ?? 5;
+      if (c.modeId === 'inf' || c.modeId === 'zombie') { if (!Number.isFinite(c.allies) || c.allies == null) c.allies = L.recommended.allies ?? 10; } else if (c.balance || !Number.isFinite(c.allies) || c.allies == null) c.allies = c.balance ? c.enemies - 1 : m.defaultAllies ?? 5;
       c.allies = clampInt(c.allies, lim.allies[0], lim.allies[1]);
     }
   }
@@ -443,11 +444,15 @@ export class Lobby {
     const st = GAME_STYLES[c.style] || GAME_STYLES.arcade;
     // Infanteriesimulation nur in passenden Modi (SIM_MODES); sonst spielt „Simulation“ als „Realistisch“
     const simOk = (SIM_MODES || []).includes(c.modeId);
-    const styles = STYLE_ORDER.filter((id) => id !== 'simulation' || simOk || c.style === id).map((id) => `<button type="button" role="radio" data-style="${id}" aria-checked="${id === c.style}">${esc(GAME_STYLES[id].label)}</button>`).join('');
+    const ultraOk = (ULTRA_MODES || []).includes(c.modeId); // Ultra-Realismus (game/ultra.js) nur in Infanterie-Modi
+    const styles = STYLE_ORDER.filter((id) => (id !== 'simulation' || simOk || c.style === id) && (id !== 'ultra' || ultraOk || c.style === id)).map((id) => `<button type="button" role="radio" data-style="${id}" aria-checked="${id === c.style}">${esc(GAME_STYLES[id].label)}</button>`).join('');
     const sg = this.G.settings.get('simGuide') || 'tutorial';
     const simBox = c.style !== 'simulation' ? '' : simOk
       ? `<div class="m-seg" role="radiogroup" aria-label="Führung" style="margin-top:8px">${[['tutorial', 'Tutorial'], ['hilfe', 'Hilfe auf Anfrage'], ['aus', 'Aus']].map(([id, l]) => `<button type="button" role="radio" data-simguide="${id}" aria-checked="${id === sg}">${l}</button>`).join('')}</div>
         <p class="lb-note">Führung: ${sg === 'tutorial' ? 'Handgriffe als Liste mit Erklärung.' : sg === 'hilfe' ? 'Liste nur auf Anfrage (F2).' : 'Ganz ohne Hilfe.'} Tasten: Durchladen O · Magazin prüfen I · Feuerwahl/Sicherung M · Visier Bild ↑/↓ · Verband N · Abbinden 7 · Kompass , · Karte . · Ausrüstung P</p>`
+      : '<p class="lb-note">In diesem Modus nicht verfügbar – es gilt „Realistisch“.</p>';
+    const ultraBox = c.style !== 'ultra' ? '' : ultraOk
+      ? '<p class="lb-note">Magazin prüfen I · Verband N · Atem anhalten im Anschlag: Sprint-Taste. Vorlage „Ultra-Realismus“ unter Einstellungen → HUD.</p>'
       : '<p class="lb-note">In diesem Modus nicht verfügbar – es gilt „Realistisch“.</p>';
     const xh = !!this.G.settings.get('realisticCrosshair');
     const map = d.MAPS[c.mapId] || {};
@@ -484,7 +489,7 @@ export class Lobby {
       </section>
       ${c.modeId === 'training' ? '' : `<section class="lb-sec lb-row2">
         <div><h2 class="m-h2">Spielstil</h2><div class="m-seg lb-style" role="radiogroup" aria-label="Spielstil">${styles}</div>
-          <p class="lb-note">${esc(st.desc || '')}</p>${simBox}
+          <p class="lb-note">${esc(st.desc || '')}</p>${simBox}${ultraBox}
           ${c.style === 'realistisch' ? `<button type="button" class="lb-bal" data-xhair aria-pressed="${xh}"><i class="m-check">${ICON.check}</i>Fadenkreuz anzeigen</button>` : ''}</div>
         ${extra.trim() ? `<div class="lb-extra">${extra}</div>` : ''}
       </section>`}`;
@@ -512,6 +517,17 @@ export class Lobby {
     const teams = m.teams !== false;
     const L = this._lim();
     const lim = { allies: L.allies, enemies: L.enemies };
+    if (c.modeId === 'zombie') {
+      // Zombies: nur KI-Kameraden wählbar; die Untoten bestimmt die Welle (Modus-Einstellungen „Wellen“, „Horde“)
+      const n = c.allies;
+      host.innerHTML = `<h2 class="m-h2">${esc(tx('Trupp'))}</h2>
+      <div class="lb-step"><span>${esc(tx('KI-Kameraden'))}</span>
+        <button type="button" class="m-icon" data-step="allies" data-d="-1" aria-label="${esc(tx('KI-Kameraden verringern'))}"${n <= lim.allies[0] ? ' disabled' : ''}>${ICON.minus}</button>
+        <b>${n}</b>
+        <button type="button" class="m-icon" data-step="allies" data-d="1" aria-label="${esc(tx('KI-Kameraden erhöhen'))}"${n >= lim.allies[1] ? ' disabled' : ''}>${ICON.plusSmall}</button></div>
+      <p class="lb-note">${esc(n ? tx(n === 1 ? 'Du und ein KI-Kamerad gegen die Untoten. Die Wellen wachsen mit dem Trupp.' : `Du und ${n} KI-Kameraden gegen die Untoten. Die Wellen wachsen mit dem Trupp.`) : tx('Allein gegen die Untoten. Fällst du, ist es vorbei.'))}</p>`;
+      return;
+    }
     if (c.modeId === 'training' || (lim.enemies[1] === 0)) {
       host.innerHTML = `<h2 class="m-h2">Bahnen</h2><p class="lb-note">Allein am Stand. Unbegrenzte Munition, jede Waffe frei wählbar, Bestzeiten im Parcours.</p>`;
       return;
@@ -581,9 +597,10 @@ export class Lobby {
     const diff = d.DIFF[c.difficulty] || {};
     let who;
     if (c.modeId === 'training') who = 'Allein am Stand';
+    else if (c.modeId === 'zombie') who = tx(`${c.allies + 1} gegen die Untoten`);
     else if (m.teams !== false) who = `${c.allies + 1} gegen ${c.enemies}`;
     else who = `${c.enemies + 1} Spieler`;
-    const sty = c.modeId === 'training' ? '' : c.style === 'realistisch' ? ' · Realistisch' : c.style === 'simulation' ? ((SIM_MODES || []).includes(c.modeId) ? ' · Simulation' : ' · Realistisch') : '';
+    const sty = c.modeId === 'training' ? '' : c.style === 'realistisch' ? ' · Realistisch' : c.style === 'simulation' ? ((SIM_MODES || []).includes(c.modeId) ? ' · Simulation' : ' · Realistisch') : c.style === 'ultra' ? ((ULTRA_MODES || []).includes(c.modeId) ? ' · Ultra-Realismus' : ' · Realistisch') : '';
     const cl = CLASSES[c.cls] ? ` · ${CLASSES[c.cls].name}` : '';
     this.el.summary.innerHTML = `<small>${esc(m.short || '')} · ${esc(prep)} ${esc(map.name || c.mapId)}</small><b>${esc(m.name || c.modeId)}</b><span>${esc(who)}${c.modeId === 'training' ? '' : ` · ${esc(diff.name || c.difficulty)}${esc(sty)}`}${esc(cl)}</span>`;
   }

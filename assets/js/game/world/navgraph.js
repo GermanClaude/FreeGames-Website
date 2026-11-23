@@ -3,7 +3,7 @@
 // Laufstege, Treppen), Verbindungen mit Kapsel-Freiraumprüfung, einseitige Absprung-Kanten,
 // Deckungspunkte. A* mit binärem Heap + String-Pulling-Glättung.
 import * as THREE from 'three';
-import { KNEE, makeTests, buildNavData } from './navbuild.js?v=20261122020853';
+import { KNEE, makeTests, buildNavData } from './navbuild.js?v=20261123073102';
 
 
 // ---------------------------------------------------------------------------
@@ -34,6 +34,26 @@ class Heap {
     this.ids[i] = lastId; this.keys[i] = lastK;
     return top;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Sperrflächen (setBlocker)
+// ---------------------------------------------------------------------------
+const BLOCK_COST = 400; // Zusatzkosten je gesperrtem Knoten: Umweg ums Flugzeug ist billiger, eingeschlossene Ziele bleiben erreichbar
+const _bc = new THREE.Vector3(), _bA = new THREE.Vector3(), _bB = new THREE.Vector3();
+/** 2D-Strecke (ax,az)→(bx,bz) gegen gedrehtes Rechteck r (+ Rand pad): Liang-Barsky im Rechteckraum. */
+function segRect(ax, az, bx, bz, r, pad) {
+  const c = Math.cos(r.yaw), s = Math.sin(r.yaw);
+  const x0 = (ax - r.x) * c - (az - r.z) * s, z0 = (ax - r.x) * s + (az - r.z) * c;
+  const x1 = (bx - r.x) * c - (bz - r.z) * s, z1 = (bx - r.x) * s + (bz - r.z) * c;
+  const hx = r.hw + pad, hz = r.hl + pad, dx = x1 - x0, dz = z1 - z0;
+  let t0 = 0, t1 = 1;
+  for (const [p, q] of [[-dx, x0 + hx], [dx, hx - x0], [-dz, z0 + hz], [dz, hz - z0]]) {
+    if (Math.abs(p) < 1e-9) { if (q < 0) return false; continue; }
+    const t = q / p;
+    if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+  }
+  return t0 <= t1;
 }
 
 // ---------------------------------------------------------------------------
@@ -193,6 +213,66 @@ export class NavGraph {
       anchor = next;
     }
     return out;
+  }
+
+  /**
+   * Dynamische Sperrflächen (rest 22.11.: abgestellte Hubschrauber/Jets – Bots liefen auf die Tragflächen und hingen
+   * fest): rects = [{ x, z, yaw, hw, hl, y0, y1 }] (Mitte, Gierung wie Object3D.rotation.y, halbe Breite/Länge, Höhenband)
+   * oder null zum Entfernen. A* meidet die Knoten darunter (Zusatzkosten, beim Entfernen genau zurückgenommen), Abkürzungen
+   * beim String-Pulling (auch BigNavGraph: Feinknoten und freie Geländestrecken) schneiden die Flächen nicht.
+   */
+  setBlocker(key, rects) {
+    const blk = this._blk || (this._blk = new Map());
+    const old = blk.get(key);
+    if (old) { for (const [n, add] of old.nodes) n.cost = Math.max(0, (n.cost || 0) - add); blk.delete(key); }
+    if (!rects || !rects.length) return 0;
+    this._blkInstall();
+    const pad = 0.55, nodes = [];
+    const seen = new Set();
+    for (const r of rects) {
+      for (const n of this.nodesInRadius(_bc.set(r.x, r.y0 + 0.5, r.z), Math.hypot(r.hw, r.hl) + pad + 1.5)) { // 3D-Abstand: Höhenspielraum
+        if (seen.has(n)) continue;
+        const p = n.position;
+        if (p.y < r.y0 - 1.6 || p.y > r.y1) continue;
+        const c = Math.cos(r.yaw), s = Math.sin(r.yaw), dx = p.x - r.x, dz = p.z - r.z;
+        if (Math.abs(dx * c - dz * s) > r.hw + pad || Math.abs(dx * s + dz * c) > r.hl + pad) continue;
+        seen.add(n); nodes.push([n, BLOCK_COST]); n.cost = (n.cost || 0) + BLOCK_COST;
+      }
+    }
+    blk.set(key, { rects, nodes });
+    return nodes.length;
+  }
+
+  /** Strecke A→B schneidet eine Sperrfläche (Agentenradius eingerechnet)? */
+  segBlocked(A, B) {
+    const blk = this._blk;
+    if (!blk || !blk.size) return false;
+    for (const { rects } of blk.values()) for (const r of rects) {
+      if (Math.min(A.y, B.y) > r.y1 || Math.max(A.y, B.y) + 1.8 < r.y0) continue;
+      if (segRect(A.x, A.z, B.x, B.z, r, 0.4)) return true;
+    }
+    return false;
+  }
+
+  /** Einmalig: Abkürzungstests dieser Instanz um die Sperrflächen erweitern (ohne Sperrflächen nur ein Map-Größen-Test). */
+  _blkInstall() {
+    if (this._blkOn) return;
+    this._blkOn = true;
+    const self = this, t = this._tests;
+    if (t && typeof t.segmentClear === 'function') {
+      const w = Object.create(t);
+      w.segmentClear = (a, b, g) => !self.segBlocked(a, b) && t.segmentClear(a, b, g);
+      this._tests = w;
+    }
+    const col = this.col; // BigNavGraph: freie Geländestrecken (_terrainClear) über col.occluded
+    if (col && typeof col.occluded === 'function') {
+      const w = Object.create(col);
+      w.occluded = (ox, oy, oz, dx, dy, dz, len) => {
+        if (self._blk && self._blk.size && self.segBlocked(_bA.set(ox, oy - 0.55, oz), _bB.set(ox + dx * len, oy - 0.55 + dy * len, oz + dz * len))) return true;
+        return col.occluded(ox, oy, oz, dx, dy, dz, len);
+      };
+      this.col = w;
+    }
   }
 
   /** Zufälliger Knoten (optional gefiltert). */

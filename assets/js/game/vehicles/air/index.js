@@ -24,22 +24,31 @@
 // Auswahl im Einsatz-/Ausrüstungsbildschirm ui/deploy.js). Einzelspieler: Stellplätze nur fürs eigene Team (keine
 // unbemannten Feind-Luftfahrzeuge als Zielscheibe), online für beide Teams.
 import * as THREE from 'three';
-import { VEHICLES } from '../data.js?v=20261122020853';
-import { collisionRay } from '../../engine/physics.js?v=20261122020853';
-import { groundBelow } from './flight.js?v=20261122020853';
-import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261122020853';
-import { readAirControls } from './controls.js?v=20261122020853';
-import { updateAirCamera } from './camera.js?v=20261122020853';
-import { AirHUD } from './hud.js?v=20261122020853';
-import { AirVoice, AIR_RANGE } from './audio.js?v=20261122020853';
-import { HeliPilotAI } from './pilot-ai.js?v=20261122020853';
-import { AirDeploy } from './deploy.js?v=20261122020853';
+import { VEHICLES } from '../data.js?v=20261123073102';
+import { collisionRay } from '../../engine/physics.js?v=20261123073102';
+import { groundBelow } from './flight.js?v=20261123073102';
+import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261123073102';
+import { readAirControls } from './controls.js?v=20261123073102';
+import { updateAirCamera } from './camera.js?v=20261123073102';
+import { AirHUD } from './hud.js?v=20261123073102';
+import { AirVoice, AIR_RANGE } from './audio.js?v=20261123073102';
+import { HeliPilotAI } from './pilot-ai.js?v=20261123073102';
+import { AirDeploy } from './deploy.js?v=20261123073102';
 
 export { AirVoice, AIR_RANGE, airWarmMaterials };
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
 const DOWN = new THREE.Vector3(0, -1, 0), _hit = {};
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+/** Alle Startpunkte der Welt: Teams, FFA, Hauptquartiere (Großkarten), Flaggen-Spawns der Eroberung. */
+function spawnPoints(w) {
+  const sp = w.spawns || {}, out = [];
+  for (const L of [sp.A, sp.B, sp.ffa, sp.hq && sp.hq.A, sp.hq && sp.hq.B]) if (Array.isArray(L)) for (const s of L) if (s && s.position) out.push(s.position);
+  const cq = w.objectives && w.objectives.cq;
+  if (Array.isArray(cq)) for (const o of cq) for (const s of o.spawns || []) if (s && s.position) out.push(s.position);
+  return out;
+}
 export const AIR_TYPES = ['heli', 'jet'];
 export const AIR_CAP = { low: 2, medium: 4, high: 4, ultra: 4 };
 const FLARE_COL = new THREE.Color(1.0, 0.82, 0.5);
@@ -91,6 +100,7 @@ export class AirSupport {
     for (const [, ai] of this.pilots) this._releaseBot(ai.bot);
     this.pilots.clear();
     for (const v of this.sys.list) v.autopilot = null;
+    this._navClear();
     if (this.group) { this.group.removeFromParent(); this.group = null; }
     if (this.hud) { this.hud.dispose(); this.hud = null; }
   }
@@ -148,7 +158,9 @@ export class AirSupport {
     });
     for (const type of AIR_TYPES) {
       for (const { team, anchor } of anchors) {
-        const spot = this.findSpot(anchor, type, { avoid: placed, toward: center }) || this.findSpot(anchor, type, { avoid: placed, toward: center, maxR: 220, flat: 1.4 });
+        // erst abseits der Bot-Laufwege (Spawns → Flaggen), sonst weiter weg, zuletzt wie früher ohne Laufwege
+        const spot = this.findSpot(anchor, type, { avoid: placed, toward: center }) || this.findSpot(anchor, type, { avoid: placed, toward: center, maxR: 220, flat: 1.4 })
+          || this.findSpot(anchor, type, { avoid: placed, toward: center, maxR: 220, flat: 1.4, lanes: false });
         if (!spot) { console.info(`[luft] kein Stellplatz für ${type} (${team || 'neutral'})`); continue; }
         placed.push(spot.position);
         sys.registerSpawn({ type, position: spot.position, yaw: spot.yaw, team });
@@ -160,7 +172,7 @@ export class AirSupport {
    * Freien, ebenen Platz für ein Luftfahrzeug suchen (Hubschrauber: Rotorkreis frei, Jet: Spannweite/Länge frei).
    * → { position, yaw } | null
    */
-  findSpot(near, type, { avoid = [], toward = null, maxR = 120, flat = 0.7 } = {}) {
+  findSpot(near, type, { avoid = [], toward = null, maxR = 120, flat = 0.7, lanes = true } = {}) {
     const w = this.sys.world, def = VEHICLES[type];
     if (!w || !def) return null;
     const top = (w.bounds ? w.bounds.max.y : near.y + 60) + 5;
@@ -178,7 +190,10 @@ export class AirSupport {
         trees.push(x, z, cr * (L[i * 5 + 3] || 1));
       }
     }
-    const spawnPts = w.spawns ? [...(w.spawns.A || []), ...(w.spawns.B || []), ...(w.spawns.ffa || [])].map((s) => s.position) : [];
+    // Startpunkte aller Art (Team, Hauptquartier, Flaggen-Spawns der Eroberung) und Laufwege (rest 22.11., Meldung „Bots
+    // hängen an Jets/Hubschraubern an den Basis-Ecken“): Luftfahrzeuge stehen nicht mehr auf Wegen von Soldaten und Transportern
+    const spawnPts = spawnPoints(w);
+    const lane = lanes ? this._lanes(near) : null;
     for (let r = 0; r <= maxR; r += 4) {
       const steps = r === 0 ? 1 : Math.max(8, Math.round((r * Math.PI * 2) / 5));
       for (let k = 0; k < steps; k++) {
@@ -189,7 +204,8 @@ export class AirSupport {
         if (gy == null) continue;
         const pos = new THREE.Vector3(x, gy, z);
         if (avoid.some((p) => Math.hypot(p.x - x, p.z - z) < clearR + 8)) continue;
-        if (spawnPts.some((p) => Math.hypot(p.x - x, p.z - z) < clearR + 2)) continue;
+        if (spawnPts.some((p) => Math.hypot(p.x - x, p.z - z) < clearR + (lanes ? 6 : 2))) continue;
+        if (lane) { let hit = false; for (let i = 0; i < lane.length; i += 2) if (Math.hypot(lane[i] - x, lane[i + 1] - z) < clearR + 2.5) { hit = true; break; } if (hit) continue; }
         if (this.sys.list.some((v) => Math.hypot(v.body.pos.x - x, v.body.pos.z - z) < clearR + 6)) continue;
         let tree = false;
         for (let i = 0; i < trees.length; i += 3) if (Math.hypot(trees[i] - x, trees[i + 1] - z) < clearR + trees[i + 2]) { tree = true; break; }
@@ -200,6 +216,45 @@ export class AirSupport {
       }
     }
     return null;
+  }
+
+  /**
+   * Bot-Laufwege um `near` (260 m): Wege von den nächsten Startpunkten dort zu den zwei nächsten Flaggen und zur
+   * Kartenmitte (world.nav.findPath), alle 2 m abgetastet → [x, z, x, z, …]. Je Welt und Anker zwischengespeichert.
+   */
+  _lanes(near) {
+    const R = 220; // größter Suchradius von findSpot – ein Satz Wege je Anker
+    const w = this.sys.world, nav = w && w.nav;
+    if (!nav || typeof nav.findPath !== 'function') return null;
+    const key = `${Math.round(near.x)}|${Math.round(near.z)}`;
+    if (this._laneW !== w) { this._laneW = w; this._laneC = new Map(); }
+    if (this._laneC.has(key)) return this._laneC.get(key);
+    const out = [];
+    try {
+      // Startpunkte der Soldaten und Stellplätze der Bodenfahrzeuge (Transporter fahren von dort los – ride.js; ein Jet am
+      // Ausgang des Fahrzeughofs wurde sonst angefahren und weggeschoben)
+      const veh = this.sys.spawns.filter((e) => e.team && !(VEHICLES[e.type] && VEHICLES[e.type].air)).map((e) => e.position);
+      const src = [...spawnPoints(w), ...veh].filter((p) => p && Math.hypot(p.x - near.x, p.z - near.z) < R + 40);
+      // nahe Startpunkte zuerst, höchstens 8 (Großkarten: HQ-Reihe + Flaggen-Spawns)
+      src.sort((a, b) => Math.hypot(a.x - near.x, a.z - near.z) - Math.hypot(b.x - near.x, b.z - near.z));
+      const ob = w.objectives || {};
+      const tg = [...(ob.cq || []), ...(ob.dom || []), ...(ob.trupp || [])].map((o) => o.position).filter(Boolean);
+      tg.sort((a, b) => Math.hypot(a.x - near.x, a.z - near.z) - Math.hypot(b.x - near.x, b.z - near.z));
+      const goals = tg.slice(0, 2);
+      if (w.bounds) goals.push(w.bounds.getCenter(new THREE.Vector3()).setY(near.y));
+      for (const s of [...src.slice(0, 8), ...veh.filter((p) => src.includes(p)).slice(0, 6)]) for (const g of goals) {
+        const path = nav.findPath(s, g);
+        let a = s;
+        for (const b of path.slice(0, 40)) {
+          const d = Math.hypot(b.x - a.x, b.z - a.z), n = Math.max(1, Math.ceil(d / 2));
+          for (let k = 0; k < n; k++) out.push(a.x + (b.x - a.x) * (k / n), a.z + (b.z - a.z) * (k / n));
+          a = b;
+          if (Math.hypot(a.x - near.x, a.z - near.z) > R + 60) break; // weiter weg spielt keine Rolle
+        }
+      }
+    } catch (err) { console.warn('[luft] Laufwege', err); }
+    this._laneC.set(key, out);
+    return out;
   }
 
   _clear(pos, R, type, flat = 0.7) {
@@ -491,6 +546,8 @@ export class AirSupport {
     if (!this.sys.replica) {
       this._assignBots(dt);
       this._updatePilots(dt);
+      this._navT = (this._navT || 0) - dt;
+      if (this._navT <= 0) { this._navT = 0.5; this._navSync(); }
     }
     this.deploy.update(dt);
     // Täuschkörper: Bestand im Modell (Bomben am Jet)
@@ -500,6 +557,44 @@ export class AirSupport {
       const n = w ? (w.reloadT > 0 ? 0 : w.mag) : 0;
       if (v._stores !== n) { v._stores = n; v.model.setStores(n); }
     }
+  }
+
+  /* =============================================================== Bot-Wege */
+
+  /**
+   * Abgestellte Luftfahrzeuge (und Wracks) als Sperrflächen ins Navigationsnetz (NavGraph.setBlocker, rest 22.11.): das
+   * Netz kannte sie nicht, Wege führten mitten hindurch (die Kollision mit Fahrzeugen schiebt nur am Rumpfquader heraus,
+   * durch die Tragflächen liefen Bots hindurch). Gesperrt werden die Teile, an denen ein Mensch hängen bleibt
+   * (Unterkante < 2 m: Rumpf, Tragflächen, Heckausleger); fliegt es los, gibt die Fläche den Weg wieder frei.
+   */
+  _navSync() {
+    const nav = this.sys.world && this.sys.world.nav;
+    if (!nav || typeof nav.setBlocker !== 'function') return;
+    const M = this._navBlk || (this._navBlk = new Map()); // Fahrzeug → { x, z, yaw }
+    for (const [v] of M) if (!this.sys.list.includes(v)) { nav.setBlocker(v, null); M.delete(v); }
+    for (const v of this.sys.list) {
+      if (!v.isAircraft && !(v.def && v.def.air)) continue;
+      const b = v.body;
+      const parked = (v.alive || v.wreck) && (b.onGround || (b.agl ?? 0) < 1.2) && b.vel.lengthSq() < 4;
+      const was = M.get(v);
+      if (!parked) { if (was) { nav.setBlocker(v, null); M.delete(v); } continue; }
+      const yaw = b.yaw();
+      if (was && Math.hypot(was.x - b.pos.x, was.z - b.pos.z) < 0.8 && Math.abs(wrapA(was.yaw - yaw)) < 0.08) continue;
+      const rects = [];
+      for (const bx of v.def.boxes || [v.def.hullBox]) {
+        if (bx[1] - bx[4] > 2.0) continue; // hoch liegende Teile (Leitwerk, Rotorkopf): darunter geht man durch
+        const c = b.toWorld(_c.set(bx[0], bx[1], bx[2]), _c);
+        rects.push({ x: c.x, z: c.z, yaw, hw: bx[3], hl: bx[5], y0: b.pos.y - 0.5, y1: b.pos.y + bx[1] + bx[4] });
+      }
+      nav.setBlocker(v, rects);
+      M.set(v, { x: b.pos.x, z: b.pos.z, yaw });
+    }
+  }
+
+  _navClear() {
+    const nav = this.sys.world && this.sys.world.nav;
+    if (this._navBlk && nav && typeof nav.setBlocker === 'function') for (const [v] of this._navBlk) nav.setBlocker(v, null);
+    if (this._navBlk) this._navBlk.clear();
   }
 
   /* =============================================================== Skript-API */

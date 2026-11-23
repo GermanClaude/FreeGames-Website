@@ -4,7 +4,7 @@
 // Die Maske liest die Tiefe der Welt, bevor das Viewmodel sie löscht.
 
 import * as THREE from 'three';
-import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261122020853';
+import { FULLSCREEN_VERT, GLSL_COMMON, hdrTarget } from './common.js?v=20261123073102';
 
 const MASK_FRAG = /* glsl */ `
   ${GLSL_COMMON}

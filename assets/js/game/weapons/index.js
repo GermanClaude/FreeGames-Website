@@ -3,13 +3,13 @@
 // und räumt beim Matchende auf.
 
 import * as THREE from 'three';
-import { WeaponController } from './controller.js?v=20261122020853';
-import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261122020853';
-import { RocketSystem } from './ballistics/rockets.js?v=20261122020853';
-import { EQUIPMENT as DATA_EQUIPMENT, killAmmoFor } from '../../shared/weapons.data.js?v=20261122020853';
-import { clamp } from './ballistics/math.js?v=20261122020853';
+import { WeaponController } from './controller.js?v=20261123073102';
+import { GrenadeSystem, GRENADE_GRAVITY } from './grenades.js?v=20261123073102';
+import { RocketSystem } from './ballistics/rockets.js?v=20261123073102';
+import { EQUIPMENT as DATA_EQUIPMENT, killAmmoFor } from '../../shared/weapons.data.js?v=20261123073102';
+import { clamp } from './ballistics/math.js?v=20261123073102';
 
-export { WeaponController } from './controller.js?v=20261122020853';
+export { WeaponController } from './controller.js?v=20261123073102';
 
 const _eye = new THREE.Vector3();
 
@@ -191,7 +191,7 @@ export class WeaponSystem {
   killAmmoEnabled() {
     const G = this.G;
     const M = G.match;
-    if (!M || M.modeId === 'training' || M.modeId === 'gun') return false;
+    if (!M || M.modeId === 'training' || M.modeId === 'gun' || M.modeId === 'br') return false; // BR: Munition nur als Beute
     const m = G.mode;
     if (m && m.def && m.def.infiniteAmmo) return false;
     if (M.net) return M.net.killAmmo !== false;

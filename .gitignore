@@ -12,3 +12,4 @@ mobile/android/
 
 # Python-Werkzeuge (tools/assets/**)
 __pycache__/
+.claude/

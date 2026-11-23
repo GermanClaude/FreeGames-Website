@@ -460,6 +460,53 @@ G.crate = (t, r, o) => {
   }
 };
 
+/**
+ * gross (23.11.): Buchrücken einer Regalreihe (Bibliothek). Nutzer/Grafik: die Regalfächer waren einfarbige, grell
+ * getönte Blöcke. Jetzt gedeckte Leinen-/Lederfarben, Breiten 1,6–6 cm (bei 1 m Kachelbreite), unterschiedliche Höhen
+ * (darüber Schatten der Regalrückwand), gerundete Rücken (Kantenschatten), Bünde/Goldprägung, Schildchen, Fugen.
+ * u = entlang des Regals, v = senkrecht (Zeile 0 = unten; Abbildung 'fit': ganze Fachhöhe).
+ */
+G.books = (t, r, o) => {
+  const { S, n } = t;
+  const pal = (o.palette || ['#5b2b25', '#6e3a2c', '#3c2a22', '#2d3a4a', '#283244', '#34402f', '#46503a', '#5a4a36', '#7a6a50',
+    '#8c7f66', '#a39478', '#4a3a3e', '#3a3632', '#6b5a44', '#2f2a26', '#7a3c30', '#56463a', '#9a8c74']).map(hex);
+  const back = hex('#141110'), gold = hex('#9a8558'), cream = hex('#c9bea4');
+  const cloth = fbm(S, 64, 3, r, { py: 16 }), wear = fbm(S, 8, 3, r);
+  const col = new Int16Array(S), books = [];
+  let x = 0;
+  while (x < S) {
+    const w = Math.max(3, Math.round(S * (0.016 + Math.pow(r(), 1.6) * 0.045)));
+    const c = pal[Math.floor(r() * pal.length)], k = 0.78 + r() * 0.32;
+    books.push({ x0: x, x1: Math.min(S, x + w), c: c.map((v) => v * k), top: 0.8 + r() * 0.18, bands: r() < 0.55, gold: r() < 0.45, label: r() < 0.3, lab: 0.5 + r() * 0.2, lean: r() < 0.05 });
+    for (let i = x; i < Math.min(S, x + w); i++) col[i] = books.length - 1;
+    x += w;
+  }
+  for (let y = 0; y < S; y++) for (let x2 = 0; x2 < S; x2++) {
+    const i = y * S + x2, b = books[col[x2]], v = y / S, u = (x2 - b.x0 + 0.5) / (b.x1 - b.x0);
+    const edge = Math.min(u, 1 - u);
+    if (v > b.top || x2 === b.x0) { // Lücke über dem Buch / Fuge zwischen den Büchern
+      const sh = v > b.top ? 0.5 + 0.5 * smooth(b.top, b.top + 0.05, v) : 0.6;
+      const c = mixC(back, [40, 34, 28], (1 - sh) * 0.6);
+      t.set(i, c[0], c[1], c[2]); t.height[i] = -0.6; t.rough[i] = 0.95; continue;
+    }
+    let c = b.c.slice();
+    c = c.map((v2) => v2 * (0.9 + cloth[i] * 0.16 + (wear[i] - 0.5) * 0.12));
+    // gerundeter Rücken: Kanten dunkler, Mitte etwas heller
+    c = c.map((v2) => v2 * (0.62 + 0.38 * smooth(0, 0.32, edge) + 0.06 * smooth(0.25, 0.5, edge)));
+    const vt = v / b.top;
+    let h = 0.3 * smooth(0, 0.3, edge);
+    if (b.bands) for (const bv of [0.1, 0.16, 0.84, 0.9]) { const d = Math.abs(vt - bv); if (d < 0.012) { c = c.map((v2) => v2 * 0.7); h += 0.2; } }
+    if (b.gold) for (const bv of [0.13, 0.87]) { const d = Math.abs(vt - bv); if (d < 0.006 && edge > 0.12) { c = mixC(c, gold, 0.55); h += 0.1; } }
+    if (b.label && Math.abs(vt - b.lab) < 0.05 && edge > 0.18) { c = mixC(c, cream, 0.7 - wear[i] * 0.2); h += 0.05; }
+    // Staub/Ausbleichen oben, Kopfschnitt
+    if (vt > 0.97) c = mixC(c, [150, 138, 118], 0.35);
+    c = mixC(c, [120, 112, 100], smooth(0.5, 1, vt) * 0.08);
+    t.set(i, c[0], c[1], c[2]);
+    t.height[i] = h + cloth[i] * 0.08;
+    t.rough[i] = 0.72 + cloth[i] * 0.18 - (b.gold ? 0.05 : 0);
+  }
+};
+
 G.cardboard = (t, r, o) => {
   const { S, n } = t;
   const base = hex(o.base || '#ae8a5c');
@@ -1237,6 +1284,7 @@ export const TEX = {
   bark:           { gen: 'bark', o: { base: '#857c6f', dark: '#433b32', light: '#a8a092', lines: 3 }, normal: 4 },
   bark_palm:      { gen: 'bark', o: { base: '#8f8270', dark: '#4a4034', light: '#b0a38c', rings: 12 }, normal: 3.5 },
   cardboard:      { gen: 'cardboard', o: {}, normal: 1.5 },
+  buecher:        { gen: 'books', o: {}, normal: 1.6 }, // gross (23.11.): Buchrücken (Bibliothek)
   metal_painted:  { gen: 'paint', o: {}, normal: 1.5 },
   metal_rust:     { gen: 'rust', o: {}, normal: 3 },
   metal_corrugated: { gen: 'corrugated', o: { ribs: 16, rustAmt: 1 }, normal: 4 },

@@ -11,10 +11,10 @@
 //   Munitionsgestell-Kasten und Splitterschutzmatten (moderne Panzer: gesteppte Matten an den freien Turmwänden).
 // Alle Teile gehen in die Sammel-Buckets von cabin.js (ein Netz je Material) und werden mit gebacken.
 import * as THREE from 'three';
-import * as SH from './cabin-shape.js?v=20261122020853';
-import { LF, worn, bolt, boltRow, rivet, weld } from './cabin-detail.js?v=20261122020853';
-import { driverCabin } from './data.js?v=20261122020853';
-import { funkerCabin, funkerDoor } from './periscopes.js?v=20261122020853';
+import * as SH from './cabin-shape.js?v=20261123073102';
+import { LF, worn, bolt, boltRow, rivet, weld } from './cabin-detail.js?v=20261123073102';
+import { driverCabin } from './data.js?v=20261123073102';
+import { funkerCabin, funkerDoor } from './periscopes.js?v=20261123073102';
 
 const PI = Math.PI, HP = PI / 2;
 const Q = (x = 0, y = 0, z = 0, o = 'XYZ') => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, o));

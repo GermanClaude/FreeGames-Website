@@ -11,17 +11,17 @@
 // freies Zielen; getAimScreenPoint() liefert den Laufpunkt auf dem Bildschirm (Fadenkreuz).
 
 import * as THREE from 'three';
-import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261122020853';
-import { raycastHumanoid, PRONE } from './combat.js?v=20261122020853';
-import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS, abilityOfClass } from '../shared/classes.data.js?v=20261122020853';
-import { refillAmmo, markAround } from './mappoints.js?v=20261122020853';
-import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261122020853';
-import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261122020853';
+import { CapsuleBody, collisionRay, probeLedge, keepClear, canOccupy } from './engine/physics.js?v=20261123073102';
+import { raycastHumanoid, PRONE } from './combat.js?v=20261123073102';
+import { canInsertPlate, plateCount, classDef, gadgetDef, GADGETS, abilityOfClass } from '../shared/classes.data.js?v=20261123073102';
+import { refillAmmo, markAround } from './mappoints.js?v=20261123073102';
+import { Stamina, STAMINA_COST, RECOVER } from './stamina.js?v=20261123073102';
+import { slideAllowed, slideBegin, slideStep } from './slide.js?v=20261123073102';
 
 const STAND_H = 1.8;
 const CROUCH_H = 1.15;
 const SLIDE_H = 1.0;
-const STAND_EYE = 1.65;
+const STAND_EYE = 1.68; // Proportionen 22.11.: Augenhöhe der Soldatenfigur (1,80 m, Augen bei 1,68–1,69 m) statt 1,65
 const CROUCH_EYE = 1.0;
 const SLIDE_EYE = 0.82;
 const SPEED_WALK = 5.4;
@@ -717,6 +717,7 @@ export class Player {
     if (this.simSpeed > 0) gear *= this.simSpeed; // Infanteriesimulation: Gewicht der Ausrüstung, Blutverlust
     if (stanceBusy && !this._dive) gear *= 0.25;
     if (this.plating) gear *= 0.8;
+    if (this.moveSpeedMult > 0) gear *= this.moveSpeedMult; // Ultra-Realismus (game/ultra.js): Tempo, Verwundung
     // Gelände: bergauf langsamer (bis −30 %), bergab etwas schneller; nach Stufen und harten Landungen kurz gebremst
     let terrain = 1;
     if (body.onGround && _wish.lengthSq() > 0.01 && body.groundNormal.y < 0.995 && body.groundNormal.y > 0.3) {
@@ -740,6 +741,7 @@ export class Player {
       else if ((_wish.x * v.x + _wish.z * v.z) < -0.2 * Math.sqrt(wishSq) * hSpeed) k = BRAKE_REVERSE;
       else k = this.prone ? ACCEL_PRONE : this.sprinting ? ACCEL_SPRINT : this.crouching ? ACCEL_CROUCH : ACCEL_WALK;
       k *= 0.82 + 0.18 * clamp((wMult - 0.82) / 0.18, 0, 1);
+      if (this.moveInertia > 0) k *= this.moveInertia; // Ultra-Realismus (game/ultra.js): träger Anlauf und Halt
       const a = damp(k, dt);
       v.x += (_wish.x - v.x) * a;
       v.z += (_wish.z - v.z) * a;
@@ -799,8 +801,10 @@ export class Player {
       if (vyBefore < -7) this._landSlow = Math.max(this._landSlow, clamp((-vyBefore - 7) * 0.07, 0, 0.45));
       G.events.emit('player:land', { velocity: vyBefore });
       // Fallschaden ab ≈ 4 m Fallhöhe
-      if (-vyBefore > FALL_SAFE && G.combat && !frozen) {
-        G.combat.damage(this, { amount: (-vyBefore - FALL_SAFE) * 9, attacker: null, weaponId: 'fall', zone: 'body', dir: new THREE.Vector3(0, -1, 0) });
+      // Ultra-Realismus (game/ultra.js): fallSafe/fallDamageMult – Schaden schon ab ≈ 2,5 m, kräftiger
+      const fallSafe = this.fallSafe > 0 ? this.fallSafe : FALL_SAFE;
+      if (-vyBefore > fallSafe && G.combat && !frozen) {
+        G.combat.damage(this, { amount: (-vyBefore - fallSafe) * 9 * (this.fallDamageMult > 0 ? this.fallDamageMult : 1), attacker: null, weaponId: 'fall', zone: 'body', dir: new THREE.Vector3(0, -1, 0) });
         if (!this.alive) return;
       }
     }
@@ -871,7 +875,7 @@ export class Player {
       const it = this._intent;
       // Waffe gesenkt: Hinlegen/Aufstehen, Platte einsetzen, Spritze/Verbandskasten/Reparatur; Realistisch: kein Schuss beim Kriechen
       const busy = this._busy(now);
-      const crawlBlock = this.crawling && !!(fl && fl.id === 'realistisch');
+      const crawlBlock = this.crawling && !!(fl && (fl.id === 'realistisch' || fl.ultra));
       const blocked = frozen || this.mantling || !!busy || crawlBlock || this.building; // Baumodus: Linksklick setzt (building.js)
       // nach dem Sprengen der Drohne: gehaltene Feuertaste erst loslassen
       if (this._fireGate && !input.down('fire')) this._fireGate = false;

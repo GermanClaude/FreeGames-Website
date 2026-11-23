@@ -10,12 +10,12 @@
 // Für den Spieler treibt er den Gunsmith-ViewModel (Waffe, Animationen, Anschlag, Overlay).
 
 import * as THREE from 'three';
-import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261122020853';
-import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261122020853';
-import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261122020853';
-import { getWeaponModelMeta } from './models.js?v=20261122020853';
-import { ladderPrebuild } from './hintergrundbau.js?v=20261122020853';
-import { classDef } from '../../shared/classes.data.js?v=20261122020853';
+import { WEAPONS as DATA_WEAPONS, EQUIPMENT as DATA_EQUIPMENT, GUN_GAME_STEPS, effectiveRange, weaponHandling, fireModesOf, burstCountOf, fireModeLabel } from '../../shared/weapons.data.js?v=20261123073102';
+import { clamp, damp, smooth01, easeInOut, wrapAngle, samplePellet, sampleCone, patternAt } from './ballistics/math.js?v=20261123073102';
+import { applyAttachments, loadAttachments, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261123073102';
+import { getWeaponModelMeta } from './models.js?v=20261123073102';
+import { ladderPrebuild } from './hintergrundbau.js?v=20261123073102';
+import { classDef } from '../../shared/classes.data.js?v=20261123073102';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _eye = new THREE.Vector3();
@@ -76,7 +76,7 @@ function actorFreeAim(actor) {
 
 export class WeaponController {
   /**
-   * @param {import('./index.js?v=20261122020853').WeaponSystem} system
+   * @param {import('./index.js?v=20261123073102').WeaponSystem} system
    * @param {object} actor  Player oder Bot (Actor-Schnittstelle §5)
    * @param {{primary, secondary, lethal}} loadout
    */
@@ -168,7 +168,8 @@ export class WeaponController {
   _modeOf(s) { const ms = fireModesOf(s.def); return s.mode && ms.includes(s.mode) ? s.mode : ms[0]; }
   /** { mag, reserve, magSize } der aktuellen Waffe (HUD-Komfort). */
   get ammo() { const s = this.current; return s ? { mag: s.mag, reserve: s.reserve, magSize: s.def.mag || 0 } : null; }
-  get infiniteAmmo() { const m = this.G.mode; return !!(this.actor.isBot || this.actor.mounted || (m && m.def && m.def.infiniteAmmo)); }
+  // finiteBotAmmo (Battle Royale): Bots haben nur die Munition, die sie finden
+  get infiniteAmmo() { const m = this.G.mode; return !!((this.actor.isBot && !(m && m.def && m.def.finiteBotAmmo)) || this.actor.mounted || (m && m.def && m.def.infiniteAmmo)); }
   /** Außer Atem nach dem Atemanhalten im Zielfernrohr (HUD-Anzeige). */
   get exhausted() { return this._exhausted > 0; }
 
@@ -365,7 +366,14 @@ export class WeaponController {
 
   /** Volle Munition + Granaten (Respawn). */
   refill() {
-    for (const s of this.slots) { s.mag = s.def.mag || 0; s.reserve = s.def.reserve || 0; }
+    for (const s of this.slots) {
+      s.mag = s.def.mag || 0; s.reserve = s.def.reserve || 0;
+      // Unterlauf-Waffe (Granatwerfer/Schrotflinte): eigene Munition ebenfalls voll – blieb sonst über den Tod hinaus leer (logik 22.11.)
+      const U = s.under && UNDER_WEAPONS[s.under.id];
+      if (U) { s.under.mag = U.mag; s.under.reserve = U.reserve; }
+    }
+    this.underOn = false;
+    this._underReloadAt = 0;
     const eq = this.equipment.lethal;
     if (eq.id) { const d = this._equipmentDefs()[eq.id]; eq.count = d ? d.count || 1 : 1; }
     const tq = this.equipment.tactical;
@@ -608,6 +616,7 @@ export class WeaponController {
       s.stepPhase = Number.isFinite(actor.stepPhase) ? actor.stepPhase : Number.isFinite(actor._bobPhase) ? actor._bobPhase : undefined;
       s.breathPhase = Number.isFinite(actor.breathPhase) ? actor.breathPhase : Number.isFinite(actor._breathPh) ? actor._breathPh : undefined;
       s.cameraMotion = Number.isFinite(actor.cameraMotion) ? actor.cameraMotion : undefined;
+      s.weightMult = actor.weaponWeightMult > 0 ? actor.weaponWeightMult : 1; // Ultra-Realismus (game/ultra.js): Waffe wirkt schwerer
       try { vm.update(dt, s); } catch (err) { this._vmError('update', err); }
       this.scoped = !!vm.showScopeOverlay;
     } else {
@@ -825,7 +834,7 @@ export class WeaponController {
     let camP = pitch, camY = yaw;
     const fa = actor.isPlayer ? actor.aimOffset : null;
     if (fa && actor.freeAimRadius > 1e-4) {
-      const kf = 0.45 * (1 - a);
+      const kf = (actor.freeAimRecoilShare > 0 ? actor.freeAimRecoilShare : 0.45) * (1 - a); // Ultra-Realismus: mehr in die Waffe
       fa.y += pitch * kf;
       fa.x += yaw * kf;
       camP *= 1 - kf;
@@ -1439,7 +1448,9 @@ export class WeaponController {
     const actor = this.actor;
     const input = G.input;
     let holding = false;
-    const active = amp0 > 0 && a > 0.5 && !it.frozen && actor.alive !== false;
+    // Ultra-Realismus (game/ultra.js, actor.aimBreath): Atem anhalten im Anschlag mit jeder Waffe, nicht nur mit Zielfernrohr
+    const active = (amp0 > 0 || actor.aimBreath > 0) && a > 0.5 && !it.frozen && actor.alive !== false;
+    const uMult = actor.aimSwayMult > 0 ? actor.aimSwayMult : 1; // Ultra-Realismus: Ausdauer/Verwundung → unruhiger
     if (active) {
       this._adsHeldT += dt;
       const touch = input && input.mode === 'touch';
@@ -1462,7 +1473,7 @@ export class WeaponController {
     let amp = 0;
     if (active) {
       const sp = clamp((it.speed || 0) / MOVE_REF, 0, 1);
-      amp = amp0 * a * this._steady * (1 + 0.9 * sp) * (it.crouching ? 0.72 : 1) * (this.sim ? this.sim.swayMult : 1);
+      amp = amp0 * a * this._steady * (1 + 0.9 * sp) * (it.crouching ? 0.72 : 1) * (this.sim ? this.sim.swayMult : 1) * uMult;
     }
     this._swayAmp = (this._swayAmp || 0) + (amp - (this._swayAmp || 0)) * damp(5, dt);
     this._swayT += dt * (this._exhausted > 0 ? 1.5 : 1);
@@ -1474,12 +1485,12 @@ export class WeaponController {
     // Zielwandern im Anschlag (F2, handling.aimDrift): ruhiges Rauschen statt Achterfigur, nach dem Sprint
     // (Atemnot) und außer Atem deutlich stärker, geduckt ruhiger; Atem anhalten beruhigt es ebenfalls.
     // Touch: nur ein Drittel (verträgt sich sonst schlecht mit der Zielhilfe).
-    const drift0 = weaponHandling(def).aimDrift || 0;
+    const drift0 = Math.max(weaponHandling(def).aimDrift || 0, actor.aimDriftMin || 0);
     let dAmp = 0;
     if (drift0 > 0 && !amp0 && a > 0.3 && !it.frozen && actor.alive !== false) {
       const sp = clamp((it.speed || 0) / MOVE_REF, 0, 1);
       dAmp = drift0 * smooth01((a - 0.3) / 0.7) * (1 + 2 * this.winded + (this._exhausted > 0 ? 1.5 : 0)) *
-        (it.crouching ? 0.6 : 1) * (1 + 0.6 * sp) * (input && input.mode === 'touch' ? 0.35 : 1) * (this.sim ? this.sim.swayMult : 1);
+        (it.crouching ? 0.6 : 1) * (1 + 0.6 * sp) * (input && input.mode === 'touch' ? 0.35 : 1) * (this.sim ? this.sim.swayMult : 1) * uMult;
     }
     this._driftAmp = (this._driftAmp || 0) + (dAmp - (this._driftAmp || 0)) * damp(3, dt);
     if (this._driftAmp > 1e-7) {
@@ -1487,6 +1498,16 @@ export class WeaponController {
       const u = this._driftT;
       x += (Math.sin(u * 0.53 + 0.3) * 0.55 + Math.sin(u * 1.27 + 2.1) * 0.3 + Math.sin(u * 2.9 + 0.7) * 0.15) * this._driftAmp;
       y += (Math.sin(u * 0.41 + 1.7) * 0.55 + Math.sin(u * 1.13 + 0.2) * 0.3 + Math.sin(u * 2.3 + 2.6) * 0.15) * this._driftAmp;
+    }
+    // Ultra-Realismus (actor.aimBreath, rad): Atemzug hebt und senkt die Mündung im Anschlag – im Takt der Körperkamera-Atmung,
+    // nach dem Sprint (winded) tiefer, Atem anhalten (_steady) beruhigt; geduckt/liegend ruhiger
+    const ab = actor.aimBreath > 0 && a > 0.3 && !it.frozen && actor.alive !== false
+      ? actor.aimBreath * smooth01((a - 0.3) / 0.7) * (1 + 2.2 * this.winded) * this._steady * uMult * (it.prone ? 0.35 : it.crouching ? 0.7 : 1) : 0;
+    this._abAmp = (this._abAmp || 0) + (ab - (this._abAmp || 0)) * damp(3, dt);
+    if (this._abAmp > 1e-7) {
+      const ph = Number.isFinite(actor._breathPh) ? actor._breathPh : this._swayT * 1.6;
+      y += Math.sin(ph) * this._abAmp;
+      x += Math.sin(ph * 0.5 + 0.8) * this._abAmp * 0.3;
     }
     if (Number.isFinite(actor.yaw)) actor.yaw -= x - this._swayX;
     if (Number.isFinite(actor.pitch)) actor.pitch += y - this._swayY;

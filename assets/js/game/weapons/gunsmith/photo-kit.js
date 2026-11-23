@@ -4,8 +4,8 @@
 // Peucker ≈ 1 px); hier werden sie auf Meter umgerechnet und als Distanzfeld-Platten mit gerundeten Kanten vernetzt
 // (PC hoch/ultra fein mit Kanten-/Muldenfarbe, PC niedrig/mittel gröber, Handy noch gröber, Bots als flache Extrusion).
 // Koordinaten wie im Bauplan: x quer (rechts +), v hoch, u nach vorn; Ursprung = Griffmitte oben (rechte Hand).
-import { extrudeRound, simplifyRing } from './sdf.js?v=20261122020853';
-import { field2, box2, sdfMesh, sdRoundRect, roundMax, STEEL, POLY, ALU } from './sdfkit.js?v=20261122020853';
+import { extrudeRound, simplifyRing } from './sdf.js?v=20261123073102';
+import { field2, box2, sdfMesh, sdRoundRect, roundMax, STEEL, POLY, ALU } from './sdfkit.js?v=20261123073102';
 
 export { STEEL, POLY, ALU };
 

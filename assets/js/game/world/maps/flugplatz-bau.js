@@ -5,12 +5,12 @@
 // Startbahn-Markierung und -Befeuerung, Hubschrauberlandeplätze. Alles frei erfunden (Fliegerhorst „Hagenmoor“).
 // Koordinaten: x Osten, z Süden (Norden = −z). Zufall nur über hash01 bzw. den Ortschafts-Zufall (b.rand).
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261122020853';
-import { frame, hash01, container, crateStack, barrelGroup, palletStack, sandbags, fence, lampPost, floodMast, tires, workbench, lockers, rack, gasBottles, electricBox, pipe, cone, jersey, truck, van, forklift, cableReel, dress } from '../props.js?v=20261122020853';
-import { flight, stairCore, vaultGeom, gableGeom, vaultProfile, KEIN, VG, hoch, mittel, rubble, igel } from './neu-bau.js?v=20261122020853';
-import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, stockbett, waschtisch, munitionskisten, funktisch, werkzeugwand, bild, teppich } from './grenzland-innen.js?v=20261122020853';
-import { schreibtisch, stuhl as bueroStuhl, aktenschrank, regal as stahlregal, besprechung, kuechenzeile, kuehlschrank, spinde, deckenleuchte, pinnwand, wasserspender } from './hafen-ausstattung.js?v=20261122020853';
-import { mgNest } from './grenzland-stellungen.js?v=20261122020853';
+import { building, wall, stairs, railing, catwalk, slab } from '../arch.js?v=20261123073102';
+import { frame, hash01, container, crateStack, barrelGroup, palletStack, sandbags, fence, lampPost, floodMast, tires, workbench, lockers, rack, gasBottles, electricBox, pipe, cone, jersey, truck, van, forklift, cableReel, dress } from '../props.js?v=20261123073102';
+import { flight, stairCore, vaultGeom, gableGeom, vaultProfile, KEIN, VG, hoch, mittel, rubble, igel } from './neu-bau.js?v=20261123073102';
+import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, stockbett, waschtisch, munitionskisten, funktisch, werkzeugwand, bild, teppich } from './grenzland-innen.js?v=20261123073102';
+import { schreibtisch, stuhl as bueroStuhl, aktenschrank, regal as stahlregal, besprechung, kuechenzeile, kuehlschrank, spinde, deckenleuchte, pinnwand, wasserspender } from './hafen-ausstattung.js?v=20261123073102';
+import { mgNest } from './grenzland-stellungen.js?v=20261123073102';
 
 const PI = Math.PI, Q = PI / 2;
 const OLIV = '#6b7458', OLIV_D = '#4f5742', BETON = '#b4b0a6', HANGAR = '#8a9182';
@@ -273,7 +273,7 @@ export function hangar(b, o) {
     b.cyl(x + 3, 2.5, z + 1, 0.02, H - 3.9, 'black', { ...KEIN, seg: 4, ao: false });
     b.box(x + 3, 2.3, z + 1, 0.3, 0.25, 0.15, 'metal_painted', { tint: '#c8402f', ...VG });
   } else {
-    for (const [lx, lz, ry] of [[-15, 4, Q], [-15, -3, Q]]) container(b, x + lx, yF, z + lz, { ry, color: ['#56603f', '#4a5338'][Math.round(hash01(lx, lz, 1))] });
+    for (const [lx, lz, ry] of [[-15, 4, Q], [-15, -3, Q]]) container(b, x + lx, yF, z + lz, { ry, color: ['#7d8560', '#717a56'][Math.round(hash01(lx, lz, 1))] });
     rack(b, x + 8, z - 4, { ry: 0, bays: 3, levels: 2, y: yF });
     rack(b, x + 8, z + 3, { ry: 0, bays: 3, levels: 2, y: yF });
     crateStack(b, x - 6, z + 8, { y: yF, ry: 0.3 });
@@ -288,7 +288,9 @@ export function hangar(b, o) {
     const wx = s < 0 ? x0 + t + 0.45 : x1 - t - 0.45, ry = s < 0 ? Q : -Q;
     workbench(b, wx, z - 2, { ry, y: yF, w: 2.2 });
     workbench(b, wx, z + 4, { ry, y: yF, w: 2.2 });
-    lockers(b, wx - s * 0.05, z + 10, { ry, y: yF, n: 5, tint: '#5a6a5a' });
+    // karten (22.11.): Spinde nicht vor die Personaltür der Ostwand (z1 − 5; bei 30 m Hallentiefe genau z + 10)
+    const lz = s > 0 && Math.abs(d / 2 - 5 - 10) < 1.8 ? 12.6 : 10;
+    lockers(b, wx - s * 0.05, z + lz, { ry, y: yF, n: 5, tint: '#5a6a5a' });
     gasBottles(b, wx - s * 0.2, z + 14.5, { n: 4, y: yF });
     b.model('tool_cart', wx - s * 1.6, yF, z + 1, { ry: ry + 0.2, collide: false, fallback: (bb) => bb.box(wx - s * 1.6, yF, z + 1, 1.27, 0.96, 0.75, 'metal_painted', { ry, tint: '#c8402f', ...KEIN }) });
     b.box(wx - s * 1.6, yF, z + 1, 1.27, 0.96, 0.75, 'black', { ry, visual: false, minimap: 'cover' });
@@ -308,7 +310,7 @@ function bueroEinbau(b, x, zb, o) {
   const B = building(b, {
     x, z: zc, w, d: dd, floors: 2, fh, mat: 'plaster_white', tint: '#d8d4c8', t: 0.25, skipWalls: ['n'],
     openings: [
-      { side: 's', at: -7, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
+      { side: 's', at: -9.5, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 }, // karten (22.11.): vorher at −7 – direkt hinter der Stahltreppe (deren Rampe darunter massiv ist), unter die Galerie gerückt
       { side: 's', at: 6.5, w: 1.0, h: 2.1, kind: 'door', leaf: 'open', floor: 0 },
       { side: 's', at: -3, w: 2.6, h: 1.3, sill: 0.95, kind: 'window', floor: 0 },
       { side: 's', at: 2, w: 2.6, h: 1.3, sill: 0.95, kind: 'window', floor: 0 },
@@ -326,7 +328,7 @@ function bueroEinbau(b, x, zb, o) {
   // Stahltreppe vor der Front (Ost → West ansteigend) zur Galerie
   const gz = zb + dd + 0.8;
   stairs(b, { x: x - 3.0, z: gz + 0.15, dir: 'w', y0: 0.08, y1: fh, w: 1.1, run: 5.0, style: 'steel', rail: 'left', railTint: '#d9a72a' });
-  catwalk(b, x - 11, gz, x - 7.6, gz, fh, { w: 1.6, rails: ['l'], railTint: '#d9a72a', supports: true });
+  catwalk(b, x - 11, gz, x - 8.0, gz, fh, { w: 1.6, rails: ['l'], railTint: '#d9a72a', supports: true }); // karten (22.11.): endet am Treppenaustritt (x − 8), vorher 0,4 m über dem obersten Lauf (Kopf stieß an)
   // Galerie-Geländer zur Treppenseite (West-Ende offen zur Tür)
   railing(b, x - 11, gz - 0.75, x - 11, gz + 0.75, fh, { tint: '#d9a72a' });
   // Einrichtung: unten Werkstattbüro + Lager, oben Flugbereitschaft
@@ -558,7 +560,7 @@ export function feuerwache(b, x, z) {
     f.solid(0, 0, 0, 2.5, 3.1, 7.4, { minimap: 'vehicle' });
   }
   lockers(b, x + 9.6, z - 3, { ry: -Q, n: 6, tint: '#7a2e26', y: 0.12 });
-  rack(b, x + 6.5, z - 4.6, { ry: 0, bays: 1, levels: 2, y: 0.12 });
+  rack(b, x + 2.5, z - 4.6, { ry: 0, bays: 1, levels: 2, y: 0.12 }); // karten (22.11.): vorher x + 6,5 – genau vor der Nordtür (x + 6)
   for (let k = 0; k < 4; k++) b.cyl(x + 8.5, 1.4 + k * 0.4, z - 5.6, 0.09, 0.32, 'metal_painted', { tint: '#c8402f', ...KEIN, seg: 8, axis: 'x' });
   deckenleuchte(b, x - 3, 4.75, z, 0, 1.25, { real: true });
   deckenleuchte(b, x + 3, 4.75, z, 0, 1.25);
@@ -768,7 +770,7 @@ export function kantine(b, x, z) {
   // Ausgabe + Küche (West)
   b.box(x - 6, 0.12, z, 0.7, 1.0, 9, 'metal_galvanized', { minimap: 'cover' });
   b.box(x - 6, 1.12, z, 0.8, 0.05, 9.1, 'metal_galvanized', { ...VG });
-  for (let k = 0; k < 3; k++) b.box(x - 9.2, 0.12, z - 3.5 + k * 3.5, 0.9, 0.9, 1.6, 'metal_galvanized', { minimap: 'cover' });
+  for (let k = 0; k < 3; k++) b.box(x - 9.2, 0.12, z - 4.6 + k * 3.0, 0.9, 0.9, 1.6, 'metal_galvanized', { minimap: 'cover' }); // karten (22.11.): Herdblöcke von der Westtür (z + 4) weg (vorher z + 3,5 direkt davor)
   kuehlschrank(b, x - 9.3, 0.12, z + 5.4, Q);
   for (let k = 0; k < 4; k++) b.cyl(x - 6 + (k % 2) * 0.1, 1.17, z - 3 + k * 2, 0.18, 0.3, 'metal_galvanized', { ...KEIN, seg: 10 });
   for (const lz of [-3.5, 3.5]) for (const lx of [-3, 3]) deckenleuchte(b, x + lx, 3.75, z + lz, Q, 1.25, { real: lx < 0 && lz < 0 });
@@ -874,7 +876,16 @@ export function wache(b, x, z) {
 }
 
 /** Wachturm (Stahlbeine, Plattform 6 m mit Brüstung, Dach, Suchscheinwerfer), Leiter-Treppe. */
-export function wachturm(b, x, y, z, ry = 0) {
+export function wachturm(b, x, y, z, ry = 0, o = {}) {
+  // karten (22.11.): stairs() kennt nur die vier Himmelsrichtungen – schräg gestellte Ecktürme (±45°/±135°) bekamen eine
+  // achsparallele Treppe neben den Turm (oben ins Leere, unten teils außerhalb des Zauns). Drehung auf die nächste
+  // Vierteldrehung, deren Treppe zur Kartenmitte zeigt.
+  const QR = PI / 2;
+  if (Math.abs(ry / QR - Math.round(ry / QR)) > 1e-6) {
+    const foot = (r) => { const fx = x - Math.sin(r) * 6.75, fz = z - Math.cos(r) * 6.75; return Math.hypot(fx, fz); };
+    const lo = Math.floor(ry / QR) * QR, hi = lo + QR;
+    ry = foot(lo) <= foot(hi) ? lo : hi;
+  }
   const f = frame(b, x, y, z, ry), H = 6;
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) f.box(sx * 1.4, 0, sz * 1.4, 0.2, H + 2.6, 0.2, 'metal_painted', { tint: OLIV_D, minimap: sx < 0 && sz < 0 ? 'pillar' : false });
   for (const yy of [1.8, 3.9]) for (const s of [-1, 1]) { f.box(0, yy, s * 1.4, 2.8, 0.08, 0.08, 'metal_painted', { tint: OLIV_D, ...VG }); f.box(s * 1.4, yy, 0, 0.08, 0.08, 2.8, 'metal_painted', { tint: OLIV_D, ...VG }); }
@@ -882,15 +893,18 @@ export function wachturm(b, x, y, z, ry = 0) {
   // Brüstung; hinten (lokal −z) Durchstieg über der Treppe (lokal x 0,4 ± 0,5)
   f.box(0, H, 1.65, 3.4, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
   for (const s of [-1, 1]) f.box(s * 1.65, H, 0, 0.1, 1.05, 3.4, 'wood_planks', { tint: '#6a5a44', minimap: false });
-  f.box(-0.65, H, -1.65, 2.1, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
-  f.box(1.35, H, -1.65, 0.7, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
+  // karten (22.11.): Durchstieg wirklich über der Treppe (x −0,1 … 0,9) – vorher deckte das linke Brett die halbe Treppe ab
+  f.box(-0.9, H, -1.65, 1.6, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
+  f.box(1.3, H, -1.65, 0.8, 1.05, 0.1, 'wood_planks', { tint: '#6a5a44', minimap: false });
   f.box(0, H + 2.6, 0, 3.9, 0.12, 3.9, 'metal_corrugated', { tint: '#5a6450', minimap: 'roof', grad: false });
   f.box(1.2, H + 1.1, 1.2, 0.35, 0.3, 0.45, 'metal_painted', { tint: '#2b2d30', ...VG });
   f.box(1.2, H + 1.15, 1.43, 0.3, 0.22, 0.02, 'lamp_lens', { ...VG, ao: false });
   // Treppe (steil) an der Rückseite (lokal −z)
   const [tx, tz] = f.P(0.4, -1.75 - 5.0);
   const d = Math.abs(Math.cos(ry)) > 0.5 ? (Math.cos(ry) > 0 ? 's' : 'n') : (Math.sin(ry) > 0 ? 'e' : 'w');
-  stairs(b, { x: tx, z: tz, dir: d, y0: y, y1: y + H - 0.15, w: 0.8, run: 5.0, style: 'steel', rail: true, railTint: '#3d4247' });
+  // karten (22.11.): Treppenfuß auf dem Gelände am Antritt (o.groundAt) – am Hang begann die Treppe sonst im Boden
+  const fy = o.groundAt ? o.groundAt(tx, tz) : y;
+  stairs(b, { x: tx, z: tz, dir: d, y0: fy, y1: y + H - 0.15, w: 0.8, run: 5.0, style: 'steel', rail: true, railTint: '#3d4247' });
   const [nx, nz] = f.P(0, 0);
   b.navPoint(nx, y + H + 0.2, nz);
 }
@@ -994,8 +1008,8 @@ export function hauptquartier(b, x, z, side, o = {}) {
   // Zelte (Stabszelt, Sanität), Container, Funk
   const tent = (tx, tz, tint = '#5b6142') => { b.box(tx, 0, tz, 5.2, 1.8, 7.2, 'tarp', { tint, minimap: 'cover' }); b.wedge(tx, 1.8, tz, 5.2, 1.4, 7.2, 'tarp', { tint, minimap: false }); };
   tent(x - s * 24, z - 22); tent(x - s * 16, z - 22, '#6a6a4c'); tent(x - s * 24, z - 12, '#5a5f48');
-  container(b, x + s * 28, 0, z - 26, { ry: Q, color: '#56603f' });
-  container(b, x + s * 28, 0, z - 19, { ry: Q, color: '#4a5338' });
+  container(b, x + s * 28, 0, z - 26, { ry: Q, color: '#7d8560' });
+  container(b, x + s * 28, 0, z - 19, { ry: Q, color: '#717a56' });
   crateStack(b, x - s * 30, z - 4, { ry: 0.2 });
   barrelGroup(b, x - s * 30, z + 2, { n: 5 });
   munitionskisten(b, x - s * 20, 0, z - 5, 0.3, 4);

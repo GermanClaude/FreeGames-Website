@@ -13,11 +13,11 @@
 // Körper abgegriffen; Zivilkleidung (Pullover, Mantel mit weich gehäuteten Schößen, Kragen am gemessenen Halsausschnitt),
 // Zivilistinnen mit eigenem Körper und Frisur; Hautton je Soldat über den Palettenplatz 'skin'.
 import * as THREE from 'three';
-import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf, lathe } from './builder.js?v=20261122020853';
-import { hullShell, hullP, hullN, hullPath, sweep, rectProfile, roundProfile, onHull, pad, rectPoly, place, curve } from './gear-parts.js?v=20261122020853';
-import { SKIN_TONES } from './materials.js?v=20261122020853';
-import { BONE, DIM } from './rig.js?v=20261122020853';
-import { BODY_MESH } from './body-mesh.js?v=20261122020853';
+import { SkinBuilder, limb, rbox, ellipsoid, cyl, torus, xf, lathe } from './builder.js?v=20261123073102';
+import { hullShell, hullP, hullN, hullPath, sweep, rectProfile, roundProfile, onHull, pad, rectPoly, place, curve } from './gear-parts.js?v=20261123073102';
+import { SKIN_TONES } from './materials.js?v=20261123073102';
+import { BONE, DIM, armY } from './rig.js?v=20261123073102';
+import { BODY_MESH } from './body-mesh.js?v=20261123073102';
 
 export const VARIANTS = [
   // Nutzer 16.10.: Grundausführungen wie die Soldaten im Video – Helm mit Tarnbezug (ohne Nachtsicht), dunkle
@@ -452,9 +452,9 @@ function buildSoldier(V, lod) {
     if (L0) {
       const ep = pad({ ...PKs, w: 0.072, h: 0.092, d: 0.022, rb: 0.009, rc: 0.024, puff: L0 ? 0.005 : 0.003, bend: [10, 3] });
       place(ep, { r: [0, Math.PI, 0] });
-      place(ep, { p: [-DIM.shoulderX - 0.006, 1.15, 0.066], r: [0.08, 0, 0] });
+      place(ep, { p: [-DIM.shoulderX - 0.006, armY(1.15), 0.066], r: [0.08, 0, 0] });
       pair(ep, 'foreArmL', 'foreArmR', C.knee);
-      if (L0) ring(-DIM.shoulderX - 0.006, 1.115, -0.004, 0.061, 0.062, 'foreArmL', C.strap, 0.01, 12);
+      if (L0) ring(-DIM.shoulderX - 0.006, armY(1.115), -0.004, 0.061, 0.062, 'foreArmL', C.strap, 0.01, 12);
     }
   }
   /* ------------------------------------------------------------ Messen am Körpernetz (Stufe 0, Bindehaltung) */
@@ -662,7 +662,7 @@ function buildSoldier(V, lod) {
     };
     // Bündchen am Handgelenk (Unterarm, links gemessen, rechts gespiegelt)
     const cuff = (mat, h = 0.04, rib = true) => {
-      const y = 0.945, ax = -DIM.shoulderX;
+      const y = armY(0.945, 'hand'), ax = -DIM.shoulderX; // 4 cm über dem Handgelenk
       const rxo = surfAt(y, ax, 0, -1, 0, 0.012, 0.35, 'arm'), rxi = surfAt(y, ax, 0, 1, 0, 0.012, 0.35, 'arm'), rzf = surfAt(y, ax, 0, 0, -1, 0.012, 0.35, 'arm'), rzb = surfAt(y, ax, 0, 0, 1, 0.012, 0.35, 'arm');
       if (!(rxo > 0.02 && rzf > 0.02)) return;
       const rx = (rxo + rxi) / 2 + 0.004, rz = (rzf + rzb) / 2 + 0.004;
@@ -1532,7 +1532,7 @@ function buildSoldier(V, lod) {
       // Ärmel (außen/oben/hinten) und Hose (außen/hinten)
       for (const [ub, fb, sx] of [['upperArmL', 'foreArmL', -1], ['upperArmR', 'foreArmR', 1]]) {
         for (const y of [1.4, 1.32, 1.24, 1.16]) ring(ub, sx * DIM.shoulderX, 0, 0.082, 0.082, y, sx, -0.4, 2.1, 0.07, 0.13, 0.15, 0.45);
-        for (const y of [1.06, 0.98]) ring(fb, sx * DIM.shoulderX, 0, 0.07, 0.07, y, sx, -0.3, 2.0, 0.05, 0.1, 0.15, 0.4);
+        for (const y of [armY(1.06), armY(0.98)]) ring(fb, sx * DIM.shoulderX, 0, 0.07, 0.07, y, sx, -0.3, 2.0, 0.05, 0.1, 0.15, 0.4);
       }
       for (const [tb, sb, sx] of [['thighL', 'shinL', -1], ['thighR', 'shinR', 1]]) {
         for (const y of [0.86, 0.78, 0.7, 0.62]) ring(tb, sx * 0.1, 0, 0.125, 0.125, y, sx, -0.5, 2.7, 0.08, 0.15, 0.1, 0.35);
@@ -1563,8 +1563,8 @@ function buildSoldier(V, lod) {
   if (V.pauldrons) pair(E(0.102, 0.078, 0.108, { p: [AX - 0.018, 1.44, 0.0] }, { thetaLength: Math.PI * 0.5 }), 'upperArmL', 'upperArmR', C.gear);
   // hochgekrempelte Ärmel: Wulst unter dem Ellbogen
   // 20.11.: Wulst höher und dicker – deckt die Stoff/Haut-Grenze am Ellbogen (vorher gezackt sichtbar)
-  if (rolled) pair(torus(0.062, 0.019, 4, q.cs, { p: [AX, 1.135, 0.0], r: [Math.PI / 2, 0, 0], s: [0.9, 1.04, 1] }), 'foreArmL', 'foreArmR', civ ? civ.top : C.top);
-  if (L0) add(R(0.014, 0.024, 0.032, 0.004, { p: [AX - 0.041, 0.965, 0] }), 'foreArmL', C.plastic); // Uhr
+  if (rolled) pair(torus(0.062, 0.019, 4, q.cs, { p: [AX, armY(1.135), 0.0], r: [Math.PI / 2, 0, 0], s: [0.9, 1.04, 1] }), 'foreArmL', 'foreArmR', civ ? civ.top : C.top);
+  if (L0) add(R(0.014, 0.024, 0.032, 0.004, { p: [AX - 0.041, armY(0.965, 'hand'), 0] }), 'foreArmL', C.plastic); // Uhr
 
   const geo = B.build();
   geo.userData.variant = V.id;

@@ -4,14 +4,14 @@
 // Dazwischen das Niemandsland: Hunderte Granattrichter (die tiefsten voll Wasser), Stacheldrahtgürtel vor beiden
 // Fronten, zersplitterte Baumstümpfe, eine Dorfruine (West) und eine Kapellenruine (Ost) mit zerstörbaren Mauern, in
 // der Mitte ein liegengebliebener Panzer. Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { wall } from '../arch.js?v=20261122020853';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261122020853';
-import { sampleSpline } from '../terrain/generate.js?v=20261122020853';
-import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261122020853';
+import { wall } from '../arch.js?v=20261123073102';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261123073102';
+import { sampleSpline } from '../terrain/generate.js?v=20261123073102';
+import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261123073102';
 // karten-voll (14.11.): Grabenleben, Trümmerfeld, ausgebrannte Lastwagen, Ruinen-Schutt
-import { kriegsspuren, ruinenLeben } from './niemandsland-leben.js?v=20261122020853';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261122020853'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261122020853';
+import { kriegsspuren, ruinenLeben } from './niemandsland-leben.js?v=20261123073102';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261123073102'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261123073102';
 
 const FRONT = 118, SUPPORT = 162, HQZ = 238; // |z| der Linien je Seite
 const XL = 268;                               // Ausdehnung der Gräben in x
@@ -96,14 +96,16 @@ function tankWreck(b, x, z, ry) {
 }
 
 /** Unterstand/Gefechtsstand an der Basis: Balkendecke auf Sandsäcken, Kisten, Fässer. */
-function dugout(b, x, z, s) {
-  sandbags(b, x - 4, z + s * 3, x + 4, z + s * 3, { rows: 5 });
-  sandbags(b, x - 4, z - s * 3, x - 4, z + s * 3, { rows: 5 });
-  sandbags(b, x + 4, z - s * 3, x + 4, z + s * 3, { rows: 5 });
-  b.box(x, 1.75, z, 8.6, 0.3, 6.6, 'wood_planks', { tint: WOOD, minimap: 'roof' });
-  for (let k = -3; k <= 3; k++) b.box(x + k * 1.25, 2.05, z, 0.25, 0.25, 6.8, 'wood_dark', { tint: WOOD_D, collide: false, minimap: false });
-  crateStack(b, x - 2.6, z, { n: 3 });
-  barrelGroup(b, x + 2.4, z - s * 1.4, { n: 3 });
+// karten (22.11.): y = Plateauhöhe der Basis (0,5) – vorher auf y 0 gebaut: Sandsäcke, Kisten und Fässer steckten 0,5 m im
+// Boden, unter dem Dach blieben nur 1,25 m Kopfhöhe
+function dugout(b, x, z, s, y = 0) {
+  sandbags(b, x - 4, z + s * 3, x + 4, z + s * 3, { rows: 5, y });
+  sandbags(b, x - 4, z - s * 3, x - 4, z + s * 3, { rows: 5, y });
+  sandbags(b, x + 4, z - s * 3, x + 4, z + s * 3, { rows: 5, y });
+  b.box(x, y + 1.75, z, 8.6, 0.3, 6.6, 'wood_planks', { tint: WOOD, minimap: 'roof' });
+  for (let k = -3; k <= 3; k++) b.box(x + k * 1.25, y + 2.05, z, 0.25, 0.25, 6.8, 'wood_dark', { tint: WOOD_D, collide: false, minimap: false });
+  crateStack(b, x - 2.6, z, { n: 3, y });
+  barrelGroup(b, x + 2.4, z - s * 1.4, { n: 3, y });
 }
 
 // ---------------------------------------------------------------------------
@@ -267,8 +269,8 @@ const NIEMANDSLAND = {
       ruinenLeben(b, [[125, -6, 12, 20]], 0.6);
     }, seeds: [[125, -6, 0.6]], height: 10 },
     { id: 'mitte', name: 'Panzerwrack', bounds: { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, build: (b) => tankWreck(b, 8, 12, 0.6), seeds: [[0, 18]], height: 6 },
-    { id: 'basis_a', name: 'Basis A', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: HQZ - 18, maxZ: HQZ + 18 }, build: (b) => { dugout(b, -18, HQZ, 1); dugout(b, 18, HQZ + 2, 1); }, seeds: [[0, HQZ, 0.5]], nav: true },
-    { id: 'basis_b', name: 'Basis B', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: -HQZ - 18, maxZ: -HQZ + 18 }, build: (b) => { dugout(b, -18, -HQZ, -1); dugout(b, 18, -HQZ - 2, -1); }, seeds: [[0, -HQZ, 0.5]], nav: true },
+    { id: 'basis_a', name: 'Basis A', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: HQZ - 18, maxZ: HQZ + 18 }, build: (b) => { dugout(b, -18, HQZ, 1, 0.5); dugout(b, 18, HQZ + 2, 1, 0.5); }, seeds: [[0, HQZ, 0.5]], nav: true },
+    { id: 'basis_b', name: 'Basis B', y: 0.5, bounds: { minX: -40, maxX: 40, minZ: -HQZ - 18, maxZ: -HQZ + 18 }, build: (b) => { dugout(b, -18, -HQZ, -1, 0.5); dugout(b, 18, -HQZ - 2, -1, 0.5); }, seeds: [[0, -HQZ, 0.5]], nav: true },
   ],
   lateSites: [
     { id: 'front', name: 'Gräben und Draht', bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, chunkSize: 80, build: (b, ctx) => frontWorks(b, ctx) },
@@ -292,7 +294,9 @@ const NIEMANDSLAND = {
   // Startpunkte [x, z, yaw]: Teamkampf in der Unterstützungslinie (in den Gräben), Eroberung an der Basis
   spawns: {
     A: [-150, -100, -50, 0, 50, 100, 150, 200].map((x) => [x, lineZ(SUP_A, x), 0]),
-    B: [-150, -100, -50, 0, 50, 100, 150, 200].map((x) => [-x, lineZ(SUP_B, -x), Math.PI]),
+    // karten (22.11.): B-Startpunkte bei x 150 und −200 lagen auf der Grabenböschung (Neigung 35–45°, Prüfskript „Start
+    // schwebt/blockiert“) – je ein paar Meter seitlich auf ebenen Boden
+    B: [-150, -100, -50, 0, 50, 100, 150, 200].map((x) => [-x + ({ 150: -4, [-200]: -6 }[-x] || 0), lineZ(SUP_B, -x), Math.PI]),
     ffa: [[-120, 0], [125, -6], [0, 30], [-60, -40], [60, 40], [-200, 20], [200, -20], [0, -60], [-30, 70], [40, -80]],
     hq: {
       A: [[-30, HQZ - 6, 0], [-20, HQZ - 8, 0], [-8, HQZ - 6, 0], [4, HQZ - 8, 0], [12, HQZ - 6, 0], [26, HQZ - 8, 0], [34, HQZ - 6, 0], [0, HQZ + 8, 0]],

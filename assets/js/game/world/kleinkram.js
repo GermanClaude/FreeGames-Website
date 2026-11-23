@@ -15,8 +15,8 @@
 // Geometrie landet in den Material-Eimern des MapBuilders (zusammengefasst je Material/Chunk → kaum zusätzliche
 // Draw Calls); Fotoscan-Modelle laufen über b.model (instanziert, LOD).
 import * as THREE from 'three';
-import { frame, hash01, cable, pallet } from './props.js?v=20261122020853';
-import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261122020853';
+import { frame, hash01, cable, pallet } from './props.js?v=20261123073102';
+import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261123073102';
 
 const D = { collide: false, minimap: false };
 const DG = { ...D, grad: false };
@@ -107,9 +107,11 @@ export function getraenkekisten(b, x, y, z, ry, n = 3) {
 }
 
 /** Ein bis drei Müllsäcke (Fotoscan trashbag bzw. gestauchte Kugeln). */
-export function muellsaecke(b, x, y, z, n = 2) {
+export function muellsaecke(b, x, y, z, n = 2, ry = null) {
   for (let i = 0; i < n; i++) {
-    const a = hash01(x, z, 60 + i) * 6.28, r = i ? 0.35 : 0;
+    // karten (22.11.): an einer Wand (ry = Außennormale, lokal +z) liegen weitere Säcke daneben bzw. davor – vorher in
+    // beliebiger Richtung 0,35 m versetzt, also oft halb in der Wand (Prüfskript: Modell in Wand)
+    const a = ry == null ? hash01(x, z, 60 + i) * 6.28 : -ry + (i % 2 ? 0.15 : Math.PI - 0.15) - (hash01(x, z, 60 + i) - 0.5) * 0.9, r = i ? 0.35 + (i > 1 ? 0.1 : 0) : 0;
     const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
     lib(b, 'trashbag', px, y, pz, { ry: a, s: 0.85 + hash01(x, z, 63 + i) * 0.3 }, (bb) => {
       bb.cyl(px, y, pz, 0.28, 0.5, 'polymer', { ...DG, r1: 0.12, seg: 8, tint: '#1e2022' });
@@ -245,8 +247,9 @@ export function briefkasten(b, x, y, z, ry) {
 
 /** Wandleuchte über einer Tür (Unterkante y), leuchtet nicht (Tageslicht). */
 export function wandleuchte(b, x, y, z, ry) {
-  if (hash01(x, z, 81) < 0.5 && b.hasModel('security_light')) { b.model('security_light', x, y, z, { ry, collide: false, minimap: false, bullet: false }); return; }
   const f = frame(b, x, y, z, ry);
+  // karten (22.11.): Modell (0,42 m tief, Mitte = Drehpunkt) um die halbe Tiefe vor die Wand – vorher steckte es zur Hälfte darin
+  if (hash01(x, z, 81) < 0.5 && b.hasModel('security_light')) { const [mx, mz] = f.P(0, 0.21); b.model('security_light', mx, y, mz, { ry, collide: false, minimap: false, bullet: false }); return; }
   f.box(0, 0.1, 0.04, 0.08, 0.12, 0.08, 'metal_painted', { ...DN, tint: '#2b2d30' });
   f.box(0, 0, 0.12, 0.16, 0.22, 0.16, 'glass', { ...DN, tint: '#e8e2d0' });
   f.box(0, 0.22, 0.12, 0.2, 0.04, 0.2, 'metal_painted', { ...DN, tint: '#2b2d30' });
@@ -569,7 +572,7 @@ const TABELLE = {
       { fn: (b, x, y, z, ry) => fahrrad(b, x, y, z, along(ry)), off: 0.25 },
       { fn: (b, x, y, z, ry) => blechtonne(b, x, y, z, ry), off: 0.35 },
       { fn: (b, x, y, z, ry) => getraenkekisten(b, x, y, z, ry, 2 + Math.floor(hash01(x, z, 5) * 3)), off: 0.25 },
-      { fn: (b, x, y, z) => muellsaecke(b, x, y, z, 1 + Math.floor(hash01(x, z, 6) * 3)), off: 0.4 },
+      { fn: (b, x, y, z, ry) => muellsaecke(b, x, y, z, 1 + Math.floor(hash01(x, z, 6) * 3), ry), off: 0.4 },
       { fn: (b, x, y, z, ry) => zaehlerkasten(b, x, y + 0.6, z, ry), off: 0.09 },
       { fn: (b, x, y, z, ry) => pflanzkuebel(b, x, y, z, ry), off: 0.5, tuer: true }, // platz: nur neben Haustüren
       { fn: (b, x, y, z, ry) => { werkzeug(b, x, y, z, ry, 3); const [ex, ez] = frame(b, x, y, z, ry).P(0.4, 0.05); eimer(b, ex, y, ez); }, off: 0.12 },
@@ -604,7 +607,7 @@ const TABELLE = {
       { fn: (b, x, y, z, ry, h) => industrieKram(b, x, y, z, ry, h * 0.6), off: 0.5 },
       { fn: (b, x, y, z, ry) => muelltonne(b, x, y, z, ry), off: 0.42 },
       { fn: (b, x, y, z, ry) => zaehlerkasten(b, x, y + 0.7, z, ry), off: 0.09 },
-      { fn: (b, x, y, z) => muellsaecke(b, x, y, z, 2), off: 0.4 },
+      { fn: (b, x, y, z, ry) => muellsaecke(b, x, y, z, 2, ry), off: 0.4 },
       { fn: (b, x, y, z, ry) => bake(b, x, y, z, ry), off: 0.3 },
     ],
   },

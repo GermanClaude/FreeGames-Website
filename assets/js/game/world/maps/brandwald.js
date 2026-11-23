@@ -5,13 +5,13 @@
 // Bretterwänden und eine Unterstützungslinie, verbunden durch Laufgräben; dazwischen Trichter, eine Stromtrasse mit
 // Gittermasten (einer umgestürzt), die Gerippe einer Gewächshausanlage (West) und ein abgebrannter Holzplatz (Ost).
 // Team A im Süden (+z), Team B im Norden (−z). (Owner: world)
-import { sampleSpline } from '../terrain/generate.js?v=20261122020853';
-import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261122020853';
+import { sampleSpline } from '../terrain/generate.js?v=20261123073102';
+import { trenchWorks, pylonLine, greenhouseRuin, timberYard, fieldPost, groundDetails } from './brandwald-bau.js?v=20261123073102';
 // karten-voll (14.11.): Trümmer im Niemandsland (Wagenreste, Blech, Hülsen, Kisten, Drahtreste)
-import { truemmerfeld } from './niemandsland-leben.js?v=20261122020853';
-import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261122020853';
-import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261122020853'; // gelaende (Runde 3): Kleinrelief
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261122020853';
+import { truemmerfeld } from './niemandsland-leben.js?v=20261123073102';
+import { sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261123073102';
+import { reliefAvoid, linienPunkte } from '../terrain/relief.js?v=20261123073102'; // gelaende (Runde 3): Kleinrelief
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261123073102';
 
 const FRONT = 92, SUPPORT = 128, HQZ = 158; // |z| der Linien je Seite
 const XL = 168;                               // Ausdehnung der Gräben in x
@@ -165,8 +165,11 @@ const BRANDWALD = {
   },
   // Startpunkte [x, z, yaw]: Teamkampf in der Unterstützungslinie (Grabensohle), Eroberung an der Basis
   spawns: {
-    A: [-120, -80, -40, 0, 40, 80, 120, 140].map((x) => [x, lineZ(SUP_A, x), 0]),
-    B: [-120, -80, -40, 0, 40, 80, 120, 140].map((x) => [-x, lineZ(SUP_B, -x), Math.PI]),
+    // karten (22.11.): nur Grabenabschnitte, die mit dem übrigen Navigationsgraphen verbunden sind (Prüfskript, Spielmodus
+    // Teamkampf): A x −120 und 0, B x 40, 0 und −80 lagen in abgeschlossenen Grabenstücken (17–45 Knoten) – Bots kamen
+    // dort nie heraus. B x 40 lag zudem auf der Böschung (Neigung 57°).
+    A: [-135, -80, -40, -10, 40, 80, 120, 140].map((x) => [x, lineZ(SUP_A, x), 0]),
+    B: [120, 80, 45, -10, -40, -30, -120, -140].map((x) => [x, lineZ(SUP_B, x), Math.PI]),
     ffa: [[-100, 14], [106, -22], [8, 30], [-60, -30], [60, 35], [-150, 20], [150, -10], [0, -50], [-30, 60], [40, -70]],
     hq: {
       A: [[-24, HQZ + 4, 0], [-14, HQZ + 2, 0], [-4, HQZ + 4, 0], [6, HQZ + 2, 0], [16, HQZ + 4, 0], [26, HQZ + 2, 0], [-8, HQZ + 12, 0], [8, HQZ + 12, 0]],

@@ -3,7 +3,7 @@
 // getLanguage(), onChange()); main.js lädt sie und meldet sie hier an. Die Sprache speichert i18n.js in den
 // Einstellungen ('language'); die Seite übersetzt es selbst (MutationObserver). Texte, die das Menü per Skript setzt,
 // stehen in strings.de.js: zuerst der Katalogschlüssel 'site.<schlüssel>', sonst tx(deutscher Text), sonst Deutsch.
-import { STRINGS, LANGS } from './strings.de.js?v=20261122020853';
+import { STRINGS, LANGS } from './strings.de.js?v=20261123073102';
 
 const CODES = new Set(LANGS.map(([c]) => c));
 let api = null;

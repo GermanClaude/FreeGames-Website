@@ -4,14 +4,14 @@
 // durchhängenden Leitungen, einzelne Masten umgestürzt), Gewächshausruine (Bogenrippen aus Rohr, Pfetten,
 // Windverbände, teils eingeknickt), abgebrannter Holzplatz (Polterholz, Schuppenruine, Sägebock) und Feldposten.
 import * as THREE from 'three';
-import { sampleSpline } from '../terrain/generate.js?v=20261122020853';
-import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261122020853';
-import { SandbagField } from '../sandbag-field.js?v=20261122020853';
-import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261122020853';
-import { getMaterial } from '../../engine/textures.js?v=20261122020853';
-import { createSimplex } from '../terrain/noise.js?v=20261122020853';
-import { mgNest } from './grenzland-stellungen.js?v=20261122020853';
-import { autoWrack } from '../autowrack.js?v=20261122020853';
+import { sampleSpline } from '../terrain/generate.js?v=20261123073102';
+import { sandbags, crateStack, barrelGroup } from '../props.js?v=20261123073102';
+import { SandbagField } from '../sandbag-field.js?v=20261123073102';
+import { barbedWireOf, wireFence } from '../barbed-wire.js?v=20261123073102';
+import { getMaterial } from '../../engine/textures.js?v=20261123073102';
+import { createSimplex } from '../terrain/noise.js?v=20261123073102';
+import { mgNest } from './grenzland-stellungen.js?v=20261123073102';
+import { autoWrack } from '../autowrack.js?v=20261123073102';
 
 const Y = new THREE.Vector3(0, 1, 0);
 const _d = new THREE.Vector3(), _qq = new THREE.Quaternion(), _ee = new THREE.Euler();
@@ -375,9 +375,10 @@ export function trenchWorks(b, ctx, trenches, o = {}) {
       b.geom(g, cx, cy, cz, earthM, { tint: EARTH_TINT, collide: false, minimap: false, uv: 'keep', grad: false, ao: false });
       b.geom(g2, cx, cy, cz, earthM, { tint: EARTH_TINT, collide: false, minimap: false, uv: 'keep', grad: false, ao: false });
       // Kollision der Stirnfläche (sonst ließe sich unter die Kappe laufen); Punkte ohne Rauschen = auf allen Stufen gleich
+      // gross (23.11.): beidseitig (beide Wicklungen) – die Kapselprüfung (Octree.triangleCapsuleIntersect) ist einseitig
       const gc = new THREE.BufferGeometry();
       gc.setAttribute('position', new THREE.Float32BufferAttribute(P.slice(), 3));
-      gc.setIndex(I.slice());
+      gc.setIndex([...I, ...I.slice().reverse()]);
       b.geom(gc, cx, cy, cz, earthM, { visual: false, collide: 'mesh', minimap: false });
     }
     // Kollision: glatte Front + Kappe (unabhängig von der Qualitätsstufe)
@@ -393,6 +394,10 @@ export function trenchWorks(b, ctx, trenches, o = {}) {
         const a = i * m + k, b2 = (i + 1) * m + k;
         I.push(a, a + 1, b2, b2, a + 1, b2 + 1);
       }
+      // gross (23.11.): Wicklung wie die sichtbare Wand (Front in den Graben, Kappe nach oben). Vorher zeigte auf der
+      // rechten Grabenseite (side −1) die ganze Kollisionsfläche nach außen/unten: die einseitige Kapselprüfung ließ Bots
+      // durch die Wand ins Erdreich, die „Decke“ der Kappe drückte sie dann unter das Höhenfeld (Sturz auf y ≈ −13)
+      fixWinding(P, I, Q[0], cx, cz, true);
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
       g.setIndex(I);
@@ -825,7 +830,7 @@ export function timberYard(b, cx, cz, y0) {
   b.box(cx - 2, y0, cz + 2, 3.2, 0.8, 0.9, 'metal_rust', { tint: '#5b4a3e', minimap: 'cover' });
   b.cyl(cx - 2, y0 + 1.15, cz + 2, 0.45, 0.04, 'metal_rust', { axis: 'z', tint: '#6b5a4c', collide: false, minimap: false, seg: 18 });
   for (let i = 0; i < 12; i++) b.box(cx + (r() - 0.5) * 18, y0 + 0.05 + r() * 0.1, cz + (r() - 0.5) * 14, 2.5 + r() * 1.5, 0.05, 0.22, 'wood_planks', { ry: r() * TAU, rz: (r() - 0.5) * 0.15, tint: r() < 0.5 ? '#3d342c' : '#5a4c3e', minimap: false, collide: false });
-  barrelGroup(b, cx + 12, cz + 8, { n: 3 });
+  barrelGroup(b, cx + 12, cz + 8, { n: 3, y: y0 }); // karten (22.11.): auf dem Platz (y0) statt 0,5 m im Boden
 }
 
 // ---------------------------------------------------------------------------
@@ -865,8 +870,9 @@ export function burntWreck(b, x, y, z, ry, kind = 'lkw', seed = 1, ground = null
     for (const sx of [-1, 1]) panel(sx * (W / 2 - 0.02), 0.32, -0.2, 0.04, 0.42, 2.0);  // Türbleche unten
     panel(0, 0.45, 1.9, 0.7, 0.4, 0.5, { mat: 'metal_galvanized', tint: '#3d3530' });  // Motor
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) rim(sx * (W / 2 - 0.12), sz * 1.4, 0.24);
-    const [cx, cy, cz] = f(0, 0, 0);
-    b.solid(cx, cy, cz, W, 1.35, L, { ry, minimap: 'vehicle' });
+    // gross (23.11.): Kollision wie die Karosserie ab medium (1,8 × 1,3 × 4,6 m an x/y/z) – vorher je Stufe ein anderer
+    // Quader (Prüfskript: Navigationsgraph Brandwald low ≠ high, Mehrspieler mit gemischten Stufen uneins)
+    b.solid(x, y, z, 1.8, 1.3, 4.6, { ry, minimap: 'vehicle' });
     return;
   }
   // Pritschenwagen
@@ -906,7 +912,8 @@ export function burntWreck(b, x, y, z, ry, kind = 'lkw', seed = 1, ground = null
 export function fieldPost(b, cx, cz, s, y0) {
   // Sandsackriegel vor der Basis (Richtung Feind = −s·z), Munitionskisten, Fässer
   for (const x of [-28, -16, 16, 28]) sandbags(b, cx + x - 3, cz - s * 9, cx + x + 3, cz - s * 9, { rows: 3, y: y0 });
-  crateStack(b, cx - 6, cz + s * 6, { n: 3 });
-  crateStack(b, cx + 7, cz + s * 5, { n: 2 });
-  barrelGroup(b, cx + 22, cz + s * 6, { n: 3 });
+  // karten (22.11.): Kisten/Fässer auf Plateauhöhe y0 (vorher 0,4 m im Boden)
+  crateStack(b, cx - 6, cz + s * 6, { n: 3, y: y0 });
+  crateStack(b, cx + 7, cz + s * 5, { n: 2, y: y0 });
+  barrelGroup(b, cx + 22, cz + s * 6, { n: 3, y: y0 });
 }

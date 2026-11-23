@@ -6,8 +6,13 @@
 //   • Wiederbeleben: Sanitäter (Verbandskasten) holen gefallene Teamkameraden zurück – Spieler mit F an der Leiche
 //     (2 s), Sanitäter-Bots in der Nähe des gefallenen Spielers von selbst. Wiederbelebte stehen mit halbem Leben auf.
 // Entscheidet offline bzw. der Host (Schaden läuft nur dort); Clients sehen das Ergebnis über Leben/Spawn.
+// Mehrspieler (rest 22.11.): der Host meldet einem Client den Wundstand seiner Puppe ('ev' ij {b, n}: Bits 1 Blutung, 2 Arm,
+// 4 Bein; n Verbände übrig) – der Client führt ihn als Abbild in P.injury (Humpeln, Zittern, Verband-Hinweis). Ein fertig
+// angelegter Verband des Clients geht als 'verband' an den Host (netBandage: lebendig, Verbände je Leben, Abklingzeit,
+// tatsächlich verwundet); dort wirkt er an der Puppe (Blutung gestillt, Ultra-Realismus: +Leben) – das Leben kommt über den
+// Schnappschuss zurück. Vorher stillte ein Client-Verband online nichts und heilte im Ultra-Realismus nicht.
 import * as THREE from 'three';
-import { issueCommand } from './bots/ai/orders.js?v=20261122020853';
+import { issueCommand } from './bots/ai/orders.js?v=20261123073102';
 
 const BLEED_RATE = { arcade: 1.6, realistisch: 2.6 };   // Leben je Sekunde
 const BLEED_CHANCE = { arcade: 0.35, realistisch: 0.7 };
@@ -37,14 +42,71 @@ export class Injuries {
       on('kill', (e) => this._killed(e)),
       on('actor:spawn', (e) => { this.clear(e.actor); this.down.delete(e.actor); }),
     ];
+    this._netBand = new WeakMap(); // Host: Puppe → Zeitpunkt des letzten Client-Verbands (Abklingzeit)
+  }
+
+  /** Online-Client (Abbild): Wunden/Leben entscheidet der Host. */
+  get _client() { const m = this.G.match; return !!m && m.netRole === 'client'; }
+
+  /** Host: Wundstand einer Client-Puppe hat sich geändert → sync-host schickt 'ev' ij an diesen Client. */
+  _changed(a) { if (a && a.isRemoteHuman && this._host) this.G.events.emit('injury:state', { actor: a }); }
+
+  /** Wundstand als Netzdaten { b: Bits (1 Blutung, 2 Arm, 4 Bein), n: Verbände }. */
+  netState(a) {
+    const j = a && a.injury;
+    if (!j) return { b: 0, n: this._flags().bandages > 0 ? this._flags().bandages : BANDAGES };
+    return { b: (j.bleed > 0 ? 1 : 0) | (j.arm ? 2 : 0) | (j.leg ? 4 : 0), n: Math.max(0, j.bandages | 0) };
+  }
+
+  /** Client: Wundstand der eigenen Puppe vom Host ('ev' ij) – Abbild in P.injury, Hinweise bei neuen Wunden. */
+  applyNet(m) {
+    const P = this.G.player;
+    if (!P || !P.alive || !m || !this._client || this.G.isim) return; // Simulation: Wunden je Körperteil in isim/body.js
+    const b = m.b | 0;
+    const j = this.of(P);
+    let news = null;
+    if (b & 2 && !j.arm) news = 'Arm getroffen – Waffe zittert.';
+    else if (b & 4 && !j.leg) news = 'Bein getroffen – du humpelst.';
+    if (b & 1 && !(j.bleed > 0)) news = news ? `${news} Du blutest!` : 'Du blutest!';
+    j.bleed = b & 1 ? BLEED_RATE[this._style()] : 0; // nur Anzeige: das Leben zieht der Host ab
+    j.bleedLeft = b & 1 ? BLEED_MAX : 0;
+    j.arm = !!(b & 2); j.leg = !!(b & 4);
+    if (Number.isFinite(m.n)) j.bandages = Math.max(0, Math.min(9, m.n | 0));
+    if (news) this.G.events.emit('injury:notice', { text: news, tone: 'dim', key: 'verband' });
+  }
+
+  /**
+   * Host: Verband eines Clients ('verband', net/sync-host.js) an seiner Puppe anlegen. Plausibel nur, wenn die Puppe lebt,
+   * noch Verbände hat (je Leben, wie offline), seit dem letzten Verband die Anlegezeit vergangen ist und es etwas zu
+   * versorgen gibt (Wunde oder – Ultra-Realismus – fehlendes Leben). → true, wenn angelegt
+   */
+  netBandage(a) {
+    const G = this.G;
+    if (!this._host || !a || !a.alive || !G.match || (G.match.state !== 'playing' && !G.match.netLive)) return false;
+    // Abklingzeit in Echtzeit (wie mappoints.js netUse – die Spielzeit des Hosts kann bei Einbrüchen langsamer laufen als die
+    // Uhr des Clients), 25 % Luft für Netz-Schwankungen; abgelehnt → Wundstand zurück, damit der Client richtig zählt
+    const now = performance.now() / 1000;
+    if (now - (this._netBand.get(a) ?? -1e9) < BANDAGE_TIME * 0.75) { this._changed(a); return false; }
+    const heal = this._flags().bandageHeal > 0 ? this._flags().bandageHeal : 0;
+    const j = this.of(a);
+    if (j.bandages <= 0) { this._changed(a); return false; }
+    if (!(j.bleed > 0 || j.arm || j.leg || (heal && a.health < a.maxHealth - 0.5))) { this._changed(a); return false; }
+    this._netBand.set(a, now);
+    j.bandages -= 1;
+    j.bleed = 0; j.arm = false; j.leg = false;
+    if (heal) a.health = Math.min(a.maxHealth, a.health + heal);
+    this._changed(a);
+    return true;
   }
 
   get _host() { const m = this.G.match; return !!m && m.netRole !== 'client'; }
   _style() { return (this.G.match && this.G.match.style) === 'realistisch' ? 'realistisch' : 'arcade'; }
+  /** Ultra-Realismus (styleFlags.bandageHeal/bandages): Verband heilt, sonst gibt es keine Heilung. */
+  _flags() { return (this.G.match && this.G.match.styleFlags) || {}; }
 
   /** Verletzungsstand eines Akteurs (legt ihn an). */
   of(a) {
-    if (!a.injury) a.injury = { arm: false, leg: false, bleed: 0, bleedLeft: 0, by: null, wid: null, bandages: BANDAGES };
+    if (!a.injury) a.injury = { arm: false, leg: false, bleed: 0, bleedLeft: 0, by: null, wid: null, bandages: this._flags().bandages > 0 ? this._flags().bandages : BANDAGES };
     return a.injury;
   }
 
@@ -61,6 +123,7 @@ export class Injuries {
     const had = j.bleed > 0 || j.arm || j.leg;
     j.bleed = 0; j.arm = false; j.leg = false;
     if (a.isBot) a.limpUntil = 0;
+    if (had) this._changed(a);
     if (had && a === this.G.player) this.G.events.emit('injury:notice', { text: 'Wunden versorgt.', tone: 'gold' });
   }
 
@@ -84,6 +147,7 @@ export class Injuries {
       j.wid = e.weaponId || null;
     }
     if (a.isBot && j.leg) a.limpUntil = G.time.elapsed + 25;
+    if (news) this._changed(a);
     if (news && a === G.player) G.events.emit('injury:notice', { text: news, tone: 'dim', key: 'verband' });
   }
 
@@ -142,9 +206,12 @@ export class Injuries {
 
   /** Spieler drückt den Verband (Taste N / Touch). */
   bandage() {
-    const P = this.G.player, j = P && P.injury;
+    const P = this.G.player;
     if (!P || !P.alive || this._act) return false;
-    if (!j || !(j.bleed > 0 || j.arm || j.leg)) { this.G.events.emit('injury:notice', { text: 'Du bist nicht verwundet.', tone: 'dim' }); return false; }
+    // Ultra-Realismus: auch ohne Blutung verbinden, solange Leben fehlt (einzige Heilung)
+    const heal = this._flags().bandageHeal > 0;
+    const j = heal ? this.of(P) : P.injury;
+    if (!j || !(j.bleed > 0 || j.arm || j.leg || (heal && P.health < P.maxHealth - 0.5))) { this.G.events.emit('injury:notice', { text: 'Du bist nicht verwundet.', tone: 'dim' }); return false; }
     if (j.bandages <= 0) { this.G.events.emit('injury:notice', { text: 'Keine Verbände mehr.', tone: 'dim' }); return false; }
     this._act = { kind: 'verband', t: 0, dur: BANDAGE_TIME };
     P._busyUntil = Math.max(P._busyUntil || 0, this.G.time.elapsed + BANDAGE_TIME);
@@ -184,7 +251,8 @@ export class Injuries {
 
   update(dt) {
     const G = this.G;
-    if (!G.match || G.match.state !== 'playing') return;
+    // online läuft das Match im Pausenmenü des Hosts weiter (netLive): Blutung/Wiederbeleben dürfen dann nicht stehen bleiben
+    if (!G.match || (G.match.state !== 'playing' && !G.match.netLive)) return;
     const now = G.time.elapsed;
     const P = G.player;
     if (this._host) {
@@ -196,7 +264,7 @@ export class Injuries {
         const j = a.injury;
         if (!j || !(j.bleed > 0) || !a.alive) continue;
         j.bleedLeft -= dt;
-        if (j.bleedLeft <= 0) { j.bleed = 0; continue; }
+        if (j.bleedLeft <= 0) { j.bleed = 0; this._changed(a); continue; }
         a.health -= j.bleed * dt;
         a.lastDamageTime = now; // keine Regeneration, solange es blutet
         if (drip && a !== P && G.effects && typeof G.effects.blood === 'function') G.effects.blood(_v.copy(a.position).setY(a.position.y + 0.9), { x: 0, y: -1, z: 0 }, {});
@@ -218,7 +286,7 @@ export class Injuries {
       }
     }
     // Spieler: Tasten (N = Verband, F = Wiederbeleben), Einblendung „Wiederbeleben“ und laufende Handlungen
-    const inp = G.input;
+    const inp = G.match.state === 'playing' ? G.input : null; // Pausenmenü (online): keine Tasten auswerten
     if (inp && P && !P.alive && typeof inp.pressed === 'function' && this.medicInfo() && inp.pressed('interact')) this.giveUp();
     if (inp && P && P.alive && typeof inp.pressed === 'function') {
       if (inp.pressed('verband') && !G.isim) this.bandage(); // Simulation: Verband in isim/body.js
@@ -245,7 +313,19 @@ export class Injuries {
       } else if (act.t >= act.dur) {
         this._act = null;
         const j = P.injury;
-        if (j) { j.bandages -= 1; this.treat(P); }
+        if (j) {
+          j.bandages -= 1;
+          const was = j.bleed > 0 || j.arm || j.leg;
+          this.treat(P);
+          // Ultra-Realismus: Verband gibt Leben zurück (offline/Host); Client: der Host legt ihn an der Puppe an (netBandage),
+          // stillt dort die Blutung und heilt – das Leben kommt mit dem nächsten Schnappschuss
+          const heal = this._flags().bandageHeal;
+          if (this._client) {
+            const sync = this.G.net && this.G.net.sync;
+            if (sync && typeof sync.sendBandage === 'function') sync.sendBandage();
+          } else if (heal > 0) P.health = Math.min(P.maxHealth, P.health + heal);
+          if (heal > 0 && !was) this.G.events.emit('injury:notice', { text: 'Verband angelegt.', tone: 'gold' });
+        }
       }
     }
   }

@@ -5,9 +5,9 @@
 //
 // vanBodyHQ / cabBodyHQ (K, S, B, GB, LB, lod, paint, variant)
 import * as THREE from 'three';
-import { tube, roundPlate } from './bodykit.js?v=20261122020853';
-import { vanBody, cabBody, TAG } from './carbody.js?v=20261122020853';
-import { addCarBody, surfaceProbe, plateMaterial } from './models-car.js?v=20261122020853';
+import { tube, roundPlate } from './bodykit.js?v=20261123073102';
+import { vanBody, cabBody, TAG } from './carbody.js?v=20261123073102';
+import { addCarBody, surfaceProbe, plateMaterial } from './models-car.js?v=20261123073102';
 
 const PI = Math.PI, HP = PI / 2;
 const lerp = (a, b, t) => a + (b - a) * t;

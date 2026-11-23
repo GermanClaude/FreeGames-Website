@@ -1,12 +1,12 @@
 // §02 Modi: Regelwerk. Fünf Zeilen als Aufklapper; jeder Name spielt seine Regel vor
 // (Fokus, Öffnen, Mitte des Bildschirms beim Scrollen, Maus als Zugabe). Dazu SERIEN.
-import { h, $, signalLost } from './dom.js?v=20261122020853';
-import { fit } from './fit.js?v=20261122020853';
-import { split, Kinetic } from './kinetic.js?v=20261122020853';
-import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261122020853';
-import { ui } from './state.js?v=20261122020853';
-import { calm, reduced, pointerFine, ease } from './motion.js?v=20261122020853';
-import { clamp } from './fmt.js?v=20261122020853';
+import { h, $, signalLost } from './dom.js?v=20261123073102';
+import { fit } from './fit.js?v=20261123073102';
+import { split, Kinetic } from './kinetic.js?v=20261123073102';
+import { buildPlayUrl, rememberLaunch } from './deploy.js?v=20261123073102';
+import { ui } from './state.js?v=20261123073102';
+import { calm, reduced, pointerFine, ease } from './motion.js?v=20261123073102';
+import { clamp } from './fmt.js?v=20261123073102';
 
 const up = (s) => String(s ?? '').toLocaleUpperCase('de-DE');
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -15,7 +15,13 @@ const pad2 = (n) => String(n).padStart(2, '0');
 export function modeLine(m) {
   const parts = [m.short || up(m.id)];
   if (m.id === 'training') { parts.push('KEIN LIMIT'); return parts.join(' · '); }
-  parts.push(m.teams ? `${(m.defaultAllies ?? 5) + 1} GEGEN ${m.defaultEnemies ?? 6}` : `${(m.defaultEnemies ?? 7) + 1} SPIELER`);
+  // Zombies (limits.enemies [0, 0]): Gegner kommen in Wellen – „4 GEGEN DIE UNTOTEN · 10 WELLEN“
+  const horde = m.teams && m.limits && m.limits.enemies && m.limits.enemies[1] === 0;
+  if (horde) {
+    parts.push(`${(m.defaultAllies ?? 0) + 1} GEGEN DIE UNTOTEN`);
+    const w = (m.options || []).find((o) => o.id === 'wellen');
+    if (w && Number.isFinite(w.def)) parts.push(`${w.def} WELLEN`);
+  } else parts.push(m.teams ? `${(m.defaultAllies ?? 5) + 1} GEGEN ${m.defaultEnemies ?? 6}` : `${(m.defaultEnemies ?? 7) + 1} SPIELER`);
   if (m.scoreLimit) parts.push(`${m.scoreLimit} ${up(m.scoreUnit || '')}`.trim());
   parts.push(m.timeLimit ? `${Math.round(m.timeLimit / 60)} MIN` : 'OHNE ZEITLIMIT');
   return parts.join(' · ');

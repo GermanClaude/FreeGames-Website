@@ -25,21 +25,21 @@
 // (cheats.js liest G.net.room.settings bzw. cfg.net.cheatMenu). Roster-Feld cheat (true = Cheat-Menü aktiv, Symbol in der
 // Punktetabelle): Client meldet 'cheat' {on} (setCheat), der Host vermerkt es und verteilt das Roster; bei jedem
 // Matchstart/-ende zurückgesetzt.
-import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261122020853';
-import { PeerLink, ICE_SERVERS } from './peer.js?v=20261122020853';
-import { hex, randomBytes } from './crypto.js?v=20261122020853';
-import { BUILD } from '../../shared/build.js?v=20261122020853';
-import { MAPS, MAP_ORDER, militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261122020853';
-import { MODES, DIFFICULTY_ORDER, ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, modeOptionDiff, modeOptionValues } from '../../shared/modes.data.js?v=20261122020853';
-import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261122020853';
-import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261122020853';
-import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261122020853';
-import { exportLoadoutCamos, importCC } from '../../shared/customcamo.js?v=20261122020853';
+import { HostSignal, joinRoom, watchLobby, relaysFromUrl, DEFAULT_RELAYS, newRoomCode, normCode, isValidCode } from './signal.js?v=20261123073102';
+import { PeerLink, ICE_SERVERS } from './peer.js?v=20261123073102';
+import { hex, randomBytes } from './crypto.js?v=20261123073102';
+import { BUILD } from '../../shared/build.js?v=20261123073102';
+import { MAPS, MAP_ORDER, militaryVehiclesAllowed } from '../../shared/maps.data.js?v=20261123073102';
+import { MODES, DIFFICULTY_ORDER, ONLINE_MODE_IDS, VEHICLE_MODE_IDS, maxTeamOf, modeOptionDiff, modeOptionValues } from '../../shared/modes.data.js?v=20261123073102';
+import { GAME_STYLES, CLASSES, ARMOR_TIERS, HELMETS } from '../../shared/classes.data.js?v=20261123073102';
+import { WEAPONS, EQUIPMENT, CAMOS } from '../../shared/weapons.data.js?v=20261123073102';
+import { ATTACHMENTS, UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261123073102';
+import { exportLoadoutCamos, importCC } from '../../shared/customcamo.js?v=20261123073102';
 const WEAPONS_ALL = { ...WEAPONS, ...UNDER_WEAPONS }; // Trefferprüfung: Waffen + Unterlauf-Aufsätze
-import { AntiCheat, PositionHistory } from './anticheat.js?v=20261122020853';
-import { recommend, UploadMeter } from './recommend.js?v=20261122020853';
-import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261122020853';
-import { isAppClient } from '../../shared/appgate.js?v=20261122020853'; // riesen: App-exklusive Karten (MAPS[id].appOnly)
+import { AntiCheat, PositionHistory } from './anticheat.js?v=20261123073102';
+import { recommend, UploadMeter } from './recommend.js?v=20261123073102';
+import { PKT_INTERNAL_MIN, packetType } from './protocol.js?v=20261123073102';
+import { isAppClient } from '../../shared/appgate.js?v=20261123073102'; // riesen: App-exklusive Karten (MAPS[id].appOnly)
 
 /** Spielprotokoll (Nachrichten/Pakete). Muss bei Host und Client gleich sein – zusätzlich zur Fassung (BUILD).
  *  2: Fahrzeuge online (Snapshot-Anhang, Fahrzeug-Absicht, 'veh'/'vhit'/'vehicles' – panzer-mp.md §C).
@@ -53,7 +53,7 @@ import { isAppClient } from '../../shared/appgate.js?v=20261122020853'; // riese
  *  10: Waffen der ersten Stunde (Waffen-Indizes verschoben), Aufsätze/Tarnung in Ausrüstungen.
  *  11: Versorgung/MG-Gurte im Fahrzeugblock (Byte 63), Militärfahrzeuge nur auf großen Karten.
  *  12: neue Waffen ZW-12 Zwilling, P-9A, PS-41 Wirbel (Waffenindizes verschoben, 26.10.). */
-export const NET_VERSION = 20; // 20: Modus Trupp online (Nachricht 'trupp' Client → Host, Modus-Zustand s.tr – 20.11.; ein gemeinsamer Sprung mit dem Fahrzeug-Strang) + elf neue Fahrzeugtypen 16–26 (lp21 … spw, data-troop.js), Fahrzeugblock-Typ 6 Bit (protocol.js packVehKind), bis 11 Sitze; 19: Waffen-Welle 3 (20.11.: neun neue Waffen) verschiebt den Waffen-Index; 18: zerbrechliche Requisiten 'ev' pb, Zaun-Kollision je Feld (zerstoerung 15.11.), neue Panzertypen 12–15 spz/kk/wk2m/wk2j + Epoche 'kk' (panzermod 15.11.); 17: Luftfahrzeuge (Hubschrauber/Jet: Fahrzeugtypen 10/11, Pilot-Eingaben, Täuschkörper 'vf') – 14.11.; 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
+export const NET_VERSION = 22; // 22: Verband eines Clients ('verband' Client → Host, injuries.js netBandage) + Wundstand der Puppe an ihren Client ('ev' ij {b, n}) – rest 22.11.; 21: Wandpaneele (destruction.js) entscheidet der Host – 'ev' wb {i:[…]} an alle, Liste beim Beitritt (logik 22.11.); 20: Modus Trupp online (Nachricht 'trupp' Client → Host, Modus-Zustand s.tr – 20.11.; ein gemeinsamer Sprung mit dem Fahrzeug-Strang) + elf neue Fahrzeugtypen 16–26 (lp21 … spw, data-troop.js), Fahrzeugblock-Typ 6 Bit (protocol.js packVehKind), bis 11 Sitze; 19: Waffen-Welle 3 (20.11.: neun neue Waffen) verschiebt den Waffen-Index; 18: zerbrechliche Requisiten 'ev' pb, Zaun-Kollision je Feld (zerstoerung 15.11.), neue Panzertypen 12–15 spz/kk/wk2m/wk2j + Epoche 'kk' (panzermod 15.11.); 17: Luftfahrzeuge (Hubschrauber/Jet: Fahrzeugtypen 10/11, Pilot-Eingaben, Täuschkörper 'vf') – 14.11.; 16: neue Waffe RG-6 Orkan (13.11.) verschiebt den Waffen-Index; 13: Modus Stellung online; 14/15: Graben (bis 60 m)/Klettern geändert – Gelände muss überall gleich sein (27.10.)
 /** Online wählbare Modi (Eroberung folgt mit den Fahrzeugen online, Training bleibt offline). 26.10.: aus den Modus-Daten
  *  (MODES[id].online, shared/modes.data.js ONLINE_MODE_IDS) – eine Quelle auch für ui/net-menus.js. */
 export const ONLINE_MODES = ONLINE_MODE_IDS;
@@ -120,6 +120,7 @@ const LOCAL_RELAY = /^wss?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/;
  *  'ability'/'point': Klassen-Fähigkeit bzw. Heilung an einem Kartenpunkt eines Clients – nur der Host wertet sie aus). */
 const RESERVED = new Set([
   'join', 'ready', 'loadout', 'hit', 'melee', 'throw', 'leave', 'hold', 'plate', 'dev', 'order', 'veh', 'vhit', 'streak', 'drone', 'cheat', 'ability', 'point', 'loot', 'build', 'door', 'dig',
+  'verband', // Verband eines Clients (injuries.js netBandage) – nur der Host wertet ihn aus
   'trupp', // Modus Trupp: Anfrage eines Clients (Trupp-Typ, Soldat wechseln, Markierung, Funk, Bauauftrag …) – nur der Host wertet sie aus
   'welcome', 'room', 'roster', 'start', 'spawn', 'kill', 'mode', 'ev', 'end', 'kick', 'host-away', 'correct', 'reject', 'actors', 'vehicles',
 ]);
@@ -590,7 +591,7 @@ export class NetSystem {
   /** resolveConditions aus world/weather.js vorladen (im Spiel steht es schon in G.modules.world bereit). */
   _loadWeather() {
     if (this._resolveFn || (this.G && this.G.modules && this.G.modules.world && this.G.modules.world.resolveConditions)) return;
-    import('../world/weather.js?v=20261122020853').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
+    import('../world/weather.js?v=20261123073102').then((m) => { this._resolveFn = m.resolveConditions; }).catch(() => { /* Rückfall unten */ });
   }
 
   _meta() {

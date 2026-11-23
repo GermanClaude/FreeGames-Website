@@ -14,8 +14,8 @@
 //
 // placeFuellung(world, group, { quality, seed, def, bereiche }) → { cluster, teile, gruen, meshes, ms }
 import * as THREE from 'three';
-import { createFoliage } from './atlas.js?v=20261122020853';
-import { streuRaster, bodenY, placeGroundDressing } from './bodenauflage.js?v=20261122020853';
+import { createFoliage } from './atlas.js?v=20261123073102';
+import { streuRaster, bodenY, placeGroundDressing } from './bodenauflage.js?v=20261123073102';
 
 /** Mengenfaktor je Stufe (low: Modul wird nicht geladen). */
 const MENGE = { medium: 0.5, high: 1, ultra: 1.4 };
@@ -389,7 +389,7 @@ export async function fuelleGrosskarte(world, group, { quality = 'high', def = {
   if (!bereiche.length) return null;
   const out = {};
   if (def.lookDecals !== false) {
-    try { out.decals = (await import('./decals.js?v=20261122020853')).placeLookDecals(world, group, { quality, seed, def: { ...def, lookDecals: { ...(def.lookDecals || {}), bereiche } } }).count; } catch (err) { console.warn('[world] Decals (Großkarte)', err); }
+    try { out.decals = (await import('./decals.js?v=20261123073102')).placeLookDecals(world, group, { quality, seed, def: { ...def, lookDecals: { ...(def.lookDecals || {}), bereiche } } }).count; } catch (err) { console.warn('[world] Decals (Großkarte)', err); }
   }
   if (def.groundDressing !== false) {
     try { const g = placeGroundDressing(world, group, { quality, seed, def: { ...def, groundDressing: { ...(def.groundDressing || {}), bereiche } } }); out.boden = g.count; out.muell = g.litter; } catch (err) { console.warn('[world] Bodenauflage (Großkarte)', err); }

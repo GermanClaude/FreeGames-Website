@@ -15,14 +15,14 @@
 // Nur wenn im Match Militärfahrzeuge unterwegs sind (nicht bei „Panzer & Fahrzeuge: Aus“, ?vehicles=0, Raum „Fahrzeuge
 // aus“ – Host und Clients haben dieselbe Einstellung); Halteplätze und Depots halten Abstand zu allen Spawnpunkten.
 import * as THREE from 'three';
-import { MAPS, militaryVehiclesAllowed } from '../shared/maps.data.js?v=20261122020853';
-import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261122020853';
+import { MAPS, militaryVehiclesAllowed } from '../shared/maps.data.js?v=20261123073102';
+import { EQUIPMENT, WEAPONS, CAMOS, killAmmoFor } from '../shared/weapons.data.js?v=20261123073102';
 const _lootCam = new THREE.Vector3(), _lootPos = new THREE.Vector3();   // Beute-LOD (20.11.)
-import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261122020853';
-import { stepDrop } from './bots/character.js?v=20261122020853';
-import { collisionRay } from './engine/physics.js?v=20261122020853';
-import { createStation, hasStationModel, STATION_SOLIDS } from './mappoints-models.js?v=20261122020853';
-import { worldPartsFrom } from './building.js?v=20261122020853';
+import { ATTACHMENTS } from '../shared/attachments.data.js?v=20261123073102';
+import { stepDrop } from './bots/character.js?v=20261123073102';
+import { collisionRay } from './engine/physics.js?v=20261123073102';
+import { createStation, hasStationModel, STATION_SOLIDS } from './mappoints-models.js?v=20261123073102';
+import { worldPartsFrom } from './building.js?v=20261123073102';
 
 // vehicle: Punktart kann Fahrzeuge versorgen (wenn sie auf offenem Feld liegt, s. vehicleStand); reach: Griffweite (m)
 export const POINT_KINDS = Object.freeze({
@@ -88,7 +88,8 @@ export class MapPoints {
     this.group = new THREE.Group();
     this.group.name = 'kartenpunkte';
     const data = MAPS[mapId];
-    const layout = POINT_LAYOUT[mapId] || [];
+    // Battle Royale (modes/br): keine Munitions-/Sanitätsstationen – Ausrüstung gibt es nur als Beute
+    const layout = G.match && G.match.modeId === 'br' ? [] : POINT_LAYOUT[mapId] || [];
     if (!data) return;
     const world = G.world;
     this.quality = (G.renderer && G.renderer.quality) || 'high';
@@ -219,7 +220,7 @@ export class MapPoints {
   lootWeaponsAllowed() {
     const G = this.G;
     const M = G.match;
-    if (!M || M.modeId === 'gun' || M.modeId === 'messer' || M.modeId === 'training') return false;
+    if (!M || M.modeId === 'gun' || M.modeId === 'messer' || M.modeId === 'training' || M.modeId === 'br') return false; // BR: eigene Beute (modes/br)
     if (M.net) return M.net.lootWeapons !== false;
     return !(G.settings && typeof G.settings.get === 'function' && G.settings.get('lootWeapons') === false);
   }

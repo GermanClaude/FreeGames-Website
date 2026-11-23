@@ -9,9 +9,9 @@
 //   Trifft die Wanne eine Wand, darf body.onWall (vehicles/breach.js, Host/Einzelspiel) sie einreißen – dann kein Rückstoß.
 // • Schlafzustand für stehende, unbesetzte Fahrzeuge (kostet dann nichts).
 import * as THREE from 'three';
-import { collisionRay } from '../engine/physics.js?v=20261122020853';
-import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261122020853';
-import { Drivetrain } from './drivetrain.js?v=20261122020853';
+import { collisionRay } from '../engine/physics.js?v=20261123073102';
+import { mountY, staticComp, VEHICLE_GRAVITY } from './data.js?v=20261123073102';
+import { Drivetrain } from './drivetrain.js?v=20261123073102';
 
 export const STEP = 1 / 60;
 export const GRAVITY = VEHICLE_GRAVITY;

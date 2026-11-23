@@ -3,7 +3,7 @@
 // mit mehr Lebenden, bei Gleichstand niemand). Höchstens fünf Runden, wer zuerst drei gewinnt, gewinnt das Match
 // (scoreLimit 3 = Rundensiege). Zu Rundenbeginn setzt der Modus alle Akteure an den Startbereichen neu ein.
 // Online rechnet der Host (Rundenstand über netExtra an die Clients, Wiedereinstiege über die normalen 'spawn').
-import { TdmMode } from './tdm.js?v=20261122020853';
+import { TdmMode } from './tdm.js?v=20261123073102';
 
 const ROUND_TIME = 120;
 const PAUSE = 5;
@@ -21,6 +21,12 @@ export class UltimateMode extends TdmMode {
   onKillScored() {} // Punkte sind gewonnene Runden
 
   allowOvertime() { return false; }
+
+  /** Todesanzeige (ui/hud.js): kein Countdown, solange die Runde läuft – zurück erst mit der nächsten Runde. */
+  respawnNote() {
+    if (this.isOver) return null;
+    return this.phase === 'kampf' ? 'Ausgeschaltet – zurück in der nächsten Runde' : 'Nächste Runde beginnt …';
+  }
 
   /** Wiedereinstieg nur beim Rundenwechsel (der Modus setzt dann alle neu ein). */
   canRespawn() { return !this.isOver && this._spawning; }

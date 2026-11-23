@@ -16,17 +16,18 @@
 // Zielen, Lehnen, Körperkamera) – auch mit Fischauge stimmt die Lage.
 
 import * as THREE from 'three';
-import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261122020853';
-import { ICON, medalBadge } from './icons.js?v=20261122020853';
-import { Minimap } from './minimap.js?v=20261122020853';
-import { Killfeed } from './killfeed.js?v=20261122020853';
-import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261122020853';
-import { StrikeTargeting } from './strike-target.js?v=20261122020853';
-import { actionKey } from './settings/keys.js?v=20261122020853';
-import { DeployScreen } from './deploy.js?v=20261122020853';
-import { CommandWheel } from './command-wheel.js?v=20261122020853';
-import { DroneHud } from './drone-hud.js?v=20261122020853';
-import { compass, tx, onChange as onLangChange } from '../../shared/i18n.js?v=20261122020853';
+import { el, esc, num, pct, clock, secs, meters, setText, setHtml, toggle, setStyle, clamp, weaponName, replay, warmNumbers } from './dom.js?v=20261123073102';
+import { ICON, medalBadge } from './icons.js?v=20261123073102';
+import { Minimap } from './minimap.js?v=20261123073102';
+import { Killfeed } from './killfeed.js?v=20261123073102';
+import { scoreboardHtml, liveRows } from './scoreboard.js?v=20261123073102';
+import { StrikeTargeting } from './strike-target.js?v=20261123073102';
+import { actionKey } from './settings/keys.js?v=20261123073102';
+import { DeployScreen } from './deploy.js?v=20261123073102';
+import { CommandWheel } from './command-wheel.js?v=20261123073102';
+import { DroneHud } from './drone-hud.js?v=20261123073102';
+import { compass, tx, onChange as onLangChange } from '../../shared/i18n.js?v=20261123073102';
+import { UNDER_WEAPONS } from '../../shared/attachments.data.js?v=20261123073102';
 
 const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
@@ -559,6 +560,8 @@ export class HUD {
       sub = '<div class="h-place"></div>';
     } else if (id === 'training') {
       sub = '<div class="h-parc" hidden><b></b><span></span></div>';
+    } else if (mode && typeof mode.hudSub === 'function') {
+      sub = mode.hudSub(); // Modus mit eigener Zeile unter dem Stand (Battle Royale: Zone, modes/br/hud.js)
     }
     this.el.sub.innerHTML = sub;
     this.el.flags = [...this.el.sub.querySelectorAll('.h-flag')];
@@ -675,7 +678,10 @@ export class HUD {
     // Munition verdeckt (Spielstil Realistisch bzw. HUD „aus“): kein Zähler, kein Vorrat, kein Füllbalken – den Stand
     // zeigt nur das Inspizieren (Magazin-/Kammer-Check im Viewmodel, Schätzung in .h-readout). Touch (kein Inspizieren):
     // grober Füllbalken ohne Zahlen bleibt (game.css)
-    this._realAmmo = fl.id === 'realistisch' || st === 'aus';
+    this._realAmmo = fl.id === 'realistisch' || !!fl.ultra || st === 'aus';
+    // Ultra-Realismus (game/ultra.js, game.css [data-ultra]): auch kein Killfeed, keine Minikarte, keine Hinweise am Fadenkreuz
+    const ul = fl.ultra ? '1' : '';
+    if (this.root.dataset.ultra !== ul) this.root.dataset.ultra = ul;
     const am = this._realAmmo ? 'verdeckt' : '';
     if (this.root.dataset.ammo !== am) this.root.dataset.ammo = am;
     const stamp = !!S.get('bodycamStamp');
@@ -688,7 +694,7 @@ export class HUD {
 
   /** Minikarte sichtbar? (voll; im Realismus-Stil nur als „Tablet“ bei gehaltener Punktetabelle) */
   get _mapShown() {
-    return this.style === 'voll' || this._tablet;
+    return (this.style === 'voll' || this._tablet) && !(this._flags && this._flags.ultra);
   }
 
   _streakName(id) {
@@ -741,7 +747,7 @@ export class HUD {
 
   _onKill(e) {
     const G = this.G;
-    if (!(this._flags && this._flags.killfeed === 'eigene') || e.killer === this.G.player || e.victim === this.G.player) this.feed.pushKill(e, { weapons: !(this._flags && this._flags.killfeed === 'eigene' && this.G.match.style === 'realistisch') });
+    if (!(this._flags && this._flags.killfeed === 'aus') && (!(this._flags && this._flags.killfeed === 'eigene') || e.killer === this.G.player || e.victim === this.G.player)) this.feed.pushKill(e, { weapons: !(this._flags && this._flags.killfeed === 'eigene' && this.G.match.style === 'realistisch') });
     const p = G.player;
     // Abschuss-Bestätigung unter dem Fadenkreuz (Realistisch: nur bei freier Sicht – Ergebnis des letzten Treffers)
     const k = e.killer;
@@ -1161,14 +1167,18 @@ export class HUD {
       const st = ub || w.current;
       setText(this.el.wName, ub ? `${def.name} · Unterlauf` : def.name);
       const FM = G.data.FIRE_MODES || {};
-      setText(this.el.wMode, melee ? 'Nahkampf' : G.data.fireModeLabel ? G.data.fireModeLabel(def, w.fireMode, false) : FM[def.fireMode] || '');
-      const infinite = G.mode && G.mode.def && G.mode.def.infiniteAmmo;
+      const ud = ub ? UNDER_WEAPONS[ub.id] : null; // Unterlauf: dessen Feuerart (Einzelfeuer), nicht die des Gewehrs
+      setText(this.el.wMode, melee ? 'Nahkampf' : ud ? (G.data.fireModeLabel ? G.data.fireModeLabel(ud, ud.fireMode || 'single', false) : FM[ud.fireMode] || '') : G.data.fireModeLabel ? G.data.fireModeLabel(def, w.fireMode, false) : FM[def.fireMode] || '');
+      const infinite = (G.mode && G.mode.def && G.mode.def.infiniteAmmo) || !!w.infiniteAmmo; // auch MG-Stellung (controller.infiniteAmmo)
+      // Magazingröße der angezeigten Waffe: Unterlauf hat eigene (Granatwerfer 1, Schrot 4) – vorher galt die des Gewehrs
+      // (1 von 30 → Balken fast leer, Dauerhinweis „Munition niedrig“; logik 22.11.)
+      const magSize = ub ? ((UNDER_WEAPONS[ub.id] && UNDER_WEAPONS[ub.id].mag) || 0) : def.mag;
       setText(this.el.mag, melee ? '—' : String(st.mag));
       setText(this.el.reserve, melee ? '' : infinite ? '/ ∞' : `/ ${st.reserve}`);
-      if (this.style === 'reduziert') setStyle(this.el.magbar, 'transform', `scaleX(${melee || !(def.mag > 0) ? 1 : clamp(st.mag / def.mag, 0, 1).toFixed(3)})`);
-      const lowMag = def.mag > 0 && st.mag <= Math.ceil(def.mag * 0.25);
+      if (this.style === 'reduziert') setStyle(this.el.magbar, 'transform', `scaleX(${melee || !(magSize > 0) ? 1 : clamp(st.mag / magSize, 0, 1).toFixed(3)})`);
+      const lowMag = magSize > 1 && st.mag <= Math.ceil(magSize * 0.25); // Einzellader (Werfer, 1 Schuss): voll ist nicht „knapp“
       toggle(this.el.weapon, 'is-low', lowMag && st.mag > 0);
-      toggle(this.el.weapon, 'is-empty', def.mag > 0 && st.mag === 0);
+      toggle(this.el.weapon, 'is-empty', magSize > 0 && st.mag === 0);
       const lethal = w.equipment && w.equipment.lethal;
       const EQ = G.data.EQUIPMENT || {};
       const eq = lethal && lethal.id ? EQ[lethal.id] : null;
@@ -1180,15 +1190,15 @@ export class HUD {
       let cls = '';
       if (alive && !melee) {
         if (w.isReloading) { hint = 'Nachladen'; cls = 'is-reload'; }
-        else if (def.mag > 0 && st.mag === 0 && st.reserve <= 0 && !infinite) {
+        else if (magSize > 0 && st.mag === 0 && st.reserve <= 0 && !infinite) {
           const other = (w.slots || []).find((s) => s && s !== st && s.def);
           const usable = other && (other.def.cls === 'melee' || other.mag > 0 || other.reserve > 0);
           hint = usable ? 'Keine Munition' : 'Keine Munition · Messer';
           key = this._keyFor(usable ? 'swap' : 'melee');
           cls = 'is-empty';
         }
-        else if (def.mag > 0 && st.mag === 0) { hint = 'Nachladen'; key = this._keyFor('reload'); cls = 'is-empty'; }
-        else if (lowMag && def.mag > 5 && this.style !== 'aus' && !this._realAmmo) { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
+        else if (magSize > 0 && st.mag === 0) { hint = 'Nachladen'; key = this._keyFor('reload'); cls = 'is-empty'; }
+        else if (lowMag && magSize > 5 && this.style !== 'aus' && !this._realAmmo) { hint = 'Munition niedrig'; key = this._keyFor('reload'); cls = 'is-low'; }
       }
       setText(this.el.ammoHintT, hint);
       setText(this.el.ammoHintK, key);
@@ -1270,7 +1280,10 @@ export class HUD {
     if (p && !p.alive && this._death && G.match.state === 'playing') {
       const left = p.respawnAt != null ? Math.max(0, p.respawnAt - now) : 0;
       const total = p.respawnDelay || (G.mode && G.mode.respawnDelay) || 3;
-      setText(this.el.deathRe, left > 0.05 ? `Wiedereinstieg in ${secs(left)}` : 'Wiedereinstieg …');
+      // Modus ohne Wiedereinstieg in dieser Phase (TDM Ultimate: ein Leben je Runde) – vorher lief „Wiedereinstieg in 5 s“
+      // ab und blieb auf „Wiedereinstieg …“ stehen, bis die Runde vorbei war (logik 22.11.)
+      const note = G.mode && typeof G.mode.respawnNote === 'function' ? G.mode.respawnNote(p) : null;
+      setText(this.el.deathRe, note || (left > 0.05 ? `Wiedereinstieg in ${secs(left)}` : 'Wiedereinstieg …'));
       setStyle(this.el.deathBar, 'transform', `scaleX(${(1 - clamp(left / total, 0, 1)).toFixed(3)})`);
     } else if (!this.el.death.hidden && p && p.alive) this.el.death.hidden = true;
 
@@ -1393,8 +1406,21 @@ export class HUD {
     const p = G.player;
     if (!mode || !p) return;
     const id = mode.id;
+    // Modus mit eigener Kopfleiste (Zombies: Welle, verbleibende Untote, Pause/Dauer) – Texte kommen übersetzt vom Modus
+    const hs = typeof mode.hudState === 'function' ? mode.hudState(p) : null;
+    if (hs) {
+      setText(this.el.timeT, Number.isFinite(hs.time) ? clock(hs.time) : '∞');
+      setText(this.el.timeS, hs.timeSub || '');
+      toggle(this.el.time, 'is-ot', false);
+      toggle(this.el.time, 'is-last', !!hs.last);
+      setText(this.el.sAv, hs.a); setText(this.el.sAs, hs.aLabel || '');
+      setText(this.el.sBv, hs.b); setText(this.el.sBs, hs.bLabel || '');
+      setStyle(this.el.sAbar, 'transform', `scaleX(${clamp(hs.aBar || 0, 0, 1).toFixed(3)})`);
+      setStyle(this.el.sBbar, 'transform', `scaleX(${clamp(hs.bBar || 0, 0, 1).toFixed(3)})`);
+      return;
+    }
     // Zeit
-    const tl = mode.timeLeft;
+    const tl = typeof mode.hudClock === 'function' ? mode.hudClock() : mode.timeLeft; // Battle Royale: Zonen-Uhr
     setText(this.el.timeT, Number.isFinite(tl) ? clock(tl) : id === 'training' ? '∞' : '∞');
     toggle(this.el.time, 'is-ot', !!mode.overtime);
     toggle(this.el.time, 'is-last', Number.isFinite(tl) && tl <= 30 && !mode.overtime);
@@ -1451,6 +1477,13 @@ export class HUD {
       setStyle(this.el.sBbar, 'transform', `scaleX(${limit ? clamp((s.leaderIsMe ? s.bestOther : s.leaderKills) / limit, 0, 1).toFixed(3) : 0})`);
       setHtml(this.el.place, `Platz <b>${s.place}</b> von ${s.total}`);
       this._lead(s.leaderIsMe && s.mine > 0);
+    } else if (typeof mode.hudScores === 'function') {
+      // Modus mit eigenem Stand (Battle Royale: übrig / eigene Abschüsse)
+      const s = mode.hudScores(p);
+      setText(this.el.sAv, String(s.a)); setText(this.el.sBv, String(s.b));
+      setText(this.el.sAs, s.as || ''); setText(this.el.sBs, s.bs || '');
+      setStyle(this.el.sAbar, 'transform', `scaleX(${clamp(s.ra || 0, 0, 1).toFixed(3)})`);
+      setStyle(this.el.sBbar, 'transform', `scaleX(${clamp(s.rb || 0, 0, 1).toFixed(3)})`);
     } else if (id === 'training' && mode.summary) {
       const s = mode.summary();
       setText(this.el.sAv, String(s.down));
@@ -1545,6 +1578,8 @@ export class HUD {
     } else if (G.injuries && G.injuries.progress()) {
       const a = G.injuries.progress();
       pr = { text: `${a.kind === 'revive' ? 'Wiederbeleben' : 'Verband anlegen'} … ${Math.round(a.p * 100)} %`, key: '', action: () => {} };
+    } else if (mode && mode.id !== 'training' && typeof mode.prompt === 'function' && (trp = mode.prompt())) {
+      pr = { text: trp.text, key: trp.key === undefined ? this._keyFor('interact') : trp.key, action: trp.action }; // Battle Royale: Beute aufnehmen
     } else if (G.injuries && G.injuries.near) {
       pr = { text: G.injuries.near.text, key: this._keyFor('interact'), action: () => G.injuries.revive() };
     } else if (G.doors && G.doors.near && !(G.points && G.points.near)) {

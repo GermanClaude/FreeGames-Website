@@ -15,17 +15,17 @@
 // Luken und Innenraum liegen außerhalb der LOD-Stufen (eigene Netze; der Innenraum nur für den lokalen Insassen).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { boxUV } from '../engine/textures.js?v=20261122020853';
-import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261122020853';
-import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261122020853';
-import { CIVIL_BUILDERS } from './models-civil.js?v=20261122020853';
-import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261122020853';
-import { attachCabin, attachTroopCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261122020853';
-import { NEW_TANK_BUILDERS, buildTroop, sprocket, idler, weld, hullShell, castTurret, towCable } from './models-tanks.js?v=20261122020853';
-import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261122020853';
-import { eraPaint } from './materials.js?v=20261122020853';
-import { HEAVY_BUILDERS } from './models-heavy.js?v=20261122020853';
-import { TROOP_BUILDERS } from './models-troop.js?v=20261122020853';
+import { boxUV } from '../engine/textures.js?v=20261123073102';
+import { VEHICLES, mountY, staticComp, driverCabin } from './data.js?v=20261123073102';
+import { vehicleMaterials, trackMaterial, markingMaterial, applyVehicleLook } from './materials.js?v=20261123073102';
+import { CIVIL_BUILDERS } from './models-civil.js?v=20261123073102';
+import { jeepBodyHQ, jeepWheelHQ } from './models-jeep.js?v=20261123073102';
+import { attachCabin, attachTroopCabin, setCabinVisible, syncCabin, attachCockpit, syncCockpit } from './cabin.js?v=20261123073102';
+import { NEW_TANK_BUILDERS, buildTroop, sprocket, idler, weld, hullShell, castTurret, towCable } from './models-tanks.js?v=20261123073102';
+import { armorShell, stackRings, insetPoly } from './armorkit.js?v=20261123073102';
+import { eraPaint } from './materials.js?v=20261123073102';
+import { HEAVY_BUILDERS } from './models-heavy.js?v=20261123073102';
+import { TROOP_BUILDERS } from './models-troop.js?v=20261123073102';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const PI = Math.PI, HP = PI / 2;
@@ -787,7 +787,9 @@ function buildWK2(lod, S, team) {
   for (const sx of [-1, 1]) {
     const x = sx * W.x;
     for (const zb of [-1.5, 0.02, 1.54]) {
-      if (lod < 2) for (const dz of [-0.36, 0.36]) {
+      // Vorbild Schraubenfeder-Federbock (VVSS): die zwei Rollen eines Bocks stehen dicht beieinander (Lücke ~9 cm),
+      // zwischen den Böcken bleibt eine deutliche Lücke (~40 cm) – vorher wirkten die sechs Rollen gleichmäßig verteilt
+      if (lod < 2) for (const dz of [-0.3, 0.3]) {
         if (HQ) addRoadWheelHQ(B, S, paint, x, 0.29, zb + dz, 0.255, lod === 0 ? 12 : 8, lod);
         else addRoadWheel(B, S, x, 0.29, zb + dz, 0.255, lod === 0 ? 12 : 6, lod);
       }

@@ -22,22 +22,22 @@
 // Durchsehen: in der Innensicht RMT (bzw. Hotspot) = Blick durch das Sichtgerät im Blick (Winkelspiegel, Optik, Kugelblende);
 // im Winkelspiegel schwenkt die Maus von Spiegel zu Spiegel, RMT/C zurück in den Innenraum.
 import * as THREE from 'three';
-import { BaseMode } from './base.js?v=20261122020853';
-import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261122020853';
-import { VEHICLES, VEHICLE_WEAPONS, TANK_ERAS, tankTypeFor } from '../vehicles/data.js?v=20261122020853';
-import { prepareVehicleModels } from '../vehicles/models.js?v=20261122020853';
-import { projectToScreen } from '../vehicles/hud.js?v=20261122020853';
-import { viewOf, viewsOf, viewLookDir } from '../vehicles/views.js?v=20261122020853';
-import { gunSeat, loaderSeat } from '../vehicles/crew.js?v=20261122020853';
-import { equipTank, registerAmmo, rackFor, KINDS, kindOf, idFor, modsOf, crewOf, eraOf, penetration, applyEffects, knockedOut } from '../vehicles/psim/ammo.js?v=20261122020853';
-import { installHooks } from '../vehicles/psim/hooks.js?v=20261122020853';
-import { TankCrew, EnemyTank, TARGET_LABEL, targetPoint, bearingWord, roundRange } from '../vehicles/psim/crew-ai.js?v=20261122020853';
-import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplacement.js?v=20261122020853';
-import { SimControls } from '../vehicles/psim/sim.js?v=20261122020853';
-import { PanzerHUD, Radio, ammoRows } from '../vehicles/psim/hud.js?v=20261122020853';
-import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261122020853';
-import { prismIndex } from '../vehicles/periscopes.js?v=20261122020853';
-import { tx } from '../../shared/i18n.js?v=20261122020853';
+import { BaseMode } from './base.js?v=20261123073102';
+import { modeOptionValues, parseModeOptions } from '../../shared/modes.data.js?v=20261123073102';
+import { VEHICLES, VEHICLE_WEAPONS, TANK_ERAS, tankTypeFor } from '../vehicles/data.js?v=20261123073102';
+import { prepareVehicleModels } from '../vehicles/models.js?v=20261123073102';
+import { projectToScreen } from '../vehicles/hud.js?v=20261123073102';
+import { viewOf, viewsOf, viewLookDir } from '../vehicles/views.js?v=20261123073102';
+import { gunSeat, loaderSeat } from '../vehicles/crew.js?v=20261123073102';
+import { equipTank, registerAmmo, rackFor, KINDS, kindOf, idFor, modsOf, crewOf, eraOf, penetration, applyEffects, knockedOut } from '../vehicles/psim/ammo.js?v=20261123073102';
+import { installHooks } from '../vehicles/psim/hooks.js?v=20261123073102';
+import { TankCrew, EnemyTank, TARGET_LABEL, targetPoint, bearingWord, roundRange } from '../vehicles/psim/crew-ai.js?v=20261123073102';
+import { spawnEmplacement, registerEmplacements } from '../vehicles/psim/emplacement.js?v=20261123073102';
+import { SimControls } from '../vehicles/psim/sim.js?v=20261123073102';
+import { PanzerHUD, Radio, ammoRows } from '../vehicles/psim/hud.js?v=20261123073102';
+import { PanzerOptics } from '../vehicles/psim/optics.js?v=20261123073102';
+import { prismIndex } from '../vehicles/periscopes.js?v=20261123073102';
+import { tx } from '../../shared/i18n.js?v=20261123073102';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
 const _q = new THREE.Quaternion();
@@ -359,7 +359,12 @@ export class PanzerMode extends BaseMode {
     else if (role === 'richtschuetze') i = gs ? gs.index : -1;
     else if (role === 'ladeschuetze') i = ls ? ls.index : -1;
     else if (role === 'kommandant') i = by((s) => s.def.id === 'commander');
-    else if (role === 'mgschuetze') i = by((s) => s.def.id === 'funker' || s.def.id === 'mg');
+    else if (role === 'mgschuetze') {
+      i = by((s) => s.def.id === 'funker' || s.def.id === 'mg');
+      // Transporter ohne Kanone (MTW: „Kommandant (MG)“ am Waffenring): dessen MG-Platz ist der MG-Schützenplatz – vorher
+      // lieferte rollen() nur den Fahrer, obwohl Besatzung und Hinweis einen zweiten Platz zeigten (Proportionen 22.11.)
+      if (i < 0 && !gs) i = by((s) => !!s.def.mount && s.weapons.some((w) => w.def.kind === 'mg'));
+    }
     if (i < 0) {
       // moderne Panzer: das MG bedient der Kommandant (fernbedient); sonst wie bisher
       if (role === 'mgschuetze') { i = by((s) => s.def.id === 'commander'); r = 'kommandant'; if (i < 0) { i = gs ? gs.index : -1; r = 'richtschuetze'; } }
@@ -613,7 +618,10 @@ export class PanzerMode extends BaseMode {
     const R = this.radio, t = this.tank;
     if (!R || !t) return;
     const n = this.targetsTotal;
-    R.say('Funk', `Kompanie an ${t.def.name}: Feindstellung voraus – ${this.enemies.length} Panzer, ${this.empl.filter((e) => e.kind === 'pak').length} Pak, ${this.empl.filter((e) => e.kind === 'bunker').length} Bunker. Angreifen und vernichten!`);
+    // Aufzählung als ein Platzhalter: die Übersetzung wählt je Teil „{#} Panzer“ usw. die Pluralform (tools/i18n/64-logik.mjs,
+    // shared/i18n.js plural) – vorher „1 AT guns, 1 bunkers“
+    const lage = [`${this.enemies.length} Panzer`, `${this.empl.filter((e) => e.kind === 'pak').length} Pak`, `${this.empl.filter((e) => e.kind === 'bunker').length} Bunker`].join(', ');
+    R.say('Funk', `Kompanie an ${t.def.name}: Feindstellung voraus – ${lage}. Angreifen und vernichten!`);
     void n;
     if (this.sim) {
       const t2 = { fahrer: 'Du bist Fahrer. Hauptschalter, Anlasser, Feststellbremse lösen, Gang einlegen.', richtschuetze: 'Du bist Richtschütze. Waffe scharf schalten, dann in die Hauptzieloptik (Sicht wechseln).', ladeschuetze: 'Du bist Ladeschütze. Befohlene Munition laden und entsichern.', kommandant: 'Du bist Kommandant. Führe deine Besatzung.', mgschuetze: 'Du bist MG-Schütze und Funker. Funkgerät auf Kanal 5, durch die Kugelblende (RMT) zielen, Feuerstöße auf Infanterie.' }[this.role];
@@ -1355,10 +1363,19 @@ export class PanzerMode extends BaseMode {
     const pad = this.G.input.lastDevice === 'gamepad'; // plattform: Controller-Hinweise statt Maus/Zifferntasten
     const aim = pad ? '<kbd>R-Stick</kbd> richten' : 'Maus richten', n14 = pad ? '' : '/1–4';
     const seatK = pad ? `${k('seat_prev', '◀')}/${k('seat_next', '▶')}` : `${k('sitzrad', 'K')} halten`;
-    if (this.arcade) return `<h4>Arcade – ${ROLE[this.role]}</h4><p>${seatK}: Platz wechseln (Richtschütze, Fahrer, Kommandant${this.rolesOf().some((x) => x.role === 'mgschuetze') ? ', MG' : ''})</p><p>${k('move_forward', 'W')}${k('move_left', 'A')}${k('move_back', 'S')}${k('move_right', 'D')} fahren · ${aim} · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom</p><p>${pad ? `${k('swap', 'Y')} Munition` : '1–4 Munition'} · ${sv}${k('grenade', 'G')} Wärmebild · ${k('befehl', 'Y')} Befehlsrad</p>`;
+    if (this.arcade) return `<h4>Arcade – ${ROLE[this.role]}</h4>${this._seatHelp(seatK)}<p>${k('move_forward', 'W')}${k('move_left', 'A')}${k('move_back', 'S')}${k('move_right', 'D')} fahren · ${aim} · ${k('fire', 'LMT')} Feuer · ${k('ads', 'RMT')} Zoom</p><p>${pad ? `${k('swap', 'Y')} Munition` : '1–4 Munition'} · ${sv}${k('grenade', 'G')} Wärmebild · ${k('befehl', 'Y')} Befehlsrad</p>`;
     const seatLine = `<p>${seatK}: Platz wechseln · ${k('ads', 'RMT')} in der Innensicht: durchsehen (Winkelspiegel/Optik)</p>`;
     const h = this._helpRole(k, sv, aim, n14);
     return h ? h + seatLine : null;
+  }
+
+  /** Arcade-Hinweis zum Platzwechsel: nur die Plätze, die rollen() wirklich anbietet (MTW: Fahrer und MG, ohne Kanone). */
+  _seatHelp(seatK) {
+    const L = this.rolesOf(), has = (r) => L.some((x) => x.role === r);
+    if (L.length < 2) return '';
+    if (has('richtschuetze') && has('fahrer') && has('kommandant')) return `<p>${seatK}: Platz wechseln (Richtschütze, Fahrer, Kommandant${has('mgschuetze') ? ', MG' : ''})</p>`;
+    // andere Zusammenstellung: Platznamen einzeln (jeder Name ist für sich übersetzt)
+    return `<p>${seatK}: Platz wechseln<span> – </span>${L.map((x) => `<span>${ROLE[x.role]}</span>`).join('<span> · </span>')}</p>`;
   }
 
   _helpRole(k, sv, aim, n14) {

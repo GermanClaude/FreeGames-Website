@@ -10,8 +10,8 @@
 // meadowTintAt) für die Grashalme (vegetation.js): Halme tragen die Wiesenfarbe des Bodens an ihrer Stelle, ferne
 // Halme gehen nahtlos in den Boden über.
 import * as THREE from 'three';
-import { LIB_MATERIALS } from '../library.js?v=20261122020853';
-import { getDetailNormalTexture } from '../../engine/textures.js?v=20261122020853';
+import { LIB_MATERIALS } from '../library.js?v=20261123073102';
+import { getDetailNormalTexture } from '../../engine/textures.js?v=20261123073102';
 
 /** Schichten: Bibliotheks-ID, prozeduraler Ersatz, Kachelgröße (m), Rauheit, Normalen-Rang (−1 = keine; 3 nur mit
  * Hex-Kachelung, high/ultra), cal: Kalibrierung der Fotoscan-Albedo (linear, je Kanal; Ø-Helligkeit wie die früheren
@@ -374,33 +374,55 @@ export async function createTerrainMaterial(o) {
         vec2 n3 = vec2(0.5);
         float eN = n2.y - 0.5;
         #endif
+        // grafik (22.11.): Steilflächen (Grabenwände, Brustwehr, Trichterränder, Uferabbrüche) seitlich statt von oben
+        // projizieren – die Draufsicht zog die Textur dort zu senkrechten Streifen. Umschalten je Pixel (unregelmäßige Kante
+        // über das Rauschen), Ableitungen aus denselben Achsen (keine Mip-Naht); ohne zusätzliche Texturen/Abfragen.
+        vec3 tPd3x = dFdx(vTW), tPd3y = dFdy(vTW);
+        // Steilheit für Bewuchs/Projektion: geglättete Normale (1-m-Raster mittelt schmale Wände weg) und Flächennormale
+        // gemischt – Grabenwände (Fläche ≈ 65°) lagen mit der geglätteten Normale allein unter jeder Schwelle
+        vec3 tFN = cross(tPd3x, tPd3y);
+        float steepF = dot(tFN, tFN) > 1e-12 ? 1.0 - abs(normalize(tFN).y) : steepS;
+        // nur in der Nähe: fern sind die Bildschirm-Ableitungen über Kuppen/Kanten unzuverlässig (Zeilenstreifen)
+        float steepB = mix(steepS, max(steepS, steepF), 0.65 * (1.0 - smoothstep(22.0, 40.0, camD)));
+        bool tSide = steepB + (n2.x - 0.5) * 0.14 > 0.46 && inside > 0.5;
+        bool tSideX = abs(wN.x) > abs(wN.z);
+        vec2 tP = tSide ? (tSideX ? vTW.zy : vTW.xy) : vTW.xz;
+        vec2 tPdx = tSide ? (tSideX ? tPd3x.zy : tPd3x.xy) : tPd3x.xz;
+        vec2 tPdy = tSide ? (tSideX ? tPd3y.zy : tPd3y.xy) : tPd3y.xz;
         // Übergänge (Wegränder, Erdflecken, Geröll): schärfer und unregelmäßig statt bilinear verwaschen (1-m-Karte)
         vec4 tr = c * (1.0 - c) * 4.0;
         vec4 wv = clamp((c - 0.5) * 1.6 + 0.5 + eN * tr * 0.75, 0.0, 1.0);
         // Geröll/Kies in Flecken an steileren Hängen (feiner als die Kontrollkarte)
         float scree = smoothstep(0.1, 0.24, steepS + (n2.x - 0.5) * 0.08) * smoothstep(0.35, 0.7, n2.y) * (1.0 - wv.z) * 0.6 * inside;
         wv.y = max(wv.y, scree);
-        float wG = clamp(1.0 - wv.x - wv.y - wv.z - wv.w, 0.0, 1.0);
+        // grafik (22.11.): auf Steilflächen wächst kein Rasen – die Kontrollkarte (1 m) trifft die schmalen Grabenwände nicht
+        // und ließ dort leuchtend grüne Wiese stehen; ab ≈ 50° Neigung offener Boden (Erde-Schicht bzw. Kartenlook-Aushub)
+        float bare = smoothstep(0.34, 0.5, steepB + (n2.x - 0.5) * 0.12) * inside;
+        wv.x = max(wv.x, bare * clamp(1.0 - wv.y - wv.z - wv.w, 0.0, 1.0));
+        // grafik (22.11.): Grundschicht nur, wo die Kontrollkarte Platz lässt – die Kontrastkurve oben drückt Mischungen
+        // aus drei Schichten (z. B. Erde/Fels/Schlamm je ≈ ⅓ an Grabenwänden, Summe 1) unter 1 und ließ dort Gras durchscheinen
+        float cSum = c.x + c.y + c.z + c.w;
+        float wG = clamp(1.0 - wv.x - wv.y - wv.z - wv.w, 0.0, 1.0) * (1.0 - smoothstep(0.82, 0.98, cSum));
         #if TERR_HEX
         // texturen3: je Schicht Hex-Kachelung (Albedo + Höhe im Alpha, Normalen), nur wo die Schicht Gewicht hat –
         // die Kontrollkarte ist räumlich zusammenhängend, meist sind 1–2 Schichten aktiv
         float fade = 1.0 - smoothstep(40.0, 140.0, camD);
         bool wantN = fade > 0.0;
-        vec2 dWx = dFdx(vTW.xz), dWy = dFdy(vTW.xz);
+        vec2 dWx = tPdx, dWy = tPdy;
         vec4 hA0 = vec4(0.0, 0.0, 0.0, 0.5), hA1 = hA0, hA2 = hA0, hA3 = hA0, hA4 = hA0;
         vec3 hN0 = vec3(0.0, 0.0, 1.0), hN1 = hN0, hN2 = hN0, hN3 = hN0, hN4 = hN0;
-        if (wG > 0.002) tLayer(tMap0, tNor0, tNM[0], wantN, vTW.xz * tScale[0], dWx * tScale[0], dWy * tScale[0], hA0, hN0);
-        if (wv.x > 0.002) tLayer(tMap1, tNor1, tNM[1], wantN, vTW.xz * tScale[1], dWx * tScale[1], dWy * tScale[1], hA1, hN1);
-        if (wv.y > 0.002) tLayer(tMap2, tNor3, tNM[2], wantN, vTW.xz * tScale[2], dWx * tScale[2], dWy * tScale[2], hA2, hN2);
-        if (wv.z > 0.002) tLayer(tMap3, tNor2, tNM[3], wantN, vTW.xz * tScale[3], dWx * tScale[3], dWy * tScale[3], hA3, hN3);
-        if (wv.w > 0.002) tLayer(tMap4, tNor1, tNM[1], wantN, vTW.xz * tScale[4], dWx * tScale[4], dWy * tScale[4], hA4, hN4);
+        if (wG > 0.002) tLayer(tMap0, tNor0, tNM[0], wantN, tP * tScale[0], dWx * tScale[0], dWy * tScale[0], hA0, hN0);
+        if (wv.x > 0.002) tLayer(tMap1, tNor1, tNM[1], wantN, tP * tScale[1], dWx * tScale[1], dWy * tScale[1], hA1, hN1);
+        if (wv.y > 0.002) tLayer(tMap2, tNor3, tNM[2], wantN, tP * tScale[2], dWx * tScale[2], dWy * tScale[2], hA2, hN2);
+        if (wv.z > 0.002) tLayer(tMap3, tNor2, tNM[3], wantN, tP * tScale[3], dWx * tScale[3], dWy * tScale[3], hA3, hN3);
+        if (wv.w > 0.002) tLayer(tMap4, tNor1, tNM[1], wantN, tP * tScale[4], dWx * tScale[4], dWy * tScale[4], hA4, hN4);
         vec3 aG = hA0.rgb * tCal[0];
         #else
         // Gegen-Kachelung: Flecken ≈ 1–9 m; fern ganz die gröbere Abtastung (Wiederholung fällt aus der Distanz auf)
         float kA = max(smoothstep(0.42, 0.58, n2.y), smoothstep(45.0, 130.0, camD));
         bool tFar = camD > 135.0;
         vec2 tW = (n2 - 0.5) * 0.35; // weiche UV-Verzerrung (texturen3: 0,9 → 0,35, sonst „verwirbelt“ in der Nähe)
-        vec3 aG = tSample(tMap0, vTW.xz * tScale[0] + tW, kA, tFar) * tCal[0];
+        vec3 aG = tSample(tMap0, tP * tScale[0] + tW, kA, tFar) * tCal[0];
         #endif
         #if TERR_MEADOW
         // Wiesenfarbe: saftig ↔ trocken (großräumig, trockener an Hängen), feucht am Ufer
@@ -437,10 +459,10 @@ export async function createTerrainMaterial(o) {
         alb *= mix(0.84, 1.05, hB);
         gTerrRough = clamp(gTerrRough + (0.5 - hB) * 0.08, 0.3, 1.0);
         #else
-        vec3 aD = tSample(tMap1, vTW.xz * tScale[1] + tW, kA, tFar) * tCal[1] * mix(vec3(0.9, 0.9, 0.94), vec3(1.08, 1.03, 0.92), n1.y);
-        vec3 aK = tSample(tMap2, vTW.xz * tScale[2] + tW, kA, tFar) * tCal[2];
-        vec3 aF = tSample(tMap3, vTW.xz * tScale[3] + tW, kA, tFar) * tRockTint * tCal[3]; // Fels/Geröll dunkler (kein Schnee-Eindruck; Kartenlook rockTint)
-        vec3 aM = texture2D(tMap4, vTW.xz * tScale[4] + tW).rgb * tCal[4];
+        vec3 aD = tSample(tMap1, tP * tScale[1] + tW, kA, tFar) * tCal[1] * mix(vec3(0.9, 0.9, 0.94), vec3(1.08, 1.03, 0.92), n1.y);
+        vec3 aK = tSample(tMap2, tP * tScale[2] + tW, kA, tFar) * tCal[2];
+        vec3 aF = tSample(tMap3, tP * tScale[3] + tW, kA, tFar) * tRockTint * tCal[3]; // Fels/Geröll dunkler (kein Schnee-Eindruck; Kartenlook rockTint)
+        vec3 aM = texture2D(tMap4, tP * tScale[4] + tW).rgb * tCal[4];
         float sum = wG + wv.x + wv.y + wv.z + wv.w + 1e-4;
         vec3 alb = (aG * wG + aD * wv.x + aK * wv.y + aF * wv.z + aM * wv.w) / sum;
         gTerrRough = (tRough[0] * wG + tRough[1] * wv.x + tRough[2] * wv.y + tRough[3] * wv.z + tRough[4] * wv.w) / sum;
@@ -462,7 +484,7 @@ export async function createTerrainMaterial(o) {
         // Mikro-Relief direkt vor den Füßen: die Erde-Normalen 4,3× feiner (Bodenkorn), bis ≈ 8 m
         float mF = 1.0 - smoothstep(2.5, 8.0, camD);
         if (mF > 0.01) {
-          vec3 nMi = tDecN(texture2D(tNor1, vTW.xz * tScale[1] * 4.3 + vec2(0.37, 0.61)), tNM[1]);
+          vec3 nMi = tDecN(texture2D(tNor1, tP * tScale[1] * 4.3 + vec2(0.37, 0.61)), tNM[1]);
           gTerrN = normalize(gTerrN + vec3(nMi.xy * 0.3 * mF, 0.0));
         }
         #else
@@ -470,7 +492,7 @@ export async function createTerrainMaterial(o) {
         gTerrN = vec3(0.0, 0.0, 1.0);
         // ab 140 m flach (wie vorher) – dort die drei Normalen-Abfragen ganz sparen (Entfernung: räumlich zusammenhängend)
         if (fade > 0.0) {
-          vec2 uG = vTW.xz * tScale[0] + tW, uD = vTW.xz * tScale[1] + tW, uF = vTW.xz * tScale[3] + tW;
+          vec2 uG = tP * tScale[0] + tW, uD = tP * tScale[1] + tW, uF = tP * tScale[3] + tW;
           vec3 nG = tDecN(texture2D(tNor0, uG), tNM[0]), nD = tDecN(texture2D(tNor1, uD), tNM[1]), nF = tDecN(texture2D(tNor2, uF), tNM[3]);
           // Stärke je Schicht: Gras flach (Fotoscan-Relief wirkt sonst wie Plastik), Erde mittel, Fels kräftig
           nG.xy *= 0.6; nF.xy *= 1.15;
@@ -480,13 +502,13 @@ export async function createTerrainMaterial(o) {
         #endif
         float dFade = 1.0 - smoothstep(4.0, 26.0, camD);
         if (dFade > 0.01) {
-          vec2 dn = texture2D(tNoise, vTW.xz * 1.15).xy * 2.0 - 1.0;
+          vec2 dn = texture2D(tNoise, tP * 1.15).xy * 2.0 - 1.0;
           gTerrN = normalize(gTerrN + vec3(dn * 0.45 * dFade, 0.0));
         }
         // textures-2: zweite, feinere Detailstufe direkt vor den Füßen (≈ 30 cm Periode, bis 9 m)
         float dFade2 = 1.0 - smoothstep(2.0, 9.0, camD);
         if (dFade2 > 0.01) {
-          vec2 dn2 = texture2D(tNoise, vTW.xz * 3.4 + 0.5).xy * 2.0 - 1.0;
+          vec2 dn2 = texture2D(tNoise, tP * 3.4 + 0.5).xy * 2.0 - 1.0;
           gTerrN = normalize(gTerrN + vec3(dn2 * 0.3 * dFade2, 0.0));
         }
         #else
@@ -496,7 +518,7 @@ export async function createTerrainMaterial(o) {
         {
           float dFl = 1.0 - smoothstep(3.0, 16.0, camD);
           if (dFl > 0.01) {
-            vec2 dnl = texture2D(tNoise, vTW.xz * 1.15).xy * 2.0 - 1.0;
+            vec2 dnl = texture2D(tNoise, tP * 1.15).xy * 2.0 - 1.0;
             gTerrN = normalize(vec3(dnl * 0.5 * dFl, 1.0));
           }
         }
@@ -506,14 +528,16 @@ export async function createTerrainMaterial(o) {
       .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = gTerrRough;')
       .replace('#include <normal_fragment_maps>', `
         #if TERR_NORMALS || TERR_DETAIL
-        vec3 tT = normalize((viewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
+        // Tangente: Welt-X, auf nach ±X zeigenden Steilflächen Welt-Z (passend zur Seitenprojektion, sonst entartet)
+        vec3 tXv = (viewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz;
+        vec3 tT = abs(dot(normal, tXv)) > 0.7 ? (viewMatrix * vec4(0.0, 0.0, 1.0, 0.0)).xyz : tXv;
         tT = normalize(tT - normal * dot(normal, tT));
         vec3 tB = cross(tT, normal);
         normal = normalize(mat3(tT, tB, normal) * gTerrN);
         #endif
       `);
   };
-  mat.customProgramCacheKey = () => `terrain-v8-${haveNormals ? 1 : 0}-${low ? 0 : 1}-${meadow ? 1 : 0}-${hex && haveNormals ? 1 : 0}`;
+  mat.customProgramCacheKey = () => `terrain-v9-${haveNormals ? 1 : 0}-${low ? 0 : 1}-${meadow ? 1 : 0}-${hex && haveNormals ? 1 : 0}`;
   return {
     material: mat, uniforms, libIds, source,
     dispose() { ctrl.dispose(); mat.dispose(); noiseTex?.dispose(); },

@@ -9,13 +9,13 @@
 //             fire (gehalten), firePressed (Flanke), weapon (Index wählen), cycleWeapon (bool, einmalig),
 //             fireWhenAligned (Standard true für Bots: erst ab Zielfehler ≤ 1,5°), reload (bool)
 import * as THREE from 'three';
-import { VEHICLES, vehicleWeapon } from './data.js?v=20261122020853';
-import { VehicleBody } from './sim.js?v=20261122020853';
-import { gearName } from './drivetrain.js?v=20261122020853';
-import { createVehicleModel } from './models.js?v=20261122020853';
-import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261122020853';
-import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261122020853';
-import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261122020853';
+import { VEHICLES, vehicleWeapon } from './data.js?v=20261123073102';
+import { VehicleBody } from './sim.js?v=20261123073102';
+import { gearName } from './drivetrain.js?v=20261123073102';
+import { createVehicleModel } from './models.js?v=20261123073102';
+import { updateAutopilot, resetAutopilot } from './autopilot.js?v=20261123073102';
+import { createGun, loadAction as crewLoad, onGunFired, updateGun, dropShell, gunSeat, isHuman } from './crew.js?v=20261123073102';
+import { viewOf, viewAnchor, fpViewOf, viewsOf } from './views.js?v=20261123073102';
 
 let SERIAL = 0;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
@@ -159,7 +159,7 @@ export class Vehicle {
     it.moveTo = point ? point.clone() : null;
     Object.assign(it, { arriveRadius: opts.arriveRadius ?? 5, maxSpeed: opts.maxSpeed ?? null, reverseAllowed: opts.reverseAllowed ?? true });
     if (point && opts.plan !== false) {
-      const path = this.sys.planPath(this.position, point);
+      const path = this.sys.planPath(this.position, point, this);
       if (path && path.length) it.path = path;
     }
     return true;

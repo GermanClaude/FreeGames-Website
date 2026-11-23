@@ -15,7 +15,7 @@ const icon = (body) =>
 
 /* ------------------------------------------------------------------ Modi */
 
-export const MODE_ORDER = ['tdm', 'ult', 'dom', 'hp', 'cq', 'trupp', 'kc', 'ffa', 'inf', 'messer', 'gun', 'training', 'panzer'];
+export const MODE_ORDER = ['tdm', 'ult', 'dom', 'hp', 'cq', 'trupp', 'kc', 'ffa', 'br', 'inf', 'zombie', 'messer', 'gun', 'training', 'panzer'];
 
 /*
  * Modus-Daten B6 (26.10.): online: true = im Mehrspieler wählbar (eine Quelle für net/index.js und ui/net-menus.js,
@@ -434,6 +434,46 @@ export const MODES = {
     icon: icon('<circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>'),
   },
 
+  // Zombie-Modus (22.11., modes/zombie.js + bots/zombie/*): Wellen-Überleben gegen Untote, allein oder mit KI-Kameraden.
+  // Nur offline (online: false) – Untote sind lokal simulierte Bot-Unterklassen ohne Netzabbild. options: wellen/horde.
+  zombie: {
+    id: 'zombie',
+    name: 'Zombies',
+    short: 'ZMB',
+    tagline: 'Sie kommen in Wellen. Sie hören jeden Schuss.',
+    description:
+      'Überlebe Welle um Welle gegen Untote, die dem Lärm folgen und dich von allen Seiten einkreisen. Schlurfer kommen langsam, aber in Massen, Hetzer rennen, Hünen halten viel aus. Kopftreffer beenden es sofort, Treffer in die Beine bremsen sie. Zwischen den Wellen bleibt kurz Zeit für Munition und Sanität.',
+    sizeRule: '{team} gegen die Untoten – {mates}',
+    rules: [
+      'Du und KI-Kameraden gegen die Untoten',
+      'Wellen werden größer und härter',
+      'Schlurfer, Hetzer und Hünen',
+      'Kopftreffer sind tödlich, Beintreffer bremsen',
+      'Pause mit Nachschub zwischen den Wellen',
+      'Wer fällt, kommt in der nächsten Pause zurück',
+    ],
+    hudObjective: 'Überlebe die Wellen',
+    scoreUnit: 'Wellen',
+    scoreLimit: 0,
+    timeLimit: 0,
+    teams: true,
+    defaultAllies: 3,
+    defaultEnemies: 0,
+    limits: { allies: [0, 5], enemies: [0, 0] },
+    respawnDelay: 3,
+    streaks: false,
+    lethals: true,
+    online: false,
+    armor: false,
+    teamNames: { A: 'Überlebende', B: 'Untote' },
+    options: [
+      { id: 'wellen', label: 'Wellen', values: [5, 10, 15, 'endlos'], labels: { endlos: 'Endlos' }, def: 10, hint: 'Nach so vielen Wellen ist es geschafft. Endlos: bis zum letzten Mann.' },
+      { id: 'horde', label: 'Horde', values: ['klein', 'mittel', 'gross'], labels: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' }, def: 'mittel', hint: 'Wie viele Untote je Welle kommen.' },
+    ],
+    recommendedMaps: ['altstadt', 'werk', 'hafen'],
+    icon: icon('<path d="M8.5 20v-3.2M15.5 20v-3.2"/><path d="M6.5 11.2a5.5 5.5 0 1 1 11 0v3.1a2.5 2.5 0 0 1-2.5 2.5H9a2.5 2.5 0 0 1-2.5-2.5z"/><path d="M9.3 11.4l1.4.9M14.7 11.4l-1.4.9"/><path d="M10.2 15h3.6"/>'),
+  },
+
   ult: {
     id: 'ult',
     name: 'TDM Ultimate',
@@ -496,6 +536,49 @@ export const MODES = {
     objective: { loadout: { primary: 'knife', secondary: null, lethal: null, tactical: null } },
     recommendedMaps: ['werk', 'altstadt', 'hafen'],
     icon: icon('<path d="M4 20l7.5-7.5"/><path d="M11.5 12.5L19.5 4.5c.6 2.8-.2 5.6-2.6 8l-2.4 2.4"/><path d="M9.5 10.5l4 4"/>'),
+  },
+
+  // Battle Royale (22.11., modes/br/*): Solo, jeder gegen jeden, offline gegen KI-Bots auf einer Großkarte. Start nur mit dem
+  // Messer, Absprung aus dem Transportflugzeug (bzw. zufälliger Fallschirm-Einstieg), Beute auf der Karte, schrumpfende Zone in
+  // sechs Phasen, kein Wiedereinstieg – der Letzte gewinnt. Teilnehmerzahl je Grafikstufe (limitsFor), online: false.
+  br: {
+    id: 'br',
+    name: 'Battle Royale',
+    short: 'BR',
+    tagline: 'Ein Absprung, ein Leben. Der Letzte gewinnt.',
+    description:
+      'Absprung über einer Großkarte, nur mit dem Messer. Waffen, Munition, Westen, Helme, Verbände und Granaten liegen in Häusern und Stellungen – dazu seltene Waffen, die es nur hier gibt. Die Zone zieht sich in mehreren Phasen zusammen, außerhalb kostet jede Sekunde Leben. Kein Wiedereinstieg: Wer als Letzter steht, gewinnt.',
+    sizeRule: '{players} Teilnehmer, jeder für sich',
+    rules: [
+      'Jeder für sich, 30 bis 60 Teilnehmer je nach Gerät',
+      'Start nur mit dem Messer – Ausrüstung liegt auf der Karte',
+      'Absprung aus dem Transportflugzeug: Leertaste, Fallschirm öffnet automatisch',
+      'Die Zone schrumpft in sechs Phasen, außerhalb gibt es Schaden',
+      'Keine Regeneration – Verbände heilen (Taste N)',
+      'Kein Wiedereinstieg, der Letzte gewinnt',
+    ],
+    hudObjective: 'Überlebe als Letzter',
+    scoreUnit: 'Abschüsse',
+    scoreLimit: 0,
+    timeLimit: 0,
+    teams: false,
+    defaultAllies: 0,
+    defaultEnemies: 39,
+    limits: { allies: [0, 0], enemies: [9, 59] },
+    winPlaces: 1,
+    respawnDelay: 0,
+    streaks: false,
+    lethals: true,
+    armor: false, // Westen und Helme gibt es nur als Beute
+    civilVehiclesOnly: true, // keine Panzer/Militärfahrzeuge, nur die Zivilfahrzeuge der Karte
+    finiteBotAmmo: true, // Bots haben nur die gefundene Munition (weapons/controller.js infiniteAmmo)
+    online: false,
+    options: [
+      { id: 'zone', label: 'Zonentempo', values: ['schnell', 'normal', 'langsam'], labels: { schnell: 'Schnell', normal: 'Normal', langsam: 'Langsam' }, def: 'normal', hint: 'Wie schnell die Zone schrumpft: Schnell ≈ 7 Minuten, Normal ≈ 10, Langsam ≈ 15.' },
+      { id: 'einstieg', label: 'Einstiegsart', values: ['flug', 'zufall'], labels: { flug: 'Absprung aus dem Flugzeug', zufall: 'Zufällig mit Fallschirm' }, def: 'flug', hint: 'Flugzeug: Du wählst den Absprungpunkt entlang der Flugroute. Zufällig: Alle schweben an zufälligen Orten am Fallschirm ein.' },
+    ],
+    recommendedMaps: ['grenzland', 'flugplatz', 'weitmark'],
+    icon: icon('<path d="M4 11a8 6 0 0 1 16 0"/><path d="M4 11l8 7 8-7"/><path d="M12 11v7"/><path d="M8.5 11l3.5 7M15.5 11l-3.5 7"/><circle cx="12" cy="20" r="1.2"/>'),
   },
 
   // Panzersimulation (Strang panzersim, 15.11.; modes/panzer.js + vehicles/psim/*): eine Rolle in der Besatzung, KI für die
@@ -770,6 +853,7 @@ export const SCORE_RULES = {
   deny: 50, // Marke eines Kameraden gesichert
   infect: 100, // Überlebenden infiziert
   survive: 50, // Infiziert: je Überlebens-Takt
+  wave: 250, // Zombies: Welle überstanden (modes/zombie.js gibt je Welle eigene Punkte, zombie-waves.js waveBonus)
   // Stellung (26.10.): hold = 10 je Sekunde in der allein gehaltenen Zone, gutgeschrieben je 5 s (+50);
   // hpcapture = als Erster des Teams eine neutrale/gegnerische Stellung allein halten; Abschüsse an der Zone
   hold: 50,
@@ -801,6 +885,7 @@ export const SCORE_LABELS = {
   deny: 'Abschuss verweigert',
   infect: 'Infiziert',
   survive: 'Überlebt',
+  wave: 'Welle überstanden',
   hold: 'Stellung gehalten',
   hpcapture: 'Stellung eingenommen',
   hpdefend: 'Stellung verteidigt',
@@ -1012,7 +1097,15 @@ export function limitsFor(modeId, map, { tier = 'high', touch = false, deviceMem
   let enemies = base.enemies.slice();
   let rec = { allies: teams ? m.defaultAllies ?? 5 : 0, enemies: m.defaultEnemies ?? 6 };
   const warn = { yellow: null, red: null };
-  if (modeId === 'training' || modeId === 'inf') return { allies, enemies, recommended: rec, warn, scale, massOk: false, mass: false };
+  if (modeId === 'training' || modeId === 'inf' || modeId === 'zombie') return { allies, enemies, recommended: rec, warn, scale, massOk: false, mass: false };
+  // Battle Royale (modes/br): Teilnehmer nach Grafikstufe/Gerät – niedrig 30, mittel 40, hoch 50, ultra/extrem 60 (inkl. Spieler);
+  // Telefone/Tablets höchstens 24, schwache Geräte (≤ 2 GB) 16. Ferne Bots vereinfacht der Bot-Manager (Simulationsstufen, Silhouetten).
+  if (modeId === 'br') {
+    const weakB = deviceMemory != null && deviceMemory <= 2;
+    const n = weakB ? 16 : touch ? 24 : tier === 'low' ? 30 : tier === 'medium' ? 40 : tier === 'high' ? 50 : 60;
+    const max = weakB ? 24 : touch ? 32 : 60;
+    return { allies: [0, 0], enemies: [9, max - 1], recommended: { allies: 0, enemies: n - 1 }, warn: { yellow: n + 1, red: Math.max(n + 12, 50) }, scale, massOk: false, mass: false };
+  }
   const weak = deviceMemory != null && deviceMemory <= 2;
   // Telefone/Tablets und „Niedrig“: keine Massenschlacht (Hitze, Akku, Speicher)
   const massOk = scale === 'gross' && teams && !weak && !touch && (MASS_SIDE[tier] || MASS_SIDE.high) > BIG_SIDE;

@@ -16,68 +16,69 @@
 // fehlen die Vollbild-Module (z. B. von einem Inhaltsfilter blockiert), übernimmt ein kleiner Ersatz (basicFullscreen).
 
 import * as THREE from 'three';
-import '../shared/i18n.js?v=20261122020853'; // Mehrsprachigkeit: Katalog laden, Seite/Canvas/Sprachausgabe übersetzen (vor allen Oberflächen)
-import { settings } from '../shared/settings.js?v=20261122020853';
-import { profile } from '../shared/profile.js?v=20261122020853';
-import { TrophyToasts } from './ui/trophy-toast.js?v=20261122020853';
-import { initTvMode } from './ui/tv-mode.js?v=20261122020853'; // TV-/Konsolen-Modus (plattform)
-import * as weaponsData from '../shared/weapons.data.js?v=20261122020853';
-import * as modesData from '../shared/modes.data.js?v=20261122020853';
-import * as mapsData from '../shared/maps.data.js?v=20261122020853';
-import { mapLockedHere } from '../shared/appgate.js?v=20261122020853'; // riesen: Riesenkarte nur in der App
-import * as classesData from '../shared/classes.data.js?v=20261122020853'; // core-mechanics: Klassen, Panzerung, Spielstile
-import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261122020853'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
-import { EventBus } from './engine/events.js?v=20261122020853';
-import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261122020853';
-import { learnTier, deviceInfo } from './engine/device.js?v=20261122020853';
-import { Input } from './engine/input.js?v=20261122020853';
-import { watchForUpdates } from './engine/update.js?v=20261122020853'; // Hinweis auf neue Fassung (nur veröffentlicht)
-import { separateActors } from './engine/physics.js?v=20261122020853';
-import { DynamicResolution } from './engine/dynres.js?v=20261122020853';
-import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261122020853'; // Erweitert-Grafik (S9, ui-controls)
-import { Player } from './player.js?v=20261122020853';
-import { Combat } from './combat.js?v=20261122020853';
-import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261122020853'; // Interaktionspunkte der Karten (Taste F)
-import { Building } from './building.js?v=20261122020853'; // Bauen (Taste K)
-import { Injuries } from './injuries.js?v=20261122020853'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
-import { InfantrySim } from './isim/index.js?v=20261122020853'; // Infanteriesimulation (Spielstil „Simulation“)
-import { Gore } from './gore.js?v=20261122020853'; // Blutlachen + Spritzer
-import { Destruction } from './destruction.js?v=20261122020853'; // zerstörbare Fassaden
-import { CarDeform } from './deform.js?v=20261122020853'; // verformbare Autos
-import { Digging } from './digging.js?v=20261122020853'; // Graben mit dem Klappspaten (Großkarten)
-import { Doors } from './doors.js?v=20261122020853'; // bewegliche Türen und Tore (Taste F)
-import { BulletHoles } from './bullet-holes.js?v=20261122020853'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
-import { TreeFall } from './treefall.js?v=20261122020853'; // Bäume brechen unter Beschuss und fallen
-import * as Feedback from '../shared/feedback.js?v=20261122020853'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
+import '../shared/i18n.js?v=20261123073102'; // Mehrsprachigkeit: Katalog laden, Seite/Canvas/Sprachausgabe übersetzen (vor allen Oberflächen)
+import { settings } from '../shared/settings.js?v=20261123073102';
+import { profile } from '../shared/profile.js?v=20261123073102';
+import { TrophyToasts } from './ui/trophy-toast.js?v=20261123073102';
+import { initTvMode } from './ui/tv-mode.js?v=20261123073102'; // TV-/Konsolen-Modus (plattform)
+import * as weaponsData from '../shared/weapons.data.js?v=20261123073102';
+import * as modesData from '../shared/modes.data.js?v=20261123073102';
+import * as mapsData from '../shared/maps.data.js?v=20261123073102';
+import { mapLockedHere } from '../shared/appgate.js?v=20261123073102'; // riesen: Riesenkarte nur in der App
+import * as classesData from '../shared/classes.data.js?v=20261123073102'; // core-mechanics: Klassen, Panzerung, Spielstile
+import { applyAttachments, loadAttachments } from '../shared/attachments.data.js?v=20261123073102'; // Vorbau der Ego-Fassung mit eigenen Aufsätzen
+import { EventBus } from './engine/events.js?v=20261123073102';
+import { createRenderer, QUALITY_LEVELS, resolveQuality, autoQualityInfo } from './engine/renderer.js?v=20261123073102';
+import { learnTier, deviceInfo } from './engine/device.js?v=20261123073102';
+import { Input } from './engine/input.js?v=20261123073102';
+import { watchForUpdates } from './engine/update.js?v=20261123073102'; // Hinweis auf neue Fassung (nur veröffentlicht)
+import { separateActors } from './engine/physics.js?v=20261123073102';
+import { DynamicResolution } from './engine/dynres.js?v=20261123073102';
+import { renderScaleValue, fpsLimitValue } from '../shared/graphics.data.js?v=20261123073102'; // Erweitert-Grafik (S9, ui-controls)
+import { Player } from './player.js?v=20261123073102';
+import { Combat } from './combat.js?v=20261123073102';
+import { MapPoints, MOUNT_WEAPON } from './mappoints.js?v=20261123073102'; // Interaktionspunkte der Karten (Taste F)
+import { Building } from './building.js?v=20261123073102'; // Bauen (Taste K)
+import { Injuries } from './injuries.js?v=20261123073102'; // Verletzungen, Blutung, Verband (Taste N), Wiederbeleben
+import { InfantrySim } from './isim/index.js?v=20261123073102'; // Infanteriesimulation (Spielstil „Simulation“)
+import { UltraRealism } from './ultra.js?v=20261123073102'; // Ultra-Realismus (Spielstil „Ultra-Realismus“, wie Bodycam)
+import { Gore } from './gore.js?v=20261123073102'; // Blutlachen + Spritzer
+import { Destruction } from './destruction.js?v=20261123073102'; // zerstörbare Fassaden
+import { CarDeform } from './deform.js?v=20261123073102'; // verformbare Autos
+import { Digging } from './digging.js?v=20261123073102'; // Graben mit dem Klappspaten (Großkarten)
+import { Doors } from './doors.js?v=20261123073102'; // bewegliche Türen und Tore (Taste F)
+import { BulletHoles } from './bullet-holes.js?v=20261123073102'; // Einschusslöcher mit Tiefe, Durchschuss nach Kaliber
+import { TreeFall } from './treefall.js?v=20261123073102'; // Bäume brechen unter Beschuss und fallen
+import * as Feedback from '../shared/feedback.js?v=20261123073102'; // Feedback an den Entwickler ab 20 Minuten Spielzeit (Nutzer 11.10.)
 
 const VERSION = '1.1.0';
 
 // key: [Pfad relativ zu main.js, Pflichtexporte]
 const MODULES = {
-  textures: ['./engine/textures.js?v=20261122020853', ['getMaterial', 'boxUV']],
-  models: ['./weapons/models.js?v=20261122020853', ['createWeaponModel']],
-  viewmodel: ['./weapons/viewmodel.js?v=20261122020853', ['ViewModel']],
-  world: ['./world/index.js?v=20261122020853', ['loadWorld']],
-  audio: ['./engine/audio.js?v=20261122020853', ['AudioEngine']],
-  weapons: ['./weapons/index.js?v=20261122020853', ['WeaponSystem']],
-  effects: ['./engine/effects.js?v=20261122020853', ['Effects']],
-  bots: ['./bots/manager.js?v=20261122020853', ['BotManager']],
-  vehicles: ['./vehicles/index.js?v=20261122020853', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
+  textures: ['./engine/textures.js?v=20261123073102', ['getMaterial', 'boxUV']],
+  models: ['./weapons/models.js?v=20261123073102', ['createWeaponModel']],
+  viewmodel: ['./weapons/viewmodel.js?v=20261123073102', ['ViewModel']],
+  world: ['./world/index.js?v=20261123073102', ['loadWorld']],
+  audio: ['./engine/audio.js?v=20261123073102', ['AudioEngine']],
+  weapons: ['./weapons/index.js?v=20261123073102', ['WeaponSystem']],
+  effects: ['./engine/effects.js?v=20261123073102', ['Effects']],
+  bots: ['./bots/manager.js?v=20261123073102', ['BotManager']],
+  vehicles: ['./vehicles/index.js?v=20261123073102', ['VehicleSystem']], // vehicles: Fahrzeuge (G.vehicles)
   // nur für die Vorarbeit im Ladebildschirm/Leerlauf (matchAssetJobs) – fehlende Exporte: Schritt entfällt
-  soldiers: ['./bots/character.js?v=20261122020853', []],
-  fxtex: ['./weapons/ballistics/fxtex.js?v=20261122020853', []],
-  modes: ['./modes/index.js?v=20261122020853', ['createMode']],
-  hud: ['./ui/hud.js?v=20261122020853', ['HUD']],
-  menus: ['./ui/menus.js?v=20261122020853', ['Menus']],
+  soldiers: ['./bots/character.js?v=20261123073102', []],
+  fxtex: ['./weapons/ballistics/fxtex.js?v=20261123073102', []],
+  modes: ['./modes/index.js?v=20261123073102', ['createMode']],
+  hud: ['./ui/hud.js?v=20261123073102', ['HUD']],
+  menus: ['./ui/menus.js?v=20261123073102', ['Menus']],
   // Vollbild (G.fullscreen) und seine Knöpfe/Anleitung (G.fullscreenUi) – optional, sonst basicFullscreen
-  fullscreen: ['./engine/fullscreen.js?v=20261122020853', ['createFullscreen']],
-  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261122020853', ['FullscreenUI']],
+  fullscreen: ['./engine/fullscreen.js?v=20261123073102', ['createFullscreen']],
+  fullscreenUi: ['./ui/fullscreen-ui.js?v=20261123073102', ['FullscreenUI']],
   // Mehrspieler (docs/planung/mehrspieler.md): Sitzung/Raum (G.net) und die Synchronisation je Rolle
-  net: ['./net/index.js?v=20261122020853', ['NetSystem']],
-  netHost: ['./net/sync-host.js?v=20261122020853', ['HostSync']],
-  netClient: ['./net/sync-client.js?v=20261122020853', ['ClientSync']],
+  net: ['./net/index.js?v=20261123073102', ['NetSystem']],
+  netHost: ['./net/sync-host.js?v=20261123073102', ['HostSync']],
+  netClient: ['./net/sync-client.js?v=20261123073102', ['ClientSync']],
   // VR-Modus (Beta, WebXR): G.xr – Sitzung, Rig, Steuerung, Overlay (engine/xr/, docs/planung/vr.md)
-  xr: ['./engine/xr/index.js?v=20261122020853', ['XRSystem']],
+  xr: ['./engine/xr/index.js?v=20261123073102', ['XRSystem']],
 };
 /** Ohne diese Module bleibt das Spiel spielbar (Ersatz) – Wert: Hinweis für die Konsole. */
 const OPTIONAL = new Map([
@@ -591,11 +592,14 @@ function applyStyle(cfg) {
   // Infanteriesimulation (isim/): baut auf „Realistisch“ auf – G.match.style bleibt 'realistisch' (alle Realismus-Regeln),
   // G.match.sim schaltet die Simulation zu; nur in SIM_MODES (sonst gilt Realistisch)
   const sim = cfg.style === 'simulation' && (classesData.SIM_MODES || []).includes(cfg.modeId);
-  const style = cfg.style === 'realistisch' || cfg.style === 'simulation' ? 'realistisch' : 'arcade';
-  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: sim ? false : cfg.crosshair })) : null;
+  // Ultra-Realismus (game/ultra.js): ebenso auf „Realistisch“ aufgesetzt, G.match.ultra schaltet ihn zu; nur in ULTRA_MODES
+  const ultra = cfg.style === 'ultra' && (classesData.ULTRA_MODES || []).includes(cfg.modeId);
+  const style = cfg.style === 'realistisch' || cfg.style === 'simulation' || cfg.style === 'ultra' ? 'realistisch' : 'arcade';
+  const rules = typeof G.data.styleRules === 'function' ? safe('styleRules', () => G.data.styleRules(style, { crosshair: sim || ultra ? false : cfg.crosshair })) : null;
   G.match.style = style;
   G.match.sim = sim;
-  G.match.styleFlags = classesData.styleFlags(sim ? 'simulation' : style, { realisticCrosshair: settings.get('realisticCrosshair'), rules });
+  G.match.ultra = ultra;
+  G.match.styleFlags = classesData.styleFlags(sim ? 'simulation' : ultra ? 'ultra' : style, { realisticCrosshair: !ultra && settings.get('realisticCrosshair'), rules });
   G.match.armor = cfg.armor;
   G.match.respawnHold = false;
   G.match.pendingLoadout = null;
@@ -647,6 +651,7 @@ function requestLoadout(loadout) {
   if (!p || !loadout || typeof loadout !== 'object') return { ok: false, reason: 'ungueltig' };
   const st = G.match.state;
   if (st !== 'playing' && st !== 'countdown' && st !== 'paused') return { ok: false, reason: 'kein-match' };
+  if (G.mode && G.mode.lockLoadout) return { ok: false, reason: 'modus' }; // Ausrüstung kommt vom Modus (Waffenspiel, Infiziert, Nur Messer)
   // Klassenwechsel: Weste/Helm/Werfer der neuen Klasse (außer ausdrücklich gewählt), Waffen bleiben (alle Klassen dürfen alle)
   const prev = p.loadout || G.match.loadout || {};
   const fallback = loadout.cls && loadout.cls !== prev.cls ? { ...prev, cls: loadout.cls, armor: undefined, helmet: undefined, launcher: undefined } : prev;
@@ -1272,13 +1277,15 @@ async function runStart(config, gen) {
     // Zivilfahrzeuge der Karte (world.civilVehicles: Autos, Transporter, Stapler, Zugmaschinen) gibt es immer – bei
     // „Panzer & Fahrzeuge: Aus“ nur sie (civilOnly)
     const civ = !!(G.world && Array.isArray(G.world.civilVehicles) && G.world.civilVehicles.length);
-    if (!netCfg) { if (cfg.vehicles !== false) safe('vehicles.attach', () => G.vehicles.attach(G)); else if (civ) safe('vehicles.attach', () => G.vehicles.attach(G, { civilOnly: true })); } // Lobby „Panzer & Fahrzeuge: Aus“
+    const civilMode = !!((G.data.MODES || {})[cfg.modeId] || {}).civilVehiclesOnly; // Battle Royale: nur Zivilfahrzeuge
+    if (!netCfg) { if (cfg.vehicles !== false && !civilMode) safe('vehicles.attach', () => G.vehicles.attach(G)); else if (civ) safe('vehicles.attach', () => G.vehicles.attach(G, { civilOnly: true })); } // Lobby „Panzer & Fahrzeuge: Aus“
     else if (netCfg.vehicles) safe('vehicles.attach', () => G.vehicles.attach(G, { replica: netCfg.role === 'client' }));
     else if (civ) safe('vehicles.attach', () => G.vehicles.attach(G, { replica: netCfg.role === 'client', civilOnly: true }));
     safe('points', () => { G.points = new MapPoints(G, cfg.mapId); });
     safe('building', () => { G.building = new Building(G); });
     safe('injuries', () => { G.injuries = new Injuries(G); });
     if (G.match.sim) safe('isim', () => { G.isim = new InfantrySim(G); });
+    if (G.match.ultra) safe('ultra', () => { G.ultra = new UltraRealism(G); });
     safe('gore', () => { G.gore = new Gore(G); });
     safe('destruction', () => { G.destruction = new Destruction(G); });
     safe('deform', () => { G.deform = new CarDeform(G); });
@@ -1653,6 +1660,7 @@ async function teardownMatch({ keepWorld = false } = {}) {
   if (G.building) { safe('building', () => G.building.dispose()); G.building = null; }
   if (G.injuries) { safe('injuries', () => G.injuries.dispose()); G.injuries = null; }
   if (G.isim) { safe('isim', () => G.isim.dispose()); G.isim = null; }
+  if (G.ultra) { safe('ultra', () => G.ultra.dispose()); G.ultra = null; }
   if (G.gore) { safe('gore', () => G.gore.dispose()); G.gore = null; }
   if (G.destruction) { safe('destruction', () => G.destruction.dispose()); G.destruction = null; }
   if (G.deform) { safe('deform', () => G.deform.dispose()); G.deform = null; }
@@ -2048,6 +2056,7 @@ function frame(now, bg = false, xrFrame = null) {
     if (net) step('net:pre', () => net.preUpdate(dt)); // Host: Zustände der Clients → Puppen; Client: Schnappschüsse → Puppen
     if (G.mode && G.mode.preUpdate) step('mode:pre', () => G.mode.preUpdate(dt)); // Cheat-Menü (cheats.js) – Blick/Bewegung/Schuss/Nahkampf vor dem Spieler
     if (G.isim) step('isim:pre', () => G.isim.preUpdate(dt)); // Simulation: Tasten im Ausrüstungsmenü abfangen
+    if (G.ultra) step('ultra:pre', () => G.ultra.preUpdate(dt)); // Ultra-Realismus: Körper-/Waffenwerte des Spielers vor seinem Bild
     step('player', () => (G.player.vehicle ? G.vehicles.updateOccupant(G.player, dt) : G.player.update(dt))); // vehicles: Sitz statt Laufen
     step('bots', () => G.bots.update(dt));
     const live = G.match.state === 'playing' || G.match.netLive;

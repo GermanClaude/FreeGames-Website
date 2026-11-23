@@ -5,7 +5,7 @@
 // Alles deterministisch (kein Math.random, Varianten nur positionsabhängig über hash01). Kollision hängt weder von der
 // Grafikstufe noch von der Bibliothek ab: Bibliotheksmodelle bekommen feste Quader in Manifest-Maßen.
 import * as THREE from 'three';
-import { frame, hash01, chair, crate, pallet, cable, CONTAINER_H, CONTAINER_W, ctrFamily, corrPanel, videoTone } from '../props.js?v=20261122020853';
+import { frame, hash01, chair, crate, pallet, cable, CONTAINER_H, CONTAINER_W, ctrFamily, corrPanel, videoTone } from '../props.js?v=20261123073102';
 
 const KEIN = { collide: false, minimap: false };
 const VG = { ...KEIN, grad: false };
@@ -275,10 +275,10 @@ export function offenerContainer(b, x, z, o = {}) {
     const cx = hx + dx * lw / 2, cz = hz + dz * lw / 2, rr = -s * phi;
     const nx = -Math.sin(phi), nz = s * Math.cos(phi); // Außennormale des Flügels (um 90° + phi gedreht)
     if (d3) {
-      // Flügel: Innenseite glatt (Lack), außen Wellblech mit waagrechten Sicken und glattem Kopf-/Fußfeld wie
+      // Flügel: Innenseite glatt (Lack), außen Wellblech mit senkrechten Sicken (gross 23.11.) und glattem Kopf-/Fußfeld wie
       // container3d; Täler (2,8 cm) liegen vor der Außenfläche des 5-cm-Blatts
       f.box(cx, 0.06, cz, lw, H - 0.16, 0.05, 'metal_painted', { ...KEIN, ry: rr, uv: 'local', tint: shade(lack, 0.85), grad: false });
-      f.geom(corrPanel(lw, H - 0.16, { dir: 'h', pitch: 0.36, depth: 0.028, flatTop: 0.3, flatBottom: 0.14 }), cx + nx * 0.054, 0.06, cz + nz * 0.054, 'ctr_lack', { ...CL, ry: s > 0 ? rr : rr + Math.PI });
+      f.geom(corrPanel(lw, H - 0.16, { dir: 'v', pitch: 0.26, depth: 0.024, flatTop: 0.3, flatBottom: 0.14 }), cx + nx * 0.054, 0.06, cz + nz * 0.054, 'ctr_lack', { ...CL, ry: s > 0 ? rr : rr + Math.PI });
     } else f.box(cx, 0.06, cz, lw, H - 0.16, 0.05, wall, { ...VW, ry: rr, grad: false });
     for (const k of [0.3, 0.75]) {
       const px = hx + dx * lw * k + nx * 0.045, pz = hz + dz * lw * k + nz * 0.045;

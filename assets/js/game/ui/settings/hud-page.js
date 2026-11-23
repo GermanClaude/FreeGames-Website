@@ -1,15 +1,24 @@
 // NULLPUNKT — Reiter „HUD“: HUD-Stil (Voll · Reduziert · Realismus wie Bodycam) mit Schema-Vorschau,
-// Fadenkreuz (Form, Farbe, Vorschau), Bodycam-Einblendung, FPS-Anzeige.
+// Fadenkreuz (Form, Farbe, Vorschau), Bodycam-Einblendung, FPS-Anzeige. Vorlage „Ultra-Realismus“ (wie Bodycam): setzt
+// Spielstil, HUD, Bildstil, Kamerabewegung, Waffenhaltung und freies Zielen auf einmal (alles einzeln wieder änderbar).
 
-import { esc } from '../dom.js?v=20261122020853';
-import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261122020853';
-import { HINTS } from './schema-page.js?v=20261122020853';
+import { esc } from '../dom.js?v=20261123073102';
+import { rowHtml, headHtml, bindRows, syncRows } from './rows.js?v=20261123073102';
+import { HINTS } from './schema-page.js?v=20261123073102';
 
 const STYLES = [
   { id: 'voll', label: 'Voll', desc: 'Alles im Blick: Minikarte, Kompass, Munition, Leben, Treffermarker.' },
   { id: 'reduziert', label: 'Reduziert', desc: 'Ohne Minikarte und Kompass, Munition nur als Balken, Leben nur nach Treffern.' },
   { id: 'aus', label: 'Realismus', desc: 'Wie Bodycam: kein Fadenkreuz, keine Munitions- und Lebensanzeige. Nur das Nötigste.' },
 ];
+
+/** Vorlage „Ultra-Realismus“ (Spielstil GAME_STYLES.ultra, game/ultra.js) – jede Taste setzt genau diese Werte. */
+export const ULTRA_PRESET = Object.freeze({
+  gameStyle: 'ultra', hudStyle: 'aus', bodycamStamp: true, realisticCrosshair: false,
+  lensStyle: 'bodycam', lensStrength: 0.7, grain: 0.55, lensArtifacts: 0.35, lensBorder: false, autoExposure: true,
+  cameraMotion: 0.8, weaponPose: 'bodycam', weaponSway: 1, freeAim: 'light',
+});
+const presetOn = (S) => Object.entries(ULTRA_PRESET).every(([k, v]) => S.get(k) === v);
 
 // Schema je Stil: Minikarte, Punktestand, Kompass, Leben, Munition, Fadenkreuz, Killfeed
 function styleArt(id) {
@@ -45,6 +54,13 @@ export function hudPage(P) {
     }
     const note = host.querySelector('[data-xh-note]');
     if (note) note.hidden = v !== 'aus';
+    const pr = host.querySelector('[data-ultra-preset]');
+    if (pr) {
+      const on = presetOn(S);
+      pr.setAttribute('aria-pressed', String(on));
+      const st = host.querySelector('[data-ultra-state]');
+      if (st) st.textContent = on ? 'Aktiv' : '';
+    }
   }
 
   return {
@@ -53,6 +69,10 @@ export function hudPage(P) {
     mount(h) {
       host = h;
       host.innerHTML = `
+        ${headHtml('Vorlage')}
+        <div class="lk-cards hs-cards">
+          <button type="button" class="lk-card" data-ultra-preset aria-pressed="false">${styleArt('aus')}<b>Ultra-Realismus <small data-ultra-state></small></b><small>Wie Bodycam: Spielstil „Ultra-Realismus“, kein HUD, Zeitstempel, Bodycam-Linse, tiefe Waffenhaltung, mehr Kamerabewegung, freies Zielen (leicht). Bei Reiseübelkeit danach unter „Grafik“ die Kamerabewegung senken.</small></button>
+        </div>
         ${headHtml('HUD-Stil')}
         <div class="lk-cards hs-cards" role="radiogroup" aria-label="HUD-Stil">
           ${STYLES.map((s) => `<button type="button" class="lk-card" role="radio" data-hs="${s.id}" aria-pressed="false">${styleArt(s.id)}<b>${esc(s.label)}</b><small>${esc(s.desc)}</small></button>`).join('')}
@@ -78,6 +98,12 @@ export function hudPage(P) {
   };
 
   function onClick(e) {
+    if (e.target.closest('[data-ultra-preset]')) {
+      for (const [k, v] of Object.entries(ULTRA_PRESET)) { try { S.set(k, v); } catch { /* unbekannter Schlüssel */ } }
+      P.sound('click');
+      sync();
+      return;
+    }
     const b = e.target.closest('[data-hs]');
     if (!b) return;
     S.set('hudStyle', b.dataset.hs);

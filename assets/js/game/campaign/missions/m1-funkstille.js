@@ -4,8 +4,8 @@
 // Glockenturm (Relais neu starten, Gegenstoß abwehren). Checkpoints: start, torhaus, familie, turm.
 // kamp3: + Familie in den Keller bringen (Begleitschutz, geschützte Figuren), Scharfschütze im Rathaus.
 
-import { actor } from './cast.js?v=20261122020853';
-import { arm } from './hilfen-c.js?v=20261122020853';
+import { actor } from './cast.js?v=20261123073102';
+import { arm } from './hilfen-c.js?v=20261123073102';
 
 // kamp3 (15.11.): vertieft – Familie aus der Gasse in den Keller bringen (Begleitschutz) und Scharfschütze im Rathaus.
 const FAMILY = [-12.6, 17.6];

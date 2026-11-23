@@ -61,17 +61,17 @@ if (d.classList.contains('is-desktop-app') || /[?&]boot=0/.test(q)) on = false;
 if (/[?&]boot=1/.test(q)) on = true;
 if (on) d.classList.add('boot-on');
 })();</script>
-<link rel="modulepreload" href="assets/js/site/main.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/site/menu.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/site/boot.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/shared/i18n.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/shared/i18n/de.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/shared/weapons.data.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/shared/modes.data.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/shared/maps.data.js?v=20261122020853">
-<link rel="modulepreload" href="assets/js/shared/settings.js?v=20261122020853">
-<script type="module" src="assets/js/site/main.js?v=20261122020853"></script>
-<script type="module" src="assets/js/shared/pwa.js?v=20261122020853"></script>
+<link rel="modulepreload" href="assets/js/site/main.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/site/menu.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/site/boot.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/shared/i18n.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/shared/i18n/de.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/shared/weapons.data.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/shared/modes.data.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/shared/maps.data.js?v=20261123073102">
+<link rel="modulepreload" href="assets/js/shared/settings.js?v=20261123073102">
+<script type="module" src="assets/js/site/main.js?v=20261123073102"></script>
+<script type="module" src="assets/js/shared/pwa.js?v=20261123073102"></script>
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute">
@@ -319,17 +319,17 @@ if (on) d.classList.add('boot-on');
     <div class="content">
       <h2 class="hl" id="h-sim">SIMULATION</h2>
       <p class="tagline">Wie viel nimmt dir das Spiel ab?</p>
-      <p class="p-cta"><a class="cta-fill" href="spielen.html?tab=panzer">Panzer-Lobby öffnen<span class="o">.</span></a> <a class="dl-btn" href="spielen.html?mode=panzer&amp;map=grenzland">Panzer im Grenzland</a> <a class="dl-btn" href="spielen.html?tab=eisenwind">Kampagne Eisenwind</a></p>
+      <p class="p-cta"><a class="cta-fill" href="spielen.html?tab=panzer">Panzer-Lobby öffnen<span class="o">.</span></a> <a class="dl-btn" href="spielen.html?mode=panzer&amp;map=grenzland">Panzer im Grenzland</a> <a class="dl-btn" href="spielen.html?tab=eisenwind">Kampagne Eisenwind</a> <a class="dl-btn" href="spielen.html?mode=tdm&amp;style=ultra">Ultra-Realismus wie Bodycam</a></p>
       <div class="sim-root" id="sim-root">
         <table class="sim-table static">
           <caption class="sr-only">Spielstile im Vergleich</caption>
-          <thead><tr><th scope="col"></th><th scope="col">Arcade</th><th scope="col">Realistisch</th><th scope="col">Simulation</th></tr></thead>
+          <thead><tr><th scope="col"></th><th scope="col">Arcade</th><th scope="col">Realistisch</th><th scope="col">Ultra-Realismus</th><th scope="col">Simulation</th></tr></thead>
           <tbody>
-            <tr><th scope="row">Anzeige</th><td>volles HUD</td><td>reduziert</td><td>kein HUD</td></tr>
-            <tr><th scope="row">Fadenkreuz</th><td>an</td><td>nach Einstellung</td><td>nie</td></tr>
-            <tr><th scope="row">Gegner auf der Minikarte</th><td>ja</td><td>nein</td><td>nein</td></tr>
-            <tr><th scope="row">Schaden durch Kugeln</th><td>×1</td><td>×1,5</td><td>×1,5</td></tr>
-            <tr><th scope="row">Magazine, Durchladen, Ladehemmung</th><td>nein</td><td>nein</td><td>ja</td></tr>
+            <tr><th scope="row">Anzeige</th><td>volles HUD</td><td>reduziert</td><td>kein HUD</td><td>kein HUD</td></tr>
+            <tr><th scope="row">Fadenkreuz</th><td>an</td><td>nach Einstellung</td><td>nie</td><td>nie</td></tr>
+            <tr><th scope="row">Gegner auf der Minikarte</th><td>ja</td><td>nein</td><td>nein</td><td>nein</td></tr>
+            <tr><th scope="row">Schaden durch Kugeln</th><td>×1</td><td>×1,5</td><td>×2,2</td><td>×1,5</td></tr>
+            <tr><th scope="row">Magazine, Durchladen, Ladehemmung</th><td>nein</td><td>nein</td><td>nein</td><td>ja</td></tr>
           </tbody>
         </table>
       </div>

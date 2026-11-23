@@ -37,16 +37,16 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { boxUV } from '../engine/textures.js?v=20261122020853';
-import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261122020853';
-import { driverCabin, vehicleWeapon } from './data.js?v=20261122020853';
-import * as DT from './cabin-detail.js?v=20261122020853';
-import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261122020853';
-import * as SH from './cabin-shape.js?v=20261122020853';
-import * as BASE from './cabin-base.js?v=20261122020853';
-import { assets, tierFor } from '../../../lib/loader.js?v=20261122020853';
-import { funkerCabin, funkerLayout, funkerDoor, loaderPrism, driverLayoutWk2 } from './periscopes.js?v=20261122020853';
-import { buildTroopRoom } from './cabin-troop.js?v=20261122020853';
+import { boxUV } from '../engine/textures.js?v=20261123073102';
+import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261123073102';
+import { driverCabin, vehicleWeapon } from './data.js?v=20261123073102';
+import * as DT from './cabin-detail.js?v=20261123073102';
+import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261123073102';
+import * as SH from './cabin-shape.js?v=20261123073102';
+import * as BASE from './cabin-base.js?v=20261123073102';
+import { assets, tierFor } from '../../../lib/loader.js?v=20261123073102';
+import { funkerCabin, funkerLayout, funkerDoor, loaderPrism, driverLayoutWk2 } from './periscopes.js?v=20261123073102';
+import { buildTroopRoom, troopSeatH } from './cabin-troop.js?v=20261123073102';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
@@ -1155,6 +1155,9 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
   // 2. WK (Nutzer 21.11.: „zu modern“): Sehklappe mit Glasblock + zwei Winkelspiegel, Blechtafel mit Rundinstrumenten,
   // Kurskreisel, Zündschloss/Anlasserknopf/Lichtschalter statt Schaltkasten, Schalthebel mit Kulisse rechts
   const w2 = D.era === 'wk2';
+  // Kalter Krieg (KP-68, SP-58; Raum/Wandfarbe wie 'wk2'): Wandlerautomatik wie die Simulation (psim eraOf: kk → modern) –
+  // Lenkbügel, Wählhebel rechts, keine Kupplung, schwarze Rundinstrumente ohne Bildschirm, geschweißte Wände ohne Nieten
+  const kk = D.era === 'kk', auto = modern || kk;
   const { xl, xr, floor: yF, roof: yR, zFT, zFB, zB, eye: E } = R;
   const x0 = R.F[0], z0 = R.F[2];
   // Raum: Boden, Glacis (schräg), Decke, Rückwand, Seitenwände – nach innen gekehrt
@@ -1180,7 +1183,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
   const gn = new THREE.Vector3(0, -(zFB - zFT), yR - yF).normalize(); // Innen-Normale des Glacis (zeigt nach hinten oben)
   if (det) B.add(box(xr - xl - 0.06, 0.018, 0.012), C.metal, [(xl + xr) / 2, yF + (yR - yF) * 0.55 + gn.y * 0.004, zFB + (zFT - zFB) * 0.55 + gn.z * 0.004], [ga - PI, 0, 0]);
   for (const zz of [zFT + 0.25, (zFT + zB) / 2 + 0.1]) B.add(box(xr - xl - 0.04, 0.03, 0.035), C.metal, [(xl + xr) / 2, yR - 0.016, zz]);
-  if (wk1 || era === 'wk2') {
+  if (wk1 || (era === 'wk2' && !kk)) {
     // Nieten an den Wänden
     for (let z = zFT + 0.1; z < zB; z += 0.16) for (const x of [xl + 0.006, xr - 0.006]) for (const y of [yF + 0.12, yR - 0.1]) B.add(new THREE.SphereGeometry(0.011, 6, 4), C.metal, [x, y, z]);
   }
@@ -1208,7 +1211,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
   }
 
   // ---- Lenkung: modern Lenkbügel an der Lenksäule (dreht), sonst Lenkhebel (Drehpunkt am Boden, ziehen = Kette bremsen)
-  if (!modern) for (const [nm, sx] of [['hebel:l', -1], ['hebel:r', 1]]) {
+  if (!auto) for (const [nm, sx] of [['hebel:l', -1], ['hebel:r', 1]]) {
     const p = part(grp, nm, [x0 + sx * 0.2, sy + 0.04, sz - 0.3]);
     const L = new MB();
     L.add(box(0.07, 0.05, 0.09), C.metal, [0, 0, 0]);
@@ -1223,7 +1226,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
 
   // ---- Pedale (Gas rechts, Bremse Mitte, Kupplung links bei den Weltkriegspanzern)
   const peds = [['pedal:gas', x0 + 0.13, 0.07, 0.1], ['pedal:bremse', x0 - 0.04, 0.12, 0.08]];
-  if (!modern) peds.push(['pedal:kupplung', x0 - 0.2, 0.08, 0.08]);
+  if (!auto) peds.push(['pedal:kupplung', x0 - 0.2, 0.08, 0.08]);
   for (const [nm, px, pw, ph] of peds) {
     const p = part(grp, nm, [px, sy + 0.03, sz - 0.8]);
     p.userData.pedal = true;
@@ -1235,8 +1238,8 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
     L.build(p, nm);
   }
 
-  // ---- Gangwahl: modern Wählhebel in Kulisse rechts, Weltkrieg Schalthebel aus dem Boden links
-  if (modern) {
+  // ---- Gangwahl: modern/Kalter Krieg Wählhebel in Kulisse rechts, Weltkrieg Schalthebel aus dem Boden links
+  if (auto) {
     B.add(rbox(0.08, 0.06, 0.24, 0.01), C.black, [x0 + 0.32, sy + 0.33, sz - 0.04]);
     label(B, C, 'gang', [x0 + 0.32, sy + 0.361, sz - 0.04], [-HP, 0, HP], 0.22);
     B.add(box(0.06, 0.33, 0.06), C.metal, [x0 + 0.32, sy + 0.15, sz - 0.04]);
@@ -1286,6 +1289,13 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
     const sg = new THREE.PlaneGeometry(0.17, 0.085);
     PF.add(sg, s.mat, [0.07, 0.05, 0.015], null, null, true);
     flabel(PF, C, 'n_oel', [-pw / 2 + 0.1, 0.128, 0.003], 0.11);
+  } else if (kk) {
+    // Kalter Krieg: schwarze Rundinstrumente (Drehzahl, Tempo, Öl, Kühlwasser), Batterieanzeige, kein Bildschirm
+    ga2('d_rpm', -pw / 2 + 0.09, 0.05, 0.06, 'rpm', 3000);
+    ga2('d_kmh', -pw / 2 + 0.24, 0.05, 0.06, 'kmh', 80);
+    ga2('d_oel', pw / 2 - 0.05, 0.09, 0.032, 'oel', 10);
+    ga2('d_wasser', pw / 2 - 0.05, 0.015, 0.032, 'wasser', 120);
+    flabel(PF, C, 'n_batt', [pw / 2 - 0.16, 0.128, 0.003], 0.1);
   } else if (era === 'wk2') {
     flabel(PF, C, 'n_batt', [pw / 2 - 0.12, 0.128, 0.003], 0.1);
     ga2('w_rpm', -pw / 2 + 0.09, 0.05, 0.06, 'rpm', 3500);
@@ -1449,7 +1459,7 @@ function buildDriver(root, D, C, det, era, cab, o = {}) {
     L.add(cyl(0.06, 0.055, 0.05, det ? 18 : 10), C.black, [0, 0.015, 0]);
     L.add(cyl(0.035, 0.035, 0.008, 12), C.steel, [0, 0.043, 0]);
     L.build(p, 'hebel:l');
-  } else if (modern) {
+  } else if (auto) {
     // Lenkbügel vor der Instrumententafel (Säule aus dem Boden)
     const cp = [x0, P.y - 0.26, P.z + 0.17];
     B.rod(C.metal, [x0, sy + 0.05, P.z - 0.02], cp, 0.035, 12);
@@ -2985,9 +2995,23 @@ export function cabinSeatAnchors(vehicleOrDef) {
     // Ladeschütze steht: Hüfte ≈ 0,68 m unter dem Auge, leicht hinter dem Kopf (Nutzer/Crew-Strang 21.11.: lag über dem Auge)
     else if (s.loader && inner && inner.space === 'turret') { const le = I.loaderEye || [0.55, 0.62, 0.35]; a.posture = 'stehend'; a.hip = fromG([le[0], le[1] - 0.68, le[2] + 0.06]); a.eye = fromG(le); a.yaw = 0; }
     // Richtschütze sitzt hinter der Optik (Station = Okular), Kommandant vor seiner Lehne (Sitz bei Station + 0,2 m)
-    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos; a.hip = [inner.pos[0], st[1] - 0.6 * sc, st[2] + (s.mount === 'gun' ? 0.34 : 0.2) * sc]; a.eye = inner.pos.slice(); }
-    else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + Math.min(0.42, (D.troop.roof - D.troop.floor) * 0.3) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; }
+    // Proportionen 22.11.: Richtschütze 8 cm näher an der Optik (Sitz 0,26 m hinter dem Okular, Stirn an der Stirnstütze);
+    // look = Kopfziel der Figur (crew-figures.js) – vorher saß sie aufrecht am Augpunkt der Innensicht, 0,36 m hinter der Optik
+    // rest 22.11. (Nutzer: „Richtschütze ohne Kopf in der Ladersicht“): der Sitz lag 0,6 m unter Okular bzw. Augpunkt – sitzend
+    // reicht das Auge aber ≈ 0,8 m über die Sitzfläche: Scheitel und Mütze stießen durch die Turmdecke (gemessen KP-1: Decke
+    // 0,25 m über dem Kopfknochen des Richtschützen, beim Kommandanten 0,01 m – Kopf von innen unsichtbar). Jetzt 0,8 m darunter
+    // (Auge auf Okular-/Augpunkthöhe)
+    else if (inner && inner.space === 'turret') { const st = inner.station || inner.pos, gun = s.mount === 'gun'; a.hip = [inner.pos[0], st[1] - 0.8 * sc, st[2] + (gun ? 0.26 : 0.2) * sc]; a.eye = inner.pos.slice(); if (gun && inner.station) a.look = [st[0], st[1], st[2] + 0.07 * sc]; }
+    else if (inner && D.troop) { const side = Math.sign(s.pos[0]) || 1; a.hip = [s.pos[0] * (D.troop.halfW - 0.25) / Math.max(0.3, Math.abs(s.pos[0])), D.troop.floor + troopSeatH(D.troop) + 0.035, s.pos[2]]; a.yaw = side > 0 ? HP : -HP; a.roof = D.troop.roof; }
     else if (s.pos) { a.hip = [s.pos[0], s.pos[1] + 0.45, s.pos[2]]; a.interior = !!inner; }
+    // Decke über dem Platz (crew-figures.js hält den Scheitel darunter): Turm – Schale des Innenraums (cabin-base.js
+    // turretBase, Gruppenraum 0,75 m; die Luken sind in der Innenschale nicht ausgeschnitten); Fahrer/Funker – Raumdecke aus
+    // driverCabin/funkerCabin
+    if (a.roof == null && a.hip) {
+      if (a.space === 'turret' && D.turretBox) a.roof = 0.75 * sc + sh[1];
+      else if (s.drive && R && Number.isFinite(R.roof)) a.roof = R.roof;
+      else if (s.id === 'funker' && FK && Number.isFinite(FK.roof)) a.roof = FK.roof;
+    }
     out.push(a);
   });
   return out;

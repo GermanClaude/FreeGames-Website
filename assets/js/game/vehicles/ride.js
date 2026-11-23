@@ -16,6 +16,12 @@ import * as THREE from 'three';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3();
 const BOARD_R = 12, CALL_R = 45, CALL_T = 14, MAX_RIDERS = 7, DRIVE_MAX = 80, PAUSE = 25, DANGER_R = 45;
+// rest 22.11.: Transporter, die sich festfahren (Brandwald: Basis-Ecke bei 36/151, Niemandsland: Laufgraben am Hauptquartier),
+// hielten ihre Mitfahrer bis zu 80 s fest – intent.stuck der Fahrzeug-KI ist nur ein Bild lang wahr (danach setzt sie zurück),
+// das Absitzen griff fast nie. Jetzt: kein Fortschritt (< PROG_D m in PROG_T s) → anhalten, absitzen, längere Pause
+// gross (23.11.): Ursache behoben (Fahrweg mit Fahrzeugbreite, Festfahr-Erkennung + Neuplanung in autopilot.js) – die
+// Absitz-Sicherung bleibt als Rückfall, lässt dem Autopiloten aber Zeit für Zurücksetzen und Umplanen (9 s statt 5 s)
+const PROG_D = 3, PROG_T = 9, STUCK_PAUSE = 60;
 
 export class TransportRides {
   constructor(sys) {
@@ -98,7 +104,8 @@ export class TransportRides {
     }
     const drv = v.driver;
     if (!drv || n < 2) { for (const s of v.seats) if (s.actor && !s.actor.isPlayer) S.removeFromSeat(s.actor, { teleport: true }); return; }
-    st.phase = 'fahren'; st.t = now; st.goal = goal; st.hp = v.health;
+    st.phase = 'fahren'; st.t = now; st.goal = goal; st.hp = v.health; st.halt = false; st.stuck = false;
+    st.prog = v.position.clone(); st.progT = now;
     v.driveTo(drv, goal, { arriveRadius: 9, maxSpeed: v.def.drive === 'tracked' ? 9 : 12 });
     G.events.emit('vehicle:ride', { vehicle: v, phase: 'fahren', riders: n });
   }
@@ -143,9 +150,18 @@ export class TransportRides {
         if (a.position.distanceToSquared(vp) < DANGER_R * DANGER_R) { danger = true; break; }
       }
     }
-    if ((it && it.arrived) || hit || danger || now - st.t > DRIVE_MAX || (it && it.stuck && now - st.t > 12)) {
+    // Fortschritt: alle PROG_D m neu ansetzen; festgefahren (oder von der Fahrzeug-KI als blockiert gemeldet) → absitzen
+    if (st.prog && v.position.distanceToSquared(st.prog) > PROG_D * PROG_D) { st.prog.copy(v.position); st.progT = now; }
+    if (!st.halt && ((st.prog && now - st.progT > PROG_T) || (it && it.blocked))) st.stuck = true;
+    // einmal entschieden, bleibt es dabei (vorher galt die Bedingung nur im Bild der Meldung)
+    if (st.halt || st.stuck || (it && it.arrived) || hit || danger || now - st.t > DRIVE_MAX) {
+      st.halt = true;
       v.stop(drv);
-      if (Math.abs(v.body.speed || 0) < 1.2 || now - st.t > DRIVE_MAX + 4) this._dismount(v, st, now);
+      if (Math.abs(v.body.speed || 0) < 1.2 || now - st.t > DRIVE_MAX + 4) {
+        const stuck = st.stuck;
+        this._dismount(v, st, now);
+        if (stuck) st.until = now + STUCK_PAUSE; // nicht gleich wieder in dieselbe Falle
+      }
     }
     void dt;
   }
@@ -178,7 +194,7 @@ export class TransportRides {
       if (!a || a.isPlayer || a.isRemoteHuman) continue;
       S.removeFromSeat(a, { teleport: true });
     }
-    st.phase = 'pause'; st.until = now + PAUSE; st.goal = null;
+    st.phase = 'pause'; st.until = now + PAUSE; st.goal = null; st.halt = false; st.stuck = false; st.prog = null;
     S.G.events.emit('vehicle:ride', { vehicle: v, phase: 'abgesessen' });
   }
 }

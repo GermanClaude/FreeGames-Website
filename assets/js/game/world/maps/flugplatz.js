@@ -6,15 +6,15 @@
 // kein Luftstart, vehicles/air/aircraft.js), Hubschrauber stehen auf Landeplätzen in den Gefechtsständen.
 // Koordinaten: x Osten, z Süden (Norden = −z). Team A (West) / Team B (Ost). Geladen von world/terrain/bigworld.js.
 import * as THREE from 'three';
-import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw, schlepper, bodenstrom, munitionswagen, tankwagen } from './flugplatz-bau.js?v=20261122020853';
-import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261122020853';
-import { mgNest } from './grenzland-stellungen.js?v=20261122020853';
-import { burntWreck } from './brandwald-bau.js?v=20261122020853';
-import { KEIN, VG } from './neu-bau.js?v=20261122020853';
-import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261122020853'; // gelaende (Runde 3)
-import { vorfeldFuellen } from './fuell-karten.js?v=20261122020853'; // fuell (20.11.): Spuren auf dem Vorfeld
-import { reliefAvoid } from '../terrain/relief.js?v=20261122020853';
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261122020853';
+import { hangar, tower, feuerwache, tanklager, radarstellung, kaserne, kantine, fahrzeughof, wache, wachturm, zaunLinie, startbahn, papi, windsack, anflug, hauptquartier, schulflugzeug, flak, armeeLkw, schlepper, bodenstrom, munitionswagen, tankwagen } from './flugplatz-bau.js?v=20261123073102';
+import { sandbags, floodMast, jersey, cone, crateStack, barrelGroup, lampPost, frame, hash01 } from '../props.js?v=20261123073102';
+import { mgNest } from './grenzland-stellungen.js?v=20261123073102';
+import { burntWreck } from './brandwald-bau.js?v=20261123073102';
+import { KEIN, VG } from './neu-bau.js?v=20261123073102';
+import { flugplatzGelaende } from './flugplatz-gelaende.js?v=20261123073102'; // gelaende (Runde 3)
+import { vorfeldFuellen } from './fuell-karten.js?v=20261123073102'; // fuell (20.11.): Spuren auf dem Vorfeld
+import { reliefAvoid } from '../terrain/relief.js?v=20261123073102';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261123073102';
 
 const PI = Math.PI, Q = PI / 2;
 const R_Y = 13;                                   // Plateau der Radarstellung
@@ -188,7 +188,7 @@ function zaun(b, ctx) {
   zaunLinie(b, hf, X, -Z, -X, -Z, [[X - 6, X + 6], [X - 330, X - 322], [X + 290, X + 297]]);
   zaunLinie(b, hf, -X, -Z, -X, Z, [[180, 190], [330, 338]]);
   zaunLinie(b, hf, X, Z, X, -Z, [[150, 158], [300, 312]]);
-  for (const [x, z, ry] of [[-X + 4, -Z + 4, PI * 0.75], [X - 4, -Z + 4, -PI * 0.75], [X - 4, Z - 4, -PI * 0.25], [-X + 4, Z - 4, PI * 0.25], [-230, Z - 4, 0], [230, Z - 4, 0], [-200, -Z + 4, PI], [200, -Z + 4, PI]]) wachturm(b, x, hf.heightAt(x, z), z, ry);
+  for (const [x, z, ry] of [[-X + 4, -Z + 4, PI * 0.75], [X - 4, -Z + 4, -PI * 0.75], [X - 4, Z - 4, -PI * 0.25], [-X + 4, Z - 4, PI * 0.25], [-230, Z - 4, 0], [230, Z - 4, 0], [-200, -Z + 4, PI], [200, -Z + 4, PI]]) wachturm(b, x, hf.heightAt(x, z), z, ry, { groundAt: (px, pz) => hf.heightAt(px, pz) });
   return { clearLines: [{ pts: [[-X, -Z], [X, -Z], [X, Z], [-X, Z], [-X, -Z]], r: 4 }] };
 }
 

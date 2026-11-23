@@ -9,10 +9,10 @@
 // Startbahn (z 40 ± 22,5 + 20 m Sicherheitsstreifen), Rollweg A (z −35 ± 10) samt Abrollwegen (x ±150, ±400), An-/Abflug-
 // schneisen (|x| > 420) und alle Flaggen/Startpunkte/Fahrzeug-Stellplätze bleiben frei (Prüfung je Teil, sonst entfällt
 // es mitsamt dem Gegenstück). Spiegelgleich in x (Team A West, Team B Ost). Höhe je Teil aus dem Gelände (ctx.hf).
-import { container, crateStack, palletStack, barrelGroup, sandbags, hash01 } from '../props.js?v=20261122020853';
-import { armeeLkw } from './flugplatz-bau.js?v=20261122020853';
-import { freiPruefer, sperrKreise, platzFrei, erdwall } from '../gelaende.js?v=20261122020853';
-import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261122020853';
+import { container, crateStack, palletStack, barrelGroup, sandbags, hash01 } from '../props.js?v=20261123073102';
+import { armeeLkw } from './flugplatz-bau.js?v=20261123073102';
+import { freiPruefer, sperrKreise, platzFrei, erdwall } from '../gelaende.js?v=20261123073102';
+import { KAMPAGNE_PUNKTE } from '../kampagne-punkte.js?v=20261123073102';
 
 /** Sperrflächen: Bahn, Rollweg, Abrollwege, Schneisen, Straßen als Rechtecke [x0, z0, x1, z1]. */
 const SPERR_RECHTECKE = [
@@ -61,8 +61,9 @@ export function flugplatzGelaende(b, ctx, def) {
   // 3) Materiallager zwischen Vorfeld und Startbereichen (x ±190, z −78)
   paar(192, -78, 12, 9, (px, s) => {
     const y = yAt(px, -78);
-    container(b, px + 6 * s, y, -84, { len: 12.19, ry: 0.02 * s, color: s > 0 ? '#5d6345' : '#4f5a44' });
-    container(b, px + 6 * s, y + 2.59, -84, { len: 6.06, ry: -0.03 * s, color: '#6b6a58' });
+    // gross (23.11.): Olivtöne aufgehellt – der Lackton wird linear auf die helle Containertextur multipliziert, #5d6345 wirkte fast schwarz
+    container(b, px + 6 * s, y, -84, { len: 12.19, ry: 0.02 * s, color: s > 0 ? '#7f8562' : '#6f7a5e' });
+    container(b, px + 6 * s, y + 2.59, -84, { len: 6.06, ry: -0.03 * s, color: '#8a8874' });
     crateStack(b, px - 4 * s, -80, { y, ry: 0.2 * s, pattern: [[0, 0, 0, 1.2], [1.25, 0, 0.05, 1.1], [0.55, 1, 0.02, 1.0], [-1.25, 0, 0.1, 1.1]] });
     palletStack(b, px - 7.5 * s, -74, { y, n: 4, ry: 0.4 * s, load: 'boxes' });
     barrelGroup(b, px + 1 * s, -72.5, { y, n: 5, colors: ['#4b5a3a', '#4b5a3a', '#c9a227'] });
