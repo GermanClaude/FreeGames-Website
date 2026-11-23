@@ -3,7 +3,7 @@
 // Spielt nie vor einem ausdrücklichen Einschalten; startet erst nach einer Nutzergeste.
 // Spielmenü (21.11.): Im Menü (html.shell) sind die Menüklänge vorgabemäßig an – hörbar erst nach der ersten Eingabe
 // (Klick, Taste) und nur, solange niemand „Ton: aus“ gewählt hat (site.soundSet).
-import { site } from './state.js?v=20261123073102';
+import { site } from './state.js?v=20261123082814';
 
 let settings = null;
 let enabled = false;
@@ -60,7 +60,7 @@ function ensure() {
   if (loading) return loading;
   loading = (async () => {
     try {
-      const m = await import('../game/engine/audio/ui-sounds.js?v=20261123073102');
+      const m = await import('../game/engine/audio/ui-sounds.js?v=20261123082814');
       if (typeof m.createUiSounds === 'function') {
         uiSnd = m.createUiSounds(settings, { gestures: false });
         uiSnd.unlock();
@@ -76,7 +76,7 @@ function ensureEngine() {
   if (engine || engineLoading) return engineLoading;
   engineLoading = (async () => {
     try {
-      const mod = await import('../game/engine/audio.js?v=20261123073102');
+      const mod = await import('../game/engine/audio.js?v=20261123082814');
       if (mod?.AudioEngine) {
         engine = new mod.AudioEngine({ settings, events: null }, { autoUnlock: false, autoMusic: false });
         await engine.unlock();

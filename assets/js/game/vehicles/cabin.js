@@ -37,16 +37,16 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { boxUV } from '../engine/textures.js?v=20261123073102';
-import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261123073102';
-import { driverCabin, vehicleWeapon } from './data.js?v=20261123073102';
-import * as DT from './cabin-detail.js?v=20261123073102';
-import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261123073102';
-import * as SH from './cabin-shape.js?v=20261123073102';
-import * as BASE from './cabin-base.js?v=20261123073102';
-import { assets, tierFor } from '../../../lib/loader.js?v=20261123073102';
-import { funkerCabin, funkerLayout, funkerDoor, loaderPrism, driverLayoutWk2 } from './periscopes.js?v=20261123073102';
-import { buildTroopRoom, troopSeatH } from './cabin-troop.js?v=20261123073102';
+import { boxUV } from '../engine/textures.js?v=20261123082814';
+import { addShaderPatch, copyShaderPatches, ensureWorldVaryings } from '../world/shading.js?v=20261123082814';
+import { driverCabin, vehicleWeapon } from './data.js?v=20261123082814';
+import * as DT from './cabin-detail.js?v=20261123082814';
+import { createBake, relMatrix, tessellate } from './cabin-bake.js?v=20261123082814';
+import * as SH from './cabin-shape.js?v=20261123082814';
+import * as BASE from './cabin-base.js?v=20261123082814';
+import { assets, tierFor } from '../../../lib/loader.js?v=20261123082814';
+import { funkerCabin, funkerLayout, funkerDoor, loaderPrism, driverLayoutWk2 } from './periscopes.js?v=20261123082814';
+import { buildTroopRoom, troopSeatH } from './cabin-troop.js?v=20261123082814';
 
 const PI = Math.PI, HP = PI / 2;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();

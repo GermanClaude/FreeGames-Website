@@ -3,8 +3,8 @@
 // Sichten mit Lafettenblick (Bordschütze: Zieloptik, vorderes Cockpit, Außenansicht) übernimmt VehicleCamera unverändert.
 // Schreibt den Zustand der VehicleCamera (pos, dir, view, sight, zoom, ready) mit, damit index.js/vehicle.js gleich lesen.
 import * as THREE from 'three';
-import { collisionRay, keepClear } from '../../engine/physics.js?v=20261123073102';
-import { viewOf, viewAnchor, viewZoom } from '../views.js?v=20261123073102';
+import { collisionRay, keepClear } from '../../engine/physics.js?v=20261123082814';
+import { viewOf, viewAnchor, viewZoom } from '../views.js?v=20261123082814';
 
 const _p = new THREE.Vector3(), _d = new THREE.Vector3(), _t = new THREE.Vector3(), _f = new THREE.Vector3(), _piv = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _e = new THREE.Euler(0, 0, 0, 'YXZ'), _hit = {};

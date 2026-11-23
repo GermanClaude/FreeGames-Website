@@ -34,14 +34,14 @@
 //   Bildschirm + 100 %, Foveated Rendering 1, MSAA über den Kontext (renderer.js, Einstellung vrEnabled).
 
 import * as THREE from 'three';
-import { collisionRay, keepClear } from '../physics.js?v=20261123073102';
-import { VrOverlay } from './overlay.js?v=20261123073102';
-import { WristHud } from './wrist.js?v=20261123073102';
-import { VrMenu } from './menu.js?v=20261123073102';
-import { VrHands } from './hands.js?v=20261123073102';
-import { VrTeleport } from './teleport.js?v=20261123073102';
-import { VrScope } from './scope.js?v=20261123073102';
-import { ACTION_BY_ID, XR_CODES, codeLabel, resolveBindings, setBinding, resetBindings } from '../../../shared/bindings.data.js?v=20261123073102';
+import { collisionRay, keepClear } from '../physics.js?v=20261123082814';
+import { VrOverlay } from './overlay.js?v=20261123082814';
+import { WristHud } from './wrist.js?v=20261123082814';
+import { VrMenu } from './menu.js?v=20261123082814';
+import { VrHands } from './hands.js?v=20261123082814';
+import { VrTeleport } from './teleport.js?v=20261123082814';
+import { VrScope } from './scope.js?v=20261123082814';
+import { ACTION_BY_ID, XR_CODES, codeLabel, resolveBindings, setBinding, resetBindings } from '../../../shared/bindings.data.js?v=20261123082814';
 
 // Augenhöhen wie player.js (STAND_EYE, CROUCH_EYE, PRONE_EYE) und Lehnweiten (LEAN_SIDE, …_CROUCH, PRONE_LEAN_SIDE)
 const EYE = { stand: 1.65, crouch: 1.0, prone: 0.38 };

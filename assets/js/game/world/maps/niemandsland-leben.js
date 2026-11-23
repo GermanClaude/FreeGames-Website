@@ -8,10 +8,10 @@
 // Alles außer den Lastwagen ohne Kollision (Gräben bleiben begehbar, Navigation unverändert); Menge je Grafikstufe.
 // Deterministisch über hash01 (kein Zufall der Karte).
 import * as THREE from 'three';
-import { frame, hash01 } from '../props.js?v=20261123073102';
-import { sampleSpline } from '../terrain/generate.js?v=20261123073102';
-import { burntWreck } from './brandwald-bau.js?v=20261123073102';
-import { schutt, stufe, DICHTE, eimer, ziegelstapel, sperrpunkte } from '../kleinkram.js?v=20261123073102';
+import { frame, hash01 } from '../props.js?v=20261123082814';
+import { sampleSpline } from '../terrain/generate.js?v=20261123082814';
+import { burntWreck } from './brandwald-bau.js?v=20261123082814';
+import { schutt, stufe, DICHTE, eimer, ziegelstapel, sperrpunkte } from '../kleinkram.js?v=20261123082814';
 
 const D = { collide: false, minimap: false, grad: false };
 const DN = { ...D, ao: false, bullet: false };

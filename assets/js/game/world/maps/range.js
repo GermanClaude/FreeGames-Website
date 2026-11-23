@@ -5,15 +5,15 @@
 // Panzerschießbahn bis 2500 m, Flugfeld mit Startbahn und Zielgebiet mit Luftzielen (Bereiche: range-gelaende.js,
 // Bedienung: modes/training-gelaende.js). Klarer Morgen. Koordinaten der Anlage unverändert (Kampagne M0).
 import * as THREE from 'three';
-import { getMaterial } from '../../engine/textures.js?v=20261123073102';
-import { building, wall, stairs, railing } from '../arch.js?v=20261123073102';
-import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261123073102';
-import { rangeFuellen } from './fuell-karten.js?v=20261123073102'; // fuell (20.11.): Bodenspuren, Wiesen außen
-import { VEHICLES } from '../../vehicles/data.js?v=20261123073102';
+import { getMaterial } from '../../engine/textures.js?v=20261123082814';
+import { building, wall, stairs, railing } from '../arch.js?v=20261123082814';
+import { crate, crateStack, barrel, sandbags, jersey, lockers, workbench, bench, floodMast, electricBox, pallet, cone, tree, rack, dress, hash01 } from '../props.js?v=20261123082814';
+import { rangeFuellen } from './fuell-karten.js?v=20261123082814'; // fuell (20.11.): Bodenspuren, Wiesen außen
+import { VEHICLES } from '../../vehicles/data.js?v=20261123082814';
 import {
   RUNWAY, FIRE_Z as TANK_LINE, TANK_X, AREA, HOF, STRECKE, SCHIESSBAHN, FLUGFELD, ZIELGEBIET, rectClearings, boardsIn,
   hof, strecke, schiessbahn, flugfeld, zielgebiet, installTargetRaycast, createDynamicTargets, installHitTest, uebungOf,
-} from './range-gelaende.js?v=20261123073102';
+} from './range-gelaende.js?v=20261123082814';
 
 const LANES = 8, LANE_W = 5.5, FIRE_Z = 34; // Schießstand (Infanterie): Feuerlinie z 34, Bahnen nach Norden
 const laneX = i => -((LANES - 1) / 2) * LANE_W + i * LANE_W;

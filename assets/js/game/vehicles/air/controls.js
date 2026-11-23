@@ -12,7 +12,7 @@
 //     „Schweben“ bzw. „Bremse“ (v_hover), „Nachbrenner“ (v_boost), „Täusch.“ (v_flare), Feuer, Waffe, Sicht, Aussteigen.
 // Der Knüppel ist „virtuell“: Mausweg/Stickrate laden ihn auf, losgelassen kehrt er zur Mitte zurück (Lage bleibt –
 // Ratensteuerung mit Lagehaltung im Flugmodell).
-import { readPlayerControls } from '../controls.js?v=20261123073102';
+import { readPlayerControls } from '../controls.js?v=20261123082814';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 

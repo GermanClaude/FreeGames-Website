@@ -4,7 +4,7 @@
 // Die Panzer-Missionen stehen in game/campaign/panzer/eisenwind-a/-b.js zusammen mit ihrem Ablauf (three.js); damit die
 // Startseite das nicht laden muss, steht hier eine Kurzliste (Quelle: deren Kopfdaten id/title/map/tank/type/minutes).
 // „Kampagne öffnen.“ führt in die Lobby, Reiter Kampagne (spielen.html?tab=kampagne bzw. ?tab=eisenwind).
-import { h, $, tabs } from './dom.js?v=20261123073102';
+import { h, $, tabs } from './dom.js?v=20261123082814';
 
 /** Eisenwind (Stand 20.11.): [Nummer, Titel, Karte, Panzer-Id, Art, Minuten]. */
 const EISENWIND = [
@@ -71,7 +71,7 @@ export async function init(sec, D, ctx = {}) {
   const cta = $('#camp-cta', sec);
   if (!root) return;
   let O = null;
-  try { O = await import('../game/campaign/outline.js?v=20261123073102'); } catch { O = null; }
+  try { O = await import('../game/campaign/outline.js?v=20261123082814'); } catch { O = null; }
 
   const list = h('div.tabs.camp-tabs');
   const tabSg = h('button.tab', { type: 'button', role: 'tab', id: 'camp-tab-sg', 'aria-controls': 'camp-panel-sg', 'aria-selected': 'true' }, 'Stille Grenze');

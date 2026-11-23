@@ -10,8 +10,8 @@
 //   Raum: Innenraum (Luke zu) dumpf mit Wannen-Dröhnen, Laufzeit Abstand/343 m/s über eine Verzögerungsleitung (ergibt
 //         echten Doppler beim Vorbeifahren/-fliegen), Luftdämpfung nach Abstand, Verdeckung per Sichtstrahl → Tiefpass,
 //         HRTF ab „high“ wie die AudioEngine.
-import { AirVoice, AIR_RANGE, useSpatialOut } from './air/audio.js?v=20261123073102';
-import { ENGINE_KINDS, engineKindOf, rpmSteps, renderEngineLoop, renderTrackLoop, renderNoiseLoop, renderRotorLoop, renderBuzzLoop, renderCrackleLoop } from './engine-sound.js?v=20261123073102';
+import { AirVoice, AIR_RANGE, useSpatialOut } from './air/audio.js?v=20261123082814';
+import { ENGINE_KINDS, engineKindOf, rpmSteps, renderEngineLoop, renderTrackLoop, renderNoiseLoop, renderRotorLoop, renderBuzzLoop, renderCrackleLoop } from './engine-sound.js?v=20261123082814';
 
 const MAX_VOICES = 3;
 const RANGE = 110;

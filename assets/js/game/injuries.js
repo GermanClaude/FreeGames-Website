@@ -12,7 +12,7 @@
 // tatsächlich verwundet); dort wirkt er an der Puppe (Blutung gestillt, Ultra-Realismus: +Leben) – das Leben kommt über den
 // Schnappschuss zurück. Vorher stillte ein Client-Verband online nichts und heilte im Ultra-Realismus nicht.
 import * as THREE from 'three';
-import { issueCommand } from './bots/ai/orders.js?v=20261123073102';
+import { issueCommand } from './bots/ai/orders.js?v=20261123082814';
 
 const BLEED_RATE = { arcade: 1.6, realistisch: 2.6 };   // Leben je Sekunde
 const BLEED_CHANCE = { arcade: 0.35, realistisch: 0.7 };

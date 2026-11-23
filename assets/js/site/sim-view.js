@@ -2,8 +2,8 @@
 // §04 Simulation: Spielstile Arcade / Realistisch / Ultra-Realismus / Simulation im Vergleich – die Werte kommen direkt aus
 // shared/classes.data.js (GAME_STYLES), ändern sich dort also mit. Ein Stil lässt sich als Vorgabe setzen (Einstellung
 // gameStyle, gilt in der Lobby). Darunter die vier Plätze im Panzer als Reiter (statisch im HTML, hier nur Reiter).
-import { h, $, $$, tabs } from './dom.js?v=20261123073102';
-import { announce } from './live.js?v=20261123073102';
+import { h, $, $$, tabs } from './dom.js?v=20261123082814';
+import { announce } from './live.js?v=20261123082814';
 
 const yes = (v) => (v ? 'ja' : 'nein');
 const num = (v) => String(v).replace('.', ',');
@@ -105,7 +105,7 @@ function crewTabs(sec, ctx) {
 
 export async function init(sec, D, ctx = {}) {
   let C = null;
-  try { C = await import('../shared/classes.data.js?v=20261123073102'); } catch { C = null; }
+  try { C = await import('../shared/classes.data.js?v=20261123082814'); } catch { C = null; }
   styleTable(sec, D, C, ctx);
   crewTabs(sec, ctx);
 }

@@ -5,12 +5,12 @@
 // Verteilerebene unter der Straße mit zwei Abgängen, Litfaßsäule, Telefonzelle, Kulissenfassaden am Kartenrand.
 // Spiegelung: Bausteine bekommen s = ±1 (Team-Hälfte); Straßenseite liegt bei kleinerem |z|.
 import * as THREE from 'three';
-import { building, wall, railing, slab } from '../arch.js?v=20261123073102';
-import { frame, hash01, sandbags, car, jersey, lampPost, awning, tree, bench, dumpster, electricBox, crateStack, barrelGroup, palletStack, tires, cone } from '../props.js?v=20261123073102';
-import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, chip, igel, tonnen, bauzaun } from './neu-bau.js?v=20261123073102';
-import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, regal, kommode, kueche, bild, teppich, theke, waschtisch } from './grenzland-innen.js?v=20261123073102';
-import { shelf, armchair, wardrobe, dresser, picture, rug } from './altstadt-ausstattung.js?v=20261123073102';
-import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde, pinnwand } from './hafen-ausstattung.js?v=20261123073102';
+import { building, wall, railing, slab } from '../arch.js?v=20261123082814';
+import { frame, hash01, sandbags, car, jersey, lampPost, awning, tree, bench, dumpster, electricBox, crateStack, barrelGroup, palletStack, tires, cone } from '../props.js?v=20261123082814';
+import { stairCore, flight, KEIN, VG, hoch, mittel, rubble, soot, chip, igel, tonnen, bauzaun } from './neu-bau.js?v=20261123082814';
+import { deckenlampe, kafiglampe, tisch, stuhl, essplatz, bett, schrank, regal, kommode, kueche, bild, teppich, theke, waschtisch } from './grenzland-innen.js?v=20261123082814';
+import { shelf, armchair, wardrobe, dresser, picture, rug } from './altstadt-ausstattung.js?v=20261123082814';
+import { schreibtisch, stuhl as bueroStuhl, aktenschrank, deckenleuchte, spinde, pinnwand } from './hafen-ausstattung.js?v=20261123082814';
 
 const PI = Math.PI, Q = PI / 2;
 export const FH = 3.4;

@@ -6,7 +6,7 @@
 //                 Verdichterpfeifen (nach vorne), Nachbrenner mit Grollen und Knistern.
 // Raum (SpatialOut): Laufzeit über eine Verzögerungsleitung → echter Doppler und „Schall hinkt dem Flugzeug hinterher“,
 // Luftdämpfung nach Abstand, Verdeckung, im Cockpit gedämpft.
-import { renderRotorLoop, renderBuzzLoop, renderCrackleLoop } from '../engine-sound.js?v=20261123073102';
+import { renderRotorLoop, renderBuzzLoop, renderCrackleLoop } from '../engine-sound.js?v=20261123082814';
 
 export const AIR_RANGE = 650;
 

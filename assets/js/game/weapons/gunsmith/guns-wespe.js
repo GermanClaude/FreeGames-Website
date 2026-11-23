@@ -5,10 +5,10 @@
 // Kennzeichen der Bauart: hohes, schmales Oberteil mit durchgehender Schiene; Unterteil mit schräger „Nase“ unter dem Lauf
 // (Schlitten-Umlenksystem), Magazinschacht VOR dem Abzugsbügel, Laufmantel facettiert, Klappschaft-Adapter mit Schaftrohr
 // und Teleskopschaft, Klappvisiere, Spannhebel links vorn (klappbarer Knauf).
-import { mm, slab, rrect, pocket, POLY } from './gbkit.js?v=20261123073102';
-import { magRounds } from './magfill.js?v=20261123073102';
-import { apertureSight } from './pistol-parts.js?v=20261123073102';   // Lochkimme mit Durchblick (visier, 14.11.)
-import { schrift } from './schrift.js?v=20261123073102';   // Gravuren (14.11., gfx-waffen)
+import { mm, slab, rrect, pocket, POLY } from './gbkit.js?v=20261123082814';
+import { magRounds } from './magfill.js?v=20261123082814';
+import { apertureSight } from './pistol-parts.js?v=20261123082814';   // Lochkimme mit Durchblick (visier, 14.11.)
+import { schrift } from './schrift.js?v=20261123082814';   // Gravuren (14.11., gfx-waffen)
 const MARK_WESPE = schrift('wespe').mark;
 
 const AXIS = 0.046;

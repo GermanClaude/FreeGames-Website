@@ -14,8 +14,8 @@
 //                 ui/uebung-menu.js): teleportieren, Fahrzeug herbeirufen/zurücksetzen, Munition auffüllen, Ziele
 //                 zurücksetzen, Zeitlupe, Unverwundbar, Panzer-Übung (startet den Modus „Panzer“ auf dieser Karte).
 import * as THREE from 'three';
-import { VEHICLES, VEHICLE_WEAPONS, vehicleWeapon } from '../vehicles/data.js?v=20261123073102';
-import { refillAmmo } from '../mappoints.js?v=20261123073102';
+import { VEHICLES, VEHICLE_WEAPONS, vehicleWeapon } from '../vehicles/data.js?v=20261123082814';
+import { refillAmmo } from '../mappoints.js?v=20261123082814';
 
 const Q_ORDER = ['low', 'medium', 'high', 'ultra'];
 const BUDGET = { low: 5, medium: 8, high: 12, ultra: 16 };

@@ -3,23 +3,23 @@
 // Kesselhaus mit Rohrbrücke, Tanks und Schornstein (Ost). Team A startet im Süden (Werkstor),
 // Team B im Norden (Gleisanschluss). Nord/Süd spiegelsymmetrisch (z → −z), Details unterschiedlich.
 import * as THREE from 'three';
-import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261123073102';
+import { building, wall, stairs, railing, catwalk } from '../arch.js?v=20261123082814';
 import {
   frame, container, crateStack, barrel, barrelGroup, palletStack, sandbags, jersey, cone,
   forklift, truck, van, car, lampPost, fence, tires, cableReel, gasBottles, electricBox, pipe,
   workbench, lockers, dumpster, tank, roofVent, dress, hash01, lampsOn,
-} from '../props.js?v=20261123073102';
-import { offenerContainer } from './hafen-ausstattung.js?v=20261123073102';
-import { createFire } from '../feuer.js?v=20261123073102';
-import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261123073102';
+} from '../props.js?v=20261123082814';
+import { offenerContainer } from './hafen-ausstattung.js?v=20261123082814';
+import { createFire } from '../feuer.js?v=20261123082814';
+import { craneClock, createTrack, partBuilder, partGroup, place, inView } from '../crane-anim.js?v=20261123082814';
 import {
   stahlTreppe, coilLager, pendel, leuchtband, flutMast, schiebetuer, mgNest, schreibtisch, stuhl, aktenschrank,
   regal, tisch, kaffeeEcke, stab, modell, ersatzQuader, zylKoerper,
-} from './werk-ausstattung.js?v=20261123073102';
+} from './werk-ausstattung.js?v=20261123082814';
 // karten-voll (14.11.): Kleinkram, Fenster-/Tür-/Dachdetails, Kabel über Gassen (nur Optik)
-import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261123073102';
-import { werkFuellen, bodenspuren } from './fuell-karten.js?v=20261123073102'; // fuell (20.11.): Fugen, Fahrspuren
-import { hofAusbau } from './werk-hof.js?v=20261123073102'; // gelaende (Runde 3)
+import { belebe, sperrpunkte, KAMPAGNE } from '../kleinkram.js?v=20261123082814';
+import { werkFuellen, bodenspuren } from './fuell-karten.js?v=20261123082814'; // fuell (20.11.): Fugen, Fahrspuren
+import { hofAusbau } from './werk-hof.js?v=20261123082814'; // gelaende (Runde 3)
 
 const HX = 22, HZ = 30;           // Halle: x −22..22, z −30..30
 const CW = 5.2;                   // Laufsteg-Höhe in der Halle

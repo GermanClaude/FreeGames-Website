@@ -1,7 +1,7 @@
 // NULLPUNKT — Requisiten aus Primitiven: Container, Fahrzeuge, Kisten, Fässer, Paletten, Sandsäcke,
 // Betonbarrieren, Lampen, Zäune, Bäume, Marktstände … (Owner: world)
 import * as THREE from 'three';
-import { autoWrack } from './autowrack.js?v=20261123073102';
+import { autoWrack } from './autowrack.js?v=20261123082814';
 
 /** Lokales Koordinatensystem (x, y, z, ry) für Unterteile eines Props. */
 export function frame(b, x, y, z, ry = 0) {

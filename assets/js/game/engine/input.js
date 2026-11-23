@@ -19,10 +19,10 @@ import * as THREE from 'three';
 import {
   ACTION_IDS, ACTION_BY_ID, resolveBindings, codeMap, findConflicts, codeLabel, isBindable,
   TOUCH_BUTTONS, aspectBucket, resolveTouchLayout, loadKeyboardLayout,
-} from '../../shared/bindings.data.js?v=20261123073102';
-import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261123073102';
-import { activePad, padFamily, padGlyphSet } from '../../shared/gamepad.js?v=20261123073102';
-import { PAD_STICK_LABELS } from '../../shared/bindings.data.js?v=20261123073102';
+} from '../../shared/bindings.data.js?v=20261123082814';
+import { assistLevels, assistAppliesTo } from '../../shared/settings.js?v=20261123082814';
+import { activePad, padFamily, padGlyphSet } from '../../shared/gamepad.js?v=20261123082814';
+import { PAD_STICK_LABELS } from '../../shared/bindings.data.js?v=20261123082814';
 
 /** Alle Aktionen (Reihenfolge wie ACTION_DEFS; die ursprünglichen 17 sind enthalten). */
 export const ACTIONS = ACTION_IDS;

@@ -24,16 +24,16 @@
 // Auswahl im Einsatz-/Ausrüstungsbildschirm ui/deploy.js). Einzelspieler: Stellplätze nur fürs eigene Team (keine
 // unbemannten Feind-Luftfahrzeuge als Zielscheibe), online für beide Teams.
 import * as THREE from 'three';
-import { VEHICLES } from '../data.js?v=20261123073102';
-import { collisionRay } from '../../engine/physics.js?v=20261123073102';
-import { groundBelow } from './flight.js?v=20261123073102';
-import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261123073102';
-import { readAirControls } from './controls.js?v=20261123073102';
-import { updateAirCamera } from './camera.js?v=20261123073102';
-import { AirHUD } from './hud.js?v=20261123073102';
-import { AirVoice, AIR_RANGE } from './audio.js?v=20261123073102';
-import { HeliPilotAI } from './pilot-ai.js?v=20261123073102';
-import { AirDeploy } from './deploy.js?v=20261123073102';
+import { VEHICLES } from '../data.js?v=20261123082814';
+import { collisionRay } from '../../engine/physics.js?v=20261123082814';
+import { groundBelow } from './flight.js?v=20261123082814';
+import { prepareAirModels, airProjectileMesh, airMaterials, airWarmMaterials } from './models.js?v=20261123082814';
+import { readAirControls } from './controls.js?v=20261123082814';
+import { updateAirCamera } from './camera.js?v=20261123082814';
+import { AirHUD } from './hud.js?v=20261123082814';
+import { AirVoice, AIR_RANGE } from './audio.js?v=20261123082814';
+import { HeliPilotAI } from './pilot-ai.js?v=20261123082814';
+import { AirDeploy } from './deploy.js?v=20261123082814';
 
 export { AirVoice, AIR_RANGE, airWarmMaterials };
 

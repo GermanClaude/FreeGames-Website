@@ -12,11 +12,11 @@
 // ≤ 0,46 m) – Halden bleiben ≤ ≈ 35° steil, Rampen ≤ 1 : 2,5, Podeste haben Treppen/Rampen (Navigationspunkte setzt
 // arch.stairs, Rampen setzen eigene). frei() prüft geplante Stellen gegen Start-, Flaggen-, Modus- und Kampagnenpunkte.
 import * as THREE from 'three';
-import { stairs, railing } from './arch.js?v=20261123073102';
-import { hash01 } from './props.js?v=20261123073102';
-import { MAPS } from '../../shared/maps.data.js?v=20261123073102';
-import { MODUS_ZIELE } from './maps/modus-ziele.js?v=20261123073102';
-import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261123073102';
+import { stairs, railing } from './arch.js?v=20261123082814';
+import { hash01 } from './props.js?v=20261123082814';
+import { MAPS } from '../../shared/maps.data.js?v=20261123082814';
+import { MODUS_ZIELE } from './maps/modus-ziele.js?v=20261123082814';
+import { KAMPAGNE_PUNKTE } from './kampagne-punkte.js?v=20261123082814';
 
 const geoCache = new Map();
 
