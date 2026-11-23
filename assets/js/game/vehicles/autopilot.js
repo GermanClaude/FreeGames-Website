@@ -54,6 +54,14 @@ export function updateAutopilot(vehicle, intent, dt, world) {
   pursuitTarget(intent, pos, ahead, _t); // führt den Wegpunktindex nach
   // Ankunft erst am letzten Wegpunkt (Rundkurse enden am Start)
   intent.arrived = intent._wp >= path.length - 1 && distFinal < (intent.arriveRadius || 4);
+  // Teilweg (Zeitbudget der Planung erschöpft): am Ende weiterplanen statt „angekommen“
+  if (intent.arrived && path.partial && intent.moveTo && (intent._replans | 0) < 6 && world && world.scale === 'gross') {
+    intent._replans = (intent._replans | 0) + 1;
+    const hb = def.hullBox;
+    let np = null;
+    try { np = planVehiclePath(world, b.origin(_q), intent.moveTo, hb[3], vehicle.sys && typeof vehicle.sys.vehicleCircles === 'function' ? vehicle.sys.vehicleCircles(vehicle) : null); } catch { np = null; }
+    if (np && np.length && np[np.length - 1].distanceTo(final) > 2) { intent.path = np; intent._wp = 0; intent.arrived = false; return true; }
+  }
   if (intent.arrived) {
     intent.throttle = 0; intent.steer = 0; intent.brake = 1;
     intent._stuckT = 0;
@@ -128,7 +136,7 @@ export function updateAutopilot(vehicle, intent, dt, world) {
       if (ban.length > 64) ban.shift();
       if (world._vehPathCache) world._vehPathCache.clear();
       try {
-        const np = planVehiclePath(world, op, final, hb[3]);
+        const np = planVehiclePath(world, op, final, hb[3], vehicle.sys && typeof vehicle.sys.vehicleCircles === 'function' ? vehicle.sys.vehicleCircles(vehicle) : null);
         if (np && np.length) { intent.path = np; intent._wp = 0; }
       } catch { /* alter Weg bleibt */ }
     }
@@ -141,7 +149,7 @@ export function updateAutopilot(vehicle, intent, dt, world) {
 
 /** Autopilot-Zustand löschen (neues Ziel). */
 export function resetAutopilot(intent) {
-  intent._wp = 0; intent._stuckT = 0; intent._reverseT = 0; intent._pp = null; intent._pt = 0; intent.stuck = false; intent.blocked = false; intent.stuckCount = 0; intent.arrived = false;
+  intent._wp = 0; intent._stuckT = 0; intent._reverseT = 0; intent._pp = null; intent._pt = 0; intent._replans = 0; intent.stuck = false; intent.blocked = false; intent.stuckCount = 0; intent.arrived = false;
 }
 
 /*
@@ -153,7 +161,7 @@ export function resetAutopilot(intent) {
  * Spuren ohne Graben/Stufe/Wall, Kollisionsstrahlen links/Mitte/rechts in Stoßstangen- und Aufbauhöhe). Ergebnisse je
  * Verbindung und Breitenklasse werden je Welt zwischengespeichert.
  */
-const VP_MAX_EXPAND = 9000, VP_W = 1.25;
+const VP_MAX_EXPAND = 16000, VP_W = 1.25, VP_BUDGET_MS = 40;
 const _vpHit = { t: 0, tri: 0, nx: 0, ny: 0, nz: 0, data: 0, back: false };
 
 /** Boden unter (x, z) nahe der Bezugshöhe ref: Höhenfeld, darüber begehbare Bauwerksflächen (Brücken, Rampen, Platten). */
@@ -165,19 +173,34 @@ function groundNear(hf, col, x, z, ref) {
 }
 
 /** Befahrbare Strecke A → B (Vector3-artig) für halbe Breite hw? */
+/** Strecke A → B (xz) kommt einem Kreis [x, z, r] näher als hw? */
+function nearCircles(A, B, hw, circles) {
+  if (!circles || !circles.length) return false;
+  const dx = B.x - A.x, dz = B.z - A.z, d2 = dx * dx + dz * dz || 1e-9;
+  for (const [cx, cz, r] of circles) {
+    const t = Math.max(0, Math.min(1, ((cx - A.x) * dx + (cz - A.z) * dz) / d2));
+    if (Math.hypot(A.x + dx * t - cx, A.z + dz * t - cz) < r + hw) return true;
+  }
+  return false;
+}
+
 export function vehicleSegmentOk(world, A, B, hw) {
   const hf = world.terrain && world.terrain.heightfield, col = world.debugData && world.debugData.colliderBVH;
   const dx = B.x - A.x, dz = B.z - A.z, d = Math.hypot(dx, dz), dy = B.y - A.y;
   if (d < 0.3) return Math.abs(dy) < 0.6;
   if (Math.abs(dy) > d * 0.5 + 0.25) return false; // > ≈ 27°
   const ux = dx / d, uz = dz / d, px = -uz, pz = ux, n = Math.max(1, Math.ceil(d / 1.2));
-  if (hf) for (const o of [-hw, 0, hw]) {
+  // Höhenprofil in Spuren alle ≤ 0,7 m bis 0,3 m über die Fahrzeugbreite hinaus (Grabenrampen der Infanterie, 3 m Trichter,
+  // sind für Fahrzeuge zu schmal – vorher fanden drei Spuren eine Lücke und das Fahrzeug blieb im Graben hängen)
+  const hwT = hw + 0.3, nt = Math.max(2, Math.ceil((2 * hwT) / 0.7)), lanes = [];
+  for (let k = 0; k <= nt; k++) lanes.push(-hwT + (2 * hwT * k) / nt);
+  if (hf) for (const o of lanes) {
     let prev = null;
     for (let i = 0; i <= n; i++) {
       const t = i / n, x = A.x + dx * t + px * o, z = A.z + dz * t + pz * o, ref = A.y + dy * t;
       if (!hf.contains(x, z)) return false;
       const h = groundNear(hf, col, x, z, ref);
-      if (h < ref - 0.6 || h > ref + 0.9) return false;         // Graben/Loch bzw. Wall unter dem Fahrzeug
+      if (h < ref - 0.45 || h > ref + 0.9) return false;        // Graben/Loch bzw. Wall unter dem Fahrzeug
       if (prev !== null && Math.abs(h - prev) > 0.5 + (d / n) * 0.45) return false; // Stufe/Grabenkante
       if (hf.waterY != null && h < hf.waterY - 0.9) return false; // tiefes Wasser
       prev = h;
@@ -189,7 +212,7 @@ export function vehicleSegmentOk(world, A, B, hw) {
     if (Math.hypot(A.x + dx * t - bx, A.z + dz * t - bz) < hw + 1.5) return false;
   }
   if (col) {
-    const len = Math.hypot(d, dy), lx = dx / len, ly = dy / len, lz = dz / len, w = hw + 0.15;
+    const len = Math.hypot(d, dy), lx = dx / len, ly = dy / len, lz = dz / len, w = hw + 0.6; // Spielraum: gelenkt wird nicht spurgenau
     // Spuren alle ≤ 0,55 m über die ganze Breite (dünne Stämme passten zwischen drei Strahlen hindurch); 0,25 m: Stümpfe und
     // liegende Stämme unter der Stoßstange (das Gelände selbst ist nicht in der Bauwerks-BVH), 0,9 m: Aufbau, 1,7 m Mitte
     const nl = Math.max(2, Math.ceil((2 * w) / 0.55));
@@ -203,7 +226,7 @@ export function vehicleSegmentOk(world, A, B, hw) {
 }
 
 /** → Vector3[] (ohne Start, mit Ziel) oder null (kein Navigationsgraph/kein Weg). */
-export function planVehiclePath(world, from, to, hw = VP_W) {
+export function planVehiclePath(world, from, to, hw = VP_W, avoid = null) {
   const nav = world && world.nav, nodes = nav && nav.nodes;
   if (!nodes || !nodes.length || typeof nav.nodesInRadius !== 'function') return null;
   const wk = Math.round(Math.max(0.75, Math.min(2.5, hw)) * 4) / 4;
@@ -215,13 +238,14 @@ export function planVehiclePath(world, from, to, hw = VP_W) {
     const key = a < c ? a * N + c : c * N + a;
     let v = cache.get(key);
     if (v === undefined) { v = vehicleSegmentOk(world, nodes[a].position, nodes[c].position, wk) ? 1 : 0; cache.set(key, v); }
-    return v === 1;
+    return v === 1 && !nearCircles(nodes[a].position, nodes[c].position, wk, avoid); // andere Fahrzeuge: nicht zwischengespeichert
   };
+  const segOk = (A, B, w) => vehicleSegmentOk(world, A, B, w) && !nearCircles(A, B, w, avoid);
   // Start/Ziel auf den Boden (Fahrzeugursprung bzw. gemittelte Zielhöhe liegen nicht genau darauf)
   const hf = world.terrain && world.terrain.heightfield, col = world.debugData && world.debugData.colliderBVH;
   if (hf) { from = from.clone(); from.y = groundNear(hf, col, from.x, from.z, from.y + 0.5); to = to.clone(); to.y = groundNear(hf, col, to.x, to.z, hf.heightAt(to.x, to.z) + 0.3); }
   const near = (p, r) => nav.nodesInRadius(p, r).filter((n) => Math.abs(n.position.y - p.y) < 2.5).slice(0, 10);
-  const startN = near(from, 10).find((n) => vehicleSegmentOk(world, from, n.position, wk * 0.8));
+  const startN = near(from, 10).find((n) => segOk(from, n.position, wk * 0.8)) || near(from, 10).find((n) => vehicleSegmentOk(world, from, n.position, wk * 0.8));
   if (!startN) return null;
   const goalP = to, goalNs = new Set(near(to, 12).map((n) => n.id));
   // A* (gewichtete Heuristik), binärer Heap
@@ -232,13 +256,16 @@ export function planVehiclePath(world, from, to, hw = VP_W) {
   const h = (id) => nodes[id].position.distanceTo(goalP) * 1.25;
   g.set(startN.id, 0); push(startN.id, h(startN.id));
   let best = startN.id, bestH = h(startN.id), found = -1, iter = 0;
-  while (heap.length && iter++ < VP_MAX_EXPAND) {
+  // Zeitbudget (läuft synchron beim Losfahren): danach Teilweg zum besten Knoten – die Verbindungsprüfungen bleiben
+  // zwischengespeichert, spätere Planungen (Neuplanung, nächste Fahrt) kommen weiter
+  const tEnd = performance.now() + VP_BUDGET_MS;
+  while (heap.length && iter++ < VP_MAX_EXPAND && ((iter & 63) || performance.now() < tEnd)) {
     const [, cur] = pop();
     if (closed.has(cur)) continue;
     closed.add(cur);
     const hc = h(cur);
     if (hc < bestH) { bestH = hc; best = cur; }
-    if (goalNs.has(cur) && vehicleSegmentOk(world, nodes[cur].position, goalP, wk * 0.8)) { found = cur; break; }
+    if (goalNs.has(cur) && segOk(nodes[cur].position, goalP, wk * 0.8)) { found = cur; break; }
     const cp = nodes[cur].position, gc = g.get(cur);
     for (const nb of nodes[cur].links) {
       if (closed.has(nb)) continue;
@@ -248,6 +275,7 @@ export function planVehiclePath(world, from, to, hw = VP_W) {
       g.set(nb, cost); prev.set(nb, cur); push(nb, cost + h(nb));
     }
   }
+  const cut = found < 0 && heap.length > 0 && iter < VP_MAX_EXPAND; // Zeitbudget erschöpft, Suche nicht zu Ende
   const end = found >= 0 ? found : best;
   if (end === startN.id && found < 0) return null;
   const ids = [];
@@ -259,10 +287,11 @@ export function planVehiclePath(world, from, to, hw = VP_W) {
   let i = 0;
   while (i < P.length - 1) {
     let j = Math.min(P.length - 1, i + 6);
-    while (j > i + 1 && (P[i].distanceTo(P[j]) > 30 || !vehicleSegmentOk(world, P[i], P[j], wk))) j--;
+    while (j > i + 1 && (P[i].distanceTo(P[j]) > 30 || !segOk(P[i], P[j], wk))) j--;
     out.push(P[j].clone());
     i = j;
   }
   if (found >= 0) out.push(goalP.clone());
+  if (cut) out.partial = true; // Autopilot plant am Ende des Teilwegs weiter (Zwischenspeicher dann warm)
   return out;
 }

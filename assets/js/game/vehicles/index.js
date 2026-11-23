@@ -1557,7 +1557,7 @@ export class VehicleSystem {
       if (hasRoads && nearRoad(from) && nearRoad(to)) path = roads.findPath(from, to);
       if ((!path || !path.length) && w && w.scale === 'gross' && w.terrain && w.terrain.heightfield) {
         const hb = vehicle && vehicle.def && vehicle.def.hullBox;
-        const vp = planVehiclePath(w, from, to, hb ? hb[3] : 1.25);
+        const vp = planVehiclePath(w, from, to, hb ? hb[3] : 1.25, this.vehicleCircles(vehicle));
         if (vp && vp.length) return vp; // schon ausgedünnt/geglättet
       }
       if ((!path || !path.length) && hasRoads && !(w.nav && typeof w.nav.findPath === 'function')) path = roads.findPath(from, to);
@@ -1569,6 +1569,17 @@ export class VehicleSystem {
     let last = from;
     for (const p of path) { if (p.distanceTo(last) >= 6) { out.push(p.clone()); last = p; } }
     if (!out.length || out[out.length - 1].distanceTo(to) > 1) out.push(to.clone());
+    return out;
+  }
+
+  /** gross (23.11.): andere Bodenfahrzeuge als Hindernis-Kreise [x, z, r] für die Wegplanung (geparkte Panzer am Basisausgang). */
+  vehicleCircles(self = null) {
+    const out = [];
+    for (const v of this.list) {
+      if (v === self || !v.alive || v.isAircraft || !v.def || !v.def.hullBox) continue;
+      const hb = v.def.hullBox, p = v.position;
+      out.push([p.x, p.z, Math.hypot(hb[3], hb[5]) * 0.85 + 0.4]);
+    }
     return out;
   }
 

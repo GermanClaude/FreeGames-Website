@@ -355,7 +355,7 @@ export function barrelGroup(b, x, z, o = {}) {
  *  Kartons: Fotoscan cardboard_box_01 (falls geladen), sonst prozedurale Kartons mit Klebeband. Kollision unverändert. */
 export function pallet(b, x, y, z, o = {}) {
   // zerstoerung 15.11.: leere/foliierte Paletten zerbrechen (game/breakables.js); mit Kartons (Bibliotheksmodelle) nicht
-  const own = o.load !== 'boxes' && typeof b.beginBreak === 'function' && !b._brk;
+  const own = o.load !== 'boxes' && o.collide !== false && typeof b.beginBreak === 'function' && !b._brk;
   if (own) b.beginBreak({ kind: 'palette', x, y, z, w: 1.2, h: o.load ? 0.9 : 0.144, d: 0.8, ry: o.ry || 0, surface: 'wood', hp: o.load ? 140 : 60 });
   try { return palletParts(b, x, y, z, o); } finally { if (own) b.endBreak(); }
 }
@@ -409,7 +409,9 @@ function palletParts(b, x, y, z, o) {
     h += 0.7;
   }
   // Kollision wie bisher (Höhe 0,122 + Ladung): gleiche Maße auf allen Grafikstufen
-  f.solid(0, 0, 0, 1.2, h - 0.022, 0.8, { minimap: L ? 'cover' : 'prop' });
+  // gross (23.11.): collide: false beachten – Kleinkram (kleinkram.js, Menge je Grafikstufe) setzte sonst je Stufe andere
+  // Kollisionsquader (Grenzland: Navigationsgraph low ≠ medium, Mehrspieler uneins)
+  if (o.collide !== false) f.solid(0, 0, 0, 1.2, h - 0.022, 0.8, { minimap: L ? 'cover' : 'prop' });
   return h - 0.022;
 }
 

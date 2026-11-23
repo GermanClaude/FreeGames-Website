@@ -273,7 +273,7 @@ export function hangar(b, o) {
     b.cyl(x + 3, 2.5, z + 1, 0.02, H - 3.9, 'black', { ...KEIN, seg: 4, ao: false });
     b.box(x + 3, 2.3, z + 1, 0.3, 0.25, 0.15, 'metal_painted', { tint: '#c8402f', ...VG });
   } else {
-    for (const [lx, lz, ry] of [[-15, 4, Q], [-15, -3, Q]]) container(b, x + lx, yF, z + lz, { ry, color: ['#56603f', '#4a5338'][Math.round(hash01(lx, lz, 1))] });
+    for (const [lx, lz, ry] of [[-15, 4, Q], [-15, -3, Q]]) container(b, x + lx, yF, z + lz, { ry, color: ['#7d8560', '#717a56'][Math.round(hash01(lx, lz, 1))] });
     rack(b, x + 8, z - 4, { ry: 0, bays: 3, levels: 2, y: yF });
     rack(b, x + 8, z + 3, { ry: 0, bays: 3, levels: 2, y: yF });
     crateStack(b, x - 6, z + 8, { y: yF, ry: 0.3 });
@@ -1008,8 +1008,8 @@ export function hauptquartier(b, x, z, side, o = {}) {
   // Zelte (Stabszelt, Sanität), Container, Funk
   const tent = (tx, tz, tint = '#5b6142') => { b.box(tx, 0, tz, 5.2, 1.8, 7.2, 'tarp', { tint, minimap: 'cover' }); b.wedge(tx, 1.8, tz, 5.2, 1.4, 7.2, 'tarp', { tint, minimap: false }); };
   tent(x - s * 24, z - 22); tent(x - s * 16, z - 22, '#6a6a4c'); tent(x - s * 24, z - 12, '#5a5f48');
-  container(b, x + s * 28, 0, z - 26, { ry: Q, color: '#56603f' });
-  container(b, x + s * 28, 0, z - 19, { ry: Q, color: '#4a5338' });
+  container(b, x + s * 28, 0, z - 26, { ry: Q, color: '#7d8560' });
+  container(b, x + s * 28, 0, z - 19, { ry: Q, color: '#717a56' });
   crateStack(b, x - s * 30, z - 4, { ry: 0.2 });
   barrelGroup(b, x - s * 30, z + 2, { n: 5 });
   munitionskisten(b, x - s * 20, 0, z - 5, 0.3, 4);

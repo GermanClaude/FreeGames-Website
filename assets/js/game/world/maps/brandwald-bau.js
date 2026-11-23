@@ -870,8 +870,9 @@ export function burntWreck(b, x, y, z, ry, kind = 'lkw', seed = 1, ground = null
     for (const sx of [-1, 1]) panel(sx * (W / 2 - 0.02), 0.32, -0.2, 0.04, 0.42, 2.0);  // Türbleche unten
     panel(0, 0.45, 1.9, 0.7, 0.4, 0.5, { mat: 'metal_galvanized', tint: '#3d3530' });  // Motor
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) rim(sx * (W / 2 - 0.12), sz * 1.4, 0.24);
-    const [cx, cy, cz] = f(0, 0, 0);
-    b.solid(cx, cy, cz, W, 1.35, L, { ry, minimap: 'vehicle' });
+    // gross (23.11.): Kollision wie die Karosserie ab medium (1,8 × 1,3 × 4,6 m an x/y/z) – vorher je Stufe ein anderer
+    // Quader (Prüfskript: Navigationsgraph Brandwald low ≠ high, Mehrspieler mit gemischten Stufen uneins)
+    b.solid(x, y, z, 1.8, 1.3, 4.6, { ry, minimap: 'vehicle' });
     return;
   }
   // Pritschenwagen

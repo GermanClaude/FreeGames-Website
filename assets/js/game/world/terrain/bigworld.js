@@ -436,7 +436,9 @@ export async function loadBigWorld(G, mapId, { onProgress, weather = null, time 
   }
   for (const r of roads.roads) for (let k = 0; k < r.points.length; k++) mark(r.points[k].x, r.points[k].z, r.width / 2 + 2.2);
   for (const f of [...(def.flags?.cq || []), ...(def.flags?.dom || [])]) mark(f.x, f.z, 5);
-  for (const v of def.vehicles || []) mark(v.x, v.z, 7);
+  // gross (23.11.): 11 m statt 7 m – Brandwald: zwei Stämme 9 m vor dem Schützenpanzer (43/160, 45/157) ließen nur 3,2 m
+  // Durchfahrt am Basisausgang; Fahrzeuge brauchen Wenderaum
+  for (const v of def.vehicles || []) mark(v.x, v.z, 11);
   for (const c of def.clearings || []) mark(c[0], c[1], c[2]);
   // Startpunkte (kein Baum auf dem Spawn) und Streifen späterer Ortschaften (Kontrollstreifen der Grenzanlage)
   for (const t of ['A', 'B', 'ffa']) for (const p of def.spawns?.[t] || []) mark(p[0], p[1], 3);

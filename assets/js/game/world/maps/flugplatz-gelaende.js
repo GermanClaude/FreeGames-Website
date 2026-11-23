@@ -61,8 +61,9 @@ export function flugplatzGelaende(b, ctx, def) {
   // 3) Materiallager zwischen Vorfeld und Startbereichen (x ±190, z −78)
   paar(192, -78, 12, 9, (px, s) => {
     const y = yAt(px, -78);
-    container(b, px + 6 * s, y, -84, { len: 12.19, ry: 0.02 * s, color: s > 0 ? '#5d6345' : '#4f5a44' });
-    container(b, px + 6 * s, y + 2.59, -84, { len: 6.06, ry: -0.03 * s, color: '#6b6a58' });
+    // gross (23.11.): Olivtöne aufgehellt – der Lackton wird linear auf die helle Containertextur multipliziert, #5d6345 wirkte fast schwarz
+    container(b, px + 6 * s, y, -84, { len: 12.19, ry: 0.02 * s, color: s > 0 ? '#7f8562' : '#6f7a5e' });
+    container(b, px + 6 * s, y + 2.59, -84, { len: 6.06, ry: -0.03 * s, color: '#8a8874' });
     crateStack(b, px - 4 * s, -80, { y, ry: 0.2 * s, pattern: [[0, 0, 0, 1.2], [1.25, 0, 0.05, 1.1], [0.55, 1, 0.02, 1.0], [-1.25, 0, 0.1, 1.1]] });
     palletStack(b, px - 7.5 * s, -74, { y, n: 4, ry: 0.4 * s, load: 'boxes' });
     barrelGroup(b, px + 1 * s, -72.5, { y, n: 5, colors: ['#4b5a3a', '#4b5a3a', '#c9a227'] });
